@@ -171,5 +171,12 @@
     "generateTimesheets": "إنشاء الجداول الزمنية",
     "generationInProgress": "جاري الإنشاء...",
     "generationComplete": "اكتمل الإنشاء"
-  }
+  },
+  "automatic_approval_workflow": "سير عمل الموافقة التلقائية",
+  "system_behavior": "سلوك النظام",
+  "automatically_determines_next_stage": "يحدد المرحلة التالية تلقائياً",
+  "moves_to_next_approval_level": "ينتقل إلى مستوى الموافقة التالي",
+  "no_manual_stage_selection_needed": "لا حاجة للاختيار اليدوي للمرحلة",
+  "automatic_stage_determination": "تحديد المرحلة تلقائياً",
+  "employees": "الموظفون"
 }

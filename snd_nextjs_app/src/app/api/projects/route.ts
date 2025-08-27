@@ -1,13 +1,13 @@
-import { db } from '@/lib/db';
+import { db } from '@/lib/drizzle';
 import { projects as projectsTable, customers, employees, locations } from '@/lib/drizzle/schema';
-import { PermissionConfigs, withPermission } from '@/lib/rbac/api-middleware';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { and, desc, eq, ilike, or } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { inArray } from 'drizzle-orm';
 import { employees as employeesTable } from '@/lib/drizzle/schema';
 
-// Re-enable RBAC middleware now that the issue is fixed
-export const GET = withPermission(async (request: NextRequest) => {
+// GET /api/projects - List projects with pagination and filters
+const getProjectsHandler = async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -112,7 +112,7 @@ export const GET = withPermission(async (request: NextRequest) => {
     const total = countRows.length;
     
     // Transform the data to match the frontend expectations
-    const transformedProjects = rows.map(project => ({
+    const enhancedRows = rows.map(project => ({
       id: project.id,
       name: project.name,
       description: project.description || '',
@@ -140,19 +140,19 @@ export const GET = withPermission(async (request: NextRequest) => {
       updated_at: project.updatedAt ? project.updatedAt.toString() : '',
     }));
 
-    const totalPages = Math.ceil(total / limit);
-
     return NextResponse.json({
       success: true,
       data: {
-        data: transformedProjects,
-        current_page: page,
-        last_page: totalPages,
-        per_page: limit,
-        total,
-        next_page_url: page < totalPages ? `/api/projects?page=${page + 1}` : null,
-        prev_page_url: page > 1 ? `/api/projects?page=${page - 1}` : null,
-      }
+        data: enhancedRows,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+          hasNextPage: page < Math.ceil(total / limit),
+          hasPrevPage: page > 1,
+        },
+      },
     });
   } catch (error) {
     console.error('Error fetching projects:', error);
@@ -162,9 +162,10 @@ export const GET = withPermission(async (request: NextRequest) => {
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
-}, PermissionConfigs.project.read);
+};
 
-export const POST = withPermission(async (request: NextRequest) => {
+// POST /api/projects - Create new project
+const createProjectHandler = async (request: NextRequest) => {
   try {
     const body = await request.json();
     const {
@@ -176,6 +177,10 @@ export const POST = withPermission(async (request: NextRequest) => {
       end_date,
       status,
       budget,
+      project_manager_id,
+      project_engineer_id,
+      project_foreman_id,
+      supervisor_id,
       notes,
       objectives,
       scope,
@@ -202,14 +207,9 @@ export const POST = withPermission(async (request: NextRequest) => {
       cost_plan_detailed,
       quality_plan_detailed,
       risk_plan_detailed,
-      // Project team roles
-      project_manager_id,
-      project_engineer_id,
-      project_foreman_id,
-      supervisor_id,
     } = body;
 
-    const inserted = await db
+    const [inserted] = await db
       .insert(projectsTable)
       .values({
         name,
@@ -270,9 +270,10 @@ export const POST = withPermission(async (request: NextRequest) => {
     console.error('Error creating project:', error);
     return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });
   }
-}, PermissionConfigs.project.create);
+};
 
-export const PUT = withPermission(async (request: NextRequest) => {
+// PUT /api/projects - Update project
+const updateProjectHandler = async (request: NextRequest) => {
   try {
     const body = await request.json();
     const { id, name, description, status, start_date, end_date, budget } = body;
@@ -294,12 +295,13 @@ export const PUT = withPermission(async (request: NextRequest) => {
 
     return NextResponse.json(project);
   } catch (error) {
-    
+    console.error('Error updating project:', error);
     return NextResponse.json({ error: 'Failed to update project' }, { status: 500 });
   }
-}, PermissionConfigs.project.update);
+};
 
-export const DELETE = withPermission(async (request: NextRequest) => {
+// DELETE /api/projects - Delete project
+const deleteProjectHandler = async (request: NextRequest) => {
   try {
     const body = await request.json();
     const { id } = body;
@@ -308,7 +310,12 @@ export const DELETE = withPermission(async (request: NextRequest) => {
 
     return NextResponse.json({ message: 'Project deleted successfully' });
   } catch (error) {
-    
+    console.error('Error deleting project:', error);
     return NextResponse.json({ error: 'Failed to delete project' }, { status: 500 });
   }
-}, PermissionConfigs.project.delete);
+};
+
+export const GET = withPermission(PermissionConfigs.project.read)(getProjectsHandler);
+export const POST = withPermission(PermissionConfigs.project.create)(createProjectHandler);
+export const PUT = withPermission(PermissionConfigs.project.update)(updateProjectHandler);
+export const DELETE = withPermission(PermissionConfigs.project.delete)(deleteProjectHandler);

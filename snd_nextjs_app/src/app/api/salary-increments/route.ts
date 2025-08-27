@@ -1,25 +1,12 @@
-import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
 import { employees, salaryIncrements, users } from '@/lib/drizzle/schema';
-import { checkPermission } from '@/lib/rbac/enhanced-permission-service';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { and, desc, eq, gte, isNull, lte, sql } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(_request: NextRequest) {
+// GET /api/salary-increments - List salary increments
+const getSalaryIncrementsHandler = async (_request: NextRequest) => {
   try {
-    // Check authentication
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check permission to view salary increments
-    const canView = await checkPermission(session.user.id, 'SalaryIncrement', 'read');
-    if (!canView) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
-
     const { searchParams } = new URL(_request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '15');
@@ -32,7 +19,7 @@ export async function GET(_request: NextRequest) {
     const offset = (page - 1) * limit;
 
     // Build where conditions array
-    const whereConditions: any[] = [];
+    const whereConditions: (typeof eq | typeof gte | typeof lte | typeof isNull)[] = [];
 
     if (employeeId) {
       whereConditions.push(eq(salaryIncrements.employeeId, parseInt(employeeId)));
@@ -98,236 +85,231 @@ export async function GET(_request: NextRequest) {
         requestedAt: salaryIncrements.requestedAt,
         requestedBy: salaryIncrements.requestedBy,
         // Employee fields
-        employeeId_inner: employees.id,
         employeeFirstName: employees.firstName,
         employeeLastName: employees.lastName,
-        employeeFileNumber: employees.fileNumber,
+        employeeEmail: employees.email,
+        employeePhone: employees.phone,
+        employeeBasicSalary: employees.basicSalary,
+        employeeFoodAllowance: employees.foodAllowance,
+        employeeHousingAllowance: employees.housingAllowance,
+        employeeTransportAllowance: employees.transportAllowance,
         // User fields for requested by
-        requestedByUserName: users.name,
-        requestedByUserEmail: users.email,
+        requesterName: users.name,
+        requesterEmail: users.email,
       })
       .from(salaryIncrements)
       .leftJoin(employees, eq(salaryIncrements.employeeId, employees.id))
       .leftJoin(users, eq(salaryIncrements.requestedBy, users.id))
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
       .orderBy(desc(salaryIncrements.createdAt))
-      .limit(limit)
-      .offset(offset);
+      .offset(offset)
+      .limit(limit);
 
-    // Transform the data to match the expected interface
+    // Transform the data to match frontend expectations
     const transformedData = salaryIncrementsData.map(item => ({
       id: item.id,
       employee_id: item.employeeId,
+      employee: {
+        id: item.employeeId,
+        first_name: item.employeeFirstName || '',
+        last_name: item.employeeLastName || '',
+        employee_id: item.employeeId.toString(),
+      },
       increment_type: item.incrementType,
       effective_date: item.effectiveDate,
-      reason: item.reason,
-      approved_by: item.approvedBy,
-      approved_at: item.approvedAt,
+      reason: item.reason || '',
+      current_base_salary: item.currentBaseSalary ? parseFloat(item.currentBaseSalary) : 0,
+      current_food_allowance: item.currentFoodAllowance ? parseFloat(item.currentFoodAllowance) : 0,
+      current_housing_allowance: item.currentHousingAllowance ? parseFloat(item.currentHousingAllowance) : 0,
+      current_transport_allowance: item.currentTransportAllowance ? parseFloat(item.currentTransportAllowance) : 0,
+      increment_amount: item.incrementAmount ? parseFloat(item.incrementAmount) : 0,
+      increment_percentage: item.incrementPercentage ? parseFloat(item.incrementPercentage) : 0,
+      new_base_salary: item.newBaseSalary ? parseFloat(item.newBaseSalary) : 0,
+      new_food_allowance: item.newFoodAllowance ? parseFloat(item.newFoodAllowance) : 0,
+      new_housing_allowance: item.newHousingAllowance ? parseFloat(item.newHousingAllowance) : 0,
+      new_transport_allowance: item.newTransportAllowance ? parseFloat(item.newTransportAllowance) : 0,
       status: item.status,
-      created_at: item.createdAt,
-      updated_at: item.updatedAt,
-      current_base_salary: item.currentBaseSalary,
-      current_food_allowance: item.currentFoodAllowance,
-      current_housing_allowance: item.currentHousingAllowance,
-      current_transport_allowance: item.currentTransportAllowance,
-      deleted_at: item.deletedAt,
-      increment_amount: item.incrementAmount,
-      increment_percentage: item.incrementPercentage,
-      new_base_salary: item.newBaseSalary,
-      new_food_allowance: item.newFoodAllowance,
-      new_housing_allowance: item.newHousingAllowance,
-      new_transport_allowance: item.newTransportAllowance,
-      notes: item.notes,
-      rejected_at: item.rejectedAt,
-      rejected_by: item.rejectedBy,
-      rejection_reason: item.rejectionReason,
+      notes: item.notes || '',
       requested_at: item.requestedAt,
       requested_by: item.requestedBy,
-      employee: item.employeeId_inner
-        ? {
-            id: item.employeeId_inner,
-            first_name: item.employeeFirstName,
-            last_name: item.employeeLastName,
-            employee_id: item.employeeFileNumber,
-          }
-        : undefined,
-      requested_by_user: item.requestedByUserName
-        ? {
-            id: item.requestedBy,
-            name: item.requestedByUserName,
-            email: item.requestedByUserEmail,
-          }
-        : undefined,
-      approved_by_user: undefined, // Will be populated in a separate query if needed
-      rejected_by_user: undefined, // Will be populated in a separate query if needed
+      requested_by_user: {
+        id: item.requestedBy || 0,
+        name: item.requesterName || '',
+      },
+      approved_at: item.approvedAt,
+      approved_by: item.approvedBy,
+      rejected_at: item.rejectedAt,
+      rejected_by: item.rejectedBy,
+      rejection_reason: item.rejectionReason || '',
+      created_at: item.createdAt,
+      updated_at: item.updatedAt,
     }));
 
     return NextResponse.json({
+      success: true,
       data: transformedData,
       pagination: {
         page,
         limit,
         total,
         pages,
+        hasNextPage: page < pages,
+        hasPrevPage: page > 1,
       },
     });
   } catch (error) {
-
-    // If table doesn't exist yet, return empty result
-    if (
-      error instanceof Error &&
-      error.message.includes('relation') &&
-      error.message.includes('does not exist')
-    ) {
-      return NextResponse.json({
-        data: [],
-        pagination: {
-          page: 1,
-          limit: 15,
-          total: 0,
-          pages: 1,
-        },
-      });
-    }
-
+    console.error('Error fetching salary increments:', error);
     return NextResponse.json(
       {
-        error: 'Internal server error',
+        success: false,
+        error: 'Failed to fetch salary increments',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
   }
-}
+};
 
-export async function POST(_request: NextRequest) {
+// POST /api/salary-increments - Create new salary increment
+const createSalaryIncrementHandler = async (request: NextRequest) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check permission to create salary increments
-    const canCreate = await checkPermission(session.user.id, 'SalaryIncrement', 'create');
-    if (!canCreate) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
-
-    const body = await _request.json();
+    const body = await request.json();
     const {
       employee_id,
       increment_type,
-      increment_percentage,
-      increment_amount,
-      reason,
       effective_date,
-      // notes, // Not used
+      reason,
+      current_base_salary,
+      current_food_allowance,
+      current_housing_allowance,
+      current_transport_allowance,
+      increment_amount,
+      increment_percentage,
       new_base_salary,
-      // new_food_allowance, // Not used
-      // new_housing_allowance, // Not used
-      // new_transport_allowances, // Not used
-      // apply_to_allowances, // Not used
+      new_food_allowance,
+      new_housing_allowance,
+      new_transport_allowance,
+      notes,
     } = body;
 
     // Validate required fields
-    if (!employee_id || !increment_type || !reason || !effective_date) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!employee_id) {
+      return NextResponse.json({ error: 'Employee ID is required' }, { status: 400 });
     }
 
-    // Get current employee salary information
-    const employee = await db
-      .select({
-        currentBaseSalary: employees.basicSalary,
-        currentFoodAllowance: employees.foodAllowance,
-        currentHousingAllowance: employees.housingAllowance,
-        currentTransportAllowance: employees.transportAllowance,
-      })
-      .from(employees)
-      .where(eq(employees.id, employee_id))
-      .limit(1);
-
-    if (employee.length === 0) {
-      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+    if (!increment_type) {
+      return NextResponse.json({ error: 'Increment type is required' }, { status: 400 });
     }
 
-    const currentSalary = employee[0];
-    if (!currentSalary) {
-      return NextResponse.json({ error: 'Employee salary information not found' }, { status: 404 });
+    if (!effective_date) {
+      return NextResponse.json({ error: 'Effective date is required' }, { status: 400 });
     }
 
-    // Calculate new salary if not provided
-    let calculatedNewBaseSalary = new_base_salary;
-    // let calculatedNewFoodAllowance: number | undefined;
-    // let calculatedNewHousingAllowance: number | undefined;
-    // let calculatedNewTransportAllowance: number | undefined;
+    // Get current user ID from session (this will be handled by the permission middleware)
+    const { getServerSession } = await import('next-auth');
+    const { authOptions } = await import('@/lib/auth-config');
+    const session = await getServerSession(authOptions);
+    const requestedBy = session?.user?.id;
+
+    // Get current employee salary information if not provided
+    let currentBaseSalary = current_base_salary;
+    let currentFoodAllowance = current_food_allowance;
+    let currentHousingAllowance = current_housing_allowance;
+    let currentTransportAllowance = current_transport_allowance;
+
+    if (!currentBaseSalary || !currentFoodAllowance || !currentHousingAllowance || !currentTransportAllowance) {
+      const employee = await db
+        .select({
+          basicSalary: employees.basicSalary,
+          foodAllowance: employees.foodAllowance,
+          housingAllowance: employees.housingAllowance,
+          transportAllowance: employees.transportAllowance,
+        })
+        .from(employees)
+        .where(eq(employees.id, parseInt(employee_id)))
+        .limit(1);
+
+      if (employee.length === 0) {
+        return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+      }
+
+      const emp = employee[0];
+      currentBaseSalary = currentBaseSalary || emp.basicSalary;
+      currentFoodAllowance = currentFoodAllowance || emp.foodAllowance;
+      currentHousingAllowance = currentHousingAllowance || emp.housingAllowance;
+      currentTransportAllowance = currentTransportAllowance || emp.transportAllowance;
+    }
+
+    // Calculate new values if not provided
+    let newBaseSalary = new_base_salary;
+    let newFoodAllowance = new_food_allowance;
+    let newHousingAllowance = new_housing_allowance;
+    let newTransportAllowance = new_transport_allowance;
 
     if (increment_type === 'percentage' && increment_percentage) {
       const percentage = increment_percentage / 100;
-      calculatedNewBaseSalary = Number(currentSalary.currentBaseSalary) * (1 + percentage);
-
-      // if (apply_to_allowances) {
-      //   calculatedNewFoodAllowance = Number(currentSalary.currentFoodAllowance) * (1 + percentage);
-      //   calculatedNewHousingAllowance = Number(currentSalary.currentHousingAllowance) * (1 + percentage);
-      //   calculatedNewTransportAllowance = Number(currentSalary.currentTransportAllowance) * (1 + percentage);
-      // }
+      newBaseSalary = newBaseSalary || (parseFloat(currentBaseSalary) * (1 + percentage));
+      newFoodAllowance = newFoodAllowance || (parseFloat(currentFoodAllowance) * (1 + percentage));
+      newHousingAllowance = newHousingAllowance || (parseFloat(currentHousingAllowance) * (1 + percentage));
+      newTransportAllowance = newTransportAllowance || (parseFloat(currentTransportAllowance) * (1 + percentage));
     } else if (increment_type === 'amount' && increment_amount) {
-      calculatedNewBaseSalary = Number(currentSalary.currentBaseSalary) + increment_amount;
+      newBaseSalary = newBaseSalary || (parseFloat(currentBaseSalary) + increment_amount);
     }
 
-    // Create the salary increment record
-    const insertData = {
-      employeeId: employee_id,
-      incrementType: increment_type,
-      effectiveDate: new Date(effective_date).toISOString().split('T')[0] || null,
-      reason,
-      notes: body.notes || '',
-      status: 'pending',
-      currentBaseSalary: currentSalary.currentBaseSalary,
-      currentFoodAllowance: currentSalary.currentFoodAllowance,
-      currentHousingAllowance: currentSalary.currentHousingAllowance,
-      currentTransportAllowance: currentSalary.currentTransportAllowance,
-      newBaseSalary: calculatedNewBaseSalary || currentSalary.currentBaseSalary,
-      newFoodAllowance: body.new_food_allowance || currentSalary.currentFoodAllowance,
-      newHousingAllowance: body.new_housing_allowance || currentSalary.currentHousingAllowance,
-      newTransportAllowance: body.new_transport_allowance || currentSalary.currentTransportAllowance,
-      incrementAmount: increment_amount,
-      incrementPercentage: increment_percentage,
-      requestedBy: session.user.id,
-      requestedAt: new Date().toISOString().split('T')[0] || null,
-      createdAt: new Date().toISOString().split('T')[0] || null,
-      updatedAt: new Date().toISOString().split('T')[0] || null,
-    };
+    // Ensure we have new values
+    if (!newBaseSalary) newBaseSalary = currentBaseSalary;
+    if (!newFoodAllowance) newFoodAllowance = currentFoodAllowance;
+    if (!newHousingAllowance) newHousingAllowance = currentHousingAllowance;
+    if (!newTransportAllowance) newTransportAllowance = currentTransportAllowance;
 
-    const [newSalaryIncrement] = await db
+    const [inserted] = await db
       .insert(salaryIncrements)
-      .values(insertData)
+      .values({
+        employeeId: parseInt(employee_id),
+        incrementType: increment_type,
+        effectiveDate: new Date(effective_date).toISOString(),
+        reason: reason || 'Salary increment request',
+        currentBaseSalary: String(currentBaseSalary),
+        currentFoodAllowance: String(currentFoodAllowance),
+        currentHousingAllowance: String(currentHousingAllowance),
+        currentTransportAllowance: String(currentTransportAllowance),
+        incrementAmount: increment_amount ? String(increment_amount) : null,
+        incrementPercentage: increment_percentage ? String(increment_percentage) : null,
+        newBaseSalary: String(newBaseSalary),
+        newFoodAllowance: String(newFoodAllowance),
+        newHousingAllowance: String(newHousingAllowance),
+        newTransportAllowance: String(newTransportAllowance),
+        status: 'pending',
+        notes: notes || null,
+        requestedAt: new Date().toISOString(),
+        requestedBy: requestedBy || null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
       .returning();
 
-    if (!newSalaryIncrement) {
-      throw new Error('Failed to create salary increment');
-    }
+    const salaryIncrement = inserted;
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        id: newSalaryIncrement.id,
-        employee_id: newSalaryIncrement.employeeId,
-        increment_type: newSalaryIncrement.incrementType,
-        effective_date: newSalaryIncrement.effectiveDate,
-        reason: newSalaryIncrement.reason,
-        status: newSalaryIncrement.status,
-        current_base_salary: newSalaryIncrement.currentBaseSalary,
-        new_base_salary: newSalaryIncrement.newBaseSalary,
-        increment_amount: newSalaryIncrement.incrementAmount,
-        increment_percentage: newSalaryIncrement.incrementPercentage,
-        requested_by: newSalaryIncrement.requestedBy,
-        requested_at: newSalaryIncrement.requestedAt,
-        created_at: newSalaryIncrement.createdAt,
-        updated_at: newSalaryIncrement.updatedAt,
+    return NextResponse.json(
+      {
+        success: true,
+        data: salaryIncrement,
+        message: 'Salary increment request created successfully',
       },
-    });
+      { status: 201 }
+    );
   } catch (error) {
-    
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error creating salary increment:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to create salary increment',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
   }
-}
+};
+
+export const GET = withPermission(PermissionConfigs.salaryIncrement.read)(getSalaryIncrementsHandler);
+export const POST = withPermission(PermissionConfigs.salaryIncrement.create)(createSalaryIncrementHandler);

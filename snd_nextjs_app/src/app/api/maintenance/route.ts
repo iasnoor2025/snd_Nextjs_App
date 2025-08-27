@@ -5,7 +5,7 @@ import {
   equipment as equipmentTable,
   equipmentMaintenanceItems as maintenanceItemsTable,
 } from '@/lib/drizzle/schema';
-import { withAuth, withPermission } from '@/lib/rbac/api-middleware';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { and, desc, eq, gte, inArray, lte } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -15,7 +15,7 @@ function parseNumber(value: any): number | undefined {
   return Number.isNaN(n) ? undefined : n;
 }
 
-export const GET = withAuth(async (request: NextRequest) => {
+export const GET = withPermission(PermissionConfigs.maintenance.read)(async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const equipmentId = parseNumber(searchParams.get('equipmentId'));

@@ -1,8 +1,9 @@
-import { PermissionConfigs, withReadPermission } from '@/lib/rbac/api-middleware';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { RentalService } from '@/lib/services/rental-service';
 import { NextRequest, NextResponse } from 'next/server';
 
-export const GET = withReadPermission(async (request: NextRequest) => {
+// GET /api/rentals - List rentals
+const getRentalsHandler = async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search');
@@ -23,7 +24,7 @@ export const GET = withReadPermission(async (request: NextRequest) => {
     const rentals = await RentalService.getRentals(filters);
     return NextResponse.json(rentals);
   } catch (error) {
-
+    console.error('Error fetching rentals:', error);
     return NextResponse.json(
       {
         error: 'Failed to fetch rentals',
@@ -33,9 +34,10 @@ export const GET = withReadPermission(async (request: NextRequest) => {
       { status: 500 }
     );
   }
-}, PermissionConfigs.rental.read);
+};
 
-export const POST = withReadPermission(async (request: NextRequest) => {
+// POST /api/rentals - Create rental
+const createRentalHandler = async (request: NextRequest) => {
   try {
     const body = await request.json();
 
@@ -86,7 +88,10 @@ export const POST = withReadPermission(async (request: NextRequest) => {
     const rental = await RentalService.createRental(rentalData);
     return NextResponse.json(rental, { status: 201 });
   } catch (error) {
-    
+    console.error('Error creating rental:', error);
     return NextResponse.json({ error: 'Failed to create rental' }, { status: 500 });
   }
-}, PermissionConfigs.rental.create);
+};
+
+export const GET = withPermission(PermissionConfigs.rental.read)(getRentalsHandler);
+export const POST = withPermission(PermissionConfigs.rental.create)(createRentalHandler);

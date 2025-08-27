@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { departments, designations, employees as employeesTable } from '@/lib/drizzle/schema';
-import { withAuth } from '@/lib/rbac/api-middleware';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { updateEmployeeStatusBasedOnLeave } from '@/lib/utils/employee-status';
 import { ERPNextSyncService } from '@/lib/services/erpnext-sync-service';
 import { eq } from 'drizzle-orm';
@@ -605,6 +605,6 @@ const deleteEmployeeHandler = async (
 };
 
 // Export the wrapped handlers
-export const GET = withAuth(getEmployeeHandler);
-export const PUT = withAuth(updateEmployeeHandler);
-export const DELETE = withAuth(deleteEmployeeHandler);
+export const GET = withPermission(PermissionConfigs.employee.read)(getEmployeeHandler);
+export const PUT = withPermission(PermissionConfigs.employee.update)(updateEmployeeHandler);
+export const DELETE = withPermission(PermissionConfigs.employee.delete)(deleteEmployeeHandler);

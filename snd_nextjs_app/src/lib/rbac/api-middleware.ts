@@ -1,11 +1,10 @@
-import { authConfig } from '@/lib/auth-config';
-import { db } from '@/lib/db';
-import { employees, modelHasRoles, roles, users } from '@/lib/drizzle/schema';
-import { eq } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { Action, Subject } from './custom-rbac';
-import { checkUserPermission } from './permission-service';
+import { getServerSession } from 'next-auth';
+import { authConfig } from '@/lib/auth-config';
+import { hasPermission, User } from './server-rbac';
+
+export type Action = 'create' | 'read' | 'update' | 'delete' | 'manage' | 'approve' | 'reject' | 'export' | 'import' | 'sync' | 'reset';
+export type Subject = string;
 
 export interface PermissionConfig {
   action: Action;
@@ -14,654 +13,432 @@ export interface PermissionConfig {
   fallbackSubject?: Subject;
 }
 
-/**
- * Middleware function to check permissions for API routes
- * This replaces hardcoded permission checks with database-driven ones
- */
-export async function checkApiPermission(
-  _request: NextRequest,
-  config: PermissionConfig
-): Promise<{ authorized: boolean; user?: any; error?: string }> {
-  try {
-    const session = await getServerSession(authConfig);
-    if (!session?.user) {
-      return { authorized: false, error: 'Unauthorized' };
-    }
-
-    const userId = session.user.id;
-    if (!userId) {
-      return { authorized: false, error: 'Invalid user session' };
-    }
-
-    // Check primary permission
-    const permissionCheck = await checkUserPermission(userId, config.action, config.subject);
-
-    if (permissionCheck.hasPermission) {
-      return { authorized: true, user: session.user };
-    }
-
-    // If fallback permissions are configured, try those
-    if (config.fallbackAction && config.fallbackSubject) {
-      const fallbackCheck = await checkUserPermission(
-        userId,
-        config.fallbackAction,
-        config.fallbackSubject
-      );
-
-      if (fallbackCheck.hasPermission) {
-        return { authorized: true, user: session.user };
-      }
-    }
-
-    return {
-      authorized: false,
-      error: permissionCheck.reason || 'Insufficient permissions',
-      user: session.user,
-    };
-  } catch (error) {
-    
-    return { authorized: false, error: 'Error checking permissions' };
-  }
-}
+// Define the handler function type
+type ApiHandler = (request: NextRequest, ...args: unknown[]) => Promise<NextResponse>;
 
 /**
- * Middleware function to check employee-specific permissions
- * Employee users can only view employee data if their national_id matches the employee's iqama_number
- */
-export async function checkEmployeeAccess(
-  _request: NextRequest,
-  employeeId: number
-): Promise<{ authorized: boolean; user?: any; error?: string }> {
-  try {
-    const session = await getServerSession(authConfig);
-    if (!session?.user) {
-      return { authorized: false, error: 'Unauthorized' };
-    }
-
-    const userId = session.user.id;
-    if (!userId) {
-      return { authorized: false, error: 'Invalid user session' };
-    }
-
-    // Get user with role information via Drizzle
-    const userRows = await db
-      .select({
-        id: users.id,
-        national_id: users.nationalId,
-        roleName: roles.name,
-      })
-      .from(users)
-      .leftJoin(modelHasRoles, eq(modelHasRoles.userId, users.id))
-      .leftJoin(roles, eq(roles.id, modelHasRoles.roleId))
-      .where(eq(users.id, parseInt(userId)));
-    const user =
-      userRows.length > 0
-        ? {
-            id: userRows[0]?.id,
-            national_id: userRows[0]?.national_id,
-            user_roles: userRows
-              .filter(r => r.roleName)
-              .map(r => ({ role: { name: r.roleName! } })),
-          }
-        : null;
-
-    if (!user) {
-      return { authorized: false, error: 'User not found' };
-    }
-
-    // Get user's role
-    const userRole = user.user_roles[0]?.role;
-    if (!userRole) {
-      return { authorized: false, error: 'User has no assigned role' };
-    }
-
-    // If user is admin or has manage permissions, allow access
-    if (userRole.name === 'admin' || userRole.name === 'super_admin') {
-      return { authorized: true, user: session.user };
-    }
-
-    // Check if user has manage.employee permission
-    const hasManagePermission = await checkUserPermission(
-      userId,
-      'manage' as Action,
-      'Employee' as Subject
-    );
-
-    if (hasManagePermission.hasPermission) {
-      return { authorized: true, user: session.user };
-    }
-
-    // For employee role users, check if their national_id matches the employee's iqama_number
-    if (userRole.name === 'employee') {
-      // Get the employee data being requested using safe operation
-      const employeeRows = await db
-        .select({ iqama_number: employees.iqamaNumber })
-        .from(employees)
-        .where(eq(employees.id, employeeId));
-      const employee = employeeRows[0];
-
-      if (!employee) {
-        return { authorized: false, error: 'Employee not found' };
-      }
-
-      // Check if user's national_id matches employee's iqama_number
-      if (user.national_id && employee.iqama_number && user.national_id === employee.iqama_number) {
-        return { authorized: true, user: session.user };
-      } else {
-        return {
-          authorized: false,
-          error: 'Access denied: Your national ID does not match this employee record',
-          user: session.user,
-        };
-      }
-    }
-
-    // For other roles, check standard permissions
-    const permissionCheck = await checkUserPermission(
-      userId,
-      'read' as Action,
-      'Employee' as Subject
-    );
-
-    if (permissionCheck.hasPermission) {
-      return { authorized: true, user: session.user };
-    }
-
-    return {
-      authorized: false,
-      error: permissionCheck.reason || 'Insufficient permissions',
-      user: session.user,
-    };
-  } catch (error) {
-    
-    return { authorized: false, error: 'Error checking permissions' };
-  }
-}
-
-/**
- * Comprehensive middleware function to ensure employee users can only access their own data
- * This function should be used for all employee-related API routes
- */
-export async function checkEmployeeOwnDataAccess(
-  _request: NextRequest,
-  employeeId?: number
-): Promise<{ authorized: boolean; user?: any; error?: string; ownEmployeeId?: number }> {
-  try {
-    const session = await getServerSession(authConfig);
-    if (!session?.user) {
-      return { authorized: false, error: 'Unauthorized' };
-    }
-
-    const userId = session.user.id;
-    if (!userId) {
-      return { authorized: false, error: 'Invalid user session' };
-    }
-
-    // Get user with role information via Drizzle
-    const userRows = await db
-      .select({
-        id: users.id,
-        national_id: users.nationalId,
-        roleName: roles.name,
-      })
-      .from(users)
-      .leftJoin(modelHasRoles, eq(modelHasRoles.userId, users.id))
-      .leftJoin(roles, eq(roles.id, modelHasRoles.roleId))
-      .where(eq(users.id, parseInt(userId)));
-    const user =
-      userRows.length > 0
-        ? {
-            id: userRows[0]?.id,
-            national_id: userRows[0]?.national_id,
-            user_roles: userRows
-              .filter(r => r.roleName)
-              .map(r => ({ role: { name: r.roleName! } })),
-          }
-        : null;
-
-    if (!user) {
-      return { authorized: false, error: 'User not found' };
-    }
-
-    // Get user's role
-    const userRole = user.user_roles[0]?.role;
-    if (!userRole) {
-      return { authorized: false, error: 'User has no assigned role' };
-    }
-
-    // If user is admin or super_admin, allow full access
-    if (userRole.name === 'admin' || userRole.name === 'super_admin') {
-      return { authorized: true, user: session.user };
-    }
-
-    // Check if user has manage.employee permission (full access)
-    const hasManagePermission = await checkUserPermission(
-      userId,
-      'manage' as Action,
-      'Employee' as Subject
-    );
-
-    if (hasManagePermission.hasPermission) {
-      return { authorized: true, user: session.user };
-    }
-
-    // For employee role users, they can only access their own data
-    if (userRole.name === 'employee') {
-      // Find the employee record that matches this user's national_id using safe operation
-      const ownRows = await db
-        .select({ id: employees.id, iqama_number: employees.iqamaNumber })
-        .from(employees)
-        .where(eq(employees.iqamaNumber, user.national_id ?? ''));
-      const ownEmployee = ownRows[0];
-
-      if (!ownEmployee) {
-        return {
-          authorized: false,
-          error: 'No employee record found for your national ID',
-          user: session.user,
-        };
-      }
-
-      // If a specific employee ID is provided, check if it matches the user's own employee record
-      if (employeeId) {
-        if (employeeId !== ownEmployee.id) {
-          return {
-            authorized: false,
-            error: 'Access denied: You can only access your own employee data',
-            user: session.user,
-          };
-        }
-      }
-
-      // Return the user's own employee ID for filtering purposes
-      return {
-        authorized: true,
-        user: session.user,
-        ownEmployeeId: ownEmployee.id,
-      };
-    }
-
-    // For other roles, check standard read permissions
-    const hasReadPermission = await checkUserPermission(
-      userId,
-      'read' as Action,
-      'Employee' as Subject
-    );
-
-    if (hasReadPermission.hasPermission) {
-      return { authorized: true, user: session.user };
-    }
-
-    // For employee role users, allow access to their own data even without explicit read permission
-    if (userRole.name === 'employee') {
-      // Find the employee record that matches this user's national_id using safe operation
-      const ownRows2 = await db
-        .select({ id: employees.id, iqama_number: employees.iqamaNumber })
-        .from(employees)
-        .where(eq(employees.iqamaNumber, user.national_id ?? ''));
-      const ownEmployee = ownRows2[0];
-
-      if (!ownEmployee) {
-        return {
-          authorized: false,
-          error: 'No employee record found for your national ID',
-          user: session.user,
-        };
-      }
-
-      // Return the user's own employee ID for filtering purposes
-      return {
-        authorized: true,
-        user: session.user,
-        ownEmployeeId: ownEmployee.id,
-      };
-    }
-
-    return {
-      authorized: false,
-      error: hasReadPermission.reason || 'Insufficient permissions',
-      user: session.user,
-    };
-  } catch (error) {
-    
-    return { authorized: false, error: 'Error checking permissions' };
-  }
-}
-
-/**
- * Higher-order function to create permission-protected API handlers
- */
-export function withPermission(
-  handler: (request: NextRequest, params?: any) => Promise<NextResponse>,
-  config: PermissionConfig
-) {
-  return async (request: NextRequest, params?: any): Promise<NextResponse> => {
-    const permissionResult = await checkApiPermission(request, config);
-
-    if (!permissionResult.authorized) {
-      return NextResponse.json(
-        { error: permissionResult.error || 'Insufficient permissions' },
-        { status: 403 }
-      );
-    }
-
-    return handler(request, params);
-  };
-}
-
-/**
- * Higher-order function to create employee-specific permission-protected API handlers
- */
-export function withEmployeePermission(
-  handler: (request: NextRequest, params?: any) => Promise<NextResponse>,
-  employeeIdExtractor: (params: any) => number
-) {
-  return async (request: NextRequest, params?: any): Promise<NextResponse> => {
-    const employeeId = employeeIdExtractor(params);
-    const permissionResult = await checkEmployeeAccess(request, employeeId);
-
-    if (!permissionResult.authorized) {
-      return NextResponse.json(
-        { error: permissionResult.error || 'Insufficient permissions' },
-        { status: 403 }
-      );
-    }
-
-    return handler(request, params);
-  };
-}
-
-/**
- * Higher-order function for employee list routes that filters data for employee users
- */
-export function withEmployeeListPermission(
-  handler: (
-    request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } },
-    params?: any
-  ) => Promise<NextResponse>
-) {
-  return async (request: NextRequest, params?: any): Promise<NextResponse> => {
-    const accessResult = await checkEmployeeOwnDataAccess(request);
-
-    if (!accessResult.authorized) {
-      return NextResponse.json(
-        { error: accessResult.error || 'Insufficient permissions' },
-        { status: 403 }
-      );
-    }
-
-    // Add the ownEmployeeId to the request context for the handler to use
-    const enhancedRequest = request as NextRequest & {
-      employeeAccess: {
-        ownEmployeeId?: number;
-        user: any;
-      };
-    };
-    enhancedRequest.employeeAccess = {
-      ...(accessResult.ownEmployeeId !== undefined && {
-        ownEmployeeId: accessResult.ownEmployeeId,
-      }),
-      user: accessResult.user,
-    };
-
-    return handler(enhancedRequest, params);
-  };
-}
-
-/**
- * Temporary bypass function for read operations
- * This allows read access without strict permission checks
- */
-export function withReadPermission(
-  handler: (request: NextRequest, params?: any) => Promise<NextResponse>,
-  _config: PermissionConfig
-) {
-  return async (request: NextRequest, params?: any): Promise<NextResponse> => {
-    // For read operations, we'll bypass strict permission checks temporarily
-    // but still check if user is authenticated
-    try {
-      const session = await getServerSession(authConfig);
-      if (!session?.user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-
-      // Allow access for now - we can add permission checks back later
-      return handler(request, params);
-    } catch (error) {
-      
-      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-    }
-  };
-}
-
-/**
- * Utility function to create permission configurations for common operations
+ * Permission configurations for different subjects
+ * This provides a centralized way to define permissions for API routes
  */
 export const PermissionConfigs = {
-  // Employee permissions
-  employee: {
-    read: { action: 'read' as Action, subject: 'Employee' as Subject },
-    create: { action: 'create' as Action, subject: 'Employee' as Subject },
-    update: { action: 'update' as Action, subject: 'Employee' as Subject },
-    delete: { action: 'delete' as Action, subject: 'Employee' as Subject },
-    manage: { action: 'manage' as Action, subject: 'Employee' as Subject },
-  },
-
-  // Customer permissions
-  customer: {
-    read: { action: 'read' as Action, subject: 'Customer' as Subject },
-    create: { action: 'create' as Action, subject: 'Customer' as Subject },
-    update: { action: 'update' as Action, subject: 'Customer' as Subject },
-    delete: { action: 'delete' as Action, subject: 'Customer' as Subject },
-    manage: { action: 'manage' as Action, subject: 'Customer' as Subject },
-  },
-
-  // Equipment permissions
-  equipment: {
-    read: { action: 'read' as Action, subject: 'Equipment' as Subject },
-    create: { action: 'create' as Action, subject: 'Equipment' as Subject },
-    update: { action: 'update' as Action, subject: 'Equipment' as Subject },
-    delete: { action: 'delete' as Action, subject: 'Equipment' as Subject },
-    manage: { action: 'manage' as Action, subject: 'Equipment' as Subject },
-  },
-
-  // Maintenance permissions
-  maintenance: {
-    read: { action: 'read' as Action, subject: 'Maintenance' as Subject },
-    create: { action: 'create' as Action, subject: 'Maintenance' as Subject },
-    update: { action: 'update' as Action, subject: 'Maintenance' as Subject },
-    delete: { action: 'delete' as Action, subject: 'Maintenance' as Subject },
-    manage: { action: 'manage' as Action, subject: 'Maintenance' as Subject },
-  },
-
-  // Rental permissions
-  rental: {
-    read: { action: 'read' as Action, subject: 'Rental' as Subject },
-    create: { action: 'create' as Action, subject: 'Rental' as Subject },
-    update: { action: 'update' as Action, subject: 'Rental' as Subject },
-    delete: { action: 'delete' as Action, subject: 'Rental' as Subject },
-    manage: { action: 'manage' as Action, subject: 'Rental' as Subject },
-  },
-
-  // Payroll permissions
-  payroll: {
-    read: { action: 'read' as Action, subject: 'Payroll' as Subject },
-    create: { action: 'create' as Action, subject: 'Payroll' as Subject },
-    update: { action: 'update' as Action, subject: 'Payroll' as Subject },
-    delete: { action: 'delete' as Action, subject: 'Payroll' as Subject },
-    manage: { action: 'manage' as Action, subject: 'Payroll' as Subject },
-  },
-
-  // Timesheet permissions
-  timesheet: {
-    read: { action: 'read' as Action, subject: 'Timesheet' as Subject },
-    create: { action: 'create' as Action, subject: 'Timesheet' as Subject },
-    update: { action: 'update' as Action, subject: 'Timesheet' as Subject },
-    delete: { action: 'delete' as Action, subject: 'Timesheet' as Subject },
-    manage: { action: 'manage' as Action, subject: 'Timesheet' as Subject },
-    approve: { action: 'approve' as Action, subject: 'Timesheet' as Subject },
-    reject: { action: 'reject' as Action, subject: 'Timesheet' as Subject },
-  },
-
-  // Advance permissions
-  advance: {
-    read: { action: 'read' as Action, subject: 'Advance' as Subject },
-    create: { action: 'create' as Action, subject: 'Advance' as Subject },
-    update: { action: 'update' as Action, subject: 'Advance' as Subject },
-    delete: { action: 'delete' as Action, subject: 'Advance' as Subject },
-    manage: { action: 'manage' as Action, subject: 'Advance' as Subject },
-    approve: { action: 'approve' as Action, subject: 'Advance' as Subject },
-    reject: { action: 'reject' as Action, subject: 'Advance' as Subject },
-  },
-
-  // Assignment permissions
-  assignment: {
-    read: { action: 'read' as Action, subject: 'Assignment' as Subject },
-    create: { action: 'create' as Action, subject: 'Assignment' as Subject },
-    update: { action: 'update' as Action, subject: 'Assignment' as Subject },
-    delete: { action: 'delete' as Action, subject: 'Assignment' as Subject },
-    manage: { action: 'manage' as Action, subject: 'Assignment' as Subject },
-    approve: { action: 'approve' as Action, subject: 'Assignment' as Subject },
-    reject: { action: 'reject' as Action, subject: 'Assignment' as Subject },
-  },
-
-  // Project permissions
-  project: {
-    read: { action: 'read' as Action, subject: 'Project' as Subject },
-    create: { action: 'create' as Action, subject: 'Project' as Subject },
-    update: { action: 'update' as Action, subject: 'Project' as Subject },
-    delete: { action: 'delete' as Action, subject: 'Project' as Subject },
-    manage: { action: 'manage' as Action, subject: 'Project' as Subject },
-  },
-
-  // Settings permissions
-  settings: {
-    read: { action: 'read' as Action, subject: 'Settings' as Subject },
-    create: { action: 'create' as Action, subject: 'Settings' as Subject },
-    update: { action: 'update' as Action, subject: 'Settings' as Subject },
-    delete: { action: 'delete' as Action, subject: 'Settings' as Subject },
-    manage: { action: 'manage' as Action, subject: 'Settings' as Subject },
-  },
-
-  // Company permissions
-  company: {
-    read: { action: 'read' as Action, subject: 'Company' as Subject },
-    create: { action: 'create' as Action, subject: 'Company' as Subject },
-    update: { action: 'update' as Action, subject: 'Company' as Subject },
-    delete: { action: 'delete' as Action, subject: 'Company' as Subject },
-    manage: { action: 'manage' as Action, subject: 'Company' as Subject },
-  },
-
-  // Department permissions
-  department: {
-    read: { action: 'read' as Action, subject: 'Department' as Subject },
-    create: { action: 'create' as Action, subject: 'Department' as Subject },
-    update: { action: 'update' as Action, subject: 'Department' as Subject },
-    delete: { action: 'delete' as Action, subject: 'Department' as Subject },
-    manage: { action: 'manage' as Action, subject: 'Department' as Subject },
-  },
-
-  // Designation permissions
-  designation: {
-    read: { action: 'read' as Action, subject: 'Designation' as Subject },
-    create: { action: 'create' as Action, subject: 'Designation' as Subject },
-    update: { action: 'update' as Action, subject: 'Designation' as Subject },
-    delete: { action: 'delete' as Action, subject: 'Designation' as Subject },
-    manage: { action: 'manage' as Action, subject: 'Designation' as Subject },
-  },
-
-  // Location permissions
-  location: {
-    read: { action: 'read' as Action, subject: 'Location' as Subject },
-    create: { action: 'create' as Action, subject: 'Location' as Subject },
-    update: { action: 'update' as Action, subject: 'Location' as Subject },
-    delete: { action: 'delete' as Action, subject: 'Location' as Subject },
-    manage: { action: 'manage' as Action, subject: 'Location' as Subject },
-  },
-
-  // Report permissions
-  report: {
-    read: { action: 'read' as Action, subject: 'Report' as Subject },
-    create: { action: 'create' as Action, subject: 'Report' as Subject },
-    update: { action: 'update' as Action, subject: 'Report' as Subject },
-    delete: { action: 'delete' as Action, subject: 'Report' as Subject },
-    manage: { action: 'manage' as Action, subject: 'Report' as Subject },
-  },
-
-  // Leave permissions
-  leave: {
-    read: { action: 'read' as Action, subject: 'Leave' as Subject },
-    create: { action: 'create' as Action, subject: 'Leave' as Subject },
-    update: { action: 'update' as Action, subject: 'Leave' as Subject },
-    delete: { action: 'delete' as Action, subject: 'Leave' as Subject },
-    manage: { action: 'manage' as Action, subject: 'Leave' as Subject },
-    approve: { action: 'approve' as Action, subject: 'Leave' as Subject },
-    reject: { action: 'reject' as Action, subject: 'Leave' as Subject },
-  },
-
-  // User permissions
   user: {
-    read: { action: 'read' as Action, subject: 'User' as Subject },
-    create: { action: 'create' as Action, subject: 'User' as Subject },
-    update: { action: 'update' as Action, subject: 'User' as Subject },
-    delete: { action: 'delete' as Action, subject: 'User' as Subject },
-    manage: { action: 'manage' as Action, subject: 'User' as Subject },
+    read: { action: 'read' as Action, subject: 'User' },
+    create: { action: 'create' as Action, subject: 'User' },
+    update: { action: 'update' as Action, subject: 'User' },
+    delete: { action: 'delete' as Action, subject: 'User' },
+    manage: { action: 'manage' as Action, subject: 'User' },
   },
-
-  // Salary Increment permissions
-  salaryIncrements: {
-    read: { action: 'read' as Action, subject: 'SalaryIncrement' as Subject },
-    create: { action: 'create' as Action, subject: 'SalaryIncrement' as Subject },
-    update: { action: 'update' as Action, subject: 'SalaryIncrement' as Subject },
-    delete: { action: 'delete' as Action, subject: 'SalaryIncrement' as Subject },
-    manage: { action: 'manage' as Action, subject: 'SalaryIncrement' as Subject },
-    approve: { action: 'approve' as Action, subject: 'SalaryIncrement' as Subject },
-    reject: { action: 'reject' as Action, subject: 'SalaryIncrement' as Subject },
-    apply: { action: 'apply' as Action, subject: 'SalaryIncrement' as Subject },
+  employee: {
+    read: { action: 'read' as Action, subject: 'Employee' },
+    create: { action: 'create' as Action, subject: 'Employee' },
+    update: { action: 'update' as Action, subject: 'Employee' },
+    delete: { action: 'delete' as Action, subject: 'Employee' },
+    manage: { action: 'manage' as Action, subject: 'Employee' },
+  },
+  customer: {
+    read: { action: 'read' as Action, subject: 'Customer' },
+    create: { action: 'create' as Action, subject: 'Customer' },
+    update: { action: 'update' as Action, subject: 'Customer' },
+    delete: { action: 'delete' as Action, subject: 'Customer' },
+    manage: { action: 'manage' as Action, subject: 'Customer' },
+  },
+  equipment: {
+    read: { action: 'read' as Action, subject: 'Equipment' },
+    create: { action: 'create' as Action, subject: 'Equipment' },
+    update: { action: 'update' as Action, subject: 'Equipment' },
+    delete: { action: 'delete' as Action, subject: 'Equipment' },
+    manage: { action: 'manage' as Action, subject: 'Equipment' },
+  },
+  project: {
+    read: { action: 'read' as Action, subject: 'Project' },
+    create: { action: 'create' as Action, subject: 'Project' },
+    update: { action: 'update' as Action, subject: 'Project' },
+    delete: { action: 'delete' as Action, subject: 'Project' },
+    manage: { action: 'manage' as Action, subject: 'Project' },
+  },
+  rental: {
+    read: { action: 'read' as Action, subject: 'Rental' },
+    create: { action: 'create' as Action, subject: 'Rental' },
+    update: { action: 'update' as Action, subject: 'Rental' },
+    delete: { action: 'delete' as Action, subject: 'Rental' },
+    manage: { action: 'manage' as Action, subject: 'Rental' },
+  },
+  quotation: {
+    read: { action: 'read' as Action, subject: 'Quotation' },
+    create: { action: 'create' as Action, subject: 'Quotation' },
+    update: { action: 'update' as Action, subject: 'Quotation' },
+    delete: { action: 'delete' as Action, subject: 'Quotation' },
+    manage: { action: 'manage' as Action, subject: 'Quotation' },
+  },
+  payroll: {
+    read: { action: 'read' as Action, subject: 'Payroll' },
+    create: { action: 'create' as Action, subject: 'Payroll' },
+    update: { action: 'update' as Action, subject: 'Payroll' },
+    delete: { action: 'delete' as Action, subject: 'Payroll' },
+    manage: { action: 'manage' as Action, subject: 'Payroll' },
+  },
+  timesheet: {
+    read: { action: 'read' as Action, subject: 'Timesheet' },
+    create: { action: 'create' as Action, subject: 'Timesheet' },
+    update: { action: 'update' as Action, subject: 'Timesheet' },
+    delete: { action: 'delete' as Action, subject: 'Timesheet' },
+    manage: { action: 'manage' as Action, subject: 'Timesheet' },
+  },
+  leave: {
+    read: { action: 'read' as Action, subject: 'Leave' },
+    create: { action: 'create' as Action, subject: 'Leave' },
+    update: { action: 'update' as Action, subject: 'Leave' },
+    delete: { action: 'delete' as Action, subject: 'Leave' },
+    manage: { action: 'manage' as Action, subject: 'Leave' },
+  },
+  department: {
+    read: { action: 'read' as Action, subject: 'Department' },
+    create: { action: 'create' as Action, subject: 'Department' },
+    update: { action: 'update' as Action, subject: 'Department' },
+    delete: { action: 'delete' as Action, subject: 'Department' },
+    manage: { action: 'manage' as Action, subject: 'Department' },
+  },
+  designation: {
+    read: { action: 'read' as Action, subject: 'Designation' },
+    create: { action: 'create' as Action, subject: 'Designation' },
+    update: { action: 'update' as Action, subject: 'Designation' },
+    delete: { action: 'delete' as Action, subject: 'Designation' },
+    manage: { action: 'manage' as Action, subject: 'Designation' },
+  },
+  company: {
+    read: { action: 'read' as Action, subject: 'Company' },
+    create: { action: 'create' as Action, subject: 'Company' },
+    update: { action: 'update' as Action, subject: 'Company' },
+    delete: { action: 'delete' as Action, subject: 'Company' },
+    manage: { action: 'manage' as Action, subject: 'Company' },
+  },
+  settings: {
+    read: { action: 'read' as Action, subject: 'Settings' },
+    create: { action: 'create' as Action, subject: 'Settings' },
+    update: { action: 'update' as Action, subject: 'Settings' },
+    delete: { action: 'delete' as Action, subject: 'Settings' },
+    manage: { action: 'manage' as Action, subject: 'Settings' },
+  },
+  location: {
+    read: { action: 'read' as Action, subject: 'Location' },
+    create: { action: 'create' as Action, subject: 'Location' },
+    update: { action: 'update' as Action, subject: 'Location' },
+    delete: { action: 'delete' as Action, subject: 'Location' },
+    manage: { action: 'manage' as Action, subject: 'Location' },
+  },
+  maintenance: {
+    read: { action: 'read' as Action, subject: 'Maintenance' },
+    create: { action: 'create' as Action, subject: 'Maintenance' },
+    update: { action: 'update' as Action, subject: 'Maintenance' },
+    delete: { action: 'delete' as Action, subject: 'Maintenance' },
+    manage: { action: 'manage' as Action, subject: 'Maintenance' },
+  },
+  safety: {
+    read: { action: 'read' as Action, subject: 'Safety' },
+    create: { action: 'create' as Action, subject: 'Safety' },
+    update: { action: 'update' as Action, subject: 'Safety' },
+    delete: { action: 'delete' as Action, subject: 'Safety' },
+    manage: { action: 'manage' as Action, subject: 'Safety' },
+  },
+  salaryIncrement: {
+    read: { action: 'read' as Action, subject: 'SalaryIncrement' },
+    create: { action: 'create' as Action, subject: 'SalaryIncrement' },
+    update: { action: 'update' as Action, subject: 'SalaryIncrement' },
+    delete: { action: 'delete' as Action, subject: 'SalaryIncrement' },
+    manage: { action: 'manage' as Action, subject: 'SalaryIncrement' },
+    approve: { action: 'approve' as Action, subject: 'SalaryIncrement' },
+    reject: { action: 'reject' as Action, subject: 'SalaryIncrement' },
+    apply: { action: 'apply' as Action, subject: 'SalaryIncrement' },
+  },
+  advance: {
+    read: { action: 'read' as Action, subject: 'Advance' },
+    create: { action: 'create' as Action, subject: 'Advance' },
+    update: { action: 'update' as Action, subject: 'Advance' },
+    delete: { action: 'delete' as Action, subject: 'Advance' },
+    manage: { action: 'manage' as Action, subject: 'Advance' },
+  },
+  assignment: {
+    read: { action: 'read' as Action, subject: 'Assignment' },
+    create: { action: 'create' as Action, subject: 'Assignment' },
+    update: { action: 'update' as Action, subject: 'Assignment' },
+    delete: { action: 'delete' as Action, subject: 'Assignment' },
+    manage: { action: 'manage' as Action, subject: 'Assignment' },
+  },
+  report: {
+    read: { action: 'read' as Action, subject: 'Report' },
+    create: { action: 'create' as Action, subject: 'Report' },
+    update: { action: 'update' as Action, subject: 'Report' },
+    delete: { action: 'delete' as Action, subject: 'Report' },
+    manage: { action: 'manage' as Action, subject: 'Report' },
+    export: { action: 'export' as Action, subject: 'Report' },
+  },
+  'employee-document': {
+    read: { action: 'read' as Action, subject: 'employee-document' },
+    create: { action: 'create' as Action, subject: 'employee-document' },
+    update: { action: 'update' as Action, subject: 'employee-document' },
+    delete: { action: 'delete' as Action, subject: 'employee-document' },
+    manage: { action: 'manage' as Action, subject: 'employee-document' },
   },
 };
 
 /**
- * Example usage of the permission middleware:
- *
- * // In your API route file:
- * import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
- *
- * export const GET = withPermission(
- *   async (request: NextRequest) => {
- *     // Your API logic here
- *     return NextResponse.json({ data: 'success' });
- *   },
- *   PermissionConfigs.employee.read
- * );
- *
- * export const POST = withPermission(
- *   async (request: NextRequest) => {
- *     // Your API logic here
- *     return NextResponse.json({ data: 'created' });
- *   },
- *   PermissionConfigs.employee.create
- * );
+ * Middleware function to check permissions for API routes
+ * This uses database-driven permission checks instead of hardcoded ones
  */
+export async function checkApiPermission(
+  _request: NextRequest,
+  config: PermissionConfig
+): Promise<{ authorized: boolean; user?: User; error?: string }> {
+  try {
+    // Get server session
+    const session = await getServerSession(authConfig);
+    
+    if (!session?.user) {
+      console.error('API permission check failed: No session or user');
+      return {
+        authorized: false,
+        error: 'Authentication required'
+      };
+    }
+
+    // Create user object for permission checking
+    const user: User = {
+      id: session.user.id || '',
+      email: session.user.email || '',
+      name: session.user.name || '',
+      role: (session.user.role as string) || 'USER',
+      isActive: session.user.isActive !== false,
+    };
+
+    // Check primary permission
+    let hasAccess = await hasPermission(user, config.action, config.subject);
+    
+    // If primary permission fails, try fallback
+    if (!hasAccess && config.fallbackAction && config.fallbackSubject) {
+      hasAccess = await hasPermission(user, config.fallbackAction, config.fallbackSubject);
+    }
+
+    if (!hasAccess) {
+      console.error(`API permission check failed: User ${user.id} lacks ${config.action}.${config.subject} permission`);
+      return {
+        authorized: false,
+        user,
+        error: `Insufficient permissions: ${config.action}.${config.subject}`
+      };
+    }
+
+    return {
+      authorized: true,
+      user
+    };
+
+  } catch (error) {
+    console.error('API permission check error:', error);
+    return {
+      authorized: false,
+      error: 'Permission check failed'
+    };
+  }
+}
 
 /**
- * Simple middleware function for employee users to access their own data
- * This bypasses permission checks for employee role users
+ * Higher-order function to wrap API route handlers with permission checks
  */
-// Simple authentication middleware - replaces withEmployeeOwnDataAccess
-export function withAuth(handler: (request: NextRequest, params?: any) => Promise<NextResponse>) {
-  return async (request: NextRequest, params?: any): Promise<NextResponse> => {
+export function withPermission(config: PermissionConfig) {
+  return function(handler: ApiHandler) {
+    return async function(request: NextRequest, ...args: unknown[]): Promise<NextResponse> {
+      try {
+        const permissionResult = await checkApiPermission(request, config);
+        
+        if (!permissionResult.authorized) {
+          return NextResponse.json(
+            { 
+              error: permissionResult.error || 'Access denied',
+              code: 'INSUFFICIENT_PERMISSIONS'
+            },
+            { status: 403 }
+          );
+        }
+
+        // Call the original handler with the request and additional args
+        return handler(request, ...args);
+      } catch (error) {
+        console.error('Permission middleware error:', error);
+        return NextResponse.json(
+          { 
+            error: 'Permission check failed',
+            code: 'PERMISSION_ERROR'
+          },
+          { status: 500 }
+        );
+      }
+    };
+  };
+}
+
+/**
+ * Simple read permission wrapper for API routes
+ */
+export function withReadPermission(subject: Subject) {
+  return withPermission({ action: 'read', subject });
+}
+
+/**
+ * Simple permission check for API routes
+ */
+export async function requirePermission(
+  request: NextRequest,
+  action: Action,
+  subject: Subject
+): Promise<User> {
+  const permissionResult = await checkApiPermission(request, { action, subject });
+  
+  if (!permissionResult.authorized) {
+    throw new Error(permissionResult.error || 'Access denied');
+  }
+
+  return permissionResult.user!;
+}
+
+/**
+ * Check if user has any of the required roles
+ */
+export function hasRequiredRole(userRole: string, requiredRoles: string[]): boolean {
+  const roleHierarchy: Record<string, number> = {
+    'SUPER_ADMIN': 1,
+    'ADMIN': 2,
+    'MANAGER': 3,
+    'SUPERVISOR': 4,
+    'OPERATOR': 5,
+    'EMPLOYEE': 6,
+    'USER': 7,
+  };
+
+  const userRoleLevel = roleHierarchy[userRole] || 10;
+
+  return requiredRoles.some(requiredRole => {
+    const requiredRoleLevel = roleHierarchy[requiredRole] || 10;
+    return userRoleLevel <= requiredRoleLevel; // Lower number = higher priority
+  });
+}
+
+/**
+ * Role-based access control for API routes
+ */
+export function withRole(requiredRoles: string[]) {
+  return function(handler: ApiHandler) {
+    return async function(request: NextRequest, ...args: unknown[]): Promise<NextResponse> {
+      try {
+        const session = await getServerSession(authConfig);
+        
+        if (!session?.user) {
+          return NextResponse.json(
+            { error: 'Authentication required' },
+            { status: 401 }
+          );
+        }
+
+        const userRole = (session.user.role as string) || 'USER';
+        
+        if (!hasRequiredRole(userRole, requiredRoles)) {
+          return NextResponse.json(
+            { 
+              error: 'Insufficient role permissions',
+              code: 'INSUFFICIENT_ROLE'
+            },
+            { status: 403 }
+          );
+        }
+
+        // Call the original handler
+        return handler(request, ...args);
+      } catch (error) {
+        console.error('Role-based access control error:', error);
+        return NextResponse.json(
+          { error: 'Access control failed' },
+          { status: 500 }
+        );
+      }
+    };
+  };
+}
+
+/**
+ * Simple authentication wrapper for API routes
+ * This is the legacy withAuth function that many routes are using
+ */
+export function withAuth(handler: ApiHandler) {
+  return async function(request: NextRequest, ...args: unknown[]): Promise<NextResponse> {
     try {
       const session = await getServerSession(authConfig);
-
+      
       if (!session?.user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return NextResponse.json(
+          { error: 'Authentication required' },
+          { status: 401 }
+        );
       }
 
-      return handler(request, params);
+      // Call the original handler
+      return handler(request, ...args);
     } catch (error) {
+      console.error('Authentication error:', error);
+      return NextResponse.json(
+        { error: 'Authentication failed' },
+        { status: 500 }
+      );
+    }
+  };
+}
+
+/**
+ * Employee list permission wrapper for API routes
+ * This provides special access control for employee-related routes
+ * where employees can only access their own data
+ */
+export function withEmployeeListPermission(handler: ApiHandler) {
+  return async function(request: NextRequest, ...args: unknown[]): Promise<NextResponse> {
+    try {
+      const session = await getServerSession(authConfig);
       
-      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+      if (!session?.user) {
+        return NextResponse.json(
+          { error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+
+      // Check if user has permission to access employee data
+      const hasEmployeePermission = await hasPermission(
+        { 
+          id: session.user.id || '0', 
+          email: session.user.email || '', 
+          name: session.user.name || '', 
+          role: session.user.role || 'USER', 
+          isActive: true 
+        },
+        'read',
+        'Employee'
+      );
+
+      if (!hasEmployeePermission) {
+        return NextResponse.json(
+          { 
+            error: 'Insufficient permissions to access employee data',
+            code: 'INSUFFICIENT_PERMISSIONS'
+          },
+          { status: 403 }
+        );
+      }
+
+      // Call the original handler
+      return handler(request, ...args);
+    } catch (error) {
+      console.error('Employee list permission error:', error);
+      return NextResponse.json(
+        { error: 'Permission check failed' },
+        { status: 500 }
+      );
     }
   };
 }

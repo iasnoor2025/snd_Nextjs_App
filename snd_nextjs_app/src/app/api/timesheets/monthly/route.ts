@@ -7,11 +7,11 @@ import {
   timesheets,
   users,
 } from '@/lib/drizzle/schema';
-import { withAuth } from '@/lib/rbac/api-middleware';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { and, asc, eq, gte, lte } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
-export const GET = withAuth(async (request: NextRequest) => {
+export const GET = withPermission(PermissionConfigs.timesheet.read)(async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const month = searchParams.get('month') || new Date().toISOString().slice(0, 7); // YYYY-MM format

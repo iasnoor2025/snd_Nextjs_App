@@ -479,6 +479,117 @@ export default function UserManagementPage() {
     }
   };
 
+  // Helper function to categorize permissions
+  const getPermissionCategory = (permissionName: string): string => {
+    if (permissionName === '*' || permissionName === 'manage.all' || permissionName === 'sync.all' || permissionName === 'reset.all') {
+      return 'Core System';
+    }
+    
+    const [action, subject] = permissionName.split('.');
+    
+    switch (subject) {
+      case 'User':
+      case 'Role':
+      case 'Permission':
+        return 'User Management';
+      case 'Employee':
+      case 'employee-document':
+      case 'employee-assignment':
+      case 'employee-leave':
+      case 'employee-salary':
+      case 'employee-skill':
+      case 'employee-training':
+      case 'employee-performance':
+      case 'employee-resignation':
+        return 'Employee Management';
+      case 'Customer':
+      case 'customer-document':
+      case 'customer-project':
+        return 'Customer Management';
+      case 'Equipment':
+      case 'equipment-rental':
+      case 'equipment-maintenance':
+      case 'equipment-history':
+        return 'Equipment Management';
+      case 'Maintenance':
+      case 'maintenance-item':
+      case 'maintenance-schedule':
+        return 'Maintenance Management';
+      case 'Rental':
+      case 'rental-item':
+      case 'rental-history':
+      case 'rental-contract':
+        return 'Rental Management';
+      case 'Quotation':
+      case 'quotation-term':
+      case 'quotation-item':
+        return 'Quotation Management';
+      case 'Payroll':
+      case 'payroll-item':
+      case 'payroll-run':
+      case 'tax-document':
+        return 'Payroll Management';
+      case 'Timesheet':
+      case 'time-entry':
+      case 'weekly-timesheet':
+      case 'timesheet-approval':
+        return 'Timesheet Management';
+      case 'Project':
+      case 'project-task':
+      case 'project-milestone':
+      case 'project-template':
+      case 'project-risk':
+      case 'project-manpower':
+      case 'project-equipment':
+      case 'project-material':
+      case 'project-fuel':
+      case 'project-expense':
+      case 'project-subcontractor':
+        return 'Project Management';
+      case 'Leave':
+      case 'time-off-request':
+        return 'Leave Management';
+      case 'Department':
+      case 'Designation':
+      case 'organizational-unit':
+      case 'Skill':
+      case 'Training':
+        return 'Department & Organization';
+      case 'Report':
+      case 'Analytics':
+        return 'Reports & Analytics';
+      case 'Company':
+      case 'Safety':
+      case 'Location':
+        return 'Company & Safety';
+      case 'Advance':
+      case 'Assignment':
+        return 'Business Operations';
+      default:
+        return 'Other';
+    }
+  };
+
+  // Helper function to toggle all permissions in a category
+  const toggleCategoryPermissions = (category: string, categoryPermissions: Permission[], select: boolean) => {
+    if (select) {
+      // Add all permissions from this category
+      const newPermissions = [...(Array.isArray(selectedRolePermissions) ? selectedRolePermissions : [])];
+      categoryPermissions.forEach(permission => {
+        if (!newPermissions.some(p => p.id === permission.id)) {
+          newPermissions.push(permission);
+        }
+      });
+      setSelectedRolePermissions(newPermissions);
+    } else {
+      // Remove all permissions from this category
+      const newPermissions = (Array.isArray(selectedRolePermissions) ? selectedRolePermissions : []).filter(
+        permission => !categoryPermissions.some(cp => cp.id === permission.id)
+      );
+      setSelectedRolePermissions(newPermissions);
+    }
+  };
+
   // Open edit user dialog
   const openEditUserDialog = (user: User) => {
     setSelectedUser(user);
@@ -1177,47 +1288,107 @@ export default function UserManagementPage() {
 
         {/* Permission Management Dialog */}
         <Dialog open={isPermissionDialogOpen} onOpenChange={setIsPermissionDialogOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-4xl max-h-[80vh]">
             <DialogHeader>
               <DialogTitle>
                 {t('managePermissions')} - {selectedRoleForPermissions?.name}
               </DialogTitle>
               <DialogDescription>{t('selectPermissionsForRole')}</DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 max-h-96 overflow-y-auto">
-              {safePermissions.length > 0 ? (
-                safePermissions.map(permission => (
-                  <div key={permission.id} className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id={`permission-${permission.id}`}
-                      checked={Array.isArray(selectedRolePermissions) ? selectedRolePermissions.some(p => p.id === permission.id) : false}
-                      onChange={e => {
-                        if (e.target.checked) {
-                          setSelectedRolePermissions(prev => [...(Array.isArray(prev) ? prev : []), permission]);
-                        } else {
-                                                  setSelectedRolePermissions(prev =>
-                          Array.isArray(prev) ? prev.filter(p => p.id !== permission.id) : []
-                        );
-                        }
-                      }}
-                    />
-                    <Label htmlFor={`permission-${permission.id}`}>{permission.name}</Label>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center text-muted-foreground py-4">
-                  {loading ? t('loading') : t('noPermissionsFound')}
-                </div>
-              )}
+            
+            <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
+              {(() => {
+                // Group permissions by category
+                const groupedPermissions: Record<string, any[]> = {};
+                
+                safePermissions.forEach(permission => {
+                  const category = getPermissionCategory(permission.name);
+                  if (!groupedPermissions[category]) {
+                    groupedPermissions[category] = [];
+                  }
+                  groupedPermissions[category].push(permission);
+                });
+
+                return Object.entries(groupedPermissions).map(([category, permissions]) => {
+                  const allSelected = permissions.every(p => 
+                    Array.isArray(selectedRolePermissions) && 
+                    selectedRolePermissions.some(sp => sp.id === p.id)
+                  );
+                  const someSelected = permissions.some(p => 
+                    Array.isArray(selectedRolePermissions) && 
+                    selectedRolePermissions.some(sp => sp.id === p.id)
+                  );
+
+                  return (
+                    <div key={category} className="space-y-3 border rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-gray-900">{category}</h3>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => toggleCategoryPermissions(category, permissions, !allSelected)}
+                            className="text-xs"
+                          >
+                            {allSelected ? 'Deselect All' : 'Select All'}
+                          </Button>
+                          <span className="text-sm text-gray-500">
+                            {permissions.filter(p => 
+                              Array.isArray(selectedRolePermissions) && 
+                              selectedRolePermissions.some(sp => sp.id === p.id)
+                            ).length} / {permissions.length}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {permissions.map(permission => (
+                          <div key={permission.id} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id={`permission-${permission.id}`}
+                              checked={Array.isArray(selectedRolePermissions) ? 
+                                selectedRolePermissions.some(p => p.id === permission.id) : false}
+                              onChange={e => {
+                                if (e.target.checked) {
+                                  setSelectedRolePermissions(prev => [...(Array.isArray(prev) ? prev : []), permission]);
+                                } else {
+                                  setSelectedRolePermissions(prev =>
+                                    Array.isArray(prev) ? prev.filter(p => p.id !== permission.id) : []
+                                  );
+                                }
+                              }}
+                              className="rounded border-gray-300"
+                            />
+                            <Label 
+                              htmlFor={`permission-${permission.id}`} 
+                              className="text-sm font-medium text-gray-700 cursor-pointer"
+                            >
+                              {permission.name}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsPermissionDialogOpen(false)}>
-                {t('cancel')}
-              </Button>
-              <Button onClick={() => updateRolePermissions(Array.isArray(selectedRolePermissions) ? selectedRolePermissions.map(p => p.id) : [])}>
-                {t('updatePermissions')}
-              </Button>
+
+            <DialogFooter className="border-t pt-4">
+              <div className="flex items-center justify-between w-full">
+                <div className="text-sm text-gray-500">
+                  Total: {Array.isArray(selectedRolePermissions) ? selectedRolePermissions.length : 0} permissions selected
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setIsPermissionDialogOpen(false)}>
+                    {t('cancel')}
+                  </Button>
+                  <Button onClick={() => updateRolePermissions(Array.isArray(selectedRolePermissions) ? selectedRolePermissions.map(p => p.id) : [])}>
+                    {t('updatePermissions')}
+                  </Button>
+                </div>
+              </div>
             </DialogFooter>
           </DialogContent>
         </Dialog>

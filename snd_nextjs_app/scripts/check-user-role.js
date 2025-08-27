@@ -1,94 +1,68 @@
-const { drizzle } = require('drizzle-orm/postgres-js');
-const postgres = require('postgres');
-require('dotenv').config({ path: '.env.local' });
+const { db } = require('../src/lib/drizzle');
+const { users, modelHasRoles, roles } = require('../src/lib/drizzle/schema');
+const { eq } = require('drizzle-orm');
 
 async function checkUserRole() {
   try {
-    // Connect to database
-    const connectionString = process.env.DATABASE_URL;
-    if (!connectionString) {
-      console.error('❌ DATABASE_URL not found in environment variables');
-      return;
-    }
-
-    const client = postgres(connectionString);
-    const db = drizzle(client);
-
-    // Import schema and functions
-    const { users, roles, modelHasRoles } = require('../src/lib/drizzle/schema.js');
-    const { eq } = require('drizzle-orm');
-
-    console.log('🔍 Checking user roles in database...\n');
+    console.log('Checking user roles...\n');
 
     // Get all users with their roles
     const usersWithRoles = await db
       .select({
-        id: users.id,
-        name: users.name,
+        userId: users.id,
         email: users.email,
-        role_id: users.roleId,
-        lastLoginAt: users.lastLoginAt,
-        createdAt: users.createdAt,
+        name: users.name,
+        roleName: roles.name,
       })
       .from(users)
-      .orderBy(users.createdAt);
+      .leftJoin(modelHasRoles, eq(users.id, modelHasRoles.userId))
+      .leftJoin(roles, eq(modelHasRoles.roleId, roles.id))
+      .orderBy(users.id);
 
-    console.log('👥 Users found:', usersWithRoles.length);
-    console.log('📋 User details:');
+    console.log('Users and their roles:');
+    console.log('=======================');
     
-    for (const user of usersWithRoles) {
-      console.log(`\n👤 User: ${user.name} (${user.email})`);
-      console.log(`   ID: ${user.id}`);
-      console.log(`   role_id: ${user.role_id}`);
-      console.log(`   Last Login: ${user.lastLoginAt || 'Never'}`);
-      console.log(`   Created: ${user.createdAt}`);
-      
-      // Check if user has entries in modelHasRoles
-      const userRoles = await db
-        .select({
-          role_id: modelHasRoles.roleId,
-        })
-        .from(modelHasRoles)
-        .where(eq(modelHasRoles.userId, user.id));
-      
-      if (userRoles.length > 0) {
-        console.log(`   🔗 modelHasRoles entries: ${userRoles.length}`);
-        for (const userRole of userRoles) {
-          // Get role name
-          const role = await db
-            .select({ name: roles.name })
-            .from(roles)
-            .where(eq(roles.id, userRole.role_id))
-            .limit(1);
-          
-          if (role[0]) {
-            console.log(`      - Role ID ${userRole.role_id}: ${role[0].name}`);
-          }
+    let currentUser = null;
+    usersWithRoles.forEach((user, index) => {
+      if (index === 0 || user.userId !== usersWithRoles[index - 1]?.userId) {
+        if (currentUser) {
+          console.log(`  Roles: ${currentUser.roles.join(', ') || 'No roles assigned'}`);
+          console.log('');
         }
-      } else {
-        console.log(`   🔗 modelHasRoles entries: None`);
+        currentUser = {
+          id: user.userId,
+          email: user.email,
+          name: user.name,
+          roles: []
+        };
+        console.log(`User ID: ${user.userId}`);
+        console.log(`Email: ${user.email}`);
+        console.log(`Name: ${user.name}`);
       }
+      if (user.roleName) {
+        currentUser.roles.push(user.roleName);
+      }
+    });
+
+    if (currentUser) {
+      console.log(`  Roles: ${currentUser.roles.join(', ') || 'No roles assigned'}`);
     }
 
-    // Check roles table
-    console.log('\n🔍 Available roles in system:');
-    const allRoles = await db
-      .select({
-        id: roles.id,
-        name: roles.name,
-      })
-      .from(roles)
-      .orderBy(roles.id);
-    
-    for (const role of allRoles) {
-      console.log(`   ${role.id}: ${role.name}`);
-    }
+    console.log('\nChecking available roles:');
+    console.log('========================');
+    const allRoles = await db.select().from(roles);
+    allRoles.forEach(role => {
+      console.log(`- ${role.name} (ID: ${role.id})`);
+    });
 
-    await client.end();
-    console.log('\n✅ Database check completed');
-    
+    console.log('\nTo fix SUPER_ADMIN access:');
+    console.log('1. Find the user ID you want to make SUPER_ADMIN');
+    console.log('2. Run: node scripts/make-super-admin.js <user_id>');
+
   } catch (error) {
-    console.error('❌ Error checking user roles:', error);
+    console.error('Error checking user roles:', error);
+  } finally {
+    process.exit(0);
   }
 }
 

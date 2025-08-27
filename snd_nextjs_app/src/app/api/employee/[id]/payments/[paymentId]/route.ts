@@ -1,7 +1,7 @@
 import { authConfig } from '@/lib/auth-config';
 import { db } from '@/lib/db';
 import { advancePaymentHistories, advancePayments, employees } from '@/lib/drizzle/schema';
-import { withAuth } from '@/lib/rbac/api-middleware';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { and, eq } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
@@ -131,4 +131,4 @@ const deleteEmployeePaymentHandler = async (
 };
 
 // Export the wrapped handler
-export const DELETE = withAuth(deleteEmployeePaymentHandler);
+export const DELETE = withPermission(PermissionConfigs.employee.update)(deleteEmployeePaymentHandler);

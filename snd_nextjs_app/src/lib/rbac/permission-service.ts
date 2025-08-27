@@ -1,4 +1,4 @@
-import { db } from '@/lib/drizzle';
+import { db } from '@/lib/db';
 import {
   modelHasPermissions,
   modelHasRoles,
@@ -8,7 +8,7 @@ import {
   users,
 } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { Action, Subject, User } from './custom-rbac';
+import { Action, Subject, User } from './server-rbac';
 
 export interface PermissionCheck {
   hasPermission: boolean;
@@ -35,8 +35,10 @@ export async function checkUserPermission(
   action: Action,
   subject: Subject
 ): Promise<PermissionCheck> {
+  console.log(`🔐 Checking permission: ${action}.${subject} for user ${userId}`);
   try {
     // Fetch user role and permissions via Drizzle
+    console.log(`🔍 Fetching user data for ID: ${userId}`);
     const userRows = await db
       .select({
         id: users.id,
@@ -49,7 +51,10 @@ export async function checkUserPermission(
       .leftJoin(roles, eq(roles.id, modelHasRoles.roleId))
       .where(eq(users.id, parseInt(userId)));
 
+    console.log(`📊 User rows found:`, userRows);
+
     if (userRows.length === 0 || !userRows[0]) {
+      console.log(`❌ User not found: ${userId}`);
       return { hasPermission: false, reason: 'User not found' };
     }
 
@@ -79,7 +84,9 @@ export async function checkUserPermission(
     // directPermissions already computed
 
     // Check for wildcard permissions
+    console.log(`🔐 Direct permissions:`, directPermissions);
     if (directPermissions.includes('*') || directPermissions.includes('manage.all')) {
+      console.log(`✅ User has wildcard permission`);
       return {
         hasPermission: true,
         userRole: roleName,
@@ -96,12 +103,14 @@ export async function checkUserPermission(
     }
 
     // Check role permissions
+    console.log(`🔍 Fetching role permissions for role ID: ${roleId}`);
     const rolePermRows = await db
       .select({ name: permissionsTable.name })
       .from(roleHasPermissions)
       .leftJoin(permissionsTable, eq(permissionsTable.id, roleHasPermissions.permissionId))
       .where(eq(roleHasPermissions.roleId, roleId));
     const rolePermissions = rolePermRows.map(r => r.name!).filter(Boolean);
+    console.log(`🔐 Role permissions:`, rolePermissions);
 
     // Check for wildcard permissions in role
     if (rolePermissions.includes('*') || rolePermissions.includes('manage.all')) {
@@ -113,7 +122,9 @@ export async function checkUserPermission(
 
     // Check specific role permissions
     const specificRolePermission = `${action}.${subject}`;
+    console.log(`🔍 Checking for specific permission: ${specificRolePermission}`);
     if (rolePermissions.includes(specificRolePermission)) {
+      console.log(`✅ User has specific role permission: ${specificRolePermission}`);
       return {
         hasPermission: true,
         userRole: roleName,
@@ -128,13 +139,17 @@ export async function checkUserPermission(
       return false;
     });
 
+    console.log(`🔍 Broader permissions found:`, broaderPermissions);
+
     if (broaderPermissions.length > 0) {
+      console.log(`✅ User has broader permission`);
       return {
         hasPermission: true,
         userRole: roleName,
       };
     }
 
+    console.log(`❌ User does not have permission: ${action}.${subject}`);
     return {
       hasPermission: false,
       reason: `User does not have permission: ${action}.${subject}`,
@@ -142,6 +157,7 @@ export async function checkUserPermission(
       requiredPermissions: [specificRolePermission],
     };
   } catch (error) {
+    console.error(`❌ Error checking permissions for user ${userId}:`, error);
     
     return {
       hasPermission: false,

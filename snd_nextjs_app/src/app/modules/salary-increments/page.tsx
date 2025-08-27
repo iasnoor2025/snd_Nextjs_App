@@ -61,6 +61,8 @@ export default function SalaryIncrementsPage() {
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [approvalNotes, setApprovalNotes] = useState('');
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [incrementToDelete, setIncrementToDelete] = useState<SalaryIncrement | null>(null);
 
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -174,24 +176,17 @@ export default function SalaryIncrementsPage() {
   };
 
   const handleDelete = async (increment: SalaryIncrement) => {
-    const isApplied = increment.status === 'applied';
-    const confirmMessage = isApplied
-      ? "Are you sure you want to delete this applied salary increment? This will also revert the employee's salary to the original amount."
-      : 'Are you sure you want to delete this salary increment?';
-
-    if (!confirm(confirmMessage)) {
-      return;
-    }
-
     try {
       await salaryIncrementService.deleteSalaryIncrement(increment.id);
-      const successMessage = isApplied
+      const successMessage = increment.status === 'applied'
         ? 'Applied salary increment deleted and employee salary reverted successfully'
         : 'Salary increment deleted successfully';
       toast.success(successMessage);
       loadData();
+      setShowDeleteDialog(false);
+      setIncrementToDelete(null);
     } catch (error) {
-      
+      console.error('Error deleting salary increment:', error);
       toast.error('Failed to delete salary increment');
     }
   };
@@ -305,16 +300,19 @@ export default function SalaryIncrementsPage() {
 
       {/* Statistics Cards */}
       {statistics && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Increments</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{statistics.total_increments}</div>
-            </CardContent>
-          </Card>
+        <>
+
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Increments</CardTitle>
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{statistics.total_increments}</div>
+              </CardContent>
+            </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Pending</CardTitle>
@@ -339,6 +337,28 @@ export default function SalaryIncrementsPage() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Approved</CardTitle>
+              <Badge variant="secondary">{statistics.approved_increments}</Badge>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">
+                {statistics.approved_increments}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Rejected</CardTitle>
+              <Badge variant="secondary">{statistics.rejected_increments}</Badge>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">
+                {statistics.rejected_increments}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Amount</CardTitle>
               <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -349,6 +369,7 @@ export default function SalaryIncrementsPage() {
             </CardContent>
           </Card>
         </div>
+        </>
       )}
 
       {/* Filters */}
@@ -550,7 +571,10 @@ export default function SalaryIncrementsPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleDelete(increment)}
+                              onClick={() => {
+                                setIncrementToDelete(increment);
+                                setShowDeleteDialog(true);
+                              }}
                             >
                               <Trash2 className="w-4 h-4 text-red-600" />
                             </Button>
@@ -725,6 +749,78 @@ export default function SalaryIncrementsPage() {
                 disabled={!rejectionReason.trim()}
               >
                 Reject
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Salary Increment</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to delete this salary increment? This action cannot be undone.
+            </p>
+            
+            {incrementToDelete && (
+              <div className="space-y-3 text-sm bg-muted/50 p-4 rounded-md">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium text-muted-foreground">Employee:</span>
+                  <span className="font-semibold">
+                    {incrementToDelete.employee?.first_name} {incrementToDelete.employee?.last_name}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <span className="font-medium text-muted-foreground">Type:</span>
+                  <span>{salaryIncrementService.getIncrementTypeLabel(incrementToDelete.increment_type)}</span>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <span className="font-medium text-muted-foreground">Status:</span>
+                  <Badge 
+                    variant={incrementToDelete.status === 'applied' ? 'destructive' : 'secondary'}
+                    className="capitalize"
+                  >
+                    {salaryIncrementService.getStatusLabel(incrementToDelete.status)}
+                  </Badge>
+                </div>
+                
+                {incrementToDelete.status === 'applied' && (
+                  <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                    <div className="flex items-start space-x-2">
+                      <span className="text-red-600 text-lg">⚠️</span>
+                      <div className="text-sm">
+                        <p className="font-medium text-red-800">Important Warning</p>
+                        <p className="text-red-700 mt-1">
+                          This will also revert the employee's salary to the original amount.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowDeleteDialog(false);
+                  setIncrementToDelete(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => incrementToDelete && handleDelete(incrementToDelete)}
+              >
+                Delete
               </Button>
             </div>
           </div>

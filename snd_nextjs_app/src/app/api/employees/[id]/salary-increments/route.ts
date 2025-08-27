@@ -2,7 +2,7 @@ import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { employees as employeesTable, salaryIncrements, users } from '@/lib/drizzle/schema';
 import { eq, desc } from 'drizzle-orm';
-import { withAuth } from '@/lib/rbac/api-middleware';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 async function getEmployeeSalaryIncrementsHandler(
   request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } },
@@ -176,4 +176,4 @@ async function getEmployeeSalaryIncrementsHandler(
   }
 }
 
-export const GET = withAuth(getEmployeeSalaryIncrementsHandler);
+export const GET = withPermission(PermissionConfigs.salaryIncrement.read)(getEmployeeSalaryIncrementsHandler);

@@ -1,4 +1,4 @@
-import { db } from '@/lib/db';
+import { db } from '@/lib/drizzle';
 import {
   employees,
   equipmentRentalHistory,
@@ -6,12 +6,13 @@ import {
   projects,
   rentals,
 } from '@/lib/drizzle/schema';
-import { PermissionConfigs, withPermission, withReadPermission } from '@/lib/rbac/api-middleware';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { asc, eq, inArray } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
 
-export const GET = withReadPermission(async (_request: NextRequest) => {
+// GET /api/equipment - List equipment with assignments
+const getEquipmentHandler = async (_request: NextRequest) => {
   try {
     // Generate cache key for equipment list
     const cacheKey = generateCacheKey('equipment', 'list', {});
@@ -42,7 +43,6 @@ export const GET = withReadPermission(async (_request: NextRequest) => {
             .orderBy(asc(equipmentTable.name));
 
           // Get current active assignments for equipment
-          
           let currentAssignments: any[] = [];
 
           try {
@@ -114,18 +114,14 @@ export const GET = withReadPermission(async (_request: NextRequest) => {
         },
         {
           ttl: 300, // 5 minutes
-          tags: [CACHE_TAGS.EQUIPMENT, CACHE_TAGS.EMPLOYEES, CACHE_TAGS.PROJECTS, CACHE_TAGS.RENTALS],
+          prefix: 'equipment',
+          tags: [CACHE_TAGS.EQUIPMENT, CACHE_TAGS.LIST]
         }
       );
-    } catch (cacheError) {
-      console.error('Cache error, falling back to direct database query:', cacheError);
-      console.error('Cache error details:', {
-        message: cacheError instanceof Error ? cacheError.message : 'Unknown cache error',
-        stack: cacheError instanceof Error ? cacheError.stack : undefined,
-        name: cacheError instanceof Error ? cacheError.name : 'Unknown'
-      });
+    } catch (error) {
+      console.error('Cache error:', error);
       
-      // Fallback: direct database query without cache
+      // Fallback to direct database query
       const equipment = await db
         .select({
           id: equipmentTable.id,
@@ -142,71 +138,91 @@ export const GET = withReadPermission(async (_request: NextRequest) => {
           istimara_expiry_date: equipmentTable.istimaraExpiryDate,
           serial_number: equipmentTable.serialNumber,
           description: equipmentTable.description,
+          door_number: equipmentTable.doorNumber,
         })
         .from(equipmentTable)
         .orderBy(asc(equipmentTable.name));
 
-      // Return equipment without assignments as fallback
-      const equipmentWithAssignments = equipment.map((item) => ({
-        ...item,
-        assignments: [],
-        is_assigned: false,
-        current_assignment: null,
-      }));
-
       return NextResponse.json({
         success: true,
-        data: equipmentWithAssignments,
-        total: equipmentWithAssignments.length,
+        data: equipment.map(item => ({
+          ...item,
+          assignments: [],
+          is_assigned: false,
+          current_assignment: null,
+        })),
+        total: equipment.length,
       });
     }
   } catch (error) {
     console.error('Error fetching equipment:', error);
-    console.error('Error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : 'Unknown'
-    });
-    return NextResponse.json({ 
-      error: 'Failed to fetch equipment',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to fetch equipment',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
   }
-});
+};
 
-export const POST = withPermission(async (request: NextRequest) => {
+// POST /api/equipment - Create new equipment
+const createEquipmentHandler = async (request: NextRequest) => {
   try {
     const body = await request.json();
+    const {
+      name,
+      description,
+      categoryId,
+      manufacturer,
+      modelNumber,
+      serialNumber,
+      doorNumber,
+      purchaseDate,
+      purchasePrice,
+      status,
+      locationId,
+      notes,
+      dailyRate,
+      weeklyRate,
+      monthlyRate,
+      istimara,
+      istimara_expiry_date,
+    } = body;
 
-    const inserted = await db
+    const [inserted] = await db
       .insert(equipmentTable)
       .values({
-        name: body.name,
-        description: body.description ?? null,
-        categoryId: body.categoryId ?? null,
-        manufacturer: body.manufacturer ?? null,
-        modelNumber: body.modelNumber ?? null,
-        serialNumber: body.serialNumber ?? null,
-        doorNumber: body.doorNumber ?? null,
-        purchaseDate: body.purchaseDate ? new Date(body.purchaseDate).toISOString() : null,
-        purchasePrice: body.purchasePrice ? String(parseFloat(body.purchasePrice)) : null,
-        status: body.status || 'available',
-        dailyRate: body.dailyRate ? String(parseFloat(body.dailyRate)) : null,
-        weeklyRate: body.weeklyRate ? String(parseFloat(body.weeklyRate)) : null,
-        monthlyRate: body.monthlyRate ? String(parseFloat(body.monthlyRate)) : null,
-        istimara: body.istimara ?? null,
-        istimaraExpiryDate: body.istimara_expiry_date
-          ? new Date(body.istimara_expiry_date).toISOString()
+        name,
+        description: description ?? null,
+        categoryId,
+        manufacturer,
+        modelNumber,
+        serialNumber,
+        doorNumber,
+        purchaseDate: purchaseDate ? new Date(purchaseDate).toISOString() : null,
+        purchasePrice: purchasePrice ? String(parseFloat(purchasePrice)) : null,
+        status,
+        locationId,
+        notes,
+        dailyRate: dailyRate ? String(parseFloat(dailyRate)) : null,
+        weeklyRate: weeklyRate ? String(parseFloat(weeklyRate)) : null,
+        monthlyRate: monthlyRate ? String(parseFloat(monthlyRate)) : null,
+        istimara: istimara ?? null,
+        istimaraExpiryDate: istimara_expiry_date
+          ? new Date(istimara_expiry_date).toISOString()
           : null,
-        isActive: true as any,
+        createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       })
       .returning();
+
     const equipment = inserted[0];
 
     return NextResponse.json({ success: true, data: equipment }, { status: 201 });
   } catch (error) {
-    
+    console.error('Error creating equipment:', error);
     return NextResponse.json(
       {
         success: false,
@@ -215,9 +231,10 @@ export const POST = withPermission(async (request: NextRequest) => {
       { status: 500 }
     );
   }
-}, PermissionConfigs.equipment.create);
+};
 
-export const PUT = withPermission(async (request: NextRequest) => {
+// PUT /api/equipment - Update equipment
+const updateEquipmentHandler = async (request: NextRequest) => {
   try {
     const body = await request.json();
     const {
@@ -271,7 +288,7 @@ export const PUT = withPermission(async (request: NextRequest) => {
 
     return NextResponse.json({ success: true, data: equipment });
   } catch (error) {
-    
+    console.error('Error updating equipment:', error);
     return NextResponse.json(
       {
         success: false,
@@ -280,9 +297,10 @@ export const PUT = withPermission(async (request: NextRequest) => {
       { status: 500 }
     );
   }
-}, PermissionConfigs.equipment.update);
+};
 
-export const DELETE = withPermission(async (request: NextRequest) => {
+// DELETE /api/equipment - Delete equipment
+const deleteEquipmentHandler = async (request: NextRequest) => {
   try {
     const body = await request.json();
     const { id } = body;
@@ -291,7 +309,7 @@ export const DELETE = withPermission(async (request: NextRequest) => {
 
     return NextResponse.json({ success: true, message: 'Equipment deleted successfully' });
   } catch (error) {
-    
+    console.error('Error deleting equipment:', error);
     return NextResponse.json(
       {
         success: false,
@@ -300,4 +318,9 @@ export const DELETE = withPermission(async (request: NextRequest) => {
       { status: 500 }
     );
   }
-}, PermissionConfigs.equipment.delete);
+};
+
+export const GET = withPermission(PermissionConfigs.equipment.read)(getEquipmentHandler);
+export const POST = withPermission(PermissionConfigs.equipment.create)(createEquipmentHandler);
+export const PUT = withPermission(PermissionConfigs.equipment.update)(updateEquipmentHandler);
+export const DELETE = withPermission(PermissionConfigs.equipment.delete)(deleteEquipmentHandler);

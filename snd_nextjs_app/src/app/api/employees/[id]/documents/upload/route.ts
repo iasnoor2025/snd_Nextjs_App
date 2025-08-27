@@ -1,6 +1,6 @@
 import { db } from '@/lib/drizzle';
 import { employeeDocuments, employees } from '@/lib/drizzle/schema';
-import { withAuth } from '@/lib/rbac/api-middleware';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { eq, and } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { SupabaseStorageService } from '@/lib/supabase/storage-service';
@@ -317,8 +317,8 @@ const uploadDocumentsHandler = async (
   }
 };
 
-export const POST = withAuth(uploadDocumentsHandler);
-export const GET = withAuth(uploadDocumentsHandler);
+export const POST = withPermission(PermissionConfigs.employee.update)(uploadDocumentsHandler);
+export const GET = withPermission(PermissionConfigs.employee.read)(uploadDocumentsHandler);
 
 // Simple test endpoint to debug upload issues
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {

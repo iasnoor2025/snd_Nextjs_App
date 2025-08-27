@@ -1,7 +1,7 @@
 import { authConfig } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
 import { employees, timesheets as timesheetsTable } from '@/lib/drizzle/schema';
-import { withAuth } from '@/lib/rbac/api-middleware';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { and, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
@@ -245,8 +245,8 @@ const getTimesheetsHandler = async (request: NextRequest) => {
   }
 };
 
-// GET /api/timesheets - List timesheets with permission check
-export const GET = async (request: NextRequest) => {
+// GET /api/timesheets - Get timesheets with permission check
+export const GET = withPermission(PermissionConfigs.timesheet.read)(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url);
   const test = searchParams.get('test');
 
@@ -255,13 +255,12 @@ export const GET = async (request: NextRequest) => {
     return getTimesheetsHandler(request);
   }
 
-  // Apply authentication middleware for regular requests
-  const authenticatedHandler = withAuth(getTimesheetsHandler);
-  return authenticatedHandler(request);
-};
+  // Apply permission middleware for regular requests
+  return getTimesheetsHandler(request);
+});
 
 // POST /api/timesheets - Create timesheet with permission check
-export const POST = withAuth(async (request: NextRequest) => {
+export const POST = withPermission(PermissionConfigs.timesheet.create)(async (request: NextRequest) => {
   try {
     const body = await request.json();
 
@@ -314,7 +313,7 @@ export const POST = withAuth(async (request: NextRequest) => {
 });
 
 // PUT /api/timesheets - Update timesheet with permission check
-export const PUT = withAuth(async (request: NextRequest) => {
+export const PUT = withPermission(PermissionConfigs.timesheet.update)(async (request: NextRequest) => {
   try {
     const body = await request.json();
     const {
@@ -369,7 +368,7 @@ export const PUT = withAuth(async (request: NextRequest) => {
 });
 
 // DELETE /api/timesheets - Delete timesheet with permission check
-export const DELETE = withAuth(async (request: NextRequest) => {
+export const DELETE = withPermission(PermissionConfigs.timesheet.delete)(async (request: NextRequest) => {
   try {
     const body = await request.json();
     const { id } = body;

@@ -1,6 +1,6 @@
 import { db } from '@/lib/drizzle';
 import { equipmentDocuments, equipment } from '@/lib/drizzle/schema';
-import { withAuth } from '@/lib/rbac/api-middleware';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { eq, and } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { SupabaseStorageService } from '@/lib/supabase/storage-service';
@@ -340,5 +340,5 @@ const uploadDocumentsHandler = async (
   }
 };
 
-export const POST = withAuth(handler);
-export const GET = withAuth(handler);
+export const POST = withPermission(PermissionConfigs.equipment.update)(handler);
+export const GET = withPermission(PermissionConfigs.equipment.read)(handler);

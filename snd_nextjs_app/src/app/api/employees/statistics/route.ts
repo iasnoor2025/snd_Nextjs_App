@@ -1,10 +1,10 @@
 import { authConfig } from '@/lib/auth-config';
 import { db } from '@/lib/db';
 import { employeeAssignments, employees } from '@/lib/drizzle/schema';
-import { withAuth } from '@/lib/rbac/api-middleware';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 const getEmployeeStatisticsHandler = async () => {
   try {
@@ -138,4 +138,4 @@ const getEmployeeStatisticsHandler = async () => {
   }
 };
 
-export const GET = withAuth(getEmployeeStatisticsHandler);
+export const GET = withPermission(PermissionConfigs.employee.read)(getEmployeeStatisticsHandler);

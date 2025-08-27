@@ -1,27 +1,15 @@
-import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
 import { employees, salaryIncrements } from '@/lib/drizzle/schema';
-import { checkPermission } from '@/lib/rbac/enhanced-permission-service';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { eq } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+// POST /api/salary-increments/[id]/apply - Apply salary increment
+const applySalaryIncrementHandler = async (_request: NextRequest, ...args: unknown[]) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check permission to apply salary increments
-    
-    const canApply = await checkPermission(session.user.id, 'SalaryIncrement', 'update');
-    
-    if (!canApply) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
-
+    const { params } = args[0] as { params: Promise<{ id: string }> };
     const { id } = await params;
+    
     if (isNaN(parseInt(id))) {
       return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     }
@@ -49,7 +37,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     const increment = existingIncrement[0];
 
     // Only allow application if status is approved
-    if (increment!.status !== 'approved') {
+    if (increment.status !== 'approved') {
       return NextResponse.json(
         { error: 'Salary increment must be approved before it can be applied' },
         { status: 400 }
@@ -57,7 +45,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     }
 
     // Check if effective date has been reached
-    const effectiveDate = new Date(increment!.effective_date);
+    const effectiveDate = new Date(increment.effective_date);
     const today = new Date();
     if (effectiveDate > today) {
       return NextResponse.json(
@@ -73,7 +61,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
         .update(salaryIncrements)
         .set({
           status: 'applied',
-          updatedAt: new Date().toISOString().split('T')[0],
+          updatedAt: new Date().toISOString(),
         })
         .where(eq(salaryIncrements.id, parseInt(id)))
         .returning();
@@ -82,13 +70,13 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       const [updatedEmployee] = await tx
         .update(employees)
         .set({
-          basicSalary: increment!.new_base_salary,
-          foodAllowance: increment!.new_food_allowance,
-          housingAllowance: increment!.new_housing_allowance,
-          transportAllowance: increment!.new_transport_allowance,
-          updatedAt: new Date().toISOString().split('T')[0],
+          basicSalary: increment.new_base_salary,
+          foodAllowance: increment.new_food_allowance,
+          housingAllowance: increment.new_housing_allowance,
+          transportAllowance: increment.new_transport_allowance,
+          updatedAt: new Date().toISOString(),
         })
-        .where(eq(employees.id, increment!.employee_id))
+        .where(eq(employees.id, increment.employee_id))
         .returning();
 
       return { appliedIncrement, updatedEmployee };
@@ -97,29 +85,34 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({
       success: true,
       data: {
-        id: result.appliedIncrement!.id,
-        employee_id: result.appliedIncrement!.employeeId,
-        increment_type: result.appliedIncrement!.incrementType,
-        effective_date: result.appliedIncrement!.effectiveDate,
-        reason: result.appliedIncrement!.reason,
-        status: result.appliedIncrement!.status,
-        new_base_salary: result.appliedIncrement!.newBaseSalary,
-        new_food_allowance: result.appliedIncrement!.newFoodAllowance,
-        new_housing_allowance: result.appliedIncrement!.newHousingAllowance,
-        new_transport_allowance: result.appliedIncrement!.newTransportAllowance,
-        updated_at: result.appliedIncrement!.updatedAt,
+        id: result.appliedIncrement.id,
+        employee_id: result.appliedIncrement.employeeId,
+        increment_type: result.appliedIncrement.incrementType,
+        effective_date: result.appliedIncrement.effectiveDate,
+        reason: result.appliedIncrement.reason,
+        status: result.appliedIncrement.status,
+        updated_at: result.appliedIncrement.updatedAt,
         employee: {
-          id: result.updatedEmployee!.id,
-          base_salary: result.updatedEmployee!.basicSalary,
-          food_allowance: result.updatedEmployee!.foodAllowance,
-          housing_allowance: result.updatedEmployee!.housingAllowance,
-          transport_allowance: result.updatedEmployee!.transportAllowance,
+          id: result.updatedEmployee.id,
+          basic_salary: result.updatedEmployee.basicSalary,
+          food_allowance: result.updatedEmployee.foodAllowance,
+          housing_allowance: result.updatedEmployee.housingAllowance,
+          transport_allowance: result.updatedEmployee.transportAllowance,
         },
       },
-      message: 'Salary increment applied successfully to employee record',
+      message: 'Salary increment applied successfully',
     });
   } catch (error) {
-    
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error applying salary increment:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to apply salary increment',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
   }
-}
+};
+
+export const POST = withPermission(PermissionConfigs.salaryIncrement.apply)(applySalaryIncrementHandler);

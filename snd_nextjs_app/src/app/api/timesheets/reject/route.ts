@@ -1,11 +1,11 @@
 import { db } from '@/lib/drizzle';
 import { employees, timesheets, users } from '@/lib/drizzle/schema';
-import { withAuth } from '@/lib/rbac/api-middleware';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 // POST /api/timesheets/reject - Reject timesheet at specific stage
-export const POST = withAuth(async (request: NextRequest) => {
+export const POST = withPermission(PermissionConfigs.timesheet.update)(async (request: NextRequest) => {
   try {
     const { timesheetId, rejectionReason, rejectionStage } = await request.json();
 

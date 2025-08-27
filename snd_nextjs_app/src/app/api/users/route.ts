@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
 
 // GET /api/users - Get all users
-export const GET = withPermission(async () => {
+export const GET = withPermission(PermissionConfigs.user.read)(async () => {
   try {
     console.log('🚀 USERS API CALLED - Starting to fetch users...');
     
@@ -79,7 +79,7 @@ export const GET = withPermission(async () => {
           let role = 'USER';
 
           const user_roles = rolesByUserId[user.id as number] || [];
-          if (user_roles.length > 0) {
+          if (user_roles.length > 0 && user_roles[0]?.role?.name) {
             // Use the first role found (since we're getting the actual role names from the database)
             // This preserves the actual role names like "Yaser", "HR_SPECIALIST", etc.
             role = user_roles[0].role.name.toUpperCase();
@@ -88,7 +88,7 @@ export const GET = withPermission(async () => {
             // This handles the transition period where users still have role_id but no modelHasRoles entries
             if (user.role_id) {
               // Find the role name from the roles table
-              const roleName = allRoles.find(r => r.id === user.role_id)?.name;
+              const roleName = allRoles?.find(r => r.id === user.role_id)?.name;
               console.log(`🔍 Debug: User ${user.name} (ID: ${user.id}) has role_id: ${user.role_id}, found role name: ${roleName}`);
               if (roleName) {
                 role = roleName.toUpperCase();
@@ -115,10 +115,10 @@ export const GET = withPermission(async () => {
     console.error('Error fetching users:', error);
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
   }
-}, PermissionConfigs.user.read);
+});
 
 // POST /api/users - Create new user
-export const POST = withPermission(async (request: NextRequest) => {
+export const POST = withPermission(PermissionConfigs.user.create)(async (request: NextRequest) => {
   try {
     const body = await request.json();
     const { name, email, password, role, isActive } = body;
@@ -189,10 +189,10 @@ export const POST = withPermission(async (request: NextRequest) => {
     
     return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
   }
-}, PermissionConfigs.user.create);
+});
 
 // PUT /api/users - Update user
-export const PUT = withPermission(async (request: NextRequest) => {
+export const PUT = withPermission(PermissionConfigs.user.update)(async (request: NextRequest) => {
   try {
     const body = await request.json();
     const { id, name, email, password, role, isActive } = body;
@@ -284,10 +284,10 @@ export const PUT = withPermission(async (request: NextRequest) => {
     
     return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
   }
-}, PermissionConfigs.user.update);
+});
 
 // DELETE /api/users - Delete user
-export const DELETE = withPermission(async (request: NextRequest) => {
+export const DELETE = withPermission(PermissionConfigs.user.delete)(async (request: NextRequest) => {
   try {
     const body = await request.json();
     const { id } = body;
@@ -316,4 +316,4 @@ export const DELETE = withPermission(async (request: NextRequest) => {
     
     return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 });
   }
-}, PermissionConfigs.user.delete);
+});

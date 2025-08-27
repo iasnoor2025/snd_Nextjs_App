@@ -8,7 +8,7 @@ import {
   rentals,
   users as usersTable,
 } from '@/lib/drizzle/schema';
-import { withAuth } from '@/lib/rbac/api-middleware';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { updateEmployeeStatusBasedOnLeave } from '@/lib/utils/employee-status';
 import { ERPNextSyncService } from '@/lib/services/erpnext-sync-service';
 import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
@@ -29,7 +29,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
     const skip = (page - 1) * limit;
 
     // Build filters
-    const filters: any[] = [];
+    const filters: unknown[] = [];
     if (search) {
       const s = `%${search}%`;
       filters.push(
@@ -37,7 +37,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
           ilike(employeesTable.firstName, s),
           ilike(employeesTable.lastName, s),
           ilike(employeesTable.fileNumber, s),
-          ilike(employeesTable.email as any, s)
+          ilike(employeesTable.email, s)
         )
       );
     }
@@ -52,6 +52,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
 
     const whereExpr = filters.length ? and(...filters) : undefined;
 
+    // Simplified query to test
     const baseQuery = db
       .select({
         id: employeesTable.id,
@@ -84,7 +85,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
       .leftJoin(departments, eq(departments.id, employeesTable.departmentId))
       .leftJoin(designations, eq(designations.id, employeesTable.designationId))
       .leftJoin(usersTable, eq(usersTable.id, employeesTable.userId))
-      .where(whereExpr as any)
+      .where(whereExpr)
       .orderBy(asc(employeesTable.firstName));
 
     const employeeRows = await (!all ? baseQuery.offset(skip).limit(limit) : baseQuery);
@@ -92,8 +93,8 @@ const getEmployeesHandler = async (request: NextRequest) => {
     const countRow = await db
       .select({ count: sql<number>`count(*)` })
       .from(employeesTable)
-      .where(whereExpr as any);
-    const total = Number((countRow as any)[0]?.count ?? 0);
+      .where(whereExpr);
+    const total = Number((countRow as { count: number }[])[0]?.count ?? 0);
 
     // Update employee statuses based on current leave status
     
@@ -320,5 +321,5 @@ const createEmployeeHandler = async (request: NextRequest) => {
 };
 
 // Export the wrapped handlers
-export const GET = withAuth(getEmployeesHandler);
-export const POST = withAuth(createEmployeeHandler);
+export const GET = withPermission(PermissionConfigs.employee.read)(getEmployeesHandler);
+export const POST = withPermission(PermissionConfigs.employee.create)(createEmployeeHandler);

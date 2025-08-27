@@ -191,5 +191,12 @@
   "inProgress": "In Progress",
   "complete": "Complete",
   "stageBreakdown": "Stage Breakdown",
-  "viewAllTimesheets": "View All Timesheets ({{count}} records)"
+  "viewAllTimesheets": "View All Timesheets ({{count}} records)",
+  "automatic_approval_workflow": "Automatic Approval Workflow",
+  "system_behavior": "System Behavior",
+  "automatically_determines_next_stage": "Automatically determines next stage",
+  "moves_to_next_approval_level": "Moves to next approval level",
+  "no_manual_stage_selection_needed": "No manual stage selection needed",
+  "automatic_stage_determination": "Automatic stage determination",
+  "employees": "Employees"
 }

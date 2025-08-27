@@ -1,53 +1,49 @@
-import { db } from '@/lib/db';
-import {
-  employees as employeesTable,
-  equipmentMaintenance as equipmentMaintenanceTable,
-  equipment as equipmentTable,
-  equipmentMaintenanceItems as maintenanceItemsTable,
-} from '@/lib/drizzle/schema';
-import { withAuth, withPermission } from '@/lib/rbac/api-middleware';
-import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
+import { db } from '@/lib/db';
+import { maintenance, equipment, employees, equipmentMaintenanceItems } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 
-export const GET = withAuth(
-  async (_request: NextRequest, { params }: { params: { id: string } }) => {
+export const GET = withPermission(PermissionConfigs.maintenance.read)(
+  async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     try {
-      const id = parseInt(params.id);
-      if (!id) return NextResponse.json({ success: false, message: 'Invalid ID' }, { status: 400 });
+      const { id } = await params;
+      const maintenanceId = parseInt(id);
+      if (!maintenanceId) return NextResponse.json({ success: false, message: 'Invalid ID' }, { status: 400 });
 
       const rows = await db
         .select({
-          id: equipmentMaintenanceTable.id,
-          equipment_id: equipmentMaintenanceTable.equipmentId,
-          title: equipmentMaintenanceTable.title,
-          description: equipmentMaintenanceTable.description,
-          status: equipmentMaintenanceTable.status,
-          type: equipmentMaintenanceTable.type,
-          priority: equipmentMaintenanceTable.priority,
-          assigned_to_employee_id: equipmentMaintenanceTable.assignedToEmployeeId,
-          scheduled_date: equipmentMaintenanceTable.scheduledDate,
-          due_date: equipmentMaintenanceTable.dueDate,
-          cost: equipmentMaintenanceTable.cost,
-          created_at: equipmentMaintenanceTable.createdAt,
-          updated_at: equipmentMaintenanceTable.updatedAt,
+          id: maintenance.id,
+          equipment_id: maintenance.equipmentId,
+          title: maintenance.title,
+          description: maintenance.description,
+          status: maintenance.status,
+          type: maintenance.type,
+          priority: maintenance.priority,
+          assigned_to_employee_id: maintenance.assignedToEmployeeId,
+          scheduled_date: maintenance.scheduledDate,
+          due_date: maintenance.dueDate,
+          cost: maintenance.cost,
+          created_at: maintenance.createdAt,
+          updated_at: maintenance.updatedAt,
           equipment: {
-            id: equipmentTable.id,
-            name: equipmentTable.name,
-            doorNumber: equipmentTable.doorNumber,
+            id: equipment.id,
+            name: equipment.name,
+            doorNumber: equipment.doorNumber,
           },
           mechanic: {
-            id: employeesTable.id,
-            first_name: employeesTable.firstName,
-            last_name: employeesTable.lastName,
+            id: employees.id,
+            first_name: employees.firstName,
+            last_name: employees.lastName,
           },
         })
-        .from(equipmentMaintenanceTable)
-        .leftJoin(equipmentTable, eq(equipmentTable.id, equipmentMaintenanceTable.equipmentId))
+        .from(maintenance)
+        .leftJoin(equipment, eq(equipment.id, maintenance.equipmentId))
         .leftJoin(
-          employeesTable,
-          eq(employeesTable.id, equipmentMaintenanceTable.assignedToEmployeeId)
+          employees,
+          eq(employees.id, maintenance.assignedToEmployeeId)
         )
-        .where(eq(equipmentMaintenanceTable.id, id));
+        .where(eq(maintenance.id, maintenanceId));
 
       const base = rows[0];
       if (!base)
@@ -55,23 +51,23 @@ export const GET = withAuth(
 
       const items = await db
         .select({
-          id: maintenanceItemsTable.id,
-          maintenance_id: maintenanceItemsTable.maintenanceId,
-          name: maintenanceItemsTable.name,
-          description: maintenanceItemsTable.description,
-          quantity: maintenanceItemsTable.quantity,
-          unit: maintenanceItemsTable.unit,
-          unit_cost: maintenanceItemsTable.unitCost,
-          total_cost: maintenanceItemsTable.totalCost,
-          created_at: maintenanceItemsTable.createdAt,
-          updated_at: maintenanceItemsTable.updatedAt,
+          id: equipmentMaintenanceItems.id,
+          maintenance_id: equipmentMaintenanceItems.maintenanceId,
+          name: equipmentMaintenanceItems.name,
+          description: equipmentMaintenanceItems.description,
+          quantity: equipmentMaintenanceItems.quantity,
+          unit: equipmentMaintenanceItems.unit,
+          unit_cost: equipmentMaintenanceItems.unitCost,
+          total_cost: equipmentMaintenanceItems.totalCost,
+          created_at: equipmentMaintenanceItems.createdAt,
+          updated_at: equipmentMaintenanceItems.updatedAt,
         })
-        .from(maintenanceItemsTable)
-        .where(eq(maintenanceItemsTable.maintenanceId, id));
+        .from(equipmentMaintenanceItems)
+        .where(eq(equipmentMaintenanceItems.maintenanceId, maintenanceId));
 
       return NextResponse.json({ success: true, data: { ...base, items } });
     } catch (error) {
-      
+      console.error('Error fetching maintenance:', error);
       return NextResponse.json(
         { success: false, message: 'Internal server error' },
         { status: 500 }
@@ -112,14 +108,14 @@ export const PUT = withPermission(
 
       const updated = await db.transaction(async tx => {
         const updatedMaint = await tx
-          .update(equipmentMaintenanceTable)
+          .update(maintenance)
           .set(dataToUpdate)
-          .where(eq(equipmentMaintenanceTable.id, id))
+          .where(eq(maintenance.id, id))
           .returning({
-            id: equipmentMaintenanceTable.id,
-            status: equipmentMaintenanceTable.status,
-            equipmentId: equipmentMaintenanceTable.equipmentId,
-            cost: equipmentMaintenanceTable.cost,
+            id: maintenance.id,
+            status: maintenance.status,
+            equipmentId: maintenance.equipmentId,
+            cost: maintenance.cost,
           });
 
         if (!updatedMaint[0]) {
@@ -127,14 +123,14 @@ export const PUT = withPermission(
         }
         let totalCostNum = Number(updatedMaint[0].cost || 0);
         if (Array.isArray(items)) {
-          await tx.delete(maintenanceItemsTable).where(eq(maintenanceItemsTable.maintenanceId, id));
+          await tx.delete(equipmentMaintenanceItems).where(eq(equipmentMaintenanceItems.maintenanceId, id));
           totalCostNum = 0;
           for (const item of items) {
             const quantity = Number(item.quantity || 1);
             const unitCost = Number(item.unit_cost || 0);
             const totalCost = Number(item.total_cost ?? quantity * unitCost);
             totalCostNum += totalCost;
-            await tx.insert(maintenanceItemsTable).values({
+            await tx.insert(equipmentMaintenanceItems).values({
               maintenanceId: id,
               name: String(item.name || 'Item'),
               description: item.description ? String(item.description) : null,
@@ -148,64 +144,64 @@ export const PUT = withPermission(
         }
 
         await tx
-          .update(equipmentMaintenanceTable)
+          .update(maintenance)
           .set({ cost: String(totalCostNum) as any, updatedAt: nowIso })
-          .where(eq(equipmentMaintenanceTable.id, id));
+          .where(eq(maintenance.id, id));
 
         if (status) {
           const newStatus = status === 'completed' ? 'available' : 'under_maintenance';
           await tx
-            .update(equipmentTable)
+            .update(equipment)
             .set({ status: newStatus, lastMaintenanceDate: nowIso })
-            .where(eq(equipmentTable.id, updatedMaint[0].equipmentId));
+            .where(eq(equipment.id, updatedMaint[0].equipmentId));
         }
 
         // Return composed record with items
         const baseRows = await tx
           .select({
-            id: equipmentMaintenanceTable.id,
-            equipment_id: equipmentMaintenanceTable.equipmentId,
-            title: equipmentMaintenanceTable.title,
-            description: equipmentMaintenanceTable.description,
-            status: equipmentMaintenanceTable.status,
-            type: equipmentMaintenanceTable.type,
-            priority: equipmentMaintenanceTable.priority,
-            assigned_to_employee_id: equipmentMaintenanceTable.assignedToEmployeeId,
-            scheduled_date: equipmentMaintenanceTable.scheduledDate,
-            due_date: equipmentMaintenanceTable.dueDate,
-            cost: equipmentMaintenanceTable.cost,
-            created_at: equipmentMaintenanceTable.createdAt,
-            updated_at: equipmentMaintenanceTable.updatedAt,
-            equipment: { id: equipmentTable.id, name: equipmentTable.name },
+            id: maintenance.id,
+            equipment_id: maintenance.equipmentId,
+            title: maintenance.title,
+            description: maintenance.description,
+            status: maintenance.status,
+            type: maintenance.type,
+            priority: maintenance.priority,
+            assigned_to_employee_id: maintenance.assignedToEmployeeId,
+            scheduled_date: maintenance.scheduledDate,
+            due_date: maintenance.dueDate,
+            cost: maintenance.cost,
+            created_at: maintenance.createdAt,
+            updated_at: maintenance.updatedAt,
+            equipment: { id: equipment.id, name: equipment.name },
             mechanic: {
-              id: employeesTable.id,
-              first_name: employeesTable.firstName,
-              last_name: employeesTable.lastName,
+              id: employees.id,
+              first_name: employees.firstName,
+              last_name: employees.lastName,
             },
           })
-          .from(equipmentMaintenanceTable)
-          .leftJoin(equipmentTable, eq(equipmentTable.id, equipmentMaintenanceTable.equipmentId))
+          .from(maintenance)
+          .leftJoin(equipment, eq(equipment.id, maintenance.equipmentId))
           .leftJoin(
-            employeesTable,
-            eq(employeesTable.id, equipmentMaintenanceTable.assignedToEmployeeId)
+            employees,
+            eq(employees.id, maintenance.assignedToEmployeeId)
           )
-          .where(eq(equipmentMaintenanceTable.id, id));
+          .where(eq(maintenance.id, id));
 
         const itemsRows = await tx
           .select({
-            id: maintenanceItemsTable.id,
-            maintenance_id: maintenanceItemsTable.maintenanceId,
-            name: maintenanceItemsTable.name,
-            description: maintenanceItemsTable.description,
-            quantity: maintenanceItemsTable.quantity,
-            unit: maintenanceItemsTable.unit,
-            unit_cost: maintenanceItemsTable.unitCost,
-            total_cost: maintenanceItemsTable.totalCost,
-            created_at: maintenanceItemsTable.createdAt,
-            updated_at: maintenanceItemsTable.updatedAt,
+            id: equipmentMaintenanceItems.id,
+            maintenance_id: equipmentMaintenanceItems.maintenanceId,
+            name: equipmentMaintenanceItems.name,
+            description: equipmentMaintenanceItems.description,
+            quantity: equipmentMaintenanceItems.quantity,
+            unit: equipmentMaintenanceItems.unit,
+            unit_cost: equipmentMaintenanceItems.unitCost,
+            total_cost: equipmentMaintenanceItems.totalCost,
+            created_at: equipmentMaintenanceItems.createdAt,
+            updated_at: equipmentMaintenanceItems.updatedAt,
           })
-          .from(maintenanceItemsTable)
-          .where(eq(maintenanceItemsTable.maintenanceId, id));
+          .from(equipmentMaintenanceItems)
+          .where(eq(equipmentMaintenanceItems.maintenanceId, id));
 
         return { ...baseRows[0], items: itemsRows };
       });
@@ -233,8 +229,8 @@ export const DELETE = withPermission(
       const id = parseInt(params.id);
       if (!id) return NextResponse.json({ success: false, message: 'Invalid ID' }, { status: 400 });
       await db.transaction(async tx => {
-        await tx.delete(maintenanceItemsTable).where(eq(maintenanceItemsTable.maintenanceId, id));
-        await tx.delete(equipmentMaintenanceTable).where(eq(equipmentMaintenanceTable.id, id));
+        await tx.delete(equipmentMaintenanceItems).where(eq(equipmentMaintenanceItems.maintenanceId, id));
+        await tx.delete(maintenance).where(eq(maintenance.id, id));
       });
       return NextResponse.json({ success: true });
     } catch (error) {

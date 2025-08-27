@@ -1,31 +1,27 @@
-import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
 import { salaryIncrements } from '@/lib/drizzle/schema';
-import { checkPermission } from '@/lib/rbac/enhanced-permission-service';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { eq } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+// POST /api/salary-increments/[id]/approve - Approve salary increment
+const approveSalaryIncrementHandler = async (request: NextRequest, ...args: unknown[]) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check permission to approve salary increments
-    const canApprove = await checkPermission(session.user.id, 'SalaryIncrement', 'approve');
-    if (!canApprove) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
-
+    const { params } = args[0] as { params: Promise<{ id: string }> };
     const { id } = await params;
+    
     if (isNaN(parseInt(id))) {
       return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     }
 
     const body = await request.json();
     const { notes } = body;
+
+    // Get current user ID from session (this will be handled by the permission middleware)
+    const { getServerSession } = await import('next-auth');
+    const { authOptions } = await import('@/lib/auth-config');
+    const session = await getServerSession(authOptions);
+    const approvedBy = session?.user?.id;
 
     // Check if salary increment exists and can be approved
     const existingIncrement = await db
@@ -46,7 +42,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const increment = existingIncrement[0];
 
     // Only allow approval if status is pending
-    if (increment!.status !== 'pending') {
+    if (increment.status !== 'pending') {
       return NextResponse.json(
         { error: 'Salary increment cannot be approved in its current status' },
         { status: 400 }
@@ -54,7 +50,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     // Check if effective date is not in the past
-    const effectiveDate = new Date(increment!.effective_date);
+    const effectiveDate = new Date(increment.effective_date);
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Reset time to start of day for fair comparison
 
@@ -70,10 +66,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       .update(salaryIncrements)
       .set({
         status: 'approved',
-        approvedBy: parseInt(session.user.id),
-        approvedAt: new Date().toISOString().split('T')[0],
+        approvedBy: approvedBy ? parseInt(approvedBy) : null,
+        approvedAt: new Date().toISOString(),
         notes: notes || undefined,
-        updatedAt: new Date().toISOString().split('T')[0],
+        updatedAt: new Date().toISOString(),
       })
       .where(eq(salaryIncrements.id, parseInt(id)))
       .returning();
@@ -81,20 +77,29 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({
       success: true,
       data: {
-        id: approvedIncrement!.id,
-        employee_id: approvedIncrement!.employeeId,
-        increment_type: approvedIncrement!.incrementType,
-        effective_date: approvedIncrement!.effectiveDate,
-        reason: approvedIncrement!.reason,
-        status: approvedIncrement!.status,
-        approved_by: approvedIncrement!.approvedBy,
-        approved_at: approvedIncrement!.approvedAt,
-        notes: approvedIncrement!.notes,
-        updated_at: approvedIncrement!.updatedAt,
+        id: approvedIncrement.id,
+        employee_id: approvedIncrement.employeeId,
+        increment_type: approvedIncrement.incrementType,
+        effective_date: approvedIncrement.effectiveDate,
+        reason: approvedIncrement.reason,
+        status: approvedIncrement.status,
+        approved_by: approvedIncrement.approvedBy,
+        approved_at: approvedIncrement.approvedAt,
+        notes: approvedIncrement.notes,
+        updated_at: approvedIncrement.updatedAt,
       },
     });
   } catch (error) {
-    
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error approving salary increment:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to approve salary increment',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
   }
-}
+};
+
+export const POST = withPermission(PermissionConfigs.salaryIncrement.approve)(approveSalaryIncrementHandler);

@@ -9,9 +9,11 @@ import { SupabaseStorageService } from '@/lib/supabase/storage-service';
 // For now, we'll use a simple in-memory store to demonstrate the functionality
 const companyDocuments = new Map<number, any[]>();
 
-export const GET = withPermission(async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+export const GET = withPermission(async (_request: NextRequest, ...args: unknown[]) => {
   try {
-    const { id: companyId } = await params;
+    const { params } = args[0] as { params: Promise<{ id: string }> };
+    const resolvedParams = await params;
+    const { id: companyId } = resolvedParams;
     const id = parseInt(companyId);
 
     if (isNaN(id)) {

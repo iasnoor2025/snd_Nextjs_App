@@ -1,11 +1,10 @@
-import { db } from '@/lib/drizzle';
-import { timesheets } from '@/lib/drizzle/schema';
-import { withAuth } from '@/lib/rbac/api-middleware';
-import { and, asc, eq, gte, lte } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
+import { db } from '@/lib/db';
+import { timesheets } from '@/lib/drizzle/schema';
+import { eq, and, gte, lte } from 'drizzle-orm';
 
-export const GET = withAuth(
-  async (request: NextRequest, { params }: { params: Promise<{ employeeId: string }> }) => {
+export const GET = withPermission(PermissionConfigs.timesheet.read)(async (request: NextRequest) => {
     try {
       const { employeeId } = await params;
       const { searchParams } = new URL(request.url);

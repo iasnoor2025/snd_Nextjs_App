@@ -1,23 +1,12 @@
-import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
 import { salaryIncrements } from '@/lib/drizzle/schema';
 import { and, eq, gte, lte, sql } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
-// import { checkPermission } from '@/lib/rbac/enhanced-permission-service';
+import { withPermission } from '@/lib/rbac/api-middleware';
+import { PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-export async function GET(_request: NextRequest) {
+async function getStatisticsHandler(_request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Temporarily bypass permission check for testing
-    // const canView = await checkPermission(session.user.id, 'SalaryIncrement', 'read');
-    // if (!canView) {
-    //   return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    // }
 
     const { searchParams } = new URL(_request.url);
     const fromDate = searchParams.get('from_date');
@@ -122,3 +111,5 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const GET = withPermission(PermissionConfigs.salaryIncrement.read)(getStatisticsHandler);

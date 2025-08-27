@@ -1,7 +1,7 @@
 import { authConfig } from '@/lib/auth-config';
 import { db } from '@/lib/db';
 import { employeeLeaves, employees as employeesTable } from '@/lib/drizzle/schema';
-import { withAuth } from '@/lib/rbac/api-middleware';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { and, desc, eq, ilike, sql } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
@@ -180,5 +180,5 @@ const createLeaveHandler = async (request: NextRequest) => {
 };
 
 // Export the wrapped handlers
-export const GET = withAuth(getLeavesHandler);
-export const POST = withAuth(createLeaveHandler);
+export const GET = withPermission(PermissionConfigs.leave.read)(getLeavesHandler);
+export const POST = withPermission(PermissionConfigs.leave.create)(createLeaveHandler);

@@ -13,8 +13,19 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check permission to view salary increments
-    const canView = await checkPermission(session.user.id, 'SalaryIncrement', 'read');
+    // Check permission to view salary increments using new system
+    const { hasPermission } = await import('@/lib/rbac/server-rbac');
+    const canView = await hasPermission(
+      { 
+        id: session.user.id || '', 
+        email: session.user.email || '', 
+        name: session.user.name || '', 
+        role: session.user.role || 'USER', 
+        isActive: true 
+      }, 
+      'read', 
+      'SalaryIncrement'
+    );
     if (!canView) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
@@ -233,8 +244,20 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check permission to delete salary increments
-    const canDelete = await checkPermission(session.user.id, 'SalaryIncrement', 'delete');
+    // Check permission to delete salary increments using new system
+    const { hasPermission } = await import('@/lib/rbac/server-rbac');
+    const canDelete = await hasPermission(
+      { 
+        id: session.user.id || '', 
+        email: session.user.email || '', 
+        name: session.user.name || '', 
+        role: session.user.role || 'USER', 
+        isActive: true 
+      }, 
+      'delete', 
+      'SalaryIncrement'
+    );
+
     if (!canDelete) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
@@ -255,23 +278,31 @@ export async function DELETE(
       return NextResponse.json({ error: 'Salary increment not found' }, { status: 404 });
     }
 
-    // Only allow deletion if status is pending
-    if (existingIncrement[0]!.status !== 'pending') {
+    // Check if user is SUPER_ADMIN - if so, allow deletion regardless of status
+    const isSuperAdmin = session.user.role === 'SUPER_ADMIN';
+    
+    // Only allow deletion if status is pending OR if user is SUPER_ADMIN
+    if (!isSuperAdmin && existingIncrement[0]!.status !== 'pending') {
       return NextResponse.json(
         { error: 'Cannot delete approved, rejected, or applied salary increments' },
         { status: 400 }
       );
     }
 
-    // Soft delete by setting deleted_at
+    // Hard delete the salary increment
     await db
-      .update(salaryIncrements)
-      .set({ deletedAt: new Date().toISOString().split('T')[0] })
+      .delete(salaryIncrements)
       .where(eq(salaryIncrements.id, parseInt(id)));
+
+    // Prepare response message based on user role and increment status
+    let message = 'Salary increment deleted successfully';
+    if (isSuperAdmin && existingIncrement[0]!.status !== 'pending') {
+      message = `Salary increment (${existingIncrement[0]!.status}) deleted successfully by SUPER_ADMIN`;
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'Salary increment deleted successfully',
+      message,
     });
   } catch (error) {
     

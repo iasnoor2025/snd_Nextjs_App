@@ -6,7 +6,7 @@ import {
   designations,
   employees,
 } from '@/lib/drizzle/schema';
-import { withAuth } from '@/lib/rbac/api-middleware';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { and, eq, isNull } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
@@ -175,4 +175,4 @@ const getEmployeePaymentReceiptHandler = async (
 };
 
 // Export the wrapped handler
-export const GET = withAuth(getEmployeePaymentReceiptHandler);
+export const GET = withPermission(PermissionConfigs.employee.read)(getEmployeePaymentReceiptHandler);

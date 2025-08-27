@@ -1,8 +1,8 @@
 import { db } from '@/lib/drizzle';
 import { employeeDocuments } from '@/lib/drizzle/schema';
-import { withAuth } from '@/lib/rbac/api-middleware';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { eq } from 'drizzle-orm';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { cacheService } from '@/lib/redis/cache-service';
 import { ensureHttps } from '@/lib/utils/url-utils';
 
@@ -113,4 +113,4 @@ const getDocumentsHandler = async (_request: any, { params }: { params: Promise<
   }
 };
 
-export const GET = withAuth(getDocumentsHandler);
+export const GET = withPermission(PermissionConfigs.employee.read)(getDocumentsHandler);
