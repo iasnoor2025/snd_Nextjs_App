@@ -530,7 +530,7 @@ export default function EmployeeShowPage() {
             <div className="flex items-center gap-2 text-muted-foreground">
               <span>{employee.designation?.name || 'No Designation'}</span>
               <span className="text-xs">•</span>
-              <span>ID: {employee.employee_id || 'N/A'}</span>
+              <span>File Number: {employee.file_number || 'N/A'}</span>
               {employee.status && getStatusBadge(employee.status)}
             </div>
           </div>
