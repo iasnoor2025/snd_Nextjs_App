@@ -70,14 +70,24 @@ export async function getRBACPermissions(userId: string) {
 
       userForRBAC.role = highestRole as any;
     } else {
-      // Fallback to role_id mapping
-      if (user.role_id === 1) userForRBAC.role = 'SUPER_ADMIN';
-      else if (user.role_id === 2) userForRBAC.role = 'ADMIN';
-      else if (user.role_id === 3) userForRBAC.role = 'MANAGER';
-      else if (user.role_id === 4) userForRBAC.role = 'SUPERVISOR';
-      else if (user.role_id === 5) userForRBAC.role = 'OPERATOR';
-      else if (user.role_id === 6) userForRBAC.role = 'EMPLOYEE';
-      else if (user.role_id === 7) userForRBAC.role = 'USER';
+      // Fallback: If no user_roles found, try to get role from the roles table using role_id
+      // This handles the transition period where users still have role_id but no modelHasRoles entries
+      if (user.role_id) {
+        // Use a simple mapping as fallback
+        const roleMapping: Record<number, string> = {
+          1: 'SUPER_ADMIN',
+          2: 'ADMIN', 
+          3: 'MANAGER',
+          4: 'SUPERVISOR',
+          5: 'OPERATOR',
+          6: 'EMPLOYEE',
+          7: 'USER'
+        };
+        userForRBAC.role = roleMapping[user.role_id] || 'USER';
+      } else {
+        // No role_id either, use default USER role
+        userForRBAC.role = 'USER';
+      }
     }
 
     return {

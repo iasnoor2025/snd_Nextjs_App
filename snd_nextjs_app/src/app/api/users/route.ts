@@ -13,12 +13,15 @@ import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
 // GET /api/users - Get all users
 export const GET = withPermission(async () => {
   try {
-    // Generate cache key for users list
-    const cacheKey = generateCacheKey('users', 'list', {});
+    console.log('🚀 USERS API CALLED - Starting to fetch users...');
     
-    return await cacheQueryResult(
-      cacheKey,
-      async () => {
+    // Temporarily disable caching for debugging
+    // const cacheKey = generateCacheKey('users', 'list', {});
+    
+    // return await cacheQueryResult(
+    //   cacheKey,
+    //   async () => {
+        console.log('📊 Fetching users from database...');
         const users = await db
           .select({
             id: usersTable.id,
@@ -27,10 +30,23 @@ export const GET = withPermission(async () => {
             role_id: usersTable.roleId,
             isActive: usersTable.isActive,
             createdAt: usersTable.createdAt,
-            last_login_at: usersTable.lastLoginAt,
+            lastLoginAt: usersTable.lastLoginAt,
           })
           .from(usersTable)
           .orderBy(desc(usersTable.createdAt));
+
+        console.log('👥 Users fetched:', users);
+
+        // Fetch all roles for fallback role determination
+        const allRoles = await db
+          .select({
+            id: rolesTable.id,
+            name: rolesTable.name,
+          })
+          .from(rolesTable);
+
+        console.log('🔍 Debug: All roles fetched:', allRoles);
+        console.log('🔍 Debug: Users with role_id:', users.map(u => ({ id: u.id, name: u.name, role_id: u.role_id })));
 
         // Fetch roles per user
         const userIds = users.map(u => u.id as number);
@@ -64,49 +80,23 @@ export const GET = withPermission(async () => {
 
           const user_roles = rolesByUserId[user.id as number] || [];
           if (user_roles.length > 0) {
-            // Get the highest priority role (SUPER_ADMIN > ADMIN > MANAGER > SUPERVISOR > OPERATOR > EMPLOYEE > USER)
-            const roleHierarchy = {
-              SUPER_ADMIN: 1, // Highest priority
-              ADMIN: 2,
-              MANAGER: 3,
-              SUPERVISOR: 4,
-              OPERATOR: 5,
-              EMPLOYEE: 6,
-              USER: 7, // Lowest priority
-            };
-
-            let highestRole = 'USER';
-            let highestPriority = 7; // Start with lowest priority
-
-            user_roles.forEach(userRole => {
-              const roleName = userRole.role.name.toUpperCase();
-              const priority = roleHierarchy[roleName as keyof typeof roleHierarchy] || 7;
-              if (priority < highestPriority) {
-                // Lower number = higher priority
-                highestPriority = priority;
-                highestRole = roleName;
-              }
-            });
-
-            role = highestRole;
+            // Use the first role found (since we're getting the actual role names from the database)
+            // This preserves the actual role names like "Yaser", "HR_SPECIALIST", etc.
+            role = user_roles[0].role.name.toUpperCase();
           } else {
-            // Fallback to role_id mapping
-            if (user.role_id === 1) {
-              role = 'SUPER_ADMIN';
-            } else if (user.role_id === 2) {
-              role = 'ADMIN';
-            } else if (user.role_id === 3) {
-              role = 'MANAGER';
-            } else if (user.role_id === 4) {
-              role = 'SUPERVISOR';
-            } else if (user.role_id === 5) {
-              role = 'OPERATOR';
-            } else if (user.role_id === 6) {
-              role = 'EMPLOYEE';
-            } else if (user.role_id === 7) {
-              role = 'USER';
+            // Fallback: If no user_roles found, try to get role from the roles table using role_id
+            // This handles the transition period where users still have role_id but no modelHasRoles entries
+            if (user.role_id) {
+              // Find the role name from the roles table
+              const roleName = allRoles.find(r => r.id === user.role_id)?.name;
+              console.log(`🔍 Debug: User ${user.name} (ID: ${user.id}) has role_id: ${user.role_id}, found role name: ${roleName}`);
+              if (roleName) {
+                role = roleName.toUpperCase();
+              }
             }
           }
+
+          console.log(`🔍 Debug: Final role for ${user.name}: ${role}`);
 
           return {
             ...user,
@@ -118,13 +108,9 @@ export const GET = withPermission(async () => {
         return NextResponse.json({
           success: true,
           users: usersWithRoles,
+          timestamp: new Date().toISOString(),
+          debug: 'API executed at: ' + new Date().toISOString(),
         });
-      },
-      {
-        ttl: 300, // 5 minutes
-        tags: [CACHE_TAGS.USERS, CACHE_TAGS.ROLES],
-      }
-    );
   } catch (error) {
     console.error('Error fetching users:', error);
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });

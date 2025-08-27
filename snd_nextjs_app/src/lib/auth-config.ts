@@ -76,14 +76,22 @@ export const authConfig: NextAuthOptions = {
 
               role = highestRole;
             } else {
-              // Fallback to role_id mapping
-              if (user.role_id === 1) role = 'SUPER_ADMIN';
-              else if (user.role_id === 2) role = 'ADMIN';
-              else if (user.role_id === 3) role = 'MANAGER';
-              else if (user.role_id === 4) role = 'SUPERVISOR';
-              else if (user.role_id === 5) role = 'OPERATOR';
-              else if (user.role_id === 6) role = 'EMPLOYEE';
-              else if (user.role_id === 7) role = 'USER';
+              // Fallback: If no user_roles found, try to get role from the roles table using role_id
+              // This handles the transition period where users still have role_id but no modelHasRoles entries
+              if (user.role_id) {
+                // We need to fetch the role name from the roles table
+                // For now, use a simple mapping as fallback
+                const roleMapping: Record<number, string> = {
+                  1: 'SUPER_ADMIN',
+                  2: 'ADMIN', 
+                  3: 'MANAGER',
+                  4: 'SUPERVISOR',
+                  5: 'OPERATOR',
+                  6: 'EMPLOYEE',
+                  7: 'USER'
+                };
+                role = roleMapping[user.role_id] || 'USER';
+              }
             }
           }
 
@@ -167,6 +175,30 @@ export const authConfig: NextAuthOptions = {
       }
       return true;
     },
+    
+    async signIn({ user, account, profile, email, credentials }) {
+      // Update last login timestamp for successful sign-ins
+      if (user?.email) {
+        try {
+          const { db } = await import('./db');
+          const { users } = await import('./drizzle/schema');
+          const { eq } = await import('drizzle-orm');
+          
+          await db
+            .update(users)
+            .set({ 
+              lastLoginAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            })
+            .where(eq(users.email, user.email));
+        } catch (error) {
+          console.error('Failed to update last login timestamp:', error);
+          // Don't fail the sign-in if this update fails
+        }
+      }
+      return true;
+    },
+    
     async jwt({ token, user, account }) {
       if (user) {
         // Set token data from user
@@ -174,6 +206,24 @@ export const authConfig: NextAuthOptions = {
         token.isActive = user.isActive || true;
         token.id = user.id;
         token.national_id = user.national_id || '';
+        
+        // Update last login timestamp for successful sign-ins
+        try {
+          const { db } = await import('./db');
+          const { users } = await import('./drizzle/schema');
+          const { eq } = await import('drizzle-orm');
+          
+          await db
+            .update(users)
+            .set({ 
+              lastLoginAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            })
+            .where(eq(users.email, user.email));
+        } catch (error) {
+          console.error('Failed to update last login timestamp:', error);
+          // Don't fail the token generation if this update fails
+        }
         // 
       }
 
@@ -224,6 +274,24 @@ export const authConfig: NextAuthOptions = {
             token.role = role;
             token.isActive = dbUser.isActive;
             token.id = dbUser.id.toString();
+            
+            // Update last login timestamp for Google OAuth users
+            try {
+              const { db } = await import('./db');
+              const { users } = await import('./drizzle/schema');
+              const { eq } = await import('drizzle-orm');
+              
+              await db
+                .update(users)
+                .set({ 
+                  lastLoginAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString()
+                })
+                .where(eq(users.email, token.email));
+            } catch (error) {
+              console.error('Failed to update last login timestamp for Google user:', error);
+              // Don't fail the token generation if this update fails
+            }
             // 
           }
         } catch (error) {
