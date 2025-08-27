@@ -113,6 +113,7 @@
       "equipmentName": "Equipment Name",
       "istimaraNumber": "Istimara #",
       "driverOperator": "Driver/Operator",
+      "doorNumber": "Door Number",
       "status": "Status",
       "expiryDate": "Expiry Date",
       "actions": "Actions"

@@ -13,8 +13,9 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useI18n } from '@/hooks/use-i18n';
-import { LogOut, Settings, User } from 'lucide-react';
+import { LogOut, RefreshCw, Settings, User } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
+import { useEffect, useState } from 'react';
 import { I18nErrorBoundary } from './i18n-error-boundary';
 import { LanguageSwitcher } from './language-switcher';
 import { NotificationBell } from './notification-bell';
@@ -23,9 +24,37 @@ import { ThemeToggle } from './theme-toggle';
 export function SiteHeader() {
   const { data: session, status } = useSession();
   const { isRTL } = useI18n();
+  const [currentUserRole, setCurrentUserRole] = useState<string>('USER');
 
-  // Check if user is an employee
-  const isEmployee = session?.user?.role === 'EMPLOYEE';
+  // Fetch current user's role from the database
+  useEffect(() => {
+    const fetchCurrentUserRole = async () => {
+      if (session?.user?.email) {
+        try {
+          const response = await fetch('/api/auth/me');
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.user) {
+              setCurrentUserRole(data.user.role);
+              console.log('🔍 Header: Fetched role from API:', data.user.role, 'for user:', data.user.email);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to fetch current user role:', error);
+        }
+      }
+    };
+
+    fetchCurrentUserRole();
+  }, [session?.user?.email]);
+
+  const refreshSession = () => {
+    // Reload the page to refresh the session
+    window.location.reload();
+  };
+
+  // Check if user is an employee - use the fetched role instead of session role
+  const isEmployee = currentUserRole === 'EMPLOYEE';
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background">
@@ -47,24 +76,32 @@ export function SiteHeader() {
           ) : session ? (
             <div className="flex items-center gap-2">
               <NotificationBell />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={refreshSession}
+                title="Refresh session to update role information"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
               <Badge
                 variant={
-                  session?.user?.role === 'SUPER_ADMIN'
+                  currentUserRole === 'SUPER_ADMIN'
                     ? 'destructive'
-                    : session?.user?.role === 'ADMIN'
+                    : currentUserRole === 'ADMIN'
                       ? 'default'
-                      : session?.user?.role === 'MANAGER'
+                      : currentUserRole === 'MANAGER'
                         ? 'secondary'
-                        : session?.user?.role === 'SUPERVISOR'
+                        : currentUserRole === 'SUPERVISOR'
                           ? 'outline'
-                          : session?.user?.role === 'OPERATOR'
-                            ? 'secondary'
-                            : session?.user?.role === 'EMPLOYEE'
-                              ? 'default'
-                              : 'secondary'
+                        : currentUserRole === 'OPERATOR'
+                          ? 'secondary'
+                        : currentUserRole === 'EMPLOYEE'
+                          ? 'default'
+                          : 'secondary'
                 }
               >
-                {session?.user?.role || 'USER'}
+                {currentUserRole}
               </Badge>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -82,6 +119,11 @@ export function SiteHeader() {
                       </p>
                     </div>
                   </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={refreshSession}>
+                    <RefreshCw className={`${isRTL ? 'ml-2' : 'mr-2'} h-4 w-4`} />
+                    <span>Refresh Session</span>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem>
                     <Settings className={`${isRTL ? 'ml-2' : 'mr-2'} h-4 w-4`} />

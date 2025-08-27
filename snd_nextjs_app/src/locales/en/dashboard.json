@@ -88,6 +88,15 @@
     "manageProjects": "Manage Projects",
     "totalProjects": "Total Projects",
     "activeProjects": "Active Projects",
+    "completedProjects": "Completed Projects",
+    "totalBudget": "Total Budget",
+    "allStatuses": "All Statuses",
+    "active": "Active",
+    "completed": "Completed",
+    "onHold": "On Hold",
+    "cancelled": "Cancelled",
+    "loadingProjects": "Loading projects...",
+    "fetchingProjectData": "Fetching project data...",
     "completionRate": "Completion Rate",
     "budgetUsed": "Budget Used",
     "status": "Status",
@@ -221,5 +230,8 @@
   "more": "more",
   "documentDeletedSuccessfully": "Document deleted successfully",
   "failedToDeleteDocument": "Failed to delete document",
-  "errorDeletingDocument": "An error occurred while deleting document"
+  "errorDeletingDocument": "An error occurred while deleting document",
+  "downloadAllExpiredPdf": "Download All Expired PDF ({{count}})",
+  "downloadAllExpiredPdfTitle": "Download consolidated PDF report for all expired documents ({{count}} total)",
+  "hoursAgo": "{{hours}} hours ago"
 }

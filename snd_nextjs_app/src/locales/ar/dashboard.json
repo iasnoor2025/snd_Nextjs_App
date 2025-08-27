@@ -88,6 +88,15 @@
     "manageProjects": "إدارة المشاريع",
     "totalProjects": "إجمالي المشاريع",
     "activeProjects": "المشاريع النشطة",
+    "completedProjects": "المشاريع المكتملة",
+    "totalBudget": "إجمالي الميزانية",
+    "allStatuses": "جميع الحالات",
+    "active": "نشط",
+    "completed": "مكتمل",
+    "onHold": "معلق",
+    "cancelled": "ملغي",
+    "loadingProjects": "جاري تحميل المشاريع...",
+    "fetchingProjectData": "جاري جلب بيانات المشروع...",
     "completionRate": "معدل الإنجاز",
     "budgetUsed": "الميزانية المستخدمة",
     "status": "الحالة",
@@ -276,5 +285,6 @@
   "more": "أخرى",
   "documentDeletedSuccessfully": "تم حذف المستند بنجاح",
   "failedToDeleteDocument": "فشل في حذف المستند",
-  "errorDeletingDocument": "حدث خطأ أثناء حذف المستند"
+  "errorDeletingDocument": "حدث خطأ أثناء حذف المستند",
+  "hoursAgo": "منذ {{hours}} ساعة"
 }

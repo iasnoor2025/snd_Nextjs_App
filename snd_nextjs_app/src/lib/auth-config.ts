@@ -79,18 +79,47 @@ export const authConfig: NextAuthOptions = {
               // Fallback: If no user_roles found, try to get role from the roles table using role_id
               // This handles the transition period where users still have role_id but no modelHasRoles entries
               if (user.role_id) {
-                // We need to fetch the role name from the roles table
-                // For now, use a simple mapping as fallback
-                const roleMapping: Record<number, string> = {
-                  1: 'SUPER_ADMIN',
-                  2: 'ADMIN', 
-                  3: 'MANAGER',
-                  4: 'SUPERVISOR',
-                  5: 'OPERATOR',
-                  6: 'EMPLOYEE',
-                  7: 'USER'
-                };
-                role = roleMapping[user.role_id] || 'USER';
+                try {
+                  // Fetch the actual role name from the roles table
+                  const { db } = await import('./db');
+                  const { roles } = await import('./drizzle/schema');
+                  const { eq } = await import('drizzle-orm');
+                  
+                  const roleRecord = await db
+                    .select({ name: roles.name })
+                    .from(roles)
+                    .where(eq(roles.id, user.role_id))
+                    .limit(1);
+                  
+                  if (roleRecord[0]) {
+                    role = roleRecord[0].name.toUpperCase();
+                  } else {
+                    // If role not found, use a simple mapping as fallback
+                    const roleMapping: Record<number, string> = {
+                      1: 'SUPER_ADMIN',
+                      2: 'ADMIN', 
+                      3: 'MANAGER',
+                      4: 'SUPERVISOR',
+                      5: 'OPERATOR',
+                      6: 'EMPLOYEE',
+                      7: 'USER'
+                    };
+                    role = roleMapping[user.role_id] || 'USER';
+                  }
+                } catch (error) {
+                  console.error('Failed to fetch role from database:', error);
+                  // Use fallback mapping if database query fails
+                  const roleMapping: Record<number, string> = {
+                    1: 'SUPER_ADMIN',
+                    2: 'ADMIN', 
+                    3: 'MANAGER',
+                    4: 'SUPERVISOR',
+                    5: 'OPERATOR',
+                    6: 'EMPLOYEE',
+                    7: 'USER'
+                  };
+                  role = roleMapping[user.role_id] || 'USER';
+                }
               }
             }
           }
@@ -104,7 +133,8 @@ export const authConfig: NextAuthOptions = {
             isActive: user.isActive || true,
           };
 
-          // 
+          console.log('🔍 Auth Config: User login - Email:', credentials.email, 'Role determined:', role);
+          console.log('🔍 Auth Config: User data being returned:', userData);
 
           return userData;
         } catch (error) {
@@ -207,6 +237,9 @@ export const authConfig: NextAuthOptions = {
         token.id = user.id;
         token.national_id = user.national_id || '';
         
+        console.log('🔍 JWT Callback: Setting token role to:', user.role);
+        console.log('🔍 JWT Callback: Full user object:', user);
+        
         // Update last login timestamp for successful sign-ins
         try {
           const { db } = await import('./db');
@@ -261,14 +294,44 @@ export const authConfig: NextAuthOptions = {
 
               role = highestRole;
             } else {
-              // Fallback to role_id mapping
-              if (dbUser.role_id === 1) role = 'SUPER_ADMIN';
-              else if (dbUser.role_id === 2) role = 'ADMIN';
-              else if (dbUser.role_id === 3) role = 'MANAGER';
-              else if (dbUser.role_id === 4) role = 'SUPERVISOR';
-              else if (dbUser.role_id === 5) role = 'OPERATOR';
-              else if (dbUser.role_id === 6) role = 'EMPLOYEE';
-              else if (dbUser.role_id === 7) role = 'USER';
+              // Fallback: If no user_roles found, try to get role from the roles table using role_id
+              if (dbUser.role_id) {
+                try {
+                  // Fetch the actual role name from the roles table
+                  const { db } = await import('./db');
+                  const { roles } = await import('./drizzle/schema');
+                  const { eq } = await import('drizzle-orm');
+                  
+                  const roleRecord = await db
+                    .select({ name: roles.name })
+                    .from(roles)
+                    .where(eq(roles.id, dbUser.role_id))
+                    .limit(1);
+                  
+                  if (roleRecord[0]) {
+                    role = roleRecord[0].name.toUpperCase();
+                  } else {
+                    // If role not found, use a simple mapping as fallback
+                    if (dbUser.role_id === 1) role = 'SUPER_ADMIN';
+                    else if (dbUser.role_id === 2) role = 'ADMIN';
+                    else if (dbUser.role_id === 3) role = 'MANAGER';
+                    else if (dbUser.role_id === 4) role = 'SUPERVISOR';
+                    else if (dbUser.role_id === 5) role = 'OPERATOR';
+                    else if (dbUser.role_id === 6) role = 'EMPLOYEE';
+                    else if (dbUser.role_id === 7) role = 'USER';
+                  }
+                } catch (error) {
+                  console.error('Failed to fetch role from database for Google user:', error);
+                  // Use fallback mapping if database query fails
+                  if (dbUser.role_id === 1) role = 'SUPER_ADMIN';
+                  else if (dbUser.role_id === 2) role = 'ADMIN';
+                  else if (dbUser.role_id === 3) role = 'MANAGER';
+                  else if (dbUser.role_id === 4) role = 'SUPERVISOR';
+                  else if (dbUser.role_id === 5) role = 'OPERATOR';
+                  else if (dbUser.role_id === 6) role = 'EMPLOYEE';
+                  else if (dbUser.role_id === 7) role = 'USER';
+                }
+              }
             }
 
             token.role = role;
@@ -311,18 +374,23 @@ export const authConfig: NextAuthOptions = {
 
     async session({ session, token }) {
       if (token) {
+        console.log('🔍 Session Callback: Token role:', token.role);
+        console.log('🔍 Session Callback: Token email:', token.email);
+        
         // ALWAYS ensure admin@ias.com and ias.snd2024@gmail.com have SUPER_ADMIN role in session
         if (token.email === 'admin@ias.com' || token.email === 'ias.snd2024@gmail.com') {
           session.user.role = 'SUPER_ADMIN';
-          // 
+          console.log('🔍 Session Callback: Setting SUPER_ADMIN for admin email');
         } else {
           session.user.role = token.role || 'USER';
+          console.log('🔍 Session Callback: Setting role from token:', token.role);
         }
 
         session.user.isActive = token.isActive || true;
         session.user.id = String(token.id || token.sub || 'unknown');
         session.user.national_id = token.national_id || '';
 
+        console.log('🔍 Session Callback: Final session role:', session.user.role);
         // 
       }
       return session;

@@ -214,6 +214,7 @@
       "equipmentName": "اسم المعدات",
       "istimaraNumber": "رقم الإستمارة #",
       "driverOperator": "السائق/المشغل",
+      "doorNumber": "رقم الباب",
       "status": "الحالة",
       "expiryDate": "تاريخ الانتهاء",
       "actions": "الإجراءات"
