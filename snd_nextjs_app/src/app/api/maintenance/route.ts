@@ -53,6 +53,7 @@ export const GET = withAuth(async (request: NextRequest) => {
         equipment: {
           id: equipmentTable.id,
           name: equipmentTable.name,
+          doorNumber: equipmentTable.doorNumber,
         },
         mechanic: {
           id: employeesTable.id,

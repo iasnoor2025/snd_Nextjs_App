@@ -3,20 +3,19 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, CheckCircle, XCircle, AlertCircle, ExternalLink } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
 interface WebhookStatus {
   isActive: boolean;
-  lastTest: string | null;
   webhookUrl: string;
   setupInstructions: string[];
 }
 
 export function WebhookManager() {
-  const { t } = useTranslation('customer');
+  const { t: _t } = useTranslation('customer');
   const [webhookStatus, setWebhookStatus] = useState<WebhookStatus | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSettingUp, setIsSettingUp] = useState(false);
@@ -34,7 +33,6 @@ export function WebhookManager() {
       if (result.success) {
         setWebhookStatus({
           isActive: true,
-          lastTest: new Date().toISOString(),
           webhookUrl: result.data.webhookUrl,
           setupInstructions: result.data.setupInstructions,
         });
@@ -65,47 +63,16 @@ export function WebhookManager() {
         toast.success('Customer webhook setup successfully!');
         setWebhookStatus({
           isActive: true,
-          lastTest: new Date().toISOString(),
           webhookUrl: result.data.webhookUrl,
           setupInstructions: result.data.setupInstructions,
         });
       } else {
         toast.error(result.message || 'Failed to setup webhook');
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to setup webhook');
     } finally {
       setIsSettingUp(false);
-    }
-  };
-
-  const testWebhook = async () => {
-    try {
-      const response = await fetch('/api/webhooks/erpnext/setup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'test_webhook',
-        }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        toast.success('Webhook endpoint is working!');
-        if (webhookStatus) {
-          setWebhookStatus({
-            ...webhookStatus,
-            lastTest: new Date().toISOString(),
-          });
-        }
-      } else {
-        toast.error(result.message || 'Webhook test failed');
-      }
-    } catch (error) {
-      toast.error('Failed to test webhook');
     }
   };
 
@@ -185,16 +152,7 @@ export function WebhookManager() {
               )}
             </div>
 
-            {webhookStatus.lastTest && (
-              <div className="text-sm text-gray-600">
-                Last tested: {new Date(webhookStatus.lastTest).toLocaleString()}
-              </div>
-            )}
-
             <div className="flex gap-2">
-              <Button onClick={testWebhook} variant="outline" size="sm">
-                Test Webhook
-              </Button>
               <Button onClick={setupWebhook} disabled={isSettingUp} size="sm">
                 {isSettingUp ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />

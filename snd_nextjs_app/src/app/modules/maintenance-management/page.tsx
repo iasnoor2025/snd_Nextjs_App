@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -16,20 +17,26 @@ import { toast } from 'sonner';
 
 interface MaintenanceRecord {
   id: number;
-  equipmentId: number;
-  maintenanceType: 'preventive' | 'corrective' | 'emergency' | 'inspection';
+  equipment_id: number;
+  title: string;
   description: string;
-  scheduledDate: string;
-  completedDate?: string;
-  status: 'scheduled' | 'in_progress' | 'completed' | 'overdue';
-  technician: string;
-  cost: number;
-  notes?: string;
-  nextMaintenanceDate?: string;
-  createdAt: string;
-  updatedAt: string;
-  equipmentName?: string;
-  equipmentModel?: string;
+  status: string;
+  type: string;
+  scheduled_date: string;
+  due_date?: string;
+  cost: string;
+  created_at: string;
+  updated_at: string;
+  equipment: {
+    id: number;
+    name: string;
+    doorNumber?: string;
+  };
+  mechanic?: {
+    id: number;
+    first_name: string;
+    last_name: string;
+  };
 }
 
 export default function MaintenanceManagementPage() {
@@ -39,25 +46,30 @@ export default function MaintenanceManagementPage() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedMaintenance, setSelectedMaintenance] = useState<MaintenanceRecord | null>(null);
+  const [equipmentList, setEquipmentList] = useState<Array<{ id: number; name: string; doorNumber?: string }>>([]);
   const [formData, setFormData] = useState({
-    equipmentId: '',
-    maintenanceType: 'preventive' as const,
+    equipment_id: '',
+    type: 'corrective' as const,
+    title: 'Maintenance',
     description: '',
-    scheduledDate: '',
-    technician: '',
+    scheduled_date: '',
+    due_date: '',
+    assigned_to_employee_id: '',
     cost: '',
-    notes: '',
-    nextMaintenanceDate: '',
   });
 
   useEffect(() => {
     fetchMaintenanceRecords();
+    fetchEquipmentList();
   }, []);
 
   const fetchMaintenanceRecords = async () => {
     try {
       setLoading(true);
-      const response = await ApiService.get('/api/maintenance');
+      const response = await ApiService.get('/maintenance');
       if (response.success) {
         setMaintenanceRecords(response.data || []);
       } else {
@@ -71,30 +83,48 @@ export default function MaintenanceManagementPage() {
     }
   };
 
+  const fetchEquipmentList = async () => {
+    try {
+      const response = await ApiService.get('/equipment');
+      if (response.success) {
+        setEquipmentList(response.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching equipment list:', error);
+    }
+  };
+
+
+
   const handleCreateMaintenance = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.equipmentId || !formData.description || !formData.scheduledDate || !formData.technician) {
+    if (!formData.equipment_id || !formData.description || !formData.scheduled_date) {
       toast.error('Please fill in all required fields');
       return;
     }
 
     try {
       setLoading(true);
-      const response = await ApiService.post('/api/maintenance', formData);
+      const response = await ApiService.post('/maintenance', {
+        ...formData,
+        equipment_id: parseInt(formData.equipment_id),
+        assigned_to_employee_id: formData.assigned_to_employee_id ? parseInt(formData.assigned_to_employee_id) : undefined,
+        cost: formData.cost ? parseFloat(formData.cost) : undefined,
+      });
       
       if (response.success) {
         toast.success('Maintenance record created successfully');
         setIsCreateDialogOpen(false);
         setFormData({
-          equipmentId: '',
-          maintenanceType: 'preventive',
+          equipment_id: '',
+          type: 'corrective',
+          title: 'Maintenance',
           description: '',
-          scheduledDate: '',
-          technician: '',
+          scheduled_date: '',
+          due_date: '',
+          assigned_to_employee_id: '',
           cost: '',
-          notes: '',
-          nextMaintenanceDate: '',
         });
         fetchMaintenanceRecords();
       } else {
@@ -110,7 +140,7 @@ export default function MaintenanceManagementPage() {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'preventive': return 'default';
+      case 'scheduled': return 'default';
       case 'corrective': return 'destructive';
       case 'emergency': return 'destructive';
       case 'inspection': return 'secondary';
@@ -120,7 +150,7 @@ export default function MaintenanceManagementPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'scheduled': return 'secondary';
+      case 'open': return 'secondary';
       case 'in_progress': return 'default';
       case 'completed': return 'secondary';
       case 'overdue': return 'destructive';
@@ -128,11 +158,92 @@ export default function MaintenanceManagementPage() {
     }
   };
 
+  const handleViewMaintenance = (id: number) => {
+    const maintenance = maintenanceRecords.find(record => record.id === id);
+    if (maintenance) {
+      setSelectedMaintenance(maintenance);
+      setIsViewDialogOpen(true);
+    }
+  };
+
+  const handleEditMaintenance = (id: number) => {
+    const maintenance = maintenanceRecords.find(record => record.id === id);
+    if (maintenance) {
+      setSelectedMaintenance(maintenance);
+      setFormData({
+        equipment_id: maintenance.equipment_id.toString(),
+        type: maintenance.type as any,
+        title: maintenance.title,
+        description: maintenance.description,
+        scheduled_date: maintenance.scheduled_date,
+        due_date: maintenance.due_date || '',
+        assigned_to_employee_id: maintenance.mechanic?.id.toString() || '',
+        cost: maintenance.cost || '',
+      });
+      setIsEditDialogOpen(true);
+    }
+  };
+
+  const handleDeleteMaintenance = async (id: number) => {
+    if (confirm('Are you sure you want to delete this maintenance record?')) {
+      try {
+        setLoading(true);
+        const response = await ApiService.delete(`/maintenance/${id}`);
+        if (response.success) {
+          toast.success('Maintenance record deleted successfully');
+          fetchMaintenanceRecords();
+        } else {
+          toast.error(response.message || 'Failed to delete maintenance record');
+        }
+      } catch (error) {
+        console.error('Error deleting maintenance record:', error);
+        toast.error('Failed to delete maintenance record');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleUpdateMaintenance = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!selectedMaintenance) return;
+
+    if (!formData.equipment_id || !formData.description || !formData.scheduled_date) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await ApiService.put(`/maintenance/${selectedMaintenance.id}`, {
+        ...formData,
+        equipment_id: parseInt(formData.equipment_id),
+        assigned_to_employee_id: formData.assigned_to_employee_id ? parseInt(formData.assigned_to_employee_id) : undefined,
+        cost: formData.cost ? parseFloat(formData.cost) : undefined,
+      });
+      
+      if (response.success) {
+        toast.success('Maintenance record updated successfully');
+        setIsEditDialogOpen(false);
+        setSelectedMaintenance(null);
+        fetchMaintenanceRecords();
+      } else {
+        toast.error(response.message || 'Failed to update maintenance record');
+      }
+    } catch (error) {
+      console.error('Error updating maintenance record:', error);
+      toast.error('Failed to update maintenance record');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredRecords = maintenanceRecords.filter(record => {
     const matchesSearch = record.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         record.technician.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         record.equipmentName?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = typeFilter === 'all' || record.maintenanceType === typeFilter;
+                         record.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         record.equipment.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = typeFilter === 'all' || record.type === typeFilter;
     const matchesStatus = statusFilter === 'all' || record.status === statusFilter;
     
     return matchesSearch && matchesType && matchesStatus;
@@ -140,11 +251,11 @@ export default function MaintenanceManagementPage() {
 
   const stats = {
     total: maintenanceRecords.length,
-    scheduled: maintenanceRecords.filter(r => r.status === 'scheduled').length,
+    scheduled: maintenanceRecords.filter(r => r.status === 'open').length,
     inProgress: maintenanceRecords.filter(r => r.status === 'in_progress').length,
     completed: maintenanceRecords.filter(r => r.status === 'completed').length,
     overdue: maintenanceRecords.filter(r => r.status === 'overdue').length,
-    preventive: maintenanceRecords.filter(r => r.maintenanceType === 'preventive').length,
+    preventive: maintenanceRecords.filter(r => r.type === 'scheduled').length,
   };
 
   return (
@@ -171,24 +282,39 @@ export default function MaintenanceManagementPage() {
             <form onSubmit={handleCreateMaintenance} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="equipmentId">Equipment ID *</Label>
-                  <Input
-                    id="equipmentId"
-                    type="number"
-                    value={formData.equipmentId}
-                    onChange={(e) => setFormData({ ...formData, equipmentId: e.target.value })}
-                    placeholder="Enter equipment ID"
-                    required
-                  />
+                  <Label htmlFor="equipment_id">Equipment *</Label>
+                  <Select
+                    value={formData.equipment_id}
+                    onValueChange={(value: string) => setFormData({ ...formData, equipment_id: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select equipment" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {equipmentList.map(equipment => (
+                        <SelectItem key={equipment.id} value={equipment.id.toString()}>
+                          {equipment.name}
+                          {equipment.doorNumber && ` (Door: ${equipment.doorNumber})`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {formData.equipment_id && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {equipmentList.find(eq => eq.id === parseInt(formData.equipment_id))?.name}
+                      {equipmentList.find(eq => eq.id === parseInt(formData.equipment_id))?.doorNumber && 
+                        ` (Door: ${equipmentList.find(eq => eq.id === parseInt(formData.equipment_id))?.doorNumber})`}
+                    </div>
+                  )}
                 </div>
                 <div>
-                  <Label htmlFor="maintenanceType">Maintenance Type *</Label>
-                  <Select value={formData.maintenanceType} onValueChange={(value: any) => setFormData({ ...formData, maintenanceType: value })}>
+                  <Label htmlFor="type">Maintenance Type *</Label>
+                  <Select value={formData.type} onValueChange={(value: any) => setFormData({ ...formData, type: value })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="preventive">Preventive</SelectItem>
+                      <SelectItem value="scheduled">Scheduled</SelectItem>
                       <SelectItem value="corrective">Corrective</SelectItem>
                       <SelectItem value="emergency">Emergency</SelectItem>
                       <SelectItem value="inspection">Inspection</SelectItem>
@@ -198,48 +324,56 @@ export default function MaintenanceManagementPage() {
               </div>
               
               <div>
-                <Label htmlFor="description">Description *</Label>
+                <Label htmlFor="title">Title *</Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="Maintenance title"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Describe the maintenance work needed"
                   rows={3}
-                  required
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="scheduledDate">Scheduled Date *</Label>
+                  <Label htmlFor="scheduled_date">Scheduled Date *</Label>
                   <Input
-                    id="scheduledDate"
+                    id="scheduled_date"
                     type="date"
-                    value={formData.scheduledDate}
-                    onChange={(e) => setFormData({ ...formData, scheduledDate: e.target.value })}
+                    value={formData.scheduled_date}
+                    onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })}
                     required
                   />
                 </div>
                 <div>
-                  <Label htmlFor="nextMaintenanceDate">Next Maintenance Date</Label>
+                  <Label htmlFor="due_date">Due Date</Label>
                   <Input
-                    id="nextMaintenanceDate"
+                    id="due_date"
                     type="date"
-                    value={formData.nextMaintenanceDate}
-                    onChange={(e) => setFormData({ ...formData, nextMaintenanceDate: e.target.value })}
+                    value={formData.due_date}
+                    onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="technician">Technician *</Label>
-                  <Input
-                    id="technician"
-                    value={formData.technician}
-                    onChange={(e) => setFormData({ ...formData, technician: e.target.value })}
-                    placeholder="Technician name"
-                    required
+                  <EmployeeDropdown
+                    value={formData.assigned_to_employee_id}
+                    onValueChange={(value: string) => setFormData({ ...formData, assigned_to_employee_id: value })}
+                    label="Assigned Employee"
+                    placeholder="Select employee (optional)"
+                    required={false}
                   />
                 </div>
                 <div>
@@ -254,16 +388,7 @@ export default function MaintenanceManagementPage() {
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="Additional notes or instructions"
-                  rows={2}
-                />
-              </div>
+
 
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
@@ -277,6 +402,220 @@ export default function MaintenanceManagementPage() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* View Maintenance Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Maintenance Details</DialogTitle>
+            <DialogDescription>
+              View maintenance record information
+            </DialogDescription>
+          </DialogHeader>
+          {selectedMaintenance && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Equipment</Label>
+                  <p className="text-sm">
+                    {selectedMaintenance.equipment.name}
+                    {selectedMaintenance.equipment.doorNumber && ` (Door: ${selectedMaintenance.equipment.doorNumber})`}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Maintenance Type</Label>
+                  <Badge variant={getTypeColor(selectedMaintenance.type)}>
+                    {selectedMaintenance.type}
+                  </Badge>
+                </div>
+              </div>
+              
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">Title</Label>
+                <p className="text-sm">{selectedMaintenance.title}</p>
+              </div>
+              
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">Description</Label>
+                <p className="text-sm">{selectedMaintenance.description}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Scheduled Date</Label>
+                  <p className="text-sm">{new Date(selectedMaintenance.scheduled_date).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Due Date</Label>
+                  <p className="text-sm">
+                    {selectedMaintenance.due_date ? new Date(selectedMaintenance.due_date).toLocaleDateString() : 'Not set'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Assigned Employee</Label>
+                  <p className="text-sm">
+                    {selectedMaintenance.mechanic 
+                      ? `${selectedMaintenance.mechanic.first_name} ${selectedMaintenance.mechanic.last_name}`
+                      : 'Not assigned'
+                    }
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Estimated Cost</Label>
+                  <p className="text-sm">
+                    {selectedMaintenance.cost ? `SAR ${Number(selectedMaintenance.cost).toLocaleString()}` : 'Not set'}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">Status</Label>
+                <Badge variant={getStatusColor(selectedMaintenance.status)}>
+                  {selectedMaintenance.status.replace('_', ' ')}
+                </Badge>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Maintenance Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Maintenance</DialogTitle>
+            <DialogDescription>
+              Update maintenance record information
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdateMaintenance} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit_equipment_id">Equipment *</Label>
+                <Select
+                  value={formData.equipment_id}
+                  onValueChange={(value: string) => setFormData({ ...formData, equipment_id: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select equipment" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {equipmentList.map(equipment => (
+                      <SelectItem key={equipment.id} value={equipment.id.toString()}>
+                        {equipment.name}
+                        {equipment.doorNumber && ` (Door: ${equipment.doorNumber})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formData.equipment_id && (
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {equipmentList.find(eq => eq.id === parseInt(formData.equipment_id))?.name}
+                    {equipmentList.find(eq => eq.id === parseInt(formData.equipment_id))?.doorNumber && 
+                      ` (Door: ${equipmentList.find(eq => eq.id === parseInt(formData.equipment_id))?.doorNumber})`}
+                  </div>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="edit_type">Maintenance Type *</Label>
+                <Select value={formData.type} onValueChange={(value: any) => setFormData({ ...formData, type: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="scheduled">Scheduled</SelectItem>
+                    <SelectItem value="corrective">Corrective</SelectItem>
+                    <SelectItem value="emergency">Emergency</SelectItem>
+                    <SelectItem value="inspection">Inspection</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="edit_title">Title *</Label>
+              <Input
+                id="edit_title"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder="Maintenance title"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit_description">Description</Label>
+              <Textarea
+                id="edit_description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Describe the maintenance work needed"
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit_scheduled_date">Scheduled Date *</Label>
+                <Input
+                  id="edit_scheduled_date"
+                  type="date"
+                  value={formData.scheduled_date}
+                  onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_due_date">Due Date</Label>
+                <Input
+                  id="edit_due_date"
+                  type="date"
+                  value={formData.due_date}
+                  onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <EmployeeDropdown
+                  value={formData.assigned_to_employee_id}
+                  onValueChange={(value: string) => setFormData({ ...formData, assigned_to_employee_id: value })}
+                  label="Assigned Employee"
+                  placeholder="Select employee (optional)"
+                  required={false}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_cost">Estimated Cost</Label>
+                <Input
+                  id="edit_cost"
+                  type="number"
+                  value={formData.cost}
+                  onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
+                  placeholder="SAR"
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Updating...' : 'Update Maintenance'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -344,7 +683,7 @@ export default function MaintenanceManagementPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="preventive">Preventive</SelectItem>
+                <SelectItem value="scheduled">Scheduled</SelectItem>
                 <SelectItem value="corrective">Corrective</SelectItem>
                 <SelectItem value="emergency">Emergency</SelectItem>
                 <SelectItem value="inspection">Inspection</SelectItem>
@@ -356,7 +695,7 @@ export default function MaintenanceManagementPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="scheduled">Scheduled</SelectItem>
+                <SelectItem value="open">Open</SelectItem>
                 <SelectItem value="in_progress">In Progress</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="overdue">Overdue</SelectItem>
@@ -377,20 +716,21 @@ export default function MaintenanceManagementPage() {
                   <TableHead>Scheduled Date</TableHead>
                   <TableHead>Technician</TableHead>
                   <TableHead>Cost</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredRecords.map((record) => (
                   <TableRow key={record.id}>
                     <TableCell className="font-medium">
-                      {record.equipmentName || `ID: ${record.equipmentId}`}
-                      {record.equipmentModel && (
-                        <div className="text-sm text-muted-foreground">{record.equipmentModel}</div>
+                      {record.equipment.name}
+                      {record.equipment.doorNumber && (
+                        <div className="text-sm text-muted-foreground">Door: {record.equipment.doorNumber}</div>
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={getTypeColor(record.maintenanceType)}>
-                        {record.maintenanceType}
+                      <Badge variant={getTypeColor(record.type)}>
+                        {record.type}
                       </Badge>
                     </TableCell>
                     <TableCell>{record.description}</TableCell>
@@ -399,10 +739,37 @@ export default function MaintenanceManagementPage() {
                         {record.status.replace('_', ' ')}
                       </Badge>
                     </TableCell>
-                    <TableCell>{new Date(record.scheduledDate).toLocaleDateString()}</TableCell>
-                    <TableCell>{record.technician}</TableCell>
+                    <TableCell>{new Date(record.scheduled_date).toLocaleDateString()}</TableCell>
                     <TableCell>
-                      {record.cost ? `SAR ${record.cost.toLocaleString()}` : '-'}
+                      {record.mechanic ? `${record.mechanic.first_name} ${record.mechanic.last_name}` : '-'}
+                    </TableCell>
+                    <TableCell>
+                      {record.cost ? `SAR ${Number(record.cost).toLocaleString()}` : '-'}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewMaintenance(record.id)}
+                        >
+                          View
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditMaintenance(record.id)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteMaintenance(record.id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

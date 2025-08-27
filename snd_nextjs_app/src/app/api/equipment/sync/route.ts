@@ -162,6 +162,7 @@ export async function POST() {
           manufacturer: '', // Not available in API response
           modelNumber: '', // Not available in API response
           serialNumber: '', // Not available in API response
+          doorNumber: null, // Not available in API response, needs manual entry
           erpnextId: erpEquipmentItem.item_code,
           dailyRate: erpEquipmentItem.standard_rate
             ? String(parseFloat(erpEquipmentItem.standard_rate))

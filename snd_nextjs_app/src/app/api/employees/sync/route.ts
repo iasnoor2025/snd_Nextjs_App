@@ -249,7 +249,7 @@ export async function POST() {
                   name: trimmedDesignationName,
                   description: trimmedDesignationName,
                   isActive: true,
-                  updatedAt: new Date().toISOString().split('T')[0] || null as string,
+                  updatedAt: new Date().toISOString().split('T')[0] || null,
                 })
                 .returning();
               designation = newDesignation;
@@ -259,7 +259,7 @@ export async function POST() {
                 .set({
                   description: trimmedDesignationName,
                   isActive: true,
-                  updatedAt: new Date().toISOString().split('T')[0] || null as string,
+                  updatedAt: new Date().toISOString().split('T')[0] || null,
                 })
                 .where(sql`id = ${designation[0].id}`)
                 .returning();
@@ -280,7 +280,7 @@ export async function POST() {
                   name: departmentName.trim(),
                   description: departmentName.trim(),
                   active: true,
-                  updatedAt: new Date().toISOString().split('T')[0] || null as string,
+                  updatedAt: new Date().toISOString().split('T')[0] || null,
                 })
                 .returning();
               department = newDepartment;
@@ -290,7 +290,7 @@ export async function POST() {
                 .set({
                   description: departmentName.trim(),
                   active: true,
-                  updatedAt: new Date().toISOString().split('T')[0] || null as string,
+                  updatedAt: new Date().toISOString().split('T')[0] || null,
                 })
                 .where(sql`id = ${department[0].id}`)
                 .returning();
@@ -419,7 +419,7 @@ export async function POST() {
             // Advance salary fields
             advanceSalaryEligible: erpEmployee.advance_salary_eligible !== false,
             advanceSalaryApprovedThisMonth: erpEmployee.advance_salary_approved_this_month || false,
-            updatedAt: new Date().toISOString().split('T')[0] || null as string,
+            updatedAt: new Date().toISOString().split('T')[0] || null,
           };
 
           if (existingEmployee.length > 0) {

@@ -23,6 +23,7 @@ interface Equipment {
   model_number?: string;
   daily_rate?: number;
   status: string;
+  door_number?: string;
 }
 
 interface EquipmentResource {
@@ -375,7 +376,7 @@ export default function EquipmentDialog({
               <SelectContent>
                 {equipment.map(eq => (
                   <SelectItem key={eq.id} value={eq.id}>
-                    {eq.name} {eq.model_number && `(${eq.model_number})`}
+                    {eq.name} {eq.door_number && `[${eq.door_number}]`} {eq.model_number && `(${eq.model_number})`}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -387,6 +388,8 @@ export default function EquipmentDialog({
                 <div className="text-sm font-medium text-gray-700">Selected Equipment</div>
                 <div className="text-sm text-gray-600 mt-1">
                   {formData.equipment_name}
+                  {equipment.find(eq => eq.id === formData.equipment_id)?.door_number && 
+                    ` [${equipment.find(eq => eq.id === formData.equipment_id)?.door_number}]`}
                   {formData.equipment_name &&
                     equipment.find(eq => eq.id === formData.equipment_id)?.model_number &&
                     ` (${equipment.find(eq => eq.id === formData.equipment_id)?.model_number})`}

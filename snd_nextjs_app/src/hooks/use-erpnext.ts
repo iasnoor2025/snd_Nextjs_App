@@ -30,7 +30,7 @@ interface Item {
 
 interface UseERPNextReturn {
   // Connection
-  testConnection: () => Promise<boolean>;
+
   connectionLoading: boolean;
 
   // Customers
@@ -67,22 +67,7 @@ export function useERPNext(): UseERPNextReturn {
     setError(null);
   }, []);
 
-  const testConnection = useCallback(async (): Promise<boolean> => {
-    setConnectionLoading(true);
-    setError(null);
 
-    try {
-      // Test connection by trying to fetch employees
-      await erpnextClient.fetchAllEmployees();
-      return true;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Connection test failed';
-      setError(message);
-      return false;
-    } finally {
-      setConnectionLoading(false);
-    }
-  }, []);
 
   const fetchCustomers = useCallback(async (): Promise<Customer[]> => {
     setCustomersLoading(true);
@@ -180,7 +165,7 @@ export function useERPNext(): UseERPNextReturn {
   }, []);
 
   return {
-    testConnection,
+
     connectionLoading,
     fetchCustomers,
     createCustomer,

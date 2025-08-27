@@ -79,7 +79,7 @@ export default function MaintenanceHistoryTable() {
             <SelectContent>
               {equipmentOptions.map((e: any) => (
                 <SelectItem key={e.id} value={String(e.id)}>
-                  {e.name}
+                  {e.name} {e.door_number && `[${e.door_number}]`}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -153,7 +153,16 @@ export default function MaintenanceHistoryTable() {
           <TableBody>
             {records.map(r => (
               <TableRow key={r.id}>
-                <TableCell>{r.equipment?.name}</TableCell>
+                <TableCell>
+                  <div>
+                    <div>{r.equipment?.name}</div>
+                    {r.equipment?.doorNumber && (
+                      <div className="text-xs text-muted-foreground">
+                        Door: {r.equipment.doorNumber}
+                      </div>
+                    )}
+                  </div>
+                </TableCell>
                 <TableCell>
                   {r.mechanic ? `${r.mechanic.first_name} ${r.mechanic.last_name}` : '-'}
                 </TableCell>

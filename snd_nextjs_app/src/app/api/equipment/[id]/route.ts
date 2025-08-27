@@ -29,6 +29,18 @@ export async function GET(
         id: equipment.id,
         name: equipment.name,
         status: equipment.status,
+        model_number: equipment.modelNumber,
+        manufacturer: equipment.manufacturer,
+        daily_rate: equipment.dailyRate,
+        weekly_rate: equipment.weeklyRate,
+        monthly_rate: equipment.monthlyRate,
+        serial_number: equipment.serialNumber,
+        description: equipment.description,
+        door_number: equipment.doorNumber,
+        erpnext_id: equipment.erpnextId,
+        istimara: equipment.istimara,
+        istimara_expiry_date: equipment.istimaraExpiryDate,
+        category_id: equipment.categoryId,
       })
       .from(equipment)
       .where(eq(equipment.id, id))

@@ -36,6 +36,7 @@ export const GET = withReadPermission(async (_request: NextRequest) => {
               istimara_expiry_date: equipmentTable.istimaraExpiryDate,
               serial_number: equipmentTable.serialNumber,
               description: equipmentTable.description,
+              door_number: equipmentTable.doorNumber,
             })
             .from(equipmentTable)
             .orderBy(asc(equipmentTable.name));
@@ -186,6 +187,7 @@ export const POST = withPermission(async (request: NextRequest) => {
         manufacturer: body.manufacturer ?? null,
         modelNumber: body.modelNumber ?? null,
         serialNumber: body.serialNumber ?? null,
+        doorNumber: body.doorNumber ?? null,
         purchaseDate: body.purchaseDate ? new Date(body.purchaseDate).toISOString() : null,
         purchasePrice: body.purchasePrice ? String(parseFloat(body.purchasePrice)) : null,
         status: body.status || 'available',
@@ -226,6 +228,7 @@ export const PUT = withPermission(async (request: NextRequest) => {
       manufacturer,
       modelNumber,
       serialNumber,
+      doorNumber,
       purchaseDate,
       purchasePrice,
       status,
@@ -247,6 +250,7 @@ export const PUT = withPermission(async (request: NextRequest) => {
         manufacturer,
         modelNumber,
         serialNumber,
+        doorNumber,
         purchaseDate: purchaseDate ? new Date(purchaseDate).toISOString() : null,
         purchasePrice: purchasePrice ? String(parseFloat(purchasePrice)) : null,
         status,

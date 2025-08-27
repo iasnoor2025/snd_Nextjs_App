@@ -198,6 +198,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       employee_phone: item.employee?.phone || null,
       assignment_type: item.assignmentType,
       equipment_name: equipmentItem.name,
+      equipment_door_number: equipmentItem.doorNumber || null,
       quantity: 1,
       unit_price: item.dailyRate || 0,
       total_price: item.totalAmount || 0,

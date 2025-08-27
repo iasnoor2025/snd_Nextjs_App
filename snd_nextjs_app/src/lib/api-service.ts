@@ -334,7 +334,7 @@ class ApiService {
   }
 
   static async updateEquipment(id: number, data: any) {
-    return this.put(`/equipment/${id}`, data, {
+    return this.put(`/equipment/${id}/update`, data, {
       toastMessage: 'Equipment updated successfully',
       errorMessage: 'Failed to update equipment',
     });
@@ -967,16 +967,7 @@ class ApiService {
     window.URL.revokeObjectURL(url);
   }
 
-  static async testConnection() {
-    try {
-      const response = await this.get('/health');
-      ToastService.connectionSuccess('API');
-      return response;
-    } catch (error) {
-      ToastService.connectionError('API', 'Connection test failed');
-      throw error;
-    }
-  }
+
 
   // Employee Assignment Methods
   static async getEmployeeAssignments(employeeId: number) {

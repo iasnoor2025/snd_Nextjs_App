@@ -36,6 +36,7 @@ interface EquipmentFormData {
   manufacturer: string;
   modelNumber: string;
   serialNumber: string;
+  doorNumber: string;
   purchaseDate: string;
   purchasePrice: string;
   status: string;
@@ -60,6 +61,7 @@ export default function AddEquipmentModal({
     manufacturer: '',
     modelNumber: '',
     serialNumber: '',
+    doorNumber: '',
     purchaseDate: '',
     purchasePrice: '',
     status: 'available',
@@ -94,6 +96,7 @@ export default function AddEquipmentModal({
         manufacturer: formData.manufacturer.trim() || undefined,
         modelNumber: formData.modelNumber.trim() || undefined,
         serialNumber: formData.serialNumber.trim() || undefined,
+        doorNumber: formData.doorNumber.trim() || undefined,
         purchaseDate: formData.purchaseDate || undefined,
         purchasePrice: formData.purchasePrice ? parseFloat(formData.purchasePrice) : undefined,
         status: formData.status,
@@ -118,6 +121,7 @@ export default function AddEquipmentModal({
           manufacturer: '',
           modelNumber: '',
           serialNumber: '',
+          doorNumber: '',
           purchaseDate: '',
           purchasePrice: '',
           status: 'available',
@@ -231,6 +235,16 @@ export default function AddEquipmentModal({
                 value={formData.serialNumber}
                 onChange={e => handleInputChange('serialNumber', e.target.value)}
                 placeholder="Enter serial number"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="doorNumber">Door Number</Label>
+              <Input
+                id="doorNumber"
+                value={formData.doorNumber}
+                onChange={e => handleInputChange('doorNumber', e.target.value)}
+                placeholder="Enter door number"
               />
             </div>
           </div>

@@ -42,6 +42,9 @@ export default function MaintenanceViewDialog({
         <div className="space-y-2 text-sm">
           <div>
             <span className="font-medium">{t('view.equipment')}:</span> {record.equipment?.name}
+            {record.equipment?.doorNumber && (
+              <span className="text-muted-foreground ml-2">[Door: {record.equipment.doorNumber}]</span>
+            )}
           </div>
           <div>
             <span className="font-medium">{t('view.mechanic')}:</span>{' '}

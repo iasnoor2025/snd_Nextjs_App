@@ -34,6 +34,7 @@ interface Equipment {
   name: string;
   model_number?: string;
   status: string;
+  door_number?: string;
   current_assignment?: {
     id: number;
     type: string;
@@ -227,6 +228,32 @@ export default function EquipmentAssignmentPage() {
           Create Assignment
         </Button>
       </div>
+
+      {/* Equipment Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Package className="h-5 w-5" />
+            <span>Equipment Information</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Name</Label>
+              <p className="text-sm font-medium">{equipment.name}</p>
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Door Number</Label>
+              <p className="text-sm">{equipment.door_number || 'Not specified'}</p>
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Status</Label>
+              <div className="mt-1">{getStatusBadge(equipment.status)}</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Assignment Dialog */}
       <AssignmentDialog

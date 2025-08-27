@@ -33,6 +33,7 @@ interface Equipment {
   istimara_expiry_date?: string;
   serial_number?: string;
   description?: string;
+  door_number?: string;
 }
 
 export default function EquipmentEditPage() {
@@ -51,6 +52,7 @@ export default function EquipmentEditPage() {
     monthly_rate: '',
     serial_number: '',
     description: '',
+    door_number: '',
     istimara: '',
     istimara_expiry_date: '',
   });
@@ -79,6 +81,7 @@ export default function EquipmentEditPage() {
           monthly_rate: response.data.monthly_rate?.toString() || '',
           serial_number: response.data.serial_number || '',
           description: response.data.description || '',
+          door_number: response.data.door_number || '',
           istimara: response.data.istimara || '',
           istimara_expiry_date: response.data.istimara_expiry_date || '',
         });
@@ -190,6 +193,16 @@ export default function EquipmentEditPage() {
                   onChange={e => handleInputChange('name', e.target.value)}
                   placeholder="Equipment name"
                   required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="door_number">Door Number</Label>
+                <Input
+                  id="door_number"
+                  value={formData.door_number}
+                  onChange={e => handleInputChange('door_number', e.target.value)}
+                  placeholder="Door number"
                 />
               </div>
 

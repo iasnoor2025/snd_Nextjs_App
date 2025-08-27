@@ -41,6 +41,7 @@ interface Equipment {
   istimara_expiry_date?: string;
   serial_number?: string;
   description?: string;
+  door_number?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -215,6 +216,19 @@ export default function EquipmentShowPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
+                <Label className="text-sm font-medium text-muted-foreground">Door Number</Label>
+                <p className="text-sm">{equipment.door_number || 'Not specified'}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">Serial Number</Label>
+                <p className="text-sm font-mono">{equipment.serial_number || 'Not specified'}</p>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
                 <Label className="text-sm font-medium text-muted-foreground">Model Number</Label>
                 <p className="text-sm">{equipment.model_number || 'Not specified'}</p>
               </div>
@@ -224,12 +238,7 @@ export default function EquipmentShowPage() {
               </div>
             </div>
 
-            <Separator />
 
-            <div>
-              <Label className="text-sm font-medium text-muted-foreground">Serial Number</Label>
-              <p className="text-sm font-mono">{equipment.serial_number || 'Not specified'}</p>
-            </div>
 
             <Separator />
 

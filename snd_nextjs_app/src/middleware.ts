@@ -11,7 +11,7 @@ export async function middleware(request: NextRequest) {
   const publicRoutes = [
     '/login',
     '/signup', 
-    '/test-signup',
+  
     '/auth',
     '/api/auth',
     '/_next',
@@ -42,7 +42,7 @@ export async function middleware(request: NextRequest) {
     if (route === '/uploads') {
       return pathname.startsWith(route);
     }
-    // For exact matches like /login, /signup, /test-signup
+    // For exact matches like /login, /signup
     return pathname === route;
   });
 

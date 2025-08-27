@@ -1,5 +1,6 @@
 import { ConditionalLayout } from '@/components/conditional-layout';
 import { Providers } from '@/components/providers';
+import { RBACInitializer } from '@/components/rbac-initializer';
 import { Toaster } from '@/components/ui/sonner';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html suppressHydrationWarning className={inter.variable}>
       <body className="font-sans antialiased">
         <Providers>
+          <RBACInitializer />
           <ConditionalLayout>{children}</ConditionalLayout>
           <Toaster position="top-right" richColors closeButton duration={4000} />
         </Providers>

@@ -63,6 +63,7 @@ interface Equipment {
   istimara_expiry_date?: string;
   serial_number?: string;
   description?: string;
+  door_number?: string;
   current_assignment?: {
     id: number;
     type: string;
@@ -445,6 +446,7 @@ export default function EquipmentManagementPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('equipment_management.name')}</TableHead>
+                      <TableHead>{t('equipment_management.door_number')}</TableHead>
                       <TableHead>{t('equipment_management.model')}</TableHead>
                       <TableHead>{t('equipment_management.manufacturer')}</TableHead>
                       <TableHead>{t('equipment_management.status')}</TableHead>
@@ -474,7 +476,7 @@ export default function EquipmentManagementPage() {
                   <TableBody>
                     {currentEquipment.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                           {equipment.length === 0 ? (
                             <div className="flex flex-col items-center space-y-2">
                               <Package className="h-8 w-8 text-muted-foreground" />
@@ -497,6 +499,15 @@ export default function EquipmentManagementPage() {
                               isRTL,
                               translatedNames,
                               setTranslatedNames
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {item.door_number ? (
+                              convertToArabicNumerals(item.door_number, isRTL)
+                            ) : (
+                              <span className="text-muted-foreground text-sm">
+                                {t('equipment_management.not_specified')}
+                              </span>
                             )}
                           </TableCell>
                           <TableCell>

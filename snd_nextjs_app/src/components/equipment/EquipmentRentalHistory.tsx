@@ -73,6 +73,7 @@ interface AssignmentHistoryItem {
   employee_phone?: string;
   assignment_type: string;
   equipment_name: string;
+  equipment_door_number?: string;
   quantity: number;
   unit_price: number;
   total_price: number;
@@ -614,6 +615,7 @@ export default function EquipmentAssignmentHistory({
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>Equipment</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Reference</TableHead>
                       <TableHead>Customer/Project/Employee</TableHead>
@@ -626,6 +628,16 @@ export default function EquipmentAssignmentHistory({
                   <TableBody>
                     {assignmentHistory.map(assignment => (
                       <TableRow key={assignment.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{assignment.equipment_name}</div>
+                            {assignment.equipment_door_number && (
+                              <div className="text-xs text-muted-foreground">
+                                Door: {assignment.equipment_door_number}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <Badge
                             variant={

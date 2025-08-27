@@ -23,6 +23,7 @@ interface EquipmentData {
   id: number;
   equipmentName: string;
   equipmentNumber?: string;
+  doorNumber?: string;
   manufacturer?: string;
   modelNumber?: string;
   categoryId?: number;
@@ -372,6 +373,7 @@ export function EquipmentSection({
                       <TableHeader>
                         <TableRow>
                           <TableHead>{t('equipment.istimara.tableHeaders.equipmentName')}</TableHead>
+                          <TableHead>{t('equipment.istimara.tableHeaders.doorNumber') || 'Door #'}</TableHead>
                           <TableHead>{t('equipment.istimara.tableHeaders.istimaraNumber')}</TableHead>
                           <TableHead>{t('equipment.istimara.tableHeaders.driverOperator')}</TableHead>
                           <TableHead>{t('equipment.istimara.tableHeaders.status')}</TableHead>
@@ -386,11 +388,19 @@ export function EquipmentSection({
                               <div>
                                 <div>{item.equipmentName}</div>
                                 <div className="text-xs text-muted-foreground">
-                                  {item.equipmentNumber && `#${item.equipmentNumber}`}
                                   {item.manufacturer && ` • ${item.manufacturer}`}
                                   {item.modelNumber && ` • ${item.modelNumber}`}
                                 </div>
                               </div>
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {item.equipmentNumber ? (
+                                <span className="font-mono text-sm bg-muted px-2 py-1 rounded">
+                                  {item.equipmentNumber}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground text-xs">Not specified</span>
+                              )}
                             </TableCell>
                             <TableCell className="text-sm">
                               {item.istimara ? (

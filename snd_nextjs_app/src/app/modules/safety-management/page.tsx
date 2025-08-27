@@ -61,7 +61,7 @@ export default function SafetyManagementPage() {
   const fetchIncidents = async () => {
     try {
       setLoading(true);
-      const response = await ApiService.get('/api/safety-incidents');
+      const response = await ApiService.get('/safety-incidents');
       if (response.success) {
         setIncidents(response.data || []);
       } else {
@@ -85,7 +85,7 @@ export default function SafetyManagementPage() {
 
     try {
       setLoading(true);
-      const response = await ApiService.post('/api/safety-incidents', formData);
+      const response = await ApiService.post('/safety-incidents', formData);
       
       if (response.success) {
         toast.success('Safety incident created successfully');

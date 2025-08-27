@@ -33,6 +33,7 @@ export const GET = withAuth(
           equipment: {
             id: equipmentTable.id,
             name: equipmentTable.name,
+            doorNumber: equipmentTable.doorNumber,
           },
           mechanic: {
             id: employeesTable.id,

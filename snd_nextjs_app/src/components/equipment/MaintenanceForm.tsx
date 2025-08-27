@@ -81,7 +81,10 @@ export function MaintenanceForm({
 
   useEffect(() => {
     ApiService.getEquipment().then(res => {
-      const opts = (res.data || []).map((e: any) => ({ value: e.id, label: e.name }));
+      const opts = (res.data || []).map((e: any) => ({ 
+        value: e.id, 
+        label: `${e.name}${e.door_number ? ` [${e.door_number}]` : ''}` 
+      }));
       setEquipmentOptions(opts);
     });
     ApiService.getEmployees({ all: true }).then(res => {
@@ -132,6 +135,11 @@ export function MaintenanceForm({
                     </SelectContent>
                   </Select>
                   <FormMessage />
+                  {field.value && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {equipmentOptions.find(opt => opt.value === field.value)?.label}
+                    </div>
+                  )}
                 </FormItem>
               )}
             />
