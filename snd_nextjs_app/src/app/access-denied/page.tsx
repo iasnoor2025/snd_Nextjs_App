@@ -6,11 +6,13 @@ import { AlertTriangle, Shield } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import { useI18n } from '@/hooks/use-i18n';
 
 function AccessDeniedContent() {
   const searchParams = useSearchParams();
   const requiredRole = searchParams.get('requiredRole');
   const currentRole = searchParams.get('currentRole');
+  const { t } = useI18n();
 
   const requiredRoles = requiredRole ? requiredRole.split(',') : [];
   const currentUserRole = currentRole || 'Unknown';
@@ -23,16 +25,16 @@ function AccessDeniedContent() {
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
               <Shield className="h-6 w-6 text-red-600" />
             </div>
-            <CardTitle className="text-xl text-red-800">Access Denied</CardTitle>
+            <CardTitle className="text-xl text-red-800">{t('common.rbac.accessDenied')}</CardTitle>
             <CardDescription className="text-red-600">
-              You don't have permission to access this resource
+              {t('common.rbac.accessDeniedMessage')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm">
                 <AlertTriangle className="h-4 w-4 text-red-500" />
-                <span className="font-medium">Required Roles:</span>
+                <span className="font-medium">{t('common.rbac.requiredRoles')}:</span>
               </div>
               <div className="ml-6">
                 {requiredRoles.length > 0 ? (
@@ -44,7 +46,7 @@ function AccessDeniedContent() {
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm text-gray-600">No specific role requirements</p>
+                  <p className="text-sm text-gray-600">{t('common.rbac.noSpecificRoleRequirements')}</p>
                 )}
               </div>
             </div>
@@ -52,7 +54,7 @@ function AccessDeniedContent() {
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm">
                 <AlertTriangle className="h-4 w-4 text-red-500" />
-                <span className="font-medium">Your Current Role:</span>
+                <span className="font-medium">{t('common.rbac.yourCurrentRole')}:</span>
               </div>
               <div className="ml-6">
                 <p className="text-sm text-gray-700 capitalize">
@@ -64,17 +66,17 @@ function AccessDeniedContent() {
             <div className="pt-4 space-y-3">
               <Link href="/">
                 <Button variant="outline" className="w-full">
-                  Go Home
+                  {t('common.rbac.goHome')}
                 </Button>
               </Link>
 
               <Button asChild className="w-full" variant="default">
-                <Link href="/profile">View Profile</Link>
+                <Link href="/profile">{t('common.rbac.viewProfile')}</Link>
               </Button>
             </div>
 
             <div className="text-xs text-gray-500 text-center pt-4">
-              If you believe this is an error, please contact your administrator.
+              {t('common.rbac.contactAdministrator')}
             </div>
           </CardContent>
         </Card>
@@ -84,6 +86,8 @@ function AccessDeniedContent() {
 }
 
 export default function AccessDeniedPage() {
+  const { t } = useI18n();
+  
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -93,7 +97,7 @@ export default function AccessDeniedPage() {
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
                 <Shield className="h-6 w-6 text-red-600" />
               </div>
-              <CardTitle className="text-xl text-red-800">Loading...</CardTitle>
+              <CardTitle className="text-xl text-red-800">{t('common.rbac.loading')}</CardTitle>
             </CardHeader>
           </Card>
         </div>

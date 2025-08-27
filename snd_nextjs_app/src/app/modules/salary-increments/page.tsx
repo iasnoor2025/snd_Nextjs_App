@@ -39,6 +39,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export default function SalaryIncrementsPage() {
   const [increments, setIncrements] = useState<SalaryIncrement[]>([]);
@@ -63,6 +64,7 @@ export default function SalaryIncrementsPage() {
 
   const router = useRouter();
   const { data: session, status } = useSession();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -93,14 +95,14 @@ export default function SalaryIncrementsPage() {
 
       // Check if it's an authentication error
       if (error instanceof Error && error.message.includes('401')) {
-        toast.error('Please log in to access salary increments');
+        toast.error(t('common.salaryIncrements.pleaseLogIn'));
         router.push('/login');
         return;
       }
 
       // Check if it's a permission error
       if (error instanceof Error && error.message.includes('403')) {
-        toast.error('Access denied: You do not have permission to view salary increments');
+        toast.error(t('common.salaryIncrements.permissionDenied'));
         // Set empty data instead of crashing
         setIncrements([]);
         setPagination({ page: 1, limit: 15, total: 0, pages: 0 });
@@ -108,7 +110,7 @@ export default function SalaryIncrementsPage() {
         return;
       }
 
-      toast.error('Failed to load salary increments');
+              toast.error(t('common.salaryIncrements.failedToLoad'));
       // Set default values on error
       setIncrements([]);
       setPagination({ page: 1, limit: 15, total: 0, pages: 0 });
@@ -271,21 +273,20 @@ export default function SalaryIncrementsPage() {
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center max-w-md">
           <div className="text-6xl mb-4">🔒</div>
-          <h1 className="text-2xl font-bold mb-2">Access Restricted</h1>
+          <h1 className="text-2xl font-bold mb-2">{t('common.salaryIncrements.accessRestricted')}</h1>
           <p className="text-muted-foreground mb-4">
-            You don't have permission to access salary increments. Please contact your administrator
-            if you believe this is an error.
+            {t('common.salaryIncrements.permissionDenied')}
           </p>
           <div className="bg-muted p-4 rounded-lg text-sm">
             <p>
-              <strong>Current Role:</strong> {session?.user?.role || 'Unknown'}
+              <strong>{t('common.salaryIncrements.currentRole')}</strong> {session?.user?.role || 'Unknown'}
             </p>
             <p>
-              <strong>User ID:</strong> {session?.user?.id}
+              <strong>{t('common.salaryIncrements.userId')}</strong> {session?.user?.id}
             </p>
           </div>
           <Button onClick={() => router.push('/')} className="mt-4" variant="outline">
-            Back to Dashboard
+            {t('common.salaryIncrements.backToDashboard')}
           </Button>
         </div>
       </div>

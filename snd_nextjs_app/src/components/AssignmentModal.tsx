@@ -23,6 +23,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useI18n } from '@/hooks/use-i18n';
 
 interface Assignment {
   id: string;
@@ -67,6 +68,7 @@ export default function AssignmentModal({
   onClose,
   onSuccess,
 }: AssignmentModalProps) {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -124,11 +126,11 @@ export default function AssignmentModal({
         onSuccess();
       } else {
         const error = await response.json();
-        toast.error(error.error || 'Failed to save assignment');
+        toast.error(error.error || t('common.errors.failedToSaveAssignment'));
       }
     } catch (error) {
       
-      toast.error('Failed to save assignment');
+              toast.error(t('common.errors.failedToSaveAssignment'));
     } finally {
       setLoading(false);
     }

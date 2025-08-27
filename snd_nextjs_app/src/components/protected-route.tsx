@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
+import { useI18n } from '@/hooks/use-i18n';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -26,15 +27,16 @@ export function ProtectedRoute({
   const { user, isLoading, hasPermission, canAccessRoute } = useRBAC();
   const router = useRouter();
   const { data: session, status } = useSession();
+  const { t } = useI18n();
 
   useEffect(() => {
     if (status === 'loading') return;
 
     if (!session) {
-      toast.error('Please sign in to access this page');
+      toast.error(t('common.rbac.pleaseSignIn'));
       router.push('/login');
     }
-  }, [session, status, router]);
+  }, [session, status, router, t]);
 
   // Show loading while checking authentication and permissions
   if (status === 'loading' || isLoading) {
@@ -43,7 +45,7 @@ export function ProtectedRoute({
 
   // Check authentication
   if (!session) {
-    return fallback || <RBACLoading message="Redirecting to sign in..." />;
+    return fallback || <RBACLoading message={t('common.rbac.redirectingToSignIn')} />;
   }
 
   // Check role-based access
@@ -68,7 +70,7 @@ export function ProtectedRoute({
     if (userRoleLevel > requiredRoleLevel) {
       return (
         <AccessDenied
-          message={`This page requires ${requiredRole} role or higher. Your current role is ${userRole}.`}
+          message={t('common.rbac.roleRequired', { role: requiredRole, currentRole: userRole })}
         />
       );
     }
@@ -79,7 +81,10 @@ export function ProtectedRoute({
     if (!hasPermission(requiredPermission.action, requiredPermission.subject)) {
       return (
         <AccessDenied
-          message={`You don't have permission to ${requiredPermission.action} ${requiredPermission.subject}.`}
+          message={t('common.rbac.permissionDenied', { 
+            action: requiredPermission.action, 
+            subject: requiredPermission.subject 
+          })}
         />
       );
     }
@@ -88,7 +93,7 @@ export function ProtectedRoute({
   // Check route-based access
   if (requiredRoute && user) {
     if (!canAccessRoute(requiredRoute)) {
-      return <AccessDenied message={`You don't have permission to access this route.`} />;
+      return <AccessDenied message={t('common.rbac.routeAccessDenied')} />;
     }
   }
 

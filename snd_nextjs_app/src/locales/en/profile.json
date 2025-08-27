@@ -104,5 +104,11 @@
   "activeSessionsDescription": "View and manage your active login sessions",
   "view": "View",
   "loginHistory": "Login History",
-  "loginHistoryDescription": "View your recent login activity"
+  "loginHistoryDescription": "View your recent login activity",
+  "notificationSettingsUpdated": "Notification settings updated successfully",
+  "appearanceSettingsUpdated": "Appearance settings updated successfully",
+  "accountDeletionInitiated": "Account deletion initiated successfully",
+  "deleteAccountTitle": "Delete Account",
+  "deleteAccountDescription": "This action will permanently delete your account and all associated data. This cannot be undone.",
+  "deleteAccountConfirmation": "Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost."
 }

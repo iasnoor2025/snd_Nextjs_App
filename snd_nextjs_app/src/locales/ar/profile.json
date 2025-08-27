@@ -104,5 +104,11 @@
   "activeSessionsDescription": "عرض وإدارة جلسات تسجيل الدخول النشطة",
   "view": "عرض",
   "loginHistory": "سجل تسجيل الدخول",
-  "loginHistoryDescription": "عرض نشاط تسجيل الدخول الأخير"
+  "loginHistoryDescription": "عرض نشاط تسجيل الدخول الأخير",
+  "notificationSettingsUpdated": "تم تحديث إعدادات الإشعارات بنجاح",
+  "appearanceSettingsUpdated": "تم تحديث إعدادات المظهر بنجاح",
+  "accountDeletionInitiated": "تم بدء حذف الحساب بنجاح",
+  "deleteAccountTitle": "حذف الحساب",
+  "deleteAccountDescription": "سيؤدي هذا الإجراء إلى حذف حسابك وبياناتك المرتبطة به نهائياً. لا يمكن التراجع عن هذا.",
+  "deleteAccountConfirmation": "هل أنت متأكد من حذف حسابك؟ لا يمكن التراجع عن هذا الإجراء وستفقد جميع بياناتك نهائياً."
 }

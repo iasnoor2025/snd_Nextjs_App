@@ -13,16 +13,18 @@ import {
   QuickActionsPermission,
   RecentActivityPermission
 } from './DashboardSectionPermission';
+import { useI18n } from '@/hooks/use-i18n';
 
 export function PermissionExample() {
+  const { t } = useI18n();
+  
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Dashboard Permission System Example</CardTitle>
+          <CardTitle>{t('common.permissions.dashboardPermissionSystemExample')}</CardTitle>
           <CardDescription>
-            This example shows how different dashboard sections are protected by permissions.
-            Sections will only be visible if the user has the required role and permissions.
+            {t('common.permissions.dashboardPermissionSystemDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -32,21 +34,21 @@ export function PermissionExample() {
               fallback={
                 <div className="p-4 border rounded-lg bg-muted">
                   <p className="text-sm text-muted-foreground">
-                    You don't have permission to view employee assignments.
+                    {t('common.permissions.employeeAssignments')}
                   </p>
                   <Badge variant="secondary" className="mt-2">
-                    Requires: Employee read permission
+                    {t('common.permissions.requiresPermission', { permission: 'Employee read' })}
                   </Badge>
                 </div>
               }
             >
               <div className="p-4 border rounded-lg bg-green-50">
-                <h4 className="font-medium text-green-800">Manual Assignments Section</h4>
+                <h4 className="font-medium text-green-800">{t('common.permissions.manualAssignmentsSection')}</h4>
                 <p className="text-sm text-green-600 mt-1">
-                  This section is visible because you have Employee read permission.
+                  {t('common.permissions.manualAssignmentsDescription')}
                 </p>
                 <Badge variant="default" className="mt-2">
-                  ✓ Access Granted
+                  {t('common.permissions.accessGranted')}
                 </Badge>
               </div>
             </ManualAssignmentsPermission>
@@ -56,21 +58,21 @@ export function PermissionExample() {
               fallback={
                 <div className="p-4 border rounded-lg bg-muted">
                   <p className="text-sm text-muted-foreground">
-                    You don't have permission to view Iqama information.
+                    {t('common.permissions.iqamaInformation')}
                   </p>
                   <Badge variant="secondary" className="mt-2">
-                    Requires: Employee read permission
+                    {t('common.permissions.requiresPermission', { permission: 'Employee read' })}
                   </Badge>
                 </div>
               }
             >
               <div className="p-4 border rounded-lg bg-green-50">
-                <h4 className="font-medium text-green-800">Iqama Section</h4>
+                <h4 className="font-medium text-green-800">{t('common.permissions.iqamaSection')}</h4>
                 <p className="text-sm text-green-600 mt-1">
-                  This section is visible because you have Employee read permission.
+                  {t('common.permissions.iqamaDescription')}
                 </p>
                 <Badge variant="default" className="mt-2">
-                  ✓ Access Granted
+                  {t('common.permissions.accessGranted')}
                 </Badge>
               </div>
             </IqamaPermission>
@@ -80,21 +82,21 @@ export function PermissionExample() {
               fallback={
                 <div className="p-4 border rounded-lg bg-muted">
                   <p className="text-sm text-muted-foreground">
-                    You don't have permission to view equipment information.
+                    {t('common.permissions.equipmentInformation')}
                   </p>
                   <Badge variant="secondary" className="mt-2">
-                    Requires: Equipment read permission
+                    {t('common.permissions.requiresPermission', { permission: 'Equipment read' })}
                   </Badge>
                 </div>
               }
             >
               <div className="p-4 border rounded-lg bg-green-50">
-                <h4 className="font-medium text-green-800">Equipment Section</h4>
+                <h4 className="font-medium text-green-800">{t('common.permissions.equipmentSection')}</h4>
                 <p className="text-sm text-green-600 mt-1">
-                  This section is visible because you have Equipment read permission.
+                  {t('common.permissions.equipmentDescription')}
                 </p>
                 <Badge variant="default" className="mt-2">
-                  ✓ Access Granted
+                  {t('common.permissions.accessGranted')}
                 </Badge>
               </div>
             </EquipmentPermission>
@@ -104,21 +106,21 @@ export function PermissionExample() {
               fallback={
                 <div className="p-4 border rounded-lg bg-muted">
                   <p className="text-sm text-muted-foreground">
-                    You don't have permission to view financial information.
+                    {t('common.permissions.financialInformation')}
                   </p>
                   <Badge variant="secondary" className="mt-2">
-                    Requires: Payroll read permission
+                    {t('common.permissions.requiresPermission', { permission: 'Payroll read' })}
                   </Badge>
                 </div>
               }
             >
               <div className="p-4 border rounded-lg bg-green-50">
-                <h4 className="font-medium text-green-800">Financial Section</h4>
+                <h4 className="font-medium text-green-800">{t('common.permissions.financialSection')}</h4>
                 <p className="text-sm text-green-600 mt-1">
-                  This section is visible because you have Payroll read permission.
+                  {t('common.permissions.financialDescription')}
                 </p>
                 <Badge variant="default" className="mt-2">
-                  ✓ Access Granted
+                  {t('common.permissions.accessGranted')}
                 </Badge>
               </div>
             </FinancialPermission>
@@ -128,21 +130,21 @@ export function PermissionExample() {
               fallback={
                 <div className="p-4 border rounded-lg bg-muted">
                   <p className="text-sm text-muted-foreground">
-                    You don't have permission to view timesheets.
+                    {t('common.permissions.timesheets')}
                   </p>
                   <Badge variant="secondary" className="mt-2">
-                    Requires: Timesheet read permission
+                    {t('common.permissions.requiresPermission', { permission: 'Timesheet read' })}
                   </Badge>
                 </div>
               }
             >
               <div className="p-4 border rounded-lg bg-green-50">
-                <h4 className="font-medium text-green-800">Timesheets Section</h4>
+                <h4 className="font-medium text-green-800">{t('common.permissions.timesheetsSection')}</h4>
                 <p className="text-sm text-green-600 mt-1">
-                  This section is visible because you have Timesheet read permission.
+                  {t('common.permissions.timesheetsDescription')}
                 </p>
                 <Badge variant="default" className="mt-2">
-                  ✓ Access Granted
+                  {t('common.permissions.accessGranted')}
                 </Badge>
               </div>
             </TimesheetsPermission>
@@ -152,21 +154,21 @@ export function PermissionExample() {
               fallback={
                 <div className="p-4 border rounded-lg bg-muted">
                   <p className="text-sm text-muted-foreground">
-                    You don't have permission to view project information.
+                    {t('common.permissions.projectInformation')}
                   </p>
                   <Badge variant="secondary" className="mt-2">
-                    Requires: Project read permission
+                    {t('common.permissions.requiresPermission', { permission: 'Project read' })}
                   </Badge>
                 </div>
               }
             >
               <div className="p-4 border rounded-lg bg-green-50">
-                <h4 className="font-medium text-green-800">Project Overview Section</h4>
+                <h4 className="font-medium text-green-800">{t('common.permissions.projectOverviewSection')}</h4>
                 <p className="text-sm text-green-600 mt-1">
-                  This section is visible because you have Project read permission.
+                  {t('common.permissions.projectOverviewDescription')}
                 </p>
                 <Badge variant="default" className="mt-2">
-                  ✓ Access Granted
+                  {t('common.permissions.accessGranted')}
                 </Badge>
               </div>
             </ProjectOverviewPermission>
@@ -176,21 +178,21 @@ export function PermissionExample() {
               fallback={
                 <div className="p-4 border rounded-lg bg-muted">
                   <p className="text-sm text-muted-foreground">
-                    You don't have permission to access quick actions.
+                    {t('common.permissions.quickActions')}
                   </p>
                   <Badge variant="secondary" className="mt-2">
-                    Requires: Settings read permission
+                    {t('common.permissions.requiresPermission', { permission: 'Settings read' })}
                   </Badge>
                 </div>
               }
             >
               <div className="p-4 border rounded-lg bg-green-50">
-                <h4 className="font-medium text-green-800">Quick Actions Section</h4>
+                <h4 className="font-medium text-green-800">{t('common.permissions.quickActionsSection')}</h4>
                 <p className="text-sm text-green-600 mt-1">
-                  This section is visible because you have Settings read permission.
+                  {t('common.permissions.quickActionsDescription')}
                 </p>
                 <Badge variant="default" className="mt-2">
-                  ✓ Access Granted
+                  {t('common.permissions.accessGranted')}
                 </Badge>
               </div>
             </QuickActionsPermission>
@@ -200,21 +202,21 @@ export function PermissionExample() {
               fallback={
                 <div className="p-4 border rounded-lg bg-muted">
                   <p className="text-sm text-muted-foreground">
-                    You don't have permission to view recent activity.
+                    {t('common.permissions.recentActivity')}
                   </p>
                   <Badge variant="secondary" className="mt-2">
-                    Requires: Settings read permission
+                    {t('common.permissions.requiresPermission', { permission: 'Settings read' })}
                   </Badge>
                 </div>
               }
             >
               <div className="p-4 border rounded-lg bg-green-50">
-                <h4 className="font-medium text-green-800">Recent Activity Section</h4>
+                <h4 className="font-medium text-green-800">{t('common.permissions.recentActivitySection')}</h4>
                 <p className="text-sm text-green-600 mt-1">
-                  This section is visible because you have Settings read permission.
+                  {t('common.permissions.recentActivityDescription')}
                 </p>
                 <Badge variant="default" className="mt-2">
-                  ✓ Access Granted
+                  {t('common.permissions.accessGranted')}
                 </Badge>
               </div>
             </RecentActivityPermission>

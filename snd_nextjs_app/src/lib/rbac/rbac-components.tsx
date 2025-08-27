@@ -3,6 +3,7 @@
 import React from 'react';
 import { Action, Subject } from './custom-rbac';
 import { usePermission, useRBAC, useRouteAccess } from './rbac-context';
+import { useI18n } from '@/hooks/use-i18n';
 
 // Component that shows content only if user has permission
 interface PermissionContentProps {
@@ -75,34 +76,38 @@ export function RoleBased({ children, roles, fallback }: RoleBasedProps) {
 
 // Component that shows access denied message
 export function AccessDenied({
-  message = "You don't have permission to access this resource.",
+  message,
   className = 'text-center p-4',
 }: {
   message?: string;
   className?: string;
 }) {
+  const { t } = useI18n();
+  
   return (
     <div className={className}>
-      <h3 className="text-lg font-semibold text-destructive mb-2">Access Denied</h3>
-      <p className="text-muted-foreground">{message}</p>
+      <h3 className="text-lg font-semibold text-destructive mb-2">{t('common.rbac.accessDenied')}</h3>
+      <p className="text-muted-foreground">{message || t('common.rbac.accessDeniedMessage')}</p>
     </div>
   );
 }
 
 // Component that shows loading state
 export function RBACLoading({
-  message = 'Checking permissions...',
+  message,
   className = 'text-center p-4',
 }: {
   message?: string;
   className?: string;
 }) {
+  const { t } = useI18n();
+  
   return (
     <div className={className}>
       <div className="flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
-      <p className="text-muted-foreground mt-2">{message}</p>
+      <p className="text-muted-foreground mt-2">{message || t('common.rbac.checkingPermissions')}</p>
     </div>
   );
 }
