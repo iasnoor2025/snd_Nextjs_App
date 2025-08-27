@@ -848,7 +848,7 @@ export default function DashboardPage() {
                     onClick={() => toggleSection('manualAssignments')}
                     className="flex items-center gap-2"
                   >
-                    Show Manual Assignments
+                    {t('dashboard.showManualAssignments')}
                   </Button>
                 )}
                 {!sectionVisibility.quickActions && (

@@ -18,7 +18,6 @@ export default function SignUpPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    phone: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -70,18 +69,33 @@ export default function SignUpPage() {
     setIsLoading(true);
 
     try {
-      // Here you would typically make an API call to create the user
-      // For now, we'll simulate a successful registration
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Make API call to create the user
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create account');
+      }
       
       toast.success('Account created successfully! Please sign in.');
       
       // Redirect to login page
       router.push('/login');
     } catch (error) {
-      toast.error('Failed to create account. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create account. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -200,18 +214,7 @@ export default function SignUpPage() {
                 />
               </div>
 
-              {/* Phone */}
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  placeholder="+966 50 123 4567"
-                />
-              </div>
+
 
               {/* Password Fields */}
               <div className="space-y-2">

@@ -21,7 +21,7 @@ import {
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
 import { toast } from 'sonner';
 
 interface EmployeeDashboardData {
@@ -154,7 +154,7 @@ interface EmployeeDashboardData {
 export default function EmployeeDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const { t } = useTranslation('dashboard');
+  const { t } = useI18n();
   const [dashboardData, setDashboardData] = useState<EmployeeDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [documentDialogOpen, setDocumentDialogOpen] = useState(false);
@@ -188,15 +188,15 @@ export default function EmployeeDashboard() {
       });
 
       if (response.ok) {
-        toast.success('Document deleted successfully');
+        toast.success(t('dashboard.documentDeletedSuccessfully'));
         // Refresh dashboard data
         fetchEmployeeDashboardData();
       } else {
         const error = await response.json();
-        toast.error(error.message || 'Failed to delete document');
+        toast.error(error.message || t('dashboard.failedToDeleteDocument'));
       }
     } catch {
-      toast.error('An error occurred while deleting document');
+      toast.error(t('dashboard.errorDeletingDocument'));
     }
   };
 
@@ -206,7 +206,7 @@ export default function EmployeeDashboard() {
       <div className="flex h-full w-full items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">{t('loading')}</p>
+          <p className="text-muted-foreground">{t('dashboard.loading')}</p>
         </div>
       </div>
     );
@@ -224,13 +224,14 @@ export default function EmployeeDashboard() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">Employee Dashboard</h1>
+              <h1 className="text-3xl font-bold text-foreground mb-2">{t('dashboard.employeeDashboard')}</h1>
               <p className="text-muted-foreground">
-                Welcome back, {dashboardData?.employee ? `${dashboardData.employee.first_name} ${dashboardData.employee.last_name}` : session?.user?.name || 'Employee'}! Here's your personalized
-                dashboard.
+                {t('dashboard.welcomeBackEmployee', { 
+                  name: dashboardData?.employee ? `${dashboardData.employee.first_name} ${dashboardData.employee.last_name}` : session?.user?.name || t('dashboard.employee')
+                })}
               </p>
             </div>
-            <Badge variant="default">Active</Badge>
+            <Badge variant="default">{t('dashboard.active')}</Badge>
           </div>
         </div>
 
@@ -240,9 +241,9 @@ export default function EmployeeDashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5" />
-                Quick Actions
+                {t('dashboard.quickActions')}
               </CardTitle>
-              <CardDescription>Common tasks and shortcuts</CardDescription>
+              <CardDescription>{t('dashboard.quickActionsDescription')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -259,74 +260,72 @@ export default function EmployeeDashboard() {
           </Card>
         </div>
 
-
-
         {/* Statistics Cards - Second Section */}
         <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Overview</h2>
+          <h2 className="text-xl font-semibold mb-4">{t('dashboard.overview')}</h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Timesheets</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('dashboard.totalTimesheets')}</CardTitle>
                 <CalendarDays className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
                   {dashboardData?.statistics?.totalTimesheets || 0}
                 </div>
-                <p className="text-xs text-muted-foreground">This month</p>
+                <p className="text-xs text-muted-foreground">{t('dashboard.thisMonth')}</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pending Leaves</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('dashboard.pendingLeaves')}</CardTitle>
                 <Calendar className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
                   {dashboardData?.statistics?.pendingLeaves || 0}
                 </div>
-                <p className="text-xs text-muted-foreground">Awaiting approval</p>
+                <p className="text-xs text-muted-foreground">{t('dashboard.awaitingApproval')}</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('dashboard.activeProjects')}</CardTitle>
                 <Building className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
                   {dashboardData?.assignments?.filter(a => a.type === 'project' && a.status === 'active').length || 0}
                 </div>
-                <p className="text-xs text-muted-foreground">Current assignments</p>
+                <p className="text-xs text-muted-foreground">{t('dashboard.currentAssignments')}</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Assignments</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('dashboard.totalAssignments')}</CardTitle>
                 <Briefcase className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
                   {dashboardData?.assignments?.length || 0}
                 </div>
-                <p className="text-xs text-muted-foreground">All assignments</p>
+                <p className="text-xs text-muted-foreground">{t('dashboard.allAssignments')}</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Advances</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('dashboard.totalAdvances')}</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
                   {dashboardData?.statistics?.totalAdvances || 0}
                 </div>
-                <p className="text-xs text-muted-foreground">Advance payments</p>
+                <p className="text-xs text-muted-foreground">{t('dashboard.advancePayments')}</p>
               </CardContent>
             </Card>
           </div>
@@ -346,9 +345,9 @@ export default function EmployeeDashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5" />
-                Recent Timesheets
+                {t('dashboard.recentTimesheets')}
               </CardTitle>
-              <CardDescription>Your latest timesheet entries</CardDescription>
+              <CardDescription>{t('dashboard.latestTimesheetEntries')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -361,8 +360,8 @@ export default function EmployeeDashboard() {
                           : ''}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {dashboardData?.recentTimesheets?.[0]?.hours_worked} hours +{' '}
-                        {dashboardData?.recentTimesheets?.[0]?.overtime_hours} overtime
+                        {dashboardData?.recentTimesheets?.[0]?.hours_worked} {t('dashboard.hours')} +{' '}
+                        {dashboardData?.recentTimesheets?.[0]?.overtime_hours} {t('dashboard.overtime')}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {dashboardData?.recentTimesheets?.[0]?.start_time?.slice(0, 5)} -{' '}
@@ -377,12 +376,12 @@ export default function EmployeeDashboard() {
                       }
                     >
                       {dashboardData?.recentTimesheets?.[0]?.status === 'manager_approved'
-                        ? 'approved'
+                        ? t('dashboard.approved')
                         : dashboardData?.recentTimesheets?.[0]?.status}
                     </Badge>
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No recent timesheets</p>
+                  <p className="text-sm text-muted-foreground">{t('dashboard.noRecentTimesheets')}</p>
                 )}
               </div>
             </CardContent>
@@ -393,9 +392,9 @@ export default function EmployeeDashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                Recent Leave Requests
+                {t('dashboard.recentLeaveRequests')}
               </CardTitle>
-              <CardDescription>Your latest leave applications</CardDescription>
+              <CardDescription>{t('dashboard.latestLeaveApplications')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -413,11 +412,11 @@ export default function EmployeeDashboard() {
                         {dashboardData.recentLeaves[0]?.end_date
                           ? new Date(dashboardData.recentLeaves[0].end_date).toLocaleDateString()
                           : 'N/A'}{' '}
-                        ({dashboardData.recentLeaves[0]?.days || 0} days)
+                        ({dashboardData.recentLeaves[0]?.days || 0} {t('dashboard.days')})
                       </p>
                       {dashboardData.recentLeaves[0]?.reason && (
                         <p className="text-xs text-muted-foreground">
-                          Reason: {dashboardData.recentLeaves[0]?.reason}
+                          {t('dashboard.reason')}: {dashboardData.recentLeaves[0]?.reason}
                         </p>
                       )}
                     </div>
@@ -434,7 +433,7 @@ export default function EmployeeDashboard() {
                     </Badge>
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No recent leave requests</p>
+                  <p className="text-sm text-muted-foreground">{t('dashboard.noRecentLeaveRequests')}</p>
                 )}
               </div>
             </CardContent>
@@ -445,9 +444,9 @@ export default function EmployeeDashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Building className="h-5 w-5" />
-                Current Projects
+                {t('dashboard.currentProjects')}
               </CardTitle>
-              <CardDescription>Projects you're currently assigned to</CardDescription>
+              <CardDescription>{t('dashboard.projectsCurrentlyAssigned')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -458,7 +457,7 @@ export default function EmployeeDashboard() {
                         {dashboardData.assignments.filter(a => a.type === 'project' && a.status === 'active')[0]?.name}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {dashboardData.assignments.filter(a => a.type === 'project' && a.status === 'active')[0]?.project?.name || 'Project assignment'}
+                        {dashboardData.assignments.filter(a => a.type === 'project' && a.status === 'active')[0]?.project?.name || t('dashboard.projectAssignment')}
                       </p>
                     </div>
                     <Badge
@@ -472,7 +471,7 @@ export default function EmployeeDashboard() {
                     </Badge>
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No current projects</p>
+                  <p className="text-sm text-muted-foreground">{t('dashboard.noCurrentProjects')}</p>
                 )}
               </div>
             </CardContent>
@@ -483,9 +482,9 @@ export default function EmployeeDashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5" />
-                Recent Advances
+                {t('dashboard.recentAdvances')}
               </CardTitle>
-              <CardDescription>Your latest advance requests</CardDescription>
+              <CardDescription>{t('dashboard.latestAdvanceRequests')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -519,7 +518,7 @@ export default function EmployeeDashboard() {
                     </Badge>
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No recent advances</p>
+                  <p className="text-sm text-muted-foreground">{t('dashboard.noRecentAdvances')}</p>
                 )}
               </div>
             </CardContent>
@@ -531,18 +530,18 @@ export default function EmployeeDashboard() {
           <Card className="overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
               <CardTitle className="flex items-center gap-3 text-xl">
-                                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold">
-                    {dashboardData?.employee?.first_name?.charAt(0) || 'E'}
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold">
+                  {dashboardData?.employee?.first_name?.charAt(0) || 'E'}
+                </div>
+                <div>
+                  <div className="font-bold text-gray-900">
+                    {dashboardData?.employee ? `${dashboardData.employee.first_name} ${dashboardData.employee.last_name}` : t('dashboard.employeeName')}
                   </div>
-                  <div>
-                    <div className="font-bold text-gray-900">
-                      {dashboardData?.employee ? `${dashboardData.employee.first_name} ${dashboardData.employee.last_name}` : 'Employee Name'}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      {dashboardData?.employee?.designation?.name || 'Designation'} •{' '}
-                      {dashboardData?.employee?.department?.name || 'Department'}
-                    </div>
+                  <div className="text-sm text-gray-600">
+                    {dashboardData?.employee?.designation?.name || t('dashboard.designation')} •{' '}
+                    {dashboardData?.employee?.department?.name || t('dashboard.department')}
                   </div>
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -551,30 +550,29 @@ export default function EmployeeDashboard() {
                 <div className="p-6 border-r border-gray-100">
                   <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <User className="h-4 w-4" />
-                    Personal Information
+                    {t('dashboard.personalInformation')}
                   </h3>
                   <div className="space-y-3">
-
                     <div className="flex justify-between items-center py-2 border-b border-gray-50">
-                      <span className="text-sm text-gray-600">Email</span>
+                      <span className="text-sm text-gray-600">{t('dashboard.email')}</span>
                       <span className="text-sm font-medium text-gray-900">
                         {dashboardData?.employee?.email || 'N/A'}
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-gray-50">
-                      <span className="text-sm text-gray-600">Phone</span>
+                      <span className="text-sm text-gray-600">{t('dashboard.phone')}</span>
                       <span className="text-sm font-medium text-gray-900">
                         {dashboardData?.employee?.phone || 'N/A'}
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-gray-50">
-                      <span className="text-sm text-gray-600">Nationality</span>
+                      <span className="text-sm text-gray-600">{t('dashboard.nationality')}</span>
                       <span className="text-sm font-medium text-gray-900">
                         {dashboardData?.employee?.nationality || 'N/A'}
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-gray-50">
-                      <span className="text-sm text-gray-600">Hire Date</span>
+                      <span className="text-sm text-gray-600">{t('dashboard.hireDate')}</span>
                       <span className="text-sm font-medium text-gray-900">
                         {dashboardData?.employee?.hire_date
                           ? new Date(dashboardData.employee.hire_date).toLocaleDateString()
@@ -582,7 +580,7 @@ export default function EmployeeDashboard() {
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2">
-                      <span className="text-sm text-gray-600">Supervisor</span>
+                      <span className="text-sm text-gray-600">{t('dashboard.supervisor')}</span>
                       <span className="text-sm font-medium text-gray-900">
                         {dashboardData?.employee?.supervisor || 'N/A'}
                       </span>
@@ -594,29 +592,29 @@ export default function EmployeeDashboard() {
                 <div className="p-6 border-r border-gray-100">
                   <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <Building className="h-4 w-4" />
-                    Employment & Location
+                    {t('dashboard.employmentAndLocation')}
                   </h3>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center py-2 border-b border-gray-50">
-                      <span className="text-sm text-gray-600">Location</span>
+                      <span className="text-sm text-gray-600">{t('dashboard.location')}</span>
                       <span className="text-sm font-medium text-gray-900">
                         {dashboardData?.employee?.location || 'N/A'}
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-gray-50">
-                      <span className="text-sm text-gray-600">Contract Hours</span>
+                      <span className="text-sm text-gray-600">{t('dashboard.contractHours')}</span>
                       <span className="text-sm font-medium text-gray-900">
-                        {dashboardData?.employee?.contract_hours_per_day || 'N/A'} hrs/day
+                        {dashboardData?.employee?.contract_hours_per_day || 'N/A'} {t('dashboard.hrsPerDay')}
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-gray-50">
-                      <span className="text-sm text-gray-600">Contract Days</span>
+                      <span className="text-sm text-gray-600">{t('dashboard.contractDays')}</span>
                       <span className="text-sm font-medium text-gray-900">
-                        {dashboardData?.employee?.contract_days_per_month || 'N/A'} days/month
+                        {dashboardData?.employee?.contract_days_per_month || 'N/A'} {t('dashboard.daysPerMonth')}
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-gray-50">
-                      <span className="text-sm text-gray-600">Address</span>
+                      <span className="text-sm text-gray-600">{t('dashboard.address')}</span>
                       <span
                         className="text-sm font-medium text-gray-900 max-w-[150px] truncate"
                         title={dashboardData?.employee?.address || 'N/A'}
@@ -625,13 +623,13 @@ export default function EmployeeDashboard() {
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-gray-50">
-                      <span className="text-sm text-gray-600">City</span>
+                      <span className="text-sm text-gray-600">{t('dashboard.city')}</span>
                       <span className="text-sm font-medium text-gray-900">
                         {dashboardData?.employee?.city || 'N/A'}
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2">
-                      <span className="text-sm text-gray-600">Country</span>
+                      <span className="text-sm text-gray-600">{t('dashboard.country')}</span>
                       <span className="text-sm font-medium text-gray-900">
                         {dashboardData?.employee?.country || 'N/A'}
                       </span>
@@ -643,11 +641,11 @@ export default function EmployeeDashboard() {
                 <div className="p-6">
                   <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <DollarSign className="h-4 w-4" />
-                    Financial Details
+                    {t('dashboard.financialDetails')}
                   </h3>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center py-2 border-b border-gray-50">
-                      <span className="text-sm text-gray-600">Basic Salary</span>
+                      <span className="text-sm text-gray-600">{t('dashboard.basicSalary')}</span>
                       <span className="text-sm font-medium text-gray-900">
                         {dashboardData?.employee?.basic_salary
                           ? `$${dashboardData.employee.basic_salary.toLocaleString()}`
@@ -655,7 +653,7 @@ export default function EmployeeDashboard() {
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-gray-50">
-                      <span className="text-sm text-gray-600">Hourly Rate</span>
+                      <span className="text-sm text-gray-600">{t('dashboard.hourlyRate')}</span>
                       <span className="text-sm font-medium text-gray-900">
                         {dashboardData?.employee?.hourly_rate
                           ? `$${dashboardData.employee.hourly_rate}/hr`
@@ -663,7 +661,7 @@ export default function EmployeeDashboard() {
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-gray-50">
-                      <span className="text-sm text-gray-600">Food Allowance</span>
+                      <span className="text-sm text-gray-600">{t('dashboard.foodAllowance')}</span>
                       <span className="text-sm font-medium text-gray-900">
                         {dashboardData?.employee?.food_allowance
                           ? `$${dashboardData.employee.food_allowance}`
@@ -671,7 +669,7 @@ export default function EmployeeDashboard() {
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-gray-50">
-                      <span className="text-sm text-gray-600">Housing Allowance</span>
+                      <span className="text-sm text-gray-600">{t('dashboard.housingAllowance')}</span>
                       <span className="text-sm font-medium text-gray-900">
                         {dashboardData?.employee?.housing_allowance
                           ? `$${dashboardData.employee.housing_allowance}`
@@ -679,7 +677,7 @@ export default function EmployeeDashboard() {
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-gray-50">
-                      <span className="text-sm text-gray-600">Transport Allowance</span>
+                      <span className="text-sm text-gray-600">{t('dashboard.transportAllowance')}</span>
                       <span className="text-sm font-medium text-gray-900">
                         {dashboardData?.employee?.transport_allowance
                           ? `$${dashboardData.employee.transport_allowance}`
@@ -687,7 +685,7 @@ export default function EmployeeDashboard() {
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2">
-                      <span className="text-sm text-gray-600">Bank</span>
+                      <span className="text-sm text-gray-600">{t('dashboard.bank')}</span>
                       <span className="text-sm font-medium text-gray-900">
                         {dashboardData?.employee?.bank_name || 'N/A'}
                       </span>
@@ -702,17 +700,17 @@ export default function EmployeeDashboard() {
                 <div className="p-6 border-b border-gray-50">
                   <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                     <User className="h-4 w-4" />
-                    Emergency Contact
+                    {t('dashboard.emergencyContact')}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex justify-between items-center py-2">
-                      <span className="text-sm text-gray-600">Contact Name</span>
+                      <span className="text-sm text-gray-600">{t('dashboard.contactName')}</span>
                       <span className="text-sm font-medium text-gray-900">
                         {dashboardData?.employee?.emergency_contact_name || 'N/A'}
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2">
-                      <span className="text-sm text-gray-600">Contact Phone</span>
+                      <span className="text-sm text-gray-600">{t('dashboard.contactPhone')}</span>
                       <span className="text-sm font-medium text-gray-900">
                         {dashboardData?.employee?.emergency_contact_phone || 'N/A'}
                       </span>
@@ -726,7 +724,7 @@ export default function EmployeeDashboard() {
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                       <FileText className="h-4 w-4" />
-                      Documents ({dashboardData?.documents?.length || 0})
+                      {t('dashboard.documents')} ({dashboardData?.documents?.length || 0})
                     </h3>
                     <Button
                       variant="outline"
@@ -735,7 +733,7 @@ export default function EmployeeDashboard() {
                       className="text-xs"
                     >
                       <Upload className="h-3 w-3 mr-1" />
-                      Upload New
+                      {t('dashboard.uploadNew')}
                     </Button>
                   </div>
 
@@ -803,7 +801,7 @@ export default function EmployeeDashboard() {
                                   className="bg-white text-gray-900 hover:bg-gray-100 shadow-lg"
                                 >
                                   <FileText className="h-3 w-3 mr-1" />
-                                  View
+                                  {t('dashboard.view')}
                                 </Button>
                                 <Button
                                   variant="destructive"
@@ -812,7 +810,7 @@ export default function EmployeeDashboard() {
                                   className="shadow-lg"
                                 >
                                   <Trash2 className="h-3 w-3 mr-1" />
-                                  Delete
+                                  {t('dashboard.delete')}
                                 </Button>
                               </div>
                             </div>
@@ -850,9 +848,9 @@ export default function EmployeeDashboard() {
                           <div className="text-center">
                             <FileText className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                             <p className="text-sm text-gray-600 font-medium">
-                              +{dashboardData.documents.length - 3} more documents
+                              +{dashboardData.documents.length - 3} {t('dashboard.moreDocuments')}
                             </p>
-                            <p className="text-xs text-gray-500">Click to view all</p>
+                            <p className="text-xs text-gray-500">{t('dashboard.clickToViewAll')}</p>
                           </div>
                         </div>
                       )}
@@ -863,10 +861,10 @@ export default function EmployeeDashboard() {
                       <div className="text-center">
                         <FileText className="h-12 w-12 text-gray-400 mx-auto mb-3" />
                         <p className="text-sm text-gray-600 font-medium mb-2">
-                          No documents uploaded yet
+                          {t('dashboard.noDocumentsUploadedYet')}
                         </p>
                         <p className="text-xs text-gray-500 mb-4">
-                          Upload your first document to get started
+                          {t('dashboard.uploadFirstDocumentToGetStarted')}
                         </p>
                         <Button
                           variant="outline"
@@ -875,7 +873,7 @@ export default function EmployeeDashboard() {
                           className="text-xs"
                         >
                           <Upload className="h-3 w-3 mr-1" />
-                          Upload Document
+                          {t('dashboard.uploadDocument')}
                         </Button>
                       </div>
                     </div>
@@ -886,7 +884,7 @@ export default function EmployeeDashboard() {
                   <div className="p-6 border-b border-gray-50">
                     <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                       <Award className="h-4 w-4" />
-                      Skills ({dashboardData.skills.length})
+                      {t('dashboard.skills')} ({dashboardData.skills.length})
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {dashboardData.skills.slice(0, 5).map(skill => (
@@ -901,7 +899,7 @@ export default function EmployeeDashboard() {
                       ))}
                       {dashboardData.skills.length > 5 && (
                         <span className="text-sm text-gray-500">
-                          +{dashboardData.skills.length - 5} more
+                          +{dashboardData.skills.length - 5} {t('dashboard.more')}
                         </span>
                       )}
                     </div>
@@ -912,7 +910,7 @@ export default function EmployeeDashboard() {
                   <div className="p-6">
                     <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                       <DollarSign className="h-4 w-4" />
-                      Recent Advances
+                      {t('dashboard.recentAdvances')}
                     </h3>
                     <div className="space-y-2">
                       {dashboardData.advances.slice(0, 2).map(advance => (
