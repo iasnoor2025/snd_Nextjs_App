@@ -21,7 +21,7 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
     const type = searchParams.get('type') || 'all';
-    const limit = parseInt(searchParams.get('limit') || '100');
+         const limit = parseInt(searchParams.get('limit') || '10');
     const page = parseInt(searchParams.get('page') || '1');
     const offset = (page - 1) * limit;
 
@@ -125,17 +125,19 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
         const validEmployeeFiles = employeeFiles.filter(item => item.name && !item.name.endsWith('/') && item.name.includes('.'));
         console.log('Valid employee files (with extensions):', validEmployeeFiles);
         
-        const employeeIds = [...new Set(
-          validEmployeeFiles
-            .map(item => {
-              const pathParts = item.name.split('/');
-              const firstPart = pathParts[0];
-              const parsedId = parseInt(firstPart);
-              console.log(`File: ${item.name}, Path parts: ${pathParts}, First part: ${firstPart}, Parsed ID: ${parsedId}`);
-              return parsedId;
-            })
-            .filter(id => id > 0)
-        )];
+                 const employeeIds = [...new Set(
+           validEmployeeFiles
+             .map(item => {
+               const pathParts = item.name.split('/');
+               const firstPart = pathParts[0];
+               // Extract ID from "employee-214" format
+               const idMatch = firstPart.match(/employee-(\d+)/);
+               const parsedId = idMatch ? parseInt(idMatch[1]) : 0;
+               console.log(`File: ${item.name}, Path parts: ${pathParts}, First part: ${firstPart}, Parsed ID: ${parsedId}`);
+               return parsedId;
+             })
+             .filter(id => id > 0)
+         )];
         
         console.log('Employee IDs found in file paths:', employeeIds);
         console.log('Employee files:', employeeFiles.map(f => f.name));
@@ -209,12 +211,15 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
           console.log('No valid employee IDs found in file paths');
         }
         
-        const employeeDocuments = employeeFiles
-          .filter(item => item.name && !item.name.endsWith('/') && item.name.includes('.'))
-          .map((item, index) => {
-            const fileName = item.name.split('/').pop() || item.name;
-            const documentType = fileName.split('.').pop()?.toUpperCase() || 'UNKNOWN';
-            const employeeId = parseInt(item.name.split('/')[0]) || 0;
+                 const employeeDocuments = employeeFiles
+           .filter(item => item.name && !item.name.endsWith('/') && item.name.includes('.'))
+           .map((item, index) => {
+             const fileName = item.name.split('/').pop() || item.name;
+             const documentType = fileName.split('.').pop()?.toUpperCase() || 'UNKNOWN';
+             // Extract ID from "employee-214" format
+             const firstPart = item.name.split('/')[0];
+             const idMatch = firstPart.match(/employee-(\d+)/);
+             const employeeId = idMatch ? parseInt(idMatch[1]) : 0;
             
             // Get employee data from the map
             console.log(`Processing document for employee ID: ${employeeId}`);
@@ -379,15 +384,304 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
       }, { status: 500 });
     }
 
-    // Filter by search term if provided
-    let filteredDocuments = allDocuments;
+    // Server-side search: Only fetch and process documents that match the search criteria
+    let filteredDocuments: any[] = [];
+    let totalDocs = 0;
+    let employeeCount = 0;
+    let equipmentCount = 0;
+
     if (search) {
-      filteredDocuments = allDocuments.filter(doc => 
-        doc.searchableText.includes(search.toLowerCase()) ||
-        doc.fileName.toLowerCase().includes(search.toLowerCase()) ||
-        doc.documentType.toLowerCase().includes(search.toLowerCase())
-      );
-    }
+      console.log(`Performing server-side search for: "${search}"`);
+      
+      // Search in employee documents first
+      if (type === 'all' || type === 'employee') {
+        const searchLower = search.toLowerCase();
+        
+        // Get employees matching search criteria
+        let searchableEmployees: any[] = [];
+        try {
+          searchableEmployees = await db
+            .select({
+              id: employees.id,
+              firstName: employees.firstName,
+              lastName: employees.lastName,
+              fileNumber: employees.fileNumber,
+            })
+            .from(employees)
+            .where(
+              sql`LOWER(${employees.firstName} || ' ' || ${employees.lastName}) LIKE ${`%${searchLower}%`} OR 
+                  LOWER(${employees.fileNumber}) LIKE ${`%${searchLower}%`}`
+            )
+            .limit(50); // Limit employee search results
+          
+          console.log(`Found ${searchableEmployees.length} employees matching search: "${search}"`);
+        } catch (error) {
+          console.error('Error searching employees:', error);
+        }
+
+        // Only process files for matching employees
+        if (searchableEmployees.length > 0) {
+          const employeeIds = searchableEmployees.map(emp => emp.id);
+          const employeeDataMap = new Map();
+          
+          searchableEmployees.forEach((emp: any) => {
+            const employeeName = `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || 'Unknown Employee';
+            const employeeFileNumber = emp.fileNumber || 'No File #';
+            employeeDataMap.set(emp.id, {
+              name: employeeName,
+              fileNumber: employeeFileNumber
+            });
+          });
+
+          // Get employee files and filter by matching employees
+          try {
+            const employeeResponse = await SupabaseStorageService.listFiles('employee-documents');
+            if (employeeResponse.success && employeeResponse.files) {
+                             // Process only files for matching employees
+               const matchingEmployeeFiles = employeeResponse.files.filter(item => {
+                 if (!item.name || item.name.endsWith('/') || !item.name.includes('.')) return false;
+                 
+                 const folderName = item.name.split('/')[0];
+                 // Extract ID from "employee-214" format
+                 const idMatch = folderName.match(/employee-(\d+)/);
+                 if (idMatch) {
+                   const employeeId = parseInt(idMatch[1]);
+                   return employeeIds.includes(employeeId);
+                 }
+                 return false;
+               });
+
+              console.log(`Processing ${matchingEmployeeFiles.length} files for matching employees`);
+
+                             const employeeDocuments = matchingEmployeeFiles.map((item, index) => {
+                 const fileName = item.name.split('/').pop() || item.name;
+                 const documentType = fileName.split('.').pop()?.toUpperCase() || 'UNKNOWN';
+                 const folderName = item.name.split('/')[0];
+                 // Extract ID from "employee-214" format
+                 const idMatch = folderName.match(/employee-(\d+)/);
+                 const employeeId = idMatch ? parseInt(idMatch[1]) : 0;
+                const employeeInfo = employeeDataMap.get(employeeId) || {
+                  name: 'Unknown Employee',
+                  fileNumber: 'No File #'
+                };
+
+                // Determine MIME type
+                let mimeType = 'application/octet-stream';
+                if (['JPG', 'JPEG', 'PNG', 'GIF', 'BMP', 'WEBP', 'SVG'].includes(documentType)) {
+                  mimeType = `image/${documentType.toLowerCase()}`;
+                } else if (documentType === 'PDF') {
+                  mimeType = 'application/pdf';
+                } else if (['DOC', 'DOCX'].includes(documentType)) {
+                  mimeType = 'application/msword';
+                } else if (['XLS', 'XLSX'].includes(documentType)) {
+                  mimeType = 'application/vnd.ms-excel';
+                }
+
+                return {
+                  id: `emp_${employeeId}_${Date.now()}_${index}`,
+                  type: 'employee' as const,
+                  documentType,
+                  filePath: item.name,
+                  fileName,
+                  originalFileName: fileName,
+                  fileSize: item.size || 0,
+                  mimeType,
+                  description: `Employee document for ${employeeInfo.name}`,
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                  employeeId,
+                  employeeName: employeeInfo.name,
+                  employeeFileNumber: employeeInfo.fileNumber,
+                  url: SupabaseStorageService.getPublicUrl('employee-documents', item.name),
+                  viewUrl: SupabaseStorageService.getPublicUrl('employee-documents', item.name),
+                  searchableText: `${employeeInfo.name} ${employeeInfo.fileNumber} ${documentType} ${fileName}`.toLowerCase(),
+                };
+              });
+
+              filteredDocuments.push(...employeeDocuments);
+              employeeCount = employeeDocuments.length;
+            }
+          } catch (error) {
+            console.error('Error processing employee files:', error);
+          }
+        }
+      }
+
+      // Search in equipment documents
+      if (type === 'all' || type === 'equipment') {
+        const searchLower = search.toLowerCase();
+        
+        // Get equipment matching search criteria
+        let searchableEquipment: any[] = [];
+        try {
+          searchableEquipment = await db
+            .select({
+              id: equipment.id,
+              name: equipment.name,
+              modelNumber: equipment.modelNumber,
+              serialNumber: equipment.serialNumber,
+              doorNumber: equipment.doorNumber,
+            })
+            .from(equipment)
+            .where(
+              sql`LOWER(${equipment.name}) LIKE ${`%${searchLower}%`} OR 
+                  LOWER(${equipment.modelNumber}) LIKE ${`%${searchLower}%`} OR
+                  LOWER(${equipment.serialNumber}) LIKE ${`%${searchLower}%`} OR
+                  LOWER(${equipment.doorNumber}) LIKE ${`%${searchLower}%`}`
+            )
+            .limit(50); // Limit equipment search results
+          
+          console.log(`Found ${searchableEquipment.length} equipment matching search: "${search}"`);
+        } catch (error) {
+          console.error('Error searching equipment:', error);
+        }
+
+        // Only process files for matching equipment
+        if (searchableEquipment.length > 0) {
+          const equipmentIds = searchableEquipment.map(eq => eq.id);
+          const equipmentDataMap = new Map();
+          
+          searchableEquipment.forEach((eq: any) => {
+            equipmentDataMap.set(eq.id, {
+              name: eq.name || 'Unknown Equipment',
+              modelNumber: eq.modelNumber || 'No Model',
+              serialNumber: eq.serialNumber || 'No Serial',
+              doorNumber: eq.doorNumber || 'No Door #'
+            });
+          });
+
+          // Get equipment files and filter by matching equipment
+          try {
+            const equipmentResponse = await SupabaseStorageService.listFiles('equipment-documents');
+            if (equipmentResponse.success && equipmentResponse.files) {
+              const matchingEquipmentFiles = equipmentResponse.files.filter(item => {
+                if (!item.name || item.name.endsWith('/') || !item.name.includes('.')) return false;
+                
+                const equipmentId = parseInt(item.name.split('/')[0]) || 0;
+                return equipmentIds.includes(equipmentId);
+              });
+
+              console.log(`Processing ${matchingEquipmentFiles.length} files for matching equipment`);
+
+              const equipmentDocuments = matchingEquipmentFiles.map((item, index) => {
+                const fileName = item.name.split('/').pop() || item.name;
+                const documentType = fileName.split('.').pop()?.toUpperCase() || 'UNKNOWN';
+                const equipmentId = parseInt(item.name.split('/')[0]) || 0;
+                const equipmentInfo = equipmentDataMap.get(equipmentId) || {
+                  name: 'Unknown Equipment',
+                  modelNumber: 'No Model',
+                  serialNumber: 'No Serial',
+                  doorNumber: 'No Door #'
+                };
+
+                // Determine MIME type
+                let mimeType = 'application/octet-stream';
+                if (['JPG', 'JPEG', 'PNG', 'GIF', 'BMP', 'WEBP', 'SVG'].includes(documentType)) {
+                  mimeType = `image/${documentType.toLowerCase()}`;
+                } else if (documentType === 'PDF') {
+                  mimeType = 'application/pdf';
+                } else if (['DOC', 'DOCX'].includes(documentType)) {
+                  mimeType = 'application/msword';
+                } else if (['XLS', 'XLSX'].includes(documentType)) {
+                  mimeType = 'application/vnd.ms-excel';
+                }
+
+                return {
+                  id: `eqp_${equipmentId}_${Date.now()}_${index}`,
+                  type: 'equipment' as const,
+                  documentType,
+                  filePath: item.name,
+                  fileName,
+                  originalFileName: fileName,
+                  fileSize: item.size || 0,
+                  mimeType,
+                  description: `Equipment document for ${equipmentInfo.name}`,
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                  equipmentId,
+                  equipmentName: equipmentInfo.name,
+                  equipmentModel: equipmentInfo.modelNumber,
+                  equipmentSerial: equipmentInfo.serialNumber,
+                  url: SupabaseStorageService.getPublicUrl('equipment-documents', item.name),
+                  viewUrl: SupabaseStorageService.getPublicUrl('equipment-documents', item.name),
+                  searchableText: `${equipmentInfo.name} ${equipmentInfo.modelNumber} ${equipmentInfo.serialNumber} ${equipmentInfo.doorNumber || ''} ${documentType} ${fileName}`.toLowerCase(),
+                };
+              });
+
+              filteredDocuments.push(...equipmentDocuments);
+              equipmentCount = equipmentDocuments.length;
+            }
+          } catch (error) {
+            console.error('Error processing equipment files:', error);
+          }
+        }
+      }
+
+      // Also search in file names and document types for any remaining matches
+      if (filteredDocuments.length === 0) {
+        console.log('No matches found in employee/equipment data, searching in file names...');
+        
+        // Search in all files for filename/document type matches
+        const allFiles = [...(await SupabaseStorageService.listFiles('employee-documents').then(res => res.success ? res.files || [] : [])), ...(await SupabaseStorageService.listFiles('equipment-documents').then(res => res.success ? res.files || [] : []))];
+        
+        const filenameMatches = allFiles.filter(item => {
+          if (!item.name || item.name.endsWith('/') || !item.name.includes('.')) return false;
+          
+          const fileName = item.name.split('/').pop() || item.name;
+          const documentType = fileName.split('.').pop()?.toUpperCase() || 'UNKNOWN';
+          
+          return fileName.toLowerCase().includes(search.toLowerCase()) || 
+                 documentType.toLowerCase().includes(search.toLowerCase());
+        });
+
+        if (filenameMatches.length > 0) {
+          console.log(`Found ${filenameMatches.length} files matching filename/document type search`);
+          // Process these files with basic info (no employee/equipment details)
+          const basicDocuments = filenameMatches.map((item, index) => {
+            const fileName = item.name.split('/').pop() || item.name;
+            const documentType = fileName.split('.').pop()?.toUpperCase() || 'UNKNOWN';
+            
+            return {
+              id: `file_${Date.now()}_${index}`,
+              type: 'unknown' as const,
+              documentType,
+              filePath: item.name,
+              fileName,
+              originalFileName: fileName,
+              fileSize: item.size || 0,
+              mimeType: 'application/octet-stream',
+              description: `File: ${fileName}`,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              url: item.name.includes('employee') ? 
+                SupabaseStorageService.getPublicUrl('employee-documents', item.name) :
+                SupabaseStorageService.getPublicUrl('equipment-documents', item.name),
+              viewUrl: item.name.includes('employee') ? 
+                SupabaseStorageService.getPublicUrl('employee-documents', item.name) :
+                SupabaseStorageService.getPublicUrl('equipment-documents', item.name),
+              searchableText: `${fileName} ${documentType}`.toLowerCase(),
+            };
+          });
+          
+          filteredDocuments.push(...basicDocuments);
+        }
+      }
+
+      totalDocs = filteredDocuments.length;
+      console.log(`Search completed. Found ${totalDocs} total documents matching "${search}"`);
+      
+         } else {
+       // No search term - use the existing allDocuments array but apply pagination
+       console.log('No search term provided, using existing documents with pagination');
+       
+       // Use the documents already fetched in allDocuments
+       filteredDocuments = allDocuments;
+       totalDocs = allDocuments.length;
+       employeeCount = allDocuments.filter(doc => doc.type === 'employee').length;
+       equipmentCount = allDocuments.filter(doc => doc.type === 'equipment').length;
+       
+       console.log(`Total documents available: ${totalDocs} (Employee: ${employeeCount}, Equipment: ${equipmentCount})`);
+     }
 
     // Filter by type if specified
     if (type !== 'all') {
@@ -397,12 +691,8 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
     // Sort by creation date
     filteredDocuments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-    // Apply pagination
-    const totalDocs = filteredDocuments.length;
-    const paginatedDocuments = filteredDocuments.slice(offset, offset + limit);
-
-    const employeeCount = filteredDocuments.filter(doc => doc.type === 'employee').length;
-    const equipmentCount = filteredDocuments.filter(doc => doc.type === 'equipment').length;
+         // Apply pagination (no maximum limit - show actual total)
+     const paginatedDocuments = filteredDocuments.slice(offset, offset + limit);
 
     const responseData = {
       success: true,
