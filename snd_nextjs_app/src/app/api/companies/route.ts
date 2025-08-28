@@ -137,13 +137,14 @@ function formatCompanyForFrontend(company: Record<string, any>) {
   };
 }
 
-export const GET = withPermission(async (request: NextRequest) => {
+export const GET = withPermission(PermissionConfigs.company.read)(async (request: NextRequest) => {
   try {
-
     // Get query parameters for filtering
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search');
     const status = searchParams.get('status');
+    const sortBy = searchParams.get('sortBy') || 'name';
+    const sortOrder = searchParams.get('sortOrder') || 'asc';
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = (page - 1) * limit;
@@ -170,6 +171,22 @@ export const GET = withPermission(async (request: NextRequest) => {
       .from(companiesTable)
       .where(whereExpr as any);
     const totalCount = Number(totalCountRow[0]?.count ?? 0);
+
+    // Build order by clause
+    let orderByClause;
+    switch (sortBy) {
+      case 'name':
+        orderByClause = sortOrder === 'asc' ? asc(companiesTable.name) : desc(companiesTable.name);
+        break;
+      case 'createdAt':
+        orderByClause = sortOrder === 'asc' ? asc(companiesTable.createdAt) : desc(companiesTable.createdAt);
+        break;
+      case 'updatedAt':
+        orderByClause = sortOrder === 'asc' ? asc(companiesTable.updatedAt) : desc(companiesTable.updatedAt);
+        break;
+      default:
+        orderByClause = asc(companiesTable.name);
+    }
 
     // Fetch companies from database
     const companies = await db
@@ -277,7 +294,7 @@ export const GET = withPermission(async (request: NextRequest) => {
       })
       .from(companiesTable)
       .where(whereExpr as any)
-      .orderBy(asc(companiesTable.id))
+      .orderBy(orderByClause)
       .offset(offset)
       .limit(limit);
 
@@ -293,23 +310,24 @@ export const GET = withPermission(async (request: NextRequest) => {
       message: 'Companies retrieved successfully',
     });
   } catch (error) {
-
+    console.error('Error fetching companies:', error);
+    
+    // Return a proper error response
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to fetch companies: ' + (error as Error).message,
+        message: 'Failed to fetch companies: ' + (error instanceof Error ? error.message : 'Unknown error'),
         error: {
           name: error instanceof Error ? error.name : 'Unknown',
           message: error instanceof Error ? error.message : 'Unknown error',
-          stack: error instanceof Error ? error.stack : 'No stack trace',
         },
       },
       { status: 500 }
     );
   }
-}, PermissionConfigs.company.read);
+});
 
-export const POST = withPermission(async (request: NextRequest) => {
+export const POST = withPermission(PermissionConfigs.company.create)(async (request: NextRequest) => {
   try {
     const body = await request.json();
 
@@ -436,12 +454,13 @@ export const POST = withPermission(async (request: NextRequest) => {
       data: formatCompanyForFrontend(newCompany),
     });
   } catch (error) {
+    console.error('Error creating company:', error);
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to create company: ' + (error as Error).message,
+        message: 'Failed to create company: ' + (error instanceof Error ? error.message : 'Unknown error'),
       },
       { status: 500 }
     );
   }
-}, PermissionConfigs.company.create);
+});

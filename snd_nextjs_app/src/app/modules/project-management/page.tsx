@@ -5,13 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import {
-  Pagination,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination';
+// Pagination components removed as they are not used in this component
 import { Progress } from '@/components/ui/progress';
 import {
   Select,
@@ -28,8 +22,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PermissionContent, PermissionBased, RoleContent } from '@/lib/rbac/rbac-components';
+// Tabs components removed as they are not used in this component
+import { PermissionContent } from '@/lib/rbac/rbac-components';
+import { PermissionBased } from '@/components/PermissionBased';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import ApiService from '@/lib/api-service';
 import {
@@ -61,8 +56,8 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-// i18n refactor: All user-facing strings now use useTranslation('project')
-import { useTranslation } from 'react-i18next';
+// i18n refactor: All user-facing strings now use useI18n
+import { useI18n } from '@/hooks/use-i18n';
 
 interface Project {
   id: string;
@@ -109,7 +104,7 @@ export default function ProjectManagementPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState('table');
   const [creatingSample, setCreatingSample] = useState(false);
-  const { t } = useTranslation('project');
+  const { t } = useI18n();
 
   // Get allowed actions for project management
   const allowedActions = getAllowedActions('Project');
@@ -309,7 +304,7 @@ export default function ProjectManagementPage() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">{t('loading')}</p>
+            <p className="text-muted-foreground">{t('project.loading')}</p>
           </div>
         </div>
       </ProtectedRoute>

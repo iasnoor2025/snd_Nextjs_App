@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/drizzle';
+import { db } from '@/lib/db';
 import { safetyIncidents, employees } from '@/lib/drizzle/schema';
 import { eq, and, desc, asc, like } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
+import { PermissionConfigs, withPermission } from '@/lib/rbac/api-middleware';
 
-export async function GET(request: NextRequest) {
+export const GET = withPermission(PermissionConfigs.safety.read)(async (request: NextRequest) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
@@ -44,49 +38,97 @@ export async function GET(request: NextRequest) {
     }
 
     // Get total count
-    const totalCount = await db
-      .select({ count: safetyIncidents.id })
-      .from(safetyIncidents)
-      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
+    let total = 0;
+    try {
+      const totalCount = await db
+        .select({ count: safetyIncidents.id })
+        .from(safetyIncidents)
+        .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
 
-    const total = totalCount.length;
+      total = totalCount.length;
+    } catch (countError) {
+      console.error('Error counting safety incidents:', countError);
+      total = 0;
+    }
 
     // Get incidents with pagination
-    const incidents = await db
-      .select({
-        id: safetyIncidents.id,
-        title: safetyIncidents.title,
-        description: safetyIncidents.description,
-        severity: safetyIncidents.severity,
-        status: safetyIncidents.status,
-        reportedBy: safetyIncidents.reportedBy,
-        assignedToId: safetyIncidents.assignedToId,
-        location: safetyIncidents.location,
-        incidentDate: safetyIncidents.incidentDate,
-        resolvedDate: safetyIncidents.resolvedDate,
-        resolution: safetyIncidents.resolution,
-        cost: safetyIncidents.cost,
-        createdAt: safetyIncidents.createdAt,
-        updatedAt: safetyIncidents.updatedAt,
-        // Related data
-        reportedByName: employees.firstName,
-        reportedByLastName: employees.lastName,
-        assignedToName: employees.firstName,
-        assignedToLastName: employees.lastName,
-      })
-      .from(safetyIncidents)
-      .leftJoin(employees, eq(safetyIncidents.reportedBy, employees.id))
-      .leftJoin(employees, eq(safetyIncidents.assignedToId, employees.id))
-      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
-      .orderBy(desc(safetyIncidents.incidentDate))
-      .limit(limit)
-      .offset(offset);
+    let incidents = [];
+    try {
+      incidents = await db
+        .select({
+          id: safetyIncidents.id,
+          title: safetyIncidents.title,
+          description: safetyIncidents.description,
+          severity: safetyIncidents.severity,
+          status: safetyIncidents.status,
+          reportedBy: safetyIncidents.reportedBy,
+          assignedToId: safetyIncidents.assignedToId,
+          location: safetyIncidents.location,
+          incidentDate: safetyIncidents.incidentDate,
+          resolvedDate: safetyIncidents.resolvedDate,
+          resolution: safetyIncidents.resolution,
+          cost: safetyIncidents.cost,
+          createdAt: safetyIncidents.createdAt,
+          updatedAt: safetyIncidents.updatedAt,
+          // Related data - we'll fetch employee names separately to avoid join conflicts
+        })
+        .from(safetyIncidents)
+        .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+        .orderBy(desc(safetyIncidents.incidentDate))
+        .limit(limit)
+        .offset(offset);
+    } catch (queryError) {
+      console.error('Error querying safety incidents:', queryError);
+      incidents = [];
+    }
+
+    // Fetch employee names separately to avoid join conflicts
+    let incidentsWithEmployeeNames = [];
+    try {
+      incidentsWithEmployeeNames = await Promise.all(
+        incidents.map(async (incident) => {
+          let reportedByEmployee = null;
+          let assignedToEmployee = null;
+
+          try {
+            if (incident.reportedBy) {
+              reportedByEmployee = await db
+                .select({ firstName: employees.firstName, lastName: employees.lastName })
+                .from(employees)
+                .where(eq(employees.id, incident.reportedBy))
+                .limit(1);
+            }
+
+            if (incident.assignedToId) {
+              assignedToEmployee = await db
+                .select({ firstName: employees.firstName, lastName: employees.lastName })
+                .from(employees)
+                .where(eq(employees.id, incident.assignedToId))
+                .limit(1);
+            }
+          } catch (employeeError) {
+            console.error('Error fetching employee names:', employeeError);
+          }
+
+          return {
+            ...incident,
+            reportedByName: reportedByEmployee?.[0]?.firstName || '',
+            reportedByLastName: reportedByEmployee?.[0]?.lastName || '',
+            assignedToName: assignedToEmployee?.[0]?.firstName || '',
+            assignedToLastName: assignedToEmployee?.[0]?.lastName || '',
+          };
+        })
+      );
+    } catch (employeeNamesError) {
+      console.error('Error processing employee names:', employeeNamesError);
+      incidentsWithEmployeeNames = incidents; // Fallback to incidents without employee names
+    }
 
     const lastPage = Math.ceil(total / limit);
 
     return NextResponse.json({
       success: true,
-      data: incidents,
+      data: incidentsWithEmployeeNames,
       current_page: page,
       last_page: lastPage,
       per_page: limit,
@@ -98,15 +140,10 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching safety incidents:', error);
     return NextResponse.json({ error: 'Failed to fetch safety incidents' }, { status: 500 });
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = withPermission(PermissionConfigs.safety.create)(async (request: NextRequest) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const body = await request.json();
     const {
       title,
@@ -170,4 +207,4 @@ export async function POST(request: NextRequest) {
     console.error('Error creating safety incident:', error);
     return NextResponse.json({ error: 'Failed to create safety incident' }, { status: 500 });
   }
-}
+});

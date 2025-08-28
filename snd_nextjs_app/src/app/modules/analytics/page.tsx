@@ -1,7 +1,8 @@
 'use client';
 
 import { ProtectedRoute } from '@/components/protected-route';
-import { PermissionContent, PermissionBased } from '@/lib/rbac/rbac-components';
+import { PermissionContent } from '@/lib/rbac/rbac-components';
+import { PermissionBased } from '@/components/PermissionBased';
 import { useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';

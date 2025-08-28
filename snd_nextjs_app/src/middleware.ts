@@ -16,9 +16,9 @@ export async function middleware(request: NextRequest) {
     '/_next',
     '/favicon.ico',
     '/access-denied',
-    '/uploads',
     '/debug-permissions',
     '/api/debug-auth',
+    '/api/timesheets/auto-generate', // Allow timesheet auto-generation
   ];
 
   // Define static assets

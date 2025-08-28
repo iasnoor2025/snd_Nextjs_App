@@ -1,5 +1,7 @@
 import { autoGenerateTimesheets } from '@/lib/timesheet-auto-generator';
 import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/drizzle';
+import { sql } from 'drizzle-orm';
 
 export async function POST(_request: NextRequest) {
   try {
@@ -53,3 +55,70 @@ export async function POST(_request: NextRequest) {
     );
     }
   }
+
+// Test endpoint to check database connection
+export async function GET() {
+  try {
+    console.log('Testing database connection...');
+    
+    // Test database connection
+    const testResult = await db.execute(sql`SELECT 1 as test`);
+    console.log('Database connection test successful:', testResult);
+    
+    // Check employee assignments
+    const assignmentsResult = await db.execute(sql`
+      SELECT id, employee_id, project_id, rental_id, start_date, end_date, status 
+      FROM employee_assignments 
+      LIMIT 5
+    `);
+    
+    // Check timesheets
+    const timesheetsResult = await db.execute(sql`
+      SELECT COUNT(*) as count FROM timesheets WHERE deleted_at IS NULL
+    `);
+    
+    // Check existing timesheets for the assignments
+    let existingTimesheetsDetails = [];
+    if (assignmentsResult.rows && assignmentsResult.rows.length > 0) {
+      for (const assignment of assignmentsResult.rows) {
+        const timesheetsForAssignment = await db.execute(sql`
+          SELECT id, employee_id, date, status 
+          FROM timesheets 
+          WHERE employee_id = ${assignment.employee_id} 
+            AND DATE(date) >= ${assignment.start_date}
+            AND deleted_at IS NULL
+          ORDER BY date
+        `);
+        
+        existingTimesheetsDetails.push({
+          assignment_id: assignment.id,
+          employee_id: assignment.employee_id,
+          start_date: assignment.start_date,
+          existing_timesheets: timesheetsForAssignment.rows || []
+        });
+      }
+    }
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Database connection successful',
+      testResult,
+      assignments: assignmentsResult.rows || [],
+      timesheetsCount: timesheetsResult.rows?.[0]?.count || 0,
+      existingTimesheetsDetails,
+      debug: {
+        currentDate: new Date().toISOString(),
+        currentDateString: new Date().toDateString(),
+        assignmentsCount: assignmentsResult.rows?.length || 0
+      }
+    });
+  } catch (error) {
+    console.error('Database connection test failed:', error);
+    
+    return NextResponse.json({
+      success: false,
+      error: 'Database connection failed',
+      details: error instanceof Error ? error.message : 'Unknown error',
+    }, { status: 500 });
+  }
+}

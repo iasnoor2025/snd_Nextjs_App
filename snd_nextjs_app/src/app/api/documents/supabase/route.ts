@@ -433,74 +433,105 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
             });
           });
 
-          // Get employee files and filter by matching employees
+          // Get employee files and filter by matching employees - recursively check all folders
           try {
-            const employeeResponse = await SupabaseStorageService.listFiles('employee-documents');
-            if (employeeResponse.success && employeeResponse.files) {
-                             // Process only files for matching employees
-               const matchingEmployeeFiles = employeeResponse.files.filter(item => {
-                 if (!item.name || item.name.endsWith('/') || !item.name.includes('.')) return false;
-                 
-                 const folderName = item.name.split('/')[0];
-                 // Extract ID from "employee-214" format
-                 const idMatch = folderName.match(/employee-(\d+)/);
-                 if (idMatch) {
-                   const employeeId = parseInt(idMatch[1]);
-                   return employeeIds.includes(employeeId);
-                 }
-                 return false;
-               });
-
-              console.log(`Processing ${matchingEmployeeFiles.length} files for matching employees`);
-
-                             const employeeDocuments = matchingEmployeeFiles.map((item, index) => {
-                 const fileName = item.name.split('/').pop() || item.name;
-                 const documentType = fileName.split('.').pop()?.toUpperCase() || 'UNKNOWN';
-                 const folderName = item.name.split('/')[0];
-                 // Extract ID from "employee-214" format
-                 const idMatch = folderName.match(/employee-(\d+)/);
-                 const employeeId = idMatch ? parseInt(idMatch[1]) : 0;
-                const employeeInfo = employeeDataMap.get(employeeId) || {
-                  name: 'Unknown Employee',
-                  fileNumber: 'No File #'
-                };
-
-                // Determine MIME type
-                let mimeType = 'application/octet-stream';
-                if (['JPG', 'JPEG', 'PNG', 'GIF', 'BMP', 'WEBP', 'SVG'].includes(documentType)) {
-                  mimeType = `image/${documentType.toLowerCase()}`;
-                } else if (documentType === 'PDF') {
-                  mimeType = 'application/pdf';
-                } else if (['DOC', 'DOCX'].includes(documentType)) {
-                  mimeType = 'application/msword';
-                } else if (['XLS', 'XLSX'].includes(documentType)) {
-                  mimeType = 'application/vnd.ms-excel';
+            let allEmployeeFiles: any[] = [];
+            
+            // First get root level to find employee folders
+            const rootResponse = await SupabaseStorageService.listFiles('employee-documents');
+            if (rootResponse.success && rootResponse.files) {
+              // Find employee folders
+              const employeeFolders = rootResponse.files
+                .filter(item => item.name.endsWith('/') || !item.name.includes('.'))
+                .map(item => item.name.replace('/', ''));
+              
+              console.log(`Found employee folders for search:`, employeeFolders);
+              
+              // Check each employee folder for files
+              for (const folder of employeeFolders) {
+                try {
+                  const folderResponse = await SupabaseStorageService.listFiles('employee-documents', folder);
+                  if (folderResponse.success && folderResponse.files) {
+                    // Add files with folder prefix
+                    allEmployeeFiles.push(...folderResponse.files.map((f: any) => ({
+                      ...f,
+                      name: `${folder}/${f.name}` // Include folder in path
+                    })));
+                  }
+                } catch (error) {
+                  console.log(`No files in employee folder ${folder}:`, error);
                 }
-
-                return {
-                  id: `emp_${employeeId}_${Date.now()}_${index}`,
-                  type: 'employee' as const,
-                  documentType,
-                  filePath: item.name,
-                  fileName,
-                  originalFileName: fileName,
-                  fileSize: item.size || 0,
-                  mimeType,
-                  description: `Employee document for ${employeeInfo.name}`,
-                  createdAt: new Date().toISOString(),
-                  updatedAt: new Date().toISOString(),
-                  employeeId,
-                  employeeName: employeeInfo.name,
-                  employeeFileNumber: employeeInfo.fileNumber,
-                  url: SupabaseStorageService.getPublicUrl('employee-documents', item.name),
-                  viewUrl: SupabaseStorageService.getPublicUrl('employee-documents', item.name),
-                  searchableText: `${employeeInfo.name} ${employeeInfo.fileNumber} ${documentType} ${fileName}`.toLowerCase(),
-                };
-              });
-
-              filteredDocuments.push(...employeeDocuments);
-              employeeCount = employeeDocuments.length;
+              }
             }
+            
+            console.log(`Total employee files found for search: ${allEmployeeFiles.length}`);
+            
+            // Now filter files for matching employees
+            const matchingEmployeeFiles = allEmployeeFiles.filter(item => {
+              if (!item.name || item.name.endsWith('/') || !item.name.includes('.')) return false;
+              
+              const folderName = item.name.split('/')[0];
+              // Extract ID from "employee-214" format
+              const idMatch = folderName.match(/employee-(\d+)/);
+              if (idMatch) {
+                const employeeId = parseInt(idMatch[1]);
+                const isMatch = employeeIds.includes(employeeId);
+                console.log(`File ${item.name}: folder=${folderName}, extracted ID=${employeeId}, isMatch=${isMatch}`);
+                return isMatch;
+              }
+              return false;
+            });
+
+            console.log(`Processing ${matchingEmployeeFiles.length} files for matching employees`);
+            console.log(`Matching files:`, matchingEmployeeFiles.map(f => f.name));
+
+            const employeeDocuments = matchingEmployeeFiles.map((item, index) => {
+              const fileName = item.name.split('/').pop() || item.name;
+              const documentType = fileName.split('.').pop()?.toUpperCase() || 'UNKNOWN';
+              const folderName = item.name.split('/')[0];
+              // Extract ID from "employee-214" format
+              const idMatch = folderName.match(/employee-(\d+)/);
+              const employeeId = idMatch ? parseInt(idMatch[1]) : 0;
+              const employeeInfo = employeeDataMap.get(employeeId) || {
+                name: 'Unknown Employee',
+                fileNumber: 'No File #'
+              };
+
+              // Determine MIME type
+              let mimeType = 'application/octet-stream';
+              if (['JPG', 'JPEG', 'PNG', 'GIF', 'BMP', 'WEBP', 'SVG'].includes(documentType)) {
+                mimeType = `image/${documentType.toLowerCase()}`;
+              } else if (documentType === 'PDF') {
+                mimeType = 'application/pdf';
+              } else if (['DOC', 'DOCX'].includes(documentType)) {
+                mimeType = 'application/msword';
+              } else if (['XLS', 'XLSX'].includes(documentType)) {
+                mimeType = 'application/vnd.ms-excel';
+              }
+
+              return {
+                id: `emp_${employeeId}_${Date.now()}_${index}`,
+                type: 'employee' as const,
+                documentType,
+                filePath: item.name,
+                fileName,
+                originalFileName: fileName,
+                fileSize: item.size || 0,
+                mimeType,
+                description: `Employee document for ${employeeInfo.name}`,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                employeeId,
+                employeeName: employeeInfo.name,
+                employeeFileNumber: employeeInfo.fileNumber,
+                url: SupabaseStorageService.getPublicUrl('employee-documents', item.name),
+                viewUrl: SupabaseStorageService.getPublicUrl('employee-documents', item.name),
+                searchableText: `${employeeInfo.name} ${employeeInfo.fileNumber} ${documentType} ${fileName}`.toLowerCase(),
+              };
+            });
+
+            filteredDocuments.push(...employeeDocuments);
+            employeeCount = employeeDocuments.length;
           } catch (error) {
             console.error('Error processing employee files:', error);
           }
@@ -550,67 +581,99 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
             });
           });
 
-          // Get equipment files and filter by matching equipment
+          // Get equipment files and filter by matching equipment - recursively check all folders
           try {
-            const equipmentResponse = await SupabaseStorageService.listFiles('equipment-documents');
-            if (equipmentResponse.success && equipmentResponse.files) {
-              const matchingEquipmentFiles = equipmentResponse.files.filter(item => {
-                if (!item.name || item.name.endsWith('/') || !item.name.includes('.')) return false;
-                
-                const equipmentId = parseInt(item.name.split('/')[0]) || 0;
-                return equipmentIds.includes(equipmentId);
-              });
-
-              console.log(`Processing ${matchingEquipmentFiles.length} files for matching equipment`);
-
-              const equipmentDocuments = matchingEquipmentFiles.map((item, index) => {
-                const fileName = item.name.split('/').pop() || item.name;
-                const documentType = fileName.split('.').pop()?.toUpperCase() || 'UNKNOWN';
-                const equipmentId = parseInt(item.name.split('/')[0]) || 0;
-                const equipmentInfo = equipmentDataMap.get(equipmentId) || {
-                  name: 'Unknown Equipment',
-                  modelNumber: 'No Model',
-                  serialNumber: 'No Serial',
-                  doorNumber: 'No Door #'
-                };
-
-                // Determine MIME type
-                let mimeType = 'application/octet-stream';
-                if (['JPG', 'JPEG', 'PNG', 'GIF', 'BMP', 'WEBP', 'SVG'].includes(documentType)) {
-                  mimeType = `image/${documentType.toLowerCase()}`;
-                } else if (documentType === 'PDF') {
-                  mimeType = 'application/pdf';
-                } else if (['DOC', 'DOCX'].includes(documentType)) {
-                  mimeType = 'application/msword';
-                } else if (['XLS', 'XLSX'].includes(documentType)) {
-                  mimeType = 'application/vnd.ms-excel';
+            let allEquipmentFiles: any[] = [];
+            
+            // First get root level to find equipment folders
+            const rootResponse = await SupabaseStorageService.listFiles('equipment-documents');
+            if (rootResponse.success && rootResponse.files) {
+              // Find equipment folders (folders that are numbers)
+              const equipmentFolders = rootResponse.files
+                .filter(item => item.name.endsWith('/') || !item.name.includes('.'))
+                .map(item => item.name.replace('/', ''));
+              
+              console.log(`Found equipment folders for search:`, equipmentFolders);
+              
+              // Check each equipment folder for files
+              for (const folder of equipmentFolders) {
+                try {
+                  const folderResponse = await SupabaseStorageService.listFiles('equipment-documents', folder);
+                  if (folderResponse.success && folderResponse.files) {
+                    // Add files with folder prefix
+                    allEquipmentFiles.push(...folderResponse.files.map((f: any) => ({
+                      ...f,
+                      name: `${folder}/${f.name}` // Include folder in path
+                    })));
+                  }
+                } catch (error) {
+                  console.log(`No files in equipment folder ${folder}:`, error);
                 }
-
-                return {
-                  id: `eqp_${equipmentId}_${Date.now()}_${index}`,
-                  type: 'equipment' as const,
-                  documentType,
-                  filePath: item.name,
-                  fileName,
-                  originalFileName: fileName,
-                  fileSize: item.size || 0,
-                  mimeType,
-                  description: `Equipment document for ${equipmentInfo.name}`,
-                  createdAt: new Date().toISOString(),
-                  updatedAt: new Date().toISOString(),
-                  equipmentId,
-                  equipmentName: equipmentInfo.name,
-                  equipmentModel: equipmentInfo.modelNumber,
-                  equipmentSerial: equipmentInfo.serialNumber,
-                  url: SupabaseStorageService.getPublicUrl('equipment-documents', item.name),
-                  viewUrl: SupabaseStorageService.getPublicUrl('equipment-documents', item.name),
-                  searchableText: `${equipmentInfo.name} ${equipmentInfo.modelNumber} ${equipmentInfo.serialNumber} ${equipmentInfo.doorNumber || ''} ${documentType} ${fileName}`.toLowerCase(),
-                };
-              });
-
-              filteredDocuments.push(...equipmentDocuments);
-              equipmentCount = equipmentDocuments.length;
+              }
             }
+            
+            console.log(`Total equipment files found for search: ${allEquipmentFiles.length}`);
+            
+            // Now filter files for matching equipment
+            const matchingEquipmentFiles = allEquipmentFiles.filter(item => {
+              if (!item.name || item.name.endsWith('/') || !item.name.includes('.')) return false;
+              
+              const equipmentId = parseInt(item.name.split('/')[0]) || 0;
+              const isMatch = equipmentIds.includes(equipmentId);
+              console.log(`File ${item.name}: folder=${item.name.split('/')[0]}, extracted ID=${equipmentId}, isMatch=${isMatch}`);
+              return isMatch;
+            });
+
+            console.log(`Processing ${matchingEquipmentFiles.length} files for matching equipment`);
+            console.log(`Matching files:`, matchingEquipmentFiles.map(f => f.name));
+
+            const equipmentDocuments = matchingEquipmentFiles.map((item, index) => {
+              const fileName = item.name.split('/').pop() || item.name;
+              const documentType = fileName.split('.').pop()?.toUpperCase() || 'UNKNOWN';
+              const equipmentId = parseInt(item.name.split('/')[0]) || 0;
+              const equipmentInfo = equipmentDataMap.get(equipmentId) || {
+                name: 'Unknown Equipment',
+                modelNumber: 'No Model',
+                serialNumber: 'No Serial',
+                doorNumber: 'No Door #'
+              };
+
+              // Determine MIME type
+              let mimeType = 'application/octet-stream';
+              if (['JPG', 'JPEG', 'PNG', 'GIF', 'BMP', 'WEBP', 'SVG'].includes(documentType)) {
+                mimeType = `image/${documentType.toLowerCase()}`;
+              } else if (documentType === 'PDF') {
+                mimeType = 'application/pdf';
+              } else if (['DOC', 'DOCX'].includes(documentType)) {
+                mimeType = 'application/msword';
+              } else if (['XLS', 'XLSX'].includes(documentType)) {
+                mimeType = 'application/vnd.ms-excel';
+              }
+
+              return {
+                id: `eqp_${equipmentId}_${Date.now()}_${index}`,
+                type: 'equipment' as const,
+                documentType,
+                filePath: item.name,
+                fileName,
+                originalFileName: fileName,
+                fileSize: item.size || 0,
+                mimeType,
+                description: `Equipment document for ${equipmentInfo.name}`,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                equipmentId,
+                equipmentName: equipmentInfo.name,
+                equipmentModel: equipmentInfo.modelNumber,
+                equipmentSerial: equipmentInfo.serialNumber,
+                url: SupabaseStorageService.getPublicUrl('equipment-documents', item.name),
+                viewUrl: SupabaseStorageService.getPublicUrl('equipment-documents', item.name),
+                searchableText: `${equipmentInfo.name} ${equipmentInfo.modelNumber} ${equipmentInfo.serialNumber} ${equipmentInfo.doorNumber || ''} ${documentType} ${fileName}`.toLowerCase(),
+              };
+            });
+
+            filteredDocuments.push(...equipmentDocuments);
+            equipmentCount = equipmentDocuments.length;
           } catch (error) {
             console.error('Error processing equipment files:', error);
           }

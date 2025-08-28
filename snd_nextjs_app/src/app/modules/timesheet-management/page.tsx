@@ -43,7 +43,8 @@ import {
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { useI18n } from '@/hooks/use-i18n';
-import { PermissionContent, PermissionBased } from '@/lib/rbac/rbac-components';
+import { PermissionContent } from '@/lib/rbac/rbac-components';
+import { PermissionBased } from '@/components/PermissionBased';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import {
   batchTranslateNames,

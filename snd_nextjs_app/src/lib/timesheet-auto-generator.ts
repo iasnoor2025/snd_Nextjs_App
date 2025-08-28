@@ -32,12 +32,12 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
   isAutoGenerating = true;
 
   try {
-    // Starting timesheet auto-generation...
+    console.log('Starting timesheet auto-generation...');
 
-    // Test database connection first
+    // Test database connection first with better error handling
     try {
-      await db.execute(sql`SELECT 1`);
-      // Database connection successful
+      const testResult = await db.execute(sql`SELECT 1 as test`);
+      console.log('Database connection test successful');
     } catch (dbError) {
               // Database connection failed
       return {
@@ -196,6 +196,11 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
         let loopCount = 0;
         const maxLoopCount = 1000; // Safety check to prevent infinite loops
 
+        console.log(`Starting timesheet generation for assignment ${assignment.id}:`);
+        console.log(`  - Start date: ${effectiveStart.toDateString()}`);
+        console.log(`  - End date: ${effectiveEnd.toDateString()}`);
+        console.log(`  - Current date: ${currentDate.toDateString()}`);
+
         while (currentDate <= effectiveEnd && loopCount < maxLoopCount) {
           loopCount++;
           try {
@@ -206,7 +211,7 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
             const day = String(currentDate.getDate()).padStart(2, '0');
             const dateString = `${year}-${month}-${day}`;
 
-
+            console.log(`  - Processing date: ${dateString} (loop ${loopCount})`);
 
             // Check for existing timesheet using raw SQL to avoid timezone issues
             const existingTimesheets = await db.execute(sql`
@@ -217,9 +222,11 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
                 AND deleted_at IS NULL
             `);
 
-            if (existingTimesheets.rows.length > 0) {
-              // Skip if timesheet already exists
+            console.log(`  - Existing timesheets found: ${existingTimesheets.rows?.length || 0}`);
 
+            if (existingTimesheets.rows && existingTimesheets.rows.length > 0) {
+              // Skip if timesheet already exists
+              console.log(`  - Skipping ${dateString} - timesheet already exists`);
               currentDate.setDate(currentDate.getDate() + 1);
               continue;
             }

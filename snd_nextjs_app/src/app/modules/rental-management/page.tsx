@@ -31,7 +31,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
-import { PermissionContent, PermissionBased, RoleContent } from '@/lib/rbac/rbac-components';
+import { PermissionContent, RoleContent } from '@/lib/rbac/rbac-components';
+import { PermissionBased } from '@/components/PermissionBased';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { format } from 'date-fns';
 import {
