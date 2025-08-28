@@ -60,7 +60,13 @@ export async function GET(_request: NextRequest) {
           let status: 'available' | 'expired' | 'expiring' | 'missing' = 'available';
           let daysRemaining: number | null = null;
 
-          if (item.istimaraExpiry) {
+          // Check if istimara number exists
+          if (!item.istimara) {
+            status = 'missing';
+          } else if (!item.istimaraExpiry) {
+            // Has istimara but no expiry date - mark as missing expiry
+            status = 'missing';
+          } else {
             const expiryDate = new Date(item.istimaraExpiry);
             const timeDiff = expiryDate.getTime() - today.getTime();
             daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
@@ -69,11 +75,10 @@ export async function GET(_request: NextRequest) {
               status = 'expired';
             } else if (daysRemaining <= 30) {
               status = 'expiring';
+            } else {
+              // Valid istimara with future expiry date
+              status = 'available';
             }
-          }
-
-          if (!item.istimara) {
-            status = 'missing';
           }
 
           return {

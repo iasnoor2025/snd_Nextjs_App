@@ -286,5 +286,89 @@
   "documentDeletedSuccessfully": "تم حذف المستند بنجاح",
   "failedToDeleteDocument": "فشل في حذف المستند",
   "errorDeletingDocument": "حدث خطأ أثناء حذف المستند",
-  "hoursAgo": "منذ {{hours}} ساعة"
+  "hoursAgo": "منذ {{hours}} ساعة",
+  "employeeAdvance": {
+    "title": "سلف الموظفين والسداد",
+    "description": "إدارة مدفوعات السلف للموظفين والموافقات وتتبع السداد",
+    "hideSection": "إخفاء القسم",
+    "newAdvance": "سلف جديدة",
+    "refresh": "تحديث",
+    "statistics": {
+      "totalAdvances": "إجمالي السلف",
+      "pending": "معلق",
+      "approved": "موافق عليه",
+      "totalAmount": "إجمالي المبلغ",
+      "totalRepaid": "إجمالي المسدد",
+      "outstanding": "المستحق"
+    },
+    "table": {
+      "title": "جميع سلف الموظفين",
+      "employee": "الموظف",
+      "amount": "المبلغ",
+      "currentBalance": "الرصيد الحالي",
+      "reason": "السبب",
+      "date": "التاريخ",
+      "status": "الحالة",
+      "actions": "الإجراءات"
+    },
+    "actions": {
+      "approve": "موافقة",
+      "reject": "رفض",
+      "repay": "سداد",
+      "view": "عرض",
+      "delete": "حذف"
+    },
+    "dialogs": {
+      "newAdvance": {
+        "title": "طلب سلف جديدة",
+        "description": "أدخل تفاصيل دفع السلف للموظف",
+        "employee": "الموظف",
+        "amount": "المبلغ (ريال)",
+        "amountPlaceholder": "أدخل المبلغ",
+        "reason": "السبب",
+        "reasonPlaceholder": "أدخل سبب السلف",
+        "submit": "إرسال",
+        "cancel": "إلغاء"
+      },
+      "rejectAdvance": {
+        "title": "رفض طلب السلف",
+        "description": "يرجى تقديم سبب لرفض طلب السلف هذا.",
+        "rejectionReason": "سبب الرفض",
+        "rejectionReasonPlaceholder": "أدخل سبب الرفض",
+        "rejectAdvance": "رفض السلف",
+        "cancel": "إلغاء"
+      },
+      "repayment": {
+        "title": "تسجيل السداد",
+        "description": "أدخل مبلغ السداد للسلف المحدد.",
+        "advanceDetails": "تفاصيل السلف",
+        "employee": "الموظف",
+        "amount": "المبلغ",
+        "status": "الحالة",
+        "repaymentAmount": "مبلغ السداد (ريال)",
+        "repaymentAmountPlaceholder": "أدخل مبلغ السداد",
+        "recordRepayment": "تسجيل السداد",
+        "cancel": "إلغاء"
+      }
+    },
+    "messages": {
+      "loading": "جاري تحميل السلف...",
+      "noRecords": "لا توجد سجلات سلف.",
+      "advanceSubmitted": "تم إرسال طلب السلف بنجاح",
+      "advanceApproved": "تمت الموافقة على السلف بنجاح",
+      "advanceRejected": "تم رفض السلف بنجاح",
+      "repaymentRecorded": "تم تسجيل السداد بنجاح",
+      "advanceDeleted": "تم حذف السلف بنجاح",
+      "fillRequiredFields": "يرجى ملء جميع الحقول المطلوبة",
+      "provideRejectionReason": "يرجى تقديم سبب الرفض",
+      "provideRepaymentAmount": "يرجى تقديم مبلغ السداد",
+      "confirmDelete": "هل أنت متأكد من أنك تريد حذف هذه السلف؟ لا يمكن التراجع عن هذا الإجراء.",
+      "failedToLoad": "فشل في تحميل السلف",
+      "failedToSubmit": "فشل في إرسال طلب السلف",
+      "failedToApprove": "فشل في الموافقة على السلف",
+      "failedToReject": "فشل في رفض السلف",
+      "failedToRecordRepayment": "فشل في تسجيل السداد",
+      "failedToDelete": "فشل في حذف السلف"
+    }
+  }
 }

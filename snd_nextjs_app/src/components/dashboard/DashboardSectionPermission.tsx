@@ -98,6 +98,14 @@ export function RecentActivityPermission({ children, fallback }: { children: Rea
   );
 }
 
+export function EmployeeAdvancePermission({ children, fallback }: { children: React.ReactNode; fallback?: React.ReactNode }) {
+  return (
+    <DashboardSectionPermission section="employeeAdvance" fallback={fallback}>
+      {children}
+    </DashboardSectionPermission>
+  );
+}
+
 export function SectionControlsPermission({ children, fallback }: { children: React.ReactNode; fallback?: React.ReactNode }) {
   return (
     <DashboardSectionPermission section="sectionControls" fallback={fallback}>

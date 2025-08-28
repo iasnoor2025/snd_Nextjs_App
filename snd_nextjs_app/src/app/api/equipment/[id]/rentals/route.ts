@@ -12,6 +12,7 @@ import { and, desc, eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
+import { EquipmentStatusService } from '@/lib/services/equipment-status-service';
 
 // Function to update equipment status when assignment status changes
 async function updateEquipmentStatusOnAssignmentChange(
@@ -19,40 +20,11 @@ async function updateEquipmentStatusOnAssignmentChange(
   assignmentStatus: string
 ) {
   try {
+    // Use the immediate status update service for real-time updates
     if (assignmentStatus === 'active') {
-      await db
-        .update(equipment)
-        .set({
-          status: 'assigned',
-          updatedAt: new Date().toISOString(),
-        })
-        .where(eq(equipment.id, equipmentId));
-      
+      await EquipmentStatusService.onAssignmentCreated(equipmentId);
     } else if (assignmentStatus === 'completed' || assignmentStatus === 'cancelled') {
-      // Check if there are other active assignments for this equipment
-      const otherActiveAssignments = await db
-        .select({ id: equipmentRentalHistory.id })
-        .from(equipmentRentalHistory)
-        .where(
-          and(
-            eq(equipmentRentalHistory.equipmentId, equipmentId),
-            eq(equipmentRentalHistory.status, 'active')
-          )
-        )
-        .limit(1);
-
-      if (otherActiveAssignments.length === 0) {
-        await db
-          .update(equipment)
-          .set({
-            status: 'available',
-            updatedAt: new Date().toISOString(),
-          })
-          .where(eq(equipment.id, equipmentId));
-        
-      } else {
-        
-      }
+      await EquipmentStatusService.onAssignmentDeleted(equipmentId);
     }
   } catch (error) {
     console.error('Error updating equipment status:', error);

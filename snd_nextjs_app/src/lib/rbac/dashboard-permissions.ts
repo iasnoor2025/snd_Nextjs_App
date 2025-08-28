@@ -69,6 +69,13 @@ export const dashboardSectionPermissions: DashboardSectionPermission[] = [
     requiredRole: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR']
   },
   {
+    section: 'employeeAdvance',
+    action: 'read',
+    subject: 'AdvancePayment',
+    description: 'View and manage employee advance payments and repayments',
+    requiredRole: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR']
+  },
+  {
     section: 'sectionControls',
     action: 'read',
     subject: 'Settings',

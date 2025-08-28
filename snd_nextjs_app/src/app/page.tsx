@@ -10,6 +10,7 @@ import ProjectOverviewSection from '@/components/dashboard/ProjectOverviewSectio
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { TimesheetsSection } from '@/components/dashboard/TimesheetsSection';
+import EmployeeAdvanceSection from '@/components/dashboard/EmployeeAdvanceSection';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/hooks/use-i18n';
 import { PDFGenerator } from '@/lib/utils/pdf-generator';
@@ -24,7 +25,8 @@ import {
   TimesheetsPermission,
   ProjectOverviewPermission,
   QuickActionsPermission,
-  RecentActivityPermission
+  RecentActivityPermission,
+  EmployeeAdvancePermission
 } from '@/components/dashboard/DashboardSectionPermission';
 import { Download } from 'lucide-react';
 import { useSession } from 'next-auth/react';
@@ -90,6 +92,7 @@ export default function DashboardPage() {
     manualAssignments: true,
     quickActions: true,
     recentActivity: true,
+    employeeAdvance: true,
   });
   const [sectionsLoaded, setSectionsLoaded] = useState(false);
 
@@ -200,7 +203,7 @@ export default function DashboardPage() {
         throw new Error(t('dashboard.failedToFetchEquipmentData'));
       }
       const data = await response.json();
-      setEquipmentData(data.equipmentData || []);
+      setEquipmentData(data.equipment || []);
     } catch (error) {
       // Handle error silently for production
     } finally {
@@ -620,6 +623,7 @@ export default function DashboardPage() {
                     manualAssignments: true,
                     quickActions: true,
                     recentActivity: true,
+                    employeeAdvance: true,
                   };
                   setSectionVisibility(newVisibility);
                   saveSectionVisibility(newVisibility);
@@ -640,6 +644,7 @@ export default function DashboardPage() {
                     manualAssignments: false,
                     quickActions: false,
                     recentActivity: false,
+                    employeeAdvance: false,
                   };
                   setSectionVisibility(newVisibility);
                   saveSectionVisibility(newVisibility);
@@ -660,6 +665,7 @@ export default function DashboardPage() {
                     manualAssignments: true,
                     quickActions: true,
                     recentActivity: true,
+                    employeeAdvance: true,
                   };
                   setSectionVisibility(defaultVisibility);
                   saveSectionVisibility(defaultVisibility);
@@ -761,6 +767,13 @@ export default function DashboardPage() {
               onRefresh={fetchRecentActivity}
             />
           </RecentActivityPermission>
+        )}
+
+        {/* Employee Advance Section */}
+        {sectionVisibility.employeeAdvance && (
+          <EmployeeAdvancePermission>
+            <EmployeeAdvanceSection onHideSection={() => toggleSection('employeeAdvance')} />
+          </EmployeeAdvancePermission>
         )}
 
         {/* Hidden Sections Summary */}
@@ -869,6 +882,16 @@ export default function DashboardPage() {
                     className="flex items-center gap-2"
                   >
                     {t('dashboard.showRecentActivity')}
+                  </Button>
+                )}
+                {!sectionVisibility.employeeAdvance && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => toggleSection('employeeAdvance')}
+                    className="flex items-center gap-2"
+                  >
+                    Show Employee Advance Section
                   </Button>
                 )}
               </div>

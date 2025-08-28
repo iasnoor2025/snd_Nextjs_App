@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { db } from '@/lib/db';
-import { maintenance, equipment, employees, equipmentMaintenanceItems } from '@/lib/drizzle/schema';
+import { equipmentMaintenance, equipment, employees, equipmentMaintenanceItems } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 
 export const GET = withPermission(PermissionConfigs.maintenance.read)(
@@ -13,19 +13,19 @@ export const GET = withPermission(PermissionConfigs.maintenance.read)(
 
       const rows = await db
         .select({
-          id: maintenance.id,
-          equipment_id: maintenance.equipmentId,
-          title: maintenance.title,
-          description: maintenance.description,
-          status: maintenance.status,
-          type: maintenance.type,
-          priority: maintenance.priority,
-          assigned_to_employee_id: maintenance.assignedToEmployeeId,
-          scheduled_date: maintenance.scheduledDate,
-          due_date: maintenance.dueDate,
-          cost: maintenance.cost,
-          created_at: maintenance.createdAt,
-          updated_at: maintenance.updatedAt,
+          id: equipmentMaintenance.id,
+          equipment_id: equipmentMaintenance.equipmentId,
+          title: equipmentMaintenance.title,
+          description: equipmentMaintenance.description,
+          status: equipmentMaintenance.status,
+          type: equipmentMaintenance.type,
+          priority: equipmentMaintenance.priority,
+          assigned_to_employee_id: equipmentMaintenance.assignedToEmployeeId,
+          scheduled_date: equipmentMaintenance.scheduledDate,
+          due_date: equipmentMaintenance.dueDate,
+          cost: equipmentMaintenance.cost,
+          created_at: equipmentMaintenance.createdAt,
+          updated_at: equipmentMaintenance.updatedAt,
           equipment: {
             id: equipment.id,
             name: equipment.name,
@@ -37,13 +37,13 @@ export const GET = withPermission(PermissionConfigs.maintenance.read)(
             last_name: employees.lastName,
           },
         })
-        .from(maintenance)
-        .leftJoin(equipment, eq(equipment.id, maintenance.equipmentId))
+        .from(equipmentMaintenance)
+        .leftJoin(equipment, eq(equipment.id, equipmentMaintenance.equipmentId))
         .leftJoin(
           employees,
-          eq(employees.id, maintenance.assignedToEmployeeId)
+          eq(employees.id, equipmentMaintenance.assignedToEmployeeId)
         )
-        .where(eq(maintenance.id, maintenanceId));
+        .where(eq(equipmentMaintenance.id, maintenanceId));
 
       const base = rows[0];
       if (!base)
@@ -76,11 +76,12 @@ export const GET = withPermission(PermissionConfigs.maintenance.read)(
   }
 );
 
-export const PUT = withPermission(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+export const PUT = withPermission(PermissionConfigs.maintenance.update)(
+  async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     try {
-      const id = parseInt(params.id);
-      if (!id) return NextResponse.json({ success: false, message: 'Invalid ID' }, { status: 400 });
+      const { id } = await params;
+      const maintenanceId = parseInt(id);
+      if (!maintenanceId) return NextResponse.json({ success: false, message: 'Invalid ID' }, { status: 400 });
       const body = await request.json();
       const {
         status,
@@ -106,16 +107,16 @@ export const PUT = withPermission(
       if (due_date !== undefined)
         dataToUpdate.dueDate = due_date ? new Date(due_date).toISOString() : null;
 
-      const updated = await db.transaction(async tx => {
+              const updated = await db.transaction(async tx => {
         const updatedMaint = await tx
-          .update(maintenance)
+          .update(equipmentMaintenance)
           .set(dataToUpdate)
-          .where(eq(maintenance.id, id))
+          .where(eq(equipmentMaintenance.id, maintenanceId))
           .returning({
-            id: maintenance.id,
-            status: maintenance.status,
-            equipmentId: maintenance.equipmentId,
-            cost: maintenance.cost,
+            id: equipmentMaintenance.id,
+            status: equipmentMaintenance.status,
+            equipmentId: equipmentMaintenance.equipmentId,
+            cost: equipmentMaintenance.cost,
           });
 
         if (!updatedMaint[0]) {
@@ -123,7 +124,7 @@ export const PUT = withPermission(
         }
         let totalCostNum = Number(updatedMaint[0].cost || 0);
         if (Array.isArray(items)) {
-          await tx.delete(equipmentMaintenanceItems).where(eq(equipmentMaintenanceItems.maintenanceId, id));
+          await tx.delete(equipmentMaintenanceItems).where(eq(equipmentMaintenanceItems.maintenanceId, maintenanceId));
           totalCostNum = 0;
           for (const item of items) {
             const quantity = Number(item.quantity || 1);
@@ -131,7 +132,7 @@ export const PUT = withPermission(
             const totalCost = Number(item.total_cost ?? quantity * unitCost);
             totalCostNum += totalCost;
             await tx.insert(equipmentMaintenanceItems).values({
-              maintenanceId: id,
+              maintenanceId: maintenanceId,
               name: String(item.name || 'Item'),
               description: item.description ? String(item.description) : null,
               quantity: String(quantity) as any,
@@ -144,9 +145,9 @@ export const PUT = withPermission(
         }
 
         await tx
-          .update(maintenance)
+          .update(equipmentMaintenance)
           .set({ cost: String(totalCostNum) as any, updatedAt: nowIso })
-          .where(eq(maintenance.id, id));
+          .where(eq(equipmentMaintenance.id, maintenanceId));
 
         if (status) {
           const newStatus = status === 'completed' ? 'available' : 'under_maintenance';
@@ -159,19 +160,19 @@ export const PUT = withPermission(
         // Return composed record with items
         const baseRows = await tx
           .select({
-            id: maintenance.id,
-            equipment_id: maintenance.equipmentId,
-            title: maintenance.title,
-            description: maintenance.description,
-            status: maintenance.status,
-            type: maintenance.type,
-            priority: maintenance.priority,
-            assigned_to_employee_id: maintenance.assignedToEmployeeId,
-            scheduled_date: maintenance.scheduledDate,
-            due_date: maintenance.dueDate,
-            cost: maintenance.cost,
-            created_at: maintenance.createdAt,
-            updated_at: maintenance.updatedAt,
+            id: equipmentMaintenance.id,
+            equipment_id: equipmentMaintenance.equipmentId,
+            title: equipmentMaintenance.title,
+            description: equipmentMaintenance.description,
+            status: equipmentMaintenance.status,
+            type: equipmentMaintenance.type,
+            priority: equipmentMaintenance.priority,
+            assigned_to_employee_id: equipmentMaintenance.assignedToEmployeeId,
+            scheduled_date: equipmentMaintenance.scheduledDate,
+            due_date: equipmentMaintenance.dueDate,
+            cost: equipmentMaintenance.cost,
+            created_at: equipmentMaintenance.createdAt,
+            updated_at: equipmentMaintenance.updatedAt,
             equipment: { id: equipment.id, name: equipment.name },
             mechanic: {
               id: employees.id,
@@ -179,13 +180,13 @@ export const PUT = withPermission(
               last_name: employees.lastName,
             },
           })
-          .from(maintenance)
-          .leftJoin(equipment, eq(equipment.id, maintenance.equipmentId))
+          .from(equipmentMaintenance)
+          .leftJoin(equipment, eq(equipment.id, equipmentMaintenance.equipmentId))
           .leftJoin(
             employees,
-            eq(employees.id, maintenance.assignedToEmployeeId)
+            eq(employees.id, equipmentMaintenance.assignedToEmployeeId)
           )
-          .where(eq(maintenance.id, id));
+          .where(eq(equipmentMaintenance.id, maintenanceId));
 
         const itemsRows = await tx
           .select({
@@ -201,50 +202,76 @@ export const PUT = withPermission(
             updated_at: equipmentMaintenanceItems.updatedAt,
           })
           .from(equipmentMaintenanceItems)
-          .where(eq(equipmentMaintenanceItems.maintenanceId, id));
+          .where(eq(equipmentMaintenanceItems.maintenanceId, maintenanceId));
 
         return { ...baseRows[0], items: itemsRows };
       });
 
       return NextResponse.json({ success: true, data: updated });
     } catch (error) {
-      
+      console.error('Error updating maintenance:', error);
       return NextResponse.json(
         { success: false, message: 'Internal server error' },
         { status: 500 }
       );
     }
-  },
-  {
-    action: 'update',
-    subject: 'Maintenance',
-    fallbackAction: 'update',
-    fallbackSubject: 'Equipment',
   }
 );
 
-export const DELETE = withPermission(
-  async (_request: NextRequest, { params }: { params: { id: string } }) => {
+export const DELETE = withPermission(PermissionConfigs.maintenance.delete)(
+  async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     try {
-      const id = parseInt(params.id);
-      if (!id) return NextResponse.json({ success: false, message: 'Invalid ID' }, { status: 400 });
-      await db.transaction(async tx => {
-        await tx.delete(equipmentMaintenanceItems).where(eq(equipmentMaintenanceItems.maintenanceId, id));
-        await tx.delete(maintenance).where(eq(maintenance.id, id));
-      });
-      return NextResponse.json({ success: true });
-    } catch (error) {
+      const { id } = await params;
+      const maintenanceId = parseInt(id);
+      if (!maintenanceId) return NextResponse.json({ success: false, message: 'Invalid ID' }, { status: 400 });
       
+      console.log(`Attempting to delete maintenance record with ID: ${maintenanceId}`);
+      
+      await db.transaction(async tx => {
+        // First get the equipment ID before deleting
+        const maintenanceRecord = await tx
+          .select({ equipmentId: equipmentMaintenance.equipmentId })
+          .from(equipmentMaintenance)
+          .where(eq(equipmentMaintenance.id, maintenanceId))
+          .limit(1);
+        
+        if (maintenanceRecord.length > 0) {
+          const equipmentId = maintenanceRecord[0].equipmentId;
+          
+          // Delete maintenance items and record
+          await tx.delete(equipmentMaintenanceItems).where(eq(equipmentMaintenanceItems.maintenanceId, maintenanceId));
+          await tx.delete(equipmentMaintenance).where(eq(equipmentMaintenance.id, maintenanceId));
+          
+          // Check if there are any remaining maintenance records for this equipment
+          const remainingMaintenance = await tx
+            .select({ id: equipmentMaintenance.id })
+            .from(equipmentMaintenance)
+            .where(eq(equipmentMaintenance.equipmentId, equipmentId))
+            .limit(1);
+          
+          // If no more maintenance records, set equipment status to 'available'
+          if (remainingMaintenance.length === 0) {
+            await tx
+              .update(equipment)
+              .set({ 
+                status: 'available',
+                updatedAt: new Date().toISOString()
+              })
+              .where(eq(equipment.id, equipmentId));
+            
+            console.log(`Updated equipment ${equipmentId} status to 'available' after maintenance deletion`);
+          }
+        }
+      });
+      
+      console.log(`Successfully deleted maintenance record with ID: ${maintenanceId}`);
+      return NextResponse.json({ success: true, message: 'Maintenance record deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting maintenance:', error);
       return NextResponse.json(
         { success: false, message: 'Internal server error' },
         { status: 500 }
       );
     }
-  },
-  {
-    action: 'delete',
-    subject: 'Maintenance',
-    fallbackAction: 'update',
-    fallbackSubject: 'Equipment',
   }
 );

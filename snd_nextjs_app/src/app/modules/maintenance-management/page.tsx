@@ -188,7 +188,11 @@ export default function MaintenanceManagementPage() {
     if (confirm('Are you sure you want to delete this maintenance record?')) {
       try {
         setLoading(true);
+        console.log(`Attempting to delete maintenance record with ID: ${id}`);
+        
         const response = await ApiService.delete(`/maintenance/${id}`);
+        console.log('Delete response:', response);
+        
         if (response.success) {
           toast.success('Maintenance record deleted successfully');
           fetchMaintenanceRecords();
@@ -197,7 +201,21 @@ export default function MaintenanceManagementPage() {
         }
       } catch (error) {
         console.error('Error deleting maintenance record:', error);
-        toast.error('Failed to delete maintenance record');
+        
+        // Handle specific error types
+        if (error instanceof Error) {
+          if (error.message.includes('403')) {
+            toast.error('Access denied: You do not have permission to delete maintenance records');
+          } else if (error.message.includes('404')) {
+            toast.error('Maintenance record not found');
+          } else if (error.message.includes('500')) {
+            toast.error('Server error: Please try again later');
+          } else {
+            toast.error(`Failed to delete maintenance record: ${error.message}`);
+          }
+        } else {
+          toast.error('Failed to delete maintenance record');
+        }
       } finally {
         setLoading(false);
       }

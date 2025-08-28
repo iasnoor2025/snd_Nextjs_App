@@ -82,6 +82,7 @@ const getAdvancesHandler = async (
         reason: advancePayments.reason,
         status: advancePayments.status,
         notes: advancePayments.notes,
+        repaidAmount: advancePayments.repaidAmount,
         createdAt: advancePayments.createdAt,
         updatedAt: advancePayments.updatedAt,
         employee: {
@@ -123,6 +124,7 @@ const getAdvancesHandler = async (
       reason: row.reason,
       status: row.status,
       notes: row.notes,
+      repaidAmount: row.repaidAmount,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       employee: row.employee

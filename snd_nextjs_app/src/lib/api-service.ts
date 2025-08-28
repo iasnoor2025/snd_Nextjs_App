@@ -69,7 +69,16 @@ class ApiService {
 
       // Make request
       const response = await fetch(url, requestOptions);
-      const data = await response.json();
+      
+      // Handle empty responses
+      let data;
+      try {
+        const responseText = await response.text();
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch (parseError) {
+        console.error('Failed to parse response:', parseError);
+        data = {};
+      }
 
       if (!response.ok) {
         throw new Error(data.message || `HTTP ${response.status}`);

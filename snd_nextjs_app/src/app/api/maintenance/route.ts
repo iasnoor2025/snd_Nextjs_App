@@ -8,6 +8,7 @@ import {
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { and, desc, eq, gte, inArray, lte } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { EquipmentStatusService } from '@/lib/services/equipment-status-service';
 
 function parseNumber(value: any): number | undefined {
   if (value === undefined || value === null || value === '') return undefined;
@@ -109,7 +110,7 @@ export const GET = withPermission(PermissionConfigs.maintenance.read)(async (req
   }
 });
 
-export const POST = withPermission(
+export const POST = withPermission(PermissionConfigs.maintenance.create)(
   async (request: NextRequest) => {
     try {
       const body = await request.json();
@@ -200,19 +201,21 @@ export const POST = withPermission(
         return updatedMaintenance[0];
       });
 
+      // Immediately update equipment status using our service
+      try {
+        await EquipmentStatusService.onMaintenanceCreated(created.equipmentId);
+      } catch (statusError) {
+        console.error('Error updating equipment status immediately:', statusError);
+        // Don't fail the maintenance creation if status update fails
+      }
+
       return NextResponse.json({ success: true, data: created });
     } catch (error) {
-      
+      console.error('Error creating maintenance:', error);
       return NextResponse.json(
         { success: false, message: 'Internal server error' },
         { status: 500 }
       );
     }
-  },
-  {
-    action: 'create',
-    subject: 'Maintenance',
-    fallbackAction: 'update',
-    fallbackSubject: 'Equipment',
   }
 );

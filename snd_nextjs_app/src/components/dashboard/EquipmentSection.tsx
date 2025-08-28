@@ -62,7 +62,19 @@ export function EquipmentSection({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch equipment data from API
+  // Use the data passed from parent component
+  useEffect(() => {
+    if (initialEquipmentData) {
+      setEquipmentData(initialEquipmentData);
+      setLoading(false);
+      setLastUpdated(new Date());
+    } else {
+      // Only fetch if no data is passed from parent
+      fetchEquipmentData();
+    }
+  }, [initialEquipmentData]);
+
+  // Fetch equipment data from API (fallback)
   const fetchEquipmentData = async () => {
     try {
       setLoading(true);
@@ -74,8 +86,8 @@ export function EquipmentSection({
       }
       
       const data = await response.json();
-      if (data.equipmentData) {
-        setEquipmentData(data.equipmentData);
+      if (data.equipment) {
+        setEquipmentData(data.equipment);
         setLastUpdated(new Date());
       }
     } catch (err) {
@@ -85,11 +97,6 @@ export function EquipmentSection({
       setLoading(false);
     }
   };
-
-  // Fetch data on component mount
-  useEffect(() => {
-    fetchEquipmentData();
-  }, []);
 
   // Refresh data function
   const handleRefresh = async () => {

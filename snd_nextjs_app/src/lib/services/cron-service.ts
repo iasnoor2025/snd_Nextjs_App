@@ -90,6 +90,78 @@ class CronService {
         }
       );
 
+      // Schedule equipment status monitoring every hour (for critical monitoring)
+      cron.schedule(
+        '0 * * * *',
+        async () => {
+          console.log('Running hourly equipment status monitoring...');
+          try {
+            // Call the equipment status monitoring API
+            const response = await fetch(
+              `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/cron/equipment-status-monitor`,
+              {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${process.env.CRON_SECRET}`,
+                  'Content-Type': 'application/json',
+                },
+              }
+            );
+
+            if (response.ok) {
+              const result = await response.json();
+              console.log('Hourly equipment status monitoring completed successfully');
+              if (result.results && result.results.fixed > 0) {
+                console.log(`Fixed ${result.results.fixed} equipment status issues`);
+              }
+            } else {
+              console.error('Hourly equipment status monitoring failed with status:', response.status);
+            }
+          } catch (error) {
+            console.error('Error in hourly equipment status monitoring cron job:', error);
+          }
+        },
+        {
+          timezone: 'Asia/Riyadh', // Saudi Arabia timezone
+        }
+      );
+
+      // Schedule equipment status monitoring at 6 AM every day (comprehensive check)
+      cron.schedule(
+        '0 6 * * *',
+        async () => {
+          console.log('Running daily comprehensive equipment status monitoring...');
+          try {
+            // Call the equipment status monitoring API
+            const response = await fetch(
+              `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/cron/equipment-status-monitor`,
+              {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${process.env.CRON_SECRET}`,
+                  'Content-Type': 'application/json',
+                },
+              }
+            );
+
+            if (response.ok) {
+              const result = await response.json();
+              console.log('Daily comprehensive equipment status monitoring completed successfully');
+              if (result.results && result.results.fixed > 0) {
+                console.log(`Fixed ${result.results.fixed} equipment status issues`);
+              }
+            } else {
+              console.error('Daily comprehensive equipment status monitoring failed with status:', response.status);
+            }
+          } catch (error) {
+            console.error('Error in daily comprehensive equipment status monitoring cron job:', error);
+          }
+        },
+        {
+          timezone: 'Asia/Riyadh', // Saudi Arabia timezone
+        }
+      );
+
 
 
       this.isInitialized = true;

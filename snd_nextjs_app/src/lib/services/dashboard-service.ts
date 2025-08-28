@@ -66,6 +66,8 @@ export interface EquipmentData {
   id: number;
   equipmentName: string;
   equipmentNumber: string | null;
+  doorNumber?: string | null;
+  istimara?: string | null;
   istimaraExpiry: string | null;
   daysRemaining: number | null;
   department: string | null;
@@ -73,6 +75,10 @@ export interface EquipmentData {
   manufacturer: string | null;
   modelNumber: string | null;
   serialNumber: string | null;
+  categoryId?: number | null;
+  assignedTo?: number | null;
+  driverName?: string | null;
+  driverFileNumber?: string | null;
 }
 
 export interface TimesheetData {
@@ -538,20 +544,25 @@ export class DashboardService {
       const thirtyDaysFromNow = new Date();
       thirtyDaysFromNow.setDate(today.getDate() + 30);
 
-
-
       const equipmentData = await db
         .select({
           id: equipment.id,
           equipmentName: equipment.name,
           equipmentNumber: equipment.doorNumber,
+          doorNumber: equipment.doorNumber,
+          istimara: equipment.istimara,
           istimaraExpiry: equipment.istimaraExpiryDate,
           manufacturer: equipment.manufacturer,
           modelNumber: equipment.modelNumber,
           serialNumber: equipment.serialNumber,
+          categoryId: equipment.categoryId,
+          assignedTo: equipment.assignedTo,
+          driverName: sql<string>`CONCAT(employees.first_name, ' ', COALESCE(employees.middle_name, ''), ' ', employees.last_name)`.as('driverName'),
+          driverFileNumber: employees.fileNumber,
           department: null, // Equipment doesn't have department in current schema
         })
         .from(equipment)
+        .leftJoin(employees, eq(equipment.assignedTo, employees.id))
         .limit(limit);
 
 
@@ -559,7 +570,11 @@ export class DashboardService {
         let status: 'available' | 'expired' | 'expiring' | 'missing' = 'available';
         let daysRemaining: number | null = null;
 
-        if (!doc.istimaraExpiry) {
+        // Check if istimara number exists
+        if (!doc.istimara) {
+          status = 'missing';
+        } else if (!doc.istimaraExpiry) {
+          // Has istimara but no expiry date - mark as missing expiry
           status = 'missing';
         } else {
           const expiryDate = new Date(doc.istimaraExpiry);
@@ -573,6 +588,8 @@ export class DashboardService {
             status = 'expiring';
             daysRemaining = diffDays;
           } else {
+            // Valid istimara with future expiry date
+            status = 'available';
             daysRemaining = diffDays;
           }
         }
@@ -581,6 +598,8 @@ export class DashboardService {
           id: doc.id,
           equipmentName: doc.equipmentName || 'Unknown',
           equipmentNumber: doc.equipmentNumber || 'N/A',
+          doorNumber: doc.doorNumber || null,
+          istimara: doc.istimara || null,
           istimaraExpiry: doc.istimaraExpiry,
           department: null, // Equipment doesn't have department in current schema
           status: status,
@@ -588,14 +607,18 @@ export class DashboardService {
           manufacturer: doc.manufacturer,
           modelNumber: doc.modelNumber,
           serialNumber: doc.serialNumber,
+          categoryId: doc.categoryId || null,
+          assignedTo: doc.assignedTo || null,
+          driverName: doc.driverName || null,
+          driverFileNumber: doc.driverFileNumber || null,
         };
       });
 
       return result;
     } catch (error) {
-      
+      console.error('Error in getEquipmentData:', error);
       if (error instanceof Error) {
-
+        console.error('Error details:', error.message);
       }
       // Return empty array instead of throwing to prevent dashboard crash
       return [];

@@ -233,5 +233,89 @@
   "errorDeletingDocument": "An error occurred while deleting document",
   "downloadAllExpiredPdf": "Download All Expired PDF ({{count}})",
   "downloadAllExpiredPdfTitle": "Download consolidated PDF report for all expired documents ({{count}} total)",
-  "hoursAgo": "{{hours}} hours ago"
+  "hoursAgo": "{{hours}} hours ago",
+  "employeeAdvance": {
+    "title": "Employee Advances & Repayments",
+    "description": "Manage employee advance payments, approvals, and repayment tracking",
+    "hideSection": "Hide Section",
+    "newAdvance": "New Advance",
+    "refresh": "Refresh",
+    "statistics": {
+      "totalAdvances": "Total Advances",
+      "pending": "Pending",
+      "approved": "Approved",
+      "totalAmount": "Total Amount",
+      "totalRepaid": "Total Repaid",
+      "outstanding": "Outstanding"
+    },
+    "table": {
+      "title": "All Employee Advances",
+      "employee": "Employee",
+      "amount": "Amount",
+      "currentBalance": "Current Balance",
+      "reason": "Reason",
+      "date": "Date",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "actions": {
+      "approve": "Approve",
+      "reject": "Reject",
+      "repay": "Repay",
+      "view": "View",
+      "delete": "Delete"
+    },
+    "dialogs": {
+      "newAdvance": {
+        "title": "Request New Advance",
+        "description": "Enter advance payment details for an employee",
+        "employee": "Employee",
+        "amount": "Amount (SAR)",
+        "amountPlaceholder": "Enter amount",
+        "reason": "Reason",
+        "reasonPlaceholder": "Enter reason for advance",
+        "submit": "Submit",
+        "cancel": "Cancel"
+      },
+      "rejectAdvance": {
+        "title": "Reject Advance Request",
+        "description": "Please provide a reason for rejecting this advance request.",
+        "rejectionReason": "Rejection Reason",
+        "rejectionReasonPlaceholder": "Enter reason for rejection",
+        "rejectAdvance": "Reject Advance",
+        "cancel": "Cancel"
+      },
+      "repayment": {
+        "title": "Record Repayment",
+        "description": "Enter the repayment amount for the selected advance.",
+        "advanceDetails": "Advance Details",
+        "employee": "Employee",
+        "amount": "Amount",
+        "status": "Status",
+        "repaymentAmount": "Repayment Amount (SAR)",
+        "repaymentAmountPlaceholder": "Enter repayment amount",
+        "recordRepayment": "Record Repayment",
+        "cancel": "Cancel"
+      }
+    },
+    "messages": {
+      "loading": "Loading advances...",
+      "noRecords": "No advance records found.",
+      "advanceSubmitted": "Advance request submitted successfully",
+      "advanceApproved": "Advance approved successfully",
+      "advanceRejected": "Advance rejected successfully",
+      "repaymentRecorded": "Repayment recorded successfully",
+      "advanceDeleted": "Advance deleted successfully",
+      "fillRequiredFields": "Please fill in all required fields",
+      "provideRejectionReason": "Please provide a rejection reason",
+      "provideRepaymentAmount": "Please provide a repayment amount",
+      "confirmDelete": "Are you sure you want to delete this advance? This action cannot be undone.",
+      "failedToLoad": "Failed to load advances",
+      "failedToSubmit": "Failed to submit advance request",
+      "failedToApprove": "Failed to approve advance",
+      "failedToReject": "Failed to reject advance",
+      "failedToRecordRepayment": "Failed to record repayment",
+      "failedToDelete": "Failed to delete advance"
+    }
+  }
 }
