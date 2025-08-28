@@ -190,11 +190,13 @@ export default function UserManagementPage() {
   const fetchPermissions = async () => {
     try {
       setLoadingPermissions(true);
+      console.log('Fetching permissions...');
       const response = await fetch('/api/permissions?limit=all');
       if (!response.ok) {
         throw new Error('Failed to fetch permissions');
       }
       const data = await response.json();
+      console.log('Permissions API response:', data);
       
       // Ensure we always set an array
       let permissionsArray = [];
@@ -205,6 +207,7 @@ export default function UserManagementPage() {
         permissionsArray = data;
       }
       
+      console.log('Final permissions array:', permissionsArray);
       setPermissions(permissionsArray);
     } catch (error) {
       console.error('Error fetching permissions:', error);
@@ -219,15 +222,17 @@ export default function UserManagementPage() {
   // Fetch permissions for a specific role
   const fetchRolePermissions = async (roleId: number) => {
     try {
+      console.log(`Fetching permissions for role ${roleId}...`);
       const response = await fetch(`/api/roles/${roleId}/permissions`);
       if (!response.ok) {
         throw new Error('Failed to fetch role permissions');
       }
       const data = await response.json();
+      console.log(`Role ${roleId} permissions response:`, data);
       setSelectedRolePermissions(data.data || []);
       return data;
     } catch (error) {
-      
+      console.error(`Error fetching role ${roleId} permissions:`, error);
       throw error;
     }
   };
@@ -236,16 +241,18 @@ export default function UserManagementPage() {
   const fetchAllRolePermissions = async () => {
     try {
       console.log('Fetching permissions for all roles...');
+      console.log('Available roles:', safeRoles);
       const permissionsMap: Record<number, Permission[]> = {};
 
       if (safeRoles.length > 0) {
         for (const role of safeRoles) {
           try {
-            console.log(`Fetching permissions for role: ${role.name}`);
+            console.log(`Fetching permissions for role: ${role.name} (ID: ${role.id})`);
             const response = await fetch(`/api/roles/${role.id}/permissions`);
             if (response.ok) {
               const data = await response.json();
               console.log(`Permissions fetched for role ${role.name}:`, data.data?.length || 0);
+              console.log(`Permissions data for role ${role.name}:`, data.data);
               permissionsMap[role.id] = data.data || [];
             } else {
               console.error(`Failed to fetch permissions for role ${role.name}:`, response.status);
@@ -258,6 +265,7 @@ export default function UserManagementPage() {
         }
       }
 
+      console.log('Final permissions map:', permissionsMap);
       setRolePermissions(permissionsMap);
       console.log('All role permissions fetched successfully');
     } catch (error) {
@@ -267,6 +275,10 @@ export default function UserManagementPage() {
 
   // Open permission management dialog
   const openPermissionDialog = async (role: Role) => {
+    console.log('Opening permission dialog for role:', role);
+    console.log('Available permissions:', permissions);
+    console.log('Current role permissions:', rolePermissions);
+    
     setSelectedRoleForPermissions(role);
     setIsPermissionDialogOpen(true);
     await fetchRolePermissions(role.id);
@@ -277,6 +289,9 @@ export default function UserManagementPage() {
     if (!selectedRoleForPermissions) return;
 
     try {
+      console.log('Updating role permissions:', { roleId: selectedRoleForPermissions.id, permissionIds });
+      console.log('Available permissions:', permissions);
+
       const response = await fetch(`/api/roles/${selectedRoleForPermissions.id}/permissions`, {
         method: 'POST',
         headers: {
@@ -289,10 +304,28 @@ export default function UserManagementPage() {
         throw new Error('Failed to update role permissions');
       }
 
+      const result = await response.json();
+      console.log('API response:', result);
+
+      // Update the local role permissions state immediately
+      // Get the permission objects that match the selected IDs
+      const updatedPermissions = permissions.filter(p => permissionIds.includes(p.id));
+      console.log('Updated permissions for local state:', updatedPermissions);
+      
+      setRolePermissions(prev => ({
+        ...prev,
+        [selectedRoleForPermissions.id]: updatedPermissions
+      }));
+
       toast.success('Role permissions updated successfully');
       setIsPermissionDialogOpen(false);
       setSelectedRoleForPermissions(null);
       setSelectedRolePermissions([]);
+      
+      // Refresh all role permissions to ensure consistency
+      console.log('Refreshing all role permissions...');
+      await fetchAllRolePermissions();
+      console.log('Role permissions refresh completed');
     } catch (error) {
       console.error('Error updating role permissions:', error);
       toast.error('Failed to update role permissions');
@@ -651,6 +684,7 @@ export default function UserManagementPage() {
   // Fetch role permissions when roles are loaded
   useEffect(() => {
     if (safeRoles.length > 0) {
+      console.log('Roles loaded, fetching role permissions...');
       fetchAllRolePermissions();
     }
   }, [safeRoles]);
@@ -1298,6 +1332,8 @@ export default function UserManagementPage() {
             
             <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
               {(() => {
+                console.log('Rendering permissions dialog with:', { safePermissions, selectedRolePermissions });
+                
                 // Group permissions by category
                 const groupedPermissions: Record<string, any[]> = {};
                 
@@ -1308,6 +1344,8 @@ export default function UserManagementPage() {
                   }
                   groupedPermissions[category].push(permission);
                 });
+
+                console.log('Grouped permissions:', groupedPermissions);
 
                 return Object.entries(groupedPermissions).map(([category, permissions]) => {
                   const allSelected = permissions.every(p => 
@@ -1384,7 +1422,12 @@ export default function UserManagementPage() {
                   <Button variant="outline" onClick={() => setIsPermissionDialogOpen(false)}>
                     {t('cancel')}
                   </Button>
-                  <Button onClick={() => updateRolePermissions(Array.isArray(selectedRolePermissions) ? selectedRolePermissions.map(p => p.id) : [])}>
+                  <Button onClick={() => {
+                    console.log('Update button clicked with permissions:', selectedRolePermissions);
+                    const permissionIds = Array.isArray(selectedRolePermissions) ? selectedRolePermissions.map(p => p.id) : [];
+                    console.log('Permission IDs to update:', permissionIds);
+                    updateRolePermissions(permissionIds);
+                  }}>
                     {t('updatePermissions')}
                   </Button>
                 </div>
