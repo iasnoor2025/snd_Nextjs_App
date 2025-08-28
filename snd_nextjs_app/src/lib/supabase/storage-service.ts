@@ -526,6 +526,162 @@ export class SupabaseStorageService {
   }
 
   /**
+   * List files in a bucket with optimized performance
+   * This method is specifically designed for document management with better caching
+   */
+  static async listFilesOptimized(
+    bucket: StorageBucket | string,
+    path?: string,
+    options?: {
+      limit?: number;
+      offset?: number;
+      sortBy?: 'name' | 'created_at' | 'updated_at' | 'size';
+      sortOrder?: 'asc' | 'desc';
+      search?: string;
+    }
+  ): Promise<{ success: boolean; files?: any[]; error?: string }> {
+    try {
+      if (!supabase) {
+        return {
+          success: false,
+          error: 'Supabase is not configured',
+        };
+      }
+
+      const {
+        limit = 1000,
+        offset = 0,
+        sortBy = 'name',
+        sortOrder = 'asc',
+        search = '',
+      } = options || {};
+
+      let query = supabase!.storage.from(bucket).list(path || '', {
+        limit,
+        offset,
+        sortBy: sortBy === 'name' ? 'name' : sortBy,
+        sortOrder,
+      });
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error listing files:', error);
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+
+      if (!data) {
+        return {
+          success: true,
+          files: [],
+        };
+      }
+
+      // Filter files if search term is provided
+      let files = data;
+      if (search) {
+        const searchLower = search.toLowerCase();
+        files = data.filter(file => 
+          file.name.toLowerCase().includes(searchLower) ||
+          (file.metadata?.mimetype && file.metadata.mimetype.toLowerCase().includes(searchLower))
+        );
+      }
+
+      // Transform files to include additional metadata
+      const transformedFiles = files.map(file => ({
+        name: file.name,
+        size: file.metadata?.size || 0,
+        mimeType: file.metadata?.mimetype || 'application/octet-stream',
+        createdAt: file.created_at,
+        updatedAt: file.updated_at,
+        lastAccessedAt: file.last_accessed_at,
+        etag: (file as any).etag || '',
+        isFolder: file.name.endsWith('/'),
+        fullPath: path ? `${path}/${file.name}` : file.name,
+      }));
+
+      return {
+        success: true,
+        files: transformedFiles,
+      };
+    } catch (error) {
+      console.error('Error in listFilesOptimized:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Get document statistics for a bucket
+   * This provides quick overview of document counts and sizes
+   */
+  static async getDocumentStats(
+    bucket: StorageBucket | string,
+    path?: string
+  ): Promise<{ success: boolean; stats?: any; error?: string }> {
+    try {
+      if (!supabase) {
+        return {
+          success: false,
+          error: 'Supabase is not configured',
+        };
+      }
+
+      const { data, error } = await supabase!.storage
+        .from(bucket)
+        .list(path || '', { limit: 1000 });
+
+      if (error) {
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+
+      if (!data) {
+        return {
+          success: true,
+          stats: {
+            totalFiles: 0,
+            totalSize: 0,
+            fileTypes: {},
+            lastModified: null,
+          },
+        };
+      }
+
+      const stats = {
+        totalFiles: data.filter(file => !file.name.endsWith('/')).length,
+        totalSize: data.reduce((sum, file) => sum + (file.metadata?.size || 0), 0),
+        fileTypes: data.reduce((acc, file) => {
+          if (!file.name.endsWith('/')) {
+            const ext = file.name.split('.').pop()?.toLowerCase() || 'unknown';
+            acc[ext] = (acc[ext] || 0) + 1;
+          }
+          return acc;
+        }, {} as Record<string, number>),
+        lastModified: data.length > 0 ? Math.max(...data.map(f => new Date(f.updated_at).getTime())) : null,
+      };
+
+      return {
+        success: true,
+        stats,
+      };
+    } catch (error) {
+      console.error('Error getting document stats:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
    * Ensure a URL is HTTPS to prevent Mixed Content errors
    */
   static ensureHttps(url: string): string {
