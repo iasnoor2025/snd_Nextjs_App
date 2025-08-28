@@ -49,18 +49,17 @@ function getApprovalStatusForStage(stage: ApprovalStage): string {
 
 // Helper function to check if user can approve at specific stage
 async function checkStageApprovalPermission(userId: string, stage: ApprovalStage) {
-
   // Check if user has specific stage approval permission
-  const stageResult = await checkUserPermission(userId, 'approve', 'Timesheet');
+  const stagePermission = `approve.Timesheet.${stage.charAt(0).toUpperCase() + stage.slice(1)}`;
+  const stageResult = await checkUserPermission(userId, 'approve', `Timesheet.${stage.charAt(0).toUpperCase() + stage.slice(1)}`);
+  
   if (stageResult.hasPermission) {
-    
     return { allowed: true };
   }
 
   // Check if user has general timesheet approval permission
   const generalResult = await checkUserPermission(userId, 'approve', 'Timesheet');
   if (generalResult.hasPermission) {
-    
     return { allowed: true };
   }
 

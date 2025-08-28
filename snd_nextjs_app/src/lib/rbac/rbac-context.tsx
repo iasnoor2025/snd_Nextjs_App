@@ -52,54 +52,70 @@ const DYNAMIC_FALLBACK_PERMISSIONS: Record<string, string[]> = {
   SUPER_ADMIN: ['*', 'manage.all'],
   ADMIN: [
     'manage.User', 'manage.Employee', 'manage.Customer', 'manage.Equipment',
-    'manage.Rental', 'manage.Quotation', 'manage.Payroll', 'manage.Timesheet',
+    'manage.Rental', 'manage.Quotation', 'manage.Payroll', 'manage.Timesheet', 'approve.Timesheet', 'reject.Timesheet',
+    'approve.Timesheet.Foreman', 'approve.Timesheet.Incharge', 'approve.Timesheet.Checking', 'approve.Timesheet.Manager',
     'manage.Project', 'manage.Leave', 'manage.Department', 'manage.Designation',
     'manage.Report', 'manage.Settings', 'manage.Company', 'manage.Safety',
-    'manage.employee-document', 'manage.SalaryIncrement', 'manage.Advance',
-    'manage.Assignment', 'manage.Location', 'manage.Maintenance', 'manage.Document', 'manage.document-version', 'manage.document-approval'
+    'manage.SalaryIncrement', 'manage.Advance',
+    'manage.Assignment', 'manage.Location', 'manage.Maintenance', 'manage.Document'
   ],
   MANAGER: [
     'read.User', 'manage.Employee', 'manage.Customer', 'manage.Equipment',
-    'manage.Rental', 'manage.Quotation', 'read.Payroll', 'manage.Timesheet',
+    'manage.Rental', 'manage.Quotation', 'read.Payroll', 'manage.Timesheet', 'approve.Timesheet', 'reject.Timesheet',
+    'approve.Timesheet.Manager',
     'manage.Project', 'manage.Leave', 'read.Department', 'read.Designation',
     'read.Report', 'read.Settings', 'read.Company', 'read.Safety',
-    'manage.employee-document', 'manage.SalaryIncrement', 'manage.Advance',
-    'manage.Assignment', 'read.Location', 'read.Maintenance', 'manage.Document', 'read.document-version', 'read.document-approval'
+    'manage.SalaryIncrement', 'manage.Advance',
+    'manage.Assignment', 'read.Location', 'read.Maintenance', 'manage.Document'
   ],
   SUPERVISOR: [
     'read.User', 'manage.Employee', 'read.Customer', 'read.Equipment',
-    'read.Rental', 'manage.Quotation', 'read.Payroll', 'manage.Timesheet',
+    'read.Rental', 'manage.Quotation', 'read.Payroll', 'manage.Timesheet', 'approve.Timesheet', 'reject.Timesheet',
+    'approve.Timesheet.Foreman', 'approve.Timesheet.Incharge',
     'manage.Project', 'manage.Leave', 'read.Department', 'read.Designation',
     'read.Report', 'read.Settings', 'read.Company', 'read.Safety',
-    'manage.employee-document', 'read.SalaryIncrement', 'read.Advance',
-    'read.Assignment', 'read.Location', 'read.Maintenance', 'read.Document', 'read.document-version', 'read.document-approval'
+    'read.SalaryIncrement', 'read.Advance',
+    'read.Assignment', 'read.Location', 'read.Maintenance', 'read.Document'
   ],
   OPERATOR: [
     'read.User', 'read.Employee', 'read.Customer', 'read.Equipment',
     'read.Rental', 'read.Quotation', 'read.Payroll', 'read.Timesheet',
     'read.Project', 'read.Leave', 'read.Department', 'read.Designation',
     'read.Report', 'read.Settings', 'read.Company', 'read.Safety',
-    'read.employee-document', 'read.SalaryIncrement', 'read.Advance',
-    'read.Assignment', 'read.Location', 'read.Maintenance', 'read.Document', 'read.document-version', 'read.document-approval'
+    'read.SalaryIncrement', 'read.Advance',
+    'read.Assignment', 'read.Location', 'read.Maintenance', 'read.Document'
   ],
   EMPLOYEE: [
     'read.User', 'read.Employee', 'read.Customer', 'read.Equipment',
     'read.Rental', 'read.Quotation', 'read.Payroll', 'manage.Timesheet',
     'read.Project', 'manage.Leave', 'read.Department', 'read.Designation',
-    'read.Report', 'read.Settings', 'read.Company', 'manage.employee-document',
-    'read.SalaryIncrement', 'read.Document', 'read.document-version', 'read.document-approval'
+    'read.Report', 'read.Settings', 'read.Company',
+    'read.SalaryIncrement', 'read.Document'
   ],
   USER: [
     'read.User', 'read.Employee', 'read.Customer', 'read.Equipment',
     'read.Rental', 'read.Quotation', 'read.Timesheet', 'read.Project',
     'read.Leave', 'read.Department', 'read.Settings', 'read.Report',
-    'read.Company', 'read.employee-document', 'read.SalaryIncrement', 'read.Document', 'read.document-version', 'read.document-approval'
+    'read.Company', 'read.SalaryIncrement', 'read.Document'
   ],
   // New roles with their permissions
   PROJECT_LEADER: [
     'manage.Project', 'manage.project-task', 'manage.project-milestone',
     'read.Employee', 'read.Timesheet', 'read.Report', 'read.Project',
     'read.Customer', 'read.Equipment'
+  ],
+  // Timesheet approval stage roles
+  FOREMAN: [
+    'read.Employee', 'read.Timesheet', 'approve.Timesheet.Foreman',
+    'read.Project', 'read.Report'
+  ],
+  TIMESHEET_INCHARGE: [
+    'read.Employee', 'read.Timesheet', 'approve.Timesheet.Incharge',
+    'read.Project', 'read.Report'
+  ],
+  TIMESHEET_CHECKER: [
+    'read.Employee', 'read.Timesheet', 'approve.Timesheet.Checking',
+    'read.Project', 'read.Report'
   ],
   FINANCE_SPECIALIST: [
     'read.Payroll', 'read.SalaryIncrement', 'read.Advance', 'read.Report',
@@ -109,7 +125,7 @@ const DYNAMIC_FALLBACK_PERMISSIONS: Record<string, string[]> = {
   HR_SPECIALIST: [
     'read.Employee', 'manage.Leave', 'read.performance-review', 'read.Training',
     'read.Report', 'read.User', 'read.Department', 'read.Designation',
-    'manage.employee-document', 'read.SalaryIncrement'
+    'read.SalaryIncrement'
   ],
   SALES_REPRESENTATIVE: [
     'read.Customer', 'manage.Quotation', 'read.Project', 'read.Report',

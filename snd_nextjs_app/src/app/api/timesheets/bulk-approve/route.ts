@@ -52,23 +52,20 @@ async function checkStageApprovalPermission(userId: string, stage: ApprovalStage
   console.log(`🔐 Checking stage approval permission for user ${userId} at stage ${stage}`);
 
   // Check if user has specific stage approval permission
-  const stageResult = await checkUserPermission(userId, 'approve', 'Timesheet');
+  const stagePermission = `approve.Timesheet.${stage.charAt(0).toUpperCase() + stage.slice(1)}`;
+  const stageResult = await checkUserPermission(userId, 'approve', `Timesheet.${stage.charAt(0).toUpperCase() + stage.slice(1)}`);
+  
   console.log(`🔐 Stage permission result:`, stageResult);
   if (stageResult.hasPermission) {
-    
     return { allowed: true };
   }
 
   // Check if user has general timesheet approval permission
   const generalResult = await checkUserPermission(userId, 'approve', 'Timesheet');
   if (generalResult.hasPermission) {
-    
     return { allowed: true };
   }
 
-  // For now, we'll skip the complex role checking and just check general permissions
-  // The permission service already handles role-based access
-  
   return {
     allowed: false,
     reason: `You don't have permission to approve timesheets at ${stage} stage`,

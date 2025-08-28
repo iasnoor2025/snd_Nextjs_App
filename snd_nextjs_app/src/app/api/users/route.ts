@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
 
 // GET /api/users - Get all users
-export const GET = withPermission(PermissionConfigs.user.read)(async () => {
+export const GET = withPermission(PermissionConfigs.user.read)(async (request: NextRequest) => {
   try {
     console.log('🚀 USERS API CALLED - Starting to fetch users...');
     

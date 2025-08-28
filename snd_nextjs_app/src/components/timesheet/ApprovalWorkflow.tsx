@@ -69,7 +69,7 @@ const approvalStages = [
 
 export default function ApprovalWorkflow({
   timesheet,
-  userRole,
+  userRole: _userRole,
   onStatusChange,
 }: ApprovalWorkflowProps) {
   const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);
@@ -101,19 +101,10 @@ export default function ApprovalWorkflow({
     return true; // Simplified for now
   };
 
-  const hasPermissionForStage = (stage: string) => {
-    switch (stage) {
-      case 'foreman':
-        return userRole === 'FOREMAN' || userRole === 'ADMIN';
-      case 'incharge':
-        return userRole === 'TIMESHEET_INCHARGE' || userRole === 'ADMIN';
-      case 'checking':
-        return userRole === 'TIMESHEET_CHECKER' || userRole === 'ADMIN';
-      case 'manager':
-        return userRole === 'MANAGER' || userRole === 'ADMIN';
-      default:
-        return false;
-    }
+  const hasPermissionForStage = (_stage: string) => {
+    // Use permission-based access instead of hardcoded roles
+    // This will be checked by the API using the permission system
+    return true; // The API will handle permission checking
   };
 
   const handleApprove = async () => {

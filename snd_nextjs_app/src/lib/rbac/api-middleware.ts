@@ -84,6 +84,13 @@ export const PermissionConfigs = {
     update: { action: 'update' as Action, subject: 'Timesheet' },
     delete: { action: 'delete' as Action, subject: 'Timesheet' },
     manage: { action: 'manage' as Action, subject: 'Timesheet' },
+    approve: { action: 'approve' as Action, subject: 'Timesheet' },
+    reject: { action: 'reject' as Action, subject: 'Timesheet' },
+    // Stage-specific approval permissions
+    'approve.foreman': { action: 'approve' as Action, subject: 'Timesheet.Foreman' },
+    'approve.incharge': { action: 'approve' as Action, subject: 'Timesheet.Incharge' },
+    'approve.checking': { action: 'approve' as Action, subject: 'Timesheet.Checking' },
+    'approve.manager': { action: 'approve' as Action, subject: 'Timesheet.Manager' },
   },
   leave: {
     read: { action: 'read' as Action, subject: 'Leave' },
@@ -175,6 +182,7 @@ export const PermissionConfigs = {
     manage: { action: 'manage' as Action, subject: 'Report' },
     export: { action: 'export' as Action, subject: 'Report' },
   },
+  // Employee Document permissions (for employees to manage their own documents)
   'employee-document': {
     read: { action: 'read' as Action, subject: 'employee-document' },
     create: { action: 'create' as Action, subject: 'employee-document' },
@@ -191,15 +199,6 @@ export const PermissionConfigs = {
     manage: { action: 'manage' as Action, subject: 'Document' },
     upload: { action: 'upload' as Action, subject: 'Document' },
     download: { action: 'download' as Action, subject: 'Document' },
-    approve: { action: 'approve' as Action, subject: 'Document' },
-    reject: { action: 'reject' as Action, subject: 'Document' },
-  },
-  'document-version': {
-    read: { action: 'read' as Action, subject: 'document-version' },
-    create: { action: 'create' as Action, subject: 'document-version' },
-    update: { action: 'update' as Action, subject: 'document-version' },
-    delete: { action: 'delete' as Action, subject: 'document-version' },
-    manage: { action: 'manage' as Action, subject: 'document-version' },
   },
   dashboard: {
     read: { action: 'read' as Action, subject: 'Dashboard' },
@@ -214,15 +213,6 @@ export const PermissionConfigs = {
     update: { action: 'update' as Action, subject: 'Admin' },
     delete: { action: 'delete' as Action, subject: 'Admin' },
     manage: { action: 'manage' as Action, subject: 'Admin' },
-  },
-  'document-approval': {
-    read: { action: 'read' as Action, subject: 'document-approval' },
-    create: { action: 'create' as Action, subject: 'document-approval' },
-    update: { action: 'update' as Action, subject: 'document-approval' },
-    delete: { action: 'delete' as Action, subject: 'document-approval' },
-    manage: { action: 'manage' as Action, subject: 'document-approval' },
-    approve: { action: 'approve' as Action, subject: 'document-approval' },
-    reject: { action: 'reject' as Action, subject: 'document-approval' },
   },
 };
 
@@ -327,6 +317,8 @@ export function withPermission(config: PermissionConfig) {
 export function withReadPermission(subject: Subject) {
   return withPermission({ action: 'read', subject });
 }
+
+
 
 /**
  * Simple permission check for API routes

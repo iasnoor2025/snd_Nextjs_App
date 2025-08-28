@@ -90,6 +90,11 @@ export const PERMISSION_MAPPING: Record<string, string[]> = {
   'manage.Timesheet': ['manage.timesheet'],
   'approve.Timesheet': ['approve.timesheet'],
   'reject.Timesheet': ['reject.timesheet'],
+  // Timesheet stage-specific approval permissions
+  'approve.Timesheet.Foreman': ['approve.timesheet.foreman'],
+  'approve.Timesheet.Incharge': ['approve.timesheet.incharge'],
+  'approve.Timesheet.Checking': ['approve.timesheet.checking'],
+  'approve.Timesheet.Manager': ['approve.timesheet.manager'],
 
   // Leave permissions
   'read.Leave': ['read.leave'],
