@@ -197,6 +197,8 @@ export default function EmployeeManagementPage() {
 
   const fetchEmployees = async () => {
     try {
+      console.log('🔍 fetchEmployees called for role:', user?.role);
+      
       // Check if user is an employee role - they should only see their own record
       const isEmployeeUser = user?.role === 'EMPLOYEE';
 
@@ -205,20 +207,36 @@ export default function EmployeeManagementPage() {
         ? `/api/employees?_t=${Date.now()}`
         : `/api/employees?all=true&_t=${Date.now()}`;
 
+      console.log('🔍 Fetching from URL:', url);
+      console.log('🔍 User role:', user?.role, 'isEmployeeUser:', isEmployeeUser);
+
       const response = await fetch(url);
+      console.log('🔍 API Response status:', response.status, response.ok);
+      
       if (response.ok) {
         const result = (await response.json()) as { success: boolean; data?: Employee[] };
+        console.log('🔍 API Response data:', result);
+        console.log('🔍 Success:', result.success);
+        console.log('🔍 Data array:', result.data);
+        console.log('🔍 Data length:', result.data?.length);
+        
         if (result.success && Array.isArray(result.data)) {
+          console.log('✅ Setting employees:', result.data.length, 'employees');
           setEmployees(result.data);
         } else {
+          console.log('❌ API returned success=false or no data array');
           setEmployees([]);
           toast.error(t('employee:messages.fetchError'));
         }
       } else {
+        console.log('❌ API response not ok, status:', response.status);
+        const errorText = await response.text();
+        console.log('❌ Error response:', errorText);
         setEmployees([]);
         toast.error(t('employee:messages.fetchError'));
       }
-    } catch (_error) {
+    } catch (error) {
+      console.error('❌ Error in fetchEmployees:', error);
       setEmployees([]);
       toast.error(t('employee:messages.fetchError'));
     } finally {

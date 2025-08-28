@@ -147,6 +147,63 @@ export class DocumentCombinerService {
   }
 
   /**
+   * Adds an info page for non-PDF/non-image documents
+   */
+  private static async addInfoPage(
+    pdfDoc: PDFDocument,
+    document: DocumentToCombine
+  ): Promise<void> {
+    try {
+      const infoPage = pdfDoc.addPage([595, 842]);
+      const normalFont = await pdfDoc.embedFont('Helvetica');
+      const titleFont = await pdfDoc.embedFont('Helvetica-Bold');
+
+      // Title
+      infoPage.drawText(`Document Information: ${document.fileName}`, {
+        x: 50,
+        y: 750,
+        size: 16,
+        font: titleFont,
+      });
+
+      // Document details
+      let yPosition = 700;
+      const documentDetails = [
+        `Document Type: ${document.type.toUpperCase()}`,
+        `File Type: ${document.mimeType}`,
+        `Owner: ${
+          document.type === 'employee'
+            ? `${document.employeeName || 'Unknown'} (${document.employeeFileNumber || 'No File #'})`
+            : `${document.equipmentName || 'Unknown'} ${document.equipmentModel ? `(${document.equipmentModel})` : ''}`
+        }`,
+        `File Path: ${document.filePath}`,
+        `Note: This document type (${document.mimeType}) cannot be directly embedded in PDF.`,
+        `Please refer to the original file for viewing.`,
+      ];
+
+      documentDetails.forEach(detail => {
+        infoPage.drawText(detail, {
+          x: 50,
+          y: yPosition,
+          size: 10,
+          font: normalFont,
+        });
+        yPosition -= 20;
+      });
+    } catch (error) {
+      console.error(`Error creating info page for ${document.fileName}:`, error);
+      
+      // Create a simple error page if font embedding fails
+      const errorPage = pdfDoc.addPage([595, 842]);
+      errorPage.drawText(`Error creating info page for: ${document.fileName}`, {
+        x: 50,
+        y: 400,
+        size: 12,
+      });
+    }
+  }
+
+  /**
    * Adds an image to the PDF
    */
   private static async addImageToDocument(

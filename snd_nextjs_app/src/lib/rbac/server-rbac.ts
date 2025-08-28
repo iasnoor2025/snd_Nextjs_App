@@ -34,11 +34,11 @@ export const PERMISSION_MAPPING: Record<string, string[]> = {
   'manage.User': ['manage.user'],
 
   // Employee permissions
-  'read.Employee': ['read.employee', 'read.employee-data'],
-  'create.Employee': ['create.employee', 'create.employee-data'],
-  'update.Employee': ['update.employee', 'update.employee-data'],
-  'delete.Employee': ['delete.employee', 'delete.employee-data'],
-  'manage.Employee': ['manage.employee', 'manage.employee-data'],
+  'read.Employee': ['read.Employee', 'read.employee', 'read.employee-data'],
+  'create.Employee': ['create.Employee', 'create.employee', 'create.employee-data'],
+  'update.Employee': ['update.Employee', 'update.employee', 'update.employee-data'],
+  'delete.Employee': ['delete.Employee', 'delete.employee', 'delete.employee-data'],
+  'manage.Employee': ['manage.Employee', 'manage.employee', 'manage.employee-data'],
 
   // Customer permissions
   'read.Customer': ['read.customer'],
@@ -225,14 +225,14 @@ export const PERMISSION_MAPPING: Record<string, string[]> = {
  * This can be moved to database or environment variables for easy updates
  */
 export const DYNAMIC_ROLE_HIERARCHY: Record<string, number> = {
-  'SUPER_ADMIN': 1,
-  'ADMIN': 2,
-  'MANAGER': 3,
-  'SUPERVISOR': 4,
-  'OPERATOR': 5,
-  'EMPLOYEE': 6,
-  'USER': 7,
-  // Add new roles here with appropriate priority numbers
+  'SUPER_ADMIN': 1, // Always highest priority
+  'ADMIN': 2, // Will be assigned dynamically
+  // All other roles will be assigned priorities dynamically
+  // 'MANAGER': 3, // Will be assigned dynamically
+  // 'SUPERVISOR': 4, // Will be assigned dynamically
+  // 'OPERATOR': 5, // Will be assigned dynamically
+  // 'EMPLOYEE': 6, // Will be assigned dynamically
+  // 'USER': 7, // Will be assigned dynamically
   // Lower number = higher priority
 };
 
@@ -244,55 +244,18 @@ export const DYNAMIC_ROLE_HIERARCHY: Record<string, number> = {
 export const DYNAMIC_FALLBACK_PERMISSIONS: Record<string, string[]> = {
   SUPER_ADMIN: ['*', 'manage.all'],
   ADMIN: [
-    'manage.user', 'manage.employee-data', 'manage.customer', 'manage.equipment',
-    'manage.rental', 'manage.quotation', 'manage.payroll', 'manage.timesheet',
-    'manage.project', 'manage.leave', 'manage.department', 'manage.designation',
-    'manage.report', 'manage.settings', 'manage.company', 'manage.safety',
-    'manage.employee-document', 'manage.salaryincrement', 'approve.salaryincrement', 'reject.salaryincrement', 'apply.salaryincrement', 'manage.advance',
-    'manage.assignment', 'manage.location', 'manage.maintenance'
+    'read.Dashboard', 'read.Employee', 'read.employee-document'
   ],
-  MANAGER: [
-    'read.user', 'manage.employee-data', 'manage.customer', 'manage.equipment',
-    'manage.rental', 'manage.quotation', 'read.payroll', 'manage.timesheet',
-    'manage.project', 'manage.leave', 'read.department', 'read.designation',
-    'read.report', 'read.settings', 'read.company', 'read.safety',
-    'manage.employee-document', 'manage.salaryincrement', 'approve.salaryincrement', 'reject.salaryincrement', 'apply.salaryincrement', 'manage.advance',
-    'manage.assignment', 'read.location', 'read.maintenance', 'manage.document', 'read.document-version', 'read.document-approval'
-  ],
-  SUPERVISOR: [
-    'read.user', 'manage.employee-data', 'read.customer', 'read.equipment',
-    'read.rental', 'manage.quotation', 'read.payroll', 'manage.timesheet',
-    'manage.project', 'manage.leave', 'read.department', 'read.designation',
-    'read.report', 'read.settings', 'read.company', 'read.safety',
-    'manage.employee-document', 'read.salaryincrement', 'read.advance',
-    'read.assignment', 'read.location', 'read.maintenance', 'read.document', 'read.document-version', 'read.document-approval'
-  ],
-  OPERATOR: [
-    'read.user', 'read.employee-data', 'read.customer', 'read.equipment',
-    'read.rental', 'read.quotation', 'read.payroll', 'read.timesheet',
-    'read.project', 'read.leave', 'read.department', 'read.designation',
-    'read.report', 'read.settings', 'read.company', 'read.safety',
-    'read.employee-document', 'read.salaryincrement', 'read.advance',
-    'read.assignment', 'read.location', 'read.maintenance', 'read.document', 'read.document-version', 'read.document-approval'
-  ],
-  EMPLOYEE: [
-    'read.user', 'read.employee-data', 'read.customer', 'read.equipment',
-    'read.rental', 'read.quotation', 'read.payroll', 'manage.timesheet',
-    'read.project', 'manage.leave', 'read.department', 'read.designation',
-    'read.report', 'read.settings', 'read.company', 'manage.employee-document',
-    'read.salaryincrement', 'read.document', 'read.document-version', 'read.document-approval'
-  ],
-  USER: [
-    'read.user', 'read.employee-data', 'read.customer', 'read.equipment',
-    'read.rental', 'read.quotation', 'read.timesheet', 'read.project',
-    'read.leave', 'read.department', 'read.settings', 'read.report',
-    'read.company', 'read.employee-document', 'read.salaryincrement', 'read.document', 'read.document-version', 'read.document-approval'
-  ],
-  // Add new roles here with their permissions
-  // Example:
-  // PROJECT_LEADER: ['manage.project', 'manage.project-task', 'read.employee-data', 'read.timesheet'],
-  // FINANCE_SPECIALIST: ['read.payroll', 'read.salaryincrement', 'read.report', 'export.report'],
-  // HR_SPECIALIST: ['read.employee-data', 'manage.leave', 'read.report', 'read.user'],
+  // All other roles start with empty permissions - they must be assigned dynamically
+  // MANAGER: [], // Will be populated dynamically
+  // SUPERVISOR: [], // Will be populated dynamically
+  // OPERATOR: [], // Will be populated dynamically
+  // EMPLOYEE: [], // Will be populated dynamically
+  // USER: [], // Will be populated dynamically
+  // PROJECT_LEADER: [], // Will be populated dynamically
+  // FINANCE_SPECIALIST: [], // Will be populated dynamically
+  // HR_SPECIALIST: [], // Will be populated dynamically
+  // SALES_REPRESENTATIVE: [], // Will be populated dynamically
 };
 
 /**
@@ -374,31 +337,45 @@ export function createUserFromSession(session: { user: { id?: string; email?: st
  */
 export async function hasPermission(user: User, action: Action, subject: Subject): Promise<boolean> {
   try {
+    console.log('🔐 hasPermission called with:', { user, action, subject });
+    
     // Load user roles from database
     const userRoles = await loadUserRolesFromDB(user.id);
+    console.log('🔐 User roles loaded:', userRoles);
+    
     if (userRoles.length === 0) {
+      console.log('🔐 No user roles found, returning false');
       return false;
     }
 
     // Load permissions for user's roles
     const userPermissions = await loadRolePermissionsFromDB(userRoles);
+    console.log('🔐 User permissions loaded:', userPermissions);
+    
     if (userPermissions.length === 0) {
+      console.log('🔐 No user permissions found, returning false');
       return false;
     }
 
     // Check for wildcard permissions
     if (userPermissions.includes('*') || userPermissions.includes('manage.all')) {
+      console.log('🔐 Wildcard permission found, returning true');
       return true;
     }
 
     // Check for specific permission using mapping
     const permissionName = `${action}.${subject}`;
     const mappedPermissions = PERMISSION_MAPPING[permissionName] || [permissionName];
+    console.log('🔐 Checking for permission:', permissionName);
+    console.log('🔐 Mapped permissions:', mappedPermissions);
     
     // Check if user has any of the mapped permissions
-    return mappedPermissions.some(permission => userPermissions.includes(permission));
+    const hasPermission = mappedPermissions.some(permission => userPermissions.includes(permission));
+    console.log('🔐 Permission check result:', hasPermission);
+    
+    return hasPermission;
   } catch (error) {
-    console.error('Error checking permission:', error);
+    console.error('🔐 Error in hasPermission:', error);
     // Fallback to dynamic system if database fails
     return hasPermissionFallback(user, action, subject);
   }
@@ -409,25 +386,44 @@ export async function hasPermission(user: User, action: Action, subject: Subject
  * Now supports new roles through configuration
  */
 function hasPermissionFallback(user: User, action: Action, subject: Subject): boolean {
-  // SUPER_ADMIN should have access to everything
+  console.log('🔐 Fallback permission check for:', { user, action, subject });
+  
+  // SUPER_ADMIN has access to everything
   if (user.role === 'SUPER_ADMIN') {
+    console.log('🔐 Fallback: SUPER_ADMIN access granted');
     return true;
   }
 
-  // Get permissions for user's role from dynamic configuration
-  const userPermissions = DYNAMIC_FALLBACK_PERMISSIONS[user.role] || [];
-  
-  // Check for wildcard permissions
-  if (userPermissions.includes('*') || userPermissions.includes('manage.all')) {
-    return true;
+  // ADMIN role permissions
+  if (user.role === 'ADMIN') {
+    console.log('🔐 Fallback: Checking ADMIN permissions');
+    
+    // Admin can read all subjects
+    if (action === 'read') {
+      console.log('🔐 Fallback: ADMIN read access granted for all subjects');
+      return true;
+    }
+    
+    // Admin can manage employees, users, and basic operations
+    if (subject === 'Employee' || subject === 'User' || subject === 'Dashboard') {
+      console.log('🔐 Fallback: ADMIN access granted for', subject);
+      return true;
+    }
   }
 
-  // Check for specific permission using mapping
-  const permissionName = `${action}.${subject}`;
-  const mappedPermissions = PERMISSION_MAPPING[permissionName] || [permissionName];
-  
-  // Check if user has any of the mapped permissions
-  return mappedPermissions.some(permission => userPermissions.includes(permission));
+  // MANAGER role permissions
+  if (user.role === 'MANAGER') {
+    console.log('🔐 Fallback: Checking MANAGER permissions');
+    
+    // Manager can read most subjects
+    if (action === 'read') {
+      console.log('🔐 Fallback: MANAGER read access granted for most subjects');
+      return true;
+    }
+  }
+
+  console.log('🔐 Fallback: No permissions found, access denied');
+  return false;
 }
 
 /**
@@ -527,6 +523,7 @@ export async function getAllowedActions(user: User, subject: Subject): Promise<A
 export async function canAccessRoute(user: User, route: string): Promise<boolean> {
   // Define base route permission mappings (can be extended dynamically)
   // All routes now use permission-based access instead of role restrictions
+  // These MUST match the client-side route permissions exactly
   const baseRoutePermissions: Record<string, { action: Action; subject: Subject; roles: UserRole[] }> = {
     '/dashboard': { action: 'read', subject: 'Settings', roles: [] },
     '/employee-dashboard': { action: 'read', subject: 'Employee', roles: [] },
@@ -534,7 +531,7 @@ export async function canAccessRoute(user: User, route: string): Promise<boolean
     '/modules/customer-management': { action: 'read', subject: 'Customer', roles: [] },
     '/modules/equipment-management': { action: 'read', subject: 'Equipment', roles: [] },
     '/modules/maintenance-management': { action: 'read', subject: 'Maintenance', roles: [] },
-    '/modules/company-management': { action: 'manage', subject: 'Company', roles: [] },
+    '/modules/company-management': { action: 'read', subject: 'Company', roles: [] },
     '/modules/rental-management': { action: 'read', subject: 'Rental', roles: [] },
     '/modules/quotation-management': { action: 'read', subject: 'Quotation', roles: [] },
     '/modules/payroll-management': { action: 'read', subject: 'Payroll', roles: [] },
@@ -550,7 +547,7 @@ export async function canAccessRoute(user: User, route: string): Promise<boolean
     '/modules/settings': { action: 'read', subject: 'Settings', roles: [] },
     '/modules/audit-compliance': { action: 'read', subject: 'Report', roles: [] },
     '/modules/document-management': { action: 'read', subject: 'Document', roles: [] },
-    '/admin': { action: 'manage', subject: 'Settings', roles: [] },
+    '/admin': { action: 'read', subject: 'Settings', roles: [] },
     '/reports': { action: 'read', subject: 'Report', roles: [] },
   };
 

@@ -208,6 +208,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const filterMenuItems = (items: any[]) => {
     if (!user) return [];
 
+    // Debug logging for permission checking
+    console.log(`🔍 Filtering sidebar items for role: ${user.role}`);
+    
     // Always show items without specific routes (like help, search)
     const essentialItems = items.filter(item => item.url === '#' || !item.url);
     
@@ -218,15 +221,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       
       // Hide employee dashboard for non-EMPLOYEE users
       if (item.url === '/employee-dashboard') {
-        // Only show if user has employee read permission
-        return hasPermission('read', 'Employee');
+        const hasEmployeePermission = hasPermission('read', 'Employee');
+        console.log(`🔍 Employee Dashboard: ${hasEmployeePermission ? '✅ SHOW' : '❌ HIDE'} - hasPermission('read', 'Employee') = ${hasEmployeePermission}`);
+        return hasEmployeePermission;
       }
       
       // For all other routes, check if user can access them
-      return canAccessRoute(item.url);
+      const canAccess = canAccessRoute(item.url);
+      const itemTitle = item.title || item.name || 'Unknown';
+      console.log(`🔍 ${itemTitle}: ${canAccess ? '✅ SHOW' : '❌ HIDE'} - canAccessRoute = ${canAccess}`);
+      return canAccess;
     });
     
-    return [...essentialItems, ...routeItems];
+    const result = [...essentialItems, ...routeItems];
+    console.log(`🔍 Final sidebar items for ${user.role}:`, result.map(item => item.title || item.name || 'Unknown'));
+    
+    return result;
   };
 
   // Filter menu items based on permissions

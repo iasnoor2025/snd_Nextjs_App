@@ -210,18 +210,18 @@ export default function DocumentManagementPage() {
     setSelectedDocuments(newSelected);
   };
 
-  const handleDownload = (document: Document) => {
+  const handleDownload = (doc: Document) => {
     const link = document.createElement('a');
-    link.href = document.url;
-    link.download = document.fileName;
+    link.href = doc.url;
+    link.download = doc.fileName;
     link.target = '_blank';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  const handlePreview = (document: Document) => {
-    setPreviewDocument(document);
+  const handlePreview = (doc: Document) => {
+    setPreviewDocument(doc);
   };
 
   const handleCombinePDFs = async () => {
@@ -261,11 +261,40 @@ export default function DocumentManagementPage() {
 
     setCombining(true);
     try {
-      // Implementation for combining PDFs would go here
-      toast.success(`Combining ${pdfDocs.length} PDF documents...`);
+      // Call the API to combine PDFs
+      const response = await fetch('/api/documents/combine-pdf-supabase', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          documentIds: pdfDocs.map(doc => doc.id),
+          type: 'all'
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Combine PDF error response:', errorData);
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      // Get the PDF blob and download it
+      const pdfBlob = await response.blob();
+      const url = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `combined_documents_${Date.now()}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success(`Successfully combined ${pdfDocs.length} PDF documents`);
+      setSelectedDocuments(new Set()); // Clear selection after successful combination
     } catch (error) {
       console.error('Error combining PDFs:', error);
-      toast.error('Failed to combine PDFs');
+      toast.error(`Failed to combine PDFs: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setCombining(false);
     }
@@ -398,7 +427,7 @@ export default function DocumentManagementPage() {
                   return (
                     <>
                       <span className="text-xs text-muted-foreground">
-                        ({pdfDocs.length} PDF{s})
+                        ({pdfDocs.length} PDF{pdfDocs.length !== 1 ? 's' : ''})
                       </span>
                       <Button
                         variant="outline"

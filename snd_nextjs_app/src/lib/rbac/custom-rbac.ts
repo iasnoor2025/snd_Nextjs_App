@@ -142,51 +142,20 @@ function hasPermissionFallback(user: User, action: Action, subject: Subject): bo
   // Define fallback permissions for each role
   const fallbackPermissions: Record<string, string[]> = {
     SUPER_ADMIN: ['*', 'manage.all'],
-    ADMIN: [
-      'manage.User', 'manage.Employee', 'manage.Customer', 'manage.Equipment',
-      'manage.Rental', 'manage.Quotation', 'manage.Payroll', 'manage.Timesheet',
-      'manage.Project', 'manage.Leave', 'manage.Department', 'manage.Designation',
-      'manage.Report', 'manage.Settings', 'manage.Company', 'manage.Safety',
-      'manage.employee-document', 'manage.SalaryIncrement', 'manage.Advance',
-      'manage.Assignment', 'manage.Location', 'manage.Maintenance'
-    ],
-    MANAGER: [
-      'read.User', 'manage.Employee', 'manage.Customer', 'manage.Equipment',
-      'manage.Rental', 'manage.Quotation', 'read.Payroll', 'manage.Timesheet',
-      'manage.Project', 'manage.Leave', 'read.Department', 'read.Designation',
-      'read.Report', 'read.Settings', 'read.Company', 'read.Safety',
-      'manage.employee-document', 'manage.SalaryIncrement', 'manage.Advance',
-      'manage.Assignment', 'read.Location', 'read.Maintenance'
-    ],
-    SUPERVISOR: [
-      'read.User', 'manage.Employee', 'read.Customer', 'read.Equipment',
-      'read.Rental', 'manage.Quotation', 'read.Payroll', 'manage.Timesheet',
-      'manage.Project', 'manage.Leave', 'read.Department', 'read.Designation',
-      'read.Report', 'read.Settings', 'read.Company', 'read.Safety',
-      'manage.employee-document', 'read.SalaryIncrement', 'read.Advance',
-      'read.Assignment', 'read.Location', 'read.Maintenance'
-    ],
-    OPERATOR: [
-      'read.User', 'read.Employee', 'read.Customer', 'read.Equipment',
-      'read.Rental', 'read.Quotation', 'read.Payroll', 'read.Timesheet',
-      'read.Project', 'read.Leave', 'read.Department', 'read.Designation',
-      'read.Report', 'read.Settings', 'read.Company', 'read.Safety',
-      'read.employee-document', 'read.SalaryIncrement', 'read.Advance',
-      'read.Assignment', 'read.Location', 'read.Maintenance'
-    ],
-    EMPLOYEE: [
-      'read.User', 'read.Employee', 'read.Customer', 'read.Equipment',
-      'read.Rental', 'read.Quotation', 'read.Payroll', 'manage.Timesheet',
-      'read.Project', 'manage.Leave', 'read.Department', 'read.Designation',
-      'read.Report', 'read.Settings', 'read.Company', 'manage.employee-document',
-      'read.SalaryIncrement'
-    ],
-    USER: [
-      'read.User', 'read.Employee', 'read.Customer', 'read.Equipment',
-      'read.Rental', 'read.Quotation', 'read.Timesheet', 'read.Project',
-      'read.Leave', 'read.Department', 'read.Settings', 'read.Report',
-      'read.Company', 'read.employee-document', 'read.SalaryIncrement'
-    ],
+    // ADMIN: [
+    //   'manage.User', 'manage.Employee', 'manage.Customer', 'manage.Equipment',
+    //   'manage.Rental', 'manage.Quotation', 'manage.Payroll', 'manage.Timesheet',
+    //   'manage.Project', 'manage.Leave', 'manage.Department', 'manage.Designation',
+    //   'manage.Report', 'manage.Settings', 'manage.Company', 'manage.Safety',
+    //   'manage.employee-document', 'manage.SalaryIncrement', 'manage.Advance',
+    //   'manage.Assignment', 'manage.Location', 'manage.Maintenance'
+    // ],
+    // All other roles start with empty permissions - they must be assigned dynamically
+    // MANAGER: [], // Will be populated dynamically
+    // SUPERVISOR: [], // Will be populated dynamically
+    // OPERATOR: [], // Will be populated dynamically
+    // EMPLOYEE: [], // Will be populated dynamically
+    // USER: [], // Will be populated dynamically
   };
 
   const userPermissions = fallbackPermissions[user.role] || [];

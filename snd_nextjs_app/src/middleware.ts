@@ -4,6 +4,8 @@ import { NextResponse } from 'next/server';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  
+  console.log('🔒 Middleware called for:', pathname);
 
   // Define public routes that should bypass middleware completely
   const publicRoutes = [
@@ -34,6 +36,7 @@ export async function middleware(request: NextRequest) {
   // Check if it's a public route or static asset
   if (publicRoutes.some(route => pathname.startsWith(route)) ||
       staticAssets.some(asset => pathname.startsWith(asset))) {
+    console.log('🔒 Public route or static asset, bypassing middleware');
     return NextResponse.next();
   }
 
@@ -43,18 +46,31 @@ export async function middleware(request: NextRequest) {
       pathname.startsWith('/api/debug') ||
       pathname.startsWith('/api/cron') ||
       pathname.startsWith('/api/webhooks')) {
+    console.log('🔒 API route bypassing middleware');
     return NextResponse.next();
   }
 
   try {
+    console.log('🔒 Checking authentication for:', pathname);
+    
     // Get the token from the request
     const token = await getToken({ 
       req: request, 
       secret: process.env.NEXTAUTH_SECRET || 'fallback-secret'
     });
 
+    console.log('🔒 Token found:', !!token);
+    if (token) {
+      console.log('🔒 Token details:', {
+        email: token.email,
+        role: token.role,
+        isActive: token.isActive
+      });
+    }
+
     // If no token, redirect to login
     if (!token) {
+      console.log('🔒 No token found, redirecting to login');
       const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('callbackUrl', pathname);
       return NextResponse.redirect(loginUrl);
@@ -62,11 +78,13 @@ export async function middleware(request: NextRequest) {
 
     // Check if user is active
     if (token.isActive === false) {
+      console.log('🔒 User inactive, redirecting to access denied');
       return NextResponse.redirect(new URL('/access-denied?reason=inactive', request.url));
     }
 
     // Client-safe route permission checking (no database operations)
     const routePermission = getClientSafeRoutePermission(pathname);
+    console.log('🔒 Route permission check:', routePermission);
     
     if (routePermission) {
       // If roles array is empty, only check permissions (no role restrictions)
@@ -77,7 +95,10 @@ export async function middleware(request: NextRequest) {
           userRoles.includes(requiredRole)
         );
 
+        console.log('🔒 Role check:', { userRoles, requiredRoles: routePermission.roles, hasRequiredRole });
+
         if (!hasRequiredRole) {
+          console.log('🔒 Insufficient role, redirecting to access denied');
           return NextResponse.redirect(new URL('/access-denied?reason=insufficient_permissions', request.url));
         }
       }
@@ -85,10 +106,11 @@ export async function middleware(request: NextRequest) {
     }
 
     // Allow access to the route
+    console.log('🔒 Access granted to:', pathname);
     return NextResponse.next();
 
   } catch (error) {
-    console.error('Middleware error:', error);
+    console.error('🔒 Middleware error:', error);
     
     // On error, allow access but log the issue
     // This prevents the app from being completely broken due to middleware errors
@@ -102,7 +124,7 @@ export async function middleware(request: NextRequest) {
  */
 function getClientSafeRoutePermission(pathname: string) {
   // Define route permission mappings for client-side
-  // All routes now use permission-based access instead of hardcoded role restrictions
+  // These MUST match the client-side and server-side route permissions exactly
   const routePermissions: Record<string, { action: string; subject: string; roles: string[] }> = {
     '/dashboard': { action: 'read', subject: 'Settings', roles: [] },
     '/employee-dashboard': { action: 'read', subject: 'Employee', roles: [] },
@@ -110,7 +132,7 @@ function getClientSafeRoutePermission(pathname: string) {
     '/modules/customer-management': { action: 'read', subject: 'Customer', roles: [] },
     '/modules/equipment-management': { action: 'read', subject: 'Equipment', roles: [] },
     '/modules/maintenance-management': { action: 'read', subject: 'Maintenance', roles: [] },
-    '/modules/company-management': { action: 'manage', subject: 'Company', roles: [] },
+    '/modules/company-management': { action: 'read', subject: 'Company', roles: [] },
     '/modules/rental-management': { action: 'read', subject: 'Rental', roles: [] },
     '/modules/quotation-management': { action: 'read', subject: 'Quotation', roles: [] },
     '/modules/payroll-management': { action: 'read', subject: 'Payroll', roles: [] },
@@ -126,10 +148,10 @@ function getClientSafeRoutePermission(pathname: string) {
     '/modules/settings': { action: 'read', subject: 'Settings', roles: [] },
     '/modules/audit-compliance': { action: 'read', subject: 'Report', roles: [] },
     '/modules/document-management': { action: 'read', subject: 'Document', roles: [] },
-    '/admin': { action: 'manage', subject: 'Settings', roles: [] },
+    '/admin': { action: 'read', subject: 'Settings', roles: [] },
     '/reports': { action: 'read', subject: 'Report', roles: [] },
   };
-
+  
   return routePermissions[pathname] || null;
 }
 

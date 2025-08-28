@@ -32,105 +32,35 @@ interface RBACProviderProps {
 
 // Dynamic role hierarchy configuration (can be updated without code changes)
 const DYNAMIC_ROLE_HIERARCHY: Record<string, number> = {
-  'SUPER_ADMIN': 1,
-  'ADMIN': 2,
-  'MANAGER': 3,
-  'SUPERVISOR': 4,
-  'OPERATOR': 5,
-  'EMPLOYEE': 6,
-  'USER': 7,
-  // Add new roles here with appropriate priority numbers
-  // Lower number = higher priority
-  'PROJECT_LEADER': 4, // Same priority as SUPERVISOR
-  'FINANCE_SPECIALIST': 5, // Same priority as OPERATOR
-  'HR_SPECIALIST': 5, // Same priority as OPERATOR
-  'SALES_REPRESENTATIVE': 5, // Same priority as OPERATOR
+  'SUPER_ADMIN': 1, // Always highest priority
+  // All other roles will be assigned priorities dynamically
+  'ADMIN': 2, // Will be assigned dynamically
+  // 'MANAGER': 3, // Will be assigned dynamically
+  // 'SUPERVISOR': 4, // Will be assigned dynamically
+  // 'OPERATOR': 5, // Will be assigned dynamically
+  // 'EMPLOYEE': 6, // Will be assigned dynamically
+  // 'USER': 7, // Will be assigned dynamically
 };
 
 // Dynamic fallback permissions configuration (can be updated without code changes)
 const DYNAMIC_FALLBACK_PERMISSIONS: Record<string, string[]> = {
   SUPER_ADMIN: ['*', 'manage.all'],
   ADMIN: [
-    'manage.User', 'manage.Employee', 'manage.Customer', 'manage.Equipment',
-    'manage.Rental', 'manage.Quotation', 'manage.Payroll', 'manage.Timesheet', 'approve.Timesheet', 'reject.Timesheet',
-    'approve.Timesheet.Foreman', 'approve.Timesheet.Incharge', 'approve.Timesheet.Checking', 'approve.Timesheet.Manager',
-    'manage.Project', 'manage.Leave', 'manage.Department', 'manage.Designation',
-    'manage.Report', 'manage.Settings', 'manage.Company', 'manage.Safety',
-    'manage.SalaryIncrement', 'manage.Advance',
-    'manage.Assignment', 'manage.Location', 'manage.Maintenance', 'manage.Document'
+    'read.Dashboard', 'read.Employee', 'read.employee-document'
   ],
-  MANAGER: [
-    'read.User', 'manage.Employee', 'manage.Customer', 'manage.Equipment',
-    'manage.Rental', 'manage.Quotation', 'read.Payroll', 'manage.Timesheet', 'approve.Timesheet', 'reject.Timesheet',
-    'approve.Timesheet.Manager',
-    'manage.Project', 'manage.Leave', 'read.Department', 'read.Designation',
-    'read.Report', 'read.Settings', 'read.Company', 'read.Safety',
-    'manage.SalaryIncrement', 'manage.Advance',
-    'manage.Assignment', 'read.Location', 'read.Maintenance', 'manage.Document'
-  ],
-  SUPERVISOR: [
-    'read.User', 'manage.Employee', 'read.Customer', 'read.Equipment',
-    'read.Rental', 'manage.Quotation', 'read.Payroll', 'manage.Timesheet', 'approve.Timesheet', 'reject.Timesheet',
-    'approve.Timesheet.Foreman', 'approve.Timesheet.Incharge',
-    'manage.Project', 'manage.Leave', 'read.Department', 'read.Designation',
-    'read.Report', 'read.Settings', 'read.Company', 'read.Safety',
-    'read.SalaryIncrement', 'read.Advance',
-    'read.Assignment', 'read.Location', 'read.Maintenance', 'read.Document'
-  ],
-  OPERATOR: [
-    'read.User', 'read.Employee', 'read.Customer', 'read.Equipment',
-    'read.Rental', 'read.Quotation', 'read.Payroll', 'read.Timesheet',
-    'read.Project', 'read.Leave', 'read.Department', 'read.Designation',
-    'read.Report', 'read.Settings', 'read.Company', 'read.Safety',
-    'read.SalaryIncrement', 'read.Advance',
-    'read.Assignment', 'read.Location', 'read.Maintenance', 'read.Document'
-  ],
-  EMPLOYEE: [
-    'read.User', 'read.Employee', 'read.Customer', 'read.Equipment',
-    'read.Rental', 'read.Quotation', 'read.Payroll', 'manage.Timesheet',
-    'read.Project', 'manage.Leave', 'read.Department', 'read.Designation',
-    'read.Report', 'read.Settings', 'read.Company',
-    'read.SalaryIncrement', 'read.Document'
-  ],
-  USER: [
-    'read.User', 'read.Employee', 'read.Customer', 'read.Equipment',
-    'read.Rental', 'read.Quotation', 'read.Timesheet', 'read.Project',
-    'read.Leave', 'read.Department', 'read.Settings', 'read.Report',
-    'read.Company', 'read.SalaryIncrement', 'read.Document'
-  ],
-  // New roles with their permissions
-  PROJECT_LEADER: [
-    'manage.Project', 'manage.project-task', 'manage.project-milestone',
-    'read.Employee', 'read.Timesheet', 'read.Report', 'read.Project',
-    'read.Customer', 'read.Equipment'
-  ],
-  // Timesheet approval stage roles
-  FOREMAN: [
-    'read.Employee', 'read.Timesheet', 'approve.Timesheet.Foreman',
-    'read.Project', 'read.Report'
-  ],
-  TIMESHEET_INCHARGE: [
-    'read.Employee', 'read.Timesheet', 'approve.Timesheet.Incharge',
-    'read.Project', 'read.Report'
-  ],
-  TIMESHEET_CHECKER: [
-    'read.Employee', 'read.Timesheet', 'approve.Timesheet.Checking',
-    'read.Project', 'read.Report'
-  ],
-  FINANCE_SPECIALIST: [
-    'read.Payroll', 'read.SalaryIncrement', 'read.Advance', 'read.Report',
-    'read.Employee', 'export.Report', 'read.Project', 'read.Customer',
-    'read.Equipment', 'read.Timesheet'
-  ],
-  HR_SPECIALIST: [
-    'read.Employee', 'manage.Leave', 'read.performance-review', 'read.Training',
-    'read.Report', 'read.User', 'read.Department', 'read.Designation',
-    'read.SalaryIncrement'
-  ],
-  SALES_REPRESENTATIVE: [
-    'read.Customer', 'manage.Quotation', 'read.Project', 'read.Report',
-    'export.Report', 'read.Employee', 'read.Equipment', 'read.Timesheet'
-  ],
+  // All other roles start with empty permissions - they must be assigned dynamically
+  // MANAGER: [], // Will be populated dynamically
+  // SUPERVISOR: [], // Will be populated dynamically
+  // OPERATOR: [], // Will be populated dynamically
+  // EMPLOYEE: [], // Will be populated dynamically
+  // USER: [], // Will be populated dynamically
+  // PROJECT_LEADER: [], // Will be populated dynamically
+  // FOREMAN: [], // Will be populated dynamically
+  // TIMESHEET_INCHARGE: [], // Will be populated dynamically
+  // TIMESHEET_CHECKER: [], // Will be populated dynamically
+  // FINANCE_SPECIALIST: [], // Will be populated dynamically
+  // HR_SPECIALIST: [], // Will be populated dynamically
+  // SALES_REPRESENTATIVE: [], // Will be populated dynamically
 };
 
 // Client-side permission checking (dynamic system)
@@ -145,7 +75,17 @@ function hasPermissionClient(user: User, action: Action, subject: Subject): bool
 
   // Check for specific permission
   const permissionName = `${action}.${subject}`;
-  return userPermissions.includes(permissionName);
+  if (userPermissions.includes(permissionName)) {
+    return true;
+  }
+
+  // Check if user has manage permission for the subject (which includes read, create, update, delete)
+  const managePermission = `manage.${subject}`;
+  if (userPermissions.includes(managePermission)) {
+    return true;
+  }
+
+  return false;
 }
 
 // Client-side route access checking (dynamic system)
