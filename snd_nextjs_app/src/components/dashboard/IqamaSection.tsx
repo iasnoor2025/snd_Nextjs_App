@@ -1,6 +1,6 @@
 'use client';
 
-import { RoleBased } from '@/components/RoleBased';
+import { PermissionBased } from '@/components/PermissionBased';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -104,7 +104,7 @@ export function IqamaSection({ iqamaData, onUpdateIqama, onHideSection }: IqamaS
             <CardDescription>{t('employee.iqama.description')}</CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
+            <PermissionBased action="manage" subject="Employee">
               <Button
                 variant="outline"
                 size="sm"
@@ -125,7 +125,7 @@ export function IqamaSection({ iqamaData, onUpdateIqama, onHideSection }: IqamaS
                 <Edit className="h-4 w-4" />
                 {t('employee.iqama.manage')}
               </Button>
-            </RoleBased>
+            </PermissionBased>
             <Button
               variant="outline"
               size="sm"
@@ -292,7 +292,7 @@ export function IqamaSection({ iqamaData, onUpdateIqama, onHideSection }: IqamaS
                     )}
                   </TableCell>
                   <TableCell>
-                    <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
+                    <PermissionBased action="update" subject="Employee">
                       <Button
                         variant="outline"
                         size="sm"
@@ -302,7 +302,7 @@ export function IqamaSection({ iqamaData, onUpdateIqama, onHideSection }: IqamaS
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
-                    </RoleBased>
+                    </PermissionBased>
                   </TableCell>
                 </TableRow>
               ))}

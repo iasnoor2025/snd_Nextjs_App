@@ -43,7 +43,7 @@ import {
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { useI18n } from '@/hooks/use-i18n';
-import { PermissionContent, RoleContent } from '@/lib/rbac/rbac-components';
+import { PermissionContent, PermissionBased } from '@/lib/rbac/rbac-components';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import {
   batchTranslateNames,
@@ -622,29 +622,11 @@ export default function TimesheetManagementPage() {
 
     // For draft timesheets, check submission permissions
     if (timesheet.status === 'draft') {
-      const canSubmit = ['ADMIN', 'MANAGER', 'SUPER_ADMIN'].includes(userRole);
-
-      return canSubmit;
+      return hasPermission('create', 'Timesheet');
     }
 
-    // Define approval workflow stages and who can approve at each stage
-    // Include 'pending' as equivalent to 'submitted' for approval purposes
-    const approvalWorkflow = {
-      pending: ['FOREMAN', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
-      submitted: ['FOREMAN', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
-      foreman_approved: ['INCHARGE', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
-      incharge_approved: ['CHECKING', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
-      checking_approved: ['MANAGER', 'ADMIN', 'SUPER_ADMIN'],
-    };
-
-    const allowedRoles = approvalWorkflow[timesheet.status as keyof typeof approvalWorkflow];
-    if (!allowedRoles) {
-      return false;
-    }
-
-    const canApprove = allowedRoles.includes(userRole);
-
-    return canApprove;
+    // Use permission-based check instead of hardcoded roles
+    return hasPermission('approve', 'Timesheet');
   };
 
   const canRejectTimesheet = (timesheet: Timesheet) => {
@@ -659,19 +641,8 @@ export default function TimesheetManagementPage() {
     ].includes(timesheet.status);
     if (!canProcess) return false;
 
-    // Any role that can approve can also reject
-    const approvalWorkflow = {
-      pending: ['FOREMAN', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
-      submitted: ['FOREMAN', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
-      foreman_approved: ['INCHARGE', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
-      incharge_approved: ['INCHARGE', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
-      checking_approved: ['MANAGER', 'ADMIN', 'SUPER_ADMIN'],
-    };
-
-    const allowedRoles = approvalWorkflow[timesheet.status as keyof typeof approvalWorkflow];
-    if (!allowedRoles) return false;
-
-    return allowedRoles.includes(userRole);
+    // Use permission-based check instead of hardcoded roles
+    return hasPermission('reject', 'Timesheet');
   };
 
   const getNextApprovalStage = (currentStatus: string) => {

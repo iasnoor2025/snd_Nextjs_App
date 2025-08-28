@@ -2,8 +2,9 @@ import { authOptions } from '@/lib/auth-config';
 import { DashboardService } from '@/lib/services/dashboard-service';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-export async function GET(_request: NextRequest) {
+export const GET = withPermission(PermissionConfigs.dashboard.read)(async (_request: NextRequest) => {
   try {
     // Check authentication
     const session = await getServerSession(authOptions);
@@ -11,17 +12,10 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user is an employee (redirect them to employee dashboard)
-    if (session.user.role === 'EMPLOYEE') {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
-
     // Get query parameters
     const { searchParams } = new URL(_request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
-    const isSeniorRole =
-      session.user.role && ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role);
-    const dataLimit = isSeniorRole ? Math.min(limit, 500) : Math.min(limit, 500);
+    const dataLimit = Math.min(limit, 500);
 
     // Fetch all dashboard data sequentially to identify which call fails
 
@@ -98,4 +92,4 @@ export async function GET(_request: NextRequest) {
         { status: 500 }
       );
   }
-}
+});

@@ -27,7 +27,7 @@ const deleteEmployeePaymentHandler = async (
     const user = session?.user;
 
     // For employee users, ensure they can only access their own payment data
-    if (user?.role === 'EMPLOYEE') {
+    if (user?.national_id) {
       // Find employee record that matches user's national_id using Drizzle
       const ownEmployeeRows = await db
         .select({ id: employees.id })

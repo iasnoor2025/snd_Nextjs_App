@@ -25,7 +25,7 @@ const getLeavesHandler = async (request: NextRequest) => {
     const user = session?.user;
 
     // For employee users, only show their own leave requests
-    if (user?.role === 'EMPLOYEE' && user.national_id) {
+    if (user?.national_id) {
       const ownRows = await db
         .select({ id: employeesTable.id })
         .from(employeesTable)
@@ -136,7 +136,7 @@ const createLeaveHandler = async (request: NextRequest) => {
     const user = session?.user;
 
     // For employee users, ensure they can only create leave requests for themselves
-    if (user?.role === 'EMPLOYEE' && user.national_id) {
+    if (user?.national_id) {
       const ownRows = await db
         .select({ id: employeesTable.id })
         .from(employeesTable)

@@ -27,7 +27,7 @@ const getAdvancesHandler = async (
     let employeeFilter: ReturnType<typeof eq> | null = null;
 
     // For employee users, only show their own advances
-    if (user?.role === 'EMPLOYEE' && user.national_id) {
+    if (user?.national_id) {
       // Find employee record that matches user's national_id
       const ownEmployeeRows = await db
         .select({ id: employees.id })

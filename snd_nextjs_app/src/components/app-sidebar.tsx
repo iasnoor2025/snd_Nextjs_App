@@ -40,7 +40,38 @@ import { useTranslation } from 'react-i18next';
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { isRTL } = useI18n();
   const { t } = useTranslation('sidebar');
-  const { canAccessRoute, user } = useRBAC();
+  const { canAccessRoute, user, hasPermission } = useRBAC();
+
+  // Debug logging for SUPER_ADMIN
+  if (user?.role === 'SUPER_ADMIN') {
+    console.log('🔍 SUPER_ADMIN detected in sidebar:', {
+      user: user,
+      hasEmployeePermission: hasPermission('read', 'Employee'),
+      canAccessDashboard: canAccessRoute('/'),
+      canAccessEmployeeManagement: canAccessRoute('/modules/employee-management'),
+    });
+  }
+
+  // Debug logging for all users
+  console.log('🔍 Sidebar debug - User:', user, 'Role:', user?.role);
+  
+  // Test route access for key routes
+  if (user) {
+    console.log('🔍 Route access test:', {
+      dashboard: canAccessRoute('/'),
+      employeeManagement: canAccessRoute('/modules/employee-management'),
+      customerManagement: canAccessRoute('/modules/customer-management'),
+      equipmentManagement: canAccessRoute('/modules/equipment-management'),
+    });
+  }
+
+  // Debug logging for SUPER_ADMIN
+  console.log('Sidebar Debug:', {
+    userRole: user?.role,
+    isSuperAdmin: user?.role === 'SUPER_ADMIN',
+    hasEmployeePermission: hasPermission('read', 'Employee'),
+    user: user
+  });
 
   // Define all possible menu items with their routes
   const allMenuItems = [
@@ -177,34 +208,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const filterMenuItems = (items: any[]) => {
     if (!user) return [];
 
-    // For EMPLOYEE role, only show employee dashboard and essential items
-    if (user.role === 'EMPLOYEE') {
-      return items.filter(item => {
-        // Always show items without specific routes (like help, search)
-        if (item.url === '#' || !item.url) return true;
-
-        // For employees, only show employee dashboard and settings
-        if (item.url === '/employee-dashboard' || item.url === '/modules/settings') {
-          return true;
-        }
-
-        return false;
-      });
-    }
-
-    // For other roles, use normal permission filtering but exclude employee dashboard
-    return items.filter(item => {
-      // Always show items without specific routes (like help, search)
-      if (item.url === '#' || !item.url) return true;
-
-      // Hide employee dashboard for non-EMPLOYEE roles
+    // Always show items without specific routes (like help, search)
+    const essentialItems = items.filter(item => item.url === '#' || !item.url);
+    
+    // Filter route-based items by permissions
+    const routeItems = items.filter(item => {
+      // Skip essential items (already handled above)
+      if (item.url === '#' || !item.url) return false;
+      
+      // Hide employee dashboard for non-EMPLOYEE users
       if (item.url === '/employee-dashboard') {
-        return false;
+        // Only show if user has employee read permission
+        return hasPermission('read', 'Employee');
       }
-
-      // Check if user can access this route
+      
+      // For all other routes, check if user can access them
       return canAccessRoute(item.url);
     });
+    
+    return [...essentialItems, ...routeItems];
   };
 
   // Filter menu items based on permissions

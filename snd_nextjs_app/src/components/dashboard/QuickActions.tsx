@@ -1,6 +1,6 @@
 'use client';
 
-import { RoleBased } from '@/components/RoleBased';
+import { PermissionBased } from '@/components/PermissionBased';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/hooks/use-i18n';
 import {
@@ -44,7 +44,7 @@ export function QuickActions({ onHideSection }: QuickActionsProps) {
         </Button>
       </div>
       <div className="grid grid-cols-9 gap-2 overflow-x-auto">
-        <RoleBased roles={['SUPER_ADMIN', 'ADMIN']}>
+        <PermissionBased action="read" subject="User">
           <Button
             variant="default"
             size="sm"
@@ -58,9 +58,9 @@ export function QuickActions({ onHideSection }: QuickActionsProps) {
               </div>
             </div>
           </Button>
-        </RoleBased>
+        </PermissionBased>
 
-        <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
+        <PermissionBased action="read" subject="Report">
           <Button
             variant="secondary"
             size="sm"
@@ -74,9 +74,9 @@ export function QuickActions({ onHideSection }: QuickActionsProps) {
               </div>
             </div>
           </Button>
-        </RoleBased>
+        </PermissionBased>
 
-        <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR']}>
+        <PermissionBased action="read" subject="Payroll">
           <Button
             variant="outline"
             size="sm"
@@ -90,9 +90,9 @@ export function QuickActions({ onHideSection }: QuickActionsProps) {
               </div>
             </div>
           </Button>
-        </RoleBased>
+        </PermissionBased>
 
-        <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
+        <PermissionBased action="read" subject="Settings">
           <Button
             variant="ghost"
             size="sm"
@@ -106,9 +106,9 @@ export function QuickActions({ onHideSection }: QuickActionsProps) {
               </div>
             </div>
           </Button>
-        </RoleBased>
+        </PermissionBased>
 
-        <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
+        <PermissionBased action="read" subject="Equipment">
           <Button
             variant="default"
             size="sm"
@@ -122,9 +122,9 @@ export function QuickActions({ onHideSection }: QuickActionsProps) {
               </div>
             </div>
           </Button>
-        </RoleBased>
+        </PermissionBased>
 
-        <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
+        <PermissionBased action="read" subject="Rental">
           <Button
             variant="secondary"
             size="sm"
@@ -138,9 +138,9 @@ export function QuickActions({ onHideSection }: QuickActionsProps) {
               </div>
             </div>
           </Button>
-        </RoleBased>
+        </PermissionBased>
 
-        <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
+        <PermissionBased action="read" subject="Document">
           <Button
             variant="outline"
             size="sm"
@@ -154,9 +154,9 @@ export function QuickActions({ onHideSection }: QuickActionsProps) {
               </div>
             </div>
           </Button>
-        </RoleBased>
+        </PermissionBased>
 
-        <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
+        <PermissionBased action="read" subject="Project">
           <Button
             variant="ghost"
             size="sm"
@@ -170,10 +170,10 @@ export function QuickActions({ onHideSection }: QuickActionsProps) {
               </div>
             </div>
           </Button>
-        </RoleBased>
+        </PermissionBased>
 
         {/* EMPLOYEE MANAGEMENT */}
-        <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR']}>
+        <PermissionBased action="read" subject="Employee">
           <Button
             variant="default"
             size="sm"
@@ -187,7 +187,7 @@ export function QuickActions({ onHideSection }: QuickActionsProps) {
               </div>
             </div>
           </Button>
-        </RoleBased>
+        </PermissionBased>
       </div>
     </div>
   );

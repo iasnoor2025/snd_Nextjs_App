@@ -56,7 +56,7 @@ const DYNAMIC_FALLBACK_PERMISSIONS: Record<string, string[]> = {
     'manage.Project', 'manage.Leave', 'manage.Department', 'manage.Designation',
     'manage.Report', 'manage.Settings', 'manage.Company', 'manage.Safety',
     'manage.employee-document', 'manage.SalaryIncrement', 'manage.Advance',
-    'manage.Assignment', 'manage.Location', 'manage.Maintenance'
+    'manage.Assignment', 'manage.Location', 'manage.Maintenance', 'manage.Document', 'manage.document-version', 'manage.document-approval'
   ],
   MANAGER: [
     'read.User', 'manage.Employee', 'manage.Customer', 'manage.Equipment',
@@ -64,7 +64,7 @@ const DYNAMIC_FALLBACK_PERMISSIONS: Record<string, string[]> = {
     'manage.Project', 'manage.Leave', 'read.Department', 'read.Designation',
     'read.Report', 'read.Settings', 'read.Company', 'read.Safety',
     'manage.employee-document', 'manage.SalaryIncrement', 'manage.Advance',
-    'manage.Assignment', 'read.Location', 'read.Maintenance'
+    'manage.Assignment', 'read.Location', 'read.Maintenance', 'manage.Document', 'read.document-version', 'read.document-approval'
   ],
   SUPERVISOR: [
     'read.User', 'manage.Employee', 'read.Customer', 'read.Equipment',
@@ -72,7 +72,7 @@ const DYNAMIC_FALLBACK_PERMISSIONS: Record<string, string[]> = {
     'manage.Project', 'manage.Leave', 'read.Department', 'read.Designation',
     'read.Report', 'read.Settings', 'read.Company', 'read.Safety',
     'manage.employee-document', 'read.SalaryIncrement', 'read.Advance',
-    'read.Assignment', 'read.Location', 'read.Maintenance'
+    'read.Assignment', 'read.Location', 'read.Maintenance', 'read.Document', 'read.document-version', 'read.document-approval'
   ],
   OPERATOR: [
     'read.User', 'read.Employee', 'read.Customer', 'read.Equipment',
@@ -80,20 +80,20 @@ const DYNAMIC_FALLBACK_PERMISSIONS: Record<string, string[]> = {
     'read.Project', 'read.Leave', 'read.Department', 'read.Designation',
     'read.Report', 'read.Settings', 'read.Company', 'read.Safety',
     'read.employee-document', 'read.SalaryIncrement', 'read.Advance',
-    'read.Assignment', 'read.Location', 'read.Maintenance'
+    'read.Assignment', 'read.Location', 'read.Maintenance', 'read.Document', 'read.document-version', 'read.document-approval'
   ],
   EMPLOYEE: [
     'read.User', 'read.Employee', 'read.Customer', 'read.Equipment',
     'read.Rental', 'read.Quotation', 'read.Payroll', 'manage.Timesheet',
     'read.Project', 'manage.Leave', 'read.Department', 'read.Designation',
     'read.Report', 'read.Settings', 'read.Company', 'manage.employee-document',
-    'read.SalaryIncrement'
+    'read.SalaryIncrement', 'read.Document', 'read.document-version', 'read.document-approval'
   ],
   USER: [
     'read.User', 'read.Employee', 'read.Customer', 'read.Equipment',
     'read.Rental', 'read.Quotation', 'read.Timesheet', 'read.Project',
     'read.Leave', 'read.Department', 'read.Settings', 'read.Report',
-    'read.Company', 'read.employee-document', 'read.SalaryIncrement'
+    'read.Company', 'read.employee-document', 'read.SalaryIncrement', 'read.Document', 'read.document-version', 'read.document-approval'
   ],
   // New roles with their permissions
   PROJECT_LEADER: [
@@ -135,36 +135,45 @@ function hasPermissionClient(user: User, action: Action, subject: Subject): bool
 // Client-side route access checking (dynamic system)
 function canAccessRouteClient(user: User, route: string): boolean {
   // Define route permission mappings for client-side
+  // All routes now use permission-based access instead of hardcoded role restrictions
   const routePermissions: Record<string, { action: Action; subject: Subject; roles: UserRole[] }> = {
-    '/dashboard': { action: 'read', subject: 'Settings', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE', 'PROJECT_LEADER', 'FINANCE_SPECIALIST', 'HR_SPECIALIST', 'SALES_REPRESENTATIVE'] },
-    '/employee-dashboard': { action: 'read', subject: 'Employee', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE', 'PROJECT_LEADER', 'FINANCE_SPECIALIST', 'HR_SPECIALIST'] },
-    '/modules/employee-management': { action: 'read', subject: 'Employee', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE', 'PROJECT_LEADER', 'FINANCE_SPECIALIST', 'HR_SPECIALIST'] },
-    '/modules/customer-management': { action: 'read', subject: 'Customer', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE', 'PROJECT_LEADER', 'SALES_REPRESENTATIVE'] },
-    '/modules/equipment-management': { action: 'read', subject: 'Equipment', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE', 'PROJECT_LEADER', 'FINANCE_SPECIALIST', 'SALES_REPRESENTATIVE'] },
-    '/modules/maintenance-management': { action: 'read', subject: 'Maintenance', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'PROJECT_LEADER'] },
-    '/modules/company-management': { action: 'manage', subject: 'Company', roles: ['SUPER_ADMIN', 'ADMIN'] },
-    '/modules/rental-management': { action: 'read', subject: 'Rental', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE', 'PROJECT_LEADER', 'SALES_REPRESENTATIVE'] },
-    '/modules/quotation-management': { action: 'read', subject: 'Quotation', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE', 'SALES_REPRESENTATIVE'] },
-    '/modules/payroll-management': { action: 'read', subject: 'Payroll', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'FINANCE_SPECIALIST'] },
-    '/modules/timesheet-management': { action: 'read', subject: 'Timesheet', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE', 'PROJECT_LEADER', 'FINANCE_SPECIALIST', 'HR_SPECIALIST'] },
-    '/modules/project-management': { action: 'read', subject: 'Project', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE', 'PROJECT_LEADER', 'SALES_REPRESENTATIVE'] },
-    '/modules/leave-management': { action: 'read', subject: 'Leave', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE', 'HR_SPECIALIST'] },
-    '/modules/location-management': { action: 'read', subject: 'Settings', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'PROJECT_LEADER'] },
-    '/modules/user-management': { action: 'read', subject: 'User', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_SPECIALIST'] },
-    '/modules/analytics': { action: 'read', subject: 'Report', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'PROJECT_LEADER', 'FINANCE_SPECIALIST', 'HR_SPECIALIST', 'SALES_REPRESENTATIVE'] },
-    '/modules/safety-management': { action: 'read', subject: 'Safety', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'PROJECT_LEADER'] },
-    '/modules/salary-increments': { action: 'read', subject: 'SalaryIncrement', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE', 'FINANCE_SPECIALIST', 'HR_SPECIALIST'] },
-    '/modules/reporting': { action: 'read', subject: 'Report', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'PROJECT_LEADER', 'FINANCE_SPECIALIST', 'HR_SPECIALIST', 'SALES_REPRESENTATIVE'] },
-    '/modules/settings': { action: 'read', subject: 'Settings', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE', 'PROJECT_LEADER', 'FINANCE_SPECIALIST', 'HR_SPECIALIST', 'SALES_REPRESENTATIVE'] },
-    '/modules/audit-compliance': { action: 'read', subject: 'Report', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'PROJECT_LEADER'] },
-    '/admin': { action: 'manage', subject: 'Settings', roles: ['SUPER_ADMIN', 'ADMIN'] },
-    '/reports': { action: 'read', subject: 'Report', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'PROJECT_LEADER', 'FINANCE_SPECIALIST', 'HR_SPECIALIST', 'SALES_REPRESENTATIVE'] },
+    '/': { action: 'read', subject: 'Dashboard', roles: [] },
+    '/dashboard': { action: 'read', subject: 'Dashboard', roles: [] },
+    '/employee-dashboard': { action: 'read', subject: 'Employee', roles: [] },
+    '/modules/employee-management': { action: 'read', subject: 'Employee', roles: [] },
+    '/modules/customer-management': { action: 'read', subject: 'Customer', roles: [] },
+    '/modules/equipment-management': { action: 'read', subject: 'Equipment', roles: [] },
+    '/modules/maintenance-management': { action: 'read', subject: 'Maintenance', roles: [] },
+    '/modules/company-management': { action: 'manage', subject: 'Company', roles: [] },
+    '/modules/rental-management': { action: 'read', subject: 'Rental', roles: [] },
+    '/modules/quotation-management': { action: 'read', subject: 'Quotation', roles: [] },
+    '/modules/payroll-management': { action: 'read', subject: 'Payroll', roles: [] },
+    '/modules/timesheet-management': { action: 'read', subject: 'Timesheet', roles: [] },
+    '/modules/project-management': { action: 'read', subject: 'Project', roles: [] },
+    '/modules/leave-management': { action: 'read', subject: 'Leave', roles: [] },
+    '/modules/location-management': { action: 'read', subject: 'Settings', roles: [] },
+    '/modules/user-management': { action: 'read', subject: 'User', roles: [] },
+    '/modules/analytics': { action: 'read', subject: 'Report', roles: [] },
+    '/modules/safety-management': { action: 'read', subject: 'Safety', roles: [] },
+    '/modules/salary-increments': { action: 'read', subject: 'SalaryIncrement', roles: [] },
+    '/modules/reporting': { action: 'read', subject: 'Report', roles: [] },
+    '/modules/settings': { action: 'read', subject: 'Settings', roles: [] },
+    '/modules/audit-compliance': { action: 'read', subject: 'Report', roles: [] },
+    '/modules/document-management': { action: 'read', subject: 'Document', roles: [] },
+    '/admin': { action: 'manage', subject: 'Admin', roles: [] },
+    '/reports': { action: 'read', subject: 'Report', roles: [] },
   };
 
   const routePermission = routePermissions[route];
   if (!routePermission) return true; // Allow access if no specific permission defined
 
-  // Check if user has required role
+  // If roles array is empty, check permissions (no role restrictions)
+  if (routePermission.roles.length === 0) {
+    // Check if user has the required permission for this route
+    return hasPermissionClient(user, routePermission.action, routePermission.subject);
+  }
+  
+  // If there are role restrictions, check if user has required role
   return routePermission.roles.includes(user.role);
 }
 

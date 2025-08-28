@@ -5,6 +5,8 @@ import { NextResponse } from 'next/server';
 import { NextRequest } from 'next/server';
 import { authOptions } from '@/lib/auth-config';
 import { getServerSession } from 'next-auth';
+import { withPermission } from '@/lib/rbac/api-middleware';
+import { PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 export async function GET(
   request: NextRequest,
@@ -67,20 +69,16 @@ export async function GET(
   }
   }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const PUT = withPermission(PermissionConfigs.equipment.update)(
+  async (
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+  ) => {
   try {
     // Check authentication
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check if user has permission to update equipment
-    if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role || '')) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
     const { id: idParam } = await params;
@@ -148,4 +146,4 @@ export async function PUT(
       { status: 500 }
     );
   }
-}
+});

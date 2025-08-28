@@ -14,17 +14,10 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user is an employee (redirect them to employee dashboard)
-    if (session.user.role === 'EMPLOYEE') {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
-
     // Get query parameters
     const { searchParams } = new URL(_request.url);
     const limit = parseInt(searchParams.get('limit') || '10000');
-    const isSeniorRole =
-      session.user.role && ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role);
-    const dataLimit = isSeniorRole ? Math.min(limit, 10000) : Math.min(limit, 10000);
+    const dataLimit = Math.min(limit, 10000);
 
     // Generate cache key for equipment dashboard
     const cacheKey = generateCacheKey('equipment', 'dashboard', { limit: dataLimit });

@@ -2,18 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { EquipmentStatusMonitor } from '@/lib/cron/equipment-status-monitor';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
+import { withPermission } from '@/lib/rbac/api-middleware';
+import { PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-export async function POST(request: NextRequest) {
+export const POST = withPermission(PermissionConfigs.admin.manage)(async (request: NextRequest) => {
   try {
     // Check authentication and admin permissions
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Only allow SUPER_ADMIN and ADMIN to trigger this
-    if (!['SUPER_ADMIN', 'ADMIN'].includes(session.user.role || '')) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
     console.log(`🔧 Admin ${session.user.email} triggered equipment status fix...`);
@@ -52,19 +49,14 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
-export async function GET(request: NextRequest) {
+export const GET = withPermission(PermissionConfigs.admin.read)(async (request: NextRequest) => {
   try {
     // Check authentication and admin permissions
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Only allow SUPER_ADMIN and ADMIN to view this
-    if (!['SUPER_ADMIN', 'ADMIN'].includes(session.user.role || '')) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
     // Get current status summary and issues without fixing
@@ -96,4 +88,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

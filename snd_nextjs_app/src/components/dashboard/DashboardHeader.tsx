@@ -1,6 +1,6 @@
 'use client';
 
-import { RoleBased } from '@/components/RoleBased';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/hooks/use-i18n';

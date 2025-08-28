@@ -1,6 +1,6 @@
 'use client';
 
-import { RoleBased } from '@/components/RoleBased';
+import { PermissionBased } from '@/components/PermissionBased';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -109,7 +109,7 @@ export function TimesheetsSection({
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR']}>
+            <PermissionBased action="approve" subject="Timesheet">
               <div className="flex items-center gap-2">
                 <Badge variant="outline">
                   <CheckCircle className="h-3 w-3 mr-1" />
@@ -119,7 +119,7 @@ export function TimesheetsSection({
                   {t('timesheet.role')}: {session?.user?.role?.replace('_', ' ')}
                 </div>
               </div>
-            </RoleBased>
+            </PermissionBased>
             <Button
               variant="outline"
               size="sm"
@@ -172,11 +172,11 @@ export function TimesheetsSection({
         <div className="p-4 rounded-lg border bg-muted/50">
           <div className="flex items-center justify-between mb-3">
             <div className="text-sm font-medium">{t('timesheet.approvalWorkflow.title')}</div>
-            <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR']}>
+            <PermissionBased action="approve" subject="Timesheet">
               <div className="text-xs text-muted-foreground">
                 {t('timesheet.yourRole')}: {session?.user?.role?.replace('_', ' ')}
               </div>
-            </RoleBased>
+            </PermissionBased>
           </div>
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
@@ -379,7 +379,7 @@ export function TimesheetsSection({
                     <div className="flex gap-1">
                       {/* Approve Button */}
                       {item.approvalStatus !== 'manager_approved' && (
-                        <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR']}>
+                        <PermissionBased action="approve" subject="Timesheet">
                           <Button
                             variant="outline"
                             size="sm"
@@ -396,13 +396,13 @@ export function TimesheetsSection({
                               <CheckCircle className="h-4 w-4" />
                             )}
                           </Button>
-                        </RoleBased>
+                        </PermissionBased>
                       )}
 
                       {/* Reject Button - Only for foreman and above */}
                       {item.approvalStatus !== 'manager_approved' &&
                         item.approvalStatus !== 'rejected' && (
-                          <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR']}>
+                          <PermissionBased action="reject" subject="Timesheet">
                             <Button
                               variant="outline"
                               size="sm"
@@ -417,11 +417,11 @@ export function TimesheetsSection({
                                 <XCircle className="h-4 w-4" />
                               )}
                             </Button>
-                          </RoleBased>
+                          </PermissionBased>
                         )}
 
                       {/* Mark Absent Button - Only for foreman and above */}
-                      <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR']}>
+                      <PermissionBased action="update" subject="Timesheet">
                         <Button
                           variant="outline"
                           size="sm"
@@ -436,10 +436,10 @@ export function TimesheetsSection({
                             <UserX className="h-4 w-4" />
                           )}
                         </Button>
-                      </RoleBased>
+                      </PermissionBased>
 
                       {/* Edit Hours Button - Only for foreman and above */}
-                      <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR']}>
+                      <PermissionBased action="update" subject="Timesheet">
                         <Button
                           variant="outline"
                           size="sm"
@@ -449,7 +449,7 @@ export function TimesheetsSection({
                         >
                           <Clock className="h-4 w-4" />
                         </Button>
-                      </RoleBased>
+                      </PermissionBased>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -491,7 +491,7 @@ export function TimesheetsSection({
                           .length
                       }
                     </span>
-                    <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR']}>
+                    <PermissionBased action="approve" subject="Timesheet">
                       <span className="flex items-center gap-1">
                         <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                         {t('timesheet.canApprove')}:{' '}
@@ -500,7 +500,7 @@ export function TimesheetsSection({
                             .length
                         }
                       </span>
-                    </RoleBased>
+                    </PermissionBased>
                   </div>
                 </div>
                 <div className="text-muted-foreground">

@@ -40,6 +40,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { useRBAC } from '@/lib/rbac/rbac-context';
 
 export default function SalaryIncrementsPage() {
   const [increments, setIncrements] = useState<SalaryIncrement[]>([]);
@@ -67,6 +68,7 @@ export default function SalaryIncrementsPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const { t } = useTranslation();
+  const { hasPermission } = useRBAC();
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -192,53 +194,28 @@ export default function SalaryIncrementsPage() {
   };
 
   const canApprove = (increment: SalaryIncrement) => {
-    // Super admin and admin can approve any increment
-    const userRole = session?.user?.role?.toLowerCase();
-    if (userRole === 'super_admin' || userRole === 'admin' || userRole === 'superadmin') {
-      return true;
-    }
-    // Other users can only approve pending increments
-    return increment.status === 'pending';
+    // Use permission-based check instead of hardcoded roles
+    return hasPermission('approve', 'SalaryIncrement');
   };
 
   const canReject = (increment: SalaryIncrement) => {
-    // Super admin and admin can reject any increment
-    const userRole = session?.user?.role?.toLowerCase();
-    if (userRole === 'super_admin' || userRole === 'admin' || userRole === 'superadmin') {
-      return true;
-    }
-    // Other users can only reject pending increments
-    return increment.status === 'pending';
+    // Use permission-based check instead of hardcoded roles
+    return hasPermission('reject', 'SalaryIncrement');
   };
 
   const canApply = (increment: SalaryIncrement) => {
-    // Super admin and admin can apply any approved increment
-    const userRole = session?.user?.role?.toLowerCase();
-    if (userRole === 'super_admin' || userRole === 'admin' || userRole === 'superadmin') {
-      return increment.status === 'approved';
-    }
-    // Other users can only apply if approved and effective date has passed
-    return increment.status === 'approved' && new Date(increment.effective_date) <= new Date();
+    // Use permission-based check instead of hardcoded roles
+    return hasPermission('apply', 'SalaryIncrement');
   };
 
   const canDelete = (increment: SalaryIncrement) => {
-    // Super admin and admin can delete any increment
-    const userRole = session?.user?.role?.toLowerCase();
-    if (userRole === 'super_admin' || userRole === 'admin' || userRole === 'superadmin') {
-      return true;
-    }
-    // Other users can only delete if not applied
-    return increment.status !== 'applied';
+    // Use permission-based check instead of hardcoded roles
+    return hasPermission('delete', 'SalaryIncrement');
   };
 
   const canEdit = (increment: SalaryIncrement) => {
-    // Super admin and admin can edit any increment
-    const userRole = session?.user?.role?.toLowerCase();
-    if (userRole === 'super_admin' || userRole === 'admin' || userRole === 'superadmin') {
-      return true;
-    }
-    // Other users can only edit if not applied
-    return increment.status !== 'applied';
+    // Use permission-based check instead of hardcoded roles
+    return hasPermission('update', 'SalaryIncrement');
   };
 
   // Show loading while checking authentication
@@ -258,12 +235,8 @@ export default function SalaryIncrementsPage() {
     return null; // Will redirect to login
   }
 
-  // Debug: Show current user information
-  const userRole = session?.user?.role?.toLowerCase();
-  const isAdmin = userRole === 'super_admin' || userRole === 'admin' || userRole === 'superadmin';
-
   // Check if user has basic access to salary increments
-  if (!isAdmin && userRole !== 'hr_manager' && userRole !== 'finance_manager') {
+  if (!hasPermission('read', 'SalaryIncrement')) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center max-w-md">

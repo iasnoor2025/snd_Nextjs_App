@@ -4,6 +4,8 @@ import { eq, or } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
+import { withPermission } from '@/lib/rbac/api-middleware';
+import { PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 // ERPNext configuration - check both NEXT_PUBLIC_ and non-NEXT_PUBLIC_ versions
 const ERPNEXT_URL = process.env.NEXT_PUBLIC_ERPNEXT_URL || process.env.ERPNEXT_URL;
@@ -45,17 +47,12 @@ async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
   return response.json();
 }
 
-export async function GET(_request: NextRequest) {
+export const GET = withPermission(PermissionConfigs.equipment.read)(async (_request: NextRequest) => {
   try {
     // Check authentication
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check if user has permission to access ERPNext equipment
-    if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role || '')) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
     const { searchParams } = new URL(_request.url);
@@ -86,19 +83,14 @@ export async function GET(_request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
-export async function POST(_request: NextRequest) {
+export const POST = withPermission(PermissionConfigs.equipment.read)(async (_request: NextRequest) => {
   try {
     // Check authentication
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check if user has permission to access ERPNext equipment
-    if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role || '')) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
     const body = await _request.json();
@@ -126,7 +118,7 @@ export async function POST(_request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
 async function syncEquipmentFromERPNext() {
   try {

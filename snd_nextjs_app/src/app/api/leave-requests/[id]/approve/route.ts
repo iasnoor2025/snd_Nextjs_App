@@ -3,25 +3,24 @@ import { db } from '@/lib/drizzle';
 import { employeeLeaves, employees } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-export async function PUT({ params }: { params: Promise<{ id: string }> }) {
+export const PUT = withPermission(PermissionConfigs.leave.approve)(async (request: NextRequest) => {
   try {
-    const { id } = await params;
+    // Extract id from URL params
+    const url = new URL(request.url);
+    const pathParts = url.pathname.split('/');
+    const id = pathParts[pathParts.length - 2]; // Get id from /api/leave-requests/[id]/approve
+    
+    if (!id) {
+      return NextResponse.json({ error: 'Leave request ID is required' }, { status: 400 });
+    }
+
     const session = await getServerSession(authConfig);
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    // Check if user has permission to approve leave requests
-    // Allow SUPER_ADMIN, ADMIN, MANAGER, SUPERVISOR, OPERATOR, EMPLOYEE roles
-    const allowedRoles = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'EMPLOYEE'];
-    if (!allowedRoles.includes(session.user.role)) {
-      return NextResponse.json(
-        { error: 'Access denied. Insufficient permissions to approve leave requests.' },
-        { status: 403 }
-      );
     }
 
     // Find the leave request with employee details
@@ -89,4 +88,4 @@ export async function PUT({ params }: { params: Promise<{ id: string }> }) {
     
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}
+});

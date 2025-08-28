@@ -29,7 +29,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PermissionContent, RoleBased, RoleContent } from '@/lib/rbac/rbac-components';
+import { PermissionContent, PermissionBased, RoleContent } from '@/lib/rbac/rbac-components';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import ApiService from '@/lib/api-service';
 import {
@@ -858,8 +858,8 @@ export default function ProjectManagementPage() {
 
 
 
-        {/* Role-based content example */}
-        <RoleBased roles={['ADMIN', 'MANAGER']}>
+        {/* permission-based content example */} 
+        <PermissionBased action="manage" subject="Project">
           <Card>
             <CardHeader>
               <CardTitle>{t('project_administration')}</CardTitle>
@@ -890,7 +890,7 @@ export default function ProjectManagementPage() {
               </div>
             </CardContent>
           </Card>
-        </RoleBased>
+        </PermissionBased>
       </div>
     </ProtectedRoute>
   );

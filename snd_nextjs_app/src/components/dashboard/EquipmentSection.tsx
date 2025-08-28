@@ -1,6 +1,6 @@
 'use client';
 
-import { RoleBased } from '@/components/RoleBased';
+import { PermissionBased } from '@/components/PermissionBased';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -194,7 +194,7 @@ export function EquipmentSection({
                {t('equipment.istimara.refreshing')}
                </div>
              )}
-            <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
+            <PermissionBased action="manage" subject="Equipment">
               <Button
                 variant="outline"
                 size="sm"
@@ -215,7 +215,7 @@ export function EquipmentSection({
                 <Plus className="h-4 w-4" />
                 {t('equipment.actions.manageEquipment')}
               </Button>
-            </RoleBased>
+            </PermissionBased>
             <Button
               variant="outline"
               size="sm"

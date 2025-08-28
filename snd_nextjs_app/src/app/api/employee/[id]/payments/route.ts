@@ -32,10 +32,7 @@ const getEmployeePaymentsHandler = async (
     const user = session?.user;
 
     // For employee users, ensure they can only access their own payment data
-    if (user?.role === 'EMPLOYEE') {
-      if (!user.national_id) {
-        return NextResponse.json({ error: 'Missing national ID on user account' }, { status: 403 });
-      }
+    if (user?.national_id) {
       // Find employee record that matches user's national_id
       const ownEmployeeRows = await db
         .select({ id: employeesTable.id })

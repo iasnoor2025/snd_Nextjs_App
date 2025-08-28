@@ -4,6 +4,7 @@ import { advancePayments, employees as employeesTable } from '@/lib/drizzle/sche
 import { eq, isNull } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 // Explicit route configuration for Next.js 15
 export const dynamic = 'force-dynamic';
@@ -32,7 +33,7 @@ export async function GET(_request: NextRequest) {
     }
 
     // Check if user has permission to view this employee's advances
-    if (session.user.role === 'EMPLOYEE' && session.user.national_id) {
+    if (session.user.national_id) {
       // For employees, they can only view their own advances
       const employeeRows = await db
         .select({ id: employeesTable.id })
@@ -98,23 +99,13 @@ export async function GET(_request: NextRequest) {
   }
 }
 
-export async function POST(_request: NextRequest) {
+export const POST = withPermission(PermissionConfigs.advance.create)(async (_request: NextRequest) => {
   try {
     // Get the current user session
     const session = await getServerSession(authConfig);
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    // Check if user has appropriate role to create advance requests
-    // Allow EMPLOYEE and higher roles (OPERATOR, SUPERVISOR, MANAGER, ADMIN, SUPER_ADMIN)
-    const allowedRoles = ['EMPLOYEE', 'OPERATOR', 'SUPERVISOR', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'];
-    if (!allowedRoles.includes(session.user.role)) {
-      return NextResponse.json(
-        { error: `Access denied. Role ${session.user.role} cannot create advance requests.` },
-        { status: 403 }
-      );
     }
 
     const body = await _request.json();
@@ -173,4 +164,4 @@ export async function POST(_request: NextRequest) {
     
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}
+});

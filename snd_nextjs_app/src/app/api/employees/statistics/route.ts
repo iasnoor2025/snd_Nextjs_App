@@ -17,7 +17,7 @@ const getEmployeeStatisticsHandler = async () => {
 
     // For employee users, only show statistics for their own record
     let ownEmployeeFileNumber: string | null = null;
-    if (user?.role === 'EMPLOYEE' && user.national_id) {
+    if (user?.national_id) {
       try {
         const ownRows = await db
           .select({ fileNumber: employees.fileNumber })

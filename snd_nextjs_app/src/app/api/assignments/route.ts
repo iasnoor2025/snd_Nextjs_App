@@ -30,7 +30,7 @@ const getAssignmentsHandler = async (
     const user = session?.user;
 
     // For employee users, only show their own assignments
-    if (user?.role === 'EMPLOYEE' && user.national_id) {
+    if (user?.national_id) {
       // Find employee record that matches user's national_id
       const [ownEmployee] = await db
         .select({ id: employees.id })
@@ -103,7 +103,7 @@ const getAssignmentsHandler = async (
       .leftJoin(users, eq(employees.userId, users.id))
       .where(
         and(
-          ...(user?.role === 'EMPLOYEE' && where.employee_id
+          ...(where.employee_id
             ? [eq(employeeAssignments.employeeId, where.employee_id)]
             : []),
           ...(status && status !== 'all' ? [eq(employeeAssignments.status, status)] : []),
@@ -120,7 +120,7 @@ const getAssignmentsHandler = async (
         .from(employeeAssignments)
         .where(
           and(
-            ...(user?.role === 'EMPLOYEE' && where.employee_id
+            ...(where.employee_id
               ? [eq(employeeAssignments.employeeId, where.employee_id)]
               : []),
             ...(status && status !== 'all' ? [eq(employeeAssignments.status, status)] : []),

@@ -5,17 +5,13 @@ import {
   cacheService, 
   getCacheStats 
 } from '@/lib/redis';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-export async function GET() {
+export const GET = withPermission(PermissionConfigs.admin.read)(async () => {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check if user is admin
-    if (!['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const stats = await getCacheStats();
@@ -24,18 +20,13 @@ export async function GET() {
     console.error('Error getting cache stats:', error);
     return NextResponse.json({ error: 'Failed to get cache stats' }, { status: 500 });
   }
-}
+});
 
-export async function DELETE(request: NextRequest) {
+export const DELETE = withPermission(PermissionConfigs.admin.delete)(async (request: NextRequest) => {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check if user is admin
-    if (!['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -51,18 +42,13 @@ export async function DELETE(request: NextRequest) {
     console.error('Error clearing cache:', error);
     return NextResponse.json({ error: 'Failed to clear cache' }, { status: 500 });
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = withPermission(PermissionConfigs.admin.create)(async (request: NextRequest) => {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check if user is admin
-    if (!['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await request.json();
@@ -162,4 +148,4 @@ export async function POST(request: NextRequest) {
     console.error('Error performing cache action:', error);
     return NextResponse.json({ error: 'Failed to perform cache action' }, { status: 500 });
   }
-}
+});

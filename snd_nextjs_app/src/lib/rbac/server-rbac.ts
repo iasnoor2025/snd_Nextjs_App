@@ -183,6 +183,33 @@ export const PERMISSION_MAPPING: Record<string, string[]> = {
   'delete.employee-document': ['delete.employee-document'],
   'manage.employee-document': ['manage.employee-document'],
 
+  // Document Management permissions
+  'read.Document': ['read.document'],
+  'create.Document': ['create.document'],
+  'update.Document': ['update.document'],
+  'delete.Document': ['delete.document'],
+  'manage.Document': ['manage.document'],
+  'upload.Document': ['upload.document'],
+  'download.Document': ['download.document'],
+  'approve.Document': ['approve.document'],
+  'reject.Document': ['reject.document'],
+
+  // Document Version permissions
+  'read.document-version': ['read.document-version'],
+  'create.document-version': ['create.document-version'],
+  'update.document-version': ['update.document-version'],
+  'delete.document-version': ['delete.document-version'],
+  'manage.document-version': ['manage.document-version'],
+
+  // Document Approval permissions
+  'read.document-approval': ['read.document-approval'],
+  'create.document-approval': ['create.document-approval'],
+  'update.document-approval': ['update.document-approval'],
+  'delete.document-approval': ['delete.document-approval'],
+  'manage.document-approval': ['manage.document-approval'],
+  'approve.document-approval': ['approve.document-approval'],
+  'reject.document-approval': ['reject.document-approval'],
+
   // Wildcard permissions
   '*': ['*'],
   'manage.all': ['manage.all'],
@@ -225,7 +252,7 @@ export const DYNAMIC_FALLBACK_PERMISSIONS: Record<string, string[]> = {
     'manage.project', 'manage.leave', 'read.department', 'read.designation',
     'read.report', 'read.settings', 'read.company', 'read.safety',
     'manage.employee-document', 'manage.salaryincrement', 'approve.salaryincrement', 'reject.salaryincrement', 'apply.salaryincrement', 'manage.advance',
-    'manage.assignment', 'read.location', 'read.maintenance'
+    'manage.assignment', 'read.location', 'read.maintenance', 'manage.document', 'read.document-version', 'read.document-approval'
   ],
   SUPERVISOR: [
     'read.user', 'manage.employee-data', 'read.customer', 'read.equipment',
@@ -233,7 +260,7 @@ export const DYNAMIC_FALLBACK_PERMISSIONS: Record<string, string[]> = {
     'manage.project', 'manage.leave', 'read.department', 'read.designation',
     'read.report', 'read.settings', 'read.company', 'read.safety',
     'manage.employee-document', 'read.salaryincrement', 'read.advance',
-    'read.assignment', 'read.location', 'read.maintenance'
+    'read.assignment', 'read.location', 'read.maintenance', 'read.document', 'read.document-version', 'read.document-approval'
   ],
   OPERATOR: [
     'read.user', 'read.employee-data', 'read.customer', 'read.equipment',
@@ -241,20 +268,20 @@ export const DYNAMIC_FALLBACK_PERMISSIONS: Record<string, string[]> = {
     'read.project', 'read.leave', 'read.department', 'read.designation',
     'read.report', 'read.settings', 'read.company', 'read.safety',
     'read.employee-document', 'read.salaryincrement', 'read.advance',
-    'read.assignment', 'read.location', 'read.maintenance'
+    'read.assignment', 'read.location', 'read.maintenance', 'read.document', 'read.document-version', 'read.document-approval'
   ],
   EMPLOYEE: [
     'read.user', 'read.employee-data', 'read.customer', 'read.equipment',
     'read.rental', 'read.quotation', 'read.payroll', 'manage.timesheet',
     'read.project', 'manage.leave', 'read.department', 'read.designation',
     'read.report', 'read.settings', 'read.company', 'manage.employee-document',
-    'read.salaryincrement'
+    'read.salaryincrement', 'read.document', 'read.document-version', 'read.document-approval'
   ],
   USER: [
     'read.user', 'read.employee-data', 'read.customer', 'read.equipment',
     'read.rental', 'read.quotation', 'read.timesheet', 'read.project',
     'read.leave', 'read.department', 'read.settings', 'read.report',
-    'read.company', 'read.employee-document', 'read.salaryincrement'
+    'read.company', 'read.employee-document', 'read.salaryincrement', 'read.document', 'read.document-version', 'read.document-approval'
   ],
   // Add new roles here with their permissions
   // Example:
@@ -494,38 +521,40 @@ export async function getAllowedActions(user: User, subject: Subject): Promise<A
  */
 export async function canAccessRoute(user: User, route: string): Promise<boolean> {
   // Define base route permission mappings (can be extended dynamically)
+  // All routes now use permission-based access instead of role restrictions
   const baseRoutePermissions: Record<string, { action: Action; subject: Subject; roles: UserRole[] }> = {
-    '/dashboard': { action: 'read', subject: 'Settings', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-    '/employee-dashboard': { action: 'read', subject: 'Employee', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-    '/modules/employee-management': { action: 'read', subject: 'Employee', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-    '/modules/customer-management': { action: 'read', subject: 'Customer', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-    '/modules/equipment-management': { action: 'read', subject: 'Equipment', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-    '/modules/maintenance-management': { action: 'read', subject: 'Maintenance', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'] },
-    '/modules/company-management': { action: 'manage', subject: 'Company', roles: ['SUPER_ADMIN', 'ADMIN'] },
-    '/modules/rental-management': { action: 'read', subject: 'Rental', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-    '/modules/quotation-management': { action: 'read', subject: 'Quotation', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-    '/modules/payroll-management': { action: 'read', subject: 'Payroll', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'] },
-    '/modules/timesheet-management': { action: 'read', subject: 'Timesheet', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-    '/modules/project-management': { action: 'read', subject: 'Project', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-    '/modules/leave-management': { action: 'read', subject: 'Leave', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-    '/modules/location-management': { action: 'read', subject: 'Settings', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'] },
-    '/modules/user-management': { action: 'read', subject: 'User', roles: ['SUPER_ADMIN', 'ADMIN'] },
-    '/modules/analytics': { action: 'read', subject: 'Report', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'] },
-    '/modules/safety-management': { action: 'read', subject: 'Safety', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'] },
-    '/modules/salary-increments': { action: 'read', subject: 'SalaryIncrement', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-    '/modules/reporting': { action: 'read', subject: 'Report', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'] },
-    '/modules/settings': { action: 'read', subject: 'Settings', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-    '/modules/audit-compliance': { action: 'read', subject: 'Report', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'] },
-    '/admin': { action: 'manage', subject: 'Settings', roles: ['SUPER_ADMIN', 'ADMIN'] },
-    '/reports': { action: 'read', subject: 'Report', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'] },
+    '/dashboard': { action: 'read', subject: 'Settings', roles: [] },
+    '/employee-dashboard': { action: 'read', subject: 'Employee', roles: [] },
+    '/modules/employee-management': { action: 'read', subject: 'Employee', roles: [] },
+    '/modules/customer-management': { action: 'read', subject: 'Customer', roles: [] },
+    '/modules/equipment-management': { action: 'read', subject: 'Equipment', roles: [] },
+    '/modules/maintenance-management': { action: 'read', subject: 'Maintenance', roles: [] },
+    '/modules/company-management': { action: 'manage', subject: 'Company', roles: [] },
+    '/modules/rental-management': { action: 'read', subject: 'Rental', roles: [] },
+    '/modules/quotation-management': { action: 'read', subject: 'Quotation', roles: [] },
+    '/modules/payroll-management': { action: 'read', subject: 'Payroll', roles: [] },
+    '/modules/timesheet-management': { action: 'read', subject: 'Timesheet', roles: [] },
+    '/modules/project-management': { action: 'read', subject: 'Project', roles: [] },
+    '/modules/leave-management': { action: 'read', subject: 'Leave', roles: [] },
+    '/modules/location-management': { action: 'read', subject: 'Settings', roles: [] },
+    '/modules/user-management': { action: 'read', subject: 'User', roles: [] },
+    '/modules/analytics': { action: 'read', subject: 'Report', roles: [] },
+    '/modules/safety-management': { action: 'read', subject: 'Safety', roles: [] },
+    '/modules/salary-increments': { action: 'read', subject: 'SalaryIncrement', roles: [] },
+    '/modules/reporting': { action: 'read', subject: 'Report', roles: [] },
+    '/modules/settings': { action: 'read', subject: 'Settings', roles: [] },
+    '/modules/audit-compliance': { action: 'read', subject: 'Report', roles: [] },
+    '/modules/document-management': { action: 'read', subject: 'Document', roles: [] },
+    '/admin': { action: 'manage', subject: 'Settings', roles: [] },
+    '/reports': { action: 'read', subject: 'Report', roles: [] },
   };
 
   // Get the route permission configuration
   const routePermission = baseRoutePermissions[route];
   if (!routePermission) return true; // Allow access if no specific permission defined
 
-  // Check if user has required role using dynamic role hierarchy
-  if (!hasRequiredRole(user.role, routePermission.roles)) {
+  // Check if user has required role using dynamic role hierarchy (only if roles are specified)
+  if (routePermission.roles.length > 0 && !hasRequiredRole(user.role, routePermission.roles)) {
     return false;
   }
 

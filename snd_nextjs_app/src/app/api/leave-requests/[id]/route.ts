@@ -4,6 +4,7 @@ import { departments, designations, employeeLeaves, employees } from '@/lib/driz
 import { eq } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 // GET /api/leave-requests/[id] - Get a specific leave request
 export async function GET({ params }: { params: Promise<{ id: string }> }) {
@@ -128,23 +129,20 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
 }
 
 // DELETE /api/leave-requests/[id] - Delete a leave request
-export async function DELETE({ params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withPermission(PermissionConfigs.leave.delete)(async (request: NextRequest) => {
+  // Extract id from URL params
+  const url = new URL(request.url);
+  const pathParts = url.pathname.split('/');
+  const id = pathParts[pathParts.length - 2]; // Get id from /api/leave-requests/[id]
+  
+  if (!id) {
+    return NextResponse.json({ error: 'Leave request ID is required' }, { status: 400 });
+  }
   try {
-    const { id } = await params;
     const session = await getServerSession(authConfig);
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    // Check if user has permission to delete leave requests
-    // Allow SUPER_ADMIN, ADMIN, MANAGER, SUPERVISOR, OPERATOR, EMPLOYEE roles
-    const allowedRoles = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'EMPLOYEE'];
-    if (!allowedRoles.includes(session.user.role)) {
-      return NextResponse.json(
-        { error: 'Access denied. Insufficient permissions to delete leave requests.' },
-        { status: 403 }
-      );
     }
 
     // Check if leave request exists
@@ -175,12 +173,20 @@ export async function DELETE({ params }: { params: Promise<{ id: string }> }) {
       { status: 500 }
     );
   }
-}
+});
 
 // PUT /api/leave-requests/[id] - Update a leave request
-export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const PUT = withPermission(PermissionConfigs.leave.update)(async (request: NextRequest) => {
   try {
-    const { id } = await params;
+    // Extract id from URL params
+    const url = new URL(request.url);
+    const pathParts = url.pathname.split('/');
+    const id = pathParts[pathParts.length - 2]; // Get id from /api/leave-requests/[id]
+    
+    if (!id) {
+      return NextResponse.json({ error: 'Leave request ID is required' }, { status: 400 });
+    }
+    
     const session = await getServerSession(authConfig);
 
     if (!session?.user?.id) {
@@ -280,4 +286,4 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       { status: 500 }
     );
   }
-}
+});

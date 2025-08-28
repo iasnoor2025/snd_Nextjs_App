@@ -1,7 +1,7 @@
 'use client';
 
 import { ProtectedRoute } from '@/components/protected-route';
-import { PermissionContent, RoleBased } from '@/lib/rbac/rbac-components';
+import { PermissionContent, PermissionBased } from '@/lib/rbac/rbac-components';
 import { useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -637,8 +637,8 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
 
-        {/* Role-based content example */}
-        <RoleBased roles={['ADMIN', 'MANAGER']}>
+        {/* Permission-based content example */}
+        <PermissionBased action="manage" subject="Report">
           <Card>
             <CardHeader>
               <CardTitle>{t('analytics_administration')}</CardTitle>
@@ -661,7 +661,7 @@ export default function AnalyticsPage() {
                 </PermissionContent>
 
                 <PermissionContent action="manage" subject="Report">
-                  <Button variant="outline">
+                                      <Button variant="outline">
                     <BarChart3 className="h-4 w-4 mr-2" />
                     {t('schedule_reports')}
                   </Button>
@@ -669,7 +669,7 @@ export default function AnalyticsPage() {
               </div>
             </CardContent>
           </Card>
-        </RoleBased>
+        </PermissionBased>
       </div>
     </ProtectedRoute>
   );

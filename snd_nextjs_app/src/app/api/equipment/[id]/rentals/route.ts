@@ -13,6 +13,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { EquipmentStatusService } from '@/lib/services/equipment-status-service';
+import { withPermission } from '@/lib/rbac/api-middleware';
+import { PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 // Function to update equipment status when assignment status changes
 async function updateEquipmentStatusOnAssignmentChange(
@@ -31,17 +33,13 @@ async function updateEquipmentStatusOnAssignmentChange(
   }
 }
 
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const GET = withPermission(PermissionConfigs.equipment.read)(
+  async (request: Request, { params }: { params: Promise<{ id: string }> }) => {
   try {
     // Check authentication
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check if user has permission to read equipment rentals
-    if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR'].includes(session.user.role || '')) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
     console.log('Starting equipment rental history fetch...');
@@ -206,19 +204,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       { status: 500 }
     );
   }
-}
+});
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withPermission(PermissionConfigs.equipment.create)(
+  async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
     // Check authentication
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check if user has permission to create equipment rentals
-    if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR'].includes(session.user.role || '')) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
     const { id: idParam } = await params;
@@ -408,4 +402,4 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       { status: 500 }
     );
   }
-}
+});

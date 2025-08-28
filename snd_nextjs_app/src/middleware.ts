@@ -69,15 +69,19 @@ export async function middleware(request: NextRequest) {
     const routePermission = getClientSafeRoutePermission(pathname);
     
     if (routePermission) {
-      // Check if user has any of the required roles
-      const userRoles = Array.isArray(token.roles) ? token.roles : [token.role || 'USER'];
-      const hasRequiredRole = routePermission.roles.some(requiredRole => 
-        userRoles.includes(requiredRole)
-      );
+      // If roles array is empty, only check permissions (no role restrictions)
+      if (routePermission.roles.length > 0) {
+        // Check if user has any of the required roles
+        const userRoles = Array.isArray(token.roles) ? token.roles : [token.role || 'USER'];
+        const hasRequiredRole = routePermission.roles.some(requiredRole => 
+          userRoles.includes(requiredRole)
+        );
 
-      if (!hasRequiredRole) {
-        return NextResponse.redirect(new URL('/access-denied?reason=insufficient_permissions', request.url));
+        if (!hasRequiredRole) {
+          return NextResponse.redirect(new URL('/access-denied?reason=insufficient_permissions', request.url));
+        }
       }
+      // If roles array is empty, allow access (permission will be checked at the component/API level)
     }
 
     // Allow access to the route
@@ -98,30 +102,32 @@ export async function middleware(request: NextRequest) {
  */
 function getClientSafeRoutePermission(pathname: string) {
   // Define route permission mappings for client-side
+  // All routes now use permission-based access instead of hardcoded role restrictions
   const routePermissions: Record<string, { action: string; subject: string; roles: string[] }> = {
-    '/dashboard': { action: 'read', subject: 'Settings', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-    '/employee-dashboard': { action: 'read', subject: 'Employee', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-    '/modules/employee-management': { action: 'read', subject: 'Employee', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-    '/modules/customer-management': { action: 'read', subject: 'Customer', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-    '/modules/equipment-management': { action: 'read', subject: 'Equipment', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-    '/modules/maintenance-management': { action: 'read', subject: 'Maintenance', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'] },
-    '/modules/company-management': { action: 'manage', subject: 'Company', roles: ['SUPER_ADMIN', 'ADMIN'] },
-    '/modules/rental-management': { action: 'read', subject: 'Rental', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-    '/modules/quotation-management': { action: 'read', subject: 'Quotation', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-    '/modules/payroll-management': { action: 'read', subject: 'Payroll', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'] },
-    '/modules/timesheet-management': { action: 'read', subject: 'Timesheet', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-    '/modules/project-management': { action: 'read', subject: 'Project', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-    '/modules/leave-management': { action: 'read', subject: 'Leave', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-    '/modules/location-management': { action: 'read', subject: 'Settings', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'] },
-    '/modules/user-management': { action: 'read', subject: 'User', roles: ['SUPER_ADMIN', 'ADMIN'] },
-    '/modules/analytics': { action: 'read', subject: 'Report', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'] },
-    '/modules/safety-management': { action: 'read', subject: 'Safety', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'] },
-    '/modules/salary-increments': { action: 'read', subject: 'SalaryIncrement', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-    '/modules/reporting': { action: 'read', subject: 'Report', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'] },
-    '/modules/settings': { action: 'read', subject: 'Settings', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-    '/modules/audit-compliance': { action: 'read', subject: 'Report', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'] },
-    '/admin': { action: 'manage', subject: 'Settings', roles: ['SUPER_ADMIN', 'ADMIN'] },
-    '/reports': { action: 'read', subject: 'Report', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'] },
+    '/dashboard': { action: 'read', subject: 'Settings', roles: [] },
+    '/employee-dashboard': { action: 'read', subject: 'Employee', roles: [] },
+    '/modules/employee-management': { action: 'read', subject: 'Employee', roles: [] },
+    '/modules/customer-management': { action: 'read', subject: 'Customer', roles: [] },
+    '/modules/equipment-management': { action: 'read', subject: 'Equipment', roles: [] },
+    '/modules/maintenance-management': { action: 'read', subject: 'Maintenance', roles: [] },
+    '/modules/company-management': { action: 'manage', subject: 'Company', roles: [] },
+    '/modules/rental-management': { action: 'read', subject: 'Rental', roles: [] },
+    '/modules/quotation-management': { action: 'read', subject: 'Quotation', roles: [] },
+    '/modules/payroll-management': { action: 'read', subject: 'Payroll', roles: [] },
+    '/modules/timesheet-management': { action: 'read', subject: 'Timesheet', roles: [] },
+    '/modules/project-management': { action: 'read', subject: 'Project', roles: [] },
+    '/modules/leave-management': { action: 'read', subject: 'Leave', roles: [] },
+    '/modules/location-management': { action: 'read', subject: 'Settings', roles: [] },
+    '/modules/user-management': { action: 'read', subject: 'User', roles: [] },
+    '/modules/analytics': { action: 'read', subject: 'Report', roles: [] },
+    '/modules/safety-management': { action: 'read', subject: 'Safety', roles: [] },
+    '/modules/salary-increments': { action: 'read', subject: 'SalaryIncrement', roles: [] },
+    '/modules/reporting': { action: 'read', subject: 'Report', roles: [] },
+    '/modules/settings': { action: 'read', subject: 'Settings', roles: [] },
+    '/modules/audit-compliance': { action: 'read', subject: 'Report', roles: [] },
+    '/modules/document-management': { action: 'read', subject: 'Document', roles: [] },
+    '/admin': { action: 'manage', subject: 'Settings', roles: [] },
+    '/reports': { action: 'read', subject: 'Report', roles: [] },
   };
 
   return routePermissions[pathname] || null;

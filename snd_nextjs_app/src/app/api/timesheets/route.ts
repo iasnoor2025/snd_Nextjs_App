@@ -105,7 +105,7 @@ const getTimesheetsHandler = async (request: NextRequest) => {
     const user = session?.user;
 
     // For employee users, only show their own timesheets
-    if (user?.role === 'EMPLOYEE') {
+    if (user?.national_id) {
       // Find employee record that matches user's national_id
       // filter by employee national id
       filters.push(eq(employees.iqamaNumber, user.national_id as unknown as string));

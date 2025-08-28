@@ -26,19 +26,37 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    // Check if user has EMPLOYEE role
+    // Check if user has EMPLOYEE role or if they are an employee in the database
     if (session.user.role !== 'EMPLOYEE') {
-      return NextResponse.json(
-        { error: 'Access denied. Employee role required.' },
-        { status: 403 }
-      );
+      console.log(`User role is ${session.user.role}, checking if they are an employee in database...`);
+      
+      // Check if the user exists as an employee in the database
+      const employeeCheck = await db
+        .select({ id: employees.id })
+        .from(employees)
+        .where(eq(employees.userId, parseInt(session.user.id)))
+        .limit(1);
+
+      if (employeeCheck.length === 0) {
+        // Allow managers, supervisors, and admins to access employee dashboard
+        if (['MANAGER', 'SUPERVISOR', 'ADMIN', 'SUPER_ADMIN'].includes(session.user.role)) {
+          console.log(`User has ${session.user.role} role, allowing access to employee dashboard`);
+        } else {
+          console.log('User is not an employee in the database and has insufficient privileges');
+          return NextResponse.json(
+            { error: 'Access denied. Employee role required or user must be registered as employee.' },
+            { status: 403 }
+          );
+        }
+      } else {
+        console.log('User is an employee in database, allowing access');
+      }
     }
 
     // Get employee data for the current user using Drizzle
     const employeeRows = await db
       .select({
         id: employees.id,
-
         firstName: employees.firstName,
         lastName: employees.lastName,
         email: employees.email,
@@ -49,6 +67,21 @@ export async function GET(_request: NextRequest) {
         departmentId: employees.departmentId,
         designationId: employees.designationId,
         userId: employees.userId,
+        nationality: employees.nationality,
+        supervisor: employees.supervisor,
+        location: employees.currentLocation,
+        contractHoursPerDay: employees.contractHoursPerDay,
+        contractDaysPerMonth: employees.contractDaysPerMonth,
+        address: employees.address,
+        city: employees.city,
+        country: employees.country,
+        hourlyRate: employees.hourlyRate,
+        foodAllowance: employees.foodAllowance,
+        housingAllowance: employees.housingAllowance,
+        transportAllowance: employees.transportAllowance,
+        bankName: employees.bankName,
+        emergencyContactName: employees.emergencyContactName,
+        emergencyContactPhone: employees.emergencyContactPhone,
         department: {
           id: departments.id,
           name: departments.name,
@@ -93,6 +126,8 @@ export async function GET(_request: NextRequest) {
         overtimeHours: timesheets.overtimeHours,
         status: timesheets.status,
         description: timesheets.description,
+        startTime: timesheets.startTime,
+        endTime: timesheets.endTime,
         projectId: timesheets.projectId,
         project: {
           id: projects.id,
@@ -206,7 +241,9 @@ export async function GET(_request: NextRequest) {
         documentType: employeeDocuments.documentType,
         fileName: employeeDocuments.fileName,
         filePath: employeeDocuments.filePath,
+        description: employeeDocuments.description,
         createdAt: employeeDocuments.createdAt,
+        updatedAt: employeeDocuments.updatedAt,
       })
       .from(employeeDocuments)
       .where(eq(employeeDocuments.employeeId, employee.id))
@@ -220,8 +257,9 @@ export async function GET(_request: NextRequest) {
       hours_worked: ts.hoursWorked,
       overtime_hours: ts.overtimeHours,
       status: ts.status,
-      description: ts.description,
-      project_rel: ts.project,
+      created_at: ts.date,
+      start_time: ts.startTime,
+      end_time: ts.endTime,
     }));
 
     const recentLeaves = recentLeavesRows.map(leave => ({
@@ -235,14 +273,12 @@ export async function GET(_request: NextRequest) {
       created_at: leave.createdAt,
     }));
 
-    const currentAssignments = currentAssignmentsRows.map(assignment => ({
+    const currentProjects = currentAssignmentsRows.map(assignment => ({
       id: assignment.id,
-      start_date: assignment.startDate,
-      end_date: assignment.endDate,
+      name: assignment.project?.name || 'Assignment',
+      description: assignment.project?.name,
       status: assignment.status,
-      project: assignment.project,
-      rental: assignment.rental,
-      created_at: assignment.createdAt,
+      assignmentStatus: assignment.status,
     }));
 
     const assignments = allAssignmentsRows.map(assignment => ({
@@ -262,22 +298,34 @@ export async function GET(_request: NextRequest) {
       updated_at: assignment.updatedAt,
     }));
 
-    const recentAdvances = recentAdvancesRows.map(advance => ({
+    const advances = recentAdvancesRows.map(advance => ({
       id: advance.id,
       amount: advance.amount,
-      purpose: advance.purpose,
+      reason: advance.purpose,
       status: advance.status,
-      monthly_deduction: advance.monthlyDeduction,
       created_at: advance.createdAt,
     }));
 
-    const employeeDocumentsList = employeeDocumentsRows.map(doc => ({
+    const documents = employeeDocumentsRows.map(doc => ({
       id: doc.id,
       document_type: doc.documentType,
       file_name: doc.fileName,
       file_path: doc.filePath,
+      description: doc.description || '',
       created_at: doc.createdAt,
+      updated_at: doc.updatedAt,
     }));
+
+    // Calculate statistics
+    const statistics = {
+      totalTimesheets: recentTimesheets.length,
+      pendingLeaves: recentLeaves.filter(l => l.status === 'pending').length,
+      approvedLeaves: recentLeaves.filter(l => l.status === 'approved').length,
+      activeProjects: currentProjects.length,
+      totalAssignments: assignments.length,
+      totalDocuments: documents.length,
+      totalAdvances: advances.length,
+    };
 
     return NextResponse.json({
       employee: {
@@ -289,19 +337,35 @@ export async function GET(_request: NextRequest) {
         hire_date: employee.hireDate,
         basic_salary: employee.basicSalary,
         status: employee.status,
+        nationality: employee.nationality,
+        supervisor: employee.supervisor,
+        location: employee.location,
+        contract_hours_per_day: employee.contractHoursPerDay,
+        contract_days_per_month: employee.contractDaysPerMonth,
+        address: employee.address,
+        city: employee.city,
+        country: employee.country,
+        hourly_rate: employee.hourlyRate,
+        food_allowance: employee.foodAllowance,
+        housing_allowance: employee.housingAllowance,
+        transport_allowance: employee.transportAllowance,
+        bank_name: employee.bankName,
+        emergency_contact_name: employee.emergencyContactName,
+        emergency_contact_phone: employee.emergencyContactPhone,
         department: employee.department,
         designation: employee.designation,
         user: employee.user,
       },
+      statistics,
       recentTimesheets,
       recentLeaves,
-      currentAssignments,
+      currentProjects,
       assignments,
-      recentAdvances,
-      employeeDocuments: employeeDocumentsList,
+      advances,
+      documents,
     });
   } catch (error) {
-    
+    console.error('Employee dashboard error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

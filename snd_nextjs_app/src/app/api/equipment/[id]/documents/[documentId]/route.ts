@@ -7,22 +7,20 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { SupabaseStorageService } from '@/lib/supabase/storage-service';
 import { cacheService } from '@/lib/redis/cache-service';
+import { withPermission } from '@/lib/rbac/api-middleware';
+import { PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 // DELETE /api/equipment/[id]/documents/[documentId]
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string; documentId: string }> }
-) {
+export const DELETE = withPermission(PermissionConfigs.equipment.delete)(
+  async (
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string; documentId: string }> }
+  ) => {
   try {
     // Check authentication
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check if user has permission to delete equipment documents
-    if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role || '')) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
     const { id, documentId } = await params;
@@ -153,4 +151,4 @@ export async function DELETE(
       { status: 500 }
     );
   }
-}
+});

@@ -48,6 +48,7 @@ export const PermissionConfigs = {
     update: { action: 'update' as Action, subject: 'Equipment' },
     delete: { action: 'delete' as Action, subject: 'Equipment' },
     manage: { action: 'manage' as Action, subject: 'Equipment' },
+    sync: { action: 'sync' as Action, subject: 'Equipment' },
   },
   project: {
     read: { action: 'read' as Action, subject: 'Project' },
@@ -90,6 +91,8 @@ export const PermissionConfigs = {
     update: { action: 'update' as Action, subject: 'Leave' },
     delete: { action: 'delete' as Action, subject: 'Leave' },
     manage: { action: 'manage' as Action, subject: 'Leave' },
+    approve: { action: 'approve' as Action, subject: 'Leave' },
+    reject: { action: 'reject' as Action, subject: 'Leave' },
   },
   department: {
     read: { action: 'read' as Action, subject: 'Department' },
@@ -178,6 +181,48 @@ export const PermissionConfigs = {
     update: { action: 'update' as Action, subject: 'employee-document' },
     delete: { action: 'delete' as Action, subject: 'employee-document' },
     manage: { action: 'manage' as Action, subject: 'employee-document' },
+  },
+  // Document Management permissions
+  document: {
+    read: { action: 'read' as Action, subject: 'Document' },
+    create: { action: 'create' as Action, subject: 'Document' },
+    update: { action: 'update' as Action, subject: 'Document' },
+    delete: { action: 'delete' as Action, subject: 'Document' },
+    manage: { action: 'manage' as Action, subject: 'Document' },
+    upload: { action: 'upload' as Action, subject: 'Document' },
+    download: { action: 'download' as Action, subject: 'Document' },
+    approve: { action: 'approve' as Action, subject: 'Document' },
+    reject: { action: 'reject' as Action, subject: 'Document' },
+  },
+  'document-version': {
+    read: { action: 'read' as Action, subject: 'document-version' },
+    create: { action: 'create' as Action, subject: 'document-version' },
+    update: { action: 'update' as Action, subject: 'document-version' },
+    delete: { action: 'delete' as Action, subject: 'document-version' },
+    manage: { action: 'manage' as Action, subject: 'document-version' },
+  },
+  dashboard: {
+    read: { action: 'read' as Action, subject: 'Dashboard' },
+    create: { action: 'create' as Action, subject: 'Dashboard' },
+    update: { action: 'update' as Action, subject: 'Dashboard' },
+    delete: { action: 'delete' as Action, subject: 'Dashboard' },
+    manage: { action: 'manage' as Action, subject: 'Dashboard' },
+  },
+  admin: {
+    read: { action: 'read' as Action, subject: 'Admin' },
+    create: { action: 'create' as Action, subject: 'Admin' },
+    update: { action: 'update' as Action, subject: 'Admin' },
+    delete: { action: 'delete' as Action, subject: 'Admin' },
+    manage: { action: 'manage' as Action, subject: 'Admin' },
+  },
+  'document-approval': {
+    read: { action: 'read' as Action, subject: 'document-approval' },
+    create: { action: 'create' as Action, subject: 'document-approval' },
+    update: { action: 'update' as Action, subject: 'document-approval' },
+    delete: { action: 'delete' as Action, subject: 'document-approval' },
+    manage: { action: 'manage' as Action, subject: 'document-approval' },
+    approve: { action: 'approve' as Action, subject: 'document-approval' },
+    reject: { action: 'reject' as Action, subject: 'document-approval' },
   },
 };
 
@@ -314,7 +359,7 @@ export function hasRequiredRole(userRole: string, requiredRoles: string[]): bool
     'USER': 7,
   };
 
-  const userRoleLevel = roleHierarchy[userRole] || 10;
+  const userRoleLevel = roleHierarchy[userRole] || 10; 
 
   return requiredRoles.some(requiredRole => {
     const requiredRoleLevel = roleHierarchy[requiredRole] || 10;

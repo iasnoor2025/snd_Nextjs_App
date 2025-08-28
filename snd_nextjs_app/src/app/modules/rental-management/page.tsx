@@ -31,7 +31,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
-import { PermissionContent, RoleBased, RoleContent } from '@/lib/rbac/rbac-components';
+import { PermissionContent, PermissionBased, RoleContent } from '@/lib/rbac/rbac-components';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { format } from 'date-fns';
 import {
@@ -997,7 +997,7 @@ export default function RentalManagementPage() {
         </Dialog>
 
         {/* Role-based content example */}
-        <RoleBased roles={['ADMIN', 'MANAGER']}>
+        <PermissionBased action="manage" subject="Rental">
           <Card>
             <CardHeader>
               <CardTitle>{t('rentalAdministration')}</CardTitle>
@@ -1028,7 +1028,7 @@ export default function RentalManagementPage() {
               </div>
             </CardContent>
           </Card>
-        </RoleBased>
+        </PermissionBased>
       </div>
     </ProtectedRoute>
   );

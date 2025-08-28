@@ -2,18 +2,15 @@ import { authOptions } from '@/lib/auth-config';
 import { ERPNextFinancialService } from '@/lib/services/erpnext-financial-service';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { withPermission } from '@/lib/rbac/api-middleware';
+import { PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-export async function GET(_request: NextRequest) {
+export const GET = withPermission(PermissionConfigs.report.read)(async (_request: NextRequest) => {
   try {
     // Check authentication
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check if user has access to financial data
-    if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role || '')) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
     const { searchParams } = new URL(_request.url);
@@ -60,4 +57,4 @@ export async function GET(_request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
