@@ -6,9 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Award, 
-  BookOpen, 
-  Star, 
   Users, 
   FileText, 
   Calendar,
@@ -26,30 +23,6 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  {
-    title: 'Skills Management',
-    description: 'Manage employee skills, certifications, and proficiency levels',
-    icon: <Award className="h-6 w-6" />,
-    href: '/modules/employee-management/skills',
-    badge: 'New',
-    color: 'bg-gradient-to-r from-yellow-500 to-orange-500'
-  },
-  {
-    title: 'Training Management',
-    description: 'Create training programs, track completion, and manage costs',
-    icon: <BookOpen className="h-6 w-6" />,
-    href: '/modules/employee-management/training',
-    badge: 'New',
-    color: 'bg-gradient-to-r from-blue-500 to-cyan-500'
-  },
-  {
-    title: 'Performance Reviews',
-    description: 'Conduct evaluations, set goals, and track employee development',
-    icon: <Star className="h-6 w-6" />,
-    href: '/modules/employee-management/performance-reviews',
-    badge: 'New',
-    color: 'bg-gradient-to-r from-purple-500 to-pink-500'
-  },
   {
     title: 'Employee Directory',
     description: 'View and manage employee information and profiles',
@@ -102,7 +75,7 @@ export default function EmployeeManagementNav() {
           Employee Management Hub
         </h1>
         <p className="text-lg text-gray-600">
-          Comprehensive tools for managing your workforce, from skills development to performance tracking
+          Comprehensive tools for managing your workforce and employee information
         </p>
       </div>
 
@@ -139,28 +112,7 @@ export default function EmployeeManagementNav() {
         ))}
       </div>
 
-      <div className="mt-12 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-          🎉 New Features Available!
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-            <span className="text-gray-700">Skills Management - Track employee capabilities</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-            <span className="text-gray-700">Training Programs - Manage development initiatives</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-            <span className="text-gray-700">Performance Reviews - Structured evaluations</span>
-          </div>
-        </div>
-        <p className="text-sm text-gray-600 mt-4">
-          All features are fully integrated with your existing system and ready for production use.
-        </p>
-      </div>
+
     </div>
   );
 }

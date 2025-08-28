@@ -215,48 +215,9 @@ export const employeeDocuments = pgTable("employee_documents", {
 		}).onUpdate("cascade").onDelete("restrict"),
 ]);
 
-export const employeePerformanceReviews = pgTable("employee_performance_reviews", {
-	id: serial().primaryKey().notNull(),
-	employeeId: integer("employee_id").notNull(),
-	reviewDate: date("review_date").notNull(),
-	reviewerId: integer("reviewer_id"),
-	rating: integer(),
-	comments: text(),
-	goals: text(),
-	status: text().default('pending').notNull(),
-	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
-	updatedAt: date("updated_at").notNull(),
-}, (table) => [
-	foreignKey({
-			columns: [table.employeeId],
-			foreignColumns: [employees.id],
-			name: "employee_performance_reviews_employee_id_fkey"
-		}).onUpdate("cascade").onDelete("restrict"),
-]);
 
-export const employeeTraining = pgTable("employee_training", {
-	id: serial().primaryKey().notNull(),
-	employeeId: integer("employee_id").notNull(),
-	trainingId: integer("training_id").notNull(),
-	startDate: date("start_date"),
-	endDate: date("end_date"),
-	status: text().default('planned').notNull(),
-	certificate: text(),
-	notes: text(),
-	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
-	updatedAt: date("updated_at").notNull(),
-}, (table) => [
-	foreignKey({
-			columns: [table.employeeId],
-			foreignColumns: [employees.id],
-			name: "employee_training_employee_id_fkey"
-		}).onUpdate("cascade").onDelete("restrict"),
-	foreignKey({
-			columns: [table.trainingId],
-			foreignColumns: [trainings.id],
-			name: "employee_training_training_id_fkey"
-		}).onUpdate("cascade").onDelete("restrict"),
-]);
+
+
 
 export const equipment = pgTable("equipment", {
 	id: serial().primaryKey().notNull(),
@@ -479,28 +440,7 @@ export const employees = pgTable("employees", {
 		}).onUpdate("cascade").onDelete("set null"),
 ]);
 
-export const employeeSkill = pgTable("employee_skill", {
-	id: serial().primaryKey().notNull(),
-	employeeId: integer("employee_id").notNull(),
-	skillId: integer("skill_id").notNull(),
-	proficiencyLevel: text("proficiency_level"),
-	certified: boolean().default(false).notNull(),
-	certificationDate: date("certification_date"),
-	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
-	updatedAt: date("updated_at").notNull(),
-}, (table) => [
-	uniqueIndex("employee_skill_employee_id_skill_id_key").using("btree", table.employeeId.asc().nullsLast().op("int4_ops"), table.skillId.asc().nullsLast().op("int4_ops")),
-	foreignKey({
-			columns: [table.employeeId],
-			foreignColumns: [employees.id],
-			name: "employee_skill_employee_id_fkey"
-		}).onUpdate("cascade").onDelete("restrict"),
-	foreignKey({
-			columns: [table.skillId],
-			foreignColumns: [skills.id],
-			name: "employee_skill_skill_id_fkey"
-		}).onUpdate("cascade").onDelete("restrict"),
-]);
+
 
 export const loans = pgTable("loans", {
 	id: serial().primaryKey().notNull(),
@@ -1154,22 +1094,7 @@ export const taxDocuments = pgTable("tax_documents", {
 		}).onUpdate("cascade").onDelete("restrict"),
 ]);
 
-export const trainings = pgTable("trainings", {
-	id: serial().primaryKey().notNull(),
-	name: text().notNull(),
-	description: text(),
-	duration: text(),
-	cost: numeric({ precision: 10, scale:  2 }),
-	provider: text(),
-	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
-	updatedAt: date("updated_at").notNull(),
-	category: text(),
-	maxParticipants: integer("max_participants"),
-	prerequisites: text(),
-	objectives: text(),
-	materials: text(),
-	status: text().default('active').notNull(),
-});
+
 
 export const prismaMigrations = pgTable("_prisma_migrations", {
 	id: varchar({ length: 36 }).primaryKey().notNull(),
@@ -1612,16 +1537,7 @@ export const systemSettings = pgTable("system_settings", {
 	uniqueIndex("system_settings_key_key").using("btree", table.key.asc().nullsLast().op("text_ops")),
 ]);
 
-export const skills = pgTable("skills", {
-	id: serial().primaryKey().notNull(),
-	name: text().notNull(),
-	description: text(),
-	category: text(),
-	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
-	updatedAt: date("updated_at").notNull(),
-	requiredLevel: text("required_level"),
-	certificationRequired: boolean("certification_required").default(false),
-});
+
 
 export const documentApprovals = pgTable("document_approvals", {
 	id: serial().primaryKey().notNull(),

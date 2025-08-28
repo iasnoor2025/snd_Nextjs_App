@@ -21,8 +21,6 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Award,
-  BookOpen,
   Building,
   CalendarDays,
   Clock,
@@ -531,25 +529,7 @@ export default function ActionDialogs({
         <span className="text-xs text-muted-foreground">{t('update_profile_desc')}</span>
       </Button>
 
-      <Button
-        variant="outline"
-        className="h-auto p-4 flex flex-col items-center gap-2"
-        onClick={() => window.open('/modules/employee-management/employee/skills', '_blank')}
-      >
-        <Award className="h-6 w-6 text-yellow-600" />
-        <span className="text-sm font-medium">{t('manage_skills')}</span>
-        <span className="text-xs text-muted-foreground">{t('manage_skills_desc')}</span>
-      </Button>
 
-      <Button
-        variant="outline"
-        className="h-auto p-4 flex flex-col items-center gap-2"
-        onClick={() => window.open('/modules/employee-management/employee/training', '_blank')}
-      >
-        <BookOpen className="h-6 w-6 text-teal-600" />
-        <span className="text-sm font-medium">{t('training_records')}</span>
-        <span className="text-xs text-muted-foreground">{t('training_records_desc')}</span>
-      </Button>
 
       <Button
         variant="outline"

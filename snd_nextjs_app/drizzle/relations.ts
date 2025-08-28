@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { users, customers, departments, designations, employees, advancePayments, employeeLeaves, employeeAssignments, projects, rentals, employeeDocuments, employeePerformanceReviews, employeeTraining, trainings, equipment, employeeSalaries, equipmentMaintenance, organizationalUnits, employeeSkill, skills, loans, equipmentMaintenanceItems, equipmentRentalHistory, documentVersions, payrolls, payrollRuns, locations, rentalItems, salaryIncrements, timeEntries, timesheets, timesheetApprovals, timeOffRequests, taxDocuments, projectExpenses, advancePaymentHistories, employeeResignations, payrollItems, taxDocumentPayrolls, weeklyTimesheets, projectEquipment, projectManpower, projectMaterials, projectMilestones, projectRisks, projectSubcontractors, projectTasks, projectTemplates, reportTemplates, projectFuel, documentApprovals, safetyIncidents, scheduledReports, equipmentDocuments, permissions, modelHasPermissions, roles, modelHasRoles, roleHasPermissions } from "./schema";
+import { users, customers, departments, designations, employees, advancePayments, employeeLeaves, employeeAssignments, projects, rentals, employeeDocuments, equipment, employeeSalaries, equipmentMaintenance, organizationalUnits, loans, equipmentMaintenanceItems, equipmentRentalHistory, documentVersions, payrolls, payrollRuns, locations, rentalItems, salaryIncrements, timeEntries, timesheets, timesheetApprovals, timeOffRequests, taxDocuments, projectExpenses, advancePaymentHistories, employeeResignations, payrollItems, taxDocumentPayrolls, weeklyTimesheets, projectEquipment, projectManpower, projectMaterials, projectMilestones, projectRisks, projectSubcontractors, projectTasks, projectTemplates, reportTemplates, projectFuel, documentApprovals, safetyIncidents, scheduledReports, equipmentDocuments, permissions, modelHasPermissions, roles, modelHasRoles, roleHasPermissions } from "./schema";
 
 export const customersRelations = relations(customers, ({one, many}) => ({
 	user: one(users, {
@@ -73,8 +73,7 @@ export const employeesRelations = relations(employees, ({one, many}) => ({
 	employeeLeaves: many(employeeLeaves),
 	employeeAssignments: many(employeeAssignments),
 	employeeDocuments: many(employeeDocuments),
-	employeePerformanceReviews: many(employeePerformanceReviews),
-	employeeTrainings: many(employeeTraining),
+
 	equipment: many(equipment),
 	employeeSalaries: many(employeeSalaries),
 	equipmentMaintenances: many(equipmentMaintenance),
@@ -95,7 +94,7 @@ export const employeesRelations = relations(employees, ({one, many}) => ({
 		references: [organizationalUnits.id],
 		relationName: "employees_unitId_organizationalUnits_id"
 	}),
-	employeeSkills: many(employeeSkill),
+
 	loans: many(loans),
 	equipmentRentalHistories: many(equipmentRentalHistory),
 	payrolls: many(payrolls),

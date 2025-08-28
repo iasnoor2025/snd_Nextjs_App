@@ -28,9 +28,7 @@ import enSidebar from '@/locales/en/sidebar.json';
 import enTimesheet from '@/locales/en/timesheet.json';
 import enFinancial from '@/locales/en/financial.json';
 import enMaintenance from '@/locales/en/maintenance.json';
-import enSkills from '@/locales/en/skills.json';
-import enTraining from '@/locales/en/training.json';
-import enPerformanceReviews from '@/locales/en/performance-reviews.json';
+
 import enAuditCompliance from '@/locales/en/audit-compliance.json';
 import enCountries from '@/locales/en/countries.json';
 import enLocations from '@/locales/en/locations.json';
@@ -65,9 +63,7 @@ import arSidebar from '@/locales/ar/sidebar.json';
 import arTimesheet from '@/locales/ar/timesheet.json';
 import arFinancial from '@/locales/ar/financial.json';
 import arMaintenance from '@/locales/ar/maintenance.json';
-import arSkills from '@/locales/ar/skills.json';
-import arTraining from '@/locales/ar/training.json';
-import arPerformanceReviews from '@/locales/ar/performance-reviews.json';
+
 import arAuditCompliance from '@/locales/ar/audit-compliance.json';
 import arCountries from '@/locales/ar/countries.json';
 import arLocations from '@/locales/ar/locations.json';
@@ -104,9 +100,7 @@ const resources = {
     timesheet: enTimesheet,
     financial: enFinancial,
     maintenance: enMaintenance,
-    skills: enSkills,
-    training: enTraining,
-    performanceReviews: enPerformanceReviews,
+
     auditCompliance: enAuditCompliance,
     countries: enCountries,
     locations: enLocations,
@@ -142,9 +136,7 @@ const resources = {
     timesheet: arTimesheet,
     financial: arFinancial,
     maintenance: arMaintenance,
-    skills: arSkills,
-    training: arTraining,
-    performanceReviews: arPerformanceReviews,
+
     auditCompliance: arAuditCompliance,
     countries: arCountries,
     locations: arLocations,
@@ -210,9 +202,7 @@ export const initializeI18n = () => {
           'timesheet',
           'financial',
           'maintenance',
-          'skills',
-          'training',
-          'performanceReviews',
+
           'auditCompliance',
           'countries',
           'locations',

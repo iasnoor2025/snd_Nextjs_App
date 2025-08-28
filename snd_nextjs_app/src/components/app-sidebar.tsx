@@ -19,9 +19,7 @@ import {
   User,
   Users,
   Wrench,
-  Award,
-  BookOpen,
-  Star,
+
   Car,
 } from 'lucide-react';
 import * as React from 'react';
@@ -71,21 +69,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       url: '/modules/employee-management',
       icon: Users,
     },
-    {
-      title: t('skillsManagement'),
-      url: '/modules/employee-management/skills',
-      icon: Award,
-    },
-    {
-      title: t('trainingPrograms'),
-      url: '/modules/employee-management/training',
-      icon: BookOpen,
-    },
-    {
-      title: t('performanceReviews'),
-      url: '/modules/employee-management/performance-reviews',
-      icon: Star,
-    },
+
     {
       title: t('equipmentManagement'),
       url: '/modules/equipment-management',

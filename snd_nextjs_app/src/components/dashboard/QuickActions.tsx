@@ -2,7 +2,6 @@
 
 import { RoleBased } from '@/components/RoleBased';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { useI18n } from '@/hooks/use-i18n';
 import {
   Activity,
@@ -44,196 +43,150 @@ export function QuickActions({ onHideSection }: QuickActionsProps) {
           {t('dashboard.hideSection')}
         </Button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-9 gap-2 overflow-x-auto">
         <RoleBased roles={['SUPER_ADMIN', 'ADMIN']}>
-          <Card
-            className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+          <Button
+            variant="default"
+            size="sm"
+            className="h-16 p-2 flex flex-col items-center justify-center space-y-1 min-w-[80px]"
             onClick={() => router.push('/modules/user-management')}
           >
-            <CardContent className="p-6 text-center">
-              <Users className="h-12 w-12 mx-auto mb-3 opacity-80" />
-              <h3 className="text-lg font-semibold mb-2">
-                {t('dashboard.quick_actions.user_management')}
-              </h3>
-              <p className="text-indigo-100 text-sm">
-                {t('dashboard.quick_actions.user_management_desc')}
-              </p>
-            </CardContent>
-          </Card>
+            <Users className="h-4 w-4" />
+            <div className="text-center">
+              <div className="font-medium text-xs leading-tight">
+                Users
+              </div>
+            </div>
+          </Button>
         </RoleBased>
 
         <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
-          <Card
-            className="bg-gradient-to-br from-emerald-600 via-emerald-700 to-emerald-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+          <Button
+            variant="secondary"
+            size="sm"
+            className="h-16 p-2 flex flex-col items-center justify-center space-y-1 min-w-[80px]"
             onClick={() => router.push('/modules/analytics')}
           >
-            <CardContent className="p-6 text-center">
-              <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-80" />
-              <h3 className="text-lg font-semibold mb-2">
-                {t('dashboard.quick_actions.analytics')}
-              </h3>
-              <p className="text-emerald-100 text-sm">
-                {t('dashboard.quick_actions.analytics_desc')}
-              </p>
-            </CardContent>
-          </Card>
+            <BarChart3 className="h-4 w-4" />
+            <div className="text-center">
+              <div className="font-medium text-xs leading-tight">
+                Analytics
+              </div>
+            </div>
+          </Button>
         </RoleBased>
 
         <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR']}>
-          <Card
-            className="bg-gradient-to-br from-amber-600 via-amber-700 to-amber-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-16 p-2 flex flex-col items-center justify-center space-y-1 min-w-[80px]"
             onClick={() => router.push('/modules/payroll-management')}
           >
-            <CardContent className="p-6 text-center">
-              <DollarSign className="h-12 w-12 mx-auto mb-3 opacity-80" />
-              <h3 className="text-lg font-semibold mb-2">{t('dashboard.quick_actions.payroll')}</h3>
-              <p className="text-amber-100 text-sm">{t('dashboard.quick_actions.payroll_desc')}</p>
-            </CardContent>
-          </Card>
+            <DollarSign className="h-4 w-4" />
+            <div className="text-center">
+              <div className="font-medium text-xs leading-tight">
+                Payroll
+              </div>
+            </div>
+          </Button>
         </RoleBased>
 
         <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
-          <Card
-            className="bg-gradient-to-br from-rose-600 via-rose-700 to-rose-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-16 p-2 flex flex-col items-center justify-center space-y-1 min-w-[80px]"
             onClick={() => router.push('/modules/settings')}
           >
-            <CardContent className="p-6 text-center">
-              <Settings className="h-12 w-12 mx-auto mb-3 opacity-80" />
-              <h3 className="text-lg font-semibold mb-2">
-                {t('dashboard.quick_actions.settings')}
-              </h3>
-              <p className="text-rose-100 text-sm">{t('dashboard.quick_actions.settings_desc')}</p>
-            </CardContent>
-          </Card>
+            <Settings className="h-4 w-4" />
+            <div className="text-center">
+              <div className="font-medium text-xs leading-tight">
+                Settings
+              </div>
+            </div>
+          </Button>
         </RoleBased>
 
         <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
-          <Card
-            className="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+          <Button
+            variant="default"
+            size="sm"
+            className="h-16 p-2 flex flex-col items-center justify-center space-y-1 min-w-[80px]"
             onClick={() => router.push('/modules/equipment-management')}
           >
-            <CardContent className="p-6 text-center">
-              <Wrench className="h-12 w-12 mx-auto mb-3 opacity-80" />
-              <h3 className="text-lg font-semibold mb-2">
-                {t('dashboard.quick_actions.equipment')}
-              </h3>
-              <p className="text-blue-100 text-sm">{t('dashboard.quick_actions.equipment_desc')}</p>
-            </CardContent>
-          </Card>
+            <Wrench className="h-4 w-4" />
+            <div className="text-center">
+              <div className="font-medium text-xs leading-tight">
+                Equipment
+              </div>
+            </div>
+          </Button>
         </RoleBased>
 
         <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
-          <Card
-            className="bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+          <Button
+            variant="secondary"
+            size="sm"
+            className="h-16 p-2 flex flex-col items-center justify-center space-y-1 min-w-[80px]"
             onClick={() => router.push('/modules/rental-management')}
           >
-            <CardContent className="p-6 text-center">
-              <Truck className="h-12 w-12 mx-auto mb-3 opacity-80" />
-              <h3 className="text-lg font-semibold mb-2">{t('dashboard.quick_actions.rentals')}</h3>
-              <p className="text-purple-100 text-sm">{t('dashboard.quick_actions.rentals_desc')}</p>
-            </CardContent>
-          </Card>
+            <Truck className="h-4 w-4" />
+            <div className="text-center">
+              <div className="font-medium text-xs leading-tight">
+                Rentals
+              </div>
+            </div>
+          </Button>
         </RoleBased>
 
         <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
-          <Card
-            className="bg-gradient-to-br from-cyan-600 via-cyan-700 to-cyan-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-16 p-2 flex flex-col items-center justify-center space-y-1 min-w-[80px]"
             onClick={() => router.push('/modules/document-management')}
           >
-            <CardContent className="p-6 text-center">
-              <FileText className="h-12 w-12 mx-auto mb-3 opacity-80" />
-              <h3 className="text-lg font-semibold mb-2">
-                {t('dashboard.quick_actions.documents')}
-              </h3>
-              <p className="text-cyan-100 text-sm">{t('dashboard.quick_actions.documents_desc')}</p>
-            </CardContent>
-          </Card>
+            <FileText className="h-4 w-4" />
+            <div className="text-center">
+              <div className="font-medium text-xs leading-tight">
+                Documents
+              </div>
+            </div>
+          </Button>
         </RoleBased>
 
         <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
-          <Card
-            className="bg-gradient-to-br from-orange-600 via-orange-700 to-orange-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-16 p-2 flex flex-col items-center justify-center space-y-1 min-w-[80px]"
             onClick={() => router.push('/modules/project-management')}
           >
-            <CardContent className="p-6 text-center">
-              <Building2 className="h-12 w-12 mx-auto mb-3 opacity-80" />
-              <h3 className="text-lg font-semibold mb-2">
-                {t('dashboard.quick_actions.projects')}
-              </h3>
-              <p className="text-orange-100 text-sm">
-                {t('dashboard.quick_actions.projects_desc')}
-              </p>
-            </CardContent>
-          </Card>
+            <Building2 className="h-4 w-4" />
+            <div className="text-center">
+              <div className="font-medium text-xs leading-tight">
+                Projects
+              </div>
+            </div>
+          </Button>
         </RoleBased>
 
-        {/* NEW EMPLOYEE MANAGEMENT FEATURES */}
+        {/* EMPLOYEE MANAGEMENT */}
         <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR']}>
-          <Card
-            className="bg-gradient-to-br from-violet-600 via-violet-700 to-violet-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+          <Button
+            variant="default"
+            size="sm"
+            className="h-16 p-2 flex flex-col items-center justify-center space-y-1 min-w-[80px]"
             onClick={() => router.push('/modules/employee-management')}
           >
-            <CardContent className="p-6 text-center">
-              <Users className="h-12 w-12 mx-auto mb-3 opacity-80" />
-              <h3 className="text-lg font-semibold mb-2">
-                Employee Management
-              </h3>
-              <p className="text-violet-100 text-sm">
-                Manage skills, training & performance
-              </p>
-            </CardContent>
-          </Card>
-        </RoleBased>
-
-        <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR']}>
-          <Card
-            className="bg-gradient-to-br from-emerald-600 via-emerald-700 to-emerald-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
-            onClick={() => router.push('/modules/employee-management/skills')}
-          >
-            <CardContent className="p-6 text-center">
-              <Award className="h-12 w-12 mx-auto mb-3 opacity-80" />
-              <h3 className="text-lg font-semibold mb-2">
-                Skills Management
-              </h3>
-              <p className="text-emerald-100 text-sm">
-                Track employee skills & certifications
-              </p>
-            </CardContent>
-          </Card>
-        </RoleBased>
-
-        <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR']}>
-          <Card
-            className="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
-            onClick={() => router.push('/modules/employee-management/training')}
-          >
-            <CardContent className="p-6 text-center">
-              <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-80" />
-              <h3 className="text-lg font-semibold mb-2">
-                Training Programs
-              </h3>
-              <p className="text-blue-100 text-sm">
-                Manage training & development
-              </p>
-            </CardContent>
-          </Card>
-        </RoleBased>
-
-        <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR']}>
-          <Card
-            className="bg-gradient-to-br from-amber-600 via-amber-700 to-amber-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
-            onClick={() => router.push('/modules/employee-management/performance-reviews')}
-          >
-            <CardContent className="p-6 text-center">
-              <Star className="h-12 w-12 mx-auto mb-3 opacity-80" />
-              <h3 className="text-lg font-semibold mb-2">
-                Performance Reviews
-              </h3>
-              <p className="text-amber-100 text-sm">
-                Track employee performance & goals
-              </p>
-            </CardContent>
-          </Card>
+            <Users className="h-4 w-4" />
+            <div className="text-center">
+              <div className="font-medium text-xs leading-tight">
+                Employee
+              </div>
+            </div>
+          </Button>
         </RoleBased>
       </div>
     </div>

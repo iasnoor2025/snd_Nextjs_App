@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Award,
   Briefcase,
   Building,
   Calendar,
@@ -59,8 +58,7 @@ interface EmployeeDashboardData {
     totalAssignments: number;
     totalDocuments: number;
     totalAdvances: number;
-    totalSkills: number;
-    totalTrainingRecords: number;
+
   };
   recentTimesheets: Array<{
     id: string;
@@ -127,28 +125,7 @@ interface EmployeeDashboardData {
     status: string;
     created_at: string;
   }>;
-  skills: Array<{
-    id: string;
-    proficiency_level?: string;
-    certified: boolean;
-    certification_date?: string;
-    skill?: {
-      name: string;
-      description?: string;
-      category?: string;
-    };
-  }>;
-  trainingRecords: Array<{
-    id: string;
-    status: string;
-    start_date?: string;
-    training?: {
-      name: string;
-      description?: string;
-      duration?: number;
-      provider?: string;
-    };
-  }>;
+
 }
 
 export default function EmployeeDashboard() {
@@ -880,31 +857,7 @@ export default function EmployeeDashboard() {
                   )}
                 </div>
 
-                {dashboardData?.skills?.length ? (
-                  <div className="p-6 border-b border-gray-50">
-                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                      <Award className="h-4 w-4" />
-                      {t('dashboard.skills')} ({dashboardData.skills.length})
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {dashboardData.skills.slice(0, 5).map(skill => (
-                        <Badge
-                          key={skill.id}
-                          variant={skill.certified ? 'default' : 'secondary'}
-                          className="text-xs"
-                        >
-                          {skill.skill?.name || 'N/A'}
-                          {skill.certified && <span className="ml-1">✓</span>}
-                        </Badge>
-                      ))}
-                      {dashboardData.skills.length > 5 && (
-                        <span className="text-sm text-gray-500">
-                          +{dashboardData.skills.length - 5} {t('dashboard.more')}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ) : null}
+
 
                 {dashboardData?.advances?.length ? (
                   <div className="p-6">
