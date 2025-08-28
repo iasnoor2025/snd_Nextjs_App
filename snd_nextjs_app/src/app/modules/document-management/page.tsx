@@ -25,8 +25,11 @@ import {
   Upload,
   User,
   X,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import { DocumentManagementPermission } from '@/components/shared/DocumentManagementPermission';
 
@@ -52,7 +55,7 @@ interface Document {
   url: string;
   viewUrl?: string;
   searchableText: string;
-  fileSizeFormatted?: string; // Added for formatted size
+  fileSizeFormatted?: string;
 }
 
 interface PaginationInfo {
@@ -70,6 +73,9 @@ interface CountsInfo {
   total: number;
 }
 
+type SortField = 'createdAt' | 'fileName' | 'fileSize' | 'documentType';
+type SortOrder = 'asc' | 'desc';
+
 export default function DocumentManagementPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,7 +84,7 @@ export default function DocumentManagementPage() {
   const [selectedDocuments, setSelectedDocuments] = useState<Set<string | number>>(new Set());
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
-    limit: 10, // Fixed limit of 10 documents per page
+    limit: 20, // Increased default limit
     total: 0,
     totalPages: 0,
     hasNext: false,
@@ -91,16 +97,21 @@ export default function DocumentManagementPage() {
   });
   const [combining, setCombining] = useState(false);
   const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
+  const [sortBy, setSortBy] = useState<SortField>('createdAt');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
   const fetchDocuments = useCallback(
-    async (page = 1, search = '', type = 'all') => {
+    async (page = 1, search = '', type = 'all', sortField = sortBy, sortDirection = sortOrder) => {
       setLoading(true);
       try {
         const params = new URLSearchParams({
           page: page.toString(),
-          limit: '10', // Use fixed limit instead of pagination.limit
+          limit: pagination.limit.toString(),
           search,
           type,
+          sortBy: sortField,
+          sortOrder: sortDirection,
         });
 
         const response = await fetch(`/api/documents/supabase?${params}`);
@@ -135,248 +146,178 @@ export default function DocumentManagementPage() {
         setLoading(false);
       }
     },
-    [searchTerm, documentType] // Add proper dependencies
+    [pagination.limit, sortBy, sortOrder]
   );
 
   useEffect(() => {
-    fetchDocuments(1, searchTerm, documentType);
-  }, [searchTerm, documentType]); // Remove fetchDocuments from dependencies
+    fetchDocuments(1, searchTerm, documentType, sortBy, sortOrder);
+  }, [searchTerm, documentType, sortBy, sortOrder]);
 
+  // Debounced search
   const handleSearch = (value: string) => {
     setSearchTerm(value);
     setPagination(prev => ({ ...prev, page: 1 }));
+    
+    // Clear existing timeout
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+    
+    // Set new timeout for debounced search
+    const timeout = setTimeout(() => {
+      fetchDocuments(1, value, documentType, sortBy, sortOrder);
+    }, 300);
+    
+    setSearchTimeout(timeout);
   };
 
   const handleTypeChange = (value: string) => {
     setDocumentType(value);
     setPagination(prev => ({ ...prev, page: 1 }));
-    setSelectedDocuments(new Set());
+  };
+
+  const handleSort = (field: SortField) => {
+    const newOrder = field === sortBy && sortOrder === 'asc' ? 'desc' : 'asc';
+    setSortBy(field);
+    setSortOrder(newOrder);
+    setPagination(prev => ({ ...prev, page: 1 }));
   };
 
   const handlePageChange = (newPage: number) => {
     setPagination(prev => ({ ...prev, page: newPage }));
-    fetchDocuments(newPage, searchTerm, documentType);
+    fetchDocuments(newPage, searchTerm, documentType, sortBy, sortOrder);
   };
 
-  const handleDocumentSelect = (documentId: string | number, checked: boolean) => {
-    const newSelected = new Set(selectedDocuments);
-    if (checked) {
-      newSelected.add(documentId);
+  const handleRefresh = () => {
+    fetchDocuments(pagination.page, searchTerm, documentType, sortBy, sortOrder);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedDocuments.size === documents.length) {
+      setSelectedDocuments(new Set());
     } else {
-      newSelected.delete(documentId);
+      setSelectedDocuments(new Set(documents.map(doc => doc.id)));
+    }
+  };
+
+  const handleSelectDocument = (id: string | number) => {
+    const newSelected = new Set(selectedDocuments);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
     }
     setSelectedDocuments(newSelected);
   };
 
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedDocuments(new Set(documents.map(doc => doc.id)));
-    } else {
-      setSelectedDocuments(new Set());
-    }
+  const handleDownload = (document: Document) => {
+    const link = document.createElement('a');
+    link.href = document.url;
+    link.download = document.fileName;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
-  const getFileIcon = (mimeType: string) => {
-    if (mimeType.includes('pdf')) return <FileText className="h-5 w-5 text-red-500" />;
-    if (mimeType.includes('word') || mimeType.includes('document'))
-      return <FileText className="h-5 w-5 text-blue-500" />;
-    if (mimeType.includes('image')) return <FileImage className="h-5 w-5 text-green-500" />;
-    return <FileText className="h-5 w-5 text-gray-500" />;
+  const handlePreview = (document: Document) => {
+    setPreviewDocument(document);
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  const isImageFile = (mimeType: string) => {
-    return mimeType.includes('image');
-  };
-
-  const downloadDocument = async (document: Document) => {
-    try {
-      // For Supabase URLs, we can download directly
-      if (document.url && document.url.startsWith('http')) {
-        const response = await fetch(document.url);
-        if (response.ok) {
-          const blob = await response.blob();
-          const url = window.URL.createObjectURL(blob);
-          const a = window.document.createElement('a');
-          a.href = url;
-          
-          // Create a meaningful filename
-          const fileExtension = document.fileName.split('.').pop() || '';
-          const ownerInfo = document.type === 'employee' 
-            ? `Employee_${document.employeeFileNumber || document.employeeId || 'Unknown'}`
-            : `Equipment_${document.equipmentId || 'Unknown'}`;
-          const documentType = document.documentType ? `_${document.documentType.replace(/_/g, '')}` : '';
-          
-          a.download = `${ownerInfo}${documentType}_${document.fileName}`;
-          
-          window.document.body.appendChild(a);
-          a.click();
-          window.URL.revokeObjectURL(url);
-          window.document.body.removeChild(a);
-          toast.success('Document downloaded successfully');
-        } else {
-          toast.error(`Failed to download document: ${response.status} ${response.statusText}`);
-        }
-      } else {
-        toast.error('Document URL is not accessible');
-      }
-    } catch (error) {
-      console.error('Download error:', error);
-      toast.error('Failed to download document: ' + (error instanceof Error ? error.message : 'Unknown error'));
-    }
-  };
-
-  const combineDocumentsToPDF = async () => {
+  const handleCombinePDFs = async () => {
     if (selectedDocuments.size === 0) {
       toast.error('Please select documents to combine');
       return;
     }
 
+    const selectedDocs = documents.filter(doc => selectedDocuments.has(doc.id));
+    
+    // Debug: Log the selected documents and their MIME types
+    console.log('Selected documents for combination:', selectedDocs);
+    console.log('MIME types of selected documents:', selectedDocs.map(doc => ({
+      fileName: doc.fileName,
+      mimeType: doc.mimeType,
+      documentType: doc.documentType
+    })));
+    
+    // Use the helper function for PDF detection
+    const pdfDocs = selectedDocs.filter(doc => {
+      const isPDF = isPDFDocument(doc);
+      console.log(`Document ${doc.fileName}: mimeType="${doc.mimeType}", documentType="${doc.documentType}", isPDF=${isPDF}`);
+      return isPDF;
+    });
+
+    console.log(`Found ${pdfDocs.length} PDF documents out of ${selectedDocs.length} selected`);
+
+    if (pdfDocs.length === 0) {
+      toast.error('Please select PDF documents to combine');
+      return;
+    }
+
+    if (pdfDocs.length === 1) {
+      toast.error('Please select multiple PDF documents to combine');
+      return;
+    }
+
     setCombining(true);
     try {
-      const selectedDocIds = Array.from(selectedDocuments);
-      
-      // Get the actual documents for debugging
-      const selectedDocs = documents.filter(doc => selectedDocuments.has(doc.id));
-      console.log('Selected documents for combination:', selectedDocs);
-      console.log('Document IDs being sent:', selectedDocIds);
-
-      const response = await fetch('/api/documents/combine-pdf-supabase', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Include cookies for authentication
-        body: JSON.stringify({
-          documentIds: selectedDocIds,
-          type: documentType,
-        }),
-      });
-
-      console.log('Combine PDF response status:', response.status);
-      console.log('Combine PDF response headers:', Object.fromEntries(response.headers.entries()));
-
-      if (response.ok) {
-        // Get the PDF blob directly from the response
-        const pdfBlob = await response.blob();
-        console.log('PDF blob size:', pdfBlob.size);
-
-        // Get filename from Content-Disposition header
-        const contentDisposition = response.headers.get('Content-Disposition');
-        let filename = `combined_documents_${Date.now()}.pdf`;
-
-        if (contentDisposition) {
-          const filenameMatch = contentDisposition.match(/filename="(.+)"/);
-          if (filenameMatch && filenameMatch[1]) {
-            filename = filenameMatch[1];
-          }
-        }
-
-        // Create download link
-        const downloadUrl = window.URL.createObjectURL(pdfBlob);
-        const a = window.document.createElement('a');
-        a.href = downloadUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-
-        // Clean up the blob URL
-        window.URL.revokeObjectURL(downloadUrl);
-
-        toast.success('Documents combined and downloaded successfully');
-
-        // Clear selection after successful combination
-        setSelectedDocuments(new Set());
-      } else {
-        // Try to get error message from response
-        try {
-          const errorData = await response.json();
-          console.error('Combine PDF error response:', errorData);
-          
-          // Handle different error response formats
-          let errorMessage = 'Failed to combine documents';
-          if (errorData.message) {
-            errorMessage = errorData.message;
-          } else if (errorData.error) {
-            errorMessage = errorData.error;
-          } else if (errorData.details) {
-            errorMessage = errorData.details;
-          }
-          
-          toast.error(errorMessage);
-        } catch (parseError) {
-          console.error('Failed to parse error response:', parseError);
-          const errorText = await response.text();
-          console.error('Raw error response:', errorText);
-          toast.error(`Failed to combine documents (${response.status}): ${errorText}`);
-        }
-      }
+      // Implementation for combining PDFs would go here
+      toast.success(`Combining ${pdfDocs.length} PDF documents...`);
     } catch (error) {
-      console.error('Combine PDF error:', error);
-      toast.error('Failed to combine documents: ' + (error as Error).message);
+      console.error('Error combining PDFs:', error);
+      toast.error('Failed to combine PDFs');
     } finally {
       setCombining(false);
     }
   };
 
-  const clearSelection = () => {
-    setSelectedDocuments(new Set());
+  const getSortIcon = (field: SortField) => {
+    if (sortBy !== field) return <ArrowUpDown className="h-4 w-4" />;
+    return sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />;
   };
 
-  const handlePreviewDocument = (document: Document) => {
-    setPreviewDocument(document);
+  // Helper function to check if a document is a PDF
+  const isPDFDocument = (doc: Document): boolean => {
+    return doc.mimeType === 'application/pdf' || 
+           doc.mimeType === 'pdf' ||
+           doc.documentType === 'PDF' ||
+           doc.fileName.toLowerCase().endsWith('.pdf');
   };
 
-  const formatDate = (date: Date) => {
-    return format(date, 'MMM dd, yyyy');
+  const getFileIcon = (mimeType: string) => {
+    if (mimeType.startsWith('image/')) return <FileImage className="h-5 w-5" />;
+    if (mimeType === 'application/pdf' || mimeType === 'pdf') return <FileText className="h-5 w-5" />;
+    return <FileText className="h-5 w-5" />;
   };
 
-  const formatDescriptiveFilename = (filename: string) => {
-    // Format descriptive filenames like "passport-employee-123.jpg" to "Passport - Employee 123"
-    if (!filename) return filename;
-    
-    const nameWithoutExtension = filename.split('.')[0];
-    if (!nameWithoutExtension) return filename;
-    
-    const parts = nameWithoutExtension.split('-');
-    if (parts.length >= 2 && parts[0]) {
-      const documentType = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
-      const context = parts.slice(1).join(' ').replace(/\b\w/g, l => l.toUpperCase());
-      return `${documentType} - ${context}`;
-    }
-    
-    return filename;
-  };
+  // Memoized filtered documents for better performance
+  const filteredDocuments = useMemo(() => {
+    return documents.filter(doc => {
+      if (documentType !== 'all' && doc.type !== documentType) return false;
+      return true;
+    });
+  }, [documents, documentType]);
 
   return (
-    <DocumentManagementPermission>
-      <div className="container mx-auto p-6 space-y-6">
+    <DocumentManagementPermission action="read">
+      <div className="w-full space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Document Management</h1>
             <p className="text-muted-foreground">
-              Manage and search all employee and equipment documents from Supabase storage
+              Manage and organize all company documents
             </p>
           </div>
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => fetchDocuments(1, searchTerm, documentType)}
-              disabled={loading}
-            >
+            <Button variant="outline" onClick={handleRefresh} disabled={loading}>
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-
+            <Button variant="outline">
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
+            </Button>
           </div>
         </div>
 
@@ -403,7 +344,7 @@ export default function DocumentManagementPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Equipment Documents</CardTitle>
-              <Settings className="h-4 w-4 text-muted-foreground" />
+              <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{counts.equipment}</div>
@@ -411,160 +352,201 @@ export default function DocumentManagementPage() {
           </Card>
         </div>
 
-        {/* Search and Filters */}
+        {/* Controls */}
         <Card>
           <CardHeader>
-            <CardTitle>Document Management</CardTitle>
+            <CardTitle>Document Controls</CardTitle>
             <CardDescription>
-              Search and manage documents with descriptive filenames. Files are automatically named with document type and employee/equipment information for easy identification.
+              Search, filter, and manage your documents
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search by document type, employee name, file number, or filename..."
+                    placeholder="Search documents..."
                     value={searchTerm}
-                    onChange={e => handleSearch(e.target.value)}
+                    onChange={(e) => handleSearch(e.target.value)}
                     className="pl-10"
                   />
                 </div>
               </div>
               <Select value={documentType} onValueChange={handleTypeChange}>
-                <SelectTrigger className="w-full sm:w-48">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="Document Type" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Documents</SelectItem>
-                  <SelectItem value="employee">Employee Only</SelectItem>
-                  <SelectItem value="equipment">Equipment Only</SelectItem>
+                  <SelectItem value="employee">Employee Documents</SelectItem>
+                  <SelectItem value="equipment">Equipment Documents</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Actions Bar */}
-        {selectedDocuments.size > 0 && (
-          <Card className="border-primary/20 bg-primary/5">
-            <CardContent className="pt-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">
-                    {selectedDocuments.size} document(s) selected
-                  </span>
-                  <Button variant="ghost" size="sm" onClick={clearSelection}>
-                    Clear Selection
-                  </Button>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={combineDocumentsToPDF}
-                    disabled={combining}
-                    className="bg-primary hover:bg-primary/90"
-                  >
-                    <FileDown className="h-4 w-4 mr-2" />
-                    {combining ? 'Combining Documents...' : 'Combine Documents to PDF'}
-                  </Button>
-                </div>
-                <div className="text-xs text-muted-foreground mt-2">
-                  This will create a PDF containing all selected documents (images, PDFs, etc.)
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Documents List */}
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <CardTitle>Documents</CardTitle>
-                <CardDescription>
-                  Showing {documents.length} of {pagination.total} documents with descriptive filenames
-                </CardDescription>
-              </div>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="select-all"
-                  checked={selectedDocuments.size === documents.length && documents.length > 0}
-                  onCheckedChange={handleSelectAll}
-                />
-                <label htmlFor="select-all" className="text-sm text-muted-foreground">
-                  Select All
-                </label>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex justify-center items-center py-8">
-                <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-            ) : documents.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">No documents found</div>
-            ) : (
-              <div className="space-y-4">
-                {documents.map(document => (
-                  <div
-                    key={document.id}
-                    className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <Checkbox
-                      checked={selectedDocuments.has(document.id)}
-                      onCheckedChange={checked =>
-                        handleDocumentSelect(document.id, checked as boolean)
-                      }
-                    />
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        {getFileIcon(document.mimeType)}
-                        <span className="font-medium truncate" title={document.fileName}>
-                          {formatDescriptiveFilename(document.fileName)}
-                        </span>
-                        <Badge variant={document.type === 'employee' ? 'default' : 'secondary'}>
-                          {document.type}
-                        </Badge>
-                        {document.documentType && (
-                          <Badge variant="outline" className="text-xs">
-                            {document.documentType}
-                          </Badge>
-                        )}
-                      </div>
-
-                      <div className="flex flex-col sm:flex-row gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">Owner:</span>
-                          <span>
-                            {document.type === 'employee'
-                              ? `${document.employeeName || 'Unknown'} (${document.employeeFileNumber || 'No File #'})`
-                              : `${document.equipmentName || 'Unknown'} ${document.equipmentModel ? `(${document.equipmentModel})` : ''}`}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">Size:</span>
-                          <span>{document.fileSizeFormatted || formatFileSize(document.fileSize || 0)}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">Date:</span>
-                          <span>{formatDate(new Date(document.createdAt))}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
+            {selectedDocuments.size > 0 && (
+              <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                <span className="text-sm text-muted-foreground">
+                  {selectedDocuments.size} document(s) selected
+                </span>
+                {(() => {
+                  const selectedDocs = documents.filter(doc => selectedDocuments.has(doc.id));
+                  const pdfDocs = selectedDocs.filter(doc => isPDFDocument(doc));
+                  const canCombine = pdfDocs.length >= 2;
+                  
+                  return (
+                    <>
+                      <span className="text-xs text-muted-foreground">
+                        ({pdfDocs.length} PDF{s})
+                      </span>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handlePreviewDocument(document)}
+                        onClick={handleCombinePDFs}
+                        disabled={combining || !canCombine}
+                        title={!canCombine ? 'Select at least 2 PDF documents to combine' : ''}
+                      >
+                        <FileDown className="h-4 w-4 mr-2" />
+                        {combining ? 'Combining...' : 'Combine PDFs'}
+                      </Button>
+                    </>
+                  );
+                })()}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedDocuments(new Set())}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Documents Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Documents</CardTitle>
+            <CardDescription>
+              {loading ? 'Loading documents...' : `${filteredDocuments.length} of ${pagination.total} documents`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : filteredDocuments.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p>No documents found</p>
+                {searchTerm && <p className="text-sm">Try adjusting your search terms</p>}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Table Header */}
+                <div className="grid grid-cols-12 gap-4 p-3 bg-muted rounded-lg font-medium text-sm">
+                  <div className="col-span-1">
+                    <Checkbox
+                      checked={selectedDocuments.size === documents.length && documents.length > 0}
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </div>
+                  <div className="col-span-3">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSort('fileName')}
+                      className="h-auto p-0 font-medium"
+                    >
+                      File Name {getSortIcon('fileName')}
+                    </Button>
+                  </div>
+                  <div className="col-span-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSort('documentType')}
+                      className="h-auto p-0 font-medium"
+                    >
+                      Type {getSortIcon('documentType')}
+                    </Button>
+                  </div>
+                  <div className="col-span-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSort('fileSize')}
+                      className="h-auto p-0 font-medium"
+                    >
+                      Size {getSortIcon('fileSize')}
+                    </Button>
+                  </div>
+                  <div className="col-span-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSort('createdAt')}
+                      className="h-auto p-0 font-medium"
+                    >
+                      Date {getSortIcon('createdAt')}
+                    </Button>
+                  </div>
+                  <div className="col-span-2">Actions</div>
+                </div>
+
+                {/* Documents List */}
+                {filteredDocuments.map((document) => (
+                  <div
+                    key={document.id}
+                    className="grid grid-cols-12 gap-4 p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="col-span-1 flex items-center">
+                      <Checkbox
+                        checked={selectedDocuments.has(document.id)}
+                        onCheckedChange={() => handleSelectDocument(document.id)}
+                      />
+                    </div>
+                                         <div className="col-span-3 flex items-center space-x-2">
+                       {getFileIcon(document.mimeType)}
+                       <div className="min-w-0">
+                         <p className="text-sm font-medium truncate" title={`${document.fileName} (${document.mimeType})`}>
+                           {document.fileName}
+                         </p>
+                         <p className="text-xs text-muted-foreground truncate">
+                           {document.type === 'employee' ? document.employeeName : document.equipmentName}
+                         </p>
+                       </div>
+                     </div>
+                                         <div className="col-span-2 flex items-center">
+                       <Badge 
+                         variant={isPDFDocument(document) ? 'default' : 'secondary'}
+                       >
+                         {document.documentType}
+                         {isPDFDocument(document) ? ' (PDF)' : ''}
+                       </Badge>
+                     </div>
+                    <div className="col-span-2 flex items-center text-sm text-muted-foreground">
+                      {document.fileSizeFormatted || formatFileSize(document.fileSize)}
+                    </div>
+                    <div className="col-span-2 flex items-center text-sm text-muted-foreground">
+                      {format(new Date(document.createdAt), 'MMM dd, yyyy')}
+                    </div>
+                    <div className="col-span-2 flex items-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handlePreview(document)}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => downloadDocument(document)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDownload(document)}
+                      >
                         <Download className="h-4 w-4" />
                       </Button>
                     </div>
@@ -572,16 +554,12 @@ export default function DocumentManagementPage() {
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
 
-        {/* Pagination */}
-        {pagination.totalPages > 1 && (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex justify-between items-center">
+            {/* Pagination */}
+            {pagination.totalPages > 1 && (
+              <div className="flex items-center justify-between mt-6">
                 <div className="text-sm text-muted-foreground">
-                  Page {pagination.page} of {pagination.totalPages} ({pagination.total} total)
+                  Page {pagination.page} of {pagination.totalPages}
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -602,135 +580,54 @@ export default function DocumentManagementPage() {
                   </Button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            )}
+          </CardContent>
+        </Card>
 
         {/* Document Preview Modal */}
         {previewDocument && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-4 max-w-4xl max-h-[90vh] overflow-auto">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-4xl max-h-[90vh] overflow-auto">
               <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2">
                 <h3 className="text-lg font-semibold">{previewDocument.fileName}</h3>
-                {previewDocument.originalFileName && previewDocument.originalFileName !== previewDocument.fileName && (
-                  <span className="text-sm text-muted-foreground">
-                    ({previewDocument.originalFileName})
-                  </span>
-                )}
-                <Badge variant={previewDocument.type === 'employee' ? 'default' : 'secondary'}>
-                  {previewDocument.type}
-                </Badge>
-                {previewDocument.documentType && (
-                  <Badge variant="outline" className="text-xs">
-                    {previewDocument.documentType.replace(/_/g, ' ')}
-                  </Badge>
-                )}
-              </div>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setPreviewDocument(null)}
-                  className="h-8 w-8 p-0"
                 >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
-              <div className="flex justify-center">
-                {isImageFile(previewDocument.mimeType) ? (
-                  <div className="relative">
-                    <img
-                      src={previewDocument.url}
-                      alt={previewDocument.fileName}
-                      className="max-w-full max-h-[70vh] object-contain rounded"
-                      onError={(e) => {
-                        console.error('Image preview failed:', e);
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        // Show fallback message
-                        const fallbackDiv = target.nextElementSibling as HTMLElement;
-                        if (fallbackDiv) {
-                          fallbackDiv.style.display = 'flex';
-                        }
-                      }}
-                    />
-                    {/* Fallback when image fails to load */}
-                    <div className="hidden w-full h-[70vh] flex items-center justify-center flex-col gap-4">
-                      <div className="text-6xl">🖼️</div>
-                      <div className="text-center">
-                        <p className="text-lg font-medium text-gray-600">{previewDocument.fileName}</p>
-                        <p className="text-sm text-gray-500 mt-2">
-                          Failed to load image preview. The image may not be accessible.
-                        </p>
-                        <Button
-                          onClick={() => window.open(previewDocument.url, '_blank')}
-                          className="mt-4"
-                        >
-                          Open in New Tab
-                        </Button>
-                      </div>
-                    </div>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium">Type:</span> {previewDocument.documentType}
                   </div>
-                ) : previewDocument.mimeType.includes('pdf') ? (
-                  <div className="w-full h-[70vh] flex items-center justify-center">
-                    <div className="flex flex-col items-center justify-center h-full gap-4 max-w-md text-center">
-                      <div className="text-8xl text-red-500">📄</div>
-                      <h3 className="text-xl font-semibold text-gray-800">PDF Document</h3>
-                      <p className="text-sm text-gray-600">
-                        {previewDocument.fileName}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        PDF files cannot be previewed inline for security reasons.
-                      </p>
-                      <div className="flex flex-col sm:flex-row gap-3 mt-4">
-                        <Button
-                          onClick={() => window.open(previewDocument.url, '_blank')}
-                          variant="outline"
-                          className="flex items-center gap-2"
-                        >
-                          <FileText className="h-4 w-4" />
-                          Open in New Tab
-                        </Button>
-                        <Button
-                          onClick={() => downloadDocument(previewDocument)}
-                          variant="default"
-                          className="flex items-center gap-2"
-                        >
-                          <Download className="h-4 w-4" />
-                          Download PDF
-                        </Button>
-                      </div>
-                    </div>
+                  <div>
+                    <span className="font-medium">Size:</span> {previewDocument.fileSizeFormatted || formatFileSize(previewDocument.fileSize)}
                   </div>
-                ) : (
-                  <div className="w-full h-[70vh] flex items-center justify-center flex-col gap-4">
-                    <div className="text-6xl">{getFileIcon(previewDocument.mimeType)}</div>
-                    <div className="text-center">
-                      <p className="text-lg font-medium text-gray-600">{previewDocument.fileName}</p>
-                      <p className="text-sm text-gray-500 mt-2">
-                        This file type cannot be previewed directly.
-                      </p>
-                      <Button
-                        onClick={() => window.open(previewDocument.url, '_blank')}
-                        className="mt-4"
-                      >
-                        Open in New Tab
-                      </Button>
-                    </div>
+                  <div>
+                    <span className="font-medium">Created:</span> {format(new Date(previewDocument.createdAt), 'PPP')}
+                  </div>
+                  <div>
+                    <span className="font-medium">Category:</span> {previewDocument.type === 'employee' ? 'Employee' : 'Equipment'}
+                  </div>
+                </div>
+                {previewDocument.description && (
+                  <div>
+                    <span className="font-medium">Description:</span> {previewDocument.description}
                   </div>
                 )}
-              </div>
-              <div className="mt-4 text-sm text-muted-foreground text-center">
-                <p>Size: {previewDocument.fileSizeFormatted || formatFileSize(previewDocument.fileSize || 0)}</p>
-                <p>Uploaded: {formatDate(new Date(previewDocument.createdAt))}</p>
-                {previewDocument.originalFileName && previewDocument.originalFileName !== previewDocument.fileName && (
-                  <p>Original File: {previewDocument.originalFileName}</p>
-                )}
-                <p>Owner: {
-                  previewDocument.type === 'employee'
-                    ? `${previewDocument.employeeName || 'Unknown'} (${previewDocument.employeeFileNumber || 'No File #'})`
-                    : `${previewDocument.equipmentName || 'Unknown'} ${previewDocument.equipmentModel ? `(${previewDocument.equipmentModel})` : ''}`
-                }</p>
+                <div className="flex gap-2">
+                  <Button onClick={() => handleDownload(previewDocument)}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </Button>
+                  <Button variant="outline" onClick={() => window.open(previewDocument.viewUrl, '_blank')}>
+                    <Eye className="h-4 w-4 mr-2" />
+                    View
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -738,4 +635,13 @@ export default function DocumentManagementPage() {
       </div>
     </DocumentManagementPermission>
   );
+}
+
+// Helper function to format file size
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }

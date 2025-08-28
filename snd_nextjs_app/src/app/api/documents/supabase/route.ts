@@ -266,32 +266,76 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
         allDocuments.push(...employeeDocuments);
       }
 
-      // Fetch equipment documents
+      // Fetch equipment documents with optimized approach
       if (type === 'all' || type === 'equipment') {
         console.log('Fetching equipment documents from Supabase...');
         
         try {
           const equipmentResponse = await SupabaseStorageService.listFiles('equipment-documents');
-          console.log('Equipment documents response:', equipmentResponse);
+          console.log('Equipment response:', equipmentResponse);
           
           if (equipmentResponse.success && equipmentResponse.files) {
-                        // Bulk fetch equipment data first
-            const equipmentIds = [...new Set(
-              equipmentResponse.files
-                .filter(item => item.name && !item.name.endsWith('/') && item.name.includes('.'))
-                .map(item => parseInt(item.name.split('/')[0]) || 0)
-                .filter(id => id > 0)
-            )];
+            console.log(`Raw equipment files found: ${equipmentResponse.files.length}`);
+            console.log('Sample files:', equipmentResponse.files.slice(0, 5).map(f => ({ name: f.name, size: f.size })));
             
-            let equipmentDataMap = new Map();
-            if (equipmentIds.length > 0) {
+            // Filter valid files and extract equipment IDs - be more flexible with naming
+            const validEquipmentFiles = equipmentResponse.files
+              .filter(item => item.name && !item.name.endsWith('/') && item.name.includes('.'))
+              .map(item => {
+                const pathParts = item.name.split('/');
+                const firstPart = pathParts[0] || '';
+                
+                // Try multiple patterns for equipment ID extraction
+                let equipmentId = 0;
+                
+                // Pattern 1: just {id} (numeric folder)
+                if (/^\d+$/.test(firstPart)) {
+                  equipmentId = parseInt(firstPart);
+                }
+                
+                // Pattern 2: equipment-{id}
+                if (!equipmentId) {
+                  const idMatch = firstPart.match(/equipment-(\d+)/);
+                  if (idMatch) {
+                    equipmentId = parseInt(idMatch[1]);
+                  }
+                }
+                
+                // Pattern 3: eq{id}
+                if (!equipmentId) {
+                  const idMatch = firstPart.match(/eq(\d+)/);
+                  if (idMatch) {
+                    equipmentId = parseInt(idMatch[1]);
+                  }
+                }
+                
+                // Pattern 4: {id} (if it's a reasonable equipment ID range)
+                if (!equipmentId && /^\d{1,4}$/.test(firstPart)) {
+                  const potentialId = parseInt(firstPart);
+                  if (potentialId > 0 && potentialId < 10000) {
+                    equipmentId = potentialId;
+                  }
+                }
+                
+                console.log(`File: ${item.name}, Path parts: ${pathParts}, First part: ${firstPart}, Extracted ID: ${equipmentId}`);
+                
+                return { ...item, equipmentId, pathParts };
+              })
+              .filter(item => item.equipmentId > 0);
+
+            console.log(`Found ${validEquipmentFiles.length} valid equipment files with IDs:`, validEquipmentFiles.map(f => f.equipmentId));
+
+            if (validEquipmentFiles.length > 0) {
+              // Bulk fetch equipment data
+              const equipmentIds = [...new Set(validEquipmentFiles.map(f => f.equipmentId))];
+              
               try {
                 // Try to get from cache first
                 const cacheKey = `equipment:${equipmentIds.sort().join(',')}`;
                 let equipmentData: any = await cacheService.get(cacheKey, 'equipment');
                 
                 if (!equipmentData) {
-                  // Fetch from database if not in cache
+                  console.log('Fetching equipment data from database for IDs:', equipmentIds);
                   equipmentData = await db
                     .select({
                       id: equipment.id,
@@ -302,10 +346,14 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
                     .from(equipment)
                     .where(inArray(equipment.id, equipmentIds));
                   
-                  // Cache for 5 minutes
-                  await cacheService.set(cacheKey, equipmentData, { prefix: 'equipment', ttl: 300 });
+                  console.log('Equipment data from database:', equipmentData);
+                  
+                  // Cache for 10 minutes
+                  await cacheService.set(cacheKey, equipmentData, { prefix: 'equipment', ttl: 600 });
                 }
-                
+
+                // Create equipment data map
+                const equipmentDataMap = new Map();
                 equipmentData.forEach((eq: any) => {
                   equipmentDataMap.set(eq.id, {
                     name: eq.name || 'Unknown Equipment',
@@ -313,63 +361,116 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
                     serialNumber: eq.serialNumber || 'No Serial'
                   });
                 });
+
+                console.log('Equipment data map:', Object.fromEntries(equipmentDataMap));
+
+                // Process equipment documents
+                const equipmentDocuments = validEquipmentFiles.map((item, index) => {
+                  const pathParts = [...item.pathParts]; // Create a copy to avoid mutating original
+                  const fileName = (pathParts.pop() || item.name) || '';
+                  const documentType = (fileName.split('.').pop() || 'UNKNOWN').toUpperCase();
+                  const equipmentInfo = equipmentDataMap.get(item.equipmentId) || {
+                    name: 'Unknown Equipment',
+                    modelNumber: 'No Model',
+                    serialNumber: 'No Serial'
+                  };
+
+                  // Determine MIME type
+                  let mimeType = 'application/octet-stream';
+                  if (['JPG', 'JPEG', 'PNG', 'GIF', 'BMP', 'WEBP', 'SVG'].includes(documentType)) {
+                    mimeType = `image/${documentType.toLowerCase()}`;
+                  } else if (documentType === 'PDF') {
+                    mimeType = 'application/pdf';
+                  } else if (['DOC', 'DOCX'].includes(documentType)) {
+                    mimeType = 'application/msword';
+                  } else if (['XLS', 'XLSX'].includes(documentType)) {
+                    mimeType = 'application/vnd.ms-excel';
+                  }
+
+                  return {
+                    id: `eqp_${item.equipmentId}_${Date.now()}_${index}`,
+                    type: 'equipment' as const,
+                    documentType,
+                    filePath: item.name,
+                    fileName,
+                    originalFileName: fileName,
+                    fileSize: item.size || 0,
+                    mimeType,
+                    description: `Equipment document for ${equipmentInfo.name}`,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    equipmentId: item.equipmentId,
+                    equipmentName: equipmentInfo.name,
+                    equipmentModel: equipmentInfo.modelNumber,
+                    equipmentSerial: equipmentInfo.serialNumber,
+                    url: SupabaseStorageService.getPublicUrl('equipment-documents', item.name),
+                    viewUrl: SupabaseStorageService.getPublicUrl('equipment-documents', item.name),
+                    searchableText: `${equipmentInfo.name} ${equipmentInfo.modelNumber} ${equipmentInfo.serialNumber} ${documentType} ${fileName}`.toLowerCase(),
+                    fileSizeFormatted: formatFileSize(item.size || 0),
+                  };
+                });
+
+                console.log(`Processed ${equipmentDocuments.length} equipment documents`);
+                allDocuments.push(...equipmentDocuments);
               } catch (error) {
-                console.error('Error fetching equipment data:', error);
+                console.error('Error processing equipment documents:', error);
+              }
+            } else {
+              console.log('No valid equipment files found - checking if there are any files at all');
+              
+              // If no valid equipment files found, try to process all files as generic documents
+              const allFiles = equipmentResponse.files.filter(item => item.name && !item.name.endsWith('/') && item.name.includes('.'));
+              console.log(`Processing ${allFiles.length} files as generic equipment documents`);
+              
+              if (allFiles.length > 0) {
+                const genericDocuments = allFiles.map((item, index) => {
+                  const fileName = item.name.split('/').pop() || item.name;
+                  const documentType = fileName.split('.').pop()?.toUpperCase() || 'UNKNOWN';
+                  
+                  // Determine MIME type
+                  let mimeType = 'application/octet-stream';
+                  if (['JPG', 'JPEG', 'PNG', 'GIF', 'BMP', 'WEBP', 'SVG'].includes(documentType)) {
+                    mimeType = `image/${documentType.toLowerCase()}`;
+                  } else if (documentType === 'PDF') {
+                    mimeType = 'application/pdf';
+                  } else if (['DOC', 'DOCX'].includes(documentType)) {
+                    mimeType = 'application/msword';
+                  } else if (['XLS', 'XLSX'].includes(documentType)) {
+                    mimeType = 'application/vnd.ms-excel';
+                  }
+
+                  return {
+                    id: `eqp_generic_${Date.now()}_${index}`,
+                    type: 'equipment' as const,
+                    documentType,
+                    filePath: item.name,
+                    fileName,
+                    originalFileName: fileName,
+                    fileSize: item.size || 0,
+                    mimeType,
+                    description: `Equipment document: ${fileName}`,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    equipmentId: 0,
+                    equipmentName: 'Unknown Equipment',
+                    equipmentModel: 'No Model',
+                    equipmentSerial: 'No Serial',
+                    url: SupabaseStorageService.getPublicUrl('equipment-documents', item.name),
+                    viewUrl: SupabaseStorageService.getPublicUrl('equipment-documents', item.name),
+                    searchableText: `${fileName} ${documentType}`.toLowerCase(),
+                    fileSizeFormatted: formatFileSize(item.size || 0),
+                  };
+                });
+                
+                console.log(`Added ${genericDocuments.length} generic equipment documents`);
+                allDocuments.push(...genericDocuments);
               }
             }
-            
-            const equipmentDocuments = equipmentResponse.files
-              .filter(item => item.name && !item.name.endsWith('/') && item.name.includes('.'))
-              .map((item, index) => {
-                const fileName = item.name.split('/').pop() || item.name;
-                const documentType = fileName.split('.').pop()?.toUpperCase() || 'UNKNOWN';
-                const equipmentId = parseInt(item.name.split('/')[0]) || 0;
-                
-                // Get equipment data from the map
-                const equipmentInfo = equipmentDataMap.get(equipmentId) || {
-                  name: 'Unknown Equipment',
-                  modelNumber: 'No Model',
-                  serialNumber: 'No Serial'
-                };
-                
-                // Determine correct MIME type
-                let mimeType = 'application/octet-stream';
-                if (['JPG', 'JPEG', 'PNG', 'GIF', 'BMP', 'WEBP', 'SVG'].includes(documentType)) {
-                  mimeType = `image/${documentType.toLowerCase()}`;
-                } else if (documentType === 'PDF') {
-                  mimeType = 'application/pdf';
-                } else if (['DOC', 'DOCX'].includes(documentType)) {
-                  mimeType = 'application/msword';
-                } else if (['XLS', 'XLSX'].includes(documentType)) {
-                  mimeType = 'application/vnd.ms-excel';
-                }
-                
-                return {
-                  id: `eqp_${equipmentId}_${Date.now()}_${index}`,
-                  type: 'equipment' as const,
-                  documentType,
-                  filePath: item.name,
-                  fileName,
-                  originalFileName: fileName,
-                  fileSize: item.size || 0,
-                  mimeType,
-                  description: `Equipment document for ${equipmentInfo.name}`,
-                  createdAt: new Date().toISOString(),
-                  updatedAt: new Date().toISOString(),
-                  equipmentId,
-                  equipmentName: equipmentInfo.name,
-                  equipmentModel: equipmentInfo.modelNumber,
-                  equipmentSerial: equipmentInfo.serialNumber,
-                  url: SupabaseStorageService.getPublicUrl('equipment-documents', item.name),
-                  viewUrl: SupabaseStorageService.getPublicUrl('equipment-documents', item.name),
-                  searchableText: `${equipmentInfo.name} ${equipmentInfo.modelNumber} ${equipmentInfo.serialNumber} ${documentType} ${fileName}`.toLowerCase(),
-                };
-              });
-            
-            allDocuments.push(...equipmentDocuments);
+          } else {
+            console.log('No equipment files found or error in response:', equipmentResponse);
           }
         } catch (error) {
-          console.log('No equipment documents found:', error);
+          console.log('Error fetching equipment documents:', error);
         }
       }
 
