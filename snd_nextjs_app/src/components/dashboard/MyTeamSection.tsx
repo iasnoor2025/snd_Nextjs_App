@@ -275,25 +275,16 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
-                    Employee
-                  </th>
-                  <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
                     File Number
                   </th>
                   <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
-                    Department
+                    Employee
                   </th>
                   <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
                     Designation
                   </th>
                   <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
                     Status
-                  </th>
-                  <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
-                    Hire Date
-                  </th>
-                  <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
-                    Service Period
                   </th>
                   <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
                     Current Location
@@ -309,6 +300,9 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
               <tbody className="bg-white divide-y divide-gray-200">
                 {teamMembers.map((member) => (
                   <tr key={member.id} className="hover:bg-gray-50">
+                    <td className="border border-gray-200 px-4 py-3 text-sm text-gray-900">
+                      {member.file_number}
+                    </td>
                     <td className="border border-gray-200 px-4 py-3">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
@@ -326,22 +320,10 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
                       </div>
                     </td>
                     <td className="border border-gray-200 px-4 py-3 text-sm text-gray-900">
-                      {member.file_number}
-                    </td>
-                    <td className="border border-gray-200 px-4 py-3 text-sm text-gray-900">
-                      {member.department?.name || 'N/A'}
-                    </td>
-                    <td className="border border-gray-200 px-4 py-3 text-sm text-gray-900">
                       {member.designation?.name || 'N/A'}
                     </td>
                     <td className="border border-gray-200 px-4 py-3">
                       {getStatusBadge(member.status)}
-                    </td>
-                    <td className="border border-gray-200 px-4 py-3 text-sm text-gray-900">
-                      {member.hire_date ? new Date(member.hire_date).toLocaleDateString() : 'N/A'}
-                    </td>
-                    <td className="border border-gray-200 px-4 py-3 text-sm text-gray-900">
-                      {member.hire_date ? calculateServicePeriod(member.hire_date) : 'N/A'}
                     </td>
                     <td className="border border-gray-200 px-4 py-3 text-sm text-gray-900">
                       {member.current_location || 'N/A'}
