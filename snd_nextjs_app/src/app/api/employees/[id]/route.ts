@@ -95,6 +95,7 @@ const getEmployeeHandler = async (
         housing_allowance: employeesTable.housingAllowance,
         transport_allowance: employeesTable.transportAllowance,
         supervisor: employeesTable.supervisor,
+        supervisor_id: employeesTable.supervisor,
         iqama_file: employeesTable.iqamaFile,
         passport_file: employeesTable.passportFile,
         driving_license_file: employeesTable.drivingLicenseFile,
@@ -111,6 +112,30 @@ const getEmployeeHandler = async (
 
     if (employeeRows.length === 0) {
       return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+    }
+
+    // Fetch supervisor details if supervisor exists
+    let supervisorDetails = null;
+    if (employeeRows[0].supervisor) {
+      try {
+        const supervisorRows = await db
+          .select({
+            id: employeesTable.id,
+            first_name: employeesTable.firstName,
+            last_name: employeesTable.lastName,
+            file_number: employeesTable.fileNumber,
+          })
+          .from(employeesTable)
+          .where(eq(employeesTable.id, parseInt(employeeRows[0].supervisor)))
+          .limit(1);
+        
+        if (supervisorRows.length > 0) {
+          supervisorDetails = supervisorRows[0];
+        }
+      } catch (error) {
+        console.error('Error fetching supervisor details:', error);
+        // Continue without supervisor details if there's an error
+      }
     }
 
     // Update employee status based on current leave status
@@ -260,6 +285,11 @@ const getEmployeeHandler = async (
       housing_allowance: updatedEmployee.housing_allowance,
       transport_allowance: updatedEmployee.transport_allowance,
       supervisor: updatedEmployee.supervisor,
+      supervisor_details: supervisorDetails ? {
+        id: supervisorDetails.id,
+        name: `${supervisorDetails.first_name} ${supervisorDetails.last_name}`,
+        file_number: supervisorDetails.file_number,
+      } : null,
       iqama_file: updatedEmployee.iqama_file,
       passport_file: updatedEmployee.passport_file,
       driving_license_file: updatedEmployee.driving_license_file,

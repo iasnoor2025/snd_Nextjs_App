@@ -131,6 +131,42 @@ export function EmployeeDropdown({
       employee.id.toString().includes(searchTerm)
   );
 
+  // Sort employees to prioritize exact file number matches first
+  const sortedEmployees = searchTerm ? filteredEmployees.sort((a, b) => {
+    const searchLower = searchTerm.toLowerCase();
+    
+    // Check for exact file number match first
+    const aFileExact = a.file_number?.toLowerCase() === searchLower;
+    const bFileExact = b.file_number?.toLowerCase() === searchLower;
+    
+    if (aFileExact && !bFileExact) return -1;
+    if (!aFileExact && bFileExact) return 1;
+    
+    // Then check for file number starts with
+    const aFileStartsWith = a.file_number?.toLowerCase().startsWith(searchLower);
+    const bFileStartsWith = b.file_number?.toLowerCase().startsWith(searchLower);
+    
+    if (aFileStartsWith && !bFileStartsWith) return -1;
+    if (!aFileStartsWith && bFileStartsWith) return 1;
+    
+    // Then check for exact name matches
+    const aNameExact = `${a.first_name} ${a.last_name}`.toLowerCase() === searchLower;
+    const bNameExact = `${b.first_name} ${b.last_name}`.toLowerCase() === searchLower;
+    
+    if (aNameExact && !bNameExact) return -1;
+    if (!aNameExact && bNameExact) return 1;
+    
+    // Then check for name starts with
+    const aNameStartsWith = `${a.first_name} ${a.last_name}`.toLowerCase().startsWith(searchLower);
+    const bNameStartsWith = `${b.first_name} ${b.last_name}`.toLowerCase().startsWith(searchLower);
+    
+    if (aNameStartsWith && !bNameStartsWith) return -1;
+    if (!aNameStartsWith && bNameStartsWith) return 1;
+    
+    // Finally, sort by name alphabetically
+    return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
+  }) : filteredEmployees;
+
   // Get selected employee for display
   const selectedEmployee = employees.find(emp => emp.id === value);
 
@@ -176,7 +212,7 @@ export function EmployeeDropdown({
             </SelectItem>
           ) : employees.length > 0 ? (
             <>
-              {filteredEmployees
+              {sortedEmployees
                 .slice(0, searchTerm ? undefined : 100) // Show first 100 if no search, all if searching
                 .map(employee => (
                   <SelectItem
@@ -195,7 +231,7 @@ export function EmployeeDropdown({
                   Showing first 100 of {employees.length} employees. Type to search for more.
                 </SelectItem>
               )}
-              {searchTerm && filteredEmployees.length === 0 && (
+              {searchTerm && sortedEmployees.length === 0 && (
                 <SelectItem value="no-results" disabled>
                   No employees found
                 </SelectItem>

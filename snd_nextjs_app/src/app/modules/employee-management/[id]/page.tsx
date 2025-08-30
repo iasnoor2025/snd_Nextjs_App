@@ -81,6 +81,11 @@ interface Employee {
   department?: { id: number; name: string };
   designation?: { id: number; name: string };
   supervisor?: string;
+  supervisor_details?: {
+    id: number;
+    name: string;
+    file_number: string;
+  } | null;
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
   emergency_contact_relationship?: string;
@@ -162,6 +167,104 @@ export default function EmployeeShowPage() {
   const approvedAdvances = advances.filter(
     (advance: any) => advance.status === 'approved' || advance.status === 'partially_repaid'
   );
+
+  // Fetch departments, designations, and employees for edit form
+  const fetchEditFormData = async () => {
+    try {
+      // Fetch departments
+      const deptResponse = await fetch('/api/departments');
+      if (deptResponse.ok) {
+        const deptData = await deptResponse.json();
+        if (deptData.success) {
+          setDepartments(deptData.data);
+        }
+      }
+
+      // Fetch designations
+      const desigResponse = await fetch('/api/designations');
+      if (desigResponse.ok) {
+        const desigData = await desigResponse.json();
+        if (desigData.success) {
+          setDesignations(desigData.data);
+        }
+      }
+
+      // Fetch employees for supervisor selection
+      const empResponse = await fetch('/api/employees?all=true');
+      if (empResponse.ok) {
+        const empData = await empResponse.json();
+        if (empData.success) {
+          setEmployees(empData.data);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching edit form data:', error);
+    }
+  };
+
+  // Open edit modal
+  const openEditModal = () => {
+    if (employee) {
+      setEditingEmployee({
+        ...employee,
+        hire_date: employee.hire_date ? employee.hire_date.slice(0, 10) : '',
+        date_of_birth: employee.date_of_birth ? employee.date_of_birth.slice(0, 10) : '',
+        iqama_expiry: employee.iqama_expiry ? employee.iqama_expiry.slice(0, 10) : '',
+        passport_expiry: employee.passport_expiry ? employee.passport_expiry.slice(0, 10) : '',
+        driving_license_expiry: employee.driving_license_expiry ? employee.driving_license_expiry.slice(0, 10) : '',
+        operator_license_expiry: employee.operator_license_expiry ? employee.operator_license_expiry.slice(0, 10) : '',
+        tuv_certification_expiry: employee.tuv_certification_expiry ? employee.tuv_certification_expiry.slice(0, 10) : '',
+        spsp_license_expiry: employee.spsp_license_expiry ? employee.spsp_license_expiry.slice(0, 10) : '',
+        access_start_date: employee.access_start_date ? employee.access_start_date.slice(0, 10) : '',
+        access_end_date: employee.access_end_date ? employee.access_end_date.slice(0, 10) : '',
+      });
+      setShowEditModal(true);
+      fetchEditFormData();
+    }
+  };
+
+  // Handle edit form input changes
+  const handleEditInputChange = (field: keyof Employee, value: any) => {
+    setEditingEmployee(prev => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  // Submit edit form
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUpdating(true);
+
+    try {
+      const response = await fetch(`/api/employees/${employeeId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editingEmployee),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          toast.success('Employee updated successfully');
+          setShowEditModal(false);
+          fetchEmployeeData(); // Refresh employee data
+        } else {
+          toast.error(result.message || 'Failed to update employee');
+        }
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.message || 'Failed to update employee');
+      }
+    } catch (error) {
+      console.error('Error updating employee:', error);
+      toast.error('Failed to update employee');
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   useEffect(() => {
     if (employeeId && !isNaN(parseInt(employeeId))) {
@@ -860,7 +963,15 @@ export default function EmployeeShowPage() {
                         <dt className="text-sm font-medium">Department</dt>
                         <dd className="text-sm">{employee.department?.name || 'Not assigned'}</dd>
                       </div>
-                      {employee.supervisor && (
+                      {employee.supervisor_details && (
+                        <div className="flex justify-between border-b pb-2">
+                          <dt className="text-sm font-medium">Supervisor</dt>
+                          <dd className="text-sm">
+                            {employee.supervisor_details.name} (File: {employee.supervisor_details.file_number})
+                          </dd>
+                        </div>
+                      )}
+                      {employee.supervisor && !employee.supervisor_details && (
                         <div className="flex justify-between border-b pb-2">
                           <dt className="text-sm font-medium">Supervisor</dt>
                           <dd className="text-sm">{employee.supervisor}</dd>

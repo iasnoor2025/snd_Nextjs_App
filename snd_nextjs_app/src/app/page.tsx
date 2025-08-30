@@ -12,6 +12,7 @@ import { QuickActions } from '@/components/dashboard/QuickActions';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { TimesheetsSection } from '@/components/dashboard/TimesheetsSection';
 import EmployeeAdvanceSection from '@/components/dashboard/EmployeeAdvanceSection';
+import MyTeamSection from '@/components/dashboard/MyTeamSection';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/hooks/use-i18n';
 import { PDFGenerator } from '@/lib/utils/pdf-generator';
@@ -97,6 +98,7 @@ export default function DashboardPage() {
     quickActions: true,
     recentActivity: true,
     employeeAdvance: true,
+    myTeam: true,
   });
   const [sectionsLoaded, setSectionsLoaded] = useState(false);
 
@@ -125,6 +127,7 @@ export default function DashboardPage() {
         quickActions: accessibleSections.includes('quickActions'),
         recentActivity: accessibleSections.includes('recentActivity'),
         employeeAdvance: accessibleSections.includes('employeeAdvance'),
+        myTeam: true, // Always show My Team for supervisors
       };
       
       setSectionVisibility(newVisibility);
@@ -652,6 +655,7 @@ export default function DashboardPage() {
                       quickActions: true,
                       recentActivity: true,
                       employeeAdvance: true,
+                      myTeam: true,
                     };
                     setSectionVisibility(newVisibility);
                     saveSectionVisibility(newVisibility);
@@ -673,6 +677,7 @@ export default function DashboardPage() {
                       quickActions: false,
                       recentActivity: false,
                       employeeAdvance: false,
+                      myTeam: false,
                     };
                     setSectionVisibility(newVisibility);
                     saveSectionVisibility(newVisibility);
@@ -694,6 +699,7 @@ export default function DashboardPage() {
                       quickActions: true,
                       recentActivity: true,
                       employeeAdvance: true,
+                      myTeam: true,
                     };
                     setSectionVisibility(defaultVisibility);
                     saveSectionVisibility(defaultVisibility);
@@ -802,6 +808,11 @@ export default function DashboardPage() {
             <EmployeeAdvancePermission>
               <EmployeeAdvanceSection onHideSection={() => toggleSection('employeeAdvance')} />
             </EmployeeAdvancePermission>
+          )}
+
+          {/* My Team Section */}
+          {sectionVisibility.myTeam && (
+            <MyTeamSection onHideSection={() => toggleSection('myTeam')} />
           )}
 
           {/* Hidden Sections Summary */}
@@ -921,6 +932,16 @@ export default function DashboardPage() {
                       className="flex items-center gap-2"
                     >
                       Show Employee Advance Section
+                    </Button>
+                  )}
+                  {!sectionVisibility.myTeam && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleSection('myTeam')}
+                      className="flex items-center gap-2"
+                    >
+                      Show My Team Section
                     </Button>
                   )}
                 </div>

@@ -24,6 +24,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
     const search = searchParams.get('search') || '';
     const department = searchParams.get('department') || '';
     const status = searchParams.get('status') || '';
+    const supervisor = searchParams.get('supervisor') || '';
     const all = searchParams.get('all') === 'true';
 
     const skip = (page - 1) * limit;
@@ -46,6 +47,9 @@ const getEmployeesHandler = async (request: NextRequest) => {
     }
     if (status) {
       filters.push(eq(employeesTable.status, status));
+    }
+    if (supervisor) {
+      filters.push(eq(employeesTable.supervisor, supervisor));
     }
 
     // No employee filtering - all authenticated users can see all employees
@@ -74,6 +78,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
         hourly_rate: employeesTable.hourlyRate,
         overtime_rate_multiplier: employeesTable.overtimeRateMultiplier,
         overtime_fixed_rate: employeesTable.overtimeFixedRate,
+        supervisor: employeesTable.supervisor,
         dept_name: departments.name,
         desig_name: designations.name,
         user_id: usersTable.id,
@@ -280,49 +285,157 @@ const createEmployeeHandler = async (request: NextRequest) => {
     const {
       first_name,
       last_name,
-      employee_id,
+      middle_name,
+      fileNumber,
       email,
       phone,
+      nationality,
+      date_of_birth,
+      hire_date,
+      address,
+      city,
+      state,
+      postal_code,
+      country,
       department_id,
       designation_id,
+      supervisor,
+      status,
       basic_salary,
-      hire_date,
-      // ... other fields
+      food_allowance,
+      housing_allowance,
+      transport_allowance,
+      hourly_rate,
+      absent_deduction_rate,
+      overtime_rate_multiplier,
+      overtime_fixed_rate,
+      bank_name,
+      bank_account_number,
+      bank_iban,
+      contract_hours_per_day,
+      contract_days_per_month,
+      emergency_contact_name,
+      emergency_contact_phone,
+      emergency_contact_relationship,
+      notes,
+      advance_salary_eligible,
+      iqama_number,
+      iqama_expiry,
+      iqama_cost,
+      passport_number,
+      passport_expiry,
+      driving_license_number,
+      driving_license_expiry,
+      driving_license_cost,
+      operator_license_number,
+      operator_license_expiry,
+      operator_license_cost,
+      tuv_certification_number,
+      tuv_certification_expiry,
+      tuv_certification_cost,
+      spsp_license_number,
+      spsp_license_expiry,
+      spsp_license_cost,
+      is_operator,
+      access_start_date,
+      access_end_date,
+      access_restriction_reason,
+      // File URLs
+      driving_license_file,
+      operator_license_file,
+      tuv_certification_file,
+      spsp_license_file,
+      passport_file,
+      iqama_file,
     } = body;
 
-    if (!first_name || !last_name || !employee_id) {
+    if (!first_name || !last_name || !fileNumber) {
       return NextResponse.json(
-        { error: 'First name, last name, and employee ID are required' },
+        { error: 'First name, last name, and file number are required' },
         { status: 400 }
       );
     }
 
-    // Check if employee ID already exists
+    // Check if file number already exists
     const existing = await db
       .select({ id: employeesTable.id })
       .from(employeesTable)
-      .where(eq(employeesTable.fileNumber, employee_id))
+      .where(eq(employeesTable.fileNumber, fileNumber))
       .limit(1);
     const existingEmployee = existing[0];
 
     if (existingEmployee) {
-      return NextResponse.json({ error: 'Employee ID already exists' }, { status: 409 });
+      return NextResponse.json({ error: 'Employee file number already exists' }, { status: 409 });
     }
 
-    // Create new employee
+    // Create new employee with all fields
     const inserted = await db
       .insert(employeesTable)
       .values({
         firstName: first_name,
+        middleName: middle_name || null,
         lastName: last_name,
-        fileNumber: employee_id,
-        email: email ?? null,
-        phone: phone ?? null,
+        fileNumber: fileNumber,
+        email: email || null,
+        phone: phone || null,
+        nationality: nationality || null,
+        dateOfBirth: date_of_birth ? new Date(date_of_birth).toISOString() : null,
+        hireDate: hire_date ? new Date(hire_date).toISOString() : null,
+        address: address || null,
+        city: city || null,
+        state: state || null,
+        postalCode: postal_code || null,
+        country: country || null,
         departmentId: department_id ? parseInt(department_id) : null,
         designationId: designation_id ? parseInt(designation_id) : null,
+        supervisor: supervisor || null,
+        status: status || 'active',
         basicSalary: basic_salary ? String(parseFloat(basic_salary)) : '0',
-        hireDate: hire_date ? new Date(hire_date).toISOString() : null,
-        status: 'active',
+        foodAllowance: food_allowance ? String(parseFloat(food_allowance)) : '0',
+        housingAllowance: housing_allowance ? String(parseFloat(housing_allowance)) : '0',
+        transportAllowance: transport_allowance ? String(parseFloat(transport_allowance)) : '0',
+        hourlyRate: hourly_rate ? parseFloat(hourly_rate) : null,
+        absentDeductionRate: absent_deduction_rate ? String(parseFloat(absent_deduction_rate)) : '0',
+        overtimeRateMultiplier: overtime_rate_multiplier ? String(parseFloat(overtime_rate_multiplier)) : '1.5',
+        overtimeFixedRate: overtime_fixed_rate ? String(parseFloat(overtime_fixed_rate)) : null,
+        bankName: bank_name || null,
+        bankAccountNumber: bank_account_number || null,
+        bankIban: bank_iban || null,
+        contractHoursPerDay: contract_hours_per_day ? parseInt(contract_hours_per_day) : 8,
+        contractDaysPerMonth: contract_days_per_month ? parseInt(contract_days_per_month) : 26,
+        emergencyContactName: emergency_contact_name || null,
+        emergencyContactPhone: emergency_contact_phone || null,
+        emergencyContactRelationship: emergency_contact_relationship || null,
+        notes: notes || null,
+        advanceSalaryEligible: advance_salary_eligible !== undefined ? advance_salary_eligible : true,
+        iqamaNumber: iqama_number || null,
+        iqamaExpiry: iqama_expiry ? new Date(iqama_expiry).toISOString() : null,
+        iqamaCost: iqama_cost ? String(parseFloat(iqama_cost)) : null,
+        passportNumber: passport_number || null,
+        passportExpiry: passport_expiry ? new Date(passport_expiry).toISOString() : null,
+        drivingLicenseNumber: driving_license_number || null,
+        drivingLicenseExpiry: driving_license_expiry ? new Date(driving_license_expiry).toISOString() : null,
+        drivingLicenseCost: driving_license_cost ? String(parseFloat(driving_license_cost)) : null,
+        operatorLicenseNumber: operator_license_number || null,
+        operatorLicenseExpiry: operator_license_expiry ? new Date(operator_license_expiry).toISOString() : null,
+        operatorLicenseCost: operator_license_cost ? String(parseFloat(operator_license_cost)) : null,
+        tuvCertificationNumber: tuv_certification_number || null,
+        tuvCertificationExpiry: tuv_certification_expiry ? new Date(tuv_certification_expiry).toISOString() : null,
+        tuvCertificationCost: tuv_certification_cost ? String(parseFloat(tuv_certification_cost)) : null,
+        spspLicenseNumber: spsp_license_number || null,
+        spspLicenseExpiry: spsp_license_expiry ? new Date(spsp_license_expiry).toISOString() : null,
+        spspLicenseCost: spsp_license_cost ? String(parseFloat(spsp_license_cost)) : null,
+        isOperator: is_operator || false,
+        accessStartDate: access_start_date ? new Date(access_start_date).toISOString() : null,
+        accessEndDate: access_end_date ? new Date(access_end_date).toISOString() : null,
+        accessRestrictionReason: access_restriction_reason || null,
+        // File URLs
+        drivingLicenseFile: driving_license_file || null,
+        operatorLicenseFile: operator_license_file || null,
+        tuvCertificationFile: tuv_certification_file || null,
+        spspLicenseFile: spsp_license_file || null,
+        passportFile: passport_file || null,
+        iqamaFile: iqama_file || null,
         updatedAt: new Date().toISOString(),
       })
       .returning();
@@ -346,6 +459,7 @@ const createEmployeeHandler = async (request: NextRequest) => {
 
     return NextResponse.json(
       {
+        success: true,
         message: 'Employee created successfully',
         employee,
         erpnextSync: erpnextSyncResult,
@@ -354,7 +468,10 @@ const createEmployeeHandler = async (request: NextRequest) => {
     );
   } catch (error) {
     console.error('Error creating employee:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ 
+      success: false,
+      error: 'Internal server error' 
+    }, { status: 500 });
   }
 };
 

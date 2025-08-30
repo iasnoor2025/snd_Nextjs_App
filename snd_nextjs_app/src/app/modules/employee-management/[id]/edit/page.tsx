@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { NationalityDropdown } from '@/components/shared/NationalityDropdown';
+import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
 import { ArrowLeft, Calendar, Edit, IdCard, MapPin, Phone, Plus, Save, User } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -59,6 +60,7 @@ interface Employee {
   tuv_certification_expiry?: string;
   spsp_license_number?: string;
   spsp_license_expiry?: string;
+  supervisor?: string;
   department?: {
     id: number;
     name: string;
@@ -148,6 +150,7 @@ export default function EditEmployeePage() {
     spsp_license_expiry: '',
     department_id: '',
     designation_id: '',
+    supervisor: '',
   });
 
   // Fetch departments and designations
@@ -241,6 +244,7 @@ export default function EditEmployeePage() {
             spsp_license_expiry: emp.spsp_license_expiry
               ? emp.spsp_license_expiry.split('T')[0]
               : '',
+            supervisor: emp.supervisor || '',
             department_id: emp.department?.id ? emp.department.id.toString() : '',
             designation_id: emp.designation?.id ? emp.designation.id.toString() : '',
           });
@@ -305,6 +309,7 @@ export default function EditEmployeePage() {
             : 8,
           department_id: formData.department_id ? parseInt(formData.department_id) : null,
           designation_id: formData.designation_id ? parseInt(formData.designation_id) : null,
+          supervisor: formData.supervisor || null,
         }),
       });
 
@@ -813,6 +818,18 @@ export default function EditEmployeePage() {
                     <Edit className="h-4 w-4" />
                   </Button>
                 </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="supervisor">Supervisor</Label>
+                <EmployeeDropdown
+                  value={formData.supervisor}
+                  onValueChange={(value) => handleInputChange('supervisor', value)}
+                  placeholder="Select supervisor"
+                  showSearch={true}
+                />
               </div>
             </div>
 
