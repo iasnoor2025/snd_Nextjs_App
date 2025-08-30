@@ -23,6 +23,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { useCallback, useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { useRBAC } from '@/lib/rbac/rbac-context';
 
 interface EquipmentDocument {
   id: number;
@@ -43,6 +44,7 @@ export default function EquipmentDocumentUpload({
   equipmentId,
   onDocumentsUpdated,
 }: EquipmentDocumentUploadProps) {
+  const { hasPermission } = useRBAC();
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
@@ -379,6 +381,8 @@ export default function EquipmentDocumentUpload({
           deleteDocument={deleteDocument}
           showNameInput={false}
           beforeUpload={handleBeforeUpload}
+          canUpload={hasPermission('upload', 'Document')}
+          canDelete={hasPermission('delete', 'Document')}
         />
       )}
     </>

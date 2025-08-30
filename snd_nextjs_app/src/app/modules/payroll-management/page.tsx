@@ -820,11 +820,13 @@ export default function PayrollManagementPage() {
                                   <Eye className="h-4 w-4" />
                                 </Button>
                               </Link>
-                              <Link href={`/modules/payroll-management/${payroll.id}/edit`}>
-                                <Button variant="outline" size="sm">
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                              </Link>
+                              {hasPermission('update', 'Payroll') && (
+                                <Link href={`/modules/payroll-management/${payroll.id}/edit`}>
+                                  <Button variant="outline" size="sm">
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                </Link>
+                              )}
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -835,7 +837,7 @@ export default function PayrollManagementPage() {
                                   <FileText className="h-4 w-4" />
                                 </Link>
                               </Button>
-                              {payroll.status === 'pending' && (
+                              {payroll.status === 'pending' && hasPermission('update', 'Payroll') && (
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -844,7 +846,7 @@ export default function PayrollManagementPage() {
                                   <CheckCircle className="h-4 w-4" />
                                 </Button>
                               )}
-                              {payroll.status === 'approved' && (
+                              {payroll.status === 'approved' && hasPermission('update', 'Payroll') && (
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -853,7 +855,7 @@ export default function PayrollManagementPage() {
                                   <DollarSign className="h-4 w-4" />
                                 </Button>
                               )}
-                              {payroll.status !== 'paid' && payroll.status !== 'cancelled' && (
+                              {payroll.status !== 'paid' && payroll.status !== 'cancelled' && hasPermission('update', 'Payroll') && (
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -862,13 +864,15 @@ export default function PayrollManagementPage() {
                                   <Ban className="h-4 w-4" />
                                 </Button>
                               )}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDelete(payroll.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              {hasPermission('delete', 'Payroll') && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDelete(payroll.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>

@@ -614,14 +614,18 @@ export default function ProjectManagementPage() {
                           <Eye className="h-4 w-4" />
                         </Button>
                       </Link>
-                      <Link href={`/modules/project-management/${project.id}/edit`}>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-4 w-4" />
+                      {hasPermission('update', 'Project') && (
+                        <Link href={`/modules/project-management/${project.id}/edit`}>
+                          <Button variant="ghost" size="sm">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                      )}
+                      {hasPermission('delete', 'Project') && (
+                        <Button variant="ghost" size="sm" onClick={() => handleDelete(project.id)}>
+                          <Trash2 className="h-4 w-4" />
                         </Button>
-                      </Link>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(project.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      )}
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">

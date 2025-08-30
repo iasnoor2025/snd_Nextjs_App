@@ -1126,11 +1126,13 @@ export default function TimesheetManagementPage() {
                               <Eye className="h-4 w-4" />
                             </Button>
                           </Link>
-                          <Link href={`/modules/timesheet-management/${timesheet.id}/edit`}>
-                            <Button variant="ghost" size="sm">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </Link>
+                          {hasPermission('update', 'Timesheet') && (
+                            <Link href={`/modules/timesheet-management/${timesheet.id}/edit`}>
+                              <Button variant="ghost" size="sm">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                          )}
 
                           {timesheet.status === 'pending' && (
                             <>
