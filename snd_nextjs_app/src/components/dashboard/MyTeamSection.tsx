@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Eye, Users, UserCheck, UserX, Clock, Calendar } from 'lucide-react';
+import { Eye, Users, UserCheck, UserX, Clock, Calendar, Table } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -34,6 +34,7 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [currentEmployee, setCurrentEmployee] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,8 +49,44 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
       setLoading(true);
       setError(null);
       
-      // Fetch employees where current user is the supervisor
-      const response = await fetch(`/api/employees?supervisor=${session?.user?.id}`);
+      console.log('Current user ID:', session?.user?.id);
+      console.log('Current user ID type:', typeof session?.user?.id);
+      
+      // First, find the employee record that matches the current user ID
+      const employeeResponse = await fetch(`/api/employees?all=true`);
+      if (!employeeResponse.ok) {
+        throw new Error('Failed to fetch employees');
+      }
+      
+      const employeeData = await employeeResponse.json();
+      console.log('All employees fetched:', employeeData.data?.length || 0);
+      
+      if (!employeeData.success) {
+        throw new Error('Failed to fetch employees');
+      }
+      
+      // Find the employee record where userId matches current user ID
+      const currentEmployee = employeeData.data?.find((emp: any) => 
+        emp.user?.id?.toString() === session?.user?.id?.toString()
+      );
+      
+      console.log('Current employee found:', currentEmployee);
+      
+      if (!currentEmployee) {
+        console.log('No employee record found for current user');
+        setTeamMembers([]);
+        setCurrentEmployee(null);
+        return;
+      }
+      
+      // Set current employee in state
+      setCurrentEmployee(currentEmployee);
+      
+      console.log('Current employee ID:', currentEmployee.id);
+      console.log('Fetching team members for supervisor:', currentEmployee.id);
+      
+      // Now fetch employees where supervisor = current employee ID
+      const response = await fetch(`/api/employees?supervisor=${currentEmployee.id}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch team members');
@@ -57,7 +94,9 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
       
       const data = await response.json();
       
+      console.log('MyTeam API Response:', data);
       if (data.success) {
+        console.log('Team members found:', data.data?.length || 0);
         setTeamMembers(data.data || []);
       } else {
         throw new Error(data.error || 'Failed to fetch team members');
@@ -176,19 +215,46 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
+              <Table className="h-5 w-5" />
               My Team
             </CardTitle>
             <CardDescription>
-              {teamMembers.length === 0 
-                ? 'No employees under your supervision' 
-                : `${teamMembers.length} employee${teamMembers.length !== 1 ? 's' : ''} under your supervision`
-              }
+              {currentEmployee ? (
+                <>
+                  {teamMembers.length === 0 
+                    ? `No employees under your supervision (Employee ID: ${currentEmployee.id})` 
+                    : `${teamMembers.length} employee${teamMembers.length !== 1 ? 's' : ''} under your supervision (Employee ID: ${currentEmployee.id})`
+                  }
+                </>
+              ) : (
+                'Loading employee information...'
+              )}
             </CardDescription>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={fetchTeamMembers}>
               Refresh
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={async () => {
+                try {
+                  const response = await fetch('/api/employees?all=true');
+                  const data = await response.json();
+                  console.log('All employees:', data);
+                  if (data.success) {
+                    console.log('Total employees:', data.data?.length || 0);
+                    console.log('Sample employees:', data.data?.slice(0, 3));
+                    console.log('Current user ID:', session?.user?.id);
+                    console.log('Current employee:', currentEmployee);
+                  }
+                } catch (err) {
+                  console.error('Error fetching all employees:', err);
+                }
+              }}
+            >
+              Debug: Show All
             </Button>
             <Button variant="outline" size="sm" onClick={onHideSection}>
               Hide
@@ -204,94 +270,102 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
             <p className="text-sm">You don't have any employees assigned to you as a supervisor.</p>
           </div>
         ) : (
-          <div className="grid gap-4">
-            {teamMembers.map((member) => (
-              <div
-                key={member.id}
-                className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-              >
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-12 w-12">
-                    <AvatarFallback className="bg-primary/10 text-primary">
-                      {member.first_name?.[0] || ''}
-                      {member.last_name?.[0] || ''}
-                    </AvatarFallback>
-                  </Avatar>
-                  
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold">
-                        {member.first_name} {member.last_name}
-                      </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse border border-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
+                    Employee
+                  </th>
+                  <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
+                    File Number
+                  </th>
+                  <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
+                    Department
+                  </th>
+                  <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
+                    Designation
+                  </th>
+                  <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
+                    Status
+                  </th>
+                  <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
+                    Hire Date
+                  </th>
+                  <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
+                    Service Period
+                  </th>
+                  <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
+                    Current Location
+                  </th>
+                  <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
+                    Timesheet Status
+                  </th>
+                  <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {teamMembers.map((member) => (
+                  <tr key={member.id} className="hover:bg-gray-50">
+                    <td className="border border-gray-200 px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                            {member.first_name?.[0] || ''}
+                            {member.last_name?.[0] || ''}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {member.first_name} {member.last_name}
+                          </div>
+                          <div className="text-sm text-gray-500">{member.email}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="border border-gray-200 px-4 py-3 text-sm text-gray-900">
+                      {member.file_number}
+                    </td>
+                    <td className="border border-gray-200 px-4 py-3 text-sm text-gray-900">
+                      {member.department?.name || 'N/A'}
+                    </td>
+                    <td className="border border-gray-200 px-4 py-3 text-sm text-gray-900">
+                      {member.designation?.name || 'N/A'}
+                    </td>
+                    <td className="border border-gray-200 px-4 py-3">
                       {getStatusBadge(member.status)}
-                    </div>
-                    
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <UserCheck className="h-3 w-3" />
-                        File: {member.file_number}
-                      </span>
-                      
-                      {member.department && (
-                        <span className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          {member.department.name}
-                        </span>
-                      )}
-                      
-                      {member.designation && (
-                        <span className="flex items-center gap-1">
-                          <UserCheck className="h-3 w-3" />
-                          {member.designation.name}
-                        </span>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        Hired: {member.hire_date ? new Date(member.hire_date).toLocaleDateString() : 'N/A'}
-                      </span>
-                      
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        Service: {member.hire_date ? calculateServicePeriod(member.hire_date) : 'N/A'}
-                      </span>
-                      
-                      {member.current_location && (
-                        <span className="flex items-center gap-1">
-                          <UserX className="h-3 w-3" />
-                          {member.current_location}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <div className="mb-2">
+                    </td>
+                    <td className="border border-gray-200 px-4 py-3 text-sm text-gray-900">
+                      {member.hire_date ? new Date(member.hire_date).toLocaleDateString() : 'N/A'}
+                    </td>
+                    <td className="border border-gray-200 px-4 py-3 text-sm text-gray-900">
+                      {member.hire_date ? calculateServicePeriod(member.hire_date) : 'N/A'}
+                    </td>
+                    <td className="border border-gray-200 px-4 py-3 text-sm text-gray-900">
+                      {member.current_location || 'N/A'}
+                    </td>
+                    <td className="border border-gray-200 px-4 py-3">
                       {getTimesheetStatusBadge(member.timesheet_status, member.last_timesheet_date)}
-                    </div>
-                    {member.email && (
-                      <p className="text-xs text-muted-foreground">{member.email}</p>
-                    )}
-                  </div>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    asChild
-                    className="flex items-center gap-2"
-                  >
-                    <Link href={`/modules/employee-management/${member.id}`}>
-                      <Eye className="h-4 w-4" />
-                      View
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            ))}
+                    </td>
+                    <td className="border border-gray-200 px-4 py-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        asChild
+                        className="flex items-center gap-2"
+                      >
+                        <Link href={`/modules/employee-management/${member.id}`}>
+                          <Eye className="h-4 w-4" />
+                          View
+                        </Link>
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </CardContent>

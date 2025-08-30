@@ -49,6 +49,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
       filters.push(eq(employeesTable.status, status));
     }
     if (supervisor) {
+      console.log('Filtering by supervisor:', supervisor);
       filters.push(eq(employeesTable.supervisor, supervisor));
     }
 
@@ -94,6 +95,12 @@ const getEmployeesHandler = async (request: NextRequest) => {
       .orderBy(asc(employeesTable.firstName));
 
     const employeeRows = await (!all ? baseQuery.offset(skip).limit(limit) : baseQuery);
+
+    console.log('Employees found:', employeeRows.length);
+    if (supervisor) {
+      console.log('Supervisor filter applied:', supervisor);
+      console.log('Sample employee supervisor values:', employeeRows.slice(0, 3).map(e => ({ id: e.id, supervisor: e.supervisor })));
+    }
 
     const countRow = await db
       .select({ count: sql<number>`count(*)` })
@@ -200,8 +207,8 @@ const getEmployeesHandler = async (request: NextRequest) => {
         phone: employee.phone || null,
         status: employee.status || null,
         full_name: fullName,
-        department: employee.dept_name || null,
-        designation: employee.desig_name || null,
+        department: employee.dept_name ? { name: employee.dept_name } : null,
+        designation: employee.desig_name ? { name: employee.desig_name } : null,
         hire_date: employee.hire_date || null,
         iqama_number: employee.iqama_number || null,
         iqama_expiry: employee.iqama_expiry || null,
@@ -214,6 +221,8 @@ const getEmployeesHandler = async (request: NextRequest) => {
         overtime_fixed_rate: employee.overtime_fixed_rate
           ? Number(employee.overtime_fixed_rate)
           : null,
+        supervisor: employee.supervisor || null,
+        current_location: currentAssignment?.location || null,
         current_assignment: isAssignmentActive
           ? {
               id: currentAssignment.id,
