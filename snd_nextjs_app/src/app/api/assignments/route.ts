@@ -21,9 +21,7 @@ const getAssignmentsHandler = async (
 
     const skip = (page - 1) * limit;
 
-    const where: any = {
-      deleted_at: null,
-    };
+    const where: any = {};
 
     // Get session to check user role
     const session = await getServerSession(authConfig);
@@ -138,6 +136,8 @@ const getAssignmentsHandler = async (
           )
         ),
     ]);
+
+
 
     const totalCount = Number(total[0]?.count ?? 0);
     const totalPages = Math.ceil(totalCount / limit);

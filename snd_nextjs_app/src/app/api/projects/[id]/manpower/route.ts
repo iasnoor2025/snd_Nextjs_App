@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { projectManpower, projects, employees } from '@/lib/drizzle/schema';
+import { projectManpower, projects, employees, employeeAssignments } from '@/lib/drizzle/schema';
 import { eq, and, desc, asc, like } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
@@ -157,6 +157,52 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       } catch (supervisorError) {
         console.error('Error auto-assigning supervisor to employee:', supervisorError);
         // Don't fail the main operation if supervisor assignment fails
+      }
+
+      // Auto-create employee assignment when assigned to project
+      try {
+        // Get project details for the assignment name
+        const projectDetails = await db
+          .select({ name: projects.name })
+          .from(projects)
+          .where(eq(projects.id, parseInt(projectId)))
+          .limit(1);
+
+        const projectName = projectDetails[0]?.name || 'Unknown Project';
+
+        // Check if employee assignment already exists for this project
+        const existingAssignment = await db
+          .select()
+          .from(employeeAssignments)
+          .where(
+            and(
+              eq(employeeAssignments.employeeId, parseInt(employeeId)),
+              eq(employeeAssignments.projectId, parseInt(projectId)),
+              eq(employeeAssignments.status, 'active')
+            )
+          );
+
+        if (existingAssignment.length === 0) {
+          // Create new employee assignment for the project
+          await db.insert(employeeAssignments).values({
+            employeeId: parseInt(employeeId),
+            projectId: parseInt(projectId),
+            name: `Project Assignment - ${projectName}`,
+            type: 'project',
+            location: 'Project Site',
+            startDate: new Date(startDate),
+            endDate: endDate ? new Date(endDate) : null,
+            status: 'active',
+            notes: `Auto-created for project: ${projectName} - ${jobTitle}`,
+            createdAt: new Date().toISOString().split('T')[0],
+            updatedAt: new Date().toISOString().split('T')[0],
+          });
+
+          console.log(`Auto-created employee assignment for employee ${employeeId} on project ${projectId}`);
+        }
+      } catch (assignmentError) {
+        console.error('Error auto-creating employee assignment:', assignmentError);
+        // Don't fail the main operation if assignment creation fails
       }
     }
 

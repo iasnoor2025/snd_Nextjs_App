@@ -123,7 +123,7 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
     
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(5);
+    const [itemsPerPage] = useState(1000);
     const [totalPages, setTotalPages] = useState(1);
 
     // Form state
@@ -160,17 +160,16 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
         }
     }, [currentEmployeeId, allowAllEmployees]);
 
-    useEffect(() => {
-        console.log('Assignments state changed:', assignments);
-    }, [assignments]);
+
 
     useEffect(() => {
         // Filter assignments based on search term
         if (searchTerm.trim() === '') {
+            // Show all assignments when no search term
             setFilteredAssignments(assignments);
             setShowAllEmployees(false);
         } else {
-            // First try to find assignments that match the search
+            // Apply search filtering when there's a search term
             const filteredAssignments = assignments.filter(assignment =>
                 assignment.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 assignment.employee?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -354,7 +353,7 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
             setLoading(true);
             setError(null);
             try {
-                const response = await fetch('/api/assignments');
+                const response = await fetch('/api/assignments?limit=1000&page=1');
                 if (response.ok) {
                     const data = await response.json();
 
@@ -1020,8 +1019,8 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                                                     </tr>
                                             ))
                                         ) : (
-                                            // Show paginated assignments
-                                            getCurrentPageAssignments().map(assignment => (
+                                            // Show all assignments
+                                            filteredAssignments.map(assignment => (
                                                 <tr key={assignment.id} className="border-b hover:bg-muted/20">
                                                     <td className="p-3 text-sm">
                                                         <span className="font-mono bg-muted px-2 py-1 rounded text-xs">
@@ -1113,7 +1112,7 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                                     </>
                                 ) : (
                                     <>
-                                        Total: {getTotalItems()} assignment{getTotalItems() !== 1 ? 's' : ''}
+                                        Total: {filteredAssignments.length} assignment{filteredAssignments.length !== 1 ? 's' : ''}
                                         {searchTerm && (
                                             <span className="ml-2 text-xs">
                                                 (filtered from {assignments.length} total)
@@ -1163,10 +1162,14 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                             {/* Page Info - Always show when there are items */}
                             {getTotalItems() > 0 && (
                                 <div className="text-center text-xs text-muted-foreground mt-2">
-                                    {totalPages > 1 ? (
+                                    {showAllEmployees && totalPages > 1 ? (
                                         <>Page {currentPage} of {totalPages} • </>
                                     ) : null}
-                                    Showing {Math.min(itemsPerPage, getCurrentPageData().length)} of {getTotalItems()} items
+                                    {showAllEmployees ? (
+                                        <>Showing {Math.min(itemsPerPage, getCurrentPageData().length)} of {getTotalItems()} items</>
+                                    ) : (
+                                        <>Showing all {filteredAssignments.length} assignments</>
+                                    )}
                                 </div>
                             )}
 

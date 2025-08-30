@@ -711,6 +711,11 @@ export default function DashboardPage() {
             </div>
           </SectionControlsPermission>
 
+          {/* My Team Section */}
+          {sectionVisibility.myTeam && (
+            <MyTeamSection onHideSection={() => toggleSection('myTeam')} />
+          )}
+
           {/* Manual Assignments Section */}
           {sectionVisibility.manualAssignments && (
             <ManualAssignmentsPermission>
@@ -722,7 +727,28 @@ export default function DashboardPage() {
             </ManualAssignmentsPermission>
           )}
 
-          {/* Iqama Section */}
+          {/* Today's Attendance (Timesheets) Section */}
+          {sectionVisibility.timesheets && (
+            <TimesheetsPermission>
+              <TimesheetsSection
+                timesheetData={timesheetData as any}
+                currentTime={currentTime}
+                session={session}
+                onApproveTimesheet={handleApproveTimesheet}
+                onRejectTimesheet={handleRejectTimesheet}
+                onMarkAbsent={handleMarkAbsent}
+                onEditHours={handleEditHours}
+                approvalSuccess={approvalSuccess}
+                approvingTimesheet={approvingTimesheet}
+                rejectingTimesheet={rejectingTimesheet}
+                markingAbsent={markingAbsent}
+                isRefreshing={refreshingTimesheets}
+                onHideSection={() => toggleSection('timesheets')}
+              />
+            </TimesheetsPermission>
+          )}
+
+          {/* Iqama Management Section */}
           {sectionVisibility.iqama && (
             <IqamaPermission>
               <IqamaSection
@@ -731,6 +757,13 @@ export default function DashboardPage() {
                 onHideSection={() => toggleSection('iqama')}
               />
             </IqamaPermission>
+          )}
+
+          {/* Employee Advances & Repayments Section */}
+          {sectionVisibility.employeeAdvance && (
+            <EmployeeAdvancePermission>
+              <EmployeeAdvanceSection onHideSection={() => toggleSection('employeeAdvance')} />
+            </EmployeeAdvancePermission>
           )}
 
           {/* Equipment Section */}
@@ -752,27 +785,6 @@ export default function DashboardPage() {
             </FinancialPermission>
           )}
 
-          {/* Timesheets Section */}
-          {sectionVisibility.timesheets && (
-            <TimesheetsPermission>
-              <TimesheetsSection
-                timesheetData={timesheetData as any}
-                currentTime={currentTime}
-                session={session}
-                onApproveTimesheet={handleApproveTimesheet}
-                onRejectTimesheet={handleRejectTimesheet}
-                onMarkAbsent={handleMarkAbsent}
-                onEditHours={handleEditHours}
-                approvalSuccess={approvalSuccess}
-                approvingTimesheet={approvingTimesheet}
-                rejectingTimesheet={rejectingTimesheet}
-                markingAbsent={markingAbsent}
-                isRefreshing={refreshingTimesheets}
-                onHideSection={() => toggleSection('timesheets')}
-              />
-            </TimesheetsPermission>
-          )}
-
           {/* Project Overview Section */}
           {sectionVisibility.projectOverview && (
             <ProjectOverviewPermission>
@@ -791,7 +803,7 @@ export default function DashboardPage() {
             </QuickActionsPermission>
           )}
 
-          {/* Recent Activity */}
+          {/* Recent Activity - Last Section */}
           {sectionVisibility.recentActivity && (
             <RecentActivityPermission>
               <RecentActivity
@@ -803,18 +815,6 @@ export default function DashboardPage() {
             </RecentActivityPermission>
           )}
 
-          {/* Employee Advance Section */}
-          {sectionVisibility.employeeAdvance && (
-            <EmployeeAdvancePermission>
-              <EmployeeAdvanceSection onHideSection={() => toggleSection('employeeAdvance')} />
-            </EmployeeAdvancePermission>
-          )}
-
-          {/* My Team Section */}
-          {sectionVisibility.myTeam && (
-            <MyTeamSection onHideSection={() => toggleSection('myTeam')} />
-          )}
-
           {/* Hidden Sections Summary */}
           {Object.values(sectionVisibility).some(visible => !visible) && (
             <SectionControlsPermission>
@@ -824,21 +824,22 @@ export default function DashboardPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      const newVisibility = {
-                        iqama: true,
-                        equipment: true,
-                        financial: true,
-                        timesheets: true,
-                        projectOverview: true,
-                        manualAssignments: true,
-                        quickActions: true,
-                        recentActivity: true,
-                        employeeAdvance: true,
-                      };
-                      setSectionVisibility(newVisibility);
-                      saveSectionVisibility(newVisibility);
-                    }}
+                                      onClick={() => {
+                    const newVisibility = {
+                      iqama: true,
+                      equipment: true,
+                      financial: true,
+                      timesheets: true,
+                      projectOverview: true,
+                      manualAssignments: true,
+                      quickActions: true,
+                      recentActivity: true,
+                      employeeAdvance: true,
+                      myTeam: true,
+                    };
+                    setSectionVisibility(newVisibility);
+                    saveSectionVisibility(newVisibility);
+                  }}
                   >
                     {t('dashboard.showAll')}
                   </Button>
