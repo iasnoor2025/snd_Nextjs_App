@@ -132,6 +132,34 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       })
       .returning();
 
+    // Auto-assign supervisor to employee if they are assigned to a project with a supervisor
+    if (employeeId) {
+      try {
+        // Get project supervisor
+        const projectWithSupervisor = await db
+          .select({ supervisorId: projects.supervisorId })
+          .from(projects)
+          .where(eq(projects.id, parseInt(projectId)))
+          .limit(1);
+
+        if (projectWithSupervisor.length > 0 && projectWithSupervisor[0].supervisorId) {
+          // Update employee's supervisor to match project supervisor
+          await db
+            .update(employees)
+            .set({ 
+              supervisor: projectWithSupervisor[0].supervisorId.toString(),
+              updatedAt: new Date().toISOString().split('T')[0]
+            })
+            .where(eq(employees.id, parseInt(employeeId)));
+
+          console.log(`Auto-assigned supervisor ${projectWithSupervisor[0].supervisorId} to employee ${employeeId} for project ${projectId}`);
+        }
+      } catch (supervisorError) {
+        console.error('Error auto-assigning supervisor to employee:', supervisorError);
+        // Don't fail the main operation if supervisor assignment fails
+      }
+    }
+
     return NextResponse.json({ 
       success: true,
       data: newManpower,

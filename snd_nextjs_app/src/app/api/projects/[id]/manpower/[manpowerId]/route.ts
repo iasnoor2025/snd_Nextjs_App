@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { projectManpower, projects } from '@/lib/drizzle/schema';
+import { projectManpower, projects, employees } from '@/lib/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
@@ -83,6 +83,34 @@ export async function PUT(
       })
       .where(eq(projectManpower.id, parseInt(manpowerId)))
       .returning();
+
+    // Auto-assign supervisor to employee if they are assigned to a project with a supervisor
+    if (employeeId !== undefined && employeeId) {
+      try {
+        // Get project supervisor
+        const projectWithSupervisor = await db
+          .select({ supervisorId: projects.supervisorId })
+          .from(projects)
+          .where(eq(projects.id, parseInt(projectId)))
+          .limit(1);
+
+        if (projectWithSupervisor.length > 0 && projectWithSupervisor[0].supervisorId) {
+          // Update employee's supervisor to match project supervisor
+          await db
+            .update(employees)
+            .set({ 
+              supervisor: projectWithSupervisor[0].supervisorId.toString(),
+              updatedAt: new Date().toISOString().split('T')[0]
+            })
+            .where(eq(employees.id, parseInt(employeeId)));
+
+          console.log(`Auto-assigned supervisor ${projectWithSupervisor[0].supervisorId} to employee ${employeeId} for project ${projectId}`);
+        }
+      } catch (supervisorError) {
+        console.error('Error auto-assigning supervisor to employee:', supervisorError);
+        // Don't fail the main operation if supervisor assignment fails
+      }
+    }
 
     return NextResponse.json({
       success: true,

@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { employeeAssignments } from '@/lib/drizzle/schema';
+import { employeeAssignments, employees } from '@/lib/drizzle/schema';
 import { RentalService } from '@/lib/services/rental-service';
 import { and, eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
@@ -87,6 +87,25 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           createdAt: new Date().toISOString().split('T')[0],
           updatedAt: new Date().toISOString().split('T')[0]
         });
+
+        // Auto-assign rental supervisor to the employee if rental has a supervisor
+        if (rentalExists.supervisor) {
+          try {
+            // Update the employee's supervisor field to match the rental's supervisor
+            await db
+              .update(employees)
+              .set({
+                supervisor: rentalExists.supervisor,
+                updatedAt: new Date().toISOString().split('T')[0],
+              })
+              .where(eq(employees.id, parseInt(body.operatorId)));
+            
+            console.log(`Auto-assigned supervisor ${rentalExists.supervisor} to employee ${body.operatorId} for rental ${rentalExists.rentalNumber}`);
+          } catch (supervisorError) {
+            console.error('Failed to auto-assign supervisor to employee:', supervisorError);
+            // Don't fail the main assignment if supervisor assignment fails
+          }
+        }
 
       } catch (assignmentError) {
         console.error('Failed to create employee assignment:', assignmentError);
@@ -261,6 +280,25 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             createdAt: new Date().toISOString().split('T')[0],
             updatedAt: new Date().toISOString().split('T')[0]
           });
+
+          // Auto-assign rental supervisor to the employee if rental has a supervisor
+          if (rentalExists.supervisor) {
+            try {
+              // Update the employee's supervisor field to match the rental's supervisor
+              await db
+                .update(employees)
+                .set({
+                  supervisor: rentalExists.supervisor,
+                  updatedAt: new Date().toISOString().split('T')[0],
+                })
+                .where(eq(employees.id, newOperatorId));
+              
+              console.log(`Auto-assigned supervisor ${rentalExists.supervisor} to employee ${newOperatorId} for rental ${rentalExists.rentalNumber}`);
+            } catch (supervisorError) {
+              console.error('Failed to auto-assign supervisor to employee:', supervisorError);
+              // Don't fail the main assignment if supervisor assignment fails
+            }
+          }
 
         }
       } catch (assignmentError) {

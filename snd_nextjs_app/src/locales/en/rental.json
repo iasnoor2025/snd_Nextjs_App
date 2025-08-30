@@ -155,6 +155,7 @@
     "headers": {
       "rentalNumber": "Rental #",
       "customer": "Customer",
+      "supervisor": "Supervisor/Foreman",
       "startDate": "Start Date",
       "endDate": "End Date",
       "status": "Status",

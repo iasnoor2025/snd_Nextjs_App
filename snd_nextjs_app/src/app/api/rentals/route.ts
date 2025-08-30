@@ -73,6 +73,7 @@ const createRentalHandler = async (request: NextRequest) => {
       paymentTermsDays: parseInt(body.paymentTermsDays) || 30,
       hasTimesheet: body.hasTimesheet || false,
       hasOperators: body.hasOperators || false,
+      supervisor: body.supervisor || null,
       notes: body.notes || '',
       rentalItems: body.rentalItems || [],
     };

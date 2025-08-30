@@ -50,6 +50,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       paymentTermsDays: parseInt(body.paymentTermsDays) || 30,
       hasTimesheet: body.hasTimesheet || false,
       hasOperators: body.hasOperators || false,
+      supervisor: body.supervisor || null,
       notes: body.notes || '',
       rentalItems: body.rentalItems || [],
     };

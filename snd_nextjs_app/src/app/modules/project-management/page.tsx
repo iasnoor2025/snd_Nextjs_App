@@ -246,19 +246,19 @@ export default function ProjectManagementPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'planning':
-        return <Badge className="bg-blue-100 text-blue-800">{t('status_options.planning')}</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800">{t('project.status_options.planning')}</Badge>;
       case 'in_progress':
         return (
-          <Badge className="bg-yellow-100 text-yellow-800">{t('status_options.in_progress')}</Badge>
+          <Badge className="bg-yellow-100 text-yellow-800">{t('project.status_options.in_progress')}</Badge>
         );
       case 'completed':
         return (
-          <Badge className="bg-green-100 text-green-800">{t('status_options.completed')}</Badge>
+          <Badge className="bg-green-100 text-green-800">{t('project.status_options.completed')}</Badge>
         );
       case 'on_hold':
-        return <Badge className="bg-gray-100 text-gray-800">{t('status_options.on_hold')}</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t('project.status_options.on_hold')}</Badge>;
       case 'cancelled':
-        return <Badge className="bg-red-100 text-red-800">{t('status_options.cancelled')}</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t('project.status_options.cancelled')}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
     }
@@ -267,16 +267,16 @@ export default function ProjectManagementPage() {
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
       case 'high':
-        return <Badge className="bg-red-100 text-red-800">{t('priority_options.high')}</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t('project.priority_options.high')}</Badge>;
       case 'medium':
         return (
-          <Badge className="bg-yellow-100 text-yellow-800">{t('priority_options.medium')}</Badge>
+          <Badge className="bg-yellow-100 text-yellow-800">{t('project.priority_options.medium')}</Badge>
         );
       case 'low':
-        return <Badge className="bg-green-100 text-green-800">{t('priority_options.low')}</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t('project.priority_options.low')}</Badge>;
       case 'critical':
         return (
-          <Badge className="bg-purple-100 text-purple-800">{t('priority_options.critical')}</Badge>
+          <Badge className="bg-purple-100 text-purple-800">{t('project.priority_options.critical')}</Badge>
         );
       default:
         return <Badge className="bg-gray-100 text-gray-800">{priority}</Badge>;
@@ -317,21 +317,21 @@ export default function ProjectManagementPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold">{t('title')}</h1>
-            <p className="text-muted-foreground">{t('description')}</p>
+            <h1 className="text-3xl font-bold">{t('project.title')}</h1>
+            <p className="text-muted-foreground">{t('project.description')}</p>
           </div>
           <div className="flex space-x-2">
             <PermissionContent action="export" subject="Project">
               <Button variant="outline" size="sm" onClick={handleExport}>
                 <Download className="h-4 w-4 mr-2" />
-                {t('export')}
+                {t('project.export')}
               </Button>
             </PermissionContent>
 
             <PermissionContent action="sync" subject="Project">
               <Button variant="outline" size="sm" onClick={handleSync}>
                 <RefreshCw className="h-4 w-4 mr-2" />
-                {t('sync_projects')}
+                {t('project.sync_projects')}
               </Button>
             </PermissionContent>
 
@@ -339,7 +339,7 @@ export default function ProjectManagementPage() {
               <Link href="/modules/project-management/templates">
                 <Button variant="outline" size="sm">
                   <FileText className="h-4 w-4 mr-2" />
-                  {t('templates')}
+                  {t('project.templates')}
                 </Button>
               </Link>
             </PermissionContent>
@@ -348,7 +348,7 @@ export default function ProjectManagementPage() {
               <Link href="/modules/project-management/create">
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
-                  {t('add_project')}
+                  {t('project.add_project')}
                 </Button>
               </Link>
             </PermissionContent>
@@ -359,45 +359,45 @@ export default function ProjectManagementPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('total_projects')}</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('project.total_projects')}</CardTitle>
               <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.total}</div>
-              <p className="text-xs text-muted-foreground">{t('all_project_types')}</p>
+              <p className="text-xs text-muted-foreground">{t('project.all_project_types')}</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('active_projects')}</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('project.active_projects')}</CardTitle>
               <Target className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-blue-600">{stats.active}</div>
-              <p className="text-xs text-muted-foreground">{t('currently_in_progress')}</p>
+              <p className="text-xs text-muted-foreground">{t('project.currently_in_progress')}</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('completed')}</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('project.completed')}</CardTitle>
               <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
-              <p className="text-xs text-muted-foreground">{t('successfully_delivered')}</p>
+              <p className="text-xs text-muted-foreground">{t('project.successfully_delivered')}</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('delayed')}</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('project.delayed')}</CardTitle>
               <AlertCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-600">{stats.delayed}</div>
-              <p className="text-xs text-muted-foreground">{t('behind_schedule')}</p>
+              <p className="text-xs text-muted-foreground">{t('project.behind_schedule')}</p>
             </CardContent>
           </Card>
         </div>
@@ -409,7 +409,7 @@ export default function ProjectManagementPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder={t('search_projects')}
+                  placeholder={t('project.search_projects')}
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   className="pl-10"
@@ -418,23 +418,23 @@ export default function ProjectManagementPage() {
             </div>
             <Select value={status} onValueChange={setStatus}>
               <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder={t('filter_by_status')} />
+                <SelectValue placeholder={t('project.filter_by_status')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('all_status')}</SelectItem>
-                <SelectItem value="planning">{t('planning')}</SelectItem>
-                <SelectItem value="in_progress">{t('in_progress')}</SelectItem>
-                <SelectItem value="completed">{t('completed')}</SelectItem>
-                <SelectItem value="on_hold">{t('on_hold')}</SelectItem>
-                <SelectItem value="cancelled">{t('cancelled')}</SelectItem>
+                <SelectItem value="all">{t('project.allStatus')}</SelectItem>
+                <SelectItem value="planning">{t('project.planning')}</SelectItem>
+                <SelectItem value="in_progress">{t('project.in_progress')}</SelectItem>
+                <SelectItem value="completed">{t('project.completed')}</SelectItem>
+                <SelectItem value="on_hold">{t('project.on_hold')}</SelectItem>
+                <SelectItem value="cancelled">{t('project.cancelled')}</SelectItem>
               </SelectContent>
             </Select>
             <Select value={priority} onValueChange={setPriority}>
               <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder={t('filter_by_priority')} />
+                <SelectValue placeholder={t('project.filterByPriority')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('all_priorities')}</SelectItem>
+                <SelectItem value="all">{t('project.allPriority')}</SelectItem>
                 {priorities.map(priority => (
                   <SelectItem key={priority} value={priority}>
                     {priority}
@@ -453,19 +453,19 @@ export default function ProjectManagementPage() {
               size="sm"
               onClick={() => setViewMode('table')}
             >
-              {t('table_view')}
+              {t('project.table_view')}
             </Button>
             <Button
               variant={viewMode === 'cards' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setViewMode('cards')}
             >
-              {t('card_view')}
+              {t('project.card_view')}
             </Button>
           </div>
           <div className="flex items-center space-x-2">
             <span className="text-sm text-gray-500">
-              {projects?.total || 0} {t('projects')}
+              {projects?.total || 0} {t('project.projects')}
             </span>
           </div>
         </div>
@@ -487,8 +487,8 @@ export default function ProjectManagementPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>{t('projects')}</CardTitle>
-                  <CardDescription>{t('manage_projects_description')}</CardDescription>
+                  <CardTitle>{t('project.projects')}</CardTitle>
+                  <CardDescription>{t('project.manage_projects_description')}</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -496,15 +496,15 @@ export default function ProjectManagementPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('project_name')}</TableHead>
-                    <TableHead>{t('client')}</TableHead>
-                    <TableHead>{t('project_team')}</TableHead>
-                    <TableHead>{t('status')}</TableHead>
-                    <TableHead>{t('priority')}</TableHead>
-                    <TableHead>{t('progress')}</TableHead>
-                    <TableHead>{t('budget')}</TableHead>
-                    <TableHead>{t('timeline')}</TableHead>
-                    <TableHead className="text-right">{t('actions')}</TableHead>
+                    <TableHead>{t('project.project_name')}</TableHead>
+                    <TableHead>{t('project.client')}</TableHead>
+                    <TableHead>{t('project.project_team')}</TableHead>
+                    <TableHead>{t('project.status')}</TableHead>
+                    <TableHead>{t('project.priority')}</TableHead>
+                    <TableHead>{t('project.progress')}</TableHead>
+                    <TableHead>{t('project.budget')}</TableHead>
+                    <TableHead>{t('project.timeline')}</TableHead>
+                    <TableHead className="text-right">{t('project.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -636,20 +636,20 @@ export default function ProjectManagementPage() {
                 <CardContent>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">{t('client')}</span>
+                      <span className="text-muted-foreground">{t('project.client')}</span>
                       <span className="font-medium">{project.client}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">{t('progress')}</span>
+                      <span className="text-muted-foreground">{t('project.progress')}</span>
                       <span className="font-medium">{project.progress}%</span>
                     </div>
                     <Progress value={project.progress} className="h-2" />
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">{t('budget')}</span>
+                      <span className="text-muted-foreground">{t('project.budget')}</span>
                       <span className="font-medium">SAR {project.budget.toLocaleString()}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">{t('timeline')}</span>
+                      <span className="text-muted-foreground">{t('project.timeline')}</span>
                       <span className="font-medium">
                         {new Date(project.start_date).toLocaleDateString()} -{' '}
                         {new Date(project.end_date).toLocaleDateString()}
@@ -725,7 +725,7 @@ export default function ProjectManagementPage() {
                   <Link href="/modules/project-management/create">
                     <Button>
                       <Plus className="h-4 w-4 mr-2" />
-                      {t('create_project')}
+                      {t('project.createProject')}
                     </Button>
                   </Link>
                   <Button 
@@ -778,7 +778,7 @@ export default function ProjectManagementPage() {
                 disabled={projects.current_page === 1}
               >
                 <ChevronLeft className="h-4 w-4 mr-1" />
-                {t('previous')}
+                {t('common.pagination.previous')}
               </Button>
 
               <div className="flex items-center gap-1">
@@ -848,7 +848,7 @@ export default function ProjectManagementPage() {
                 }
                 disabled={projects.current_page === projects.last_page}
               >
-                {t('next')}
+                {t('common.pagination.next')}
                 <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
@@ -861,29 +861,29 @@ export default function ProjectManagementPage() {
         <PermissionBased action="manage" subject="Project">
           <Card>
             <CardHeader>
-              <CardTitle>{t('project_administration')}</CardTitle>
-              <CardDescription>{t('advanced_project_management_features')}</CardDescription>
+              <CardTitle>{t('project.project_administration')}</CardTitle>
+              <CardDescription>{t('project.advanced_project_management_features')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex gap-2">
                 <PermissionContent action="manage" subject="Project">
                   <Button variant="outline">
                     <Settings className="h-4 w-4 mr-2" />
-                    {t('project_settings')}
+                    {t('project.project_settings')}
                   </Button>
                 </PermissionContent>
 
                 <PermissionContent action="export" subject="Project">
                   <Button variant="outline">
                     <FileText className="h-4 w-4 mr-2" />
-                    {t('generate_reports')}
+                    {t('project.generate_reports')}
                   </Button>
                 </PermissionContent>
 
                 <PermissionContent action="import" subject="Project">
                   <Button variant="outline">
                     <Upload className="h-4 w-4 mr-2" />
-                    {t('import_projects')}
+                    {t('project.import_projects')}
                   </Button>
                 </PermissionContent>
               </div>

@@ -143,6 +143,7 @@ interface Rental {
   paymentTermsDays: number;
   hasTimesheet: boolean;
   hasOperators: boolean;
+  supervisor?: string;
   createdAt: string;
   updatedAt: string;
   rentalItems?: RentalItem[];
@@ -728,6 +729,7 @@ export default function RentalDetailPage() {
     hasOperators: false,
     status: 'pending',
     paymentStatus: 'pending',
+    supervisor: '',
     notes: '',
   });
 
@@ -746,6 +748,7 @@ export default function RentalDetailPage() {
 
   const [equipment, setEquipment] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
+  const [supervisorDetails, setSupervisorDetails] = useState<any>(null);
 
   // Helper function to convert Decimal to number
   const formatAmount = (amount: any): string => {
@@ -787,6 +790,32 @@ export default function RentalDetailPage() {
       const financials = calculateFinancials(rental.rentalItems);
       // Update the rental object with calculated values
       setRental(prev => prev ? { ...prev, ...financials } : null);
+    }
+  };
+
+  // Fetch supervisor details when rental loads
+  useEffect(() => {
+    if (rental?.supervisor) {
+      fetchSupervisorDetails(rental.supervisor);
+    }
+  }, [rental?.supervisor]);
+
+  // Fetch supervisor details
+  const fetchSupervisorDetails = async (supervisorId: string) => {
+    if (!supervisorId) return;
+    
+    try {
+      const response = await fetch(`/api/employees/${supervisorId}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.success && data.employee) {
+          setSupervisorDetails(data.employee);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch supervisor details:', error);
     }
   };
 
@@ -1080,6 +1109,7 @@ export default function RentalDetailPage() {
       hasOperators: rental.hasOperators,
       status: rental.status || 'pending',
       paymentStatus: rental.paymentStatus || 'pending',
+      supervisor: rental.supervisor || '',
       notes: rental.notes || '',
     });
     setIsEditDialogOpen(true);
@@ -1449,6 +1479,19 @@ export default function RentalDetailPage() {
                           ? format(new Date(rental.createdAt), 'MMM dd, yyyy HH:mm')
                           : 'N/A'}
                       </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Supervisor/Foreman</Label>
+                      <p className="text-sm text-muted-foreground">
+                        {supervisorDetails ? (
+                          `${supervisorDetails.first_name} ${supervisorDetails.last_name} (File: ${supervisorDetails.file_number})`
+                        ) : rental.supervisor ? (
+                          `Loading... (ID: ${rental.supervisor})`
+                        ) : (
+                          'Not assigned'
+                        )}
+                      </p>
+
                     </div>
                   </div>
 
@@ -1928,6 +1971,15 @@ export default function RentalDetailPage() {
                   <SelectItem value="overdue">Overdue</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label htmlFor="editSupervisor">Supervisor/Foreman</Label>
+              <Input
+                id="editSupervisor"
+                value={formData.supervisor}
+                onChange={e => setFormData(prev => ({ ...prev, supervisor: e.target.value }))}
+                placeholder="Enter supervisor name or ID"
+              />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">

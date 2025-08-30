@@ -2,6 +2,7 @@ import { db } from '@/lib/drizzle';
 import {
   customers,
   employeeAssignments,
+  employees,
   equipment,
   equipmentRentalHistory,
   rentalItems,
@@ -93,6 +94,7 @@ export class RentalService {
             paymentDueDate: rentals.paymentDueDate,
             hasTimesheet: rentals.hasTimesheet,
             hasOperators: rentals.hasOperators,
+            supervisor: rentals.supervisor,
             completedBy: rentals.completedBy,
             completedAt: rentals.completedAt,
             approvedBy: rentals.approvedBy,
@@ -124,6 +126,74 @@ export class RentalService {
             try {
               const items = await this.getRentalItems(rental.id);
               
+              // Fetch supervisor details if supervisor exists
+              let supervisorDetails = null;
+              if (rental.supervisor && typeof rental.supervisor === 'string') {
+                try {
+                  const supervisorRows = await db
+                    .select({
+                      id: employees.id,
+                      first_name: employees.firstName,
+                      last_name: employees.lastName,
+                      file_number: employees.fileNumber,
+                    })
+                    .from(employees)
+                    .where(eq(employees.id, parseInt(rental.supervisor)))
+                    .limit(1);
+                  
+                  if (supervisorRows.length > 0 && supervisorRows[0]) {
+                    supervisorDetails = {
+                      id: supervisorRows[0].id,
+                      name: `${supervisorRows[0].first_name} ${supervisorRows[0].last_name}`,
+                      file_number: supervisorRows[0].file_number,
+                    };
+                  }
+                } catch {
+                  // Return rental without items if there's an error
+                  // Fetch supervisor details if supervisor exists
+                  let supervisorDetails = null;
+                  if (rental.supervisor && typeof rental.supervisor === 'string') {
+                    try {
+                      const supervisorRows = await db
+                        .select({
+                          id: employees.id,
+                          first_name: employees.firstName,
+                          last_name: employees.lastName,
+                          file_number: employees.fileNumber,
+                        })
+                        .from(employees)
+                        .where(eq(employees.id, parseInt(rental.supervisor)))
+                        .limit(1);
+                      
+                      if (supervisorRows.length > 0 && supervisorRows[0]) {
+                        supervisorDetails = {
+                          id: supervisorRows[0].id,
+                          name: `${supervisorRows[0].first_name} ${supervisorRows[0].last_name}`,
+                          file_number: supervisorRows[0].file_number,
+                        };
+                      }
+                    } catch (supervisorError) {
+                      console.error('Error fetching supervisor details:', supervisorError);
+                    }
+                  }
+
+                  return {
+                    ...rental,
+                    rental_items: [],
+                    rentalItems: [], // Add camelCase version for frontend compatibility
+                    customer: rental.customerId
+                      ? {
+                          id: rental.customerId,
+                          name: rental.customerName,
+                          email: rental.customerEmail,
+                          phone: rental.customerPhone,
+                        }
+                      : null,
+                    supervisor_details: supervisorDetails,
+                  };
+                }
+              }
+
               return {
                 ...rental,
                 rental_items: items || [],
@@ -136,14 +206,42 @@ export class RentalService {
                       phone: rental.customerPhone,
                     }
                   : null,
+                supervisor_details: supervisorDetails,
               };
             } catch (error) {
               // Return rental without items if there's an error
+              // Fetch supervisor details if supervisor exists
+              let supervisorDetails = null;
+              if (rental.supervisor && typeof rental.supervisor === 'string') {
+                try {
+                  const supervisorRows = await db
+                    .select({
+                      id: employees.id,
+                      first_name: employees.firstName,
+                      last_name: employees.lastName,
+                      file_number: employees.fileNumber,
+                    })
+                    .from(employees)
+                    .where(eq(employees.id, parseInt(rental.supervisor)))
+                    .limit(1);
+                  
+                  if (supervisorRows.length > 0 && supervisorRows[0]) {
+                    supervisorDetails = {
+                      id: supervisorRows[0].id,
+                      name: `${supervisorRows[0].first_name} ${supervisorRows[0].last_name}`,
+                      file_number: supervisorRows[0].file_number,
+                    };
+                  }
+                } catch (supervisorError) {
+                  console.error('Error fetching supervisor details:', supervisorError);
+                }
+              }
+
               return {
                 ...rental,
                 rental_items: [],
                 rentalItems: [], // Add camelCase version for frontend compatibility
-                customer: rental.customerName
+                customer: rental.customerId
                   ? {
                       id: rental.customerId,
                       name: rental.customerName,
@@ -151,6 +249,7 @@ export class RentalService {
                       phone: rental.customerPhone,
                     }
                   : null,
+                supervisor_details: supervisorDetails,
               };
             }
           })
@@ -205,6 +304,7 @@ export class RentalService {
         paymentDueDate: rentals.paymentDueDate,
         hasTimesheet: rentals.hasTimesheet,
         hasOperators: rentals.hasOperators,
+        supervisor: rentals.supervisor,
         completedBy: rentals.completedBy,
         completedAt: rentals.completedAt,
         approvedBy: rentals.approvedBy,
@@ -373,6 +473,7 @@ export class RentalService {
       paymentTermsDays?: number;
       hasTimesheet?: boolean;
       hasOperators?: boolean;
+      supervisor?: string;
       notes?: string;
       rentalItems?: any[];
       approvedAt?: string;
@@ -688,6 +789,24 @@ export class RentalService {
               updatedAt: new Date().toISOString().split('T')[0],
             });
             
+            // Auto-assign rental supervisor to the employee if rental has a supervisor
+            if (rental.supervisor) {
+              try {
+                // Update the employee's supervisor field to match the rental's supervisor
+                await db
+                  .update(employees)
+                  .set({
+                    supervisor: rental.supervisor,
+                    updatedAt: new Date().toISOString().split('T')[0],
+                  })
+                  .where(eq(employees.id, item.operatorId));
+                
+                console.log(`Auto-assigned supervisor ${rental.supervisor} to employee ${item.operatorId} for rental ${rental.rentalNumber}`);
+              } catch (supervisorError) {
+                console.error('Failed to auto-assign supervisor to employee:', supervisorError);
+                // Don't fail the main assignment if supervisor assignment fails
+              }
+            }
           }
         }
       }

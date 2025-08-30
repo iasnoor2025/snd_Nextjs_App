@@ -1,12 +1,19 @@
 import { db } from '@/lib/db';
 import {
+  advancePayments,
   departments,
   designations,
   employeeAssignments,
+  employeeDocuments,
+  employeeLeaves,
   employees as employeesTable,
   projects,
   rentals,
+  timesheets,
   users as usersTable,
+  permissions,
+  roleHasPermissions,
+  projectManpower,
 } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { updateEmployeeStatusBasedOnLeave } from '@/lib/utils/employee-status';
@@ -175,14 +182,68 @@ const getEmployeesHandler = async (request: NextRequest) => {
           .orderBy(desc(employeeAssignments.startDate));
       }
       
-      const assignmentRows = await assignmentQuery;
-      
-      for (const row of assignmentRows) {
-        const empFileNumber = row.employee_file_number as string;
-        if (!latestAssignments[empFileNumber]) {
-          latestAssignments[empFileNumber] = row;
+              const assignmentRows = await assignmentQuery;
+        
+        // Also fetch project assignments from projectManpower table
+        let projectAssignmentQuery;
+        if (isAllEmployeesRequest) {
+          projectAssignmentQuery = db
+            .select({
+              id: projectManpower.id,
+              employee_file_number: employeesTable.fileNumber,
+              type: sql<string>`'project'`,
+              name: sql<string>`'Project Assignment'`,
+              status: projectManpower.status,
+              start_date: projectManpower.startDate,
+              end_date: projectManpower.endDate,
+              location: sql<string>`NULL`,
+              notes: projectManpower.notes,
+              project_name: projects.name,
+              rental_number: sql<string>`NULL`,
+            })
+            .from(projectManpower)
+            .innerJoin(employeesTable, eq(employeesTable.id, projectManpower.employeeId))
+            .leftJoin(projects, eq(projects.id, projectManpower.projectId))
+            .where(eq(projectManpower.status, 'active'))
+            .orderBy(desc(projectManpower.startDate));
+        } else {
+          projectAssignmentQuery = db
+            .select({
+              id: projectManpower.id,
+              employee_file_number: employeesTable.fileNumber,
+              type: sql<string>`'project'`,
+              name: sql<string>`'Project Assignment'`,
+              status: projectManpower.status,
+              start_date: projectManpower.startDate,
+              end_date: projectManpower.endDate,
+              location: sql<string>`NULL`,
+              notes: projectManpower.notes,
+              project_name: projects.name,
+              rental_number: sql<string>`NULL`,
+            })
+            .from(projectManpower)
+            .innerJoin(employeesTable, eq(employeesTable.id, projectManpower.employeeId))
+            .leftJoin(projects, eq(projects.id, projectManpower.projectId))
+            .where(
+              and(
+                inArray(employeesTable.fileNumber, employeeFileNumbers),
+                eq(projectManpower.status, 'active')
+              )
+            )
+            .orderBy(desc(projectManpower.startDate));
         }
-      }
+        
+        const projectAssignmentRows = await projectAssignmentQuery;
+        
+        // Combine both assignment types
+        const allAssignments = [...assignmentRows, ...projectAssignmentRows];
+        
+        for (const row of allAssignments) {
+          const empFileNumber = row.employee_file_number as string;
+          if (!latestAssignments[empFileNumber]) {
+            latestAssignments[empFileNumber] = row;
+          }
+        }
     }
 
     // Transform

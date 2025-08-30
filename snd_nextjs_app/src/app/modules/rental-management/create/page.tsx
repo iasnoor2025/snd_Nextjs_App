@@ -21,6 +21,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
+import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
 import { format } from 'date-fns';
 import {
   ArrowLeft,
@@ -32,7 +33,7 @@ import {
   Package,
   Plus,
   Trash2,
-  User,
+  User, 
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -82,6 +83,7 @@ interface RentalFormData {
   hasOperators: boolean;
   status: string;
   paymentStatus: string;
+  supervisor: string;
   notes: string;
   rentalItems: RentalItem[];
   subtotal: number;
@@ -108,6 +110,7 @@ export default function CreateRentalPage() {
     hasOperators: false,
     status: 'pending',
     paymentStatus: 'pending',
+    supervisor: '',
     notes: '',
     rentalItems: [],
     subtotal: 0,
@@ -326,6 +329,7 @@ export default function CreateRentalPage() {
           hasOperators: formData.hasOperators,
           status: formData.status,
           paymentStatus: formData.paymentStatus,
+          supervisor: formData.supervisor || null,
           notes: formData.notes,
           rentalItems: formData.rentalItems,
           subtotal: formData.subtotal,
@@ -490,6 +494,20 @@ export default function CreateRentalPage() {
                     <SelectItem value="overdue">Overdue</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="supervisor">Supervisor/Foreman</Label>
+                {/* EmployeeDropdown for supervisor selection */}
+                <EmployeeDropdown
+                  value={formData.supervisor}
+                  onValueChange={(value) => {
+                    console.log('Supervisor selected:', value);
+                    setFormData(prev => ({ ...prev, supervisor: value }));
+                  }}
+                  placeholder="Select supervisor"
+                />
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

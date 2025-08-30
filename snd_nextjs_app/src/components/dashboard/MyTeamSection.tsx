@@ -4,10 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Eye, Users, UserCheck, UserX, Clock, Calendar, Table } from 'lucide-react';
+import { Eye, Users, Table } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 interface TeamMember {
@@ -24,6 +23,12 @@ interface TeamMember {
   current_location?: string;
   last_timesheet_date?: string;
   timesheet_status?: string;
+  current_assignment?: {
+    type: string;
+    name?: string;
+    project?: { name: string };
+    rental?: { rental_number: string };
+  };
 }
 
 interface MyTeamSectionProps {
@@ -32,9 +37,8 @@ interface MyTeamSectionProps {
 
 export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
   const { data: session } = useSession();
-  const router = useRouter();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [currentEmployee, setCurrentEmployee] = useState<any>(null);
+  const [currentEmployee, setCurrentEmployee] = useState<{ id: number; [key: string]: unknown } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,7 +70,7 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
       }
       
       // Find the employee record where userId matches current user ID
-      const currentEmployee = employeeData.data?.find((emp: any) => 
+      const currentEmployee = employeeData.data?.find((emp: { user?: { id?: string | number }; [key: string]: unknown }) => 
         emp.user?.id?.toString() === session?.user?.id?.toString()
       );
       
@@ -141,31 +145,29 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
     }
   };
 
-  const calculateServicePeriod = (hireDate: string) => {
-    const hire = new Date(hireDate);
-    const today = new Date();
+  const formatEmployeeName = (firstName: string, lastName: string) => {
+    if (!lastName) return firstName;
     
-    let years = today.getFullYear() - hire.getFullYear();
-    let months = today.getMonth() - hire.getMonth();
-    let days = today.getDate() - hire.getDate();
-    
-    if (days < 0) {
-      months--;
-      const lastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
-      days += lastMonth.getDate();
-    }
-    if (months < 0) {
-      years--;
-      months += 12;
+    // Handle case where lastName might contain the full name
+    let fullName = lastName;
+    if (firstName && !lastName.includes(firstName)) {
+      fullName = `${firstName} ${lastName}`;
     }
     
-    const parts: string[] = [];
-    if (years > 0) parts.push(`${years} year${years !== 1 ? 's' : ''}`);
-    if (months > 0) parts.push(`${months} month${months !== 1 ? 's' : ''}`);
-    if (days > 0) parts.push(`${days} day${days !== 1 ? 's' : ''}`);
+    // Split the full name into parts and filter out empty parts
+    const nameParts = fullName.trim().split(' ').filter(part => part.length > 0);
     
-    return parts.join(', ') || 'Less than a day';
+    if (nameParts.length <= 2) {
+      // If 2 or fewer parts, show the full name
+      return fullName;
+    } else {
+      // If more than 2 parts, show only first 2 parts
+      const shortenedName = nameParts.slice(0, 2).join(' ');
+      return shortenedName;
+    }
   };
+
+
 
   if (loading) {
     return (
@@ -235,27 +237,7 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
             <Button variant="outline" size="sm" onClick={fetchTeamMembers}>
               Refresh
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={async () => {
-                try {
-                  const response = await fetch('/api/employees?all=true');
-                  const data = await response.json();
-                  console.log('All employees:', data);
-                  if (data.success) {
-                    console.log('Total employees:', data.data?.length || 0);
-                    console.log('Sample employees:', data.data?.slice(0, 3));
-                    console.log('Current user ID:', session?.user?.id);
-                    console.log('Current employee:', currentEmployee);
-                  }
-                } catch (err) {
-                  console.error('Error fetching all employees:', err);
-                }
-              }}
-            >
-              Debug: Show All
-            </Button>
+
             <Button variant="outline" size="sm" onClick={onHideSection}>
               Hide
             </Button>
@@ -287,7 +269,7 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
                     Status
                   </th>
                   <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
-                    Current Location
+                    Current Assignment
                   </th>
                   <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
                     Timesheet Status
@@ -312,8 +294,9 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <div className="font-medium text-gray-900">
-                            {member.first_name} {member.last_name}
+                          <div className="font-medium text-gray-900" title={`${member.first_name} ${member.last_name}`}>
+                            {formatEmployeeName(member.first_name, member.last_name)}
+
                           </div>
                           <div className="text-sm text-gray-500">{member.email}</div>
                         </div>
@@ -326,7 +309,30 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
                       {getStatusBadge(member.status)}
                     </td>
                     <td className="border border-gray-200 px-4 py-3 text-sm text-gray-900">
-                      {member.current_location || 'N/A'}
+                      {member.current_assignment ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          <div className="text-xs">
+                            <div className="font-medium">
+                              {member.current_assignment.type === 'rental' ? 'Rental Site' : 
+                               member.current_assignment.type === 'project' ? 'Project' : 
+                               member.current_assignment.type}
+                            </div>
+                            <div className="text-gray-600">
+                              {member.current_assignment.type === 'rental' ? 
+                                (member.current_assignment.rental?.rental_number || 'Rental Assignment') :
+                                member.current_assignment.type === 'project' ? 
+                                (member.current_assignment.project?.name || member.current_assignment.name || 'Project Assignment') :
+                                (member.current_assignment.name || 'Unnamed Assignment')}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                          <span className="text-gray-500">Not Assigned</span>
+                        </div>
+                      )}
                     </td>
                     <td className="border border-gray-200 px-4 py-3">
                       {getTimesheetStatusBadge(member.timesheet_status, member.last_timesheet_date)}

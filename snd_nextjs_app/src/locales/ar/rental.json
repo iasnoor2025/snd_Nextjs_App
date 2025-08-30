@@ -109,6 +109,7 @@
     "headers": {
       "rentalNumber": "رقم عقد التأجير",
       "customer": "العميل",
+      "supervisor": "المشرف/الرئيس",
       "startDate": "تاريخ البدء",
       "endDate": "تاريخ الانتهاء",
       "status": "الحالة",

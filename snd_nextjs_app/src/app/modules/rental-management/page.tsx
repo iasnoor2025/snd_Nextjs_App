@@ -31,6 +31,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
+import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
 import { PermissionContent, RoleContent } from '@/lib/rbac/rbac-components';
 import { PermissionBased } from '@/components/PermissionBased';
 import { useRBAC } from '@/lib/rbac/rbac-context';
@@ -155,6 +156,7 @@ export default function RentalManagementPage() {
     hasOperators: false,
     status: 'pending',
     paymentStatus: 'pending',
+    supervisor: '',
     notes: '',
     rentalItems: [] as RentalItem[],
     subtotal: 0,
@@ -348,6 +350,7 @@ export default function RentalManagementPage() {
           expectedEndDate: formData.expectedEndDate
             ? new Date(formData.expectedEndDate).toISOString()
             : null,
+          supervisor: formData.supervisor || null,
         }),
       });
 
@@ -398,6 +401,7 @@ export default function RentalManagementPage() {
       hasOperators: false,
       status: 'pending',
       paymentStatus: 'pending',
+      supervisor: '',
       notes: '',
       rentalItems: [],
       subtotal: 0,
@@ -430,6 +434,7 @@ export default function RentalManagementPage() {
       hasOperators: rental.hasOperators,
       status: rental.status || 'pending',
       paymentStatus: rental.paymentStatus || 'pending',
+      supervisor: rental.supervisor || '',
       notes: rental.notes || '',
       rentalItems: rental.rentalItems || [],
       subtotal: rental.subtotal,
@@ -621,6 +626,7 @@ export default function RentalManagementPage() {
                 <TableRow>
                   <TableHead>{t('table.headers.rentalNumber')}</TableHead>
                   <TableHead>{t('table.headers.customer')}</TableHead>
+                  <TableHead>{t('table.headers.supervisor')}</TableHead>
                   <TableHead>{t('table.headers.startDate')}</TableHead>
                   <TableHead>{t('table.headers.endDate')}</TableHead>
                   <TableHead>{t('table.headers.status')}</TableHead>
@@ -641,6 +647,21 @@ export default function RentalManagementPage() {
                         isRTL,
                         translatedNames,
                         setTranslatedNames
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {rental.supervisor ? (
+                        <span className="text-sm">
+                          {rental.supervisor_details ? (
+                            `${rental.supervisor_details.name} (File: ${rental.supervisor_details.file_number})`
+                          ) : (
+                            `ID: ${rental.supervisor}`
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">
+                          {t('na')}
+                        </span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -957,6 +978,18 @@ export default function RentalManagementPage() {
                     <SelectItem value="overdue">{t('overdue')}</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div>
+                <Label htmlFor="editSupervisor">Supervisor/Foreman</Label>
+                {/* EmployeeDropdown for supervisor selection */}
+                <EmployeeDropdown
+                  value={formData.supervisor}
+                  onValueChange={(value) => {
+                    console.log('Supervisor selected in edit:', value);
+                    setFormData(prev => ({ ...prev, supervisor: value }));
+                  }}
+                  placeholder="Select supervisor"
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
