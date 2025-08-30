@@ -1,5 +1,6 @@
 'use client';
 
+import { ProtectedRoute } from '@/components/protected-route';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { format } from 'date-fns';
+import { useRBAC } from '@/lib/rbac/rbac-context';
 import {
   Download,
   Eye,
@@ -77,6 +79,7 @@ type SortField = 'createdAt' | 'fileName' | 'fileSize' | 'documentType';
 type SortOrder = 'asc' | 'desc';
 
 export default function DocumentManagementPage() {
+  const { user, hasPermission, getAllowedActions } = useRBAC();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -100,6 +103,9 @@ export default function DocumentManagementPage() {
   const [sortBy, setSortBy] = useState<SortField>('createdAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Get allowed actions for document management
+  const allowedActions = getAllowedActions('Document');
 
   const fetchDocuments = useCallback(
     async (page = 1, search = '', type = 'all', sortField = sortBy, sortDirection = sortOrder) => {
@@ -328,7 +334,7 @@ export default function DocumentManagementPage() {
   }, [documents, documentType]);
 
   return (
-    <DocumentManagementPermission action="read">
+    <ProtectedRoute>
       <div className="w-full space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -662,7 +668,7 @@ export default function DocumentManagementPage() {
           </div>
         )}
       </div>
-    </DocumentManagementPermission>
+    </ProtectedRoute>
   );
 }
 

@@ -1,16 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET() {
-  try {
-    return NextResponse.json({
-      success: true,
-      message: 'Test API is working',
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
-  }
+export async function GET(_request: NextRequest) {
+  return NextResponse.json({
+    success: true,
+    message: 'Test API route is working',
+    timestamp: new Date().toISOString(),
+  });
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { ProtectedRoute } from '@/components/protected-route';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +14,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import ApiService from '@/lib/api-service';
+import { useRBAC } from '@/lib/rbac/rbac-context';
 import {
   AlertCircle,
   ArrowLeft,
@@ -100,20 +102,27 @@ interface Assignment {
 export default function EquipmentAssignmentPage() {
   const params = useParams();
   const router = useRouter();
+  const { user, hasPermission, getAllowedActions } = useRBAC();
   const [equipment, setEquipment] = useState<Equipment | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showAssignmentDialog, setShowAssignmentDialog] = useState(false);
+  const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   const equipmentId = params.id as string;
 
+  // Get allowed actions for equipment management
+  const allowedActions = getAllowedActions('Equipment');
+
   useEffect(() => {
     if (equipmentId) {
-      fetchData();
+      fetchEquipment();
+      fetchAssignments();
     }
   }, [equipmentId]);
 
-  const fetchData = async () => {
+  const fetchEquipment = async () => {
     setLoading(true);
     try {
       // Fetch equipment details
@@ -129,6 +138,20 @@ export default function EquipmentAssignmentPage() {
       }
     } catch (error) {
       toast.error('Failed to load assignment data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAssignments = async () => {
+    setLoading(true);
+    try {
+      const historyResponse = await ApiService.getEquipmentRentalHistory(parseInt(equipmentId));
+      if (historyResponse.success) {
+        setAssignments(historyResponse.data);
+      }
+    } catch (error) {
+      toast.error('Failed to load assignment history');
     } finally {
       setLoading(false);
     }
@@ -207,238 +230,246 @@ export default function EquipmentAssignmentPage() {
   }
 
   return (
-    <div className="w-full p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button
-            variant="ghost"
-            onClick={() => router.push(`/modules/equipment-management/${equipmentId}`)}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Equipment
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Equipment Assignments</h1>
-            <p className="text-muted-foreground">Manage assignments for {equipment.name}</p>
+    <ProtectedRoute>
+      <div className="w-full p-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              onClick={() => router.push(`/modules/equipment-management/${equipmentId}`)}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Equipment
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold">Equipment Assignments</h1>
+              <p className="text-muted-foreground">Manage assignments for {equipment.name}</p>
+            </div>
           </div>
+          {hasPermission('create', 'Equipment') && (
+            <Button onClick={() => setShowAssignmentDialog(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Assignment
+            </Button>
+          )}
         </div>
-        <Button onClick={() => setShowCreateDialog(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create Assignment
-        </Button>
-      </div>
 
-      {/* Equipment Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Package className="h-5 w-5" />
-            <span>Equipment Information</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label className="text-sm font-medium text-muted-foreground">Name</Label>
-              <p className="text-sm font-medium">{equipment.name}</p>
-            </div>
-            <div>
-              <Label className="text-sm font-medium text-muted-foreground">Door Number</Label>
-              <p className="text-sm">{equipment.door_number || 'Not specified'}</p>
-            </div>
-            <div>
-              <Label className="text-sm font-medium text-muted-foreground">Status</Label>
-              <div className="mt-1">{getStatusBadge(equipment.status)}</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Assignment Dialog */}
-      <AssignmentDialog
-        open={showCreateDialog}
-        onOpenChange={setShowCreateDialog}
-        equipmentId={equipmentId}
-        onSuccess={() => {
-          fetchData();
-          setShowCreateDialog(false);
-        }}
-      />
-
-      {/* Current Assignment */}
-      {equipment?.current_assignment && (
+        {/* Equipment Information */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Package className="h-5 w-5" />
-              <span>Current Assignment</span>
+              <span>Equipment Information</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">Assignment Type</Label>
-                <div className="mt-1">
-                  {getAssignmentTypeBadge(equipment.current_assignment.type)}
-                </div>
+                <Label className="text-sm font-medium text-muted-foreground">Name</Label>
+                <p className="text-sm font-medium">{equipment.name}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">Door Number</Label>
+                <p className="text-sm">{equipment.door_number || 'Not specified'}</p>
               </div>
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Status</Label>
-                <div className="mt-1">{getStatusBadge(equipment.current_assignment.status)}</div>
+                <div className="mt-1">{getStatusBadge(equipment.status)}</div>
               </div>
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Name</Label>
-                <p className="text-sm">{equipment.current_assignment.name}</p>
-              </div>
-              {equipment.current_assignment.employee && (
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">
-                    Assigned Employee
-                  </Label>
-                  <p className="text-sm">
-                    👤 {equipment.current_assignment.employee.name} (
-                    {equipment.current_assignment.employee.file_number})
-                  </p>
-                </div>
-              )}
-              {equipment.current_assignment.location && (
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Location</Label>
-                  <p className="text-sm">📍 {equipment.current_assignment.location}</p>
-                </div>
-              )}
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Start Date</Label>
-                <p className="text-sm">
-                  {equipment.current_assignment.start_date
-                    ? new Date(equipment.current_assignment.start_date).toLocaleDateString()
-                    : 'Not set'}
-                </p>
-              </div>
-              {equipment.current_assignment.notes && (
-                <div className="md:col-span-2">
-                  <Label className="text-sm font-medium text-muted-foreground">Notes</Label>
-                  <p className="text-sm">{equipment.current_assignment.notes}</p>
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>
-      )}
 
-      {/* Assignment History */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Calendar className="h-5 w-5" />
-            <span>Assignment History</span>
-          </CardTitle>
-          <CardDescription>All assignments for this equipment</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Employee</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Start Date</TableHead>
-                  <TableHead>End Date</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {assignments.length === 0 ? (
+        {/* Assignment Dialog */}
+        <AssignmentDialog
+          open={showAssignmentDialog}
+          onOpenChange={setShowAssignmentDialog}
+          equipmentId={equipmentId}
+          onSuccess={() => {
+            fetchEquipment();
+            setShowAssignmentDialog(false);
+          }}
+        />
+
+        {/* Current Assignment */}
+        {equipment?.current_assignment && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Package className="h-5 w-5" />
+                <span>Current Assignment</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Assignment Type</Label>
+                  <div className="mt-1">
+                    {getAssignmentTypeBadge(equipment.current_assignment.type)}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Status</Label>
+                  <div className="mt-1">{getStatusBadge(equipment.current_assignment.status)}</div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Name</Label>
+                  <p className="text-sm">{equipment.current_assignment.name}</p>
+                </div>
+                {equipment.current_assignment.employee && (
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      Assigned Employee
+                    </Label>
+                    <p className="text-sm">
+                      👤 {equipment.current_assignment.employee.name} (
+                      {equipment.current_assignment.employee.file_number})
+                    </p>
+                  </div>
+                )}
+                {equipment.current_assignment.location && (
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Location</Label>
+                    <p className="text-sm">📍 {equipment.current_assignment.location}</p>
+                  </div>
+                )}
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Start Date</Label>
+                  <p className="text-sm">
+                    {equipment.current_assignment.start_date
+                      ? new Date(equipment.current_assignment.start_date).toLocaleDateString()
+                      : 'Not set'}
+                  </p>
+                </div>
+                {equipment.current_assignment.notes && (
+                  <div className="md:col-span-2">
+                    <Label className="text-sm font-medium text-muted-foreground">Notes</Label>
+                    <p className="text-sm">{equipment.current_assignment.notes}</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Assignment History */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Calendar className="h-5 w-5" />
+              <span>Assignment History</span>
+            </CardTitle>
+            <CardDescription>All assignments for this equipment</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      No assignment history found
-                    </TableCell>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Employee</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Start Date</TableHead>
+                    <TableHead>End Date</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ) : (
-                  assignments.map(assignment => (
-                    <TableRow key={assignment.id}>
-                      <TableCell>{getAssignmentTypeBadge(assignment.assignment_type)}</TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">
-                            {assignment.assignment_type === 'project' && assignment.project
-                              ? assignment.project.name
-                              : assignment.assignment_type === 'rental' && assignment.rental
-                                ? `${assignment.rental.project?.name || 'Unknown Project'} - ${assignment.rental.rental_number}`
-                                : assignment.assignment_type === 'manual'
-                                  ? `Manual Assignment${assignment.employee ? ` - ${assignment.employee.name}` : ''}`
-                                  : assignment.assignment_type}
-                          </div>
-                          {assignment.location && (
-                            <div className="text-xs text-muted-foreground">
-                              📍 {assignment.location}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {assignment.employee ? (
-                          <div>
-                            <div className="font-medium">{assignment.employee.name}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {assignment.employee.file_number}
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">No employee</span>
-                        )}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(assignment.status)}</TableCell>
-                      <TableCell>{new Date(assignment.start_date).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        {assignment.end_date
-                          ? new Date(assignment.end_date).toLocaleDateString()
-                          : '-'}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              /* TODO: Implement edit */
-                            }}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          {assignment.status === 'active' && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                /* TODO: Implement complete */
-                              }}
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              /* TODO: Implement delete */
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                </TableHeader>
+                <TableBody>
+                  {assignments.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                        No assignment history found
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+                  ) : (
+                    assignments.map(assignment => (
+                      <TableRow key={assignment.id}>
+                        <TableCell>{getAssignmentTypeBadge(assignment.assignment_type)}</TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">
+                              {assignment.assignment_type === 'project' && assignment.project
+                                ? assignment.project.name
+                                : assignment.assignment_type === 'rental' && assignment.rental
+                                  ? `${assignment.rental.project?.name || 'Unknown Project'} - ${assignment.rental.rental_number}`
+                                  : assignment.assignment_type === 'manual'
+                                    ? `Manual Assignment${assignment.employee ? ` - ${assignment.employee.name}` : ''}`
+                                    : assignment.assignment_type}
+                            </div>
+                            {assignment.location && (
+                              <div className="text-xs text-muted-foreground">
+                                📍 {assignment.location}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {assignment.employee ? (
+                            <div>
+                              <div className="font-medium">{assignment.employee.name}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {assignment.employee.file_number}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">No employee</span>
+                          )}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(assignment.status)}</TableCell>
+                        <TableCell>{new Date(assignment.start_date).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          {assignment.end_date
+                            ? new Date(assignment.end_date).toLocaleDateString()
+                            : '-'}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            {hasPermission('update', 'Equipment') && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  /* TODO: Implement edit */
+                                }}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {assignment.status === 'active' && hasPermission('update', 'Equipment') && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  /* TODO: Implement complete */
+                                }}
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {hasPermission('delete', 'Equipment') && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  /* TODO: Implement delete */
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </ProtectedRoute>
   );
 }

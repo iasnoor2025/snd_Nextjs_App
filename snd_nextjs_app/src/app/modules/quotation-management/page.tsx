@@ -1,5 +1,6 @@
 'use client';
 
+import { ProtectedRoute } from '@/components/protected-route';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +21,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { usePrint } from '@/hooks/use-print';
+import { useRBAC } from '@/lib/rbac/rbac-context';
 import {
   Calendar,
   Download,
@@ -98,6 +100,7 @@ interface PaginatedResponse {
 
 export default function QuotationManagementPage() {
   const { t } = useTranslation('quotation');
+  const { user, hasPermission, getAllowedActions } = useRBAC();
   const [quotations, setQuotations] = useState<PaginatedResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -112,6 +115,9 @@ export default function QuotationManagementPage() {
       // Continue with print even if there are image errors
     },
   });
+
+  // Get allowed actions for quotation management
+  const allowedActions = getAllowedActions('Quotation');
 
   useEffect(() => {
     const fetchQuotations = async () => {
@@ -213,16 +219,163 @@ export default function QuotationManagementPage() {
   }
 
   return (
-    <div className="p-6">
-      {/* Print container - only visible when printing */}
-      <div ref={printRef} className="hidden print:block">
-        <div className="p-6">
+    <ProtectedRoute>
+      <div className="p-6">
+        {/* Print container - only visible when printing */}
+        <div ref={printRef} className="hidden print:block">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-2xl font-bold">{t('quotation_management.title')}</h1>
+            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('quotation_management.quotations')}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('quotation_management.quotation_number')}</TableHead>
+                      <TableHead>{t('quotation_management.customer')}</TableHead>
+                      <TableHead>{t('quotation_management.status')}</TableHead>
+                      <TableHead>{t('quotation_management.issue_date')}</TableHead>
+                      <TableHead>{t('quotation_management.valid_until')}</TableHead>
+                      <TableHead>{t('quotation_management.total_amount')}</TableHead>
+                      <TableHead>{t('quotation_management.items')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {quotations?.data.map(quotation => (
+                      <TableRow key={quotation.id}>
+                        <TableCell className="font-mono font-medium">
+                          {quotation.quotation_number}
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{quotation.customer.companyName || quotation.customer.name}</div>
+                            <div className="text-sm text-gray-500">
+                              {quotation.customer.contactPerson}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{getStatusBadge(quotation.status)}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Calendar className="h-3 w-3" />
+                            <span>{formatDate(quotation.issue_date)}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Calendar className="h-3 w-3" />
+                            <span>{formatDate(quotation.valid_until)}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-semibold">
+                          {formatCurrency(quotation.total_amount)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {quotation.quotationItems.length} {t('quotation_management.items_count')}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Main content - visible normally, hidden when printing */}
+        <div className="block print:hidden">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-bold">{t('quotation_management.title')}</h1>
+            <div className="flex space-x-2">
+              <Button variant="outline" size="sm" onClick={handleRefresh}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                {t('quotation_management.refresh')}
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="h-4 w-4 mr-2" />
+                {t('quotation_management.export')}
+              </Button>
+              <Button variant="outline" size="sm" onClick={handlePrint}>
+                <Printer className="h-4 w-4 mr-2" />
+                {t('quotation_management.print')}
+              </Button>
+              <Link href="/modules/quotation-management/create">
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t('quotation_management.create_quotation')}
+                </Button>
+              </Link>
+            </div>
           </div>
+
+          <div className="grid gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder={t('quotation_management.search_placeholder')}
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder={t('quotation_management.filter_status_placeholder')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('quotation_management.all_status')}</SelectItem>
+                  <SelectItem value="draft">{t('quotation_management.status.draft')}</SelectItem>
+                  <SelectItem value="sent">{t('quotation_management.status.sent')}</SelectItem>
+                  <SelectItem value="approved">{t('quotation_management.status.approved')}</SelectItem>
+                  <SelectItem value="rejected">{t('quotation_management.status.rejected')}</SelectItem>
+                  <SelectItem value="expired">{t('quotation_management.status.expired')}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                type="date"
+                placeholder={t('quotation_management.from_date_placeholder')}
+                value={startDate}
+                onChange={e => setStartDate(e.target.value)}
+                className="w-full sm:w-40"
+              />
+              <Input
+                type="date"
+                placeholder={t('quotation_management.to_date_placeholder')}
+                value={endDate}
+                onChange={e => setEndDate(e.target.value)}
+                className="w-full sm:w-40"
+              />
+            </div>
+          </div>
+
           <Card>
             <CardHeader>
-              <CardTitle>{t('quotation_management.quotations')}</CardTitle>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>{t('quotation_management.quotations')}</CardTitle>
+                  <CardDescription>
+                    {t('quotation_management.manage_quotations_description')}
+                  </CardDescription>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-500">
+                    {t('quotation_management.showing_quotations', {
+                      from: quotations?.from || 0,
+                      to: quotations?.to || 0,
+                      total: quotations?.total || 0,
+                    })}
+                  </span>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
@@ -235,6 +388,7 @@ export default function QuotationManagementPage() {
                     <TableHead>{t('quotation_management.valid_until')}</TableHead>
                     <TableHead>{t('quotation_management.total_amount')}</TableHead>
                     <TableHead>{t('quotation_management.items')}</TableHead>
+                    <TableHead className="text-right">{t('quotation_management.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -272,229 +426,87 @@ export default function QuotationManagementPage() {
                           {quotation.quotationItems.length} {t('quotation_management.items_count')}
                         </Badge>
                       </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end space-x-2">
+                          <Link href={`/modules/quotation-management/${quotation.id}`}>
+                            <Button variant="ghost" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          {hasPermission('update', 'Quotation') && (
+                            <Link href={`/modules/quotation-management/${quotation.id}/edit`}>
+                              <Button variant="ghost" size="sm">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                          )}
+                          <Link href={`/modules/quotation-management/${quotation.id}/print`}>
+                            <Button variant="ghost" size="sm">
+                              <Printer className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <Link href={`/modules/quotation-management/${quotation.id}/pdf`}>
+                            <Button variant="ghost" size="sm">
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          {hasPermission('delete', 'Quotation') && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(quotation.id)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+
+              {/* Pagination */}
+              {quotations && quotations.last_page > 1 && (
+                <div className="flex items-center justify-between mt-6">
+                  <div className="text-sm text-gray-500">
+                    {t('quotation_management.showing_results', {
+                      from: quotations.from,
+                      to: quotations.to,
+                      total: quotations.total,
+                    })}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={!quotations.prev_page_url}
+                      onClick={() => setCurrentPage(quotations.current_page - 1)}
+                    >
+                      {t('quotation_management.previous')}
+                    </Button>
+                    <span className="text-sm">
+                      {t('quotation_management.page_of', {
+                        current: quotations.current_page,
+                        total: quotations.last_page,
+                      })}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={!quotations.next_page_url}
+                      onClick={() => setCurrentPage(quotations.current_page + 1)}
+                    >
+                      {t('quotation_management.next')}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
       </div>
-
-      {/* Main content - visible normally, hidden when printing */}
-      <div className="block print:hidden">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">{t('quotation_management.title')}</h1>
-          <div className="flex space-x-2">
-            <Button variant="outline" size="sm" onClick={handleRefresh}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              {t('quotation_management.refresh')}
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="h-4 w-4 mr-2" />
-              {t('quotation_management.export')}
-            </Button>
-            <Button variant="outline" size="sm" onClick={handlePrint}>
-              <Printer className="h-4 w-4 mr-2" />
-              {t('quotation_management.print')}
-            </Button>
-            <Link href="/modules/quotation-management/create">
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                {t('quotation_management.create_quotation')}
-              </Button>
-            </Link>
-          </div>
-        </div>
-
-        <div className="grid gap-4 mb-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder={t('quotation_management.search_placeholder')}
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder={t('quotation_management.filter_status_placeholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('quotation_management.all_status')}</SelectItem>
-                <SelectItem value="draft">{t('quotation_management.status.draft')}</SelectItem>
-                <SelectItem value="sent">{t('quotation_management.status.sent')}</SelectItem>
-                <SelectItem value="approved">{t('quotation_management.status.approved')}</SelectItem>
-                <SelectItem value="rejected">{t('quotation_management.status.rejected')}</SelectItem>
-                <SelectItem value="expired">{t('quotation_management.status.expired')}</SelectItem>
-              </SelectContent>
-            </Select>
-            <Input
-              type="date"
-              placeholder={t('quotation_management.from_date_placeholder')}
-              value={startDate}
-              onChange={e => setStartDate(e.target.value)}
-              className="w-full sm:w-40"
-            />
-            <Input
-              type="date"
-              placeholder={t('quotation_management.to_date_placeholder')}
-              value={endDate}
-              onChange={e => setEndDate(e.target.value)}
-              className="w-full sm:w-40"
-            />
-          </div>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>{t('quotation_management.quotations')}</CardTitle>
-                <CardDescription>
-                  {t('quotation_management.manage_quotations_description')}
-                </CardDescription>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-500">
-                  {t('quotation_management.showing_quotations', {
-                    from: quotations?.from || 0,
-                    to: quotations?.to || 0,
-                    total: quotations?.total || 0,
-                  })}
-                </span>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('quotation_management.quotation_number')}</TableHead>
-                  <TableHead>{t('quotation_management.customer')}</TableHead>
-                  <TableHead>{t('quotation_management.status')}</TableHead>
-                  <TableHead>{t('quotation_management.issue_date')}</TableHead>
-                  <TableHead>{t('quotation_management.valid_until')}</TableHead>
-                  <TableHead>{t('quotation_management.total_amount')}</TableHead>
-                  <TableHead>{t('quotation_management.items')}</TableHead>
-                  <TableHead className="text-right">{t('quotation_management.actions')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {quotations?.data.map(quotation => (
-                  <TableRow key={quotation.id}>
-                    <TableCell className="font-mono font-medium">
-                      {quotation.quotation_number}
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{quotation.customer.companyName || quotation.customer.name}</div>
-                        <div className="text-sm text-gray-500">
-                          {quotation.customer.contactPerson}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{getStatusBadge(quotation.status)}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="h-3 w-3" />
-                        <span>{formatDate(quotation.issue_date)}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="h-3 w-3" />
-                        <span>{formatDate(quotation.valid_until)}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-semibold">
-                      {formatCurrency(quotation.total_amount)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {quotation.quotationItems.length} {t('quotation_management.items_count')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end space-x-2">
-                        <Link href={`/modules/quotation-management/${quotation.id}`}>
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <Link href={`/modules/quotation-management/${quotation.id}/edit`}>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <Link href={`/modules/quotation-management/${quotation.id}/print`}>
-                          <Button variant="ghost" size="sm">
-                            <Printer className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <Link href={`/modules/quotation-management/${quotation.id}/pdf`}>
-                          <Button variant="ghost" size="sm">
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(quotation.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-
-            {/* Pagination */}
-            {quotations && quotations.last_page > 1 && (
-              <div className="flex items-center justify-between mt-6">
-                <div className="text-sm text-gray-500">
-                  {t('quotation_management.showing_results', {
-                    from: quotations.from,
-                    to: quotations.to,
-                    total: quotations.total,
-                  })}
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={!quotations.prev_page_url}
-                    onClick={() => setCurrentPage(quotations.current_page - 1)}
-                  >
-                    {t('quotation_management.previous')}
-                  </Button>
-                  <span className="text-sm">
-                    {t('quotation_management.page_of', {
-                      current: quotations.current_page,
-                      total: quotations.last_page,
-                    })}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={!quotations.next_page_url}
-                    onClick={() => setCurrentPage(quotations.current_page + 1)}
-                  >
-                    {t('quotation_management.next')}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    </ProtectedRoute>
   );
 }

@@ -2,6 +2,10 @@
   "title": "إدارة المعدات",
   "subtitle": "إدارة المعدات والمركبات والأصول",
   "description": "إدارة قاعدة بيانات المعدات والمركبات وتتبع حالتها وصيانتها",
+  "manage_equipment_inventory": "إدارة مخزون المعدات",
+  "add_equipment": "إضافة معدات",
+  "syncing": "جاري المزامنة...",
+  "sync_from_erpnext": "مزامنة من ERPNext",
   "actions": {
     "addEquipment": "إضافة معدات",
     "editEquipment": "تعديل المعدات",

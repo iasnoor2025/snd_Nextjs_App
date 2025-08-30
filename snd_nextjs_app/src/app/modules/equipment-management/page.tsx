@@ -1,5 +1,6 @@
 'use client';
 
+import { ProtectedRoute } from '@/components/protected-route';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -41,6 +42,7 @@ import { toast } from 'sonner';
 import AddEquipmentModal from '@/components/equipment/AddEquipmentModal';
 import ExpiryDateDisplay from '@/components/shared/ExpiryDateDisplay';
 import { useI18n } from '@/hooks/use-i18n';
+import { useRBAC } from '@/lib/rbac/rbac-context';
 import {
   batchTranslateNames,
   convertToArabicNumerals,
@@ -98,6 +100,7 @@ interface Equipment {
 export default function EquipmentManagementPage() {
   const { t } = useTranslation('equipment');
   const { isRTL } = useI18n();
+  const { user, hasPermission, getAllowedActions } = useRBAC();
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -115,6 +118,9 @@ export default function EquipmentManagementPage() {
   const [showAddEquipmentModal, setShowAddEquipmentModal] = useState(false);
 
   const router = useRouter();
+
+  // Get allowed actions for equipment management
+  const allowedActions = getAllowedActions('Equipment');
 
   useEffect(() => {
     fetchEquipment();
@@ -280,500 +286,520 @@ export default function EquipmentManagementPage() {
   };
 
   return (
-    <div className="w-full p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{t('equipment_management.title')}</h1>
-          <p className="text-muted-foreground">{t('equipment_management.description')}</p>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={syncEquipmentFromERPNext} disabled={syncing}>
-            {syncing ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <RotateCw className="h-4 w-4 mr-2" />
+    <ProtectedRoute>
+      <div className="container mx-auto py-6 space-y-6">
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Package className="h-8 w-8 text-blue-600" />
+              {t('equipment_management.title')}
+            </h1>
+            <p className="text-muted-foreground">{t('manage_equipment_inventory')}</p>
+          </div>
+          <div className="flex gap-2">
+            {hasPermission('create', 'Equipment') && (
+              <Button onClick={() => setShowAddEquipmentModal(true)} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                {t('add_equipment')}
+              </Button>
             )}
-            {t('equipment_management.sync_erpnext')}
-          </Button>
-          <Button onClick={() => setShowAddEquipmentModal(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            {t('equipment_management.add_equipment')}
-          </Button>
-        </div>
-      </div>
-
-      {/* Search and Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex gap-4 items-center">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder={t('equipment_management.search_placeholder')}
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Label htmlFor="status-filter" className="text-sm font-medium">
-                {t('equipment_management.status_filter_label')}:
-              </Label>
-              <select
-                id="status-filter"
-                value={filterStatus}
-                onChange={e => setFilterStatus(e.target.value)}
-                className="border rounded-md px-3 py-2 text-sm"
-              >
-                <option value="all">{t('equipment_management.all_status')}</option>
-                <option value="available">{t('status.available')}</option>
-                <option value="rented">{t('status.rented')}</option>
-                <option value="maintenance">{t('status.maintenance')}</option>
-                <option value="out_of_service">{t('status.out_of_service')}</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <Label htmlFor="assignment-filter" className="text-sm font-medium">
-                {t('equipment_management.assignment_filter_label')}:
-              </Label>
-              <select
-                id="assignment-filter"
-                value={filterAssignment}
-                onChange={e => setFilterAssignment(e.target.value)}
-                className="border rounded-md px-3 py-2 text-sm"
-              >
-                <option value="all">{t('equipment_management.all_assignments')}</option>
-                <option value="assigned">{t('equipment_management.currently_assigned')}</option>
-                <option value="unassigned">{t('equipment_management.not_assigned')}</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <Label htmlFor="istimara-filter" className="text-sm font-medium">
-                {t('equipment_management.istimara_status')}:
-              </Label>
-              <select
-                id="istimara-filter"
-                value={filterIstimara}
-                onChange={e => setFilterIstimara(e.target.value)}
-                className="border rounded-md px-3 py-2 text-sm"
-              >
-                <option value="all">{t('equipment_management.all_istimara')}</option>
-                <option value="valid">{t('equipment_management.valid')}</option>
-                <option value="expired">{t('equipment_management.expired')}</option>
-                <option value="expiring_soon">{t('equipment_management.expiring_soon')}</option>
-              </select>
-            </div>
-            {(filterStatus !== 'all' ||
-              filterAssignment !== 'all' ||
-              filterIstimara !== 'all' ||
-              searchTerm) && (
+            {hasPermission('sync', 'Equipment') && (
               <Button
+                onClick={syncEquipmentFromERPNext}
+                disabled={syncing}
                 variant="outline"
-                size="sm"
-                onClick={() => {
-                  setFilterStatus('all');
-                  setFilterAssignment('all');
-                  setFilterIstimara('all');
-                  setSearchTerm('');
-                }}
-                className="text-xs"
+                className="flex items-center gap-2"
               >
-                {t('equipment_management.clear_filters')}
+                {syncing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RotateCw className="h-4 w-4" />
+                )}
+                {syncing ? t('syncing') : t('sync_from_erpnext')}
               </Button>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Equipment Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Database className="h-5 w-5" />
-            <span>{t('equipment_management.equipment_inventory')}</span>
-          </CardTitle>
-          <CardDescription className="flex items-center gap-4 text-sm">
-            <span>
-              {t('equipment_management.total_equipment')}: {equipment.length}
-            </span>
-            {(() => {
-              const expiredCount = equipment.filter(
-                item =>
-                  item.istimara_expiry_date && new Date(item.istimara_expiry_date) < new Date()
-              ).length;
-              const expiringSoonCount = equipment.filter(item => {
-                if (!item.istimara_expiry_date) return false;
-                const date = new Date(item.istimara_expiry_date);
-                const today = new Date();
-                const thirtyDaysFromNow = new Date();
-                thirtyDaysFromNow.setDate(today.getDate() + 30);
-                today.setHours(0, 0, 0, 0);
-                date.setHours(0, 0, 0, 0);
-                thirtyDaysFromNow.setHours(0, 0, 0, 0);
-                return date >= today && date <= thirtyDaysFromNow;
-              }).length;
-
-              return (
-                <>
-                  {expiredCount > 0 && (
-                    <span className="text-red-600 font-medium">
-                      ⚠️ {expiredCount} {t('equipment_management.expired_istimara')}
-                    </span>
-                  )}
-                  {expiringSoonCount > 0 && (
-                    <span className="text-orange-600 font-medium">
-                      ⏰ {expiringSoonCount} {t('equipment_management.expiring_soon_istimara')}
-                    </span>
-                  )}
-                </>
-              );
-            })()}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin" />
-              <span className="ml-2">{t('equipment_management.loading_equipment')}</span>
+        {/* Search and Filters */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex gap-4 items-center">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder={t('equipment_management.search_placeholder')}
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="status-filter" className="text-sm font-medium">
+                  {t('equipment_management.status_filter_label')}:
+                </Label>
+                <select
+                  id="status-filter"
+                  value={filterStatus}
+                  onChange={e => setFilterStatus(e.target.value)}
+                  className="border rounded-md px-3 py-2 text-sm"
+                >
+                  <option value="all">{t('equipment_management.all_status')}</option>
+                  <option value="available">{t('status.available')}</option>
+                  <option value="rented">{t('status.rented')}</option>
+                  <option value="maintenance">{t('status.maintenance')}</option>
+                  <option value="out_of_service">{t('status.out_of_service')}</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="assignment-filter" className="text-sm font-medium">
+                  {t('equipment_management.assignment_filter_label')}:
+                </Label>
+                <select
+                  id="assignment-filter"
+                  value={filterAssignment}
+                  onChange={e => setFilterAssignment(e.target.value)}
+                  className="border rounded-md px-3 py-2 text-sm"
+                >
+                  <option value="all">{t('equipment_management.all_assignments')}</option>
+                  <option value="assigned">{t('equipment_management.currently_assigned')}</option>
+                  <option value="unassigned">{t('equipment_management.not_assigned')}</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="istimara-filter" className="text-sm font-medium">
+                  {t('equipment_management.istimara_status')}:
+                </Label>
+                <select
+                  id="istimara-filter"
+                  value={filterIstimara}
+                  onChange={e => setFilterIstimara(e.target.value)}
+                  className="border rounded-md px-3 py-2 text-sm"
+                >
+                  <option value="all">{t('equipment_management.all_istimara')}</option>
+                  <option value="valid">{t('equipment_management.valid')}</option>
+                  <option value="expired">{t('equipment_management.expired')}</option>
+                  <option value="expiring_soon">{t('equipment_management.expiring_soon')}</option>
+                </select>
+              </div>
+              {(filterStatus !== 'all' ||
+                filterAssignment !== 'all' ||
+                filterIstimara !== 'all' ||
+                searchTerm) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setFilterStatus('all');
+                    setFilterAssignment('all');
+                    setFilterIstimara('all');
+                    setSearchTerm('');
+                  }}
+                  className="text-xs"
+                >
+                  {t('equipment_management.clear_filters')}
+                </Button>
+              )}
             </div>
-          ) : (
-            <>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t('equipment_management.name')}</TableHead>
-                      <TableHead>{t('equipment_management.door_number')}</TableHead>
-                      <TableHead>{t('equipment_management.model')}</TableHead>
-                      <TableHead>{t('equipment_management.manufacturer')}</TableHead>
-                      <TableHead>{t('equipment_management.status')}</TableHead>
-                      <TableHead>{t('equipment_management.current_assignment')}</TableHead>
-                      <TableHead>{t('equipment_management.daily_rate')}</TableHead>
-                      <TableHead>{t('equipment_management.erpnext_id')}</TableHead>
-                      <TableHead>
-                        <div className="flex items-center gap-2">
-                          <span>{t('equipment_management.istimara')}</span>
-                          {(() => {
-                            const expiredCount = equipment.filter(
-                              item =>
-                                item.istimara_expiry_date &&
-                                new Date(item.istimara_expiry_date) < new Date()
-                            ).length;
-                            return expiredCount > 0 ? (
-                              <Badge variant="destructive" className="text-xs">
-                                {expiredCount} {t('equipment_management.expired')}
-                              </Badge>
-                            ) : null;
-                          })()}
-                        </div>
-                      </TableHead>
-                      <TableHead>{t('equipment_management.actions')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {currentEquipment.length === 0 ? (
+          </CardContent>
+        </Card>
+
+        {/* Equipment Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Database className="h-5 w-5" />
+              <span>{t('equipment_management.equipment_inventory')}</span>
+            </CardTitle>
+            <CardDescription className="flex items-center gap-4 text-sm">
+              <span>
+                {t('equipment_management.total_equipment')}: {equipment.length}
+              </span>
+              {(() => {
+                const expiredCount = equipment.filter(
+                  item =>
+                    item.istimara_expiry_date && new Date(item.istimara_expiry_date) < new Date()
+                ).length;
+                const expiringSoonCount = equipment.filter(item => {
+                  if (!item.istimara_expiry_date) return false;
+                  const date = new Date(item.istimara_expiry_date);
+                  const today = new Date();
+                  const thirtyDaysFromNow = new Date();
+                  thirtyDaysFromNow.setDate(today.getDate() + 30);
+                  today.setHours(0, 0, 0, 0);
+                  date.setHours(0, 0, 0, 0);
+                  thirtyDaysFromNow.setHours(0, 0, 0, 0);
+                  return date >= today && date <= thirtyDaysFromNow;
+                }).length;
+
+                return (
+                  <>
+                    {expiredCount > 0 && (
+                      <span className="text-red-600 font-medium">
+                        ⚠️ {expiredCount} {t('equipment_management.expired_istimara')}
+                      </span>
+                    )}
+                    {expiringSoonCount > 0 && (
+                      <span className="text-orange-600 font-medium">
+                        ⏰ {expiringSoonCount} {t('equipment_management.expiring_soon_istimara')}
+                      </span>
+                    )}
+                  </>
+                );
+              })()}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin" />
+                <span className="ml-2">{t('equipment_management.loading_equipment')}</span>
+              </div>
+            ) : (
+              <>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
                       <TableRow>
-                        <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
-                          {equipment.length === 0 ? (
-                            <div className="flex flex-col items-center space-y-2">
-                              <Package className="h-8 w-8 text-muted-foreground" />
-                              <p>{t('equipment_management.no_equipment_found')}</p>
-                              <p className="text-sm">
-                                {t('equipment_management.sync_erpnext_to_get_started')}
-                              </p>
-                            </div>
-                          ) : (
-                            t('equipment_management.no_equipment_matches_search_criteria')
-                          )}
-                        </TableCell>
+                        <TableHead>{t('equipment_management.name')}</TableHead>
+                        <TableHead>{t('equipment_management.door_number')}</TableHead>
+                        <TableHead>{t('equipment_management.model')}</TableHead>
+                        <TableHead>{t('equipment_management.manufacturer')}</TableHead>
+                        <TableHead>{t('equipment_management.status')}</TableHead>
+                        <TableHead>{t('equipment_management.current_assignment')}</TableHead>
+                        <TableHead>{t('equipment_management.daily_rate')}</TableHead>
+                        <TableHead>{t('equipment_management.erpnext_id')}</TableHead>
+                        <TableHead>
+                          <div className="flex items-center gap-2">
+                            <span>{t('equipment_management.istimara')}</span>
+                            {(() => {
+                              const expiredCount = equipment.filter(
+                                item =>
+                                  item.istimara_expiry_date &&
+                                  new Date(item.istimara_expiry_date) < new Date()
+                              ).length;
+                              return expiredCount > 0 ? (
+                                <Badge variant="destructive" className="text-xs">
+                                  {expiredCount} {t('equipment_management.expired')}
+                                </Badge>
+                              ) : null;
+                            })()}
+                          </div>
+                        </TableHead>
+                        <TableHead>{t('equipment_management.actions')}</TableHead>
                       </TableRow>
-                    ) : (
-                      currentEquipment.map(item => (
-                        <TableRow key={item.id}>
-                          <TableCell className="font-medium">
-                            {getTranslatedName(
-                              item.name,
-                              isRTL,
-                              translatedNames,
-                              setTranslatedNames
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {item.door_number ? (
-                              convertToArabicNumerals(item.door_number, isRTL)
+                    </TableHeader>
+                    <TableBody>
+                      {currentEquipment.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                            {equipment.length === 0 ? (
+                              <div className="flex flex-col items-center space-y-2">
+                                <Package className="h-8 w-8 text-muted-foreground" />
+                                <p>{t('equipment_management.no_equipment_found')}</p>
+                                <p className="text-sm">
+                                  {t('equipment_management.sync_erpnext_to_get_started')}
+                                </p>
+                              </div>
                             ) : (
-                              <span className="text-muted-foreground text-sm">
-                                {t('equipment_management.not_specified')}
-                              </span>
+                              t('equipment_management.no_equipment_matches_search_criteria')
                             )}
                           </TableCell>
-                          <TableCell>
-                            {item.model_number ? (
-                              convertToArabicNumerals(item.model_number, isRTL)
-                            ) : (
-                              <span className="text-muted-foreground text-sm">
-                                {t('equipment_management.not_specified')}
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {item.manufacturer ? (
-                              getTranslatedName(
-                                item.manufacturer,
+                        </TableRow>
+                      ) : (
+                        currentEquipment.map(item => (
+                          <TableRow key={item.id}>
+                            <TableCell className="font-medium">
+                              {getTranslatedName(
+                                item.name,
                                 isRTL,
                                 translatedNames,
                                 setTranslatedNames
-                              )
-                            ) : (
-                              <span className="text-muted-foreground text-sm">
-                                {t('equipment_management.not_specified')}
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell>{getStatusBadge(item)}</TableCell>
-                          <TableCell>
-                            {item.current_assignment ? (
-                              <div className="space-y-1">
-                                <div className="text-sm font-medium">
-                                  {item.current_assignment.employee?.full_name ||
-                                    item.current_assignment.project?.name ||
-                                    item.current_assignment.rental?.rental_number ||
-                                    item.current_assignment.name ||
-                                    t('equipment_management.assigned')}
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {item.door_number ? (
+                                convertToArabicNumerals(item.door_number, isRTL)
+                              ) : (
+                                <span className="text-muted-foreground text-sm">
+                                  {t('equipment_management.not_specified')}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {item.model_number ? (
+                                convertToArabicNumerals(item.model_number, isRTL)
+                              ) : (
+                                <span className="text-muted-foreground text-sm">
+                                  {t('equipment_management.not_specified')}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {item.manufacturer ? (
+                                getTranslatedName(
+                                  item.manufacturer,
+                                  isRTL,
+                                  translatedNames,
+                                  setTranslatedNames
+                                )
+                              ) : (
+                                <span className="text-muted-foreground text-sm">
+                                  {t('equipment_management.not_specified')}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell>{getStatusBadge(item)}</TableCell>
+                            <TableCell>
+                              {item.current_assignment ? (
+                                <div className="space-y-1">
+                                  <div className="text-sm font-medium">
+                                    {item.current_assignment.employee?.full_name ||
+                                      item.current_assignment.project?.name ||
+                                      item.current_assignment.rental?.rental_number ||
+                                      item.current_assignment.name ||
+                                      t('equipment_management.assigned')}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {item.current_assignment.type === 'project' &&
+                                      item.current_assignment.project?.name &&
+                                      `Project: ${item.current_assignment.project.name}`}
+                                    {item.current_assignment.type === 'rental' &&
+                                      item.current_assignment.rental?.rental_number &&
+                                      `Rental: ${item.current_assignment.rental.rental_number}`}
+                                    {item.current_assignment.type === 'manual' &&
+                                      item.current_assignment.employee?.full_name &&
+                                      `Employee: ${item.current_assignment.employee.full_name}`}
+                                    {!item.current_assignment.project?.name &&
+                                      !item.current_assignment.rental?.rental_number &&
+                                      !item.current_assignment.employee?.full_name &&
+                                      `${item.current_assignment.type} Assignment`}
+                                  </div>
                                 </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {item.current_assignment.type === 'project' &&
-                                    item.current_assignment.project?.name &&
-                                    `Project: ${item.current_assignment.project.name}`}
-                                  {item.current_assignment.type === 'rental' &&
-                                    item.current_assignment.rental?.rental_number &&
-                                    `Rental: ${item.current_assignment.rental.rental_number}`}
-                                  {item.current_assignment.type === 'manual' &&
-                                    item.current_assignment.employee?.full_name &&
-                                    `Employee: ${item.current_assignment.employee.full_name}`}
-                                  {!item.current_assignment.project?.name &&
-                                    !item.current_assignment.rental?.rental_number &&
-                                    !item.current_assignment.employee?.full_name &&
-                                    `${item.current_assignment.type} Assignment`}
+                              ) : (
+                                <span className="text-muted-foreground">
+                                  {t('equipment_management.no_assignment')}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {item.daily_rate ? (
+                                <span className="font-medium">
+                                  {convertToArabicNumerals(item.daily_rate.toString(), isRTL)}{' '}
+                                  {t('equipment_management.per_day')}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground text-sm">
+                                  {t('equipment_management.not_specified')}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {convertToArabicNumerals(item.erpnext_id?.toString(), isRTL) || '-'}
+                            </TableCell>
+                            <TableCell>
+                              {item.istimara ? (
+                                <div className="space-y-1">
+                                  <div className="text-sm font-medium">{item.istimara}</div>
+                                  {item.istimara_expiry_date && (
+                                    <ExpiryDateDisplay
+                                      date={item.istimara_expiry_date}
+                                      showIcon={false}
+                                      className="text-xs"
+                                    />
+                                  )}
                                 </div>
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground">
-                                {t('equipment_management.no_assignment')}
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {item.daily_rate ? (
-                              <span className="font-medium">
-                                {convertToArabicNumerals(item.daily_rate.toString(), isRTL)}{' '}
-                                {t('equipment_management.per_day')}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground text-sm">
-                                {t('equipment_management.not_specified')}
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {convertToArabicNumerals(item.erpnext_id?.toString(), isRTL) || '-'}
-                          </TableCell>
-                          <TableCell>
-                            {item.istimara ? (
-                              <div className="space-y-1">
-                                <div className="text-sm font-medium">{item.istimara}</div>
-                                {item.istimara_expiry_date && (
-                                  <ExpiryDateDisplay
-                                    date={item.istimara_expiry_date}
-                                    showIcon={false}
-                                    className="text-xs"
-                                  />
+                              ) : (
+                                <span className="text-muted-foreground text-sm">
+                                  {t('equipment_management.not_specified')}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center space-x-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    router.push(`/modules/equipment-management/${item.id}`)
+                                  }
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                {hasPermission('update', 'Equipment') && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      router.push(`/modules/equipment-management/${item.id}/edit`)
+                                    }
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                {hasPermission('update', 'Equipment') && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      router.push(`/modules/equipment-management/${item.id}/assign`)
+                                    }
+                                    title={t('equipment_management.manage_assignments')}
+                                  >
+                                    <div className="h-4 w-4 flex items-center justify-center">
+                                      <span className="text-xs">📋</span>
+                                    </div>
+                                  </Button>
+                                )}
+                                {hasPermission('delete', 'Equipment') && (
+                                  <Button variant="ghost" size="sm">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
                                 )}
                               </div>
-                            ) : (
-                              <span className="text-muted-foreground text-sm">
-                                {t('equipment_management.not_specified')}
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  router.push(`/modules/equipment-management/${item.id}`)
-                                }
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  router.push(`/modules/equipment-management/${item.id}/edit`)
-                                }
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  router.push(`/modules/equipment-management/${item.id}/assign`)
-                                }
-                                title={t('equipment_management.manage_assignments')}
-                              >
-                                <div className="h-4 w-4 flex items-center justify-center">
-                                  <span className="text-xs">📋</span>
-                                </div>
-                              </Button>
-                              <Button variant="ghost" size="sm">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between px-2 py-4">
-                  <div className="flex-1 text-sm text-muted-foreground">
-                    {t('equipment_management.showing_results', {
-                      start: startIndex + 1,
-                      end: Math.min(endIndex, totalItems),
-                      total: totalItems,
-                    })}
-                  </div>
-
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <Label htmlFor="items-per-page" className="text-sm font-medium">
-                        {t('equipment_management.show')}:
-                      </Label>
-                      <select
-                        id="items-per-page"
-                        value={itemsPerPage}
-                        onChange={() => handleItemsPerPageChange()}
-                        className="border rounded-md px-3 py-2 text-sm"
-                      >
-                        <option value={10}>10</option>
-                        <option value={25}>25</option>
-                        <option value={50}>50</option>
-                        <option value={100}>100</option>
-                      </select>
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between px-2 py-4">
+                    <div className="flex-1 text-sm text-muted-foreground">
+                      {t('equipment_management.showing_results', {
+                        start: startIndex + 1,
+                        end: Math.min(endIndex, totalItems),
+                        total: totalItems,
+                      })}
                     </div>
 
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious
-                            href="#"
-                            onClick={e => {
-                              e.preventDefault();
-                              if (currentPage > 1) handlePageChange(currentPage - 1);
-                            }}
-                            className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
-                          />
-                        </PaginationItem>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor="items-per-page" className="text-sm font-medium">
+                          {t('equipment_management.show')}:
+                        </Label>
+                        <select
+                          id="items-per-page"
+                          value={itemsPerPage}
+                          onChange={() => handleItemsPerPageChange()}
+                          className="border rounded-md px-3 py-2 text-sm"
+                        >
+                          <option value={10}>10</option>
+                          <option value={25}>25</option>
+                          <option value={50}>50</option>
+                          <option value={100}>100</option>
+                        </select>
+                      </div>
 
-                        {/* First page */}
-                        {currentPage > 3 && (
-                          <>
-                            <PaginationItem>
-                              <PaginationLink
-                                href="#"
-                                onClick={e => {
-                                  e.preventDefault();
-                                  handlePageChange(1);
-                                }}
-                              >
-                                1
-                              </PaginationLink>
-                            </PaginationItem>
-                            <PaginationItem>
-                              <PaginationEllipsis />
-                            </PaginationItem>
-                          </>
-                        )}
+                      <Pagination>
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious
+                              href="#"
+                              onClick={e => {
+                                e.preventDefault();
+                                if (currentPage > 1) handlePageChange(currentPage - 1);
+                              }}
+                              className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+                            />
+                          </PaginationItem>
 
-                        {/* Page numbers around current page */}
-                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                          const page = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
-                          if (page > totalPages) return null;
+                          {/* First page */}
+                          {currentPage > 3 && (
+                            <>
+                              <PaginationItem>
+                                <PaginationLink
+                                  href="#"
+                                  onClick={e => {
+                                    e.preventDefault();
+                                    handlePageChange(1);
+                                  }}
+                                >
+                                  1
+                                </PaginationLink>
+                              </PaginationItem>
+                              <PaginationItem>
+                                <PaginationEllipsis />
+                              </PaginationItem>
+                            </>
+                          )}
 
-                          return (
-                            <PaginationItem key={page}>
-                              <PaginationLink
-                                href="#"
-                                onClick={e => {
-                                  e.preventDefault();
-                                  handlePageChange(page);
-                                }}
-                                isActive={currentPage === page}
-                              >
-                                {page}
-                              </PaginationLink>
-                            </PaginationItem>
-                          );
-                        })}
+                          {/* Page numbers around current page */}
+                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            const page = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                            if (page > totalPages) return null;
 
-                        {/* Last page */}
-                        {currentPage < totalPages - 2 && (
-                          <>
-                            <PaginationItem>
-                              <PaginationEllipsis />
-                            </PaginationItem>
-                            <PaginationItem>
-                              <PaginationLink
-                                href="#"
-                                onClick={e => {
-                                  e.preventDefault();
-                                  handlePageChange(totalPages);
-                                }}
-                              >
-                                {totalPages}
-                              </PaginationLink>
-                            </PaginationItem>
-                          </>
-                        )}
+                            return (
+                              <PaginationItem key={page}>
+                                <PaginationLink
+                                  href="#"
+                                  onClick={e => {
+                                    e.preventDefault();
+                                    handlePageChange(page);
+                                  }}
+                                  isActive={currentPage === page}
+                                >
+                                  {page}
+                                </PaginationLink>
+                              </PaginationItem>
+                            );
+                          })}
 
-                        <PaginationItem>
-                          <PaginationNext
-                            href="#"
-                            onClick={e => {
-                              e.preventDefault();
-                              if (currentPage < totalPages) handlePageChange(currentPage + 1);
-                            }}
-                            className={
-                              currentPage === totalPages ? 'pointer-events-none opacity-50' : ''
-                            }
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
+                          {/* Last page */}
+                          {currentPage < totalPages - 2 && (
+                            <>
+                              <PaginationItem>
+                                <PaginationEllipsis />
+                              </PaginationItem>
+                              <PaginationItem>
+                                <PaginationLink
+                                  href="#"
+                                  onClick={e => {
+                                    e.preventDefault();
+                                    handlePageChange(totalPages);
+                                  }}
+                                >
+                                  {totalPages}
+                                </PaginationLink>
+                              </PaginationItem>
+                            </>
+                          )}
+
+                          <PaginationItem>
+                            <PaginationNext
+                              href="#"
+                              onClick={e => {
+                                e.preventDefault();
+                                if (currentPage < totalPages) handlePageChange(currentPage + 1);
+                              }}
+                              className={
+                                currentPage === totalPages ? 'pointer-events-none opacity-50' : ''
+                              }
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
                   </div>
-                </div>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Add Equipment Modal */}
-      <AddEquipmentModal
-        open={showAddEquipmentModal}
-        onOpenChange={setShowAddEquipmentModal}
-        onSuccess={fetchEquipment}
-      />
-    </div>
+        {/* Add Equipment Modal */}
+        <AddEquipmentModal
+          open={showAddEquipmentModal}
+          onOpenChange={setShowAddEquipmentModal}
+          onSuccess={fetchEquipment}
+        />
+      </div>
+    </ProtectedRoute>
   );
 }

@@ -4,9 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../lib/db';
 import { PermissionConfigs, withPermission } from '../../../lib/rbac/api-middleware';
 
-export const GET = withPermission(async (_request: NextRequest) => {
+export const GET = withPermission(PermissionConfigs.department.read)(async (_request: NextRequest) => {
   try {
-
     const allDepartments = await db
       .select({
         id: departments.id,
@@ -27,7 +26,6 @@ export const GET = withPermission(async (_request: NextRequest) => {
       message: 'Departments retrieved successfully',
     });
   } catch (error) {
-    
     return NextResponse.json(
       {
         success: false,
@@ -38,9 +36,9 @@ export const GET = withPermission(async (_request: NextRequest) => {
       { status: 500 }
     );
   }
-}, PermissionConfigs.department.read);
+});
 
-export const POST = withPermission(async (request: NextRequest) => {
+export const POST = withPermission(PermissionConfigs.department.create)(async (request: NextRequest) => {
   try {
     const body = await request.json();
     const { name, code, description } = body;
@@ -71,7 +69,6 @@ export const POST = withPermission(async (request: NextRequest) => {
     );
 
     if (existingDepartment) {
-      
       return NextResponse.json(
         {
           success: false,
@@ -108,7 +105,6 @@ export const POST = withPermission(async (request: NextRequest) => {
       message: 'Department created successfully',
     });
   } catch (error) {
-    
     return NextResponse.json(
       {
         success: false,
@@ -119,4 +115,4 @@ export const POST = withPermission(async (request: NextRequest) => {
       { status: 500 }
     );
   }
-}, PermissionConfigs.department.create);
+});

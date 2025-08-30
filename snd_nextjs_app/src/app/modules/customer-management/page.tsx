@@ -1,5 +1,6 @@
 'use client';
 
+import { ProtectedRoute } from '@/components/protected-route';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,7 +14,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useI18n } from '@/hooks/use-i18n';
-import { Edit, Eye, Plus, Search, Trash2 } from 'lucide-react';
+import { useRBAC } from '@/lib/rbac/rbac-context';
+import { Edit, Eye, Plus, Search, Trash2, RefreshCw, Users, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -31,6 +33,7 @@ interface Customer {
 export default function CustomerManagementPage() {
   const { t } = useTranslation('customer');
   const { isRTL } = useI18n();
+  const { user, hasPermission, getAllowedActions } = useRBAC();
   
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +42,9 @@ export default function CustomerManagementPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
+
+  // Get allowed actions for customer management
+  const allowedActions = getAllowedActions('Customer');
 
   // Fetch customers data
   const fetchCustomers = async () => {
@@ -197,142 +203,160 @@ export default function CustomerManagementPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
-          <p className="text-muted-foreground">{t('subtitle')}</p>
+    <ProtectedRoute>
+      <div className="container mx-auto py-6 space-y-6">
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Users className="h-8 w-8 text-blue-600" />
+              {t('customer_management')}
+            </h1>
+            <p className="text-muted-foreground">{t('manage_customer_information')}</p>
+          </div>
+          <div className="flex gap-2">
+            {hasPermission('create', 'Customer') && (
+              <Button className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                {t('add_customer')}
+              </Button>
+            )}
+            {hasPermission('sync', 'Customer') && (
+              <Button
+                onClick={handleSyncFromERPNext}
+                disabled={syncing}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                {syncing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                {syncing ? t('syncing') : t('sync_from_erpnext')}
+              </Button>
+            )}
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleSyncFromERPNext} disabled={syncing}>
-            {syncing ? t('sync.inProgress') : t('actions.syncFromERPNext')}
-          </Button>
-          <Button variant="outline" onClick={handleExportCustomers}>
-            {t('actions.exportCustomers')}
-          </Button>
-          <Button variant="outline" onClick={handleImportCustomers}>
-            {t('actions.importCustomers')}
-          </Button>
-          <Button className="bg-primary hover:bg-primary/90" onClick={handleAddCustomer}>
-            <Plus className="mr-2 h-4 w-4" />
-            {t('actions.addCustomer')}
-          </Button>
-        </div>
-      </div>
 
-      {error && (
-        <Card className="border-yellow-200 bg-yellow-50">
-          <CardContent className="pt-6">
-            <p className="text-yellow-800">{error}</p>
+        {error && (
+          <Card className="border-yellow-200 bg-yellow-50">
+            <CardContent className="pt-6">
+              <p className="text-yellow-800">{error}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('search.title')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSearch} className="flex gap-4">
+              <div className="flex-1">
+                <Input
+                  placeholder={t('search.placeholder')}
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <Button type="submit" variant="outline">
+                <Search className="mr-2 h-4 w-4" />
+                {t('actions.search')}
+              </Button>
+            </form>
           </CardContent>
         </Card>
-      )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('search.title')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSearch} className="flex gap-4">
-            <div className="flex-1">
-              <Input
-                placeholder={t('search.placeholder')}
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <Button type="submit" variant="outline">
-              <Search className="mr-2 h-4 w-4" />
-              {t('actions.search')}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('search.resultCount', { count: filteredCustomers.length })}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('table.headers.name')}</TableHead>
-                <TableHead>{t('table.headers.email')}</TableHead>
-                <TableHead>{t('table.headers.phone')}</TableHead>
-                <TableHead>{t('table.headers.status')}</TableHead>
-                <TableHead>{t('table.headers.created')}</TableHead>
-                <TableHead>{t('table.headers.actions')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredCustomers.map(customer => (
-                <TableRow key={customer.id}>
-                  <TableCell className="font-medium">{customer.name}</TableCell>
-                  <TableCell>{customer.email}</TableCell>
-                  <TableCell>{customer.phone}</TableCell>
-                  <TableCell>{getStatusBadge(customer.status)}</TableCell>
-                  <TableCell>{new Date(customer.createdAt).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleViewCustomer(customer)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleEditCustomer(customer)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-red-600"
-                        onClick={() => handleDeleteCustomer(customer)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('search.resultCount', { count: filteredCustomers.length })}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('table.headers.name')}</TableHead>
+                  <TableHead>{t('table.headers.email')}</TableHead>
+                  <TableHead>{t('table.headers.phone')}</TableHead>
+                  <TableHead>{t('table.headers.status')}</TableHead>
+                  <TableHead>{t('table.headers.created')}</TableHead>
+                  <TableHead>{t('table.headers.actions')}</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredCustomers.map(customer => (
+                  <TableRow key={customer.id}>
+                    <TableCell className="font-medium">{customer.name}</TableCell>
+                    <TableCell>{customer.email}</TableCell>
+                    <TableCell>{customer.phone}</TableCell>
+                    <TableCell>{getStatusBadge(customer.status)}</TableCell>
+                    <TableCell>{new Date(customer.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleViewCustomer(customer)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        {hasPermission('update', 'Customer') && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditCustomer(customer)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {hasPermission('delete', 'Customer') && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-red-600"
+                            onClick={() => handleDeleteCustomer(customer)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
 
-          {filteredCustomers.length === 0 && (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">{t('search.noResults')}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            {filteredCustomers.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">{t('search.noResults')}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-      {totalPages > 1 && (
-        <div className="flex justify-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-            disabled={currentPage === 1}
-          >
-            {t('pagination.previous')}
-          </Button>
-          <span className="flex items-center px-4">
-            {t('pagination.page', { current: currentPage, total: totalPages })}
-          </span>
-          <Button
-            variant="outline"
-            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-            disabled={currentPage === totalPages}
-          >
-            {t('pagination.next')}
-          </Button>
-        </div>
-      )}
-    </div>
+        {totalPages > 1 && (
+          <div className="flex justify-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+            >
+              {t('pagination.previous')}
+            </Button>
+            <span className="flex items-center px-4">
+              {t('pagination.page', { current: currentPage, total: totalPages })}
+            </span>
+            <Button
+              variant="outline"
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+            >
+              {t('pagination.next')}
+            </Button>
+          </div>
+        )}
+      </div>
+    </ProtectedRoute>
   );
 }

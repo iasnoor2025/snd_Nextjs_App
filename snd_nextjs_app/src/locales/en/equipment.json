@@ -1,6 +1,10 @@
 {
   "title": "Equipment Management",
   "subtitle": "Track and manage rental equipment inventory",
+  "manage_equipment_inventory": "Manage Equipment Inventory",
+  "add_equipment": "Add Equipment",
+  "syncing": "Syncing...",
+  "sync_from_erpnext": "Sync from ERPNext",
   "equipment_management": {
     "title": "Equipment Management",
     "description": "Track and manage rental equipment inventory",
@@ -47,7 +51,8 @@
     "clear_filters": "Clear Filters",
     "total_equipment": "Total",
     "expired_istimara": "expired Istimara",
-    "expiring_soon_istimara": "expiring soon"
+    "expiring_soon_istimara": "expiring soon",
+    "door_number": "Door Number"
   },
   "fields": {
     "name": "Equipment Name",
@@ -69,7 +74,9 @@
     "in_use": "In Use",
     "maintenance": "Maintenance",
     "out_of_service": "Out of Service",
-    "assigned": "Assigned"
+    "assigned": "Assigned",
+    "rented": "Rented",
+    "pending": "Pending"
   },
   "actions": {
     "addEquipment": "Add Equipment",

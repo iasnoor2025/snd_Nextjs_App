@@ -4,9 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../lib/db';
 import { PermissionConfigs, withPermission } from '../../../lib/rbac/api-middleware';
 
-export const GET = withPermission(async (_request: NextRequest) => {
+export const GET = withPermission(PermissionConfigs.designation.read)(async (_request: NextRequest) => {
   try {
-
     const allDesignations = await db
       .select({
         id: designations.id,
@@ -53,7 +52,6 @@ export const GET = withPermission(async (_request: NextRequest) => {
       message: 'Designations retrieved successfully',
     });
   } catch (error) {
-    
     return NextResponse.json(
       {
         success: false,
@@ -66,7 +64,7 @@ export const GET = withPermission(async (_request: NextRequest) => {
   }
 }, PermissionConfigs.designation.read);
 
-export const POST = withPermission(async (request: NextRequest) => {
+export const POST = withPermission(PermissionConfigs.designation.create)(async (request: NextRequest) => {
   try {
     const body = await request.json();
     const { name, description, department_id } = body;
@@ -160,7 +158,6 @@ export const POST = withPermission(async (request: NextRequest) => {
       message: 'Designation created successfully',
     });
   } catch (error) {
-    
     return NextResponse.json(
       {
         success: false,
@@ -171,4 +168,4 @@ export const POST = withPermission(async (request: NextRequest) => {
       { status: 500 }
     );
   }
-}, PermissionConfigs.designation.create);
+});
