@@ -518,28 +518,7 @@ export default function ActionDialogs({
         </DialogContent>
       </Dialog>
 
-      {/* Other action buttons that redirect to pages */}
-      <Button
-        variant="outline"
-        className="h-auto p-4 flex flex-col items-center gap-2"
-        onClick={() => window.open('/modules/employee-management/employee/profile/edit', '_blank')}
-      >
-        <User className="h-6 w-6 text-indigo-600" />
-        <span className="text-sm font-medium">{t('update_profile')}</span>
-        <span className="text-xs text-muted-foreground">{t('update_profile_desc')}</span>
-      </Button>
 
-
-
-      <Button
-        variant="outline"
-        className="h-auto p-4 flex flex-col items-center gap-2"
-        onClick={() => window.open('/modules/project-management/employee/assignments', '_blank')}
-      >
-        <Building className="h-6 w-6 text-red-600" />
-        <span className="text-sm font-medium">{t('project_assignments')}</span>
-        <span className="text-xs text-muted-foreground">{t('project_assignments_desc')}</span>
-      </Button>
     </>
   );
 }

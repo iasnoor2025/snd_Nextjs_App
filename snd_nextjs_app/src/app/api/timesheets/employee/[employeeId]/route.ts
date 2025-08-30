@@ -2,13 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { db } from '@/lib/db';
 import { timesheets } from '@/lib/drizzle/schema';
-import { eq, and, gte, lte } from 'drizzle-orm';
+import { eq, and, gte, lte, asc, sql } from 'drizzle-orm';
 
-export const GET = withPermission(PermissionConfigs.timesheet.read)(async (request: NextRequest) => {
+export const GET = withPermission(PermissionConfigs.timesheet.read)(async (request: NextRequest, { params }: { params: Promise<{ employeeId: string }> }) => {
     try {
+      console.log('Timesheet API called with params:', await params);
+      
       const { employeeId } = await params;
       const { searchParams } = new URL(request.url);
       const month = searchParams.get('month');
+
+      console.log('Employee ID:', employeeId, 'Month:', month);
 
       if (!month) {
         return NextResponse.json({ error: 'Month parameter is required' }, { status: 400 });
@@ -20,9 +24,22 @@ export const GET = withPermission(PermissionConfigs.timesheet.read)(async (reque
         return NextResponse.json({ error: 'Invalid month format. Use YYYY-MM' }, { status: 400 });
       }
 
+      console.log('Parsed year:', year, 'month:', monthNum);
+
       // Calculate date range for the month
       const startDate = new Date(year, monthNum - 1, 1);
       const endDate = new Date(year, monthNum, 0);
+
+      console.log('Date range:', startDate.toISOString(), 'to', endDate.toISOString());
+
+      // Test database connection first
+      try {
+        await db.select({ test: sql`1` }).from(timesheets).limit(1);
+        console.log('Database connection test successful');
+      } catch (dbError) {
+        console.error('Database connection test failed:', dbError);
+        return NextResponse.json({ error: 'Database connection failed' }, { status: 500 });
+      }
 
       // Fetch timesheets for the employee in the specified month using Drizzle
       const timesheetsData = await db
@@ -45,6 +62,8 @@ export const GET = withPermission(PermissionConfigs.timesheet.read)(async (reque
           )
         )
         .orderBy(asc(timesheets.date));
+
+      console.log('Timesheets fetched:', timesheetsData.length);
 
       // Calculate summary - properly handle Decimal types
       const totalRegularHours = timesheetsData.reduce((sum: number, t: any) => {
@@ -89,7 +108,7 @@ export const GET = withPermission(PermissionConfigs.timesheet.read)(async (reque
         },
       });
     } catch (error) {
-      
+      console.error('Timesheet fetch error:', error);
       return NextResponse.json({ error: 'Failed to fetch timesheet data' }, { status: 500 });
     }
   }

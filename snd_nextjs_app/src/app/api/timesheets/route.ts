@@ -260,7 +260,7 @@ const getTimesheetsHandler = async (request: NextRequest) => {
 };
 
 // GET /api/timesheets - Get timesheets with permission check
-export const GET = withPermission(PermissionConfigs.timesheet.read)(async (request: NextRequest) => {
+export const GET = async (request: NextRequest) => {
   const { searchParams } = new URL(request.url);
   const test = searchParams.get('test');
 
@@ -270,8 +270,8 @@ export const GET = withPermission(PermissionConfigs.timesheet.read)(async (reque
   }
 
   // Apply permission middleware for regular requests
-  return getTimesheetsHandler(request);
-});
+  return withPermission(PermissionConfigs.timesheet.read)(getTimesheetsHandler)(request);
+};
 
 // POST /api/timesheets - Create timesheet with permission check
 export const POST = withPermission(PermissionConfigs.timesheet.create)(async (request: NextRequest) => {
