@@ -21,11 +21,12 @@ const getAssignmentsHandler = async (
 
     const skip = (page - 1) * limit;
 
-    const where: any = {};
-
     // Get session to check user role
     const session = await getServerSession(authConfig);
     const user = session?.user;
+
+    // Build base filters array
+    const baseFilters: any[] = [];
 
     // Use role-based access control instead of national_id
     // Admin/Manager users can see all assignments, Employee users see their own
@@ -38,17 +39,20 @@ const getAssignmentsHandler = async (
           .where(eq(employees.userId, parseInt(user.id)))
           .limit(1);
         if (ownEmployee) {
-          where.employee_id = ownEmployee.id;
+          baseFilters.push(eq(employeeAssignments.employeeId, ownEmployee.id));
+        } else {
+          // If we can't find the employee, don't show any assignments
+          baseFilters.push(eq(employeeAssignments.employeeId, -1)); // This will ensure no results
         }
       } catch (error) {
         console.error('Error finding employee for user:', error);
         // If we can't find the employee, don't show any assignments
-        where.employee_id = -1; // This will ensure no results
+        baseFilters.push(eq(employeeAssignments.employeeId, -1)); // This will ensure no results
       }
     }
     // For ADMIN, MANAGER, SUPERVISOR, SUPER_ADMIN roles, show all assignments (no restriction)
 
-    // Search filters will be applied in the Drizzle query
+    // Add search filters
     const searchFilters = search
       ? [
           ilike(employees.firstName, `%${search}%`),
@@ -59,16 +63,24 @@ const getAssignmentsHandler = async (
         ]
       : [];
 
+    // Add status filter
     if (status && status !== 'all') {
-      where.status = status;
+      baseFilters.push(eq(employeeAssignments.status, status));
     }
 
+    // Add employee filter
     if (employeeId) {
-      where.employee_id = employeeId;
+      baseFilters.push(eq(employeeAssignments.employeeId, parseInt(employeeId)));
     }
 
+    // Add project filter
     if (projectId) {
-      where.project_id = projectId;
+      baseFilters.push(eq(employeeAssignments.projectId, parseInt(projectId)));
+    }
+
+    // Add search filters
+    if (searchFilters.length > 0) {
+      baseFilters.push(or(...searchFilters));
     }
 
     // Build Drizzle query with filters
@@ -106,38 +118,23 @@ const getAssignmentsHandler = async (
       .from(employeeAssignments)
       .leftJoin(employees, eq(employeeAssignments.employeeId, employees.id))
       .leftJoin(projects, eq(employeeAssignments.projectId, projects.id))
-      .leftJoin(users, eq(employees.userId, users.id))
-      .where(
-        and(
-          ...(where.employee_id
-            ? [eq(employeeAssignments.employeeId, where.employee_id)]
-            : []),
-          ...(status && status !== 'all' ? [eq(employeeAssignments.status, status)] : []),
-          ...(employeeId ? [eq(employeeAssignments.employeeId, parseInt(employeeId))] : []),
-          ...(projectId ? [eq(employeeAssignments.projectId, parseInt(projectId))] : []),
-          ...(searchFilters.length > 0 ? [or(...searchFilters)] : [])
-        )
-      );
+      .leftJoin(users, eq(employees.userId, users.id));
+
+    // Apply filters only if there are any
+    const filteredQuery = baseFilters.length > 0 
+      ? baseQuery.where(and(...baseFilters))
+      : baseQuery;
 
     const [assignments, total] = await Promise.all([
-      baseQuery.orderBy(desc(employeeAssignments.createdAt)).offset(skip).limit(limit),
+      filteredQuery.orderBy(desc(employeeAssignments.createdAt)).offset(skip).limit(limit),
       db
         .select({ count: sql<number>`count(*)` })
         .from(employeeAssignments)
-        .where(
-          and(
-            ...(where.employee_id
-              ? [eq(employeeAssignments.employeeId, where.employee_id)]
-              : []),
-            ...(status && status !== 'all' ? [eq(employeeAssignments.status, status)] : []),
-            ...(employeeId ? [eq(employeeAssignments.employeeId, parseInt(employeeId))] : []),
-            ...(projectId ? [eq(employeeAssignments.projectId, parseInt(projectId))] : []),
-            ...(searchFilters.length > 0 ? [or(...searchFilters)] : [])
-          )
-        ),
+        .leftJoin(employees, eq(employeeAssignments.employeeId, employees.id))
+        .leftJoin(projects, eq(employeeAssignments.projectId, projects.id))
+        .leftJoin(users, eq(employees.userId, users.id))
+        .where(baseFilters.length > 0 ? and(...baseFilters) : undefined),
     ]);
-
-
 
     const totalCount = Number(total[0]?.count ?? 0);
     const totalPages = Math.ceil(totalCount / limit);
@@ -152,7 +149,7 @@ const getAssignmentsHandler = async (
       prev_page_url: page > 1 ? `/api/assignments?page=${page - 1}` : null,
     });
   } catch (error) {
-    
+    console.error('Error in getAssignmentsHandler:', error);
     return NextResponse.json(
       {
         error: 'Failed to fetch assignments',
