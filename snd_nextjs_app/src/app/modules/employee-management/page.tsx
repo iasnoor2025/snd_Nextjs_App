@@ -57,7 +57,9 @@ interface Employee {
   full_name: string | null;
   email: string | null;
   department: string | null;
+  department_details?: { name: string } | null;
   designation: string | null;
+  designation_details?: { name: string } | null;
   status: string | null;
   hire_date: string | null;
   basic_salary: number | null;

@@ -1,6 +1,6 @@
 import { authConfig } from '@/lib/auth-config';
 import { db } from '@/lib/db';
-import { employeeAssignments, employees } from '@/lib/drizzle/schema';
+import { employeeAssignments, employees, projectManpower } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
@@ -54,7 +54,7 @@ const getEmployeeStatisticsHandler = async () => {
     if (employeeIds.length > 0) {
       console.log('🔍 Found employee IDs:', employeeIds);
       
-      // Get all active assignments for these employees
+      // Get all active assignments from employeeAssignments table
       const assignmentRows = await db
         .select({
           employeeId: employeeAssignments.employeeId,
@@ -71,11 +71,31 @@ const getEmployeeStatisticsHandler = async () => {
           )
         );
 
-      console.log('🔍 Found assignment rows:', assignmentRows);
-      console.log('🔍 Assignment rows count:', assignmentRows.length);
+      // Get all active assignments from projectManpower table
+      const projectManpowerRows = await db
+        .select({
+          employeeId: projectManpower.employeeId,
+          status: projectManpower.status,
+          startDate: projectManpower.startDate,
+          endDate: projectManpower.endDate,
+        })
+        .from(projectManpower)
+        .where(
+          and(
+            inArray(projectManpower.employeeId, employeeIds),
+            eq(projectManpower.status, 'active')
+          )
+        );
 
-      // Count unique employees with active assignments
+      console.log('🔍 Found assignment rows:', assignmentRows);
+      console.log('🔍 Found projectManpower rows:', projectManpowerRows);
+      console.log('🔍 Assignment rows count:', assignmentRows.length);
+      console.log('🔍 ProjectManpower rows count:', projectManpowerRows.length);
+
+      // Count unique employees with active assignments from both sources
       const employeesWithAssignments = new Set();
+      
+      // Process employeeAssignments
       assignmentRows.forEach(row => {
         // Check if assignment is currently active (no end date or end date is in the future)
         const isAssignmentActive = 
@@ -83,6 +103,20 @@ const getEmployeeStatisticsHandler = async () => {
           (!row.endDate || new Date(row.endDate) > new Date());
         
         console.log('🔍 Assignment row:', row, 'isActive:', isAssignmentActive);
+        
+        if (isAssignmentActive) {
+          employeesWithAssignments.add(row.employeeId);
+        }
+      });
+
+      // Process projectManpower
+      projectManpowerRows.forEach(row => {
+        // Check if assignment is currently active (no end date or end date is in the future)
+        const isAssignmentActive = 
+          row.status === 'active' &&
+          (!row.endDate || new Date(row.endDate) > new Date());
+        
+        console.log('🔍 ProjectManpower row:', row, 'isActive:', isAssignmentActive);
         
         if (isAssignmentActive) {
           employeesWithAssignments.add(row.employeeId);
@@ -97,9 +131,10 @@ const getEmployeeStatisticsHandler = async () => {
     
     console.log('🔍 Currently assigned count:', currentlyAssigned);
 
-    // Count project assignments
+    // Count project assignments (from both employeeAssignments and projectManpower tables)
     let projectAssignments = 0;
     if (totalEmployees > 0) {
+      // Get project assignments from employeeAssignments table
       const assignmentRows = await db
         .select({
           employeeId: employeeAssignments.employeeId,
@@ -116,9 +151,33 @@ const getEmployeeStatisticsHandler = async () => {
           )
         );
 
-      // Count unique employees with active project assignments
+      // Get project assignments from projectManpower table
+      const projectManpowerRows = await db
+        .select({
+          employeeId: projectManpower.employeeId,
+          status: projectManpower.status,
+          startDate: projectManpower.startDate,
+          endDate: projectManpower.endDate,
+        })
+        .from(projectManpower)
+        .where(eq(projectManpower.status, 'active'));
+
+      // Count unique employees with active project assignments from both sources
       const employeesWithProjectAssignments = new Set();
+      
+      // Process employeeAssignments
       assignmentRows.forEach(row => {
+        const isAssignmentActive = 
+          row.status === 'active' &&
+          (!row.endDate || new Date(row.endDate) > new Date());
+        
+        if (isAssignmentActive) {
+          employeesWithProjectAssignments.add(row.employeeId);
+        }
+      });
+
+      // Process projectManpower
+      projectManpowerRows.forEach(row => {
         const isAssignmentActive = 
           row.status === 'active' &&
           (!row.endDate || new Date(row.endDate) > new Date());
@@ -129,6 +188,10 @@ const getEmployeeStatisticsHandler = async () => {
       });
       
       projectAssignments = employeesWithProjectAssignments.size;
+      console.log('🔍 Project assignments breakdown:');
+      console.log('🔍 - From employeeAssignments table:', assignmentRows.length);
+      console.log('🔍 - From projectManpower table:', projectManpowerRows.length);
+      console.log('🔍 - Total unique employees with project assignments:', projectAssignments);
     } else {
       projectAssignments = 0;
     }
