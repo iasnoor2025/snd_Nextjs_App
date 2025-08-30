@@ -32,9 +32,17 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔍 RBAC status check requested...');
+    
     // Check if RBAC system is already initialized by checking the database directly
+    console.log('📊 Querying database for existing roles...');
     const existingRoles = await db.select().from(roles).limit(1);
     const isInitialized = existingRoles.length > 0;
+    
+    console.log('✅ Database query successful:', { 
+      rolesFound: existingRoles.length, 
+      isInitialized 
+    });
     
     return NextResponse.json({
       success: true,
@@ -45,11 +53,18 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('❌ RBAC status check failed:', error);
     
+    // Provide more detailed error information
+    const errorDetails = error instanceof Error ? {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    } : 'Unknown error type';
+    
     return NextResponse.json(
       {
         success: false,
         message: 'RBAC system status check failed',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: errorDetails,
         timestamp: new Date().toISOString(),
       },
       { status: 500 }

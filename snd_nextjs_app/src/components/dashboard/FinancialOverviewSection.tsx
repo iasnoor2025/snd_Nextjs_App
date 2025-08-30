@@ -161,6 +161,9 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
         if (month) {
           setSelectedMonth(month);
         }
+      } else if (response.status === 403) {
+        // User doesn't have permission - hide the section
+        setError('PERMISSION_DENIED');
       } else {
         const errorText = await response.text();
         
@@ -184,6 +187,9 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
         const data = await response.json();
         
         setInvoiceSummary(data.data);
+      } else if (response.status === 403) {
+        // User doesn't have permission - hide the section
+        setError('PERMISSION_DENIED');
       } else {
         const errorText = await response.text();
         
@@ -253,6 +259,11 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
   }
 
   if (error) {
+    // If permission is denied, hide the section instead of showing error
+    if (error === 'PERMISSION_DENIED') {
+      return null;
+    }
+    
     return (
       <Card>
         <CardHeader>

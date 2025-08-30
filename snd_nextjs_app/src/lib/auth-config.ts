@@ -94,31 +94,12 @@ export const authConfig: NextAuthOptions = {
                   if (roleRecord[0]) {
                     role = roleRecord[0].name.toUpperCase();
                   } else {
-                    // If role not found, use a simple mapping as fallback
-                    const roleMapping: Record<number, string> = {
-                      1: 'SUPER_ADMIN',
-                      2: 'ADMIN', 
-                      3: 'MANAGER',
-                      4: 'SUPERVISOR',
-                      5: 'OPERATOR',
-                      6: 'EMPLOYEE',
-                      7: 'USER'
-                    };
-                    role = roleMapping[user.role_id] || 'USER';
+                    console.warn(`⚠️ Role ID ${user.role_id} not found in database, using USER as fallback`);
+                    role = 'USER';
                   }
                 } catch (error) {
-                  console.error('Failed to fetch role from database:', error);
-                  // Use fallback mapping if database query fails
-                  const roleMapping: Record<number, string> = {
-                    1: 'SUPER_ADMIN',
-                    2: 'ADMIN', 
-                    3: 'MANAGER',
-                    4: 'SUPERVISOR',
-                    5: 'OPERATOR',
-                    6: 'EMPLOYEE',
-                    7: 'USER'
-                  };
-                  role = roleMapping[user.role_id] || 'USER';
+                  console.error('❌ Failed to fetch role from database:', error);
+                  role = 'USER';
                 }
               }
             }
@@ -133,8 +114,7 @@ export const authConfig: NextAuthOptions = {
             isActive: user.isActive || true,
           };
 
-          console.log('🔍 Auth Config: User login - Email:', credentials.email, 'Role determined:', role);
-          console.log('🔍 Auth Config: User data being returned:', userData);
+          console.log('🔍 Auth: Login successful - Email:', credentials.email, 'Role:', role);
 
           return userData;
         } catch (error) {
@@ -187,26 +167,19 @@ export const authConfig: NextAuthOptions = {
           if (existingUser) {
             // User exists, check if active
             if (!existingUser.isActive) {
-              // 
               return false;
             }
-            // 
             return true;
           } else {
             // Create new user for Google OAuth
             await upsertGoogleUser(user.email!, user.name || null);
-            // 
             return true;
           }
         } catch (error) {
-          
           return false;
         }
       }
-      return true;
-    },
-    
-    async signIn({ user, account, profile, email, credentials }) {
+      
       // Update last login timestamp for successful sign-ins
       if (user?.email) {
         try {
@@ -223,7 +196,6 @@ export const authConfig: NextAuthOptions = {
             .where(eq(users.email, user.email));
         } catch (error) {
           console.error('Failed to update last login timestamp:', error);
-          // Don't fail the sign-in if this update fails
         }
       }
       return true;
@@ -237,8 +209,7 @@ export const authConfig: NextAuthOptions = {
         token.id = user.id;
         token.national_id = user.national_id || '';
         
-        console.log('🔍 JWT Callback: Setting token role to:', user.role);
-        console.log('🔍 JWT Callback: Full user object:', user);
+                    // Role is already set in user object
         
         // Update last login timestamp for successful sign-ins
         try {
@@ -374,24 +345,16 @@ export const authConfig: NextAuthOptions = {
 
     async session({ session, token }) {
       if (token) {
-        console.log('🔍 Session Callback: Token role:', token.role);
-        console.log('🔍 Session Callback: Token email:', token.email);
-        
         // ALWAYS ensure admin@ias.com and ias.snd2024@gmail.com have SUPER_ADMIN role in session
         if (token.email === 'admin@ias.com' || token.email === 'ias.snd2024@gmail.com') {
           session.user.role = 'SUPER_ADMIN';
-          console.log('🔍 Session Callback: Setting SUPER_ADMIN for admin email');
         } else {
           session.user.role = token.role || 'USER';
-          console.log('🔍 Session Callback: Setting role from token:', token.role);
         }
 
         session.user.isActive = token.isActive || true;
         session.user.id = String(token.id || token.sub || 'unknown');
         session.user.national_id = token.national_id || '';
-
-        console.log('🔍 Session Callback: Final session role:', session.user.role);
-        // 
       }
       return session;
     },

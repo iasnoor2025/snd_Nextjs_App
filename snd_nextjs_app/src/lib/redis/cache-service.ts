@@ -17,6 +17,13 @@ export class CacheService {
   private keyPrefix = 'app:';
 
   /**
+   * Check if Redis is available
+   */
+  private isRedisAvailable(): boolean {
+    return !redisService.isRedisDisabled() && redisService.isClientConnected();
+  }
+
+  /**
    * Generate a cache key from components
    */
   private generateKey(components: (string | number | boolean)[]): string {
@@ -31,6 +38,11 @@ export class CacheService {
     value: T,
     options: CacheOptions = {}
   ): Promise<void> {
+    // Skip caching if Redis is disabled
+    if (!this.isRedisAvailable()) {
+      return;
+    }
+
     try {
       const client = redisService.getClient();
       const ttl = options.ttl || this.defaultTTL;
@@ -58,6 +70,11 @@ export class CacheService {
    * Get a value from cache
    */
   async get<T>(key: string, prefix?: string): Promise<T | null> {
+    // Return null if Redis is disabled
+    if (!this.isRedisAvailable()) {
+      return null;
+    }
+
     try {
       const client = redisService.getClient();
       const fullKey = this.generateKey([prefix || 'data', key]);
@@ -81,6 +98,11 @@ export class CacheService {
     fetchFn: () => Promise<T>,
     options: CacheOptions = {}
   ): Promise<T> {
+    // If Redis is disabled, just fetch fresh data
+    if (!this.isRedisAvailable()) {
+      return await fetchFn();
+    }
+
     // Try to get from cache first
     const cached = await this.get<T>(key, options.prefix);
     if (cached !== null) {

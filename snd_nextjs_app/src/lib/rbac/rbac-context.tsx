@@ -1,7 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useMemo, useEffect } from 'react';
 
 // Client-safe types and interfaces
 export type Action = 'create' | 'read' | 'update' | 'delete' | 'manage' | 'approve' | 'reject' | 'export' | 'import' | 'sync' | 'reset';
@@ -45,9 +45,7 @@ const DYNAMIC_ROLE_HIERARCHY: Record<string, number> = {
 // Dynamic fallback permissions configuration (can be updated without code changes)
 const DYNAMIC_FALLBACK_PERMISSIONS: Record<string, string[]> = {
   SUPER_ADMIN: ['*', 'manage.all'],
-  ADMIN: [
-    'read.Dashboard', 'read.Employee', 'read.employee-document'
-  ],
+  // ADMIN: [],
   // All other roles start with empty permissions - they must be assigned dynamically
   // MANAGER: [], // Will be populated dynamically
   // SUPERVISOR: [], // Will be populated dynamically
@@ -63,28 +61,80 @@ const DYNAMIC_FALLBACK_PERMISSIONS: Record<string, string[]> = {
   // SALES_REPRESENTATIVE: [], // Will be populated dynamically
 };
 
+// Cache for user permissions
+const userPermissionsCache = new Map<string, string[]>();
+
+// Function to get user permissions from cache
+function getUserPermissionsFromCache(userId: string): string[] | undefined {
+  return userPermissionsCache.get(userId);
+}
+
+// Function to set user permissions in cache
+function setUserPermissionsInCache(userId: string, permissions: string[]): void {
+  userPermissionsCache.set(userId, permissions);
+}
+
+// Function to load user permissions from API and cache them
+async function loadUserPermissions(userId: string): Promise<string[]> {
+  try {
+    const response = await fetch('/api/user-permissions');
+    
+    if (response.ok) {
+      const data = await response.json();
+      
+      if (data.success && data.permissions) {
+        setUserPermissionsInCache(userId, data.permissions);
+        return data.permissions;
+      }
+    }
+  } catch (error) {
+    console.error('Error loading user permissions:', error);
+  }
+  
+  return [];
+}
+
 // Client-side permission checking (dynamic system)
 function hasPermissionClient(user: User, action: Action, subject: Subject): boolean {
-  // Get permissions for user's role from dynamic configuration
-  const userPermissions = DYNAMIC_FALLBACK_PERMISSIONS[user.role] || [];
+  // Permission check in progress
+  
+  // SUPER_ADMIN has all permissions
+  if (user.role === 'SUPER_ADMIN') {
+    // SUPER_ADMIN granted
+    return true;
+  }
+  
+  // For all other roles, check against cached permissions
+  // The permissions are loaded when the user logs in and cached in the context
+  const userPermissions = getUserPermissionsFromCache(user.id);
+  // Using cached permissions
+  
+  if (!userPermissions) {
+    // No cached permissions found
+    return false;
+  }
   
   // Check for wildcard permissions
   if (userPermissions.includes('*') || userPermissions.includes('manage.all')) {
+    // Wildcard permission granted
     return true;
   }
-
+  
   // Check for specific permission
   const permissionName = `${action}.${subject}`;
   if (userPermissions.includes(permissionName)) {
+    // Specific permission granted
     return true;
   }
-
+  
   // Check if user has manage permission for the subject (which includes read, create, update, delete)
   const managePermission = `manage.${subject}`;
   if (userPermissions.includes(managePermission)) {
+    // Manage permission granted
     return true;
   }
-
+  
+  // Permission denied
   return false;
 }
 
@@ -95,7 +145,7 @@ function canAccessRouteClient(user: User, route: string): boolean {
   const routePermissions: Record<string, { action: Action; subject: Subject; roles: UserRole[] }> = {
     '/': { action: 'read', subject: 'Dashboard', roles: [] },
     '/dashboard': { action: 'read', subject: 'Dashboard', roles: [] },
-    '/employee-dashboard': { action: 'read', subject: 'Employee', roles: [] },
+    '/employee-dashboard': { action: 'read', subject: 'mydashboard', roles: [] },
     '/modules/employee-management': { action: 'read', subject: 'Employee', roles: [] },
     '/modules/customer-management': { action: 'read', subject: 'Customer', roles: [] },
     '/modules/equipment-management': { action: 'read', subject: 'Equipment', roles: [] },
@@ -121,12 +171,33 @@ function canAccessRouteClient(user: User, route: string): boolean {
   };
 
   const routePermission = routePermissions[route];
-  if (!routePermission) return true; // Allow access if no specific permission defined
+  
+  if (!routePermission) {
+    return true; // Allow access if no specific permission defined
+  }
 
   // If roles array is empty, check permissions (no role restrictions)
   if (routePermission.roles.length === 0) {
     // Check if user has the required permission for this route
-    return hasPermissionClient(user, routePermission.action, routePermission.subject);
+    const hasAccess = hasPermissionClient(user, routePermission.action, routePermission.subject);
+    
+    // Special debug for employee-dashboard
+    if (route === '/employee-dashboard') {
+      console.log(`🎯 EMPLOYEE-DASHBOARD DEBUG:`);
+      console.log(`  - User role: ${user.role}`);
+      console.log(`  - Required permission: ${routePermission.action}.${routePermission.subject}`);
+      console.log(`  - Has access: ${hasAccess}`);
+      console.log(`  - Cached permissions:`, getUserPermissionsFromCache(user.id));
+    }
+    
+    return hasAccess;
+  }
+  
+  // If roles array has specific roles, check if user's role is in the list
+  if (routePermission.roles.length > 0) {
+    const hasRoleAccess = routePermission.roles.includes(user.role);
+    console.log(`👥 Role-based access for route ${route}: ${hasRoleAccess ? '✅ GRANTED' : '❌ DENIED'} (user role: ${user.role}, required: ${routePermission.roles.join(', ')})`);
+    return hasRoleAccess;
   }
   
   // If there are role restrictions, check if user has required role
@@ -198,6 +269,15 @@ export function RBACProvider({ children }: RBACProviderProps) {
       isActive: session.user.isActive !== false,
     };
   }, [session, status]);
+
+  // Load user permissions when user changes
+  useEffect(() => {
+    if (user) {
+      loadUserPermissions(user.id).catch(error => {
+        console.error(`Failed to load permissions for user ${user.id}:`, error);
+      });
+    }
+  }, [user]);
 
   const contextValue: RBACContextType = useMemo(
     () => ({

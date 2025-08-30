@@ -21,6 +21,8 @@ export async function middleware(request: NextRequest) {
     '/debug-permissions',
     '/api/debug-auth',
     '/api/timesheets/auto-generate', // Allow timesheet auto-generation
+    '/api/rbac/initialize', // Allow RBAC initialization and status check
+    '/api/test-db', // Allow database connection testing
   ];
 
   // Define static assets

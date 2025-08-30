@@ -32,6 +32,7 @@ import { Download } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { getUserAccessibleSections } from '@/lib/rbac/dashboard-permissions';
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -105,6 +106,29 @@ export default function DashboardPage() {
     }
   }, [session, status, router]);
 
+  // Set section visibility based on user permissions
+  useEffect(() => {
+    if (session?.user?.role && !sectionsLoaded) {
+      const accessibleSections = getUserAccessibleSections(session.user.role);
+      
+      // Set visibility based on permissions
+      const newVisibility = {
+        iqama: accessibleSections.includes('iqama'),
+        equipment: accessibleSections.includes('equipment'),
+        financial: accessibleSections.includes('financial'),
+        timesheets: accessibleSections.includes('timesheets'),
+        projectOverview: accessibleSections.includes('projectOverview'),
+        manualAssignments: accessibleSections.includes('manualAssignments'),
+        quickActions: accessibleSections.includes('quickActions'),
+        recentActivity: accessibleSections.includes('recentActivity'),
+        employeeAdvance: accessibleSections.includes('employeeAdvance'),
+      };
+      
+      setSectionVisibility(newVisibility);
+      setSectionsLoaded(true);
+    }
+  }, [session?.user?.role, sectionsLoaded]);
+
   // Update current time every minute
   useEffect(() => {
     const interval = setInterval(() => {
@@ -152,8 +176,8 @@ export default function DashboardPage() {
       setProjectData(data.projectData || []);
       setActivities(data.recentActivity || []);
 
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+    } catch (_error) {
+      console.error('Error fetching dashboard data:', _error);
       // Handle error silently for production
     } finally {
       setLoading(false);
@@ -170,7 +194,7 @@ export default function DashboardPage() {
       }
       const data = await response.json();
       setTimesheetData(data.timesheetData || []);
-    } catch (error) {
+    } catch (_error) {
       // Handle error silently for production
     } finally {
       setRefreshingTimesheets(false);
@@ -187,7 +211,7 @@ export default function DashboardPage() {
       }
       const data = await response.json();
       setIqamaData(data.iqamaData || []);
-    } catch (error) {
+    } catch (_error) {
       // Handle error silently for production
     } finally {
       setUpdatingIqama(false);
@@ -204,7 +228,7 @@ export default function DashboardPage() {
       }
       const data = await response.json();
       setEquipmentData(data.equipment || []);
-    } catch (error) {
+    } catch (_error) {
       // Handle error silently for production
     } finally {
       setUpdatingEquipment(false);
@@ -220,7 +244,7 @@ export default function DashboardPage() {
       }
       const data = await response.json();
       setActivities(data.recentActivity || []);
-    } catch (error) {
+    } catch (_error) {
       // Handle error silently for production
     }
   };
@@ -795,6 +819,7 @@ export default function DashboardPage() {
                       manualAssignments: true,
                       quickActions: true,
                       recentActivity: true,
+                      employeeAdvance: true,
                     };
                     setSectionVisibility(newVisibility);
                     saveSectionVisibility(newVisibility);

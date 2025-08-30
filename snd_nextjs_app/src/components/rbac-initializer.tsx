@@ -1,14 +1,40 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
 
 export function RBACInitializer() {
+  const { data: session, status: authStatus } = useSession();
   const [status, setStatus] = useState<'checking' | 'initializing' | 'completed' | 'error'>('checking');
   const [message, setMessage] = useState('');
   const [showUI, setShowUI] = useState(false);
 
   useEffect(() => {
+    // Only run RBAC initialization after authentication is confirmed
+    if (authStatus === 'loading') {
+      console.log('⏳ Waiting for authentication to complete...');
+      return; // Still loading, wait
+    }
+    
+    if (authStatus === 'unauthenticated') {
+      console.log('🚫 User not authenticated, skipping RBAC initialization');
+      // User is not authenticated, skip RBAC initialization
+      setStatus('completed');
+      return;
+    }
+
+    // Ensure we have a valid session with user data
+    if (!session?.user) {
+      console.log('⚠️ No user data in session, skipping RBAC initialization');
+      setStatus('completed');
+      return;
+    }
+
+    console.log('✅ Authentication confirmed, proceeding with RBAC initialization');
+
     const initializeRBAC = async () => {
+      // Add a small delay to ensure session is fully established
+      await new Promise(resolve => setTimeout(resolve, 100));
       try {
         // Check if we already know the RBAC status from this session
         const cachedStatus = sessionStorage.getItem('rbac-status');
@@ -33,19 +59,33 @@ export function RBACInitializer() {
         });
 
         // First check if RBAC system is already initialized
+        console.log('🔍 Checking RBAC system status...');
         const checkPromise = fetch('/api/rbac/initialize');
         const checkResponse = await Promise.race([checkPromise, timeoutPromise]) as Response;
         
+        console.log('📡 Status check response:', {
+          status: checkResponse.status,
+          statusText: checkResponse.statusText,
+          headers: Object.fromEntries(checkResponse.headers.entries())
+        });
+        
         if (!checkResponse.ok) {
+          const errorText = await checkResponse.text();
+          console.error('❌ Status check failed:', {
+            status: checkResponse.status,
+            statusText: checkResponse.statusText,
+            responseText: errorText
+          });
           throw new Error(`Status check failed: ${checkResponse.status} ${checkResponse.statusText}`);
         }
         
         let checkData;
         try {
           const responseText = await checkResponse.text();
+          console.log('📄 Raw response text:', responseText);
           checkData = JSON.parse(responseText);
         } catch (parseError) {
-          console.error('Failed to parse JSON response:', parseError);
+          console.error('❌ Failed to parse JSON response:', parseError);
           throw new Error('Invalid response from server');
         }
         
@@ -123,7 +163,21 @@ export function RBACInitializer() {
 
     // Initialize RBAC system on component mount
     initializeRBAC();
-  }, []);
+  }, [authStatus]);
+
+  // Show loading state while waiting for authentication
+  if (authStatus === 'loading') {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 max-w-md mx-4">
+          <div className="flex items-center space-x-3">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <p className="text-gray-700">Checking authentication...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Don't render anything if not showing UI
   if (!showUI) {

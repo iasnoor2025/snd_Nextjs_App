@@ -1,4 +1,5 @@
 import { createClient } from 'redis';
+import { redisConfig, isRedisEnabled } from '../config/redis';
 
 declare global {
   var __redisClient: ReturnType<typeof createClient> | undefined;
@@ -9,17 +10,20 @@ class RedisService {
   private isConnected = false;
 
   async connect(): Promise<void> {
+    // Skip connection if Redis is disabled
+    if (!isRedisEnabled()) {
+      console.log('Redis is disabled - skipping connection');
+      return;
+    }
+
     if (this.client && this.isConnected) {
       return;
     }
 
     try {
       this.client = createClient({
-        url: process.env.REDIS_URL || 'redis://localhost:6379',
-        socket: {
-          connectTimeout: 10000,
-          lazyConnect: true,
-        },
+        url: redisConfig.url,
+        socket: redisConfig.connection,
       });
 
       this.client.on('error', (err) => {
@@ -28,24 +32,30 @@ class RedisService {
       });
 
       this.client.on('connect', () => {
-        console.log('Redis Client Connected');
+        if (redisConfig.development.logConnection) {
+          console.log('Redis Client Connected');
+        }
         this.isConnected = true;
       });
 
       this.client.on('ready', () => {
-        console.log('Redis Client Ready');
+        if (redisConfig.development.logConnection) {
+          console.log('Redis Client Ready');
+        }
         this.isConnected = true;
       });
 
       this.client.on('end', () => {
-        console.log('Redis Client Disconnected');
+        if (redisConfig.development.logConnection) {
+          console.log('Redis Client Disconnected');
+        }
         this.isConnected = false;
       });
 
       await this.client.connect();
       
       // Store in global for development hot reload
-      if (process.env.NODE_ENV === 'development') {
+      if (redisConfig.development.autoConnect) {
         global.__redisClient = this.client;
       }
     } catch (error) {
@@ -56,6 +66,10 @@ class RedisService {
   }
 
   async disconnect(): Promise<void> {
+    if (!isRedisEnabled()) {
+      return;
+    }
+    
     if (this.client && this.isConnected) {
       await this.client.quit();
       this.isConnected = false;
@@ -63,6 +77,10 @@ class RedisService {
   }
 
   getClient(): ReturnType<typeof createClient> {
+    if (!isRedisEnabled()) {
+      throw new Error('Redis is disabled');
+    }
+    
     if (!this.client || !this.isConnected) {
       throw new Error('Redis client not connected. Call connect() first.');
     }
@@ -70,15 +88,19 @@ class RedisService {
   }
 
   isClientConnected(): boolean {
-    return this.isConnected;
+    return isRedisEnabled() ? this.isConnected : false;
+  }
+
+  isRedisDisabled(): boolean {
+    return !isRedisEnabled();
   }
 }
 
 // Singleton instance
 const redisService = new RedisService();
 
-// Connect on import in development
-if (process.env.NODE_ENV === 'development') {
+// Connect on import in development (only if enabled)
+if (redisConfig.development.autoConnect && isRedisEnabled()) {
   redisService.connect().catch(console.error);
 }
 

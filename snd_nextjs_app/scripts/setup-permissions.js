@@ -1,6 +1,6 @@
 const { drizzle } = require('drizzle-orm/postgres-js');
 const postgres = require('postgres');
-const { permissions, roles, roleHasPermissions, modelHasRoles } = require('../src/lib/drizzle/schema');
+const { permissions, roles: rolesTable, roleHasPermissions, modelHasRoles } = require('../src/lib/drizzle/schema');
 
 // Database connection
 const connectionString = process.env.DATABASE_URL || 'postgresql://username:password@localhost:5432/database';
@@ -294,7 +294,7 @@ async function setupPermissions() {
     console.log('👑 Creating roles...');
     const createdRoles = {};
     for (const roleName of roles) {
-      const [role] = await db.insert(roles).values({
+      const [role] = await db.insert(rolesTable).values({
         name: roleName,
         guardName: 'web',
         createdAt: new Date(),

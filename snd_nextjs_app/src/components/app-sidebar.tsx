@@ -42,36 +42,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { t } = useTranslation('sidebar');
   const { canAccessRoute, user, hasPermission } = useRBAC();
 
-  // Debug logging for SUPER_ADMIN
-  if (user?.role === 'SUPER_ADMIN') {
-    console.log('🔍 SUPER_ADMIN detected in sidebar:', {
-      user: user,
-      hasEmployeePermission: hasPermission('read', 'Employee'),
-      canAccessDashboard: canAccessRoute('/'),
-      canAccessEmployeeManagement: canAccessRoute('/modules/employee-management'),
-    });
-  }
 
-  // Debug logging for all users
-  console.log('🔍 Sidebar debug - User:', user, 'Role:', user?.role);
-  
-  // Test route access for key routes
-  if (user) {
-    console.log('🔍 Route access test:', {
-      dashboard: canAccessRoute('/'),
-      employeeManagement: canAccessRoute('/modules/employee-management'),
-      customerManagement: canAccessRoute('/modules/customer-management'),
-      equipmentManagement: canAccessRoute('/modules/equipment-management'),
-    });
-  }
-
-  // Debug logging for SUPER_ADMIN
-  console.log('Sidebar Debug:', {
-    userRole: user?.role,
-    isSuperAdmin: user?.role === 'SUPER_ADMIN',
-    hasEmployeePermission: hasPermission('read', 'Employee'),
-    user: user
-  });
+  // Debug logging removed for cleaner console
 
   // Define all possible menu items with their routes
   const allMenuItems = [
@@ -209,7 +181,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     if (!user) return [];
 
     // Debug logging for permission checking
-    console.log(`🔍 Filtering sidebar items for role: ${user.role}`);
+    // Filtering sidebar items
     
     // Always show items without specific routes (like help, search)
     const essentialItems = items.filter(item => item.url === '#' || !item.url);
@@ -221,20 +193,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       
       // Hide employee dashboard for non-EMPLOYEE users
       if (item.url === '/employee-dashboard') {
-        const hasEmployeePermission = hasPermission('read', 'Employee');
-        console.log(`🔍 Employee Dashboard: ${hasEmployeePermission ? '✅ SHOW' : '❌ HIDE'} - hasPermission('read', 'Employee') = ${hasEmployeePermission}`);
+        const hasEmployeePermission = hasPermission('read', 'mydashboard');  
+        // Employee Dashboard permission check
         return hasEmployeePermission;
       }
       
       // For all other routes, check if user can access them
       const canAccess = canAccessRoute(item.url);
-      const itemTitle = item.title || item.name || 'Unknown';
-      console.log(`🔍 ${itemTitle}: ${canAccess ? '✅ SHOW' : '❌ HIDE'} - canAccessRoute = ${canAccess}`);
+              // Route access check
       return canAccess;
     });
     
     const result = [...essentialItems, ...routeItems];
-    console.log(`🔍 Final sidebar items for ${user.role}:`, result.map(item => item.title || item.name || 'Unknown'));
+    // Sidebar items filtered
     
     return result;
   };

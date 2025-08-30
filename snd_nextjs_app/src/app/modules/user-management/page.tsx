@@ -134,14 +134,14 @@ export default function UserManagementPage() {
   // Fetch users with role information
   const fetchUsers = async () => {
     try {
-      console.log('🔍 Frontend: fetchUsers function called');
+      // Fetching users
       const response = await fetch('/api/users');
-      console.log('🔍 Frontend: API response received:', response.status, response.ok);
+              // API response received
       if (!response.ok) {
         throw new Error('Failed to fetch users');
       }
       const usersData = await response.json();
-      console.log('🔍 Frontend: Users data received:', usersData);
+              // Users data received
       
       // The API returns { success: true, users: [...] }
       let usersArray = [];
@@ -152,7 +152,7 @@ export default function UserManagementPage() {
         usersArray = usersData;
       }
       
-      console.log('🔍 Frontend: Final users array:', usersArray);
+              // Final users array processed
       setUsers(usersArray);
     } catch (error) {
       console.error('Error in fetchUsers:', error);
@@ -654,7 +654,7 @@ export default function UserManagementPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log('🔍 Frontend: useEffect fetchData called');
+        // useEffect fetchData called
         setLoading(true);
         setError(null);
         
@@ -663,9 +663,9 @@ export default function UserManagementPage() {
         setRoles([]);
         setPermissions([]);
 
-        console.log('🔍 Frontend: About to call Promise.all with fetchUsers, fetchRoles, fetchPermissions');
+        // Calling Promise.all
         await Promise.all([fetchUsers(), fetchRoles(), fetchPermissions()]);
-        console.log('🔍 Frontend: Promise.all completed successfully');
+                  // Promise.all completed
       } catch (err) {
         console.error('Error loading user management data:', err);
         setError(err instanceof Error ? err.message : t('loadDataFailed'));

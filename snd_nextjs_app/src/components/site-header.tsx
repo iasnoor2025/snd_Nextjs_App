@@ -36,7 +36,7 @@ export function SiteHeader() {
             const data = await response.json();
             if (data.success && data.user) {
               setCurrentUserRole(data.user.role);
-              console.log('🔍 Header: Fetched role from API:', data.user.role, 'for user:', data.user.email);
+              // Role fetched from API
             }
           }
         } catch (error) {

@@ -27,11 +27,18 @@ export interface UserPermissions {
  */
 export const PERMISSION_MAPPING: Record<string, string[]> = {
   // User permissions
-  'read.User': ['read.user'],
-  'create.User': ['create.user'],
-  'update.User': ['update.user'],
-  'delete.User': ['delete.user'],
-  'manage.User': ['manage.user'],
+  'read.User': ['read.User', 'read.user'],
+  'create.User': ['create.User', 'create.user'],
+  'update.User': ['update.User', 'update.user'],
+  'delete.User': ['delete.User', 'delete.user'],
+  'manage.User': ['manage.User', 'manage.user'],
+
+  // Dashboard permissions
+  'read.Dashboard': ['read.Dashboard', 'read.dashboard'],
+  'create.Dashboard': ['create.Dashboard', 'create.dashboard'],
+  'update.Dashboard': ['update.Dashboard', 'update.dashboard'],
+  'delete.Dashboard': ['delete.Dashboard', 'delete.dashboard'],
+  'manage.Dashboard': ['manage.Dashboard', 'manage.dashboard'],
 
   // Employee permissions
   'read.Employee': ['read.Employee', 'read.employee', 'read.employee-data'],
@@ -41,55 +48,55 @@ export const PERMISSION_MAPPING: Record<string, string[]> = {
   'manage.Employee': ['manage.Employee', 'manage.employee', 'manage.employee-data'],
 
   // Customer permissions
-  'read.Customer': ['read.customer'],
-  'create.Customer': ['create.customer'],
-  'update.Customer': ['update.customer'],
-  'delete.Customer': ['delete.customer'],
-  'manage.Customer': ['manage.customer'],
+  'read.Customer': ['read.Customer', 'read.customer'],
+  'create.Customer': ['create.Customer', 'create.customer'],
+  'update.Customer': ['update.Customer', 'update.customer'],
+  'delete.Customer': ['delete.Customer', 'delete.customer'],
+  'manage.Customer': ['manage.Customer', 'manage.customer'],
 
   // Equipment permissions
-  'read.Equipment': ['read.equipment'],
-  'create.Equipment': ['create.equipment'],
-  'update.Equipment': ['update.equipment'],
-  'delete.Equipment': ['delete.equipment'],
-  'manage.Equipment': ['manage.equipment'],
+  'read.Equipment': ['read.Equipment', 'read.equipment'],
+  'create.Equipment': ['create.Equipment', 'create.equipment'],
+  'update.Equipment': ['update.Equipment', 'update.equipment'],
+  'delete.Equipment': ['delete.Equipment', 'delete.equipment'],
+  'manage.Equipment': ['manage.Equipment', 'manage.equipment'],
 
   // Project permissions
-  'read.Project': ['read.project'],
-  'create.Project': ['create.project'],
-  'update.Project': ['update.project'],
-  'delete.Project': ['delete.project'],
-  'manage.Project': ['manage.project'],
+  'read.Project': ['read.Project', 'read.project'],
+  'create.Project': ['create.Project', 'create.project'],
+  'update.Project': ['update.Project', 'update.project'],
+  'delete.Project': ['delete.Project', 'delete.project'],
+  'manage.Project': ['manage.Project', 'manage.project'],
 
   // Rental permissions
-  'read.Rental': ['read.rental'],
-  'create.Rental': ['create.rental'],
-  'update.Rental': ['update.rental'],
-  'delete.Rental': ['delete.rental'],
-  'manage.Rental': ['manage.rental'],
+  'read.Rental': ['read.Rental', 'read.rental'],
+  'create.Rental': ['create.Rental', 'create.rental'],
+  'update.Rental': ['update.Rental', 'update.rental'],
+  'delete.Rental': ['delete.Rental', 'delete.rental'],
+  'manage.Rental': ['manage.Rental', 'manage.rental'],
 
   // Quotation permissions
-  'read.Quotation': ['read.quotation'],
-  'create.Quotation': ['create.quotation'],
-  'update.Quotation': ['update.quotation'],
-  'delete.Quotation': ['delete.quotation'],
-  'manage.Quotation': ['manage.quotation'],
+  'read.Quotation': ['read.Quotation', 'read.quotation'],
+  'create.Quotation': ['create.Quotation', 'create.quotation'],
+  'update.Quotation': ['update.Quotation', 'update.quotation'],
+  'delete.Quotation': ['delete.Quotation', 'delete.quotation'],
+  'manage.Quotation': ['manage.Quotation', 'manage.quotation'],
 
   // Payroll permissions
-  'read.Payroll': ['read.payroll'],
-  'create.Payroll': ['create.payroll'],
-  'update.Payroll': ['update.payroll'],
-  'delete.Payroll': ['delete.payroll'],
-  'manage.Payroll': ['manage.payroll'],
+  'read.Payroll': ['read.Payroll', 'read.payroll'],
+  'create.Payroll': ['create.Payroll', 'create.payroll'],
+  'update.Payroll': ['update.Payroll', 'update.payroll'],
+  'delete.Payroll': ['delete.Payroll', 'delete.payroll'],
+  'manage.Payroll': ['manage.Payroll', 'manage.payroll'],
 
   // Timesheet permissions
-  'read.Timesheet': ['read.timesheet'],
-  'create.Timesheet': ['create.timesheet'],
-  'update.Timesheet': ['update.timesheet'],
-  'delete.Timesheet': ['delete.timesheet'],
-  'manage.Timesheet': ['manage.timesheet'],
-  'approve.Timesheet': ['approve.timesheet'],
-  'reject.Timesheet': ['reject.timesheet'],
+  'read.Timesheet': ['read.Timesheet', 'read.timesheet'],
+  'create.Timesheet': ['create.Timesheet', 'create.timesheet'],
+  'update.Timesheet': ['update.Timesheet', 'update.timesheet'],
+  'delete.Timesheet': ['delete.Timesheet', 'delete.timesheet'],
+  'manage.Timesheet': ['manage.Timesheet', 'manage.timesheet'],
+  'approve.Timesheet': ['approve.Timesheet', 'approve.timesheet'],
+  'reject.Timesheet': ['reject.Timesheet', 'reject.timesheet'],
   // Timesheet stage-specific approval permissions
   'approve.Timesheet.Foreman': ['approve.timesheet.foreman'],
   'approve.Timesheet.Incharge': ['approve.timesheet.incharge'],
@@ -97,25 +104,25 @@ export const PERMISSION_MAPPING: Record<string, string[]> = {
   'approve.Timesheet.Manager': ['approve.timesheet.manager'],
 
   // Leave permissions
-  'read.Leave': ['read.leave'],
-  'create.Leave': ['create.leave'],
-  'update.Leave': ['update.leave'],
-  'delete.Leave': ['delete.leave'],
-  'manage.Leave': ['manage.leave'],
+  'read.Leave': ['read.Leave', 'read.leave'],
+  'create.Leave': ['create.Leave', 'create.leave'],
+  'update.Leave': ['update.Leave', 'update.leave'],
+  'delete.Leave': ['delete.Leave', 'delete.leave'],
+  'manage.Leave': ['manage.Leave', 'manage.leave'],
 
   // Department permissions
-  'read.Department': ['read.department'],
-  'create.Department': ['create.department'],
-  'update.Department': ['update.department'],
-  'delete.Department': ['delete.department'],
-  'manage.Department': ['manage.department'],
+  'read.Department': ['read.Department', 'read.department'],
+  'create.Department': ['create.Department', 'create.department'],
+  'update.Department': ['update.Department', 'update.department'],
+  'delete.Department': ['delete.Department', 'delete.department'],
+  'manage.Department': ['manage.Department', 'manage.department'],
 
   // Designation permissions
-  'read.Designation': ['read.designation'],
-  'create.Designation': ['create.designation'],
-  'update.Designation': ['update.designation'],
-  'delete.Designation': ['delete.designation'],
-  'manage.Designation': ['manage.designation'],
+  'read.Designation': ['read.Designation', 'read.designation'],
+  'create.Designation': ['create.Designation', 'create.designation'],
+  'update.Designation': ['update.Designation', 'update.designation'],
+  'delete.Designation': ['delete.Designation', 'delete.designation'],
+  'manage.Designation': ['manage.Designation', 'manage.designation'],
 
   // Company permissions
   'read.Company': ['read.company'],
@@ -125,61 +132,68 @@ export const PERMISSION_MAPPING: Record<string, string[]> = {
   'manage.Company': ['manage.company'],
 
   // Settings permissions
-  'read.Settings': ['read.settings', 'read.system-setting'],
-  'create.Settings': ['create.settings', 'create.system-setting'],
-  'update.Settings': ['update.settings', 'update.system-setting'],
-  'delete.Settings': ['delete.settings', 'delete.system-setting'],
-  'manage.Settings': ['manage.settings', 'manage.system-setting'],
+  'read.Settings': ['read.Settings', 'read.settings', 'read.system-setting'],
+  'create.Settings': ['create.Settings', 'create.settings', 'create.system-setting'],
+  'update.Settings': ['update.Settings', 'update.settings', 'update.system-setting'],
+  'delete.Settings': ['delete.Settings', 'delete.settings', 'delete.system-setting'],
+  'manage.Settings': ['manage.Settings', 'manage.settings', 'manage.system-setting'],
 
   // Location permissions
-  'read.Location': ['read.location'],
-  'create.Location': ['create.location'],
-  'update.Location': ['update.location'],
-  'delete.Location': ['delete.location'],
-  'manage.Location': ['manage.location'],
+  'read.Location': ['read.Location', 'read.location'],
+  'create.Location': ['create.Location', 'create.location'],
+  'update.Location': ['update.Location', 'update.location'],
+  'delete.Location': ['delete.Location', 'delete.location'],
+  'manage.Location': ['manage.Location', 'manage.location'],
 
   // Maintenance permissions
-  'read.Maintenance': ['read.maintenance'],
-  'create.Maintenance': ['create.maintenance'],
-  'update.Maintenance': ['update.maintenance'],
-  'delete.Maintenance': ['delete.maintenance'],
-  'manage.Maintenance': ['manage.maintenance'],
+  'read.Maintenance': ['read.Maintenance', 'read.maintenance'],
+  'create.Maintenance': ['create.Maintenance', 'create.maintenance'],
+  'update.Maintenance': ['update.Maintenance', 'update.maintenance'],
+  'delete.Maintenance': ['delete.Maintenance', 'delete.maintenance'],
+  'manage.Maintenance': ['manage.Maintenance', 'manage.maintenance'],
 
   // Safety permissions
-  'read.Safety': ['read.safety'],
-  'create.Safety': ['create.safety'],
-  'update.Safety': ['update.safety'],
-  'delete.Safety': ['delete.safety'],
-  'manage.Safety': ['manage.safety'],
+  'read.Safety': ['read.Safety', 'read.safety'],
+  'create.Safety': ['create.Safety', 'create.safety'],
+  'update.Safety': ['update.Safety', 'update.safety'],
+  'delete.Safety': ['delete.Safety', 'delete.safety'],
+  'manage.Safety': ['manage.Safety', 'manage.safety'],
 
   // SalaryIncrement permissions
-  'read.SalaryIncrement': ['read.salaryincrement'],
-  'create.SalaryIncrement': ['create.salaryincrement'],
-  'update.SalaryIncrement': ['update.salaryincrement'],
-  'delete.SalaryIncrement': ['delete.salaryincrement'],
-  'manage.SalaryIncrement': ['manage.salaryincrement'],
+  'read.SalaryIncrement': ['read.SalaryIncrement', 'read.salaryincrement'],
+  'create.SalaryIncrement': ['create.SalaryIncrement', 'create.salaryincrement'],
+  'update.SalaryIncrement': ['update.SalaryIncrement', 'update.salaryincrement'],
+  'delete.SalaryIncrement': ['delete.SalaryIncrement', 'delete.salaryincrement'],
+  'manage.SalaryIncrement': ['manage.SalaryIncrement', 'manage.salaryincrement'],
 
   // Advance permissions
-  'read.Advance': ['read.advance'],
-  'create.Advance': ['create.advance'],
-  'update.Advance': ['update.advance'],
-  'delete.Advance': ['delete.advance'],
-  'manage.Advance': ['manage.advance'],
+  'read.Advance': ['read.Advance', 'read.advance'],
+  'create.Advance': ['create.Advance', 'create.advance'],
+  'update.Advance': ['update.Advance', 'update.advance'],
+  'delete.Advance': ['delete.Advance', 'delete.advance'],
+  'manage.Advance': ['manage.Advance', 'manage.advance'],
+
+  // AdvancePayment permissions (for dashboard sections)
+  'read.AdvancePayment': ['read.AdvancePayment', 'read.advancepayment', 'read.advance'],
+  'create.AdvancePayment': ['create.AdvancePayment', 'create.advancepayment', 'create.advance'],
+  'update.AdvancePayment': ['update.AdvancePayment', 'update.advancepayment', 'update.advance'],
+  'delete.AdvancePayment': ['delete.AdvancePayment', 'delete.advancepayment', 'delete.advance'],
+  'manage.AdvancePayment': ['manage.AdvancePayment', 'manage.advancepayment', 'manage.advance'],
 
   // Assignment permissions
-  'read.Assignment': ['read.assignment'],
-  'create.Assignment': ['create.assignment'],
-  'update.Assignment': ['update.assignment'],
-  'delete.Assignment': ['delete.assignment'],
-  'manage.Assignment': ['manage.assignment'],
+  'read.Assignment': ['read.Assignment', 'read.assignment'],
+  'create.Assignment': ['create.Assignment', 'create.assignment'],
+  'update.Assignment': ['update.Assignment', 'update.assignment'],
+  'delete.Assignment': ['delete.Assignment', 'delete.assignment'],
+  'manage.Assignment': ['manage.Assignment', 'manage.assignment'],
 
   // Report permissions
-  'read.Report': ['read.report'],
-  'create.Report': ['create.report'],
-  'update.Report': ['update.report'],
-  'delete.Report': ['delete.report'],
-  'manage.Report': ['manage.report'],
-  'export.Report': ['export.report'],
+  'read.Report': ['read.Report', 'read.report'],
+  'create.Report': ['create.Report', 'create.report'],
+  'update.Report': ['update.Report', 'update.report'],
+  'delete.Report': ['delete.Report', 'delete.report'],
+  'manage.Report': ['manage.Report', 'manage.report'],
+  'export.Report': ['export.Report', 'export.report'],
 
   // Employee-document permissions
   'read.employee-document': ['read.employee-document'],
@@ -189,15 +203,15 @@ export const PERMISSION_MAPPING: Record<string, string[]> = {
   'manage.employee-document': ['manage.employee-document'],
 
   // Document Management permissions
-  'read.Document': ['read.document'],
-  'create.Document': ['create.document'],
-  'update.Document': ['update.document'],
-  'delete.Document': ['delete.document'],
-  'manage.Document': ['manage.document'],
-  'upload.Document': ['upload.document'],
-  'download.Document': ['download.document'],
-  'approve.Document': ['approve.document'],
-  'reject.Document': ['reject.document'],
+  'read.Document': ['read.Document', 'read.document'],
+  'create.Document': ['create.Document', 'create.document'],
+  'update.Document': ['update.Document', 'update.document'],
+  'delete.Document': ['delete.Document', 'delete.document'],
+  'manage.Document': ['manage.Document', 'manage.document'],
+  'upload.Document': ['upload.Document', 'upload.document'],
+  'download.Document': ['download.Document', 'download.document'],
+  'approve.Document': ['approve.Document', 'approve.document'],
+  'reject.Document': ['reject.Document', 'reject.document'],
 
   // Document Version permissions
   'read.document-version': ['read.document-version'],
@@ -243,9 +257,9 @@ export const DYNAMIC_ROLE_HIERARCHY: Record<string, number> = {
  */
 export const DYNAMIC_FALLBACK_PERMISSIONS: Record<string, string[]> = {
   SUPER_ADMIN: ['*', 'manage.all'],
-  ADMIN: [
-    'read.Dashboard', 'read.Employee', 'read.employee-document'
-  ],
+  // ADMIN: [
+  //   'read.Dashboard', 'read.Employee', 'read.employee-document'
+  // ],
   // All other roles start with empty permissions - they must be assigned dynamically
   // MANAGER: [], // Will be populated dynamically
   // SUPERVISOR: [], // Will be populated dynamically
