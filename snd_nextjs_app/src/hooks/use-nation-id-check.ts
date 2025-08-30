@@ -150,6 +150,12 @@ export function useNationIdCheck() {
       firstLoginCache.delete(cacheKey);
     }
 
+    // Also clear any browser storage
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('first-login-check');
+      sessionStorage.removeItem('first-login-check');
+    }
+
     setHasChecked(false);
     setNationIdData(null);
     checkFirstLogin();

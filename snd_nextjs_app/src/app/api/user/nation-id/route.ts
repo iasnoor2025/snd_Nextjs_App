@@ -230,11 +230,63 @@ export async function PUT(_request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
     }
 
+    // Now automatically link employee record if found by National ID
+    let linkedEmployee = null;
+    try {
+      // Find employee by National ID (Iqama number)
+      const employeeRows = await db
+        .select({
+          id: employees.id,
+          firstName: employees.firstName,
+          lastName: employees.lastName,
+          email: employees.email,
+          userId: employees.userId,
+        })
+        .from(employees)
+        .where(eq(employees.iqamaNumber, nationId.trim()))
+        .limit(1);
+
+      if (employeeRows.length > 0) {
+        const employee = employeeRows[0];
+        
+        // Link employee to user and update email
+        await db
+          .update(employees)
+          .set({
+            userId: userId,
+            email: updatedUser.email, // Update employee email to match user email
+          })
+          .where(eq(employees.id, employee.id));
+
+        linkedEmployee = {
+          id: employee.id,
+          firstName: employee.firstName,
+          lastName: employee.lastName,
+          email: updatedUser.email,
+          userId: userId,
+        };
+
+        console.log('Successfully linked employee to user:', {
+          employeeId: employee.id,
+          employeeName: `${employee.firstName} ${employee.lastName}`,
+          userId: userId,
+          userEmail: updatedUser.email
+        });
+      } else {
+        console.log('No employee found with National ID:', nationId.trim());
+      }
+    } catch (linkError) {
+      console.error('Failed to link employee:', linkError);
+      // Continue without employee linking - user can still access the system
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Nation ID updated successfully',
       nationId: updatedUser.national_id,
       userId: updatedUser.id,
+      employeeLinked: !!linkedEmployee,
+      employee: linkedEmployee,
     });
   } catch (error) {
     

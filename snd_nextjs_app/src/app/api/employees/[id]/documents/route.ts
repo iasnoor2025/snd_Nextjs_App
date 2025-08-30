@@ -79,6 +79,14 @@ const getDocumentsHandler = async (_request: any, { params }: { params: Promise<
         // Additional fields needed for DocumentManager
         typeLabel: displayName,
         employee_file_number: employeeId,
+        // Add image detection properties for profile page
+        isImage: doc.mimeType?.startsWith('image/') || false,
+        isPhoto: doc.documentType?.toLowerCase().includes('photo') || 
+                 doc.documentType?.toLowerCase().includes('picture') ||
+                 doc.documentType?.toLowerCase().includes('image') ||
+                 doc.fileName?.toLowerCase().includes('photo') ||
+                 doc.fileName?.toLowerCase().includes('picture') ||
+                 doc.fileName?.toLowerCase().includes('image'),
       };
     });
 

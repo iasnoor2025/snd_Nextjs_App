@@ -43,13 +43,24 @@ export function NationIdRequired({ userName, userEmail, onNationIdSet }: NationI
       const data = await response.json();
 
       if (response.ok) {
-        toast.success('Nation ID saved successfully!');
+        if (data.employeeLinked) {
+          toast.success(`Nation ID saved successfully! Employee ${data.employee.firstName} ${data.employee.lastName} linked to your account.`);
+        } else {
+          toast.success('Nation ID saved successfully!');
+        }
+        
+        // Clear the first login cache immediately so user can access the system
+        if (typeof window !== 'undefined') {
+          // Clear any cached first login data
+          localStorage.removeItem('first-login-check');
+          sessionStorage.removeItem('first-login-check');
+        }
+        
         onNationIdSet();
       } else {
         setError(data.error || 'Failed to save nation ID');
       }
-    } catch (error) {
-      
+    } catch {
       setError('An error occurred while saving your nation ID');
     } finally {
       setIsLoading(false);

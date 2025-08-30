@@ -103,30 +103,68 @@ const getEmployeesHandler = async (request: NextRequest) => {
     );
     await Promise.all(statusUpdatePromises);
 
-    // Fetch latest assignment per employee in this page
+    // Fetch latest ACTIVE assignment per employee in this page
     const employeeFileNumbers = employeeRows.map(e => e.file_number as string).filter(Boolean);
     const latestAssignments: Record<string, any> = {};
     if (employeeFileNumbers.length > 0) {
-      const assignmentRows = await db
-        .select({
-          id: employeeAssignments.id,
-          employee_file_number: employeesTable.fileNumber,
-          type: employeeAssignments.type,
-          name: employeeAssignments.name,
-          status: employeeAssignments.status,
-          start_date: employeeAssignments.startDate,
-          end_date: employeeAssignments.endDate,
-          location: employeeAssignments.location,
-          notes: employeeAssignments.notes,
-          project_name: projects.name,
-          rental_number: rentals.rentalNumber,
-        })
-        .from(employeeAssignments)
-        .innerJoin(employeesTable, eq(employeesTable.id, employeeAssignments.employeeId))
-        .leftJoin(projects, eq(projects.id, employeeAssignments.projectId))
-        .leftJoin(rentals, eq(rentals.id, employeeAssignments.rentalId))
-        .where(inArray(employeesTable.fileNumber, employeeFileNumbers))
-        .orderBy(desc(employeeAssignments.startDate));
+      // If this is a request for all employees (admin view), fetch assignments for all employees
+      // Otherwise, only fetch for the current page
+      const isAllEmployeesRequest = searchParams.get('all') === 'true';
+      
+      let assignmentQuery;
+      if (isAllEmployeesRequest) {
+        // For admin view, get assignments for all employees to ensure statistics are accurate
+        assignmentQuery = db
+          .select({
+            id: employeeAssignments.id,
+            employee_file_number: employeesTable.fileNumber,
+            type: employeeAssignments.type,
+            name: employeeAssignments.name,
+            status: employeeAssignments.status,
+            start_date: employeeAssignments.startDate,
+            end_date: employeeAssignments.endDate,
+            location: employeeAssignments.location,
+            notes: employeeAssignments.notes,
+            project_name: projects.name,
+            rental_number: rentals.rentalNumber,
+          })
+          .from(employeeAssignments)
+          .innerJoin(employeesTable, eq(employeesTable.id, employeeAssignments.employeeId))
+          .leftJoin(projects, eq(projects.id, employeeAssignments.projectId))
+          .leftJoin(rentals, eq(rentals.id, employeeAssignments.rentalId))
+          .where(eq(employeeAssignments.status, 'active'))
+          .orderBy(desc(employeeAssignments.startDate));
+      } else {
+        // For paginated view, only get assignments for current page employees
+        assignmentQuery = db
+          .select({
+            id: employeeAssignments.id,
+            employee_file_number: employeesTable.fileNumber,
+            type: employeeAssignments.type,
+            name: employeeAssignments.name,
+            status: employeeAssignments.status,
+            start_date: employeeAssignments.startDate,
+            end_date: employeeAssignments.endDate,
+            location: employeeAssignments.location,
+            notes: employeeAssignments.notes,
+            project_name: projects.name,
+            rental_number: rentals.rentalNumber,
+          })
+          .from(employeeAssignments)
+          .innerJoin(employeesTable, eq(employeesTable.id, employeeAssignments.employeeId))
+          .leftJoin(projects, eq(projects.id, employeeAssignments.projectId))
+          .leftJoin(rentals, eq(rentals.id, employeeAssignments.rentalId))
+          .where(
+            and(
+              inArray(employeesTable.fileNumber, employeeFileNumbers),
+              eq(employeeAssignments.status, 'active')
+            )
+          )
+          .orderBy(desc(employeeAssignments.startDate));
+      }
+      
+      const assignmentRows = await assignmentQuery;
+      
       for (const row of assignmentRows) {
         const empFileNumber = row.employee_file_number as string;
         if (!latestAssignments[empFileNumber]) {

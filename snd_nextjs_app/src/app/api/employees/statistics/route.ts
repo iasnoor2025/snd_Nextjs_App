@@ -4,117 +4,184 @@ import { employeeAssignments, employees } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 const getEmployeeStatisticsHandler = async () => {
   try {
-
-    // Drizzle pool is initialized on import
+    console.log('🔍 Statistics API - Starting...');
 
     // Get session to check user role
     const session = await getServerSession(authConfig);
     const user = session?.user;
+    
+    console.log('🔍 User role:', user?.role);
 
-    // For employee users, only show statistics for their own record
-    let ownEmployeeFileNumber: string | null = null;
-    if (user?.national_id) {
-      try {
-        const ownRows = await db
-          .select({ fileNumber: employees.fileNumber })
-          .from(employees)
-          .where(eq(employees.iqamaNumber, String(user.national_id)))
-          .limit(1);
-        ownEmployeeFileNumber = ownRows[0]?.fileNumber ?? null;
-      } catch (e) {
-        ownEmployeeFileNumber = null;
-      }
-    }
+    // Get total employee count
+    const totalEmployeesRows = await db.select({ count: sql<number>`count(*)` }).from(employees);
+    const totalEmployees = Number((totalEmployeesRows as { count: number }[])[0]?.count ?? 0);
+    
+    console.log('🔍 Total employees found:', totalEmployees);
+    
+    // Debug: Check all assignments in the database
+    const allAssignments = await db
+      .select({
+        id: employeeAssignments.id,
+        employeeId: employeeAssignments.employeeId,
+        type: employeeAssignments.type,
+        status: employeeAssignments.status,
+        startDate: employeeAssignments.startDate,
+        endDate: employeeAssignments.endDate,
+      })
+      .from(employeeAssignments)
+      .limit(10);
+    
+    console.log('🔍 All assignments in database (first 10):', allAssignments);
+    console.log('🔍 Total assignments count:', allAssignments.length);
 
-    // Get total employee count (filtered for employee users)
-    const totalEmployeesRows = ownEmployeeFileNumber
-      ? await db
-          .select({ count: sql<number>`count(*)` })
-          .from(employees)
-          .where(eq(employees.fileNumber, ownEmployeeFileNumber))
-      : await db.select({ count: sql<number>`count(*)` }).from(employees);
-    const totalEmployees = Number((totalEmployeesRows as any)[0]?.count ?? 0);
-
-    // Get employees with current assignments (filtered for employee users)
+    // Get employees with current assignments
     let currentlyAssigned = 0;
-    if (ownEmployeeFileNumber) {
-      // For employee users, check if they have any active assignments
-      const rows = await db
-        .select({ count: sql<number>`count(*)` })
+    
+    // Get all employees
+    const allEmployees = await db
+      .select({
+        id: employees.id,
+        fileNumber: employees.fileNumber,
+      })
+      .from(employees);
+
+    const employeeIds = allEmployees.map(emp => emp.id);
+    
+    if (employeeIds.length > 0) {
+      console.log('🔍 Found employee IDs:', employeeIds);
+      
+      // Get all active assignments for these employees
+      const assignmentRows = await db
+        .select({
+          employeeId: employeeAssignments.employeeId,
+          type: employeeAssignments.type,
+          status: employeeAssignments.status,
+          startDate: employeeAssignments.startDate,
+          endDate: employeeAssignments.endDate,
+        })
         .from(employeeAssignments)
-        .innerJoin(employees, eq(employees.id, employeeAssignments.employeeId))
         .where(
           and(
-            eq(employees.fileNumber, ownEmployeeFileNumber),
+            inArray(employeeAssignments.employeeId, employeeIds),
             eq(employeeAssignments.status, 'active')
           )
         );
-      currentlyAssigned = Number((rows as any)[0]?.count ?? 0) > 0 ? 1 : 0;
-    } else {
-      const rows = await db
-        .select({ count: sql<number>`count(distinct ${employeeAssignments.employeeId})` })
-        .from(employeeAssignments)
-        .where(eq(employeeAssignments.status, 'active'));
-      currentlyAssigned = Number((rows as any)[0]?.count ?? 0);
-    }
 
-    // Count project assignments (filtered for employee users)
+      console.log('🔍 Found assignment rows:', assignmentRows);
+      console.log('🔍 Assignment rows count:', assignmentRows.length);
+
+      // Count unique employees with active assignments
+      const employeesWithAssignments = new Set();
+      assignmentRows.forEach(row => {
+        // Check if assignment is currently active (no end date or end date is in the future)
+        const isAssignmentActive = 
+          row.status === 'active' &&
+          (!row.endDate || new Date(row.endDate) > new Date());
+        
+        console.log('🔍 Assignment row:', row, 'isActive:', isAssignmentActive);
+        
+        if (isAssignmentActive) {
+          employeesWithAssignments.add(row.employeeId);
+        }
+      });
+      
+      currentlyAssigned = employeesWithAssignments.size;
+      console.log('🔍 Employees with assignments set:', Array.from(employeesWithAssignments));
+    } else {
+      currentlyAssigned = 0;
+    }
+    
+    console.log('🔍 Currently assigned count:', currentlyAssigned);
+
+    // Count project assignments
     let projectAssignments = 0;
-    if (ownEmployeeFileNumber) {
-      const rows = await db
-        .select({ count: sql<number>`count(*)` })
+    if (totalEmployees > 0) {
+      const assignmentRows = await db
+        .select({
+          employeeId: employeeAssignments.employeeId,
+          type: employeeAssignments.type,
+          status: employeeAssignments.status,
+          startDate: employeeAssignments.startDate,
+          endDate: employeeAssignments.endDate,
+        })
         .from(employeeAssignments)
-        .innerJoin(employees, eq(employees.id, employeeAssignments.employeeId))
         .where(
           and(
-            eq(employees.fileNumber, ownEmployeeFileNumber),
             eq(employeeAssignments.status, 'active'),
             eq(employeeAssignments.type, 'project')
           )
         );
-      projectAssignments = Number((rows as any)[0]?.count ?? 0) > 0 ? 1 : 0;
+
+      // Count unique employees with active project assignments
+      const employeesWithProjectAssignments = new Set();
+      assignmentRows.forEach(row => {
+        const isAssignmentActive = 
+          row.status === 'active' &&
+          (!row.endDate || new Date(row.endDate) > new Date());
+        
+        if (isAssignmentActive) {
+          employeesWithProjectAssignments.add(row.employeeId);
+        }
+      });
+      
+      projectAssignments = employeesWithProjectAssignments.size;
     } else {
-      const rows = await db
-        .select({ count: sql<number>`count(distinct ${employeeAssignments.employeeId})` })
-        .from(employeeAssignments)
-        .where(
-          and(eq(employeeAssignments.status, 'active'), eq(employeeAssignments.type, 'project'))
-        );
-      projectAssignments = Number((rows as any)[0]?.count ?? 0);
+      projectAssignments = 0;
     }
 
-    // Count rental assignments (filtered for employee users)
+    // Count rental assignments
     let rentalAssignments = 0;
     const rentalTypes = ['rental', 'rental_item'] as const;
-    if (ownEmployeeFileNumber) {
-      const rows = await db
-        .select({ count: sql<number>`count(*)` })
+    
+    if (totalEmployees > 0) {
+      console.log('🔍 Checking rental assignments for all employees');
+      
+      const assignmentRows = await db
+        .select({
+          employeeId: employeeAssignments.employeeId,
+          type: employeeAssignments.type,
+          status: employeeAssignments.status,
+          startDate: employeeAssignments.startDate,
+          endDate: employeeAssignments.endDate,
+        })
         .from(employeeAssignments)
-        .innerJoin(employees, eq(employees.id, employeeAssignments.employeeId))
         .where(
           and(
-            eq(employees.fileNumber, ownEmployeeFileNumber),
             eq(employeeAssignments.status, 'active'),
             inArray(employeeAssignments.type, rentalTypes as unknown as string[])
           )
         );
-      rentalAssignments = Number((rows as any)[0]?.count ?? 0) > 0 ? 1 : 0;
+
+      console.log('🔍 Found rental assignment rows:', assignmentRows);
+      console.log('🔍 Rental assignment rows count:', assignmentRows.length);
+      console.log('🔍 Looking for types:', rentalTypes);
+
+      // Count unique employees with active rental assignments
+      const employeesWithRentalAssignments = new Set();
+      assignmentRows.forEach(row => {
+        const isAssignmentActive = 
+          row.status === 'active' &&
+          (!row.endDate || new Date(row.endDate) > new Date());
+        
+        console.log('🔍 Rental assignment row:', row, 'isActive:', isAssignmentActive);
+        
+        if (isAssignmentActive) {
+          employeesWithRentalAssignments.add(row.employeeId);
+        }
+      });
+      
+      rentalAssignments = employeesWithRentalAssignments.size;
+      console.log('🔍 Employees with rental assignments set:', Array.from(employeesWithRentalAssignments));
     } else {
-      const rows = await db
-        .select({ count: sql<number>`count(distinct ${employeeAssignments.employeeId})` })
-        .from(employeeAssignments)
-        .where(
-          and(
-            eq(employeeAssignments.status, 'active'),
-            inArray(employeeAssignments.type, rentalTypes as unknown as string[])
-          )
-        );
-      rentalAssignments = Number((rows as any)[0]?.count ?? 0);
+      rentalAssignments = 0;
     }
+    
+    console.log('🔍 Project assignments count:', projectAssignments);
+    console.log('🔍 Rental assignments count:', rentalAssignments);
 
     return NextResponse.json({
       success: true,
@@ -127,7 +194,7 @@ const getEmployeeStatisticsHandler = async () => {
       message: 'Employee statistics retrieved successfully',
     });
   } catch (error) {
-
+    console.error('🔍 Statistics API - Error:', error);
     return NextResponse.json(
       {
         success: false,

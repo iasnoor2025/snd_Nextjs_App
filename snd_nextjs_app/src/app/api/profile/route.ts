@@ -1,5 +1,5 @@
 import { authConfig } from '@/lib/auth-config';
-import { db } from '@/lib/drizzle';
+import { db } from '@/lib/db';
 import { departments, designations, employees, users } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
@@ -16,10 +16,40 @@ export async function GET(_request: NextRequest) {
   }
 
   try {
-    const userId = session.user.id;
+            const userId = session.user.id;
 
-    // Generate cache key for user profile
-    const cacheKey = generateCacheKey('profile', 'user', { userId });
+        // Debug: Check what employees exist in the database
+        const allEmployees = await db
+          .select({
+            id: employees.id,
+            firstName: employees.firstName,
+            lastName: employees.lastName,
+            email: employees.email,
+            userId: employees.userId,
+            iqamaNumber: employees.iqamaNumber,
+          })
+          .from(employees)
+          .limit(10);
+
+        console.log('All employees in database (first 10):', allEmployees);
+        
+        // Debug: Check if there's an employee linked to this user
+        const userLinkedEmployees = await db
+          .select({
+            id: employees.id,
+            firstName: employees.firstName,
+            lastName: employees.lastName,
+            email: employees.email,
+            userId: employees.userId,
+            iqamaNumber: employees.iqamaNumber,
+          })
+          .from(employees)
+          .where(eq(employees.userId, parseInt(userId)));
+
+        console.log('Employees linked to this user:', userLinkedEmployees);
+
+        // Generate cache key for user profile
+        const cacheKey = generateCacheKey('profile', 'user', { userId });
     
     return await cacheQueryResult(
       cacheKey,
@@ -53,44 +83,36 @@ export async function GET(_request: NextRequest) {
           return NextResponse.json({ error: 'User not found in database' }, { status: 404 });
         }
 
-        // Get employee data if exists (direct user_id match)
-        const employeeRows = await db
+        console.log('Profile API Debug - User Info:', {
+          userId: user.id,
+          userEmail: user.email,
+          userNationalId: user.nationalId,
+          userName: user.name
+        });
+
+        // Debug: Check what employees exist in the database
+        const allEmployees = await db
           .select({
             id: employees.id,
             firstName: employees.firstName,
-            middleName: employees.middleName,
             lastName: employees.lastName,
-            fileNumber: employees.fileNumber,
-            phone: employees.phone,
             email: employees.email,
-            address: employees.address,
-            city: employees.city,
-            state: employees.state,
-            country: employees.country,
-            nationality: employees.nationality,
-            dateOfBirth: employees.dateOfBirth,
-            hireDate: employees.hireDate,
+            userId: employees.userId,
             iqamaNumber: employees.iqamaNumber,
-            iqamaExpiry: employees.iqamaExpiry,
-            passportNumber: employees.passportNumber,
-            passportExpiry: employees.passportExpiry,
-            drivingLicenseNumber: employees.drivingLicenseNumber,
-            drivingLicenseExpiry: employees.drivingLicenseExpiry,
-            operatorLicenseNumber: employees.operatorLicenseNumber,
-            operatorLicenseExpiry: employees.operatorLicenseExpiry,
-            designationId: employees.designationId,
-            departmentId: employees.departmentId,
           })
           .from(employees)
-          .where(eq(employees.userId, parseInt(user.id.toString())))
-          .limit(1);
+          .limit(10);
 
-        const employee = employeeRows.length > 0 ? employeeRows[0] : null;
+        console.log('All employees in database (first 10):', allEmployees);
 
-        // Check if user's national ID matches any employee's Iqama number
-        let matchedEmployee: any = null;
+        // Get employee data if exists (direct user_id match)
+        let employee = null;
+        
+        // First try to find employee by National ID match (this should be the primary method)
         if (user.nationalId) {
-          const matchedEmployeeRows = await db
+          console.log('Looking for employee with National ID:', user.nationalId);
+          
+          const nationalIdEmployeeRows = await db
             .select({
               id: employees.id,
               firstName: employees.firstName,
@@ -126,54 +148,48 @@ export async function GET(_request: NextRequest) {
             .where(eq(employees.iqamaNumber, user.nationalId))
             .limit(1);
 
-          if (matchedEmployeeRows.length > 0) {
-            matchedEmployee = matchedEmployeeRows[0];
+          console.log('National ID search results:', {
+            foundCount: nationalIdEmployeeRows.length,
+            employees: nationalIdEmployeeRows.map(emp => ({
+              id: emp.id,
+              name: `${emp.firstName} ${emp.lastName}`,
+              iqamaNumber: emp.iqamaNumber,
+              userId: emp.userId
+            }))
+          });
 
-            // Step 3: Auto-update employee email if it doesn't match user's email
-            if (matchedEmployee.email !== user.email) {
-              
-              try {
-                await db
-                  .update(employees)
-                  .set({ email: user.email })
-                  .where(eq(employees.id, matchedEmployee.id));
-                
-                // Update the matchedEmployee object with new email
-                matchedEmployee.email = user.email;
-              } catch (updateError) {
-                
-              }
-            }
-
-            // Step 4: Establish relationship by updating employee's userId field
-            if (!matchedEmployee.userId || matchedEmployee.userId !== parseInt(user.id.toString())) {
-              
-              try {
-                await db
-                  .update(employees)
-                  .set({ userId: parseInt(user.id.toString()) })
-                  .where(eq(employees.id, matchedEmployee.id));
-                
-                // Update the matchedEmployee object with new userId
-                matchedEmployee.userId = parseInt(user.id.toString());
-              } catch (linkError) {
-                
-              }
-            } else {
-              
-            }
-          } else {
+          if (nationalIdEmployeeRows.length > 0) {
+            employee = nationalIdEmployeeRows[0];
+            console.log('Found employee by National ID:', {
+              employeeId: employee.id,
+              employeeName: `${employee.firstName} ${employee.lastName}`,
+              nationalId: employee.iqamaNumber
+            });
             
+            // Auto-link this employee to the user if not already linked
+            if (!employee.userId) {
+              try {
+                await db
+                  .update(employees)
+                  .set({ 
+                    userId: parseInt(user.id.toString()),
+                    email: user.email
+                  })
+                  .where(eq(employees.id, employee.id));
+                
+                employee.userId = parseInt(user.id.toString());
+                employee.email = user.email;
+                console.log('Auto-linked employee to user');
+              } catch (linkError) {
+                console.error('Failed to auto-link employee:', linkError);
+              }
+            }
           }
-        } else {
-          
         }
-
-        // If no direct employee record, try to find by email match
-        let emailMatchedEmployee: any = null;
-        if (!employee && user.email) {
-          
-          const emailMatchedEmployeeRows = await db
+        
+        // If no employee found by National ID, try direct userId match as fallback
+        if (!employee) {
+          const directEmployeeRows = await db
             .select({
               id: employees.id,
               firstName: employees.firstName,
@@ -200,41 +216,43 @@ export async function GET(_request: NextRequest) {
               designationId: employees.designationId,
               departmentId: employees.departmentId,
               userId: employees.userId,
+              designation: designations.name,
+              department: departments.name,
             })
             .from(employees)
-            .where(eq(employees.email, user.email))
+            .leftJoin(designations, eq(employees.designationId, designations.id))
+            .leftJoin(departments, eq(employees.departmentId, departments.id))
+            .where(eq(employees.userId, parseInt(user.id.toString())))
             .limit(1);
 
-          if (emailMatchedEmployeeRows.length > 0) {
-            emailMatchedEmployee = emailMatchedEmployeeRows[0];
-
-            // Establish relationship by updating employee's userId field if not already set
-            if (
-              !emailMatchedEmployee.userId ||
-              emailMatchedEmployee.userId !== parseInt(user.id.toString())
-            ) {
-              
-              try {
-                await db
-                  .update(employees)
-                  .set({ userId: parseInt(user.id.toString()) })
-                  .where(eq(employees.id, emailMatchedEmployee.id));
-                
-                // Update the emailMatchedEmployee object with new userId
-                emailMatchedEmployee.userId = parseInt(user.id.toString());
-              } catch (linkError) {
-                
-              }
-            } else {
-              
-            }
-          } else {
-            
-          }
+          employee = directEmployeeRows.length > 0 ? directEmployeeRows[0] : null;
         }
 
-        // Use the best available employee data
-        const bestEmployee = employee || emailMatchedEmployee || matchedEmployee;
+        // Debug logging
+        console.log('Profile API Debug:', {
+          userId: user.id,
+          userEmail: user.email,
+          directEmployeeFound: !!employee,
+          directEmployeeId: employee?.id,
+          directEmployeeName: employee ? `${employee.firstName} ${employee.lastName}` : 'None'
+        });
+
+        // Use the employee found (either by National ID or direct userId)
+        const bestEmployee = employee;
+        
+        console.log('Final employee selection:', {
+          employeeFound: !!bestEmployee,
+          finalEmployeeId: bestEmployee?.id,
+          finalEmployeeName: bestEmployee ? `${bestEmployee.firstName} ${bestEmployee.lastName}` : 'None',
+          source: bestEmployee ? (bestEmployee.userId === parseInt(user.id.toString()) ? 'direct' : 'nationalId') : 'none',
+          employeeDetails: bestEmployee ? {
+            firstName: bestEmployee.firstName,
+            lastName: bestEmployee.lastName,
+            email: bestEmployee.email,
+            phone: bestEmployee.phone,
+            iqamaNumber: bestEmployee.iqamaNumber
+          } : null
+        });
 
         // Format the response
         const profile = {
@@ -263,8 +281,11 @@ export async function GET(_request: NextRequest) {
           city: bestEmployee?.city || '',
           state: bestEmployee?.state || '',
           country: bestEmployee?.country || '',
-          // Matched employee details (only if Nation ID matches Iqama)
-          matchedEmployee: matchedEmployee,
+          // Additional info for debugging and user guidance
+          needsNationalId: !user.nationalId && !bestEmployee,
+          employeeLinked: !!bestEmployee,
+          employeeSource: bestEmployee ? (bestEmployee.userId === parseInt(user.id.toString()) ? 'direct' : 'nationalId') : 'none',
+          employeeId: bestEmployee?.id || null
         };
 
         return NextResponse.json(profile);
@@ -275,35 +296,24 @@ export async function GET(_request: NextRequest) {
       }
     );
   } catch (error) {
-
-    // Return session user data on any error
-    const sessionProfile = {
-      id: session?.user?.id || 'error-user',
-      name: session?.user?.name || 'Authenticated User',
-      email: session?.user?.email || '',
-      phone: '',
-      avatar: '',
-      role: session?.user?.role || 'USER',
-      department: 'General',
-      location: '',
-      bio:
-        'This is your profile from session data. Database error occurred: ' +
-        (error instanceof Error ? error.message : 'Unknown error'),
-      joinDate: new Date().toISOString(),
-      lastLogin: new Date().toISOString(),
-      status: session?.user?.isActive ? 'active' : 'inactive',
-      nationalId: '',
-      firstName: '',
-      middleName: '',
-      lastName: '',
-      designation: '',
-      address: '',
-      city: '',
-      state: '',
-      country: '',
-    };
-
-    return NextResponse.json(sessionProfile);
+    console.error('Profile fetch error:', error);
+    
+    // Return a proper error response instead of session data
+    return NextResponse.json(
+      {
+        error: 'Failed to fetch profile data: ' + (error instanceof Error ? error.message : 'Unknown error'),
+        // Fallback to basic session data for display purposes
+        id: session?.user?.id || '',
+        name: session?.user?.name || '',
+        email: session?.user?.email || '',
+        phone: '',
+        firstName: '',
+        lastName: '',
+        role: session?.user?.role || 'USER',
+        status: session?.user?.isActive ? 'active' : 'inactive',
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -409,7 +419,6 @@ export async function POST(_request: NextRequest) {
 
     if (existingEmployeeRows.length > 0) {
       // Update existing employee
-      
       const existingEmployee = existingEmployeeRows[0]!;
       const updatedEmployeeRows = await db
         .update(employees)
@@ -427,10 +436,34 @@ export async function POST(_request: NextRequest) {
         .returning();
 
       employee = updatedEmployeeRows[0]!;
-      
     } else {
-      // No employee record exists - don't create one
-      
+      // Create new employee record if we have the required data
+      if (firstName || lastName || phone || address || city || state || country) {
+        try {
+          const newEmployeeRows = await db
+            .insert(employees)
+            .values({
+              userId: parseInt(userId),
+              firstName: firstName || '',
+              middleName: middleName || '',
+              lastName: lastName || '',
+              phone: phone || '',
+              address: address || '',
+              city: city || '',
+              state: state || '',
+              country: country || '',
+              email: email || '',
+            })
+            .returning();
+
+          if (newEmployeeRows.length > 0) {
+            employee = newEmployeeRows[0]!;
+          }
+        } catch (createError) {
+          console.error('Failed to create employee record:', createError);
+          // Continue without employee record
+        }
+      }
     }
 
     // Format the response

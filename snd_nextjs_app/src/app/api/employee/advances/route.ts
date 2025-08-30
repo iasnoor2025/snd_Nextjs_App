@@ -33,24 +33,31 @@ export async function GET(_request: NextRequest) {
     }
 
     // Check if user has permission to view this employee's advances
-    if (session.user.national_id) {
+    // Use role-based access control instead of national_id
+    if (session.user.role === 'EMPLOYEE') {
       // For employees, they can only view their own advances
-      const employeeRows = await db
-        .select({ id: employeesTable.id })
-        .from(employeesTable)
-        .where(eq(employeesTable.iqamaNumber, session.user.national_id))
-        .limit(1);
+      try {
+        const [ownEmployee] = await db
+          .select({ id: employeesTable.id })
+          .from(employeesTable)
+          .where(eq(employeesTable.userId, parseInt(session.user.id)))
+          .limit(1);
 
-      const employee = employeeRows[0];
-
-      if (!employee || employee.id !== parseInt(employeeId)) {
-        
+        if (!ownEmployee || ownEmployee.id !== parseInt(employeeId)) {
+          return NextResponse.json(
+            { error: 'Access denied. You can only view your own advances.' },
+            { status: 403 }
+          );
+        }
+      } catch (error) {
+        console.error('Error finding employee for user:', error);
         return NextResponse.json(
-          { error: 'Access denied. You can only view your own advances.' },
+          { error: 'Access denied. Employee not found.' },
           { status: 403 }
         );
       }
     }
+    // For ADMIN, MANAGER, SUPERVISOR, SUPER_ADMIN roles, they can view any employee's advances
 
     // Fetch advances for the specified employee using Drizzle
     const advancesRows = await db

@@ -34,14 +34,14 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Get default user role (usually "USER" role)
+    // Get default user role (EMPLOYEE role instead of USER)
     const defaultRole = await db
       .select({ id: rolesTable.id })
       .from(rolesTable)
-      .where(eq(rolesTable.name, 'USER'))
+      .where(eq(rolesTable.name, 'EMPLOYEE'))
       .limit(1);
 
-    const roleId = defaultRole[0]?.id || 2; // Fallback to role ID 2 if "User" role not found
+    const roleId = defaultRole[0]?.id || 6; // Fallback to role ID 6 (EMPLOYEE) if "EMPLOYEE" role not found
 
     console.log('Creating user with data:', { firstName, lastName, email, roleId });
     

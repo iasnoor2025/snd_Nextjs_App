@@ -4,8 +4,6 @@ import { NextResponse } from 'next/server';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
-  console.log('🔒 Middleware called for:', pathname);
 
   // Define public routes that should bypass middleware completely
   const publicRoutes = [
@@ -38,7 +36,6 @@ export async function middleware(request: NextRequest) {
   // Check if it's a public route or static asset
   if (publicRoutes.some(route => pathname.startsWith(route)) ||
       staticAssets.some(asset => pathname.startsWith(asset))) {
-    console.log('🔒 Public route or static asset, bypassing middleware');
     return NextResponse.next();
   }
 
@@ -48,31 +45,18 @@ export async function middleware(request: NextRequest) {
       pathname.startsWith('/api/debug') ||
       pathname.startsWith('/api/cron') ||
       pathname.startsWith('/api/webhooks')) {
-    console.log('🔒 API route bypassing middleware');
     return NextResponse.next();
   }
 
   try {
-    console.log('🔒 Checking authentication for:', pathname);
-    
     // Get the token from the request
     const token = await getToken({ 
       req: request, 
       secret: process.env.NEXTAUTH_SECRET || 'fallback-secret'
     });
 
-    console.log('🔒 Token found:', !!token);
-    if (token) {
-      console.log('🔒 Token details:', {
-        email: token.email,
-        role: token.role,
-        isActive: token.isActive
-      });
-    }
-
     // If no token, redirect to login
     if (!token) {
-      console.log('🔒 No token found, redirecting to login');
       const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('callbackUrl', pathname);
       return NextResponse.redirect(loginUrl);
@@ -80,13 +64,11 @@ export async function middleware(request: NextRequest) {
 
     // Check if user is active
     if (token.isActive === false) {
-      console.log('🔒 User inactive, redirecting to access denied');
       return NextResponse.redirect(new URL('/access-denied?reason=inactive', request.url));
     }
 
     // Client-safe route permission checking (no database operations)
     const routePermission = getClientSafeRoutePermission(pathname);
-    console.log('🔒 Route permission check:', routePermission);
     
     if (routePermission) {
       // If roles array is empty, only check permissions (no role restrictions)
@@ -97,10 +79,7 @@ export async function middleware(request: NextRequest) {
           userRoles.includes(requiredRole)
         );
 
-        console.log('🔒 Role check:', { userRoles, requiredRoles: routePermission.roles, hasRequiredRole });
-
         if (!hasRequiredRole) {
-          console.log('🔒 Insufficient role, redirecting to access denied');
           return NextResponse.redirect(new URL('/access-denied?reason=insufficient_permissions', request.url));
         }
       }
@@ -108,7 +87,6 @@ export async function middleware(request: NextRequest) {
     }
 
     // Allow access to the route
-    console.log('🔒 Access granted to:', pathname);
     return NextResponse.next();
 
   } catch (error) {
@@ -161,12 +139,12 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api/auth (NextAuth.js routes)
+     * - api (API routes - let them handle their own auth)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
      */
-    '/((?!api/auth|_next/static|_next/image|favicon.ico|public/).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|public/).*)',
   ],
 };

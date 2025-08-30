@@ -1,107 +1,130 @@
 import { authConfig } from '@/lib/auth-config';
 import { db } from '@/lib/db';
-import { employeeDocuments, employees } from '@/lib/drizzle/schema';
+import { employeeDocuments, employees, users } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { ensureHttps } from '@/lib/utils/url-utils';
 
-// GET /api/profile/documents - Get current user's documents
+// GET /api/profile/documents - Get current user's employee documents
 export async function GET(_request: NextRequest) {
   try {
-
     // Get the current user session
     const session = await getServerSession(authConfig);
 
     if (!session?.user?.id) {
-      
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     const userId = parseInt(session.user.id);
 
-    // First, try to find employee by user_id
-    
-    let employee = await db
-      .select({ id: employees.id })
+    // First, find the employee record linked to this user
+    let employeeRows = await db
+      .select({
+        id: employees.id,
+        firstName: employees.firstName,
+        lastName: employees.lastName,
+        iqamaNumber: employees.iqamaNumber,
+      })
       .from(employees)
       .where(eq(employees.userId, userId))
       .limit(1);
 
-    // If not found, try to find by national_id (Iqama number)
-    if (employee.length === 0 && session.user.national_id) {
+    // If no employee found by userId, try to find by National ID from user record
+    if (employeeRows.length === 0) {
+      console.log('No employee found by userId, trying National ID match...');
       
-      employee = await db
-        .select({ id: employees.id })
-        .from(employees)
-        .where(eq(employees.iqamaNumber, session.user.national_id))
+      // Get user's National ID
+      const userRows = await db
+        .select({ nationalId: users.nationalId })
+        .from(users)
+        .where(eq(users.id, userId))
         .limit(1);
       
+      if (userRows.length > 0 && userRows[0].nationalId) {
+        console.log('Looking for employee with National ID:', userRows[0].nationalId);
+        
+        employeeRows = await db
+          .select({
+            id: employees.id,
+            firstName: employees.firstName,
+            lastName: employees.lastName,
+            iqamaNumber: employees.iqamaNumber,
+          })
+          .from(employees)
+          .where(eq(employees.iqamaNumber, userRows[0].nationalId))
+          .limit(1);
+        
+        console.log('National ID search results:', {
+          foundCount: employeeRows.length,
+          employees: employeeRows.map(emp => ({
+            id: emp.id,
+            name: `${emp.firstName} ${emp.lastName}`,
+            iqamaNumber: emp.iqamaNumber
+          }))
+        });
+      }
     }
 
-    if (employee.length === 0) {
-      
-      return NextResponse.json([]);
+    if (employeeRows.length === 0) {
+      return NextResponse.json({ 
+        error: 'No employee record found for this user',
+        documents: []
+      }, { status: 404 });
     }
 
-    const employeeId = employee[0]?.id;
-    if (!employeeId) {
-      return NextResponse.json({ success: false, message: 'Employee not found' }, { status: 404 });
-    }
+    const employee = employeeRows[0];
 
-    // Fetch documents for the employee
-    
-    const documentsRows = await db
+    // Get employee documents
+    const documentRows = await db
       .select({
         id: employeeDocuments.id,
         documentType: employeeDocuments.documentType,
         fileName: employeeDocuments.fileName,
-        fileSize: employeeDocuments.fileSize,
-        mimeType: employeeDocuments.mimeType,
         filePath: employeeDocuments.filePath,
         description: employeeDocuments.description,
+        fileSize: employeeDocuments.fileSize,
+        mimeType: employeeDocuments.mimeType,
         createdAt: employeeDocuments.createdAt,
         updatedAt: employeeDocuments.updatedAt,
       })
       .from(employeeDocuments)
-      .where(eq(employeeDocuments.employeeId, employeeId))
+      .where(eq(employeeDocuments.employeeId, employee.id))
       .orderBy(employeeDocuments.createdAt);
 
-    // Format documents to match the expected structure
-    const formattedDocuments = documentsRows.map(doc => ({
+    // Transform documents to include file type information
+    const documents = documentRows.map(doc => ({
       id: doc.id,
-      name:
-        doc.documentType === 'iqama'
-          ? 'Iqama Document'
-          : doc.documentType === 'passport'
-            ? 'Passport'
-            : doc.documentType === 'driving_license'
-              ? 'Driving License'
-              : doc.documentType === 'operator_license'
-                ? 'Operator License'
-                : doc.documentType === 'contract'
-                  ? 'Employment Contract'
-                  : doc.documentType === 'medical'
-                    ? 'Medical Certificate'
-                    : doc.documentType === 'general'
-                      ? 'General Document'
-                      : doc.documentType,
-      file_name: doc.fileName,
-      file_size: doc.fileSize,
-      mime_type: doc.mimeType,
-      document_type: doc.documentType,
-      url: ensureHttps(doc.filePath), // Force HTTPS to prevent Mixed Content errors
-      description: doc.description,
-      created_at: doc.createdAt,
-      updated_at: doc.updatedAt,
+      documentType: doc.documentType,
+      fileName: doc.fileName,
+      filePath: doc.filePath,
+      description: doc.description || '',
+      fileSize: doc.fileSize,
+      mimeType: doc.mimeType,
+      isImage: doc.mimeType?.startsWith('image/') || false,
+      isPhoto: doc.documentType?.toLowerCase().includes('photo') || 
+               doc.documentType?.toLowerCase().includes('picture') ||
+               doc.documentType?.toLowerCase().includes('image'),
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
     }));
 
-    // Check specifically for Iqama documents
-    const iqamaDocs = formattedDocuments.filter(doc => doc.document_type === 'iqama');
+    return NextResponse.json({
+      success: true,
+      employee: {
+        id: employee.id,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        iqamaNumber: employee.iqamaNumber,
+      },
+      documents,
+      totalDocuments: documents.length,
+    });
 
-    return NextResponse.json(formattedDocuments);
   } catch (error) {
-
-    return NextResponse.json({ error: 'Failed to fetch documents' }, { status: 500 });
+    console.error('Error fetching employee documents:', error);
+    return NextResponse.json({ 
+      error: 'Failed to fetch employee documents',
+      documents: []
+    }, { status: 500 });
   }
 }

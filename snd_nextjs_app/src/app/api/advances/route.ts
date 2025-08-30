@@ -26,19 +26,26 @@ const getAdvancesHandler = async (
 
     let employeeFilter: ReturnType<typeof eq> | null = null;
 
-    // For employee users, only show their own advances
-    if (user?.national_id) {
-      // Find employee record that matches user's national_id
-      const ownEmployeeRows = await db
-        .select({ id: employees.id })
-        .from(employees)
-        .where(eq(employees.iqamaNumber, user.national_id))
-        .limit(1);
-
-      if (ownEmployeeRows.length > 0 && ownEmployeeRows[0]?.id) {
-        employeeFilter = eq(advancePayments.employeeId, ownEmployeeRows[0].id);
+    // Use role-based access control instead of national_id
+    // Admin/Manager users can see all advances, Employee users see their own
+    if (user?.role === 'EMPLOYEE') {
+      // For employee users, find their employee record and restrict to their advances
+      try {
+        const [ownEmployee] = await db
+          .select({ id: employees.id })
+          .from(employees)
+          .where(eq(employees.userId, parseInt(user.id)))
+          .limit(1);
+        if (ownEmployee) {
+          employeeFilter = eq(advancePayments.employeeId, ownEmployee.id);
+        }
+      } catch (error) {
+        console.error('Error finding employee for user:', error);
+        // If we can't find the employee, don't show any advances
+        employeeFilter = eq(advancePayments.employeeId, -1); // This will ensure no results
       }
     }
+    // For ADMIN, MANAGER, SUPERVISOR, SUPER_ADMIN roles, show all advances (no restriction)
 
     // Build where conditions
     const whereConditions: Array<ReturnType<typeof eq> | ReturnType<typeof isNull> | ReturnType<typeof like>> = [isNull(advancePayments.deletedAt)];

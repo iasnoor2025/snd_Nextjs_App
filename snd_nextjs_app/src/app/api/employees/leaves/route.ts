@@ -25,15 +25,24 @@ const getLeavesHandler = async (request: NextRequest) => {
     const user = session?.user;
 
     // For employee users, only show their own leave requests
-    if (user?.national_id) {
-      const ownRows = await db
-        .select({ id: employeesTable.id })
-        .from(employeesTable)
-        .where(eq(employeesTable.iqamaNumber, String(user.national_id)))
-        .limit(1);
-      const ownId = ownRows[0]?.id;
-      if (ownId) filters.push(eq(employeeLeaves.employeeId, ownId));
+    // Use role-based access control instead of national_id
+    if (user?.role === 'EMPLOYEE') {
+      try {
+        const [ownEmployee] = await db
+          .select({ id: employeesTable.id })
+          .from(employeesTable)
+          .where(eq(employeesTable.userId, parseInt(user.id)))
+          .limit(1);
+        if (ownEmployee) {
+          filters.push(eq(employeeLeaves.employeeId, ownEmployee.id));
+        }
+      } catch (error) {
+        console.error('Error finding employee for user:', error);
+        // If we can't find the employee, don't show any leaves
+        filters.push(eq(employeeLeaves.employeeId, -1)); // This will ensure no results
+      }
     }
+    // For ADMIN, MANAGER, SUPERVISOR, SUPER_ADMIN roles, show all leaves (no restriction)
 
     if (status && status !== 'all') {
       filters.push(eq(employeeLeaves.status, status));
@@ -136,16 +145,26 @@ const createLeaveHandler = async (request: NextRequest) => {
     const user = session?.user;
 
     // For employee users, ensure they can only create leave requests for themselves
-    if (user?.national_id) {
-      const ownRows = await db
-        .select({ id: employeesTable.id })
-        .from(employeesTable)
-        .where(eq(employeesTable.iqamaNumber, String(user.national_id)))
-        .limit(1);
-      if (ownRows[0]?.id) {
-        body.employee_id = ownRows[0].id;
+    // Use role-based access control instead of national_id
+    if (user?.role === 'EMPLOYEE') {
+      try {
+        const [ownEmployee] = await db
+          .select({ id: employeesTable.id })
+          .from(employeesTable)
+          .where(eq(employeesTable.userId, parseInt(user.id)))
+          .limit(1);
+        if (ownEmployee) {
+          body.employee_id = ownEmployee.id;
+        }
+      } catch (error) {
+        console.error('Error finding employee for user:', error);
+        return NextResponse.json(
+          { error: 'Access denied. Employee not found.' },
+          { status: 403 }
+        );
       }
     }
+    // For ADMIN, MANAGER, SUPERVISOR, SUPER_ADMIN roles, they can create leave requests for any employee
 
     const inserted = await db
       .insert(employeeLeaves)

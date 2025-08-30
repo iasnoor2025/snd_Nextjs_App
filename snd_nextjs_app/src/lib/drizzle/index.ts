@@ -1,20 +1,22 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
+import * as schema from './schema';
 
 declare global {
+  // eslint-disable-next-line no-var
   var __drizzlePool: Pool | undefined;
+  // eslint-disable-next-line no-var
   var __drizzleDb: ReturnType<typeof drizzle> | undefined;
 }
 
 function createPool(): Pool {
   if (!process.env.DATABASE_URL) {
-    
     throw new Error('DATABASE_URL is not set');
   }
 
-  if (global.__drizzlePool) {
-    return global.__drizzlePool;
-  }
+if (global.__drizzlePool) {
+  return global.__drizzlePool;
+}
 
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -48,7 +50,7 @@ export function getPool(): Pool {
 function createDb() {
   try {
     const pool = getPool();
-    return drizzle(pool);
+    return drizzle(pool, { schema });
   } catch (error) {
     console.error('Error creating database connection:', error);
     throw error;
@@ -61,7 +63,6 @@ export function getDb() {
       global.__drizzleDb = createDb();
     } catch (error) {
       console.error('Error creating database connection:', error);
-      throw error;
     }
   }
   return global.__drizzleDb;
@@ -71,7 +72,8 @@ export function getDb() {
 export const pool: Pool = new Proxy({} as Pool, {
   get(_target, prop) {
     try {
-      return (getPool() as any)[prop];
+      const poolInstance = getPool();
+      return (poolInstance as unknown as Record<string, unknown>)[prop as string];
     } catch (error) {
       console.error('Error accessing pool property:', error);
       throw error;
@@ -82,7 +84,8 @@ export const pool: Pool = new Proxy({} as Pool, {
 export const db = new Proxy({} as ReturnType<typeof drizzle>, {
   get(_target, prop) {
     try {
-      return (getDb() as any)[prop];
+      const dbInstance = getDb();
+      return (dbInstance as unknown as Record<string, unknown>)[prop as string];
     } catch (error) {
       console.error('Error accessing db property:', error);
       throw error;

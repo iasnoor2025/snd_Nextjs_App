@@ -32,20 +32,30 @@ const getEmployeePaymentReceiptHandler = async (
     const user = session?.user;
 
     // For employee users, ensure they can only access their own payment data
-    if (user?.national_id) {
-      // Find employee record that matches user's national_id
-      const ownEmployee = await db
-        .select({ id: employees.id })
-        .from(employees)
-        .where(eq(employees.iqamaNumber, user.national_id))
-        .limit(1);
-      if (ownEmployee.length > 0 && ownEmployee[0]?.id && employeeId !== ownEmployee[0].id) {
+    // Use role-based access control instead of national_id
+    if (user?.role === 'EMPLOYEE') {
+      // Find employee record that matches user's userId
+      try {
+        const [ownEmployee] = await db
+          .select({ id: employees.id })
+          .from(employees)
+          .where(eq(employees.userId, parseInt(user.id)))
+          .limit(1);
+        if (ownEmployee && employeeId !== ownEmployee.id) {
+          return NextResponse.json(
+            { error: 'You can only access your own payment data' },
+            { status: 403 }
+          );
+        }
+      } catch (error) {
+        console.error('Error finding employee for user:', error);
         return NextResponse.json(
-          { error: 'You can only access your own payment data' },
+          { error: 'Access denied. Employee not found.' },
           { status: 403 }
         );
       }
     }
+    // For ADMIN, MANAGER, SUPERVISOR, SUPER_ADMIN roles, they can access any employee's payment data
 
     // Get the payment record
     const paymentRecord = await db

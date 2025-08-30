@@ -53,13 +53,37 @@ export async function findUserByEmailWithRoles(email: string): Promise<UserWithR
 export async function upsertGoogleUser(email: string, name: string | null): Promise<void> {
   const existing = await db.select({ id: users.id }).from(users).where(eq(users.email, email));
   if (existing.length > 0) return;
-  await db.insert(users).values({
-    email,
-    name: name ?? email.split('@')[0],
+  
+  // Get EMPLOYEE role from database
+  const employeeRole = await db
+    .select({ id: roles.id })
+    .from(roles)
+    .where(eq(roles.name, 'EMPLOYEE'))
+    .limit(1);
+  
+  if (employeeRole.length === 0) {
+    throw new Error('EMPLOYEE role not found in database');
+  }
+  
+  const employeeRoleId = employeeRole[0].id;
+  const userName = name ?? email.split('@')[0];
+  
+  // Insert user with EMPLOYEE role
+  const inserted = await db.insert(users).values({
+    email: email,
+    name: userName,
     password: '',
     isActive: true,
     emailVerifiedAt: new Date().toISOString(),
-    roleId: 7,
+    roleId: employeeRoleId, // Dynamically fetched from database
     updatedAt: new Date().toISOString(),
-  });
+  }).returning({ id: users.id });
+  
+  // Create role relationship in modelHasRoles table
+  if (inserted[0] && inserted[0].id) {
+    await db.insert(modelHasRoles).values({
+      userId: inserted[0].id,
+      roleId: employeeRoleId, // Use the same dynamically fetched role ID
+    });
+  }
 }
