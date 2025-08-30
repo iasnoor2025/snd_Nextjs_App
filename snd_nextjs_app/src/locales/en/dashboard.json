@@ -317,5 +317,10 @@
       "failedToRecordRepayment": "Failed to record repayment",
       "failedToDelete": "Failed to delete advance"
     }
-  }
+  },
+  "accessDenied": "Access Denied",
+  "insufficientPermissions": "You don't have sufficient permissions to view your employee dashboard.",
+  "backToHome": "Back to Home",
+  "employeeNotFound": "Employee record not found",
+  "errorLoadingDashboard": "Error loading dashboard data"
 }

@@ -142,6 +142,9 @@ export default function EmployeeDashboard() {
   // Get allowed actions for employee dashboard
   const allowedActions = getAllowedActions('Employee');
 
+  // Check if user has permission to view their own dashboard
+  const canViewMyDashboard = hasPermission('read', 'mydashboard');
+
   // Check authentication
   useEffect(() => {
     if (status === 'loading') return;
@@ -150,9 +153,16 @@ export default function EmployeeDashboard() {
       return;
     }
     if (status === 'authenticated' && session?.user) {
-      fetchEmployeeDashboardData();
+      // Check permission before fetching data
+      if (canViewMyDashboard) {
+        fetchEmployeeDashboardData();
+      } else {
+        setLoading(false);
+        toast.error(t('dashboard.accessDenied'));
+        router.push('/access-denied');
+      }
     }
-  }, [session, status, router]);
+  }, [session, status, router, canViewMyDashboard]);
 
   const fetchEmployeeDashboardData = async () => {
     try {

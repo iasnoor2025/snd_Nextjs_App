@@ -370,5 +370,10 @@
       "failedToRecordRepayment": "فشل في تسجيل السداد",
       "failedToDelete": "فشل في حذف السلف"
     }
-  }
+  },
+  "accessDenied": "تم رفض الوصول",
+  "insufficientPermissions": "ليس لديك صلاحيات كافية لعرض لوحة معلومات الموظف الخاصة بك.",
+  "backToHome": "العودة إلى الرئيسية",
+  "employeeNotFound": "لم يتم العثور على سجل الموظف",
+  "errorLoadingDashboard": "خطأ في تحميل بيانات لوحة المعلومات"
 }

@@ -12,6 +12,8 @@ import {
   rentals,
   timesheets,
   users,
+  permissions,
+  roleHasPermissions,
 } from '@/lib/drizzle/schema';
 import { and, desc, eq, gte } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
@@ -23,35 +25,80 @@ export async function GET(_request: NextRequest) {
     const session = await getServerSession(authConfig);
 
     if (!session?.user?.id) {
+      console.log('❌ No session or user ID found');
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    // Check if user has EMPLOYEE role or if they are an employee in the database
-    if (session.user.role !== 'EMPLOYEE') {
-      console.log(`User role is ${session.user.role}, checking if they are an employee in database...`);
-      
-      // Check if the user exists as an employee in the database
-      const employeeCheck = await db
-        .select({ id: employees.id })
-        .from(employees)
-        .where(eq(employees.userId, parseInt(session.user.id)))
-        .limit(1);
+    const userId = session.user.id;
+    console.log('🔍 Session user:', {
+      id: userId,
+      email: session.user.email,
+      role: session.user.role
+    });
 
-      if (employeeCheck.length === 0) {
-        // Allow managers, supervisors, and admins to access employee dashboard
-        if (['MANAGER', 'SUPERVISOR', 'ADMIN', 'SUPER_ADMIN'].includes(session.user.role)) {
-          console.log(`User has ${session.user.role} role, allowing access to employee dashboard`);
-        } else {
-          console.log('User is not an employee in the database and has insufficient privileges');
-          return NextResponse.json(
-            { error: 'Access denied. Employee role required or user must be registered as employee.' },
-            { status: 403 }
-          );
-        }
-      } else {
-        console.log('User is an employee in database, allowing access');
-      }
+    // Check if user has the read.mydashboard permission
+    // First, get the user's role from the users table
+    const userRecord = await db
+      .select({
+        id: users.id,
+        roleId: users.roleId,
+      })
+      .from(users)
+      .where(eq(users.id, parseInt(userId)))
+      .limit(1);
+
+    if (userRecord.length === 0) {
+      console.log('❌ User not found in database');
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
+
+    const userRoleId = userRecord[0]?.roleId;
+    if (!userRoleId) {
+      console.log('❌ User has no role assigned');
+      return NextResponse.json({ error: 'User has no role assigned' }, { status: 403 });
+    }
+
+    console.log('🔍 User roleId from database:', userRoleId);
+
+    // Now get the user's permissions using the roleId from database
+    const userPermissions = await db
+      .select({
+        permissionName: permissions.name,
+      })
+      .from(roleHasPermissions)
+      .leftJoin(permissions, eq(roleHasPermissions.permissionId, permissions.id))
+      .where(eq(roleHasPermissions.roleId, userRoleId));
+
+    console.log('🔑 User permissions:', userPermissions.map(p => p.permissionName));
+
+    const hasMyDashboardPermission = userPermissions.some(p => p.permissionName === 'read.mydashboard');
+
+    if (!hasMyDashboardPermission) {
+      console.log('❌ User does not have read.mydashboard permission');
+      return NextResponse.json(
+        { error: 'Access denied. read.mydashboard permission required.' },
+        { status: 403 }
+      );
+    }
+
+    console.log('✅ User has read.mydashboard permission');
+
+    // Debug: Check if there are any employees in the database and what user IDs they have
+    const allEmployees = await db
+      .select({
+        id: employees.id,
+        firstName: employees.firstName,
+        lastName: employees.lastName,
+        userId: employees.userId,
+        email: employees.email,
+      })
+      .from(employees)
+      .limit(10);
+
+    console.log('👥 All employees in database:', allEmployees);
+    console.log('🔍 Current session user ID:', userId, 'Type:', typeof userId);
+    console.log('🔍 Looking for employee with userId =', parseInt(userId));
+    console.log('🔍 Current user email:', session.user.email);
 
     // Get employee data for the current user using Drizzle
     const employeeRows = await db
@@ -103,11 +150,86 @@ export async function GET(_request: NextRequest) {
       .leftJoin(users, eq(employees.userId, users.id))
       .leftJoin(departments, eq(employees.departmentId, departments.id))
       .leftJoin(designations, eq(employees.designationId, designations.id))
-      .where(eq(employees.userId, parseInt(session.user.id)))
+      .where(eq(employees.userId, parseInt(userId)))
       .limit(1);
 
+    console.log('👤 Employee query result for current user:', {
+      queryUserId: userId,
+      employeeRowsFound: employeeRows.length,
+      firstEmployee: employeeRows[0] ? {
+        id: employeeRows[0].id,
+        firstName: employeeRows[0].firstName,
+        lastName: employeeRows[0].lastName,
+        userId: employeeRows[0].userId
+      } : null
+    });
+
     if (employeeRows.length === 0) {
-      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+      console.log('❌ No employee record found for user ID:', userId);
+      
+      // Fallback: Create a basic profile from user session data
+      console.log('🔄 Creating fallback profile from user session data');
+      
+      return NextResponse.json({
+        employee: {
+          id: null,
+          first_name: session.user.name || 'User',
+          last_name: '',
+          email: session.user.email || '',
+          phone: 'N/A',
+          hire_date: null,
+          basic_salary: 0,
+          status: 'active',
+          nationality: 'N/A',
+          supervisor: 'N/A',
+          location: 'N/A',
+          contract_hours_per_day: 8,
+          contract_days_per_month: 26,
+          address: 'N/A',
+          city: 'N/A',
+          country: 'N/A',
+          hourly_rate: 0,
+          food_allowance: 0,
+          housing_allowance: 0,
+          transport_allowance: 0,
+          bank_name: 'N/A',
+          emergency_contact_name: 'N/A',
+          emergency_contact_phone: 'N/A',
+          department: {
+            id: null,
+            name: 'N/A',
+            code: 'N/A',
+          },
+          designation: {
+            id: null,
+            name: 'N/A',
+            description: 'N/A',
+          },
+          user: {
+            id: parseInt(userId),
+            name: session.user.name || 'User',
+            email: session.user.email || '',
+            roleId: null,
+          },
+        },
+        statistics: {
+          totalTimesheets: 0,
+          pendingLeaves: 0,
+          approvedLeaves: 0,
+          activeProjects: 0,
+          totalAssignments: 0,
+          totalDocuments: 0,
+          totalAdvances: 0,
+        },
+        recentTimesheets: [],
+        recentLeaves: [],
+        currentProjects: [],
+        assignments: [],
+        advances: [],
+        documents: [],
+        isFallbackProfile: true,
+        message: 'No employee record found. Showing basic profile information.'
+      });
     }
 
     const employee = employeeRows[0];
