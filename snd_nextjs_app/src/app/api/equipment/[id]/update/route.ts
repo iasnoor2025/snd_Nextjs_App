@@ -7,6 +7,7 @@ import { authOptions } from '@/lib/auth-config';
 import { getServerSession } from 'next-auth';
 import { withPermission } from '@/lib/rbac/api-middleware';
 import { PermissionConfigs } from '@/lib/rbac/api-middleware';
+import { autoExtractDoorNumber } from '@/lib/utils/equipment-utils';
 
 export const PUT = withPermission(PermissionConfigs.equipment.update)(
   async (
@@ -60,9 +61,18 @@ export const PUT = withPermission(PermissionConfigs.equipment.update)(
     if (body.description !== undefined) {
       updateData.description = body.description;
     }
-    if (body.door_number !== undefined) {
-      updateData.doorNumber = body.door_number;
+    
+    // Handle door number with auto-extraction
+    if (body.door_number !== undefined || body.name !== undefined) {
+      const currentName = body.name || (await db.select({ name: equipment.name }).from(equipment).where(eq(equipment.id, id)).limit(1))[0]?.name;
+      const currentDoorNumber = body.door_number !== undefined ? body.door_number : (await db.select({ doorNumber: equipment.doorNumber }).from(equipment).where(eq(equipment.id, id)).limit(1))[0]?.doorNumber;
+      
+      if (currentName) {
+        const finalDoorNumber = autoExtractDoorNumber(currentName, currentDoorNumber);
+        updateData.doorNumber = finalDoorNumber;
+      }
     }
+    
     if (body.istimara !== undefined) {
       updateData.istimara = body.istimara;
     }

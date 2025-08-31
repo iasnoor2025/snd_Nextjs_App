@@ -18,8 +18,7 @@
   "locationManagement": "Location Management",
   "reporting": "Reporting",
   "documentManagement": "Document Management",
-  "userManagement": "User Management",
-  "settings": "Settings",
+    "userManagement": "User Management",
   "getHelp": "Get Help",
   "search": "Search",
   "appTitle": "SND Rental"

@@ -125,21 +125,22 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
         const validEmployeeFiles = employeeFiles.filter(item => item.name && !item.name.endsWith('/') && item.name.includes('.'));
         console.log('Valid employee files (with extensions):', validEmployeeFiles);
         
-                 const employeeIds = [...new Set(
+                 // Extract file numbers from folder names like "employee-EMP-001" or "employee-12345"
+                 const employeeFileNumbers = [...new Set(
            validEmployeeFiles
              .map(item => {
                const pathParts = item.name.split('/');
                const firstPart = pathParts[0];
-               // Extract ID from "employee-214" format
-               const idMatch = firstPart.match(/employee-(\d+)/);
-               const parsedId = idMatch ? parseInt(idMatch[1]) : 0;
-               console.log(`File: ${item.name}, Path parts: ${pathParts}, First part: ${firstPart}, Parsed ID: ${parsedId}`);
-               return parsedId;
+               // Extract file number from "employee-{fileNumber}" format
+               const fileNumberMatch = firstPart.match(/employee-(.+)/);
+               const fileNumber = fileNumberMatch ? fileNumberMatch[1] : null;
+               console.log(`File: ${item.name}, Path parts: ${pathParts}, First part: ${firstPart}, Extracted file number: ${fileNumber}`);
+               return fileNumber;
              })
-             .filter(id => id > 0)
+             .filter(fileNumber => fileNumber !== null)
          )];
         
-        console.log('Employee IDs found in file paths:', employeeIds);
+        console.log('Employee file numbers found in file paths:', employeeFileNumbers);
         console.log('Employee files:', employeeFiles.map(f => f.name));
         
         let employeeDataMap = new Map();
@@ -151,7 +152,7 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
             .from(employees);
           console.log('Total employees in database:', totalEmployees[0]?.count);
           
-          // Also get a sample of employees to see their IDs
+          // Also get a sample of employees to see their file numbers
           const sampleEmployees = await db
             .select({
               id: employees.id,
@@ -166,14 +167,14 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
           console.error('Error checking database for employees:', error);
         }
         
-        if (employeeIds.length > 0) {
+        if (employeeFileNumbers.length > 0) {
           try {
             // Try to get from cache first
             const cacheKey = `employees:${employeeIds.sort().join(',')}`;
             let employeeData: any = await cacheService.get(cacheKey, 'employees');
             
             if (!employeeData) {
-              console.log('Fetching employee data from database for IDs:', employeeIds);
+              console.log('Fetching employee data from database for file numbers:', employeeFileNumbers);
               // Fetch from database if not in cache
               employeeData = await db
                 .select({
@@ -183,7 +184,7 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
                   fileNumber: employees.fileNumber,
                 })
                 .from(employees)
-                .where(inArray(employees.id, employeeIds));
+                .where(inArray(employees.fileNumber, employeeFileNumbers));
               
               console.log('Employee data fetched from database:', employeeData);
               
@@ -197,7 +198,8 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
               const employeeName = `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || 'Unknown Employee';
               const employeeFileNumber = emp.fileNumber || 'No File #';
               console.log(`Setting employee ${emp.id}: ${employeeName} (${employeeFileNumber})`);
-              employeeDataMap.set(emp.id, {
+              employeeDataMap.set(employeeFileNumber, {
+                id: emp.id,
                 name: employeeName,
                 fileNumber: employeeFileNumber
               });
@@ -216,19 +218,19 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
            .map((item, index) => {
              const fileName = item.name.split('/').pop() || item.name;
              const documentType = fileName.split('.').pop()?.toUpperCase() || 'UNKNOWN';
-             // Extract ID from "employee-214" format
+             // Extract file number from "employee-{fileNumber}" format
              const firstPart = item.name.split('/')[0];
-             const idMatch = firstPart.match(/employee-(\d+)/);
-             const employeeId = idMatch ? parseInt(idMatch[1]) : 0;
+             const fileNumberMatch = firstPart.match(/employee-(.+)/);
+             const fileNumber = fileNumberMatch ? fileNumberMatch[1] : null;
             
-            // Get employee data from the map
-            console.log(`Processing document for employee ID: ${employeeId}`);
-            console.log(`Available employee IDs in map:`, Array.from(employeeDataMap.keys()));
-            const employeeInfo = employeeDataMap.get(employeeId) || {
+            // Get employee data from the map using file number
+            console.log(`Processing document for employee file number: ${fileNumber}`);
+            console.log(`Available employee file numbers in map:`, Array.from(employeeDataMap.keys()));
+            const employeeInfo = employeeDataMap.get(fileNumber) || {
               name: 'Unknown Employee',
               fileNumber: 'No File #'
             };
-            console.log(`Employee info for ID ${employeeId}:`, employeeInfo);
+            console.log(`Employee info for file number ${fileNumber}:`, employeeInfo);
             
             // Determine correct MIME type
             let mimeType = 'application/octet-stream';
@@ -243,7 +245,7 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
             }
             
             return {
-              id: `emp_${employeeId}_${Date.now()}_${index}`,
+              id: `emp_${fileNumber}_${Date.now()}_${index}`,
               type: 'employee' as const,
               documentType,
               filePath: item.name,
@@ -254,7 +256,7 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
               description: `Employee document for ${employeeInfo.name}`,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
-              employeeId,
+              employeeId: employeeInfo.id || 0,
               employeeName: employeeInfo.name,
               employeeFileNumber: employeeInfo.fileNumber,
               url: SupabaseStorageService.getPublicUrl('employee-documents', item.name),
@@ -572,12 +574,12 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
               if (!item.name || item.name.endsWith('/') || !item.name.includes('.')) return false;
               
               const folderName = item.name.split('/')[0];
-              // Extract ID from "employee-214" format
-              const idMatch = folderName.match(/employee-(\d+)/);
-              if (idMatch) {
-                const employeeId = parseInt(idMatch[1]);
-                const isMatch = employeeIds.includes(employeeId);
-                console.log(`File ${item.name}: folder=${folderName}, extracted ID=${employeeId}, isMatch=${isMatch}`);
+              // Extract file number from "employee-{fileNumber}" format
+              const fileNumberMatch = folderName.match(/employee-(.+)/);
+              if (fileNumberMatch) {
+                const fileNumber = fileNumberMatch[1];
+                const isMatch = employeeFileNumbers.includes(fileNumber);
+                console.log(`File ${item.name}: folder=${folderName}, extracted file number=${fileNumber}, isMatch=${isMatch}`);
                 return isMatch;
               }
               return false;
@@ -590,10 +592,10 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
               const fileName = item.name.split('/').pop() || item.name;
               const documentType = fileName.split('.').pop()?.toUpperCase() || 'UNKNOWN';
               const folderName = item.name.split('/')[0];
-              // Extract ID from "employee-214" format
-              const idMatch = folderName.match(/employee-(\d+)/);
-              const employeeId = idMatch ? parseInt(idMatch[1]) : 0;
-              const employeeInfo = employeeDataMap.get(employeeId) || {
+              // Extract file number from "employee-{fileNumber}" format
+              const fileNumberMatch = folderName.match(/employee-(.+)/);
+              const fileNumber = fileNumberMatch ? fileNumberMatch[1] : null;
+              const employeeInfo = employeeDataMap.get(fileNumber) || {
                 name: 'Unknown Employee',
                 fileNumber: 'No File #'
               };
@@ -611,7 +613,7 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
               }
 
               return {
-                id: `emp_${employeeId}_${Date.now()}_${index}`,
+                id: `emp_${fileNumber}_${Date.now()}_${index}`,
                 type: 'employee' as const,
                 documentType,
                 filePath: item.name,
@@ -622,7 +624,7 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
                 description: `Employee document for ${employeeInfo.name}`,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
-                employeeId,
+                employeeId: employeeInfo.id || 0,
                 employeeName: employeeInfo.name,
                 employeeFileNumber: employeeInfo.fileNumber,
                 url: SupabaseStorageService.getPublicUrl('employee-documents', item.name),
@@ -670,16 +672,23 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
 
         // Only process files for matching equipment
         if (searchableEquipment.length > 0) {
-          const equipmentIds = searchableEquipment.map(eq => eq.id);
-          const equipmentDataMap = new Map();
+          // Extract equipment door numbers for file matching
+          const equipmentDoorNumbers = searchableEquipment
+            .map(eq => eq.doorNumber)
+            .filter(doorNumber => doorNumber !== null && doorNumber !== undefined);
           
+          // Create equipment data map for quick lookup using door numbers
+          const equipmentDataMap = new Map();
           searchableEquipment.forEach((eq: any) => {
-            equipmentDataMap.set(eq.id, {
-              name: eq.name || 'Unknown Equipment',
-              modelNumber: eq.modelNumber || 'No Model',
-              serialNumber: eq.serialNumber || 'No Serial',
-              doorNumber: eq.doorNumber || 'No Door #'
-            });
+            if (eq.doorNumber) {
+              equipmentDataMap.set(eq.doorNumber, {
+                id: eq.id,
+                name: eq.name || 'Unknown Equipment',
+                modelNumber: eq.modelNumber || 'No Model',
+                serialNumber: eq.serialNumber || 'No Serial',
+                doorNumber: eq.doorNumber || 'No Door #'
+              });
+            }
           });
 
           // Get equipment files and filter by matching equipment - recursively check all folders
@@ -719,10 +728,16 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
             const matchingEquipmentFiles = allEquipmentFiles.filter(item => {
               if (!item.name || item.name.endsWith('/') || !item.name.includes('.')) return false;
               
-              const equipmentId = parseInt(item.name.split('/')[0]) || 0;
-              const isMatch = equipmentIds.includes(equipmentId);
-              console.log(`File ${item.name}: folder=${item.name.split('/')[0]}, extracted ID=${equipmentId}, isMatch=${isMatch}`);
-              return isMatch;
+              const folderName = item.name.split('/')[0];
+              // Extract door number from "equipment-{doorNumber}" format
+              const doorNumberMatch = folderName.match(/equipment-(.+)/);
+              if (doorNumberMatch) {
+                const doorNumber = doorNumberMatch[1];
+                const isMatch = equipmentDoorNumbers.includes(doorNumber);
+                console.log(`File ${item.name}: folder=${folderName}, extracted door number=${doorNumber}, isMatch=${isMatch}`);
+                return isMatch;
+              }
+              return false;
             });
 
             console.log(`Processing ${matchingEquipmentFiles.length} files for matching equipment`);
@@ -731,8 +746,11 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
             const equipmentDocuments = matchingEquipmentFiles.map((item, index) => {
               const fileName = item.name.split('/').pop() || item.name;
               const documentType = fileName.split('.').pop()?.toUpperCase() || 'UNKNOWN';
-              const equipmentId = parseInt(item.name.split('/')[0]) || 0;
-              const equipmentInfo = equipmentDataMap.get(equipmentId) || {
+              const folderName = item.name.split('/')[0];
+              // Extract door number from "equipment-{doorNumber}" format
+              const doorNumberMatch = folderName.match(/equipment-(.+)/);
+              const doorNumber = doorNumberMatch ? doorNumberMatch[1] : null;
+              const equipmentInfo = equipmentDataMap.get(doorNumber) || {
                 name: 'Unknown Equipment',
                 modelNumber: 'No Model',
                 serialNumber: 'No Serial',
@@ -752,7 +770,7 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
               }
 
               return {
-                id: `eqp_${equipmentId}_${Date.now()}_${index}`,
+                id: `eqp_${doorNumber}_${Date.now()}_${index}`,
                 type: 'equipment' as const,
                 documentType,
                 filePath: item.name,
@@ -763,7 +781,7 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
                 description: `Equipment document for ${equipmentInfo.name}`,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
-                equipmentId,
+                equipmentId: equipmentInfo.id || 0,
                 equipmentName: equipmentInfo.name,
                 equipmentModel: equipmentInfo.modelNumber,
                 equipmentSerial: equipmentInfo.serialNumber,

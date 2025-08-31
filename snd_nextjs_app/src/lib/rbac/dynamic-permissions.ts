@@ -203,7 +203,7 @@ export async function getDynamicRoutePermissions(pathname: string): Promise<Rout
       '/modules/safety-management': { action: 'read', subject: 'Safety', permissionPattern: 'read.Safety' },
       '/modules/salary-increments': { action: 'read', subject: 'SalaryIncrement', permissionPattern: 'read.SalaryIncrement' },
       '/modules/reporting': { action: 'read', subject: 'Report', permissionPattern: 'read.Report' },
-      '/modules/settings': { action: 'read', subject: 'Settings', permissionPattern: 'read.Settings' },
+  
   
       '/admin': { action: 'manage', subject: 'Settings', permissionPattern: 'manage.Settings' },
       '/reports': { action: 'read', subject: 'Report', permissionPattern: 'read.Report' },
@@ -267,7 +267,7 @@ function getFallbackRoutePermissions(pathname: string): RoutePermission | null {
     '/modules/safety-management': { action: 'read', subject: 'Safety', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'] },
     '/modules/salary-increments': { action: 'read', subject: 'SalaryIncrement', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
     '/modules/reporting': { action: 'read', subject: 'Report', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'] },
-    '/modules/settings': { action: 'read', subject: 'Settings', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
+
 
     '/admin': { action: 'manage', subject: 'Settings', roles: ['SUPER_ADMIN', 'ADMIN'] },
     '/reports': { action: 'read', subject: 'Report', roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'] },

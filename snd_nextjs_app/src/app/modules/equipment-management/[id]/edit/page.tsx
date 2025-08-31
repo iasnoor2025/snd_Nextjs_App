@@ -132,7 +132,12 @@ export default function EquipmentEditPage() {
 
       const response = await ApiService.updateEquipment(equipment.id, updateData);
       if (response.success) {
-        toast.success('Equipment updated successfully');
+        // Show success message with door number extraction info if applicable
+        if (response.doorNumberExtracted && response.extractedDoorNumber) {
+          toast.success(`Equipment updated successfully! Door number "${response.extractedDoorNumber}" was automatically extracted from the equipment name.`);
+        } else {
+          toast.success('Equipment updated successfully');
+        }
         router.push(`/modules/equipment-management/${equipmentId}`);
       } else {
         toast.error('Failed to update equipment');

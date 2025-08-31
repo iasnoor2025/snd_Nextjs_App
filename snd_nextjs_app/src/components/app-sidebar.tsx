@@ -7,7 +7,6 @@ import {
   BarChart3,
   Building,
   Calendar,
-  Database,
   FileSpreadsheet,
   FileText,
   HelpCircle,
@@ -15,7 +14,6 @@ import {
   LayoutDashboard,
   MapPin,
   Search,
-  Settings,
   User,
   Users,
   Wrench,
@@ -145,23 +143,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
   ];
 
-  const allSecondaryItems = [
-    {
-      title: t('settings'),
-      url: '/modules/settings',
-      icon: Settings,
-    },
-    {
-      title: t('getHelp'),
-      url: '#',
-      icon: HelpCircle,
-    },
-    {
-      title: t('search'),
-      url: '#',
-      icon: Search,
-    },
-  ];
+  // const allSecondaryItems = [
+
+
+  //   {
+  //     title: t('getHelp'),
+  //     url: '#',
+  //     icon: HelpCircle,
+  //   },
+  //   {
+  //     title: t('search'),
+  //     url: '#',
+  //     icon: Search,
+  //   },
+  // ];
 
   const allDocumentItems: Array<{
     name: string;
@@ -206,12 +201,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   // Filter menu items based on permissions
   const navMain = filterMenuItems(allMenuItems);
-  const navSecondary = filterMenuItems(allSecondaryItems);
+  // const navSecondary = filterMenuItems(allSecondaryItems);
   const documents = filterMenuItems(allDocumentItems);
 
   const data = {
     navMain,
-    navSecondary,
+    // navSecondary,
     documents,
   };
 
@@ -238,7 +233,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <NavMain items={data.navMain} />
         <NavDocuments items={data.documents} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        {/* <NavSecondary items={data.navSecondary} className="mt-auto" /> */}
       </SidebarContent>
       <SidebarFooter>
         <NavUser />

@@ -10,6 +10,7 @@ import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { asc, eq, inArray } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
+import { autoExtractDoorNumber } from '@/lib/utils/equipment-utils';
 
 // GET /api/equipment - List equipment with assignments
 const getEquipmentHandler = async (_request: NextRequest) => {
@@ -191,6 +192,9 @@ const createEquipmentHandler = async (request: NextRequest) => {
       istimara_expiry_date,
     } = body;
 
+    // Auto-extract door number from equipment name if not provided
+    const finalDoorNumber = autoExtractDoorNumber(name, doorNumber);
+
     const [inserted] = await db
       .insert(equipmentTable)
       .values({
@@ -200,7 +204,7 @@ const createEquipmentHandler = async (request: NextRequest) => {
         manufacturer,
         modelNumber,
         serialNumber,
-        doorNumber,
+        doorNumber: finalDoorNumber,
         purchaseDate: purchaseDate ? new Date(purchaseDate).toISOString() : null,
         purchasePrice: purchasePrice ? String(parseFloat(purchasePrice)) : null,
         status,
@@ -220,7 +224,12 @@ const createEquipmentHandler = async (request: NextRequest) => {
 
     const equipment = inserted[0];
 
-    return NextResponse.json({ success: true, data: equipment }, { status: 201 });
+    return NextResponse.json({ 
+      success: true, 
+      data: equipment,
+      doorNumberExtracted: finalDoorNumber !== doorNumber,
+      extractedDoorNumber: finalDoorNumber
+    }, { status: 201 });
   } catch (error) {
     console.error('Error creating equipment:', error);
     return NextResponse.json(
@@ -258,6 +267,9 @@ const updateEquipmentHandler = async (request: NextRequest) => {
       istimara_expiry_date,
     } = body;
 
+    // Auto-extract door number from equipment name if not provided
+    const finalDoorNumber = autoExtractDoorNumber(name, doorNumber);
+
     const updated = await db
       .update(equipmentTable)
       .set({
@@ -267,7 +279,7 @@ const updateEquipmentHandler = async (request: NextRequest) => {
         manufacturer,
         modelNumber,
         serialNumber,
-        doorNumber,
+        doorNumber: finalDoorNumber,
         purchaseDate: purchaseDate ? new Date(purchaseDate).toISOString() : null,
         purchasePrice: purchasePrice ? String(parseFloat(purchasePrice)) : null,
         status,
@@ -286,7 +298,12 @@ const updateEquipmentHandler = async (request: NextRequest) => {
       .returning();
     const equipment = updated[0];
 
-    return NextResponse.json({ success: true, data: equipment });
+    return NextResponse.json({ 
+      success: true, 
+      data: equipment,
+      doorNumberExtracted: finalDoorNumber !== doorNumber,
+      extractedDoorNumber: finalDoorNumber
+    });
   } catch (error) {
     console.error('Error updating equipment:', error);
     return NextResponse.json(

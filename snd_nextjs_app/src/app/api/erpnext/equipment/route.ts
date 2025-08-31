@@ -6,6 +6,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { withPermission } from '@/lib/rbac/api-middleware';
 import { PermissionConfigs } from '@/lib/rbac/api-middleware';
+import { autoExtractDoorNumber } from '@/lib/utils/equipment-utils';
 
 // ERPNext configuration - check both NEXT_PUBLIC_ and non-NEXT_PUBLIC_ versions
 const ERPNEXT_URL = process.env.NEXT_PUBLIC_ERPNEXT_URL || process.env.ERPNEXT_URL;
@@ -142,12 +143,16 @@ async function syncEquipmentFromERPNext() {
           continue;
         }
 
+        // Auto-extract door number from equipment name
+        const doorNumber = autoExtractDoorNumber(item.item_name || item.item_code, null);
+        
         const equipmentData = {
           name: item.item_name || item.item_code,
           description: item.description || '',
           manufacturer: item.manufacturer || '',
           modelNumber: item.model || '',
           serialNumber: item.serial_no || '',
+          doorNumber: doorNumber,
           erpnextId: item.item_code,
           dailyRate: item.standard_rate ? item.standard_rate.toString() : null,
           status: 'available',
@@ -177,6 +182,7 @@ async function syncEquipmentFromERPNext() {
               manufacturer: equipmentData.manufacturer,
               modelNumber: equipmentData.modelNumber,
               serialNumber: equipmentData.serialNumber,
+              doorNumber: equipmentData.doorNumber,
               erpnextId: equipmentData.erpnextId,
               dailyRate: equipmentData.dailyRate,
               status: equipmentData.status,

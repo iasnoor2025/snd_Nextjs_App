@@ -875,4 +875,93 @@ export class SupabaseStorageService {
     
     return `${finalDocType}-${finalContext}.${extension}`;
   }
+
+  /**
+   * Ensure folder exists in Supabase storage
+   * In Supabase, folders are created automatically when uploading files,
+   * but this method can be used to validate folder structure
+   */
+  static async ensureFolderExists(
+    bucket: StorageBucket | string,
+    folderPath: string
+  ): Promise<{ success: boolean; message: string; error?: string }> {
+    try {
+      if (!supabase) {
+        return {
+          success: false,
+          message: 'Supabase is not configured',
+          error: 'SUPABASE_NOT_CONFIGURED',
+        };
+      }
+
+      // Clean the folder path
+      const cleanPath = folderPath
+        .replace(/^\/+|\/+$/g, '') // Remove leading/trailing slashes
+        .replace(/[^a-zA-Z0-9\-_\/]/g, '-'); // Replace invalid chars with hyphens
+
+      // Try to list the folder to check if it exists
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .list(cleanPath, { limit: 1 });
+
+      if (error) {
+        // Folder doesn't exist yet, but that's okay - it will be created on first upload
+        console.log(`Folder ${cleanPath} will be created on first file upload`);
+        return {
+          success: true,
+          message: `Folder ${cleanPath} will be created on first upload`,
+        };
+      }
+
+      return {
+        success: true,
+        message: `Folder ${cleanPath} exists or will be created`,
+      };
+    } catch (error) {
+      console.error('Error checking folder existence:', error);
+      return {
+        success: false,
+        message: `Error checking folder: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Create a folder structure for employee documents based on file number
+   */
+  static async createEmployeeFolder(
+    fileNumber: string,
+    bucket: StorageBucket | string = STORAGE_BUCKETS.EMPLOYEE_DOCUMENTS
+  ): Promise<{ success: boolean; message: string; error?: string }> {
+    try {
+      const folderPath = `employee-${fileNumber}`;
+      return await this.ensureFolderExists(bucket, folderPath);
+    } catch (error) {
+      return {
+        success: false,
+        message: `Error creating employee folder: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Create a folder structure for equipment documents based on door number
+   */
+  static async createEquipmentFolder(
+    doorNumber: string,
+    bucket: StorageBucket | string = STORAGE_BUCKETS.EQUIPMENT_DOCUMENTS
+  ): Promise<{ success: boolean; message: string; error?: string }> {
+    try {
+      const folderPath = `equipment-${doorNumber}`;
+      return await this.ensureFolderExists(bucket, folderPath);
+    } catch (error) {
+      return {
+        success: false,
+        message: `Error creating equipment folder: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
 }

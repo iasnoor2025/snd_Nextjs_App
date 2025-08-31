@@ -38,6 +38,7 @@ const uploadDocumentsHandler = async (
     }
 
     const employee = employeeResult[0];
+    const fileNumber = employee.fileNumber || String(employeeId);
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -132,7 +133,8 @@ const uploadDocumentsHandler = async (
               const fileName = existingDoc.filePath.split('/').pop();
               if (fileName) {
                 try {
-                  await SupabaseStorageService.deleteFile('employee-documents', `employee-${employeeId}/${fileName}`);
+                  // Use file number-based path for deletion to match the new upload structure
+                  await SupabaseStorageService.deleteFile('employee-documents', `employee-${fileNumber}/${fileName}`);
                   console.log(`Deleted old file: ${fileName}`);
                 } catch (deleteError) {
                   console.error(`Failed to delete old file ${fileName}:`, deleteError);
@@ -154,12 +156,11 @@ const uploadDocumentsHandler = async (
 
     console.log('Starting file upload process...');
 
-    // Generate path for Supabase storage
+    // Generate path for Supabase storage based on employee file number
     const toTitleCase = (s: string) =>
       s.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
     const baseLabel =
       documentName.trim() || toTitleCase((rawDocumentType || 'Document').replace(/_/g, ' '));
-    const fileNumber = employee.fileNumber || String(employeeId);
     
     // Generate descriptive filename using the user-provided document name
     // This ensures the file is saved in Supabase with the user's chosen name
@@ -202,7 +203,13 @@ const uploadDocumentsHandler = async (
       );
     }
     
-    const path = `employee-${employeeId}`;
+    // Create folder path based on employee file number for better organization
+    // This creates a folder structure like: employee-documents/EMP-001/ or employee-documents/12345/
+    const path = `employee-${fileNumber}`;
+
+    // Ensure the employee folder exists (will be created automatically on first upload)
+    const folderCheck = await SupabaseStorageService.createEmployeeFolder(fileNumber, 'employee-documents');
+    console.log(`Folder check for employee ${fileNumber}:`, folderCheck.message);
 
     console.log(`Uploading file: ${file.name} as ${descriptiveFilename} to path: ${path}`);
     console.log(`File details: name=${file.name}, type=${file.type}, size=${file.size}`);

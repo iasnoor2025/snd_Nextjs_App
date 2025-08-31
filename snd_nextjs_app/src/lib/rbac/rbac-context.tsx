@@ -164,7 +164,7 @@ function canAccessRouteClient(user: User, route: string): boolean {
     '/modules/safety-management': { action: 'read', subject: 'Safety', roles: [] },
     '/modules/salary-increments': { action: 'read', subject: 'SalaryIncrement', roles: [] },
     '/modules/reporting': { action: 'read', subject: 'Report', roles: [] },
-    '/modules/settings': { action: 'read', subject: 'Settings', roles: [] },
+
 
     '/modules/document-management': { action: 'read', subject: 'Document', roles: [] },
     '/admin': { action: 'manage', subject: 'Admin', roles: [] },

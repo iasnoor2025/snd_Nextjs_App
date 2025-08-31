@@ -153,27 +153,7 @@ export default function DashboardPage() {
       }
       const data = await response.json();
 
-      console.log('Dashboard data fetched:', {
-        stats: data.stats,
-        iqamaCount: data.iqamaData?.length || 0,
-        equipmentCount: data.equipmentData?.length || 0,
-        timesheetCount: data.timesheetData?.length || 0,
-        projectCount: data.projectData?.length || 0,
-        activityCount: data.recentActivity?.length || 0,
-      });
-      
-      // Debug equipment data
-      if (data.equipmentData && data.equipmentData.length > 0) {
-        console.log('Equipment data sample:', data.equipmentData.slice(0, 3));
-        console.log('Equipment status breakdown:', {
-          expired: data.equipmentData.filter((e: any) => e.status === 'expired').length,
-          expiring: data.equipmentData.filter((e: any) => e.status === 'expiring').length,
-          missing: data.equipmentData.filter((e: any) => e.status === 'missing').length,
-          available: data.equipmentData.filter((e: any) => e.status === 'available').length,
-        });
-      } else {
-        console.log('No equipment data received');
-      }
+
 
       setStats(data.stats || {});
       setIqamaData(data.iqamaData || []);

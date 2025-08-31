@@ -113,6 +113,7 @@ const uploadDocumentsHandler = async (
     }
 
     const equipmentItem = equipmentResult[0];
+    const doorNumber = equipmentItem.doorNumber || String(equipmentId);
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -195,8 +196,9 @@ const uploadDocumentsHandler = async (
                 // Extract the filename from the filePath
                 const fileName = existingDoc.filePath.split('/').pop();
                 if (fileName) {
-                  console.log(`Deleting file from Supabase: equipment-${equipmentId}/${fileName}`);
-                  const deleteResult = await SupabaseStorageService.deleteFile('equipment-documents', `equipment-${equipmentId}/${fileName}`);
+                  // Use door number-based path for deletion to match the new upload structure
+                  console.log(`Deleting file from Supabase: equipment-${doorNumber}/${fileName}`);
+                  const deleteResult = await SupabaseStorageService.deleteFile('equipment-documents', `equipment-${doorNumber}/${fileName}`);
                   if (deleteResult.success) {
                     console.log(`Successfully deleted file: ${fileName}`);
                   } else {
@@ -265,7 +267,13 @@ const uploadDocumentsHandler = async (
       );
     }
     
-    const path = `equipment-${equipmentId}`;
+    // Create folder path based on equipment door number for better organization
+    // This creates a folder structure like: equipment-documents/123/ or equipment-documents/456/
+    const path = `equipment-${doorNumber}`;
+
+    // Ensure the equipment folder exists (will be created automatically on first upload)
+    const folderCheck = await SupabaseStorageService.createEquipmentFolder(doorNumber, 'equipment-documents');
+    console.log(`Folder check for equipment ${doorNumber}:`, folderCheck.message);
 
     // Upload file to Supabase storage
     const uploadResult = await SupabaseStorageService.uploadFile(

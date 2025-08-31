@@ -9,7 +9,7 @@ import enDashboard from '@/locales/en/dashboard.json';
 import enEquipment from '@/locales/en/equipment.json';
 import enEmployee from '@/locales/en/employee.json';
 import enRental from '@/locales/en/rental.json';
-import enSettings from '@/locales/en/settings.json';
+
 import enReporting from '@/locales/en/reporting.json';
 
 import enProject from '@/locales/en/project.json';
@@ -44,7 +44,7 @@ import arDashboard from '@/locales/ar/dashboard.json';
 import arEquipment from '@/locales/ar/equipment.json';
 import arEmployee from '@/locales/ar/employee.json';
 import arRental from '@/locales/ar/rental.json';
-import arSettings from '@/locales/ar/settings.json';
+
 import arReporting from '@/locales/ar/reporting.json';
 
 import arProject from '@/locales/ar/project.json';
@@ -81,7 +81,7 @@ const resources = {
     equipment: enEquipment,
     employee: enEmployee,
     rental: enRental,
-    settings: enSettings,
+
     reporting: enReporting,
 
     project: enProject,
@@ -117,7 +117,7 @@ const resources = {
     equipment: arEquipment,
     employee: arEmployee,
     rental: arRental,
-    settings: arSettings,
+
     reporting: arReporting,
 
     project: arProject,

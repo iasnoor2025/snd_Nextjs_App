@@ -111,7 +111,12 @@ export default function AddEquipmentModal({
       const response = await ApiService.createEquipment(payload);
 
       if (response.success) {
-        toast.success('Equipment created successfully!');
+        // Show success message with door number extraction info if applicable
+        if (response.doorNumberExtracted && response.extractedDoorNumber) {
+          toast.success(`Equipment created successfully! Door number "${response.extractedDoorNumber}" was automatically extracted from the equipment name.`);
+        } else {
+          toast.success('Equipment created successfully!');
+        }
         onSuccess();
         onOpenChange(false);
         // Reset form

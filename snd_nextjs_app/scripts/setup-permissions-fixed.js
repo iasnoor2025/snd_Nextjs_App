@@ -1,6 +1,5 @@
 const { drizzle } = require('drizzle-orm/postgres-js');
 const postgres = require('postgres');
-const { permissions, roles: rolesTable, roleHasPermissions, modelHasRoles } = require('../drizzle/schema.ts');
 
 // Database connection
 const connectionString = process.env.DATABASE_URL || 'postgres://postgres:fAfab9Ckow7o3yp2EhryEYKzHbyeMifPBHxi8Xb4f9sdnBgMI47Ytdaq2NWDCxy5@192.168.8.4:5432/snd_nextjs_db';
@@ -286,12 +285,10 @@ async function setupPermissions() {
     // Create permissions
     console.log('📝 Creating permissions...');
     for (const permissionName of allPermissions) {
-      await db.insert(permissions).values({
-        name: permissionName,
-        guardName: 'web',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+      await sql`
+        INSERT INTO permissions (name, guard_name, created_at, updated_at)
+        VALUES (${permissionName}, 'web', NOW(), NOW())
+      `;
     }
     console.log(`✅ Created ${allPermissions.length} permissions`);
     
@@ -299,12 +296,11 @@ async function setupPermissions() {
     console.log('👑 Creating roles...');
     const createdRoles = {};
     for (const roleName of roles) {
-      const [role] = await db.insert(rolesTable).values({
-        name: roleName,
-        guardName: 'web',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }).returning();
+      const [role] = await sql`
+        INSERT INTO roles (name, guard_name, created_at, updated_at)
+        VALUES (${roleName}, 'web', NOW(), NOW())
+        RETURNING id
+      `;
       createdRoles[roleName] = role.id;
     }
     console.log(`✅ Created ${roles.length} roles`);
@@ -318,16 +314,15 @@ async function setupPermissions() {
       
       for (const permissionName of permissionNames) {
         // Find permission ID
-        const [permission] = await db
-          .select({ id: permissions.id })
-          .from(permissions)
-          .where(sql`${permissions.name} = ${permissionName}`);
+        const [permission] = await sql`
+          SELECT id FROM permissions WHERE name = ${permissionName}
+        `;
         
         if (permission) {
-          await db.insert(roleHasPermissions).values({
-            roleId: roleId,
-            permissionId: permission.id,
-          });
+          await sql`
+            INSERT INTO role_has_permissions (role_id, permission_id)
+            VALUES (${roleId}, ${permission.id})
+          `;
           totalAssignments++;
         }
       }

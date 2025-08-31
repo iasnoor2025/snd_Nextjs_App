@@ -5,7 +5,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-// Pagination components removed as they are not used in this component
 import { Progress } from '@/components/ui/progress';
 import {
   Select,
@@ -22,7 +21,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-// Tabs components removed as they are not used in this component
 import { PermissionContent } from '@/lib/rbac/rbac-components';
 import { PermissionBased } from '@/components/PermissionBased';
 import { useRBAC } from '@/lib/rbac/rbac-context';

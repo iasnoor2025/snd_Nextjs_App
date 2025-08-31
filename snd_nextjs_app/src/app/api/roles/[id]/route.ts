@@ -33,8 +33,6 @@ const rolePermissions = {
     'reports.read',
     'reports.create',
     'reports.export',
-    'settings.read',
-    'settings.update',
     // Timesheet permissions - full access
     'timesheets.read',
     'timesheets.create',
@@ -75,8 +73,6 @@ const rolePermissions = {
     'reports.read',
     'reports.create',
     'reports.export',
-    'settings.read',
-    'settings.update',
     // Timesheet permissions - full access
     'timesheets.read',
     'timesheets.create',
@@ -102,7 +98,6 @@ const rolePermissions = {
     'projects.update',
     'reports.read',
     'reports.export',
-    'settings.read',
     // Timesheet permissions - manager level
     'timesheets.read',
     'timesheets.create',

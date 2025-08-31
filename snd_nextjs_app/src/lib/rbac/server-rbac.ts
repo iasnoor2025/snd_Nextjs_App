@@ -97,6 +97,7 @@ export const PERMISSION_MAPPING: Record<string, string[]> = {
   'manage.Timesheet': ['manage.Timesheet', 'manage.timesheet'],
   'approve.Timesheet': ['approve.Timesheet', 'approve.timesheet'],
   'reject.Timesheet': ['reject.Timesheet', 'reject.timesheet'],
+  
   // Timesheet stage-specific approval permissions
   'approve.Timesheet.Foreman': ['approve.timesheet.foreman'],
   'approve.Timesheet.Incharge': ['approve.timesheet.incharge'],
@@ -570,7 +571,7 @@ export async function canAccessRoute(user: User, route: string): Promise<boolean
     '/modules/safety-management': { action: 'read', subject: 'Safety', roles: [] },
     '/modules/salary-increments': { action: 'read', subject: 'SalaryIncrement', roles: [] },
     '/modules/reporting': { action: 'read', subject: 'Report', roles: [] },
-    '/modules/settings': { action: 'read', subject: 'Settings', roles: [] },
+
 
     '/modules/document-management': { action: 'read', subject: 'Document', roles: [] },
     '/admin': { action: 'read', subject: 'Settings', roles: [] },
