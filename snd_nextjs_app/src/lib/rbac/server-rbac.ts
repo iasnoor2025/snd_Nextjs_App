@@ -202,6 +202,13 @@ export const PERMISSION_MAPPING: Record<string, string[]> = {
   'delete.employee-document': ['delete.employee-document'],
   'manage.employee-document': ['manage.employee-document'],
 
+  // Equipment-document permissions
+  'read.equipment-document': ['read.equipment-document'],
+  'create.equipment-document': ['create.equipment-document'],
+  'update.equipment-document': ['update.equipment-document'],
+  'delete.equipment-document': ['delete.equipment-document'],
+  'manage.equipment-document': ['manage.equipment-document'],
+
   // Document Management permissions
   'read.Document': ['read.Document', 'read.document'],
   'create.Document': ['create.Document', 'create.document'],
@@ -228,6 +235,11 @@ export const PERMISSION_MAPPING: Record<string, string[]> = {
   'manage.document-approval': ['manage.document-approval'],
   'approve.document-approval': ['approve.document-approval'],
   'reject.document-approval': ['reject.document-approval'],
+
+  // Own Profile permissions
+  'read.own-profile': ['read.own-profile'],
+  'update.own-profile': ['update.own-profile'],
+  'manage.own-profile': ['manage.own-profile'],
 
   // Wildcard permissions
   '*': ['*'],

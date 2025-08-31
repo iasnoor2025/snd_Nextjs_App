@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { PermissionContent, RoleContent } from '@/lib/rbac/rbac-components';
+import { PermissionManagement } from '@/components/permission-management';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import {
   Calendar,
@@ -518,8 +518,29 @@ export default function UserManagementPage() {
       return 'Core System';
     }
     
-    const [action, subject] = permissionName.split('.');
+    const [_action, subject] = permissionName.split('.');
     
+    // Direct mapping for specific permissions
+    const directMappings: Record<string, string> = {
+      'own-profile': 'User Management',
+      'own-preferences': 'User Management',
+      'own-timesheet': 'Timesheet Management',
+      'own-leave': 'Leave Management',
+      'employee-dashboard': 'Employee Management',
+      'employee-data': 'Employee Management',
+      'SalaryIncrement': 'Payroll Management',
+      'Advance': 'Payroll Management',
+      'document-approval': 'Document Management',
+      'Assignment': 'Assignment Management',
+      'equipment-document': 'Equipment Management'
+    };
+
+    // Check direct mappings first
+    if (subject && directMappings[subject]) {
+      return directMappings[subject];
+    }
+
+    // Comprehensive categorization based on subject
     switch (subject) {
       case 'User':
       case 'Role':
@@ -529,7 +550,6 @@ export default function UserManagementPage() {
       case 'employee-document':
       case 'employee-assignment':
       case 'employee-leave':
-      case 'employee-salary':
       case 'employee-skill':
       case 'employee-training':
       case 'employee-performance':
@@ -595,11 +615,36 @@ export default function UserManagementPage() {
       case 'Safety':
       case 'Location':
         return 'Company & Safety';
-      case 'Advance':
-      case 'Assignment':
-        return 'Business Operations';
+      case 'Document':
+        return 'Document Management';
       default:
-        return 'Other';
+        // Fallback categorization based on subject
+        const fallbackMappings: Record<string, string> = {
+          'User': 'User Management',
+          'Role': 'User Management',
+          'Permission': 'User Management',
+          'Employee': 'Employee Management',
+          'Customer': 'Customer Management',
+          'Equipment': 'Equipment Management',
+          'Maintenance': 'Maintenance Management',
+          'Rental': 'Rental Management',
+          'Quotation': 'Quotation Management',
+          'Payroll': 'Payroll Management',
+          'Timesheet': 'Timesheet Management',
+          'Project': 'Project Management',
+          'Leave': 'Leave Management',
+          'Department': 'Department & Organization',
+          'Designation': 'Department & Organization',
+          'Report': 'Reports & Analytics',
+          'Analytics': 'Reports & Analytics',
+          'Company': 'Company & Safety',
+          'Safety': 'Company & Safety',
+          'Location': 'Company & Safety',
+          'Skill': 'Department & Organization',
+          'Training': 'Department & Organization'
+        };
+
+        return (subject && fallbackMappings[subject]) || 'Core System';
     }
   };
 
@@ -1055,44 +1100,51 @@ export default function UserManagementPage() {
 
           {/* Permissions Tab */}
           <TabsContent value="permissions" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('permissions')}</CardTitle>
-                <CardDescription>{t('systemPermissionsDescription')}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t('name')}</TableHead>
-                      <TableHead>{t('guardName')}</TableHead>
-                      <TableHead>{t('createdAt')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {safePermissions.length > 0 ? (
-                      safePermissions.map(permission => (
-                        <TableRow key={permission.id}>
-                          <TableCell className="font-medium">{permission.name}</TableCell>
-                          <TableCell>{permission.guardName}</TableCell>
-                          <TableCell>
-                            {permission.createdAt
-                              ? new Date(permission.createdAt).toLocaleDateString()
-                              : 'N/A'}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center text-muted-foreground">
-                          {loading ? t('loading') : t('noPermissionsFound')}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <PermissionManagement
+              permissions={safePermissions}
+              roles={safeRoles}
+              selectedRole={selectedRoleForPermissions}
+              selectedPermissions={selectedRolePermissions}
+              onPermissionChange={setSelectedRolePermissions}
+              onRoleChange={setSelectedRoleForPermissions}
+              loading={loadingPermissions}
+            />
+            
+            {/* Save Permissions Button */}
+            {selectedRoleForPermissions && (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold">Save Changes</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Save the permission changes for {selectedRoleForPermissions.name}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedRoleForPermissions(null);
+                          setSelectedRolePermissions([]);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          const permissionIds = selectedRolePermissions.map(p => p.id);
+                          updateRolePermissions(permissionIds);
+                        }}
+                        disabled={loadingPermissions}
+                      >
+                        Save Permissions
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
 
@@ -1335,7 +1387,7 @@ export default function UserManagementPage() {
                 console.log('Rendering permissions dialog with:', { safePermissions, selectedRolePermissions });
                 
                 // Group permissions by category
-                const groupedPermissions: Record<string, any[]> = {};
+                const groupedPermissions: Record<string, Permission[]> = {};
                 
                 safePermissions.forEach(permission => {
                   const category = getPermissionCategory(permission.name);

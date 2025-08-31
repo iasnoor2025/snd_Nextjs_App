@@ -41,7 +41,7 @@ export default function ProfilePage() {
   const [documentsLoading, setDocumentsLoading] = useState(false);
 
   // Get allowed actions for profile management
-  const allowedActions = getAllowedActions('Profile');
+  const allowedActions = getAllowedActions('own-profile');
   
   // Check if user has permission to view profile
   const canViewProfile = allowedActions.includes('read') || user?.role === 'SUPER_ADMIN';

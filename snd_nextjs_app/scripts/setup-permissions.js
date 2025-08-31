@@ -1,6 +1,6 @@
 const { drizzle } = require('drizzle-orm/postgres-js');
 const postgres = require('postgres');
-const { permissions, roles: rolesTable, roleHasPermissions, modelHasRoles } = require('../src/lib/drizzle/schema');
+const { permissions, roles: rolesTable, roleHasPermissions, modelHasRoles } = require('./src/lib/drizzle/schema');
 
 // Database connection
 const connectionString = process.env.DATABASE_URL || 'postgresql://username:password@localhost:5432/database';
@@ -36,11 +36,12 @@ const allPermissions = [
   'create.customer-document', 'read.customer-document', 'update.customer-document', 'delete.customer-document', 'manage.customer-document',
   'create.customer-project', 'read.customer-project', 'update.customer-project', 'delete.customer-project', 'manage.customer-project',
   
-  // Equipment management
-  'create.Equipment', 'read.Equipment', 'update.Equipment', 'delete.Equipment', 'manage.Equipment',
-  'create.equipment-rental', 'read.equipment-rental', 'update.equipment-rental', 'delete.equipment-rental', 'manage.equipment-rental',
-  'create.equipment-maintenance', 'read.equipment-maintenance', 'update.equipment-maintenance', 'delete.equipment-maintenance', 'manage.equipment-maintenance',
-  'create.equipment-history', 'read.equipment-history', 'update.equipment-history', 'delete.equipment-history', 'manage.equipment-history',
+     // Equipment management
+   'create.Equipment', 'read.Equipment', 'update.Equipment', 'delete.Equipment', 'manage.Equipment',
+   'create.equipment-rental', 'read.equipment-rental', 'update.equipment-rental', 'delete.equipment-rental', 'manage.equipment-rental',
+   'create.equipment-maintenance', 'read.equipment-maintenance', 'update.equipment-maintenance', 'delete.equipment-maintenance', 'manage.equipment-maintenance',
+   'create.equipment-history', 'read.equipment-history', 'update.equipment-history', 'delete.equipment-history', 'manage.equipment-history',
+   'create.equipment-document', 'read.equipment-document', 'update.equipment-document', 'delete.equipment-document', 'manage.equipment-document',
   
   // Maintenance management
   'create.Maintenance', 'read.Maintenance', 'update.Maintenance', 'delete.Maintenance', 'manage.Maintenance',
@@ -205,39 +206,43 @@ const rolePermissions = {
     'manage.Rental', 'manage.Quotation', 'manage.Payroll', 'manage.Timesheet',
     'manage.Project', 'manage.Leave', 'manage.Department', 'manage.Designation',
     'manage.Report', 'manage.Settings', 'manage.Company', 'manage.Safety',
-    'manage.employee-document', 'manage.SalaryIncrement', 'manage.Advance',
-    'manage.Assignment', 'manage.Location', 'manage.Maintenance'
+    'manage.employee-document', 'manage.equipment-document', 'manage.SalaryIncrement', 'manage.Advance',
+    'manage.Assignment', 'manage.Location', 'manage.Maintenance',
+    'read.own-profile', 'update.own-profile'
   ],
   MANAGER: [
     'read.User', 'manage.Employee', 'manage.Customer', 'manage.Equipment',
     'manage.Rental', 'manage.Quotation', 'read.Payroll', 'manage.Timesheet',
     'manage.Project', 'manage.Leave', 'read.Department', 'read.Designation',
     'read.Report', 'read.Settings', 'read.Company', 'read.Safety',
-    'manage.employee-document', 'manage.SalaryIncrement', 'manage.Advance',
-    'manage.Assignment', 'read.Location', 'read.Maintenance'
+    'manage.employee-document', 'manage.equipment-document', 'manage.SalaryIncrement', 'manage.Advance',
+    'manage.Assignment', 'read.Location', 'read.Maintenance',
+    'read.own-profile', 'update.own-profile'
   ],
   SUPERVISOR: [
     'read.User', 'manage.Employee', 'read.Customer', 'read.Equipment',
     'read.Rental', 'manage.Quotation', 'read.Payroll', 'manage.Timesheet',
     'manage.Project', 'manage.Leave', 'read.Department', 'read.Designation',
     'read.Report', 'read.Settings', 'read.Company', 'read.Safety',
-    'manage.employee-document', 'read.SalaryIncrement', 'read.Advance',
-    'read.Assignment', 'read.Location', 'read.Maintenance'
+    'manage.employee-document', 'read.equipment-document', 'read.SalaryIncrement', 'read.Advance',
+    'read.Assignment', 'read.Location', 'read.Maintenance',
+    'read.own-profile', 'update.own-profile'
   ],
   OPERATOR: [
     'read.User', 'read.Employee', 'read.Customer', 'read.Equipment',
     'read.Rental', 'read.Quotation', 'read.Payroll', 'read.Timesheet',
     'read.Project', 'read.Leave', 'read.Department', 'read.Designation',
     'read.Report', 'read.Settings', 'read.Company', 'read.Safety',
-    'read.employee-document', 'read.SalaryIncrement', 'read.Advance',
-    'read.Assignment', 'read.Location', 'read.Maintenance'
+    'read.employee-document', 'read.equipment-document', 'read.SalaryIncrement', 'read.Advance',
+    'read.Assignment', 'read.Location', 'read.Maintenance',
+    'read.own-profile', 'update.own-profile'
   ],
   EMPLOYEE: [
     'read.User', 'read.Employee', 'read.Customer', 'read.Equipment',
     'read.Rental', 'read.Quotation', 'read.Payroll', 'manage.Timesheet',
     'read.Project', 'manage.Leave', 'read.Department', 'read.Designation',
     'read.Report', 'read.Settings', 'read.Company', 'manage.employee-document',
-    'read.SalaryIncrement', 'read.own-profile', 'update.own-profile',
+    'read.equipment-document', 'read.SalaryIncrement', 'read.own-profile', 'update.own-profile',
     'read.own-preferences', 'update.own-preferences', 'read.own-timesheet',
     'update.own-timesheet', 'read.own-leave', 'update.own-leave',
     'read.employee-dashboard', 'read.employee-data'
@@ -246,7 +251,8 @@ const rolePermissions = {
     'read.User', 'read.Employee', 'read.Customer', 'read.Equipment',
     'read.Rental', 'read.Quotation', 'read.Timesheet', 'read.Project',
     'read.Leave', 'read.Department', 'read.Settings', 'read.Report',
-    'read.Company', 'read.employee-document', 'read.SalaryIncrement'
+    'read.Company', 'read.employee-document', 'read.equipment-document', 'read.SalaryIncrement',
+    'read.own-profile', 'update.own-profile'
   ],
   PROJECT_LEADER: [
     'manage.Project', 'manage.project-task', 'manage.project-milestone',

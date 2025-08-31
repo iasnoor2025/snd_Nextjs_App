@@ -190,6 +190,14 @@ export const PermissionConfigs = {
     delete: { action: 'delete' as Action, subject: 'employee-document' },
     manage: { action: 'manage' as Action, subject: 'employee-document' },
   },
+  // Equipment Document permissions (for equipment document management)
+  'equipment-document': {
+    read: { action: 'read' as Action, subject: 'equipment-document' },
+    create: { action: 'create' as Action, subject: 'equipment-document' },
+    update: { action: 'update' as Action, subject: 'equipment-document' },
+    delete: { action: 'delete' as Action, subject: 'equipment-document' },
+    manage: { action: 'manage' as Action, subject: 'equipment-document' },
+  },
   // Document Management permissions
   document: {
     read: { action: 'read' as Action, subject: 'Document' },
@@ -206,6 +214,11 @@ export const PermissionConfigs = {
     update: { action: 'update' as Action, subject: 'Dashboard' },
     delete: { action: 'delete' as Action, subject: 'Dashboard' },
     manage: { action: 'manage' as Action, subject: 'Dashboard' },
+  },
+  'own-profile': {
+    read: { action: 'read' as Action, subject: 'own-profile' },
+    update: { action: 'update' as Action, subject: 'own-profile' },
+    manage: { action: 'manage' as Action, subject: 'own-profile' },
   },
   admin: {
     read: { action: 'read' as Action, subject: 'Admin' },
