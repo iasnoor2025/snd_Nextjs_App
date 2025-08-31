@@ -192,9 +192,6 @@
     "settings": {
       "read": "View settings",
       "update": "Update settings"
-    },
-    "analytics": {
-      "read": "View analytics"
     }
   }
 }

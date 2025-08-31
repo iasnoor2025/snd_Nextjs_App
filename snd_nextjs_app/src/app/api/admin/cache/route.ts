@@ -117,9 +117,7 @@ export const POST = withPermission(PermissionConfigs.admin.create)(async (reques
         await cacheService.clearByTags(['settings']);
         return NextResponse.json({ message: 'Settings cache cleared successfully' });
 
-      case 'clear-analytics':
-        await cacheService.clearByTags(['analytics']);
-        return NextResponse.json({ message: 'Analytics cache cleared successfully' });
+
 
       case 'clear-reports':
         await cacheService.clearByTags(['reports']);

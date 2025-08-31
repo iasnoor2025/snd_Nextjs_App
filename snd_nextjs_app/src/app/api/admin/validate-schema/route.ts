@@ -17,7 +17,7 @@ export async function GET() {
 
     // Get expected tables from Drizzle schema
     const expectedTables = [
-      'analytics_reports',
+  
       'advance_payment_histories',
       'equipment_rental_history',
       'companies',

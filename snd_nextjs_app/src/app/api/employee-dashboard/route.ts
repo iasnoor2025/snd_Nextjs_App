@@ -18,6 +18,7 @@ import {
 import { and, desc, eq, gte } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { checkUserPermission } from '@/lib/rbac/permission-service';
 
 export async function GET(_request: NextRequest) {
   try {
@@ -36,52 +37,19 @@ export async function GET(_request: NextRequest) {
       role: session.user.role
     });
 
-    // Check if user has the read.mydashboard permission
-    // First, get the user's role from the users table
-    const userRecord = await db
-      .select({
-        id: users.id,
-        roleId: users.roleId,
-      })
-      .from(users)
-      .where(eq(users.id, parseInt(userId)))
-      .limit(1);
-
-    if (userRecord.length === 0) {
-      console.log('❌ User not found in database');
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const userRoleId = userRecord[0]?.roleId;
-    if (!userRoleId) {
-      console.log('❌ User has no role assigned');
-      return NextResponse.json({ error: 'User has no role assigned' }, { status: 403 });
-    }
-
-    console.log('🔍 User roleId from database:', userRoleId);
-
-    // Now get the user's permissions using the roleId from database
-    const userPermissions = await db
-      .select({
-        permissionName: permissions.name,
-      })
-      .from(roleHasPermissions)
-      .leftJoin(permissions, eq(roleHasPermissions.permissionId, permissions.id))
-      .where(eq(roleHasPermissions.roleId, userRoleId));
-
-    console.log('🔑 User permissions:', userPermissions.map(p => p.permissionName));
-
-    const hasMyDashboardPermission = userPermissions.some(p => p.permissionName === 'read.mydashboard');
-
-    if (!hasMyDashboardPermission) {
-      console.log('❌ User does not have read.mydashboard permission');
+    // Check if user has permission to access employee dashboard
+    // This will check for wildcard permissions (*, manage.all) as well as specific permissions
+    const permissionCheck = await checkUserPermission(userId, 'read', 'mydashboard');
+    
+    if (!permissionCheck.hasPermission) {
+      console.log('❌ User does not have permission to access employee dashboard:', permissionCheck.reason);
       return NextResponse.json(
-        { error: 'Access denied. read.mydashboard permission required.' },
+        { error: 'Access denied. Permission required to access employee dashboard.' },
         { status: 403 }
       );
     }
 
-    console.log('✅ User has read.mydashboard permission');
+    console.log('✅ User has permission to access employee dashboard');
 
     // Debug: Check if there are any employees in the database and what user IDs they have
     const allEmployees = await db

@@ -143,7 +143,8 @@ export default function EmployeeDashboard() {
   const allowedActions = getAllowedActions('Employee');
 
   // Check if user has permission to view their own dashboard
-  const canViewMyDashboard = hasPermission('read', 'mydashboard');
+  // This will check for wildcard permissions (*, manage.all) as well as specific permissions
+  const canViewMyDashboard = hasPermission('read', 'mydashboard') || hasPermission('read', 'Employee') || hasPermission('manage', 'Employee');
 
   // Check authentication
   useEffect(() => {

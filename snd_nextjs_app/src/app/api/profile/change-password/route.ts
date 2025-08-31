@@ -5,6 +5,7 @@ import { db } from '@/lib/drizzle';
 import { users } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
+import { checkUserPermission } from '@/lib/rbac/permission-service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,6 +36,19 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = session.user.id;
+
+    // Check if user has permission to update their own profile (password change is part of profile update)
+    const permissionCheck = await checkUserPermission(userId, 'update', 'own-profile');
+    
+    if (!permissionCheck.hasPermission) {
+      console.log('❌ User does not have permission to change password:', permissionCheck.reason);
+      return NextResponse.json(
+        { error: 'Access denied. Permission required to change password.' },
+        { status: 403 }
+      );
+    }
+
+    console.log('✅ User has permission to change password');
 
     // Get user with current password hash
     const userRows = await db

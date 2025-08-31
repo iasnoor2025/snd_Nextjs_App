@@ -175,8 +175,7 @@ const routePermissionMappings = {
     'DELETE': 'PermissionConfigs.assignment.delete'
   },
   
-  // Analytics/Report routes
-  'analytics': {
+
     'GET': 'PermissionConfigs.report.read'
   },
   'reports': {
@@ -281,7 +280,7 @@ function findAndUpdateRoutes(dir) {
     
     if (stat.isDirectory()) {
       // Check if this is an API route directory
-      if (item.startsWith('[') || item.includes('-') || item === 'employees' || item === 'users' || item === 'customers' || item === 'equipment' || item === 'projects' || item === 'rentals' || item === 'quotations' || item === 'payroll' || item === 'timesheets' || item === 'leave-requests' || item === 'departments' || item === 'designations' || item === 'companies' || item === 'settings' || item === 'locations' || item === 'maintenance' || item === 'safety-incidents' || item === 'salary-increments' || item === 'advances' || item === 'assignments' || item === 'analytics' || item === 'reports') {
+      if (item.startsWith('[') || item.includes('-') || item === 'employees' || item === 'users' || item === 'customers' || item === 'equipment' || item === 'projects' || item === 'rentals' || item === 'quotations' || item === 'payroll' || item === 'timesheets' || item === 'leave-requests' || item === 'departments' || item === 'designations' || item === 'companies' || item === 'settings' || item === 'locations' || item === 'maintenance' || item === 'safety-incidents' || item === 'salary-increments' || item === 'advances' || item === 'assignments' || item === 'reports') {
         const routeFile = path.join(fullPath, 'route.ts');
         if (fs.existsSync(routeFile)) {
           if (updateRouteFile(routeFile)) {

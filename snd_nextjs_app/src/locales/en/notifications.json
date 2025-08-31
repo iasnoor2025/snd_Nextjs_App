@@ -11,7 +11,7 @@
     "email": "Email and SMS notifications",
     "push": "Push notifications",
     "templates": "Notification templates",
-    "history": "Notification history and analytics"
+    "history": "Notification history"
   },
   "preferences": "Preferences",
   "email": "Email",

@@ -55,7 +55,7 @@
   "yes": "Yes",
   "no": "No",
   "content_flush_description": "Content should flush to the right when sidebar is collapsed.",
-  "analytics_overview": "Analytics Overview",
+  
   "recent_activities": "Recent Activities",
   "timesheet_calendar": "Timesheet Calendar",
   "timesheet_entries": "Your timesheet entries for {{month}}",
@@ -67,8 +67,8 @@
   "quick_actions": {
     "user_management": "User Management",
     "user_management_desc": "Manage users, roles & permissions",
-    "analytics": "Analytics",
-    "analytics_desc": "Business intelligence & reports",
+
+
     "payroll": "Payroll",
     "payroll_desc": "Salary & compensation management",
     "settings": "Settings",

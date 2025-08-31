@@ -4,6 +4,7 @@ import { employeeDocuments, employees, users } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { checkUserPermission } from '@/lib/rbac/permission-service';
 
 // GET /api/profile/documents - Get current user's employee documents
 export async function GET(_request: NextRequest) {
@@ -16,6 +17,19 @@ export async function GET(_request: NextRequest) {
     }
 
     const userId = parseInt(session.user.id);
+
+    // Check if user has permission to read their own profile documents
+    const permissionCheck = await checkUserPermission(userId.toString(), 'read', 'own-profile');
+    
+    if (!permissionCheck.hasPermission) {
+      console.log('❌ User does not have permission to read profile documents:', permissionCheck.reason);
+      return NextResponse.json(
+        { error: 'Access denied. Permission required to read profile documents.' },
+        { status: 403 }
+      );
+    }
+
+    console.log('✅ User has permission to read profile documents');
 
     // First, find the employee record linked to this user
     let employeeRows = await db

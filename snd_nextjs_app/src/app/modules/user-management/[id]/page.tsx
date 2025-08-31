@@ -267,7 +267,6 @@ export default function UserDetailPage() {
                     <Badge variant="outline">projects.*</Badge>
                     <Badge variant="outline">reports.*</Badge>
                     <Badge variant="outline">settings.*</Badge>
-                    <Badge variant="outline">analytics.read</Badge>
                   </>
                 )}
                 {user.role === 'MANAGER' && (
@@ -288,7 +287,6 @@ export default function UserDetailPage() {
                     <Badge variant="outline">reports.read</Badge>
                     <Badge variant="outline">reports.create</Badge>
                     <Badge variant="outline">settings.read</Badge>
-                    <Badge variant="outline">analytics.read</Badge>
                   </>
                 )}
                 {user.role === 'USER' && (

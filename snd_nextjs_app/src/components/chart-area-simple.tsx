@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-export const description = 'An interactive area chart for rental analytics';
+export const description = 'An interactive area chart for rental data';
 
 const chartData = [
   { date: 'Jan', revenue: 12500, rentals: 45 },
@@ -44,7 +44,7 @@ export function ChartAreaSimple() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Rental Analytics</CardTitle>
+            <CardTitle>Rental Data</CardTitle>
             <CardDescription>Track your rental performance and revenue trends</CardDescription>
           </div>
           <CardAction>

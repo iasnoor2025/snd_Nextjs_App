@@ -11,7 +11,7 @@ import enEmployee from '@/locales/en/employee.json';
 import enRental from '@/locales/en/rental.json';
 import enSettings from '@/locales/en/settings.json';
 import enReporting from '@/locales/en/reporting.json';
-import enAnalytics from '@/locales/en/analytics.json';
+
 import enProject from '@/locales/en/project.json';
 import enQuotation from '@/locales/en/quotation.json';
 import enPayroll from '@/locales/en/payroll.json';
@@ -29,7 +29,7 @@ import enTimesheet from '@/locales/en/timesheet.json';
 import enFinancial from '@/locales/en/financial.json';
 import enMaintenance from '@/locales/en/maintenance.json';
 
-import enAuditCompliance from '@/locales/en/audit-compliance.json';
+
 import enCountries from '@/locales/en/countries.json';
 import enLocations from '@/locales/en/locations.json';
 import enDepartments from '@/locales/en/departments.json';
@@ -46,7 +46,7 @@ import arEmployee from '@/locales/ar/employee.json';
 import arRental from '@/locales/ar/rental.json';
 import arSettings from '@/locales/ar/settings.json';
 import arReporting from '@/locales/ar/reporting.json';
-import arAnalytics from '@/locales/ar/analytics.json';
+
 import arProject from '@/locales/ar/project.json';
 import arQuotation from '@/locales/ar/quotation.json';
 import arPayroll from '@/locales/ar/payroll.json';
@@ -64,7 +64,7 @@ import arTimesheet from '@/locales/ar/timesheet.json';
 import arFinancial from '@/locales/ar/financial.json';
 import arMaintenance from '@/locales/ar/maintenance.json';
 
-import arAuditCompliance from '@/locales/ar/audit-compliance.json';
+
 import arCountries from '@/locales/ar/countries.json';
 import arLocations from '@/locales/ar/locations.json';
 import arDepartments from '@/locales/ar/departments.json';
@@ -83,7 +83,7 @@ const resources = {
     rental: enRental,
     settings: enSettings,
     reporting: enReporting,
-    analytics: enAnalytics,
+
     project: enProject,
     quotation: enQuotation,
     payroll: enPayroll,
@@ -101,7 +101,7 @@ const resources = {
     financial: enFinancial,
     maintenance: enMaintenance,
 
-    auditCompliance: enAuditCompliance,
+
     countries: enCountries,
     locations: enLocations,
     departments: enDepartments,
@@ -119,7 +119,7 @@ const resources = {
     rental: arRental,
     settings: arSettings,
     reporting: arReporting,
-    analytics: arAnalytics,
+
     project: arProject,
     quotation: arQuotation,
     payroll: arPayroll,
@@ -137,7 +137,7 @@ const resources = {
     financial: arFinancial,
     maintenance: arMaintenance,
 
-    auditCompliance: arAuditCompliance,
+
     countries: arCountries,
     locations: arLocations,
     departments: arDepartments,
@@ -185,7 +185,7 @@ export const initializeI18n = () => {
           'rental',
           'settings',
           'reporting',
-          'analytics',
+      
           'project',
           'quotation',
           'payroll',
@@ -203,7 +203,7 @@ export const initializeI18n = () => {
           'financial',
           'maintenance',
 
-          'auditCompliance',
+      
           'countries',
           'locations',
           'departments',

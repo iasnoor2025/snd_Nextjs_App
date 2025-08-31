@@ -150,7 +150,7 @@ export class ERPNextFinancialService {
       },
       {
         ttl: 1800, // 30 minutes - financial data changes less frequently
-        tags: [CACHE_TAGS.ANALYTICS, CACHE_TAGS.INVOICES],
+        tags: [CACHE_TAGS.INVOICES],
       }
     );
   }

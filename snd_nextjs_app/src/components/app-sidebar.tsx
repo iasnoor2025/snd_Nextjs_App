@@ -163,17 +163,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
   ];
 
-  const allDocumentItems = [
-    {
-      name: t('analytics'),
-      url: '/modules/analytics',
-      icon: BarChart3,
-    },
-    {
-      name: t('auditCompliance'),
-      url: '/modules/audit-compliance',
-      icon: Database,
-    },
+  const allDocumentItems: Array<{
+    name: string;
+    url: string;
+    icon: any;
+  }> = [
   ];
 
   // Filter menu items based on user permissions

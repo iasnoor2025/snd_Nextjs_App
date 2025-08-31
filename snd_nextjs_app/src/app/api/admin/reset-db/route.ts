@@ -47,7 +47,7 @@ export async function POST(_request: NextRequest) {
       'DROP TABLE IF EXISTS skills CASCADE',
       'DROP TABLE IF EXISTS trainings CASCADE',
       'DROP TABLE IF EXISTS geofence_zones CASCADE',
-      'DROP TABLE IF EXISTS analytics_reports CASCADE',
+      
       'DROP TABLE IF EXISTS companies CASCADE',
       'DROP TABLE IF EXISTS media CASCADE',
       'DROP TABLE IF EXISTS password_reset_tokens CASCADE',

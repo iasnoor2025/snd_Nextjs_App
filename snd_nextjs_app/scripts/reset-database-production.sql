@@ -33,7 +33,7 @@ DROP TABLE IF EXISTS
     user_roles,
     webhook_logs,
     webhook_subscriptions,
-    analytics_reports,
+    
     cache,
     company_documents,
     customers,

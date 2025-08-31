@@ -22,6 +22,7 @@ export const usersRelations = relations(users, ({many}) => ({
 		relationName: "payrolls_paidBy_users_id"
 	}),
 	projectTemplates: many(projectTemplates),
+	reportTemplates: many(reportTemplates),
 	rentals_createdBy: many(rentals, {
 		relationName: "rentals_createdBy_users_id"
 	}),
@@ -31,7 +32,6 @@ export const usersRelations = relations(users, ({many}) => ({
 	rentals_approvedBy: many(rentals, {
 		relationName: "rentals_approvedBy_users_id"
 	}),
-	reportTemplates: many(reportTemplates),
 	salaryIncrements_requestedBy: many(salaryIncrements, {
 		relationName: "salaryIncrements_requestedBy_users_id"
 	}),
@@ -204,8 +204,8 @@ export const projectsRelations = relations(projects, ({one, many}) => ({
 	projectEquipments: many(projectEquipment),
 	projectSubcontractors: many(projectSubcontractors),
 	projectTasks: many(projectTasks),
-	rentals: many(rentals),
 	projectRisks: many(projectRisks),
+	rentals: many(rentals),
 	customer: one(customers, {
 		fields: [projects.customerId],
 		references: [customers.id]

@@ -68,7 +68,7 @@ export default function RoleDetailPage() {
     if (permission.startsWith('projects.')) return 'Project Management';
     if (permission.startsWith('reports.')) return 'Reporting';
     if (permission.startsWith('settings.')) return 'Settings';
-    if (permission.startsWith('analytics.')) return 'Analytics';
+
     return 'Other';
   };
 

@@ -229,16 +229,7 @@ export const useDeleteConfirmations = () => {
     });
   };
 
-  const confirmDeleteAnalyticsReport = async () => {
-    return await confirm({
-      title: 'Delete Analytics Report',
-      description:
-        'Are you sure you want to delete this analytics report? This action cannot be undone.',
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
-      variant: 'destructive',
-    });
-  };
+
 
   const confirmBulkDelete = async (count: number, itemType: string) => {
     return await confirm({
@@ -303,7 +294,7 @@ export const useDeleteConfirmations = () => {
     confirmDeleteQuotation,
     confirmDeleteInvoice,
     confirmDeleteSafetyRecord,
-    confirmDeleteAnalyticsReport,
+
     confirmBulkDelete,
     confirmCancel,
     confirmApprove,

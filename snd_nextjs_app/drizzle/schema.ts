@@ -1301,6 +1301,52 @@ export const rentalItems = pgTable("rental_items", {
 		}).onUpdate("cascade").onDelete("set null"),
 ]);
 
+export const reportTemplates = pgTable("report_templates", {
+	id: serial().primaryKey().notNull(),
+	name: text().notNull(),
+	description: text(),
+	type: text().notNull(),
+	parameters: jsonb(),
+	query: text(),
+	isActive: boolean("is_active").default(true).notNull(),
+	createdBy: integer("created_by"),
+	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
+	updatedAt: date("updated_at").notNull(),
+}, (table) => [
+	foreignKey({
+			columns: [table.createdBy],
+			foreignColumns: [users.id],
+			name: "report_templates_created_by_fkey"
+		}).onUpdate("cascade").onDelete("set null"),
+]);
+
+export const projectRisks = pgTable("project_risks", {
+	id: serial().primaryKey().notNull(),
+	projectId: integer("project_id").notNull(),
+	title: text().notNull(),
+	description: text(),
+	probability: text().default('medium').notNull(),
+	impact: text().default('medium').notNull(),
+	severity: text().default('medium').notNull(),
+	status: text().default('open').notNull(),
+	mitigationStrategy: text("mitigation_strategy"),
+	assignedToId: integer("assigned_to_id"),
+	dueDate: date("due_date"),
+	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
+	updatedAt: date("updated_at").notNull(),
+}, (table) => [
+	foreignKey({
+			columns: [table.projectId],
+			foreignColumns: [projects.id],
+			name: "project_risks_project_id_fkey"
+		}).onUpdate("cascade").onDelete("cascade"),
+	foreignKey({
+			columns: [table.assignedToId],
+			foreignColumns: [employees.id],
+			name: "project_risks_assigned_to_id_fkey"
+		}).onUpdate("cascade").onDelete("set null"),
+]);
+
 export const rentals = pgTable("rentals", {
 	id: serial().primaryKey().notNull(),
 	customerId: integer("customer_id"),
@@ -1350,6 +1396,7 @@ export const rentals = pgTable("rentals", {
 	mdTerms: text("md_terms"),
 	termsLastUpdated: timestamp("terms_last_updated", { precision: 3, mode: 'string' }),
 	termsUpdateNotes: text("terms_update_notes"),
+	supervisor: text(),
 }, (table) => [
 	uniqueIndex("rentals_rental_number_key").using("btree", table.rentalNumber.asc().nullsLast().op("text_ops")),
 	foreignKey({
@@ -1376,52 +1423,6 @@ export const rentals = pgTable("rentals", {
 			columns: [table.approvedBy],
 			foreignColumns: [users.id],
 			name: "rentals_approved_by_fkey"
-		}).onUpdate("cascade").onDelete("set null"),
-]);
-
-export const reportTemplates = pgTable("report_templates", {
-	id: serial().primaryKey().notNull(),
-	name: text().notNull(),
-	description: text(),
-	type: text().notNull(),
-	parameters: jsonb(),
-	query: text(),
-	isActive: boolean("is_active").default(true).notNull(),
-	createdBy: integer("created_by"),
-	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
-	updatedAt: date("updated_at").notNull(),
-}, (table) => [
-	foreignKey({
-			columns: [table.createdBy],
-			foreignColumns: [users.id],
-			name: "report_templates_created_by_fkey"
-		}).onUpdate("cascade").onDelete("set null"),
-]);
-
-export const projectRisks = pgTable("project_risks", {
-	id: serial().primaryKey().notNull(),
-	projectId: integer("project_id").notNull(),
-	title: text().notNull(),
-	description: text(),
-	probability: text().default('medium').notNull(),
-	impact: text().default('medium').notNull(),
-	severity: text().default('medium').notNull(),
-	status: text().default('open').notNull(),
-	mitigationStrategy: text("mitigation_strategy"),
-	assignedToId: integer("assigned_to_id"),
-	dueDate: date("due_date"),
-	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
-	updatedAt: date("updated_at").notNull(),
-}, (table) => [
-	foreignKey({
-			columns: [table.projectId],
-			foreignColumns: [projects.id],
-			name: "project_risks_project_id_fkey"
-		}).onUpdate("cascade").onDelete("cascade"),
-	foreignKey({
-			columns: [table.assignedToId],
-			foreignColumns: [employees.id],
-			name: "project_risks_assigned_to_id_fkey"
 		}).onUpdate("cascade").onDelete("set null"),
 ]);
 

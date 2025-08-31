@@ -99,7 +99,7 @@ const allPermissions = [
   'create.Report', 'read.Report', 'update.Report', 'delete.Report', 'manage.Report',
   'create.report-template', 'read.report-template', 'update.report-template', 'delete.report-template', 'manage.report-template',
   'create.scheduled-report', 'read.scheduled-report', 'update.scheduled-report', 'delete.scheduled-report', 'manage.scheduled-report',
-  'create.analytics-report', 'read.analytics-report', 'update.analytics-report', 'delete.analytics-report', 'manage.analytics-report',
+  
   'export.Report', 'import.Report',
   
   // Settings management
@@ -145,8 +145,7 @@ const allPermissions = [
   'create.video', 'read.video', 'update.video', 'delete.video', 'manage.video',
   'create.audio', 'read.audio', 'update.audio', 'delete.audio', 'manage.audio',
   
-  // Analytics and dashboard
-  'create.Analytics', 'read.Analytics', 'update.Analytics', 'delete.Analytics', 'manage.Analytics',
+
   'create.Dashboard', 'read.Dashboard', 'update.Dashboard', 'delete.Dashboard', 'manage.Dashboard',
   
   // Notification management

@@ -35,8 +35,6 @@ const rolePermissions = {
     'reports.export',
     'settings.read',
     'settings.update',
-    'analytics.read',
-    'analytics.export',
     // Timesheet permissions - full access
     'timesheets.read',
     'timesheets.create',
@@ -79,8 +77,6 @@ const rolePermissions = {
     'reports.export',
     'settings.read',
     'settings.update',
-    'analytics.read',
-    'analytics.export',
     // Timesheet permissions - full access
     'timesheets.read',
     'timesheets.create',

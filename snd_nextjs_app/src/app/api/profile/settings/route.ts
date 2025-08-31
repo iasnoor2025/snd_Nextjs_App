@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { authConfig } from '@/lib/auth-config';
 import { getServerSession } from 'next-auth';
+import { checkUserPermission } from '@/lib/rbac/permission-service';
 
 // GET /api/profile/settings - Get user settings
 export async function GET(_request: NextRequest) {
@@ -13,7 +14,21 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    // const userId = session.user.id;
+    const userId = session.user.id;
+
+    // Check if user has permission to read their own profile settings
+    const permissionCheck = await checkUserPermission(userId, 'read', 'own-profile');
+    
+    if (!permissionCheck.hasPermission) {
+      console.log('❌ User does not have permission to read profile settings:', permissionCheck.reason);
+      return NextResponse.json(
+        { error: 'Access denied. Permission required to read profile settings.' },
+        { status: 403 }
+      );
+    }
+
+    console.log('✅ User has permission to read profile settings');
+
     const { searchParams } = new URL(_request.url);
     const type = searchParams.get('type'); // 'notifications' or 'appearance'
 
@@ -66,7 +81,20 @@ export async function PUT(_request: NextRequest) {
       return NextResponse.json({ error: 'Type and settings are required' }, { status: 400 });
     }
 
-    // const userId = session.user.id;
+    const userId = session.user.id;
+
+    // Check if user has permission to update their own profile settings
+    const permissionCheck = await checkUserPermission(userId, 'update', 'own-profile');
+    
+    if (!permissionCheck.hasPermission) {
+      console.log('❌ User does not have permission to update profile settings:', permissionCheck.reason);
+      return NextResponse.json(
+        { error: 'Access denied. Permission required to update profile settings.' },
+        { status: 403 }
+      );
+    }
+
+    console.log('✅ User has permission to update profile settings');
 
     // In a real app, you would save these settings to a database
     // For now, we'll just return success

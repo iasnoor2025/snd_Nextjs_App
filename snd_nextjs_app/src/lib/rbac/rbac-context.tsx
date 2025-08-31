@@ -160,12 +160,12 @@ function canAccessRouteClient(user: User, route: string): boolean {
     '/modules/leave-management': { action: 'read', subject: 'Leave', roles: [] },
     '/modules/location-management': { action: 'read', subject: 'Settings', roles: [] },
     '/modules/user-management': { action: 'read', subject: 'User', roles: [] },
-    '/modules/analytics': { action: 'read', subject: 'Report', roles: [] },
+
     '/modules/safety-management': { action: 'read', subject: 'Safety', roles: [] },
     '/modules/salary-increments': { action: 'read', subject: 'SalaryIncrement', roles: [] },
     '/modules/reporting': { action: 'read', subject: 'Report', roles: [] },
     '/modules/settings': { action: 'read', subject: 'Settings', roles: [] },
-    '/modules/audit-compliance': { action: 'read', subject: 'Report', roles: [] },
+
     '/modules/document-management': { action: 'read', subject: 'Document', roles: [] },
     '/admin': { action: 'manage', subject: 'Admin', roles: [] },
     '/reports': { action: 'read', subject: 'Report', roles: [] },
