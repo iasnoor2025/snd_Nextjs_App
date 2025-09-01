@@ -27,6 +27,7 @@ import {
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface Equipment {
   id: number;
@@ -42,6 +43,7 @@ interface Equipment {
   istimara?: string;
   istimara_expiry_date?: string;
   serial_number?: string;
+  chassis_number?: string;
   description?: string;
   door_number?: string;
   created_at?: string;
@@ -49,6 +51,7 @@ interface Equipment {
 }
 
 export default function EquipmentShowPage() {
+  const { t } = useTranslation('equipment');
   const params = useParams();
   const router = useRouter();
   const { confirmDeleteEquipment } = useDeleteConfirmations();
@@ -75,11 +78,11 @@ export default function EquipmentShowPage() {
       if (response.success) {
         setEquipment(response.data);
       } else {
-        toast.error('Failed to load equipment');
+        toast.error(t('messages.loadingError'));
         router.push('/modules/equipment-management');
       }
-    } catch (error) {
-      toast.error('Failed to load equipment');
+    } catch {
+      toast.error(t('messages.loadingError'));
       router.push('/modules/equipment-management');
     } finally {
       setLoading(false);
@@ -99,13 +102,13 @@ export default function EquipmentShowPage() {
       try {
         const response = await ApiService.deleteEquipment(equipment.id);
         if (response.success) {
-          toast.success('Equipment deleted successfully');
+          toast.success(t('messages.deleteSuccess'));
           router.push('/modules/equipment-management');
         } else {
-          toast.error('Failed to delete equipment');
+          toast.error(t('messages.deleteError'));
         }
-      } catch (error) {
-        toast.error('Failed to delete equipment');
+      } catch {
+        toast.error(t('messages.deleteError'));
       } finally {
         setDeleting(false);
       }
@@ -148,7 +151,7 @@ export default function EquipmentShowPage() {
       <div className="w-full p-6">
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin" />
-          <span className="ml-2">Loading equipment...</span>
+          <span className="ml-2">{t('messages.loading')}</span>
         </div>
       </div>
     );
@@ -159,7 +162,7 @@ export default function EquipmentShowPage() {
       <div className="w-full p-6">
         <div className="flex items-center justify-center py-8">
           <AlertCircle className="h-8 w-8 text-destructive" />
-          <span className="ml-2">Equipment not found</span>
+          <span className="ml-2">{t('messages.notFound')}</span>
         </div>
       </div>
     );
@@ -173,18 +176,18 @@ export default function EquipmentShowPage() {
           <div className="flex items-center space-x-4">
             <Button variant="ghost" onClick={() => router.push('/modules/equipment-management')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Equipment
+              {t('actions.back')}
             </Button>
             <div>
               <h1 className="text-2xl font-bold">{equipment.name}</h1>
-              <p className="text-muted-foreground">Equipment Details</p>
+              <p className="text-muted-foreground">{t('messages.equipmentDetails')}</p>
             </div>
           </div>
           <div className="flex gap-2">
             {hasPermission('update', 'Equipment') && (
               <Button onClick={handleEdit}>
                 <Edit className="h-4 w-4 mr-2" />
-                Edit Equipment
+                {t('actions.editEquipment')}
               </Button>
             )}
 
@@ -195,7 +198,7 @@ export default function EquipmentShowPage() {
                 ) : (
                   <Trash2 className="h-4 w-4 mr-2" />
                 )}
-                Delete Equipment
+                {t('actions.deleteEquipment')}
               </Button>
             )}
           </div>
@@ -205,23 +208,23 @@ export default function EquipmentShowPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Basic Information */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Package className="h-5 w-5" />
-                <span>Basic Information</span>
-              </CardTitle>
-            </CardHeader>
+                          <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Package className="h-5 w-5" />
+                  <span>{t('fields.basicInfo')}</span>
+                </CardTitle>
+              </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Name</Label>
-                  <p className="text-lg font-medium">{equipment.name}</p>
+                              <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">{t('fields.name')}</Label>
+                    <p className="text-lg font-medium">{equipment.name}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">{t('fields.status')}</Label>
+                    <div className="mt-1">{getStatusBadge(equipment.status)}</div>
+                  </div>
                 </div>
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Status</Label>
-                  <div className="mt-1">{getStatusBadge(equipment.status)}</div>
-                </div>
-              </div>
 
               <Separator />
 
@@ -233,6 +236,10 @@ export default function EquipmentShowPage() {
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Serial Number</Label>
                   <p className="text-sm font-mono">{equipment.serial_number || 'Not specified'}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Chassis Number</Label>
+                  <p className="text-sm font-mono">{equipment.chassis_number || 'Not specified'}</p>
                 </div>
               </div>
 

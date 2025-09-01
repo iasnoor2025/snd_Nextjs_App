@@ -12,7 +12,7 @@ import { autoExtractDoorNumber } from '@/lib/utils/equipment-utils';
 export const PUT = withPermission(PermissionConfigs.equipment.update)(
   async (
     request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
+    ...args: unknown[]
   ) => {
   try {
     // Check authentication
@@ -21,6 +21,7 @@ export const PUT = withPermission(PermissionConfigs.equipment.update)(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { params } = (args[0] as { params: Promise<{ id: string }> }) || { params: Promise.resolve({ id: '' }) };
     const { id: idParam } = await params;
     const id = parseInt(idParam);
 
@@ -57,6 +58,9 @@ export const PUT = withPermission(PermissionConfigs.equipment.update)(
     }
     if (body.serial_number !== undefined) {
       updateData.serialNumber = body.serial_number;
+    }
+    if (body.chassis_number !== undefined) {
+      updateData.chassisNumber = body.chassis_number;
     }
     if (body.description !== undefined) {
       updateData.description = body.description;

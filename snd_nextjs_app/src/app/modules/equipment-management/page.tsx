@@ -64,6 +64,7 @@ interface Equipment {
   istimara?: string;
   istimara_expiry_date?: string;
   serial_number?: string;
+  chassis_number?: string;
   description?: string;
   door_number?: string;
   current_assignment?: {
@@ -472,6 +473,7 @@ export default function EquipmentManagementPage() {
                         <TableHead>{t('equipment_management.current_assignment')}</TableHead>
                         <TableHead>{t('equipment_management.daily_rate')}</TableHead>
                         <TableHead>{t('equipment_management.erpnext_id')}</TableHead>
+                        <TableHead>{t('equipment_management.chassis_number')}</TableHead>
                         <TableHead>
                           <div className="flex items-center gap-2">
                             <span>{t('equipment_management.istimara')}</span>
@@ -599,6 +601,15 @@ export default function EquipmentManagementPage() {
                             </TableCell>
                             <TableCell>
                               {convertToArabicNumerals(item.erpnext_id?.toString(), isRTL) || '-'}
+                            </TableCell>
+                            <TableCell>
+                              {item.chassis_number ? (
+                                convertToArabicNumerals(item.chassis_number, isRTL)
+                              ) : (
+                                <span className="text-muted-foreground text-sm">
+                                  {t('equipment_management.not_specified')}
+                                </span>
+                              )}
                             </TableCell>
                             <TableCell>
                               {item.istimara ? (

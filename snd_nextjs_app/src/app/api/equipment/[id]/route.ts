@@ -37,6 +37,7 @@ export async function GET(
         weekly_rate: equipment.weeklyRate,
         monthly_rate: equipment.monthlyRate,
         serial_number: equipment.serialNumber,
+        chassis_number: equipment.chassisNumber,
         description: equipment.description,
         door_number: equipment.doorNumber,
         erpnext_id: equipment.erpnextId,

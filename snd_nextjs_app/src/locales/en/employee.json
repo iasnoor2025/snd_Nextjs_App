@@ -445,6 +445,23 @@
     "viewAll": "View All"
   },
 
+  "advances": {
+    "currentBalance": "Current Balance",
+    "remainingBalance": "Remaining Balance",
+    "active": "Active",
+    "noBalance": "No Balance",
+    "basedOnCurrentBalance": "Based on current balance and monthly deduction",
+    "loadingPaymentHistory": "Loading payment history...",
+    "repaymentHistory": "Repayment History",
+    "amount": "Amount",
+    "date": "Date",
+    "notes": "Notes",
+    "actions": "Actions",
+    "noRepaymentHistory": "No repayment history found.",
+    "deleteRepayment": "Delete Repayment",
+    "deleteRepaymentConfirm": "Are you sure you want to delete this repayment? This action cannot be undone."
+  },
+
   "servicePeriod": {
     "year": "year",
     "years": "years",

@@ -1671,6 +1671,7 @@ export const equipment = pgTable(
     manufacturer: text(),
     modelNumber: text('model_number'),
     serialNumber: text('serial_number'),
+    chassisNumber: text('chassis_number'),
     purchaseDate: date('purchase_date'),
     purchasePrice: numeric('purchase_price', { precision: 12, scale: 2 }),
     warrantyExpiryDate: date('warranty_expiry_date'),

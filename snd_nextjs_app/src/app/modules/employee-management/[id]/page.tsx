@@ -1523,7 +1523,7 @@ export default function EmployeeShowPage() {
                                           : '0.00'}
                                       </div>
                                       <div>
-                                        Remaining Balance: SAR{' '}
+                                        {t('employee:advances.remainingBalance')}: SAR{' '}
                                         {(
                                           Number(selectedAdvanceForRepayment.amount) -
                                           Number(selectedAdvanceForRepayment.repaid_amount || 0)
@@ -1768,9 +1768,9 @@ export default function EmployeeShowPage() {
                 {/* Current Balance Card */}
                 <div className="rounded-lg border bg-white p-6 shadow-sm">
                   <div className="mb-4 flex items-center justify-between">
-                    <h3 className="text-sm font-medium text-muted-foreground">Current Balance</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground">{t('employee:advances.currentBalance')}</h3>
                     <Badge variant="outline" className="bg-muted/50">
-                      {Number(currentBalance) > 0 ? 'Active' : 'No Balance'}
+                      {Number(currentBalance) > 0 ? t('employee:advances.active') : t('employee:advances.noBalance')}
                     </Badge>
                   </div>
                   <div className="space-y-2">
@@ -1857,7 +1857,7 @@ export default function EmployeeShowPage() {
                       {monthlyDeduction &&
                       Number(monthlyDeduction) > 0 &&
                       Number(currentBalance) > 0
-                        ? `Based on current balance and monthly deduction`
+                        ? t('employee:advances.basedOnCurrentBalance')
                         : `Set monthly deduction to see estimate`}
                     </p>
                   </div>

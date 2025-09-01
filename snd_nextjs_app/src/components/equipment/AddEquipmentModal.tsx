@@ -36,6 +36,7 @@ interface EquipmentFormData {
   manufacturer: string;
   modelNumber: string;
   serialNumber: string;
+  chassisNumber: string;
   doorNumber: string;
   purchaseDate: string;
   purchasePrice: string;
@@ -61,6 +62,7 @@ export default function AddEquipmentModal({
     manufacturer: '',
     modelNumber: '',
     serialNumber: '',
+    chassisNumber: '',
     doorNumber: '',
     purchaseDate: '',
     purchasePrice: '',
@@ -96,6 +98,7 @@ export default function AddEquipmentModal({
         manufacturer: formData.manufacturer.trim() || undefined,
         modelNumber: formData.modelNumber.trim() || undefined,
         serialNumber: formData.serialNumber.trim() || undefined,
+        chassisNumber: formData.chassisNumber.trim() || undefined,
         doorNumber: formData.doorNumber.trim() || undefined,
         purchaseDate: formData.purchaseDate || undefined,
         purchasePrice: formData.purchasePrice ? parseFloat(formData.purchasePrice) : undefined,
@@ -112,8 +115,9 @@ export default function AddEquipmentModal({
 
       if (response.success) {
         // Show success message with door number extraction info if applicable
-        if (response.doorNumberExtracted && response.extractedDoorNumber) {
-          toast.success(`Equipment created successfully! Door number "${response.extractedDoorNumber}" was automatically extracted from the equipment name.`);
+        const created = (response as { doorNumberExtracted?: boolean; extractedDoorNumber?: string; success: boolean; data?: unknown });
+        if (created.doorNumberExtracted && created.extractedDoorNumber) {
+          toast.success(`Equipment created successfully! Door number "${created.extractedDoorNumber}" was automatically extracted from the equipment name.`);
         } else {
           toast.success('Equipment created successfully!');
         }
@@ -126,6 +130,7 @@ export default function AddEquipmentModal({
           manufacturer: '',
           modelNumber: '',
           serialNumber: '',
+          chassisNumber: '',
           doorNumber: '',
           purchaseDate: '',
           purchasePrice: '',
@@ -140,7 +145,7 @@ export default function AddEquipmentModal({
       } else {
         toast.error(response.message || 'Failed to create equipment');
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to create equipment');
     } finally {
       setLoading(false);
@@ -240,6 +245,16 @@ export default function AddEquipmentModal({
                 value={formData.serialNumber}
                 onChange={e => handleInputChange('serialNumber', e.target.value)}
                 placeholder="Enter serial number"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="chassisNumber">Chassis Number</Label>
+              <Input
+                id="chassisNumber"
+                value={formData.chassisNumber}
+                onChange={e => handleInputChange('chassisNumber', e.target.value)}
+                placeholder="Enter chassis number"
               />
             </div>
 

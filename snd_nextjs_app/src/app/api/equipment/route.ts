@@ -7,7 +7,7 @@ import {
   rentals,
 } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
-import { asc, eq, inArray } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
 import { autoExtractDoorNumber } from '@/lib/utils/equipment-utils';
@@ -37,6 +37,7 @@ const getEquipmentHandler = async (_request: NextRequest) => {
               istimara: equipmentTable.istimara,
               istimara_expiry_date: equipmentTable.istimaraExpiryDate,
               serial_number: equipmentTable.serialNumber,
+              chassis_number: equipmentTable.chassisNumber,
               description: equipmentTable.description,
               door_number: equipmentTable.doorNumber,
             })
@@ -58,8 +59,8 @@ const getEquipmentHandler = async (_request: NextRequest) => {
                 project_name: projects.name,
                 rental_id: rentals.id,
                 rental_number: rentals.rentalNumber,
-                assignment_date: equipmentRentalHistory.assignmentDate,
-                return_date: equipmentRentalHistory.returnDate,
+                assignment_date: equipmentRentalHistory.startDate,
+                return_date: equipmentRentalHistory.endDate,
                 status: equipmentRentalHistory.status,
               })
               .from(equipmentTable)
@@ -116,7 +117,7 @@ const getEquipmentHandler = async (_request: NextRequest) => {
         {
           ttl: 300, // 5 minutes
           prefix: 'equipment',
-          tags: [CACHE_TAGS.EQUIPMENT, CACHE_TAGS.LIST]
+          tags: [CACHE_TAGS.EQUIPMENT]
         }
       );
     } catch (error) {
@@ -138,6 +139,7 @@ const getEquipmentHandler = async (_request: NextRequest) => {
           istimara: equipmentTable.istimara,
           istimara_expiry_date: equipmentTable.istimaraExpiryDate,
           serial_number: equipmentTable.serialNumber,
+          chassis_number: equipmentTable.chassisNumber,
           description: equipmentTable.description,
           door_number: equipmentTable.doorNumber,
         })
@@ -179,6 +181,7 @@ const createEquipmentHandler = async (request: NextRequest) => {
       manufacturer,
       modelNumber,
       serialNumber,
+      chassisNumber,
       doorNumber,
       purchaseDate,
       purchasePrice,
@@ -195,7 +198,7 @@ const createEquipmentHandler = async (request: NextRequest) => {
     // Auto-extract door number from equipment name if not provided
     const finalDoorNumber = autoExtractDoorNumber(name, doorNumber);
 
-    const [inserted] = await db
+    const inserted = await db
       .insert(equipmentTable)
       .values({
         name,
@@ -204,6 +207,7 @@ const createEquipmentHandler = async (request: NextRequest) => {
         manufacturer,
         modelNumber,
         serialNumber,
+        chassisNumber: chassisNumber ?? null,
         doorNumber: finalDoorNumber,
         purchaseDate: purchaseDate ? new Date(purchaseDate).toISOString() : null,
         purchasePrice: purchasePrice ? String(parseFloat(purchasePrice)) : null,
@@ -222,11 +226,11 @@ const createEquipmentHandler = async (request: NextRequest) => {
       })
       .returning();
 
-    const equipment = inserted[0];
+    const equipment = inserted?.[0];
 
     return NextResponse.json({ 
       success: true, 
-      data: equipment,
+      data: equipment!,
       doorNumberExtracted: finalDoorNumber !== doorNumber,
       extractedDoorNumber: finalDoorNumber
     }, { status: 201 });
@@ -254,6 +258,7 @@ const updateEquipmentHandler = async (request: NextRequest) => {
       manufacturer,
       modelNumber,
       serialNumber,
+      chassisNumber,
       doorNumber,
       purchaseDate,
       purchasePrice,
@@ -279,6 +284,7 @@ const updateEquipmentHandler = async (request: NextRequest) => {
         manufacturer,
         modelNumber,
         serialNumber,
+        chassisNumber: chassisNumber ?? null,
         doorNumber: finalDoorNumber,
         purchaseDate: purchaseDate ? new Date(purchaseDate).toISOString() : null,
         purchasePrice: purchasePrice ? String(parseFloat(purchasePrice)) : null,

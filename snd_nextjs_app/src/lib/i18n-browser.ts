@@ -28,6 +28,7 @@ import enSidebar from '@/locales/en/sidebar.json';
 import enTimesheet from '@/locales/en/timesheet.json';
 import enFinancial from '@/locales/en/financial.json';
 import enMaintenance from '@/locales/en/maintenance.json';
+import enAssignment from '@/locales/en/assignment.json';
 
 
 import enCountries from '@/locales/en/countries.json';
@@ -63,6 +64,7 @@ import arSidebar from '@/locales/ar/sidebar.json';
 import arTimesheet from '@/locales/ar/timesheet.json';
 import arFinancial from '@/locales/ar/financial.json';
 import arMaintenance from '@/locales/ar/maintenance.json';
+import arAssignment from '@/locales/ar/assignment.json';
 
 
 import arCountries from '@/locales/ar/countries.json';
@@ -100,6 +102,7 @@ const resources = {
     timesheet: enTimesheet,
     financial: enFinancial,
     maintenance: enMaintenance,
+    assignment: enAssignment,
 
 
     countries: enCountries,
@@ -136,6 +139,7 @@ const resources = {
     timesheet: arTimesheet,
     financial: arFinancial,
     maintenance: arMaintenance,
+    assignment: arAssignment,
 
 
     countries: arCountries,
@@ -156,6 +160,21 @@ export const initializeI18n = () => {
   }
 
   if (i18n.isInitialized) {
+    // Ensure late-added namespaces are available (e.g., 'assignment')
+    try {
+      const langs = Object.keys(resources) as Array<'en' | 'ar'>;
+      for (const lang of langs) {
+        const namespaces = Object.keys(resources[lang] as Record<string, unknown>);
+        for (const ns of namespaces) {
+          if (!i18n.hasResourceBundle(lang, ns)) {
+            // @ts-ignore - dynamic index
+            i18n.addResourceBundle(lang, ns, (resources as any)[lang][ns], true, true);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('i18n: failed to ensure resource bundles for late namespaces', e);
+    }
     return Promise.resolve();
   }
 
@@ -182,6 +201,7 @@ export const initializeI18n = () => {
           'dashboard',
           'equipment',
           'employee',
+          'assignment',
           'rental',
           'settings',
           'reporting',

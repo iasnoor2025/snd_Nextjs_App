@@ -49,6 +49,7 @@ interface PaymentHistoryProps {
 }
 
 export default function PaymentHistory({ employeeId }: PaymentHistoryProps) {
+  const { t } = require('react-i18next').useTranslation('employee');
   const [payments, setPayments] = useState<Payment[]>([]);
   const [activeAdvances, setActiveAdvances] = useState<ActiveAdvance[]>([]);
   const [employeeInfo, setEmployeeInfo] = useState<EmployeeInfo | null>(null);
@@ -118,7 +119,7 @@ export default function PaymentHistory({ employeeId }: PaymentHistoryProps) {
   };
 
   if (loading)
-    return <div className="p-4 text-center text-muted-foreground">Loading payment history...</div>;
+    return <div className="p-4 text-center text-muted-foreground">{t('employee:advances.loadingPaymentHistory')}</div>;
 
   return (
     <>
@@ -195,7 +196,7 @@ export default function PaymentHistory({ employeeId }: PaymentHistoryProps) {
       <Card className="mt-6 shadow-sm border border-gray-200 bg-white rounded-lg">
         <CardHeader className="bg-muted/50 rounded-t-lg p-4 flex flex-row items-center gap-2">
           <CreditCard className="h-5 w-5 text-primary" />
-          <CardTitle className="text-lg font-semibold">Repayment History</CardTitle>
+          <CardTitle className="text-lg font-semibold">{t('employee:advances.repaymentHistory')}</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -203,16 +204,16 @@ export default function PaymentHistory({ employeeId }: PaymentHistoryProps) {
               <thead className="bg-muted/50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Amount
+                    {t('employee:advances.amount')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Date
+                    {t('employee:advances.date')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Notes
+                    {t('employee:advances.notes')}
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Actions
+                    {t('employee:advances.actions')}
                   </th>
                 </tr>
               </thead>
@@ -226,7 +227,7 @@ export default function PaymentHistory({ employeeId }: PaymentHistoryProps) {
                       <td className="px-6 py-4 whitespace-nowrap">
                         {new Date(p.payment_date).toLocaleDateString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">{p.notes || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{p.notes || t('common:common.na')}</td>
                       <td className="px-6 py-4 text-right flex gap-2 justify-end">
                         <Button
                           variant="outline"
@@ -263,7 +264,7 @@ export default function PaymentHistory({ employeeId }: PaymentHistoryProps) {
                 ) : (
                   <tr>
                     <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground italic">
-                      No repayment history found.
+                      {t('employee:advances.noRepaymentHistory')}
                     </td>
                   </tr>
                 )}
@@ -273,21 +274,21 @@ export default function PaymentHistory({ employeeId }: PaymentHistoryProps) {
           <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Delete Repayment</DialogTitle>
+                <DialogTitle>{t('employee:advances.deleteRepayment')}</DialogTitle>
                 <DialogDescription>
-                  Are you sure you want to delete this repayment? This action cannot be undone.
+                  {t('employee:advances.deleteRepaymentConfirm')}
                 </DialogDescription>
               </DialogHeader>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-                  Cancel
+                  {t('common:actions.cancel')}
                 </Button>
                 <Button
                   variant="destructive"
                   disabled={deletingId === selectedPaymentId}
                   onClick={() => selectedPaymentId && handleRepaymentDelete(selectedPaymentId)}
                 >
-                  Delete
+                  {t('common:actions.delete')}
                 </Button>
               </div>
             </DialogContent>

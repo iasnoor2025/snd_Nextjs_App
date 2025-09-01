@@ -85,7 +85,10 @@
     "viewDetails": "View Details",
     "assignToProject": "Assign to Project",
     "manageEquipment": "Manage Equipment",
-    "actions": "Actions"
+    "actions": "Actions",
+    "back": "Back to Equipment",
+    "save": "Save Changes",
+    "cancel": "Cancel"
   },
   "messages": {
     "equipmentCreated": "Equipment created successfully",

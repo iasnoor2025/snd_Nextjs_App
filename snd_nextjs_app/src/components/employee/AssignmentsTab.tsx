@@ -46,6 +46,9 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import i18n from '@/lib/i18n-browser';
+import arAssignment from '@/locales/ar/assignment.json';
+import enAssignment from '@/locales/en/assignment.json';
 
 interface Assignment {
   id: number;
@@ -77,7 +80,7 @@ interface AssignmentsTabProps {
 
 export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
   const { hasPermission } = useRBAC();
-  const { t } = useTranslation();
+  const { t } = useTranslation('assignment');
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -87,6 +90,30 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
+  const [nsReady, setNsReady] = useState<boolean>(i18n.hasResourceBundle(i18n.language, 'assignment'));
+
+  // Ensure assignment namespace is available even if i18n was initialized earlier
+  useEffect(() => {
+    try {
+      if (!i18n.hasResourceBundle('ar', 'assignment')) {
+        // @ts-ignore: JSON import type
+        i18n.addResourceBundle('ar', 'assignment', arAssignment, true, true);
+      }
+      if (!i18n.hasResourceBundle('en', 'assignment')) {
+        // @ts-ignore: JSON import type
+        i18n.addResourceBundle('en', 'assignment', enAssignment, true, true);
+      }
+      if (!nsReady) {
+        i18n.loadNamespaces(['assignment']).finally(() => setNsReady(true));
+      }
+    } catch (e) {
+      // no-op safeguard
+    }
+  }, [nsReady]);
+
+  if (!nsReady) {
+    return null;
+  }
 
   // Form state
   const [formData, setFormData] = useState({

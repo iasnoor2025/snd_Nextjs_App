@@ -501,6 +501,23 @@
     "viewAll": "عرض الكل"
   },
 
+  "advances": {
+    "currentBalance": "الرصيد الحالي",
+    "remainingBalance": "الرصيد المتبقي",
+    "active": "نشط",
+    "noBalance": "لا يوجد رصيد",
+    "basedOnCurrentBalance": "بالاعتماد على الرصيد الحالي والخصم الشهري",
+    "loadingPaymentHistory": "جاري تحميل سجل السداد...",
+    "repaymentHistory": "سجل السداد",
+    "amount": "المبلغ",
+    "date": "التاريخ",
+    "notes": "ملاحظات",
+    "actions": "الإجراءات",
+    "noRepaymentHistory": "لا يوجد سجل سداد.",
+    "deleteRepayment": "حذف السداد",
+    "deleteRepaymentConfirm": "هل أنت متأكد من حذف هذا السداد؟ لا يمكن التراجع عن هذا الإجراء."
+  },
+
   "servicePeriod": {
     "year": "سنة",
     "years": "سنوات",

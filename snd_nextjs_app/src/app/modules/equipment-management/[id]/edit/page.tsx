@@ -19,6 +19,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useRBAC } from '@/lib/rbac/rbac-context';
+import { useTranslation } from 'react-i18next';
 
 interface Equipment {
   id: number;
@@ -34,14 +35,16 @@ interface Equipment {
   istimara?: string;
   istimara_expiry_date?: string;
   serial_number?: string;
+  chassis_number?: string;
   description?: string;
   door_number?: string;
 }
 
 export default function EquipmentEditPage() {
+  const { t } = useTranslation('equipment');
   const params = useParams();
   const router = useRouter();
-  const { user, hasPermission } = useRBAC();
+  const { hasPermission } = useRBAC();
   const [equipment, setEquipment] = useState<Equipment | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -54,6 +57,7 @@ export default function EquipmentEditPage() {
     weekly_rate: '',
     monthly_rate: '',
     serial_number: '',
+    chassis_number: '',
     description: '',
     door_number: '',
     istimara: '',
@@ -65,11 +69,11 @@ export default function EquipmentEditPage() {
   // Check if user has permission to edit equipment
   useEffect(() => {
     if (!hasPermission('update', 'Equipment')) {
-      toast.error('You do not have permission to edit equipment');
+      toast.error(t('messages.noPermission'));
       router.push('/modules/equipment-management');
       return;
     }
-  }, [hasPermission, router]);
+  }, [hasPermission, router, t]);
 
   useEffect(() => {
     if (equipmentId) {
@@ -92,17 +96,18 @@ export default function EquipmentEditPage() {
           weekly_rate: response.data.weekly_rate?.toString() || '',
           monthly_rate: response.data.monthly_rate?.toString() || '',
           serial_number: response.data.serial_number || '',
+          chassis_number: response.data.chassis_number || '',
           description: response.data.description || '',
           door_number: response.data.door_number || '',
           istimara: response.data.istimara || '',
           istimara_expiry_date: response.data.istimara_expiry_date || '',
         });
       } else {
-        toast.error('Failed to load equipment');
+        toast.error(t('messages.loadingError'));
         router.push('/modules/equipment-management');
       }
-    } catch (error) {
-      toast.error('Failed to load equipment');
+    } catch {
+      toast.error(t('messages.loadingError'));
       router.push('/modules/equipment-management');
     } finally {
       setLoading(false);
@@ -133,17 +138,18 @@ export default function EquipmentEditPage() {
       const response = await ApiService.updateEquipment(equipment.id, updateData);
       if (response.success) {
         // Show success message with door number extraction info if applicable
-        if (response.doorNumberExtracted && response.extractedDoorNumber) {
-          toast.success(`Equipment updated successfully! Door number "${response.extractedDoorNumber}" was automatically extracted from the equipment name.`);
+        const resAny = response as { doorNumberExtracted?: boolean; extractedDoorNumber?: string; success: boolean };
+        if (resAny.doorNumberExtracted && resAny.extractedDoorNumber) {
+          toast.success(t('messages.updateSuccessWithDoorNumber', { doorNumber: resAny.extractedDoorNumber }));
         } else {
-          toast.success('Equipment updated successfully');
+          toast.success(t('messages.updateSuccess'));
         }
         router.push(`/modules/equipment-management/${equipmentId}`);
       } else {
-        toast.error('Failed to update equipment');
+        toast.error(t('messages.updateError'));
       }
-    } catch (error) {
-      toast.error('Failed to update equipment');
+    } catch {
+      toast.error(t('messages.updateError'));
     } finally {
       setSaving(false);
     }
@@ -154,7 +160,7 @@ export default function EquipmentEditPage() {
       <div className="w-full p-6">
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin" />
-          <span className="ml-2">Loading equipment...</span>
+          <span className="ml-2">{t('messages.loading')}</span>
         </div>
       </div>
     );
@@ -165,7 +171,7 @@ export default function EquipmentEditPage() {
       <div className="w-full p-6">
         <div className="flex items-center justify-center py-8">
           <AlertCircle className="h-8 w-8 text-destructive" />
-          <span className="ml-2">Equipment not found</span>
+          <span className="ml-2">{t('messages.notFound')}</span>
         </div>
       </div>
     );
@@ -182,11 +188,11 @@ export default function EquipmentEditPage() {
               onClick={() => router.push(`/modules/equipment-management/${equipmentId}`)}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Equipment
+              {t('actions.back')}
             </Button>
             <div>
-              <h1 className="text-2xl font-bold">Edit Equipment</h1>
-              <p className="text-muted-foreground">Update equipment information</p>
+              <h1 className="text-2xl font-bold">{t('actions.editEquipment')}</h1>
+              <p className="text-muted-foreground">{t('messages.editDescription')}</p>
             </div>
           </div>
         </div>
@@ -199,87 +205,101 @@ export default function EquipmentEditPage() {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <Package className="h-5 w-5" />
-                  <span>Basic Information</span>
+                  <span>{t('fields.basicInfo')}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Name *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={e => handleInputChange('name', e.target.value)}
-                    placeholder="Equipment name"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="door_number">Door Number</Label>
-                  <Input
-                    id="door_number"
-                    value={formData.door_number}
-                    onChange={e => handleInputChange('door_number', e.target.value)}
-                    placeholder="Door number"
-                  />
-                </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="model_number">Model Number</Label>
+                    <Label htmlFor="name">{t('fields.name')} *</Label>
                     <Input
-                      id="model_number"
-                      value={formData.model_number}
-                      onChange={e => handleInputChange('model_number', e.target.value)}
-                      placeholder="Model number"
+                      id="name"
+                      value={formData.name}
+                      onChange={e => handleInputChange('name', e.target.value)}
+                      placeholder={t('fields.namePlaceholder')}
+                      required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="manufacturer">Manufacturer</Label>
+                    <Label htmlFor="door_number">{t('equipment_management.door_number')}</Label>
                     <Input
-                      id="manufacturer"
-                      value={formData.manufacturer}
-                      onChange={e => handleInputChange('manufacturer', e.target.value)}
-                      placeholder="Manufacturer"
+                      id="door_number"
+                      value={formData.door_number}
+                      onChange={e => handleInputChange('door_number', e.target.value)}
+                      placeholder={t('equipment_management.door_number')}
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="serial_number">Serial Number</Label>
-                  <Input
-                    id="serial_number"
-                    value={formData.serial_number}
-                    onChange={e => handleInputChange('serial_number', e.target.value)}
-                    placeholder="Serial number"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status *</Label>
+                  <Label htmlFor="status">{t('fields.status')} *</Label>
                   <Select
                     value={formData.status}
                     onValueChange={value => handleInputChange('status', value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
+                      <SelectValue placeholder={t('fields.selectStatus')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="available">Available</SelectItem>
-                      <SelectItem value="rented">Rented</SelectItem>
-                      <SelectItem value="maintenance">Maintenance</SelectItem>
-                      <SelectItem value="out_of_service">Out of Service</SelectItem>
+                      <SelectItem value="available">{t('status.available')}</SelectItem>
+                      <SelectItem value="rented">{t('status.rented')}</SelectItem>
+                      <SelectItem value="maintenance">{t('status.maintenance')}</SelectItem>
+                      <SelectItem value="out_of_service">{t('status.out_of_service')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="manufacturer">{t('fields.manufacturer')}</Label>
+                    <Input
+                      id="manufacturer"
+                      value={formData.manufacturer}
+                      onChange={e => handleInputChange('manufacturer', e.target.value)}
+                      placeholder={t('fields.manufacturer')}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="model_number">{t('fields.modelNumber')}</Label>
+                    <Input
+                      id="model_number"
+                      value={formData.model_number}
+                      onChange={e => handleInputChange('model_number', e.target.value)}
+                      placeholder={t('fields.modelNumber')}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="serial_number">{t('fields.serialNumber')}</Label>
+                    <Input
+                      id="serial_number"
+                      value={formData.serial_number}
+                      onChange={e => handleInputChange('serial_number', e.target.value)}
+                      placeholder={t('fields.serialNumber')}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="chassis_number">{t('fields.chassisNumber')}</Label>
+                    <Input
+                      id="chassis_number"
+                      value={formData.chassis_number}
+                      onChange={e => handleInputChange('chassis_number', e.target.value)}
+                      placeholder={t('fields.chassisNumber')}
+                    />
+                  </div>
+                </div>
+
+
+
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">{t('fields.description')}</Label>
                   <Textarea
                     id="description"
                     value={formData.description}
                     onChange={e => handleInputChange('description', e.target.value)}
-                    placeholder="Equipment description"
+                    placeholder={t('fields.descriptionPlaceholder')}
                     rows={3}
                   />
                 </div>
@@ -289,12 +309,12 @@ export default function EquipmentEditPage() {
             {/* Financial Information */}
             <Card>
               <CardHeader>
-                <CardTitle>Financial Information</CardTitle>
-                <CardDescription>Set rental rates for this equipment</CardDescription>
+                <CardTitle>{t('fields.financialInfo')}</CardTitle>
+                <CardDescription>{t('messages.financialDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="daily_rate">Daily Rate (SAR)</Label>
+                  <Label htmlFor="daily_rate">{t('fields.dailyRate')} (SAR)</Label>
                   <Input
                     id="daily_rate"
                     type="number"
@@ -307,7 +327,7 @@ export default function EquipmentEditPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="weekly_rate">Weekly Rate (SAR)</Label>
+                  <Label htmlFor="weekly_rate">{t('fields.weeklyRate')} (SAR)</Label>
                   <Input
                     id="weekly_rate"
                     type="number"
@@ -320,7 +340,7 @@ export default function EquipmentEditPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="monthly_rate">Monthly Rate (SAR)</Label>
+                  <Label htmlFor="monthly_rate">{t('fields.monthlyRate')} (SAR)</Label>
                   <Input
                     id="monthly_rate"
                     type="number"
@@ -337,22 +357,22 @@ export default function EquipmentEditPage() {
             {/* Istimara Information */}
             <Card>
               <CardHeader>
-                <CardTitle>Istimara Information</CardTitle>
-                <CardDescription>Vehicle registration details</CardDescription>
+                <CardTitle>{t('fields.istimaraInfo')}</CardTitle>
+                <CardDescription>{t('messages.istimaraDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="istimara">Istimara Number</Label>
+                    <Label htmlFor="istimara">{t('fields.istimaraNumber')}</Label>
                     <Input
                       id="istimara"
                       value={formData.istimara}
                       onChange={e => handleInputChange('istimara', e.target.value)}
-                      placeholder="Istimara number"
+                      placeholder={t('fields.istimaraNumber')}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="istimara_expiry_date">Expiry Date</Label>
+                    <Label htmlFor="istimara_expiry_date">{t('fields.istimaraExpiryDate')}</Label>
                     <Input
                       id="istimara_expiry_date"
                       type="date"
@@ -372,7 +392,7 @@ export default function EquipmentEditPage() {
               variant="outline"
               onClick={() => router.push(`/modules/equipment-management/${equipmentId}`)}
             >
-              Cancel
+              {t('actions.cancel')}
             </Button>
             <Button type="submit" disabled={saving}>
               {saving ? (
@@ -380,7 +400,7 @@ export default function EquipmentEditPage() {
               ) : (
                 <Save className="h-4 w-4 mr-2" />
               )}
-              Save Changes
+              {t('actions.save')}
             </Button>
           </div>
         </form>
