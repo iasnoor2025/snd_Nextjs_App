@@ -1,5 +1,8 @@
 'use client';
 
+// Force dynamic rendering to prevent SSR issues
+export const dynamic = 'force-dynamic';
+
 import { ProtectedRoute } from '@/components/protected-route';
 import { PermissionContent } from '@/lib/rbac/rbac-components';
 import DynamicDocumentTypeManager from '@/components/company/DynamicDocumentTypeManager';

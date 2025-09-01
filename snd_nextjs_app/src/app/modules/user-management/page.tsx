@@ -1,4 +1,9 @@
+
 'use client';
+
+
+// Force dynamic rendering to prevent SSR issues
+export const dynamic = 'force-dynamic';
 
 import { ProtectedRoute } from '@/components/protected-route';
 import { Badge } from '@/components/ui/badge';

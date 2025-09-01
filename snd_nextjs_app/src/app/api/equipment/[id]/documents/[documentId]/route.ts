@@ -11,7 +11,7 @@ import { withPermission } from '@/lib/rbac/api-middleware';
 import { PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 // DELETE /api/equipment/[id]/documents/[documentId]
-export const DELETE = withPermission(PermissionConfigs.equipment.delete)(
+export const DELETE = withPermission(PermissionConfigs['equipment-document'].delete)(
   async (
     request: NextRequest,
     { params }: { params: Promise<{ id: string; documentId: string }> }

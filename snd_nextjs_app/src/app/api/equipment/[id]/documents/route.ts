@@ -348,5 +348,5 @@ const uploadDocumentsHandler = async (
   }
 };
 
-export const POST = withPermission(PermissionConfigs.equipment.update)(handler);
-export const GET = withPermission(PermissionConfigs.equipment.read)(handler);
+export const POST = withPermission(PermissionConfigs['equipment-document'].create)(handler);
+export const GET = withPermission(PermissionConfigs['equipment-document'].read)(handler);

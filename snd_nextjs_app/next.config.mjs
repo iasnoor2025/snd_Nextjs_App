@@ -33,33 +33,6 @@ const nextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
-  // Headers for security and caching
-  async headers() {
-    return [
-      {
-        source: '/api/:path*',
-        headers: [
-          { key: 'Cache-Control', value: 'no-store, must-revalidate' },
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'X-Frame-Options', value: 'DENY' },
-          { key: 'X-XSS-Protection', value: '1; mode=block' },
-        ],
-      },
-      {
-        source: '/_next/static/:path*',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
-        ],
-      },
-      {
-        source: '/images/:path*',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
-        ],
-      },
-    ];
-  },
-
   // Environment variables - ensure ERPNext variables are available in production
   env: {
     NEXT_TELEMETRY_DISABLED: "1",
@@ -83,8 +56,6 @@ const nextConfig = {
     return config;
   },
 
-
-
   // Force conservative browser targets
   compiler: {
     // Ensure we don't use modern JS features that might cause syntax errors
@@ -102,10 +73,6 @@ const nextConfig = {
 
   // React strict mode for better development
   reactStrictMode: true,
-  
-
-
-
 };
 
 export default nextConfig;

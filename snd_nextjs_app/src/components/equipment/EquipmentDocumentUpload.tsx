@@ -26,15 +26,7 @@ import { toast } from 'sonner';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { useTranslation } from 'react-i18next';
 
-interface EquipmentDocument {
-  id: number;
-  name: string;
-  file_name: string;
-  file_type: string;
-  size: number;
-  url: string;
-  created_at: string;
-}
+// EquipmentDocument interface removed as it's not used
 
 interface EquipmentDocumentUploadProps {
   equipmentId: number;
@@ -45,10 +37,36 @@ export default function EquipmentDocumentUpload({
   equipmentId,
   onDocumentsUpdated,
 }: EquipmentDocumentUploadProps) {
+  console.log('🔧 EquipmentDocumentUpload component rendering with equipmentId:', equipmentId);
+  console.log('🚨 COMPONENT IS RENDERING - CHECK THIS LOG');
+  
   const { t } = useTranslation('equipment');
   const { hasPermission } = useRBAC();
-  const [documents, setDocuments] = useState<DocumentItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  
+  // Debug permission checks
+  const canCreate = hasPermission('create', 'equipment-document');
+  const canDelete = hasPermission('delete', 'equipment-document');
+  const canRead = hasPermission('read', 'equipment-document');
+  const canManage = hasPermission('manage', 'equipment-document');
+  
+  // Use manage permission as fallback for upload if create is not available
+  const canUpload = canCreate || canManage;
+  
+  console.log('📋 Equipment Document Permissions:', {
+    canCreate,
+    canDelete,
+    canRead,
+    canManage,
+    canUpload,
+    equipmentId
+  });
+  
+  // Additional debug info
+  console.log('🔍 canUpload value:', canUpload);
+  console.log('🔍 canCreate value:', canCreate);
+  console.log('🔍 canManage value:', canManage);
+  const [_documents, setDocuments] = useState<DocumentItem[]>([]);
+  const [_isLoading, setIsLoading] = useState(false);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
@@ -97,8 +115,8 @@ export default function EquipmentDocumentUpload({
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.documents) {
-          // Convert API response to DocumentItem format
-          const docs = result.documents.map((doc: any) => ({
+                     // Convert API response to DocumentItem format
+           const docs = result.documents.map((doc: Record<string, unknown>) => ({
             id: doc.id,
             name: doc.name || doc.fileName,
             file_name: doc.fileName,
@@ -129,7 +147,7 @@ export default function EquipmentDocumentUpload({
   }, [loadDocuments]);
 
   const uploadDocument = useCallback(
-    async (file: File, extra?: Record<string, any>) => {
+    async (file: File, extra?: Record<string, unknown>) => {
       try {
         // Use the equipment-specific document upload API
         const formData = new FormData();
@@ -275,6 +293,8 @@ export default function EquipmentDocumentUpload({
     }
   };
 
+
+  
   return (
     <>
       {/* Document Name Input Dialog */}
@@ -383,8 +403,10 @@ export default function EquipmentDocumentUpload({
           deleteDocument={deleteDocument}
           showNameInput={false}
           beforeUpload={handleBeforeUpload}
-          canUpload={hasPermission('upload', 'Document')}
-          canDelete={hasPermission('delete', 'Document')}
+          canUpload={canUpload}
+          canDelete={canDelete}
+          canDownload={canRead}
+          canPreview={canRead}
         />
       )}
     </>

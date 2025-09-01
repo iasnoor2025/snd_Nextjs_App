@@ -49,6 +49,9 @@ import {
 import { useDeleteConfirmations } from '@/lib/utils/confirmation-utils';
 import { cn } from '@/lib/utils';
 
+// Force dynamic rendering to prevent SSR issues
+export const dynamic = 'force-dynamic';
+
 interface Employee {
   id: number;
   file_number: string | null;

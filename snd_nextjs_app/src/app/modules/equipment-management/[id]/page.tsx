@@ -1,4 +1,9 @@
+
 'use client';
+
+
+// Force dynamic rendering to prevent SSR issues
+export const dynamic = 'force-dynamic';
 
 import { ProtectedRoute } from '@/components/protected-route';
 import EquipmentDocumentUpload from '@/components/equipment/EquipmentDocumentUpload';
@@ -386,7 +391,9 @@ export default function EquipmentShowPage() {
         <EquipmentAssignmentHistory equipmentId={equipment.id} />
 
         {/* Documents */}
+        {console.log('🔍 About to render EquipmentDocumentUpload with equipmentId:', equipment.id)}
         <EquipmentDocumentUpload equipmentId={equipment.id} />
+        {console.log('🔍 EquipmentDocumentUpload component rendered')}
       </div>
     </ProtectedRoute>
   );

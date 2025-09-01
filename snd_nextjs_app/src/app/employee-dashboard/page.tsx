@@ -1,5 +1,8 @@
 'use client';
 
+// Force dynamic rendering to prevent SSR issues
+export const dynamic = 'force-dynamic';
+
 import ActionDialogs from '@/components/employee/ActionDialogs';
 import TimesheetCalendar from '@/components/timesheet/TimesheetCalendar';
 import { Badge } from '@/components/ui/badge';

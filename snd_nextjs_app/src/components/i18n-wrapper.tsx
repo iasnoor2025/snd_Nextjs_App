@@ -13,26 +13,36 @@ export function I18nWrapper({ children }: I18nWrapperProps) {
   const { data: session, status } = useSession();
   const [mounted, setMounted] = useState(false);
   const [i18nReady, setI18nReady] = useState(false);
+  const [contextReady, setContextReady] = useState(false);
+
+  // Check if we're in a browser environment
+  const isBrowser = typeof window !== 'undefined';
 
   useEffect(() => {
     setMounted(true);
     
     // Initialize i18n only in browser
-    if (typeof window !== 'undefined') {
+    if (isBrowser) {
       initializeI18n().then(() => {
         setI18nReady(true);
+        // Add a small delay to ensure the context is fully established
+        setTimeout(() => {
+          setContextReady(true);
+        }, 100);
       }).catch((error) => {
         console.error('Failed to initialize i18n:', error);
         // Still set ready to prevent infinite loading
         setI18nReady(true);
+        setContextReady(true);
       });
     } else {
       setI18nReady(true);
+      setContextReady(true);
     }
-  }, []);
+  }, [isBrowser]);
 
   useEffect(() => {
-    if (status === 'authenticated' && session?.user?.id && i18nReady) {
+    if (status === 'authenticated' && session?.user?.id && i18nReady && isBrowser) {
       const syncUserLanguage = async () => {
         try {
           // Get current language from localStorage and database
@@ -42,8 +52,6 @@ export function I18nWrapper({ children }: I18nWrapperProps) {
           if (response.ok) {
             const data = await response.json();
             const dbLanguage = data.success && data.language ? data.language : 'en';
-            
-
             
             // If localStorage has a different language than database, prioritize localStorage and update database
             if (localLanguage !== dbLanguage) {
@@ -63,9 +71,9 @@ export function I18nWrapper({ children }: I18nWrapperProps) {
                 } else {
                   console.warn('Failed to update database language preference');
                 }
-                          } catch (updateError) {
-              console.warn('Error updating database language preference:', updateError);
-            }
+              } catch (updateError) {
+                console.warn('Error updating database language preference:', updateError);
+              }
             }
             
             // Set the language (prioritize localStorage)
@@ -75,7 +83,7 @@ export function I18nWrapper({ children }: I18nWrapperProps) {
             }
             
             // Ensure localStorage is updated
-            if (typeof window !== 'undefined') {
+            if (isBrowser) {
               localStorage.setItem('i18nextLng', finalLanguage);
               sessionStorage.setItem('i18nextLng', finalLanguage);
             }
@@ -107,10 +115,10 @@ export function I18nWrapper({ children }: I18nWrapperProps) {
 
       syncUserLanguage();
     }
-  }, [status, session?.user?.id, i18nReady]);
+  }, [status, session?.user?.id, i18nReady, isBrowser]);
 
-  // Don't render anything until mounted and i18n is ready
-  if (!mounted || !i18nReady) {
+  // Don't render anything until mounted, i18n is ready, and context is established
+  if (!mounted || !i18nReady || !contextReady) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
