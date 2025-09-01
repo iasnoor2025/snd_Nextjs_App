@@ -161,5 +161,96 @@
     "failedToLoad": "Failed to load {{item}}",
     "generalError": "An error occurred while processing your request",
     "failedToSaveAssignment": "Failed to save assignment"
-  }
+  },
+  "pages": {
+    "notFound": {
+      "title": "404",
+      "subtitle": "Page Not Found",
+      "description": "The page you're looking for doesn't exist or has been moved.",
+      "goHome": "Go Home",
+      "dashboard": "Dashboard"
+    }
+  },
+  "fields": {
+    "name": "Name",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "status": "Status",
+    "description": "Description",
+    "notes": "Notes",
+    "phone": "Phone",
+    "address": "Address",
+    "city": "City",
+    "country": "Country",
+    "selectStatus": "Select Status",
+    "namePlaceholder": "Enter name",
+    "emailPlaceholder": "Enter email address",
+    "passwordPlaceholder": "Enter password",
+    "confirmPasswordPlaceholder": "Confirm your password",
+    "firstNamePlaceholder": "John",
+    "lastNamePlaceholder": "Doe",
+    "descriptionPlaceholder": "Enter description",
+    "notesPlaceholder": "Enter notes (optional)"
+  },
+  "messages": {
+    "loading": "Loading...",
+    "notFound": "Not Found",
+    "loadingError": "Error loading data",
+    "updateSuccess": "Updated successfully",
+    "updateError": "Error updating data",
+    "updateSuccessWithDoorNumber": "Updated successfully. Door number extracted: {{doorNumber}}",
+    "noPermission": "You don't have permission to perform this action",
+    "editDescription": "Update equipment information and settings"
+  },
+  "actions": {
+    "editEquipment": "Edit Equipment",
+    "save": "Save",
+    "cancel": "Cancel",
+    "back": "Back",
+    "submit": "Submit",
+    "create": "Create",
+    "update": "Update",
+    "delete": "Delete",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "import": "Import",
+    "refresh": "Refresh",
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "noData": "No data available"
+  },
+  "status": {
+    "available": "Available",
+    "rented": "Rented",
+    "maintenance": "Maintenance",
+    "out_of_service": "Out of Service",
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "completed": "Completed",
+    "cancelled": "Cancelled"
+  },
+  "equipment_management": {
+    "door_number": "Door Number"
+  },
+  "basicInfo": "Basic Information",
+  "financialInfo": "Financial Information",
+  "istimaraInfo": "Istimara Information",
+  "manufacturer": "Manufacturer",
+  "modelNumber": "Model Number",
+  "serialNumber": "Serial Number",
+  "chassisNumber": "Chassis Number",
+  "dailyRate": "Daily Rate",
+  "weeklyRate": "Weekly Rate",
+  "monthlyRate": "Monthly Rate",
+  "istimaraNumber": "Istimara Number",
+  "istimaraExpiry": "Istimara Expiry Date",
+  "addIstimara": "Add Istimara",
+  "updateIstimara": "Update Istimara"
 }

@@ -8,8 +8,10 @@ import { GalleryVerticalEnd } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useI18n } from '@/hooks/use-i18n';
 
 export default function ForgotPasswordPage() {
+  const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -65,14 +67,14 @@ export default function ForgotPasswordPage() {
           {/* Success Card */}
           <Card>
             <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Check Your Email</CardTitle>
+              <CardTitle className="text-2xl">{t('auth.forgotPassword.checkEmail')}</CardTitle>
               <CardDescription>
-                We've sent a password reset link to {email}
+                {t('auth.forgotPassword.emailSent', { email })}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground text-center">
-                Click the link in the email to reset your password. The link will expire in 1 hour.
+                {t('auth.forgotPassword.emailInstructions')}
               </p>
               
               <div className="space-y-2">
@@ -81,14 +83,14 @@ export default function ForgotPasswordPage() {
                   variant="outline" 
                   className="w-full"
                 >
-                  Try another email
+                  {t('auth.forgotPassword.tryAnotherEmail')}
                 </Button>
                 
                 <Button 
                   onClick={() => router.push('/login')} 
                   className="w-full"
                 >
-                  Back to Login
+                  {t('auth.forgotPassword.backToLogin')}
                 </Button>
               </div>
             </CardContent>
@@ -112,16 +114,16 @@ export default function ForgotPasswordPage() {
         {/* Forgot Password Card */}
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Forgot Password</CardTitle>
+            <CardTitle className="text-2xl">{t('auth.forgotPassword.title')}</CardTitle>
             <CardDescription>
-              Enter your email address and we'll send you a link to reset your password
+              {t('auth.forgotPassword.subtitle')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Email */}
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="email">{t('auth.forgotPassword.email')}</Label>
                 <Input
                   id="email"
                   name="email"
@@ -129,25 +131,25 @@ export default function ForgotPasswordPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  placeholder="Enter your email address"
+                  placeholder={t('auth.forgotPassword.emailPlaceholder')}
                 />
               </div>
 
               {/* Submit Button */}
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Sending Reset Email...' : 'Send Reset Email'}
+                {isLoading ? t('auth.forgotPassword.loading') : t('auth.forgotPassword.submit')}
               </Button>
             </form>
 
             {/* Back to Login */}
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
-                Remember your password?{' '}
+                {t('auth.forgotPassword.rememberPassword')}{' '}
                 <button
                   onClick={() => router.push('/login')}
                   className="text-primary hover:underline font-medium"
                 >
-                  Sign in
+                  {t('auth.signin.signIn')}
                 </button>
               </p>
             </div>

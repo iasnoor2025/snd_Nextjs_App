@@ -54,6 +54,7 @@ import {
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface AssignmentHistoryItem {
   id: number;
@@ -99,6 +100,7 @@ interface EquipmentAssignmentHistoryProps {
 export default function EquipmentAssignmentHistory({
   equipmentId,
 }: EquipmentAssignmentHistoryProps) {
+  const { t } = useTranslation('equipment');
   const [assignmentHistory, setAssignmentHistory] = useState<AssignmentHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -138,11 +140,11 @@ export default function EquipmentAssignmentHistory({
       if (response.success) {
         setAssignmentHistory(response.data || []);
       } else {
-        setError(response.message || 'Failed to load assignment history');
+        setError(response.message || t('messages.loadAssignmentHistoryError'));
       }
     } catch (error) {
       
-      setError('Failed to load assignment history');
+      setError(t('messages.loadAssignmentHistoryError'));
     } finally {
       setLoading(false);
     }
@@ -402,19 +404,19 @@ export default function EquipmentAssignmentHistory({
       });
 
       if (response.success) {
-        toast.success('Assignment completed successfully');
+        toast.success(t('messages.assignmentCompletedSuccess'));
         fetchAssignmentHistory();
       } else {
-        toast.error(response.message || 'Failed to complete assignment');
+        toast.error(response.message || t('messages.completeAssignmentError'));
       }
     } catch (error) {
-      toast.error('Failed to complete assignment');
+      toast.error(t('messages.completeAssignmentError'));
     }
   };
 
   const handleDeleteAssignment = async (assignment: AssignmentHistoryItem) => {
     if (
-      !confirm(`Are you sure you want to delete this assignment? This action cannot be undone.`)
+      !confirm(t('messages.confirmDeleteAssignment'))
     ) {
       return;
     }
@@ -423,13 +425,13 @@ export default function EquipmentAssignmentHistory({
       const response = await ApiService.deleteEquipmentAssignment(assignment.id);
 
       if (response.success) {
-        toast.success('Assignment deleted successfully');
+        toast.success(t('messages.assignmentDeletedSuccess'));
         fetchAssignmentHistory();
       } else {
-        toast.error(response.message || 'Failed to delete assignment');
+        toast.error(response.message || t('messages.deleteAssignmentError'));
       }
     } catch (error) {
-      toast.error('Failed to delete assignment');
+      toast.error(t('messages.deleteAssignmentError'));
     }
   };
 
@@ -439,13 +441,13 @@ export default function EquipmentAssignmentHistory({
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <History className="h-5 w-5" />
-            <span>Rental History</span>
+            <span>{t('assignmentHistory.title')}</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin" />
-            <span className="ml-2">Loading assignment history...</span>
+            <span className="ml-2">{t('messages.loadingAssignmentHistory')}</span>
           </div>
         </CardContent>
       </Card>
@@ -458,7 +460,7 @@ export default function EquipmentAssignmentHistory({
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <History className="h-5 w-5" />
-            <span>Assignment History</span>
+            <span>{t('assignmentHistory.title')}</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -467,7 +469,7 @@ export default function EquipmentAssignmentHistory({
             <span className="ml-2">{error}</span>
             <Button variant="outline" size="sm" onClick={fetchAssignmentHistory} className="ml-4">
               <RefreshCw className="h-4 w-4 mr-2" />
-              Retry
+              {t('actions.retry')}
             </Button>
           </div>
         </CardContent>
@@ -483,10 +485,10 @@ export default function EquipmentAssignmentHistory({
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <History className="h-5 w-5" />
-            <span>Assignment History</span>
+            <span>{t('assignmentHistory.title')}</span>
           </CardTitle>
           <CardDescription>
-            Track all assignments (rental, project, manual) and revenue for this equipment
+            {t('assignmentHistory.description')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -495,7 +497,7 @@ export default function EquipmentAssignmentHistory({
             <div className="bg-muted p-4 rounded-lg">
               <div className="flex items-center space-x-2">
                 <Package className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-muted-foreground">Total Assignments</span>
+                <span className="text-sm font-medium text-muted-foreground">{t('assignmentHistory.totalAssignments')}</span>
               </div>
               <div className="text-2xl font-bold">{assignmentHistory.length}</div>
             </div>
@@ -503,7 +505,7 @@ export default function EquipmentAssignmentHistory({
             <div className="bg-muted p-4 rounded-lg">
               <div className="flex items-center space-x-2">
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-muted-foreground">Total Revenue</span>
+                <span className="text-sm font-medium text-muted-foreground">{t('assignmentHistory.totalRevenue')}</span>
               </div>
               <div className="text-2xl font-bold">SAR {totalRevenue.toFixed(2)}</div>
             </div>
@@ -511,7 +513,7 @@ export default function EquipmentAssignmentHistory({
             <div className="bg-muted p-4 rounded-lg">
               <div className="flex items-center space-x-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-muted-foreground">Completed</span>
+                <span className="text-sm font-medium text-muted-foreground">{t('assignmentHistory.completed')}</span>
               </div>
               <div className="text-2xl font-bold">{getCompletedAssignments().length}</div>
             </div>
@@ -519,10 +521,10 @@ export default function EquipmentAssignmentHistory({
             <div className="bg-muted p-4 rounded-lg">
               <div className="flex items-center space-x-2">
                 <User className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-muted-foreground">Current Status</span>
+                <span className="text-sm font-medium text-muted-foreground">{t('assignmentHistory.currentStatus')}</span>
               </div>
               <div className="text-2xl font-bold">
-                {getCurrentAssignment() ? 'Assigned' : 'Available'}
+                {getCurrentAssignment() ? t('status.assigned') : t('status.available')}
               </div>
             </div>
           </div>
@@ -532,7 +534,7 @@ export default function EquipmentAssignmentHistory({
           {/* Current Assignment */}
           {getCurrentAssignment() && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Current Assignment</h3>
+              <h3 className="text-lg font-semibold">{t('assignmentHistory.currentAssignment')}</h3>
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
@@ -591,11 +593,11 @@ export default function EquipmentAssignmentHistory({
           {/* Assignment History Table */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Assignment History</h3>
+              <h3 className="text-lg font-semibold">{t('assignmentHistory.title')}</h3>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={fetchAssignmentHistory}>
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  Refresh
+                  {t('actions.refresh')}
                 </Button>
                 <Button variant="default" size="sm" onClick={openManualAssignmentDialog}>
                   <Plus className="h-4 w-4 mr-2" />

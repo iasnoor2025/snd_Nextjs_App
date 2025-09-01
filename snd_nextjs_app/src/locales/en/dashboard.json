@@ -155,6 +155,8 @@
   "showQuickActions": "Show Quick Actions",
   "showRecentActivity": "Show Recent Activity",
   "showManualAssignments": "Show Manual Assignments",
+  "showEmployeeAdvanceSection": "Show Employee Advance Section",
+  "showMyTeamSection": "Show My Team Section",
   "hideSection": "Hide Section",
   "refresh": "Refresh",
   "showSection": "Show Section",
@@ -335,5 +337,208 @@
   "insufficientPermissions": "You don't have sufficient permissions to view your employee dashboard.",
   "backToHome": "Back to Home",
   "employeeNotFound": "Employee record not found",
-  "errorLoadingDashboard": "Error loading dashboard data"
+  "errorLoadingDashboard": "Error loading dashboard data",
+  "myTeam": {
+    "title": "My Team",
+    "description": "Employees under your supervision",
+    "noEmployees": "No employees under your supervision (Employee ID: {{id}})",
+    "employeesCount": "{{count}} employee{{plural}} under your supervision (Employee ID: {{id}})",
+    "loadingEmployeeInfo": "Loading employee information...",
+    "noTeamMembers": "No team members found",
+    "noTeamMembersDescription": "You don't have any employees assigned to you as a supervisor.",
+    "loadingTeamMembers": "Loading team members...",
+    "tryAgain": "Try Again",
+    "tableHeaders": {
+      "fileNumber": "File Number",
+      "employee": "Employee",
+      "designation": "Designation",
+      "status": "Status",
+      "currentAssignment": "Current Assignment",
+      "timesheetStatus": "Timesheet Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "terminated": "Terminated",
+      "onLeave": "On Leave"
+    },
+    "timesheetStatus": {
+      "noTimesheet": "No Timesheet",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "daysAgo": "{{days}} days ago"
+    },
+    "assignment": {
+      "notAssigned": "Not Assigned",
+      "rentalSite": "Rental Site",
+      "project": "Project",
+      "rentalAssignment": "Rental Assignment",
+      "projectAssignment": "Project Assignment",
+      "unnamedAssignment": "Unnamed Assignment"
+    },
+    "actions": {
+      "view": "View",
+      "refresh": "Refresh",
+      "hide": "Hide"
+    }
+  },
+  "manualAssignments": {
+    "title": "Manual Assignments",
+    "description": "View and manage assignments for all employees",
+    "descriptionSingle": "Manage your current and upcoming assignments",
+    "hideSection": "Hide Section",
+    "employeeIdRequired": "Employee ID Required",
+    "employeeIdRequiredDescription": "Please log in as an employee to view and manage assignments.",
+    "loadingAssignments": "Loading assignments...",
+    "errorLoadingAssignments": "Error Loading Assignments",
+    "tryAgain": "Try Again",
+    "noAssignmentsFound": "No Assignments Found",
+    "noAssignmentsDescription": "No assignments have been created for any employees yet.",
+    "noAssignmentsDescriptionSingle": "You don't have any assignments at the moment.",
+    "createFirstAssignment": "Create First Assignment",
+    "searchPlaceholder": "Search by assignment, employee name, or file number...",
+    "assignmentsCount": "{{filtered}} of {{total}} assignments",
+    "tableHeaders": {
+      "fileNumber": "File Number",
+      "employeeName": "Employee Name",
+      "assignment": "Assignment",
+      "type": "Type",
+      "location": "Location",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "assignmentTypes": {
+      "manual": "Manual",
+      "project": "Project",
+      "rental": "Rental"
+    },
+    "status": {
+      "active": "Active",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "pending": "Pending"
+    },
+    "actions": {
+      "assign": "Assign",
+      "edit": "Edit",
+      "newAssignment": "New Assignment",
+      "delete": "Delete"
+    },
+    "summary": {
+      "totalEmployees": "Total: {{count}} employee{{plural}} found",
+      "totalAssignments": "Total: {{count}} assignment{{plural}}",
+      "searchingAllEmployees": "(searching all employees)",
+      "filteredFromTotal": "(filtered from {{total}} total)"
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "pageInfo": "Page {{current}} of {{total}} • Showing {{showing}} of {{total}} items",
+      "showingAll": "Showing all {{count}} assignments"
+    },
+    "dialogs": {
+      "addNewAssignment": "Add New Assignment",
+      "addNewAssignmentDescription": "Create a new assignment for the selected employee",
+      "addNewAssignmentDescriptionSingle": "Create a new assignment for yourself",
+      "editAssignment": "Edit Assignment",
+      "editAssignmentDescription": "Update assignment details",
+      "deleteAssignment": "Delete Assignment",
+      "deleteAssignmentDescription": "Are you sure you want to delete this assignment? This action cannot be undone.",
+      "form": {
+        "employee": "Employee",
+        "assignmentName": "Assignment Name",
+        "assignmentNamePlaceholder": "Enter assignment name",
+        "assignmentType": "Assignment Type",
+        "selectAssignmentType": "Select assignment type",
+        "location": "Location",
+        "locationPlaceholder": "Enter location",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "status": "Status",
+        "selectStatus": "Select status",
+        "notes": "Notes",
+        "notesPlaceholder": "Enter notes (optional)",
+        "cancel": "Cancel",
+        "create": "Create",
+        "creating": "Creating...",
+        "update": "Update",
+        "updating": "Updating...",
+        "delete": "Delete",
+        "deleting": "Deleting..."
+      }
+    },
+    "messages": {
+      "assignmentCreated": "Assignment created successfully. Previous assignments marked as completed.",
+      "assignmentUpdated": "Assignment updated successfully",
+      "assignmentDeleted": "Assignment deleted successfully",
+      "employeeIdRequired": "Employee ID not provided",
+      "nameAndStartDateRequired": "Assignment name and start date are required",
+      "selectEmployee": "Please select an employee"
+    }
+  },
+  "timesheets": {
+    "todaysAttendance": "Today's Attendance",
+    "attendanceDescription": "Employee attendance and timesheet status for today",
+    "canApprove": "Can Approve",
+    "role": "Role",
+    "approvalWorkflow": "Approval Workflow",
+    "workflowStages": {
+      "manager": "Manager (Final)",
+      "checking": "Checking",
+      "incharge": "Incharge",
+      "foreman": "Foreman",
+      "draftSubmitted": "Draft/Submitted"
+    },
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "absent": "Absent",
+      "late": "Late",
+      "present": "Present"
+    }
+  },
+  "iqama": {
+    "management": "Iqama Management",
+    "description": "Monitor and manage employee Iqama status and expiry dates",
+    "manage": "Manage Iqama",
+    "searchPlaceholder": "Search by employee name, file number, nationality, or position...",
+    "allStatuses": "All Statuses",
+    "expired": "Expired",
+    "expiringSoon": "Expiring Soon",
+    "missing": "Missing",
+    "active": "Active",
+    "days": "Days",
+    "noExpiryDate": "No Expiry Date",
+    "daysOverdue": "{{days}} days overdue",
+    "daysRemaining": "{{days}} days remaining",
+    "notApplicable": "N/A",
+    "updateExpiryDate": "Update Expiry Date",
+    "noRecordsFound": "No Iqama records found",
+    "tryAdjustingSearch": "Try adjusting your search or filter criteria.",
+    "allRecordsActive": "All Iqama records are currently active.",
+    "downloadPdf": "Download PDF ({{count}})",
+    "downloadPdfTitle": "Download PDF report for {{count}} expired Iqama records",
+    "noExpiredRecords": "No expired Iqama records found to download.",
+    "pdfGenerationFailed": "Failed to generate PDF. Please try again.",
+    "clear": "Clear",
+    "tableHeaders": {
+      "name": "Employee Name",
+      "fileNumber": "File Number",
+      "iqamaNumber": "Iqama #",
+      "status": "Status",
+      "expiryDate": "Expiry Date",
+      "days": "Days",
+      "actions": "Actions"
+    },
+    "pagination": {
+      "show": "Show",
+      "perPage": "per page",
+      "previous": "Previous",
+      "next": "Next",
+      "page": "Page {{current}} of {{total}}"
+    }
+  }
 }

@@ -162,5 +162,96 @@
     "failedToLoad": "فشل في تحميل {{item}}",
     "generalError": "حدث خطأ أثناء معالجة طلبك",
     "failedToSaveAssignment": "فشل في حفظ التعيين"
-  }
+  },
+  "pages": {
+    "notFound": {
+      "title": "404",
+      "subtitle": "الصفحة غير موجودة",
+      "description": "الصفحة التي تبحث عنها غير موجودة أو تم نقلها.",
+      "goHome": "العودة للرئيسية",
+      "dashboard": "لوحة التحكم"
+    }
+  },
+  "fields": {
+    "name": "الاسم",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "confirmPassword": "تأكيد كلمة المرور",
+    "firstName": "الاسم الأول",
+    "lastName": "اسم العائلة",
+    "status": "الحالة",
+    "description": "الوصف",
+    "notes": "ملاحظات",
+    "phone": "الهاتف",
+    "address": "العنوان",
+    "city": "المدينة",
+    "country": "البلد",
+    "selectStatus": "اختر الحالة",
+    "namePlaceholder": "أدخل الاسم",
+    "emailPlaceholder": "أدخل عنوان البريد الإلكتروني",
+    "passwordPlaceholder": "أدخل كلمة المرور",
+    "confirmPasswordPlaceholder": "تأكيد كلمة المرور",
+    "firstNamePlaceholder": "أحمد",
+    "lastNamePlaceholder": "محمد",
+    "descriptionPlaceholder": "أدخل الوصف",
+    "notesPlaceholder": "أدخل ملاحظات (اختياري)"
+  },
+  "messages": {
+    "loading": "جاري التحميل...",
+    "notFound": "غير موجود",
+    "loadingError": "خطأ في تحميل البيانات",
+    "updateSuccess": "تم التحديث بنجاح",
+    "updateError": "خطأ في تحديث البيانات",
+    "updateSuccessWithDoorNumber": "تم التحديث بنجاح. تم استخراج رقم الباب: {{doorNumber}}",
+    "noPermission": "ليس لديك صلاحية لتنفيذ هذا الإجراء",
+    "editDescription": "تحديث معلومات المعدات والإعدادات"
+  },
+  "actions": {
+    "editEquipment": "تعديل المعدات",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "back": "رجوع",
+    "submit": "إرسال",
+    "create": "إنشاء",
+    "update": "تحديث",
+    "delete": "حذف",
+    "search": "بحث",
+    "filter": "تصفية",
+    "export": "تصدير",
+    "import": "استيراد",
+    "refresh": "تحديث",
+    "loading": "جاري التحميل...",
+    "saving": "جاري الحفظ...",
+    "noData": "لا توجد بيانات متاحة"
+  },
+  "status": {
+    "available": "متاح",
+    "rented": "مؤجر",
+    "maintenance": "صيانة",
+    "out_of_service": "خارج الخدمة",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "pending": "معلق",
+    "approved": "موافق عليه",
+    "rejected": "مرفوض",
+    "completed": "مكتمل",
+    "cancelled": "ملغي"
+  },
+  "equipment_management": {
+    "door_number": "رقم الباب"
+  },
+  "basicInfo": "المعلومات الأساسية",
+  "financialInfo": "المعلومات المالية",
+  "istimaraInfo": "معلومات الاستمارة",
+  "manufacturer": "الشركة المصنعة",
+  "modelNumber": "رقم الموديل",
+  "serialNumber": "الرقم التسلسلي",
+  "chassisNumber": "رقم الشاسيه",
+  "dailyRate": "المعدل اليومي",
+  "weeklyRate": "المعدل الأسبوعي",
+  "monthlyRate": "المعدل الشهري",
+  "istimaraNumber": "رقم الاستمارة",
+  "istimaraExpiry": "تاريخ انتهاء الاستمارة",
+  "addIstimara": "إضافة استمارة",
+  "updateIstimara": "تحديث الاستمارة"
 }

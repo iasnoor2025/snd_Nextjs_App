@@ -210,6 +210,8 @@
   "showQuickActions": "عرض الإجراءات السريعة",
   "showRecentActivity": "عرض النشاط الأخير",
   "showManualAssignments": "عرض المهام اليدوية",
+  "showEmployeeAdvanceSection": "عرض قسم سلف الموظفين",
+  "showMyTeamSection": "عرض قسم فريقي",
   "hideSection": "إخفاء القسم",
   "refresh": "تحديث",
   "showSection": "عرض القسم",
@@ -389,5 +391,208 @@
   "insufficientPermissions": "ليس لديك صلاحيات كافية لعرض لوحة معلومات الموظف الخاصة بك.",
   "backToHome": "العودة إلى الرئيسية",
   "employeeNotFound": "لم يتم العثور على سجل الموظف",
-  "errorLoadingDashboard": "خطأ في تحميل بيانات لوحة المعلومات"
+  "errorLoadingDashboard": "خطأ في تحميل بيانات لوحة المعلومات",
+  "myTeam": {
+    "title": "فريقي",
+    "description": "الموظفون تحت إشرافك",
+    "noEmployees": "لا يوجد موظفون تحت إشرافك (رقم الموظف: {{id}})",
+    "employeesCount": "{{count}} موظف{{plural}} تحت إشرافك (رقم الموظف: {{id}})",
+    "loadingEmployeeInfo": "جاري تحميل معلومات الموظف...",
+    "noTeamMembers": "لم يتم العثور على أعضاء الفريق",
+    "noTeamMembersDescription": "ليس لديك أي موظفين مخصصين لك كمشرف.",
+    "loadingTeamMembers": "جاري تحميل أعضاء الفريق...",
+    "tryAgain": "حاول مرة أخرى",
+    "tableHeaders": {
+      "fileNumber": "رقم الملف",
+      "employee": "الموظف",
+      "designation": "المنصب",
+      "status": "الحالة",
+      "currentAssignment": "المهمة الحالية",
+      "timesheetStatus": "حالة سجل الوقت",
+      "actions": "الإجراءات"
+    },
+    "status": {
+      "active": "نشط",
+      "inactive": "غير نشط",
+      "terminated": "منتهي",
+      "onLeave": "في إجازة"
+    },
+    "timesheetStatus": {
+      "noTimesheet": "لا يوجد سجل وقت",
+      "today": "اليوم",
+      "yesterday": "أمس",
+      "daysAgo": "منذ {{days}} يوم"
+    },
+    "assignment": {
+      "notAssigned": "غير مخصص",
+      "rentalSite": "موقع التأجير",
+      "project": "المشروع",
+      "rentalAssignment": "مهمة التأجير",
+      "projectAssignment": "مهمة المشروع",
+      "unnamedAssignment": "مهمة غير مسماة"
+    },
+    "actions": {
+      "view": "عرض",
+      "refresh": "تحديث",
+      "hide": "إخفاء"
+    }
+  },
+  "manualAssignments": {
+    "title": "المهام اليدوية",
+    "description": "عرض وإدارة المهام لجميع الموظفين",
+    "descriptionSingle": "إدارة مهامك الحالية والقادمة",
+    "hideSection": "إخفاء القسم",
+    "employeeIdRequired": "رقم الموظف مطلوب",
+    "employeeIdRequiredDescription": "يرجى تسجيل الدخول كموظف لعرض وإدارة المهام.",
+    "loadingAssignments": "جاري تحميل المهام...",
+    "errorLoadingAssignments": "خطأ في تحميل المهام",
+    "tryAgain": "حاول مرة أخرى",
+    "noAssignmentsFound": "لم يتم العثور على مهام",
+    "noAssignmentsDescription": "لم يتم إنشاء أي مهام لأي موظفين بعد.",
+    "noAssignmentsDescriptionSingle": "ليس لديك أي مهام في الوقت الحالي.",
+    "createFirstAssignment": "إنشاء أول مهمة",
+    "searchPlaceholder": "البحث حسب المهمة أو اسم الموظف أو رقم الملف...",
+    "assignmentsCount": "{{filtered}} من {{total}} مهمة",
+    "tableHeaders": {
+      "fileNumber": "رقم الملف",
+      "employeeName": "اسم الموظف",
+      "assignment": "المهمة",
+      "type": "النوع",
+      "location": "الموقع",
+      "startDate": "تاريخ البداية",
+      "endDate": "تاريخ الانتهاء",
+      "status": "الحالة",
+      "actions": "الإجراءات"
+    },
+    "assignmentTypes": {
+      "manual": "يدوي",
+      "project": "مشروع",
+      "rental": "تأجير"
+    },
+    "status": {
+      "active": "نشط",
+      "completed": "مكتمل",
+      "cancelled": "ملغي",
+      "pending": "معلق"
+    },
+    "actions": {
+      "assign": "تخصيص",
+      "edit": "تعديل",
+      "newAssignment": "مهمة جديدة",
+      "delete": "حذف"
+    },
+    "summary": {
+      "totalEmployees": "إجمالي: {{count}} موظف{{plural}} تم العثور عليه",
+      "totalAssignments": "إجمالي: {{count}} مهمة{{plural}}",
+      "searchingAllEmployees": "(البحث في جميع الموظفين)",
+      "filteredFromTotal": "(مفلتر من {{total}} إجمالي)"
+    },
+    "pagination": {
+      "previous": "السابق",
+      "next": "التالي",
+      "pageInfo": "الصفحة {{current}} من {{total}} • عرض {{showing}} من {{total}} عنصر",
+      "showingAll": "عرض جميع {{count}} المهام"
+    },
+    "dialogs": {
+      "addNewAssignment": "إضافة مهمة جديدة",
+      "addNewAssignmentDescription": "إنشاء مهمة جديدة للموظف المحدد",
+      "addNewAssignmentDescriptionSingle": "إنشاء مهمة جديدة لنفسك",
+      "editAssignment": "تعديل المهمة",
+      "editAssignmentDescription": "تحديث تفاصيل المهمة",
+      "deleteAssignment": "حذف المهمة",
+      "deleteAssignmentDescription": "هل أنت متأكد من أنك تريد حذف هذه المهمة؟ لا يمكن التراجع عن هذا الإجراء.",
+      "form": {
+        "employee": "الموظف",
+        "assignmentName": "اسم المهمة",
+        "assignmentNamePlaceholder": "أدخل اسم المهمة",
+        "assignmentType": "نوع المهمة",
+        "selectAssignmentType": "اختر نوع المهمة",
+        "location": "الموقع",
+        "locationPlaceholder": "أدخل الموقع",
+        "startDate": "تاريخ البداية",
+        "endDate": "تاريخ الانتهاء",
+        "status": "الحالة",
+        "selectStatus": "اختر الحالة",
+        "notes": "ملاحظات",
+        "notesPlaceholder": "أدخل ملاحظات (اختياري)",
+        "cancel": "إلغاء",
+        "create": "إنشاء",
+        "creating": "جاري الإنشاء...",
+        "update": "تحديث",
+        "updating": "جاري التحديث...",
+        "delete": "حذف",
+        "deleting": "جاري الحذف..."
+      }
+    },
+    "messages": {
+      "assignmentCreated": "تم إنشاء المهمة بنجاح. تم تحديد المهام السابقة كمكتملة.",
+      "assignmentUpdated": "تم تحديث المهمة بنجاح",
+      "assignmentDeleted": "تم حذف المهمة بنجاح",
+      "employeeIdRequired": "رقم الموظف غير مقدم",
+      "nameAndStartDateRequired": "اسم المهمة وتاريخ البداية مطلوبان",
+      "selectEmployee": "يرجى اختيار موظف"
+    }
+  },
+  "timesheets": {
+    "todaysAttendance": "حضور اليوم",
+    "attendanceDescription": "حضور الموظفين وحالة سجل الوقت لليوم",
+    "canApprove": "يمكن الموافقة",
+    "role": "الدور",
+    "approvalWorkflow": "سير عمل الموافقة",
+    "workflowStages": {
+      "manager": "المدير (نهائي)",
+      "checking": "الفحص",
+      "incharge": "المسؤول",
+      "foreman": "المراقب",
+      "draftSubmitted": "مسودة/مقدم"
+    },
+    "status": {
+      "pending": "معلق",
+      "approved": "موافق عليه",
+      "absent": "غائب",
+      "late": "متأخر",
+      "present": "حاضر"
+    }
+  },
+  "iqama": {
+    "management": "إدارة الإقامة",
+    "description": "مراقبة وإدارة حالة الإقامة وتواريخ انتهاء صلاحيتها للموظفين",
+    "manage": "إدارة الإقامة",
+    "searchPlaceholder": "البحث حسب اسم الموظف أو رقم الملف أو الجنسية أو المنصب...",
+    "allStatuses": "جميع الحالات",
+    "expired": "منتهية الصلاحية",
+    "expiringSoon": "تنتهي قريباً",
+    "missing": "مفقودة",
+    "active": "نشطة",
+    "days": "أيام",
+    "noExpiryDate": "لا يوجد تاريخ انتهاء",
+    "daysOverdue": "{{days}} يوم متأخر",
+    "daysRemaining": "{{days}} يوم متبقي",
+    "notApplicable": "غير متاح",
+    "updateExpiryDate": "تحديث تاريخ الانتهاء",
+    "noRecordsFound": "لم يتم العثور على سجلات إقامة",
+    "tryAdjustingSearch": "حاول تعديل معايير البحث أو التصفية.",
+    "allRecordsActive": "جميع سجلات الإقامة نشطة حالياً.",
+    "downloadPdf": "تحميل PDF ({{count}})",
+    "downloadPdfTitle": "تحميل تقرير PDF لـ {{count}} سجل إقامة منتهية الصلاحية",
+    "noExpiredRecords": "لم يتم العثور على سجلات إقامة منتهية الصلاحية للتحميل.",
+    "pdfGenerationFailed": "فشل في توليد PDF. يرجى المحاولة مرة أخرى.",
+    "clear": "مسح",
+    "tableHeaders": {
+      "name": "اسم الموظف",
+      "fileNumber": "رقم الملف",
+      "iqamaNumber": "رقم الإقامة #",
+      "status": "الحالة",
+      "expiryDate": "تاريخ الانتهاء",
+      "days": "أيام",
+      "actions": "الإجراءات"
+    },
+    "pagination": {
+      "show": "عرض",
+      "perPage": "في الصفحة",
+      "previous": "السابق",
+      "next": "التالي",
+      "page": "الصفحة {{current}} من {{total}}"
+    }
+  }
 }

@@ -119,23 +119,23 @@ export default function EquipmentShowPage() {
     const statusConfig = {
       available: {
         className: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200',
-        label: 'Available',
+        label: t('status.available'),
       },
       assigned: {
         className: 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200',
-        label: 'Assigned',
+        label: t('status.assigned'),
       },
       rented: {
         className: 'bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-200',
-        label: 'Rented',
+        label: t('status.rented'),
       },
       maintenance: {
         className: 'bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200',
-        label: 'Maintenance',
+        label: t('status.maintenance'),
       },
       out_of_service: {
         className: 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200',
-        label: 'Out of Service',
+        label: t('status.out_of_service'),
       },
     };
 
@@ -230,16 +230,16 @@ export default function EquipmentShowPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Door Number</Label>
-                  <p className="text-sm">{equipment.door_number || 'Not specified'}</p>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment_management.door_number')}</Label>
+                  <p className="text-sm">{equipment.door_number || t('messages.notSpecified')}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Serial Number</Label>
-                  <p className="text-sm font-mono">{equipment.serial_number || 'Not specified'}</p>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.serialNumber')}</Label>
+                  <p className="text-sm font-mono">{equipment.serial_number || t('messages.notSpecified')}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Chassis Number</Label>
-                  <p className="text-sm font-mono">{equipment.chassis_number || 'Not specified'}</p>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.chassisNumber')}</Label>
+                  <p className="text-sm font-mono">{equipment.chassis_number || t('messages.notSpecified')}</p>
                 </div>
               </div>
 
@@ -247,12 +247,12 @@ export default function EquipmentShowPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Model Number</Label>
-                  <p className="text-sm">{equipment.model_number || 'Not specified'}</p>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.modelNumber')}</Label>
+                  <p className="text-sm">{equipment.model_number || t('messages.notSpecified')}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Manufacturer</Label>
-                  <p className="text-sm">{equipment.manufacturer || 'Not specified'}</p>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.manufacturer')}</Label>
+                  <p className="text-sm">{equipment.manufacturer || t('messages.notSpecified')}</p>
                 </div>
               </div>
 
@@ -261,8 +261,8 @@ export default function EquipmentShowPage() {
               <Separator />
 
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">Description</Label>
-                <p className="text-sm">{equipment.description || 'No description available'}</p>
+                <Label className="text-sm font-medium text-muted-foreground">{t('fields.description')}</Label>
+                <p className="text-sm">{equipment.description || t('messages.noDescriptionAvailable')}</p>
               </div>
             </CardContent>
           </Card>
@@ -272,27 +272,27 @@ export default function EquipmentShowPage() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <DollarSign className="h-5 w-5" />
-                <span>Financial Information</span>
+                <span>{t('fields.financialInfo')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Daily Rate</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.dailyRate')}</Label>
                   <p className="text-lg font-medium">
-                    {equipment.daily_rate ? `SAR ${Number(equipment.daily_rate).toFixed(2)}` : 'Not set'}
+                    {equipment.daily_rate ? `SAR ${Number(equipment.daily_rate).toFixed(2)}` : t('messages.notSet')}
                   </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Weekly Rate</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.weeklyRate')}</Label>
                   <p className="text-lg font-medium">
-                    {equipment.weekly_rate ? `SAR ${Number(equipment.weekly_rate).toFixed(2)}` : 'Not set'}
+                    {equipment.weekly_rate ? `SAR ${Number(equipment.weekly_rate).toFixed(2)}` : t('messages.notSet')}
                   </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Monthly Rate</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.monthlyRate')}</Label>
                   <p className="text-lg font-medium">
-                    {equipment.monthly_rate ? `SAR ${Number(equipment.monthly_rate).toFixed(2)}` : 'Not set'}
+                    {equipment.monthly_rate ? `SAR ${Number(equipment.monthly_rate).toFixed(2)}` : t('messages.notSet')}
                   </p>
                 </div>
               </div>
@@ -304,22 +304,22 @@ export default function EquipmentShowPage() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Database className="h-5 w-5" />
-                <span>System Information</span>
+                <span>{t('messages.systemInfo')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Equipment ID</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('messages.equipmentId')}</Label>
                   <p className="text-sm font-mono">{equipment.id}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">ERPNext ID</Label>
-                  <p className="text-sm font-mono">{equipment.erpnext_id || 'Not synced'}</p>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.erpnextId')}</Label>
+                  <p className="text-sm font-mono">{equipment.erpnext_id || t('messages.notSynced')}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Category ID</Label>
-                  <p className="text-sm">{equipment.category_id || 'Not assigned'}</p>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.categoryId')}</Label>
+                  <p className="text-sm">{equipment.category_id || t('messages.notAssigned')}</p>
                 </div>
               </div>
             </CardContent>
@@ -330,17 +330,17 @@ export default function EquipmentShowPage() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Hash className="h-5 w-5" />
-                <span>Istimara Information</span>
+                <span>{t('fields.istimaraInfo')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Istimara Number</Label>
-                  <p className="text-sm font-mono">{equipment.istimara || 'Not specified'}</p>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.istimaraNumber')}</Label>
+                  <p className="text-sm font-mono">{equipment.istimara || t('messages.notSpecified')}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Expiry Date</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.istimaraExpiryDate')}</Label>
                   <ExpiryDateDisplay
                     date={equipment.istimara_expiry_date}
                     showIcon={true}
@@ -356,25 +356,25 @@ export default function EquipmentShowPage() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Calendar className="h-5 w-5" />
-                <span>Timestamps</span>
+                <span>{t('fields.timestamps')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Created At</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.createdAt')}</Label>
                   <p className="text-sm">
                     {equipment.created_at
                       ? new Date(equipment.created_at).toLocaleString()
-                      : 'Not available'}
+                      : t('messages.notAvailable')}
                   </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Last Updated</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.lastUpdated')}</Label>
                   <p className="text-sm">
                     {equipment.updated_at
                       ? new Date(equipment.updated_at).toLocaleString()
-                      : 'Not available'}
+                      : t('messages.notAvailable')}
                   </p>
                 </div>
               </div>

@@ -8,6 +8,7 @@ import { Eye, Users, Table } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useI18n } from '@/hooks/use-i18n';
 
 interface TeamMember {
   id: number;
@@ -37,6 +38,7 @@ interface MyTeamSectionProps {
 
 export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
   const { data: session } = useSession();
+  const { t } = useI18n();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [currentEmployee, setCurrentEmployee] = useState<{ id: number; [key: string]: unknown } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -114,10 +116,10 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      active: { variant: 'default' as const, label: 'Active' },
-      inactive: { variant: 'secondary' as const, label: 'Inactive' },
-      terminated: { variant: 'destructive' as const, label: 'Terminated' },
-      on_leave: { variant: 'outline' as const, label: 'On Leave' },
+      active: { variant: 'default' as const, label: t('dashboard.myTeam.status.active') },
+      inactive: { variant: 'secondary' as const, label: t('dashboard.myTeam.status.inactive') },
+      terminated: { variant: 'destructive' as const, label: t('dashboard.myTeam.status.terminated') },
+      on_leave: { variant: 'outline' as const, label: t('dashboard.myTeam.status.onLeave') },
     };
     
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.active;
@@ -127,7 +129,7 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
 
   const getTimesheetStatusBadge = (status?: string, lastDate?: string) => {
     if (!status || !lastDate) {
-      return <Badge variant="outline">No Timesheet</Badge>;
+      return <Badge variant="outline">{t('dashboard.myTeam.timesheetStatus.noTimesheet')}</Badge>;
     }
     
     const today = new Date();
@@ -135,13 +137,13 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
     const daysDiff = Math.floor((today.getTime() - lastTimesheet.getTime()) / (1000 * 60 * 60 * 24));
     
     if (daysDiff === 0) {
-      return <Badge variant="default">Today</Badge>;
+      return <Badge variant="default">{t('dashboard.myTeam.timesheetStatus.today')}</Badge>;
     } else if (daysDiff === 1) {
-      return <Badge variant="secondary">Yesterday</Badge>;
+      return <Badge variant="secondary">{t('dashboard.myTeam.timesheetStatus.yesterday')}</Badge>;
     } else if (daysDiff <= 3) {
-      return <Badge variant="outline">{daysDiff} days ago</Badge>;
+      return <Badge variant="outline">{t('dashboard.myTeam.timesheetStatus.daysAgo', { days: daysDiff })}</Badge>;
     } else {
-      return <Badge variant="destructive">{daysDiff} days ago</Badge>;
+      return <Badge variant="destructive">{t('dashboard.myTeam.timesheetStatus.daysAgo', { days: daysDiff })}</Badge>;
     }
   };
 
@@ -175,14 +177,14 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            My Team
+            {t('dashboard.myTeam.title')}
           </CardTitle>
-          <CardDescription>Employees under your supervision</CardDescription>
+          <CardDescription>{t('dashboard.myTeam.description')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-2">Loading team members...</span>
+            <span className="ml-2">{t('dashboard.myTeam.loadingTeamMembers')}</span>
           </div>
         </CardContent>
       </Card>
@@ -195,15 +197,15 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            My Team
+            {t('dashboard.myTeam.title')}
           </CardTitle>
-          <CardDescription>Employees under your supervision</CardDescription>
+          <CardDescription>{t('dashboard.myTeam.description')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
             <p className="text-red-600 mb-4">{error}</p>
             <Button onClick={fetchTeamMembers} variant="outline">
-              Try Again
+              {t('dashboard.myTeam.actions.tryAgain')}
             </Button>
           </div>
         </CardContent>
@@ -218,28 +220,32 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Table className="h-5 w-5" />
-              My Team
+              {t('dashboard.myTeam.title')}
             </CardTitle>
             <CardDescription>
               {currentEmployee ? (
                 <>
                   {teamMembers.length === 0 
-                    ? `No employees under your supervision (Employee ID: ${currentEmployee.id})` 
-                    : `${teamMembers.length} employee${teamMembers.length !== 1 ? 's' : ''} under your supervision (Employee ID: ${currentEmployee.id})`
+                    ? t('dashboard.myTeam.noEmployees', { id: currentEmployee.id }) 
+                    : t('dashboard.myTeam.employeesCount', { 
+                        count: teamMembers.length, 
+                        plural: teamMembers.length !== 1 ? 's' : '',
+                        id: currentEmployee.id 
+                      })
                   }
                 </>
               ) : (
-                'Loading employee information...'
+                t('dashboard.myTeam.loadingEmployeeInfo')
               )}
             </CardDescription>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={fetchTeamMembers}>
-              Refresh
+              {t('dashboard.myTeam.actions.refresh')}
             </Button>
 
             <Button variant="outline" size="sm" onClick={onHideSection}>
-              Hide
+              {t('dashboard.myTeam.actions.hide')}
             </Button>
           </div>
         </div>
@@ -248,8 +254,8 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
         {teamMembers.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-            <p className="text-lg font-medium">No team members found</p>
-            <p className="text-sm">You don't have any employees assigned to you as a supervisor.</p>
+            <p className="text-lg font-medium">{t('dashboard.myTeam.noTeamMembers')}</p>
+            <p className="text-sm">{t('dashboard.myTeam.noTeamMembersDescription')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -257,25 +263,25 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
-                    File Number
+                    {t('dashboard.myTeam.tableHeaders.fileNumber')}
                   </th>
                   <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
-                    Employee
+                    {t('dashboard.myTeam.tableHeaders.employee')}
                   </th>
                   <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
-                    Designation
+                    {t('dashboard.myTeam.tableHeaders.designation')}
                   </th>
                   <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
-                    Status
+                    {t('dashboard.myTeam.tableHeaders.status')}
                   </th>
                   <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
-                    Current Assignment
+                    {t('dashboard.myTeam.tableHeaders.currentAssignment')}
                   </th>
                   <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
-                    Timesheet Status
+                    {t('dashboard.myTeam.tableHeaders.timesheetStatus')}
                   </th>
                   <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
-                    Actions
+                    {t('dashboard.myTeam.tableHeaders.actions')}
                   </th>
                 </tr>
               </thead>
@@ -314,23 +320,23 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
                           <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                           <div className="text-xs">
                             <div className="font-medium">
-                              {member.current_assignment.type === 'rental' ? 'Rental Site' : 
-                               member.current_assignment.type === 'project' ? 'Project' : 
+                              {member.current_assignment.type === 'rental' ? t('dashboard.myTeam.assignment.rentalSite') : 
+                               member.current_assignment.type === 'project' ? t('dashboard.myTeam.assignment.project') : 
                                member.current_assignment.type}
                             </div>
                             <div className="text-gray-600">
                               {member.current_assignment.type === 'rental' ? 
-                                (member.current_assignment.rental?.rental_number || 'Rental Assignment') :
+                                (member.current_assignment.rental?.rental_number || t('dashboard.myTeam.assignment.rentalAssignment')) :
                                 member.current_assignment.type === 'project' ? 
-                                (member.current_assignment.project?.name || member.current_assignment.name || 'Project Assignment') :
-                                (member.current_assignment.name || 'Unnamed Assignment')}
+                                (member.current_assignment.project?.name || member.current_assignment.name || t('dashboard.myTeam.assignment.projectAssignment')) :
+                                (member.current_assignment.name || t('dashboard.myTeam.assignment.unnamedAssignment'))}
                             </div>
                           </div>
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                          <span className="text-gray-500">Not Assigned</span>
+                          <span className="text-gray-500">{t('dashboard.myTeam.assignment.notAssigned')}</span>
                         </div>
                       )}
                     </td>
@@ -346,7 +352,7 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
                       >
                         <Link href={`/modules/employee-management/${member.id}`}>
                           <Eye className="h-4 w-4" />
-                          View
+                          {t('dashboard.myTeam.actions.view')}
                         </Link>
                       </Button>
                     </td>

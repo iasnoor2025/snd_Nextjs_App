@@ -34,6 +34,7 @@ import {
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
+import { useI18n } from '@/hooks/use-i18n';
 
 interface Assignment {
     id: number;
@@ -105,6 +106,7 @@ interface ManualAssignmentSectionProps {
 export default function ManualAssignmentSection({ employeeId: propEmployeeId, onHideSection, allowAllEmployees = false }: ManualAssignmentSectionProps) {
     const { hasPermission } = useRBAC();
     const { data: session } = useSession();
+    const { t } = useI18n();
     const [assignments, setAssignments] = useState<Assignment[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -715,12 +717,12 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                             <div>
                                 <CardTitle className="flex items-center gap-2">
                                     <Briefcase className="h-5 w-5" />
-                                    Manual Assignments
+                                    {t('dashboard.manualAssignments.title')}
                                 </CardTitle>
                                 <CardDescription>
                                     {allowAllEmployees
-                                        ? 'View and manage assignments for all employees'
-                                        : 'Manage your current and upcoming assignments'
+                                        ? t('dashboard.manualAssignments.description')
+                                        : t('dashboard.manualAssignments.descriptionSingle')
                                     }
                                 </CardDescription>
                             </div>
@@ -731,7 +733,7 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                                     onClick={onHideSection}
                                     className="text-xs"
                                 >
-                                    Hide Section
+                                    {t('dashboard.manualAssignments.hideSection')}
                                 </Button>
                             )}
                         </div>
@@ -739,9 +741,9 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                     <CardContent>
                         <div className="text-center py-8">
                             <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                            <h3 className="text-lg font-medium mb-2">Employee ID Required</h3>
+                            <h3 className="text-lg font-medium mb-2">{t('dashboard.manualAssignments.employeeIdRequired')}</h3>
                             <p className="text-sm text-muted-foreground">
-                                Please log in as an employee to view and manage assignments.
+                                {t('dashboard.manualAssignments.employeeIdRequiredDescription')}
                             </p>
                         </div>
                     </CardContent>
@@ -754,7 +756,7 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
         return (
             <div className="flex items-center justify-center p-8">
                 <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-                <span className="ml-2">Loading assignments...</span>
+                <span className="ml-2">{t('dashboard.manualAssignments.loadingAssignments')}</span>
             </div>
         );
     }
@@ -763,11 +765,11 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
         return (
             <div className="rounded-md border border-red-200 bg-red-50 p-4">
                 <div className="text-center">
-                    <div className="font-medium text-red-600">Error Loading Assignments</div>
+                    <div className="font-medium text-red-600">{t('dashboard.manualAssignments.errorLoadingAssignments')}</div>
                     <div className="mt-1 text-sm text-red-600">{error}</div>
                     <div className="mt-4 flex justify-center">
                         <Button variant="outline" onClick={fetchAssignments} className="bg-white">
-                            <RefreshCw className="mr-2 h-4 w-4" /> Try Again
+                            <RefreshCw className="mr-2 h-4 w-4" /> {t('dashboard.manualAssignments.tryAgain')}
                         </Button>
                     </div>
                 </div>
@@ -785,12 +787,12 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                         <div>
                             <CardTitle className="flex items-center gap-2">
                                 <Briefcase className="h-5 w-5" />
-                                Manual Assignments
+                                {t('dashboard.manualAssignments.title')}
                             </CardTitle>
                             <CardDescription>
                                 {allowAllEmployees
-                                    ? 'View and manage assignments for all employees'
-                                    : 'Manage your current and upcoming assignments'
+                                    ? t('dashboard.manualAssignments.description')
+                                    : t('dashboard.manualAssignments.descriptionSingle')
                                 }
                             </CardDescription>
                         </div>
@@ -802,7 +804,7 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                                     onClick={onHideSection}
                                     className="text-xs"
                                 >
-                                    Hide Section
+                                    {t('dashboard.manualAssignments.hideSection')}
                                 </Button>
                             )}
                             {hasPermission('create', 'employee-assignment') && (
@@ -942,14 +944,17 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                                 <div className="relative flex-1 max-w-md">
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                     <Input
-                                        placeholder="Search by assignment, employee name, or file number..."
+                                        placeholder={t('dashboard.manualAssignments.searchPlaceholder')}
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                         className="pl-10"
                                     />
                                 </div>
                                 <div className="text-sm text-muted-foreground">
-                                    {filteredAssignments.length} of {assignments.length} assignments
+                                    {t('dashboard.manualAssignments.assignmentsCount', { 
+                                        filtered: filteredAssignments.length, 
+                                        total: assignments.length 
+                                    })}
                                 </div>
                             </div>
 
@@ -960,19 +965,19 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                                 <table className="w-full border-collapse">
                                     <thead>
                                         <tr className="border-b bg-muted/50">
-                                            <th className="text-left p-3 font-medium text-sm">File Number</th>
-                                            <th className="text-left p-3 font-medium text-sm">Employee Name</th>
+                                            <th className="text-left p-3 font-medium text-sm">{t('dashboard.manualAssignments.tableHeaders.fileNumber')}</th>
+                                            <th className="text-left p-3 font-medium text-sm">{t('dashboard.manualAssignments.tableHeaders.employeeName')}</th>
                                             {!showAllEmployees && (
                                                 <>
-                                                    <th className="text-left p-3 font-medium text-sm">Assignment</th>
-                                                    <th className="text-left p-3 font-medium text-sm">Type</th>
-                                                    <th className="text-left p-3 font-medium text-sm">Location</th>
-                                                    <th className="text-left p-3 font-medium text-sm">Start Date</th>
-                                                    <th className="text-left p-3 font-medium text-sm">End Date</th>
-                                                    <th className="text-left p-3 font-medium text-sm">Status</th>
+                                                    <th className="text-left p-3 font-medium text-sm">{t('dashboard.manualAssignments.tableHeaders.assignment')}</th>
+                                                    <th className="text-left p-3 font-medium text-sm">{t('dashboard.manualAssignments.tableHeaders.type')}</th>
+                                                    <th className="text-left p-3 font-medium text-sm">{t('dashboard.manualAssignments.tableHeaders.location')}</th>
+                                                    <th className="text-left p-3 font-medium text-sm">{t('dashboard.manualAssignments.tableHeaders.startDate')}</th>
+                                                    <th className="text-left p-3 font-medium text-sm">{t('dashboard.manualAssignments.tableHeaders.endDate')}</th>
+                                                    <th className="text-left p-3 font-medium text-sm">{t('dashboard.manualAssignments.tableHeaders.status')}</th>
                                                 </>
                                             )}
-                                            <th className="text-left p-3 font-medium text-sm">Actions</th>
+                                            <th className="text-left p-3 font-medium text-sm">{t('dashboard.manualAssignments.tableHeaders.actions')}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1011,7 +1016,7 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                                                                         }}
                                                                     >
                                                                         <Plus className="mr-1 h-3 w-3" />
-                                                                        Assign
+                                                                        {t('dashboard.manualAssignments.actions.assign')}
                                                                     </Button>
                                                                 )}
                                                             </div>
@@ -1068,7 +1073,7 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                                                                     onClick={() => openEditDialog(assignment)}
                                                                 >
                                                                     <Edit className="mr-1 h-3 w-3" />
-                                                                    Edit
+                                                                    {t('dashboard.manualAssignments.actions.edit')}
                                                                 </Button>
                                                             )}
                                                             {hasPermission('create', 'employee-assignment') && (
@@ -1077,7 +1082,7 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                                                                     variant="default"
                                                                     onClick={() => openNewAssignmentDialog(assignment)}
                                                                 >
-                                                                    New Assignment
+                                                                    {t('dashboard.manualAssignments.actions.newAssignment')}
                                                                 </Button>
                                                             )}
                                                             {hasPermission('delete', 'employee-assignment') && (
@@ -1087,7 +1092,7 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                                                                     onClick={() => openDeleteDialog(assignment)}
                                                                 >
                                                                     <Trash2 className="mr-1 h-3 w-3" />
-                                                                    Delete
+                                                                    {t('dashboard.manualAssignments.actions.delete')}
                                                                 </Button>
                                                             )}
                                                         </div>
@@ -1178,17 +1183,17 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                     ) : (
                         <div className="text-center py-8">
                             <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                            <h3 className="font-medium mb-2">No Assignments Found</h3>
+                            <h3 className="font-medium mb-2">{t('dashboard.manualAssignments.noAssignmentsFound')}</h3>
                             <p className="text-sm text-muted-foreground mb-4">
                                 {allowAllEmployees
-                                    ? 'No assignments have been created for any employees yet.'
-                                    : 'You don\'t have any assignments at the moment.'
+                                    ? t('dashboard.manualAssignments.noAssignmentsDescription')
+                                    : t('dashboard.manualAssignments.noAssignmentsDescriptionSingle')
                                 }
                             </p>
                             {hasPermission('create', 'employee-assignment') && (
                                 <Button onClick={() => setShowCreateDialog(true)}>
                                     <Plus className="mr-2 h-4 w-4" />
-                                    Create First Assignment
+                                    {t('dashboard.manualAssignments.createFirstAssignment')}
                                 </Button>
                             )}
                         </div>

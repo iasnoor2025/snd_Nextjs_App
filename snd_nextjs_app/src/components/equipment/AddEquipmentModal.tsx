@@ -86,7 +86,7 @@ export default function AddEquipmentModal({
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      toast.error('Equipment name is required');
+      toast.error(t('messages.nameRequired'));
       return;
     }
 
@@ -117,9 +117,9 @@ export default function AddEquipmentModal({
         // Show success message with door number extraction info if applicable
         const created = (response as { doorNumberExtracted?: boolean; extractedDoorNumber?: string; success: boolean; data?: unknown });
         if (created.doorNumberExtracted && created.extractedDoorNumber) {
-          toast.success(`Equipment created successfully! Door number "${created.extractedDoorNumber}" was automatically extracted from the equipment name.`);
+          toast.success(t('messages.createSuccessWithDoorNumber', { doorNumber: created.extractedDoorNumber }));
         } else {
-          toast.success('Equipment created successfully!');
+          toast.success(t('messages.createSuccess'));
         }
         onSuccess();
         onOpenChange(false);
@@ -143,10 +143,10 @@ export default function AddEquipmentModal({
           istimara_expiry_date: '',
         });
       } else {
-        toast.error(response.message || 'Failed to create equipment');
+        toast.error(response.message || t('messages.createError'));
       }
     } catch {
-      toast.error('Failed to create equipment');
+      toast.error(t('messages.createError'));
     } finally {
       setLoading(false);
     }
@@ -168,22 +168,22 @@ export default function AddEquipmentModal({
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">Basic Information</h3>
+            <h3 className="text-lg font-medium">{t('fields.basicInfo')}</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Equipment Name *</Label>
+                <Label htmlFor="name">{t('fields.name')} *</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={e => handleInputChange('name', e.target.value)}
-                  placeholder="Enter equipment name"
+                  placeholder={t('fields.namePlaceholder')}
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">{t('fields.status')}</Label>
                 <Select
                   value={formData.status}
                   onValueChange={value => handleInputChange('status', value)}
@@ -192,21 +192,21 @@ export default function AddEquipmentModal({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="available">Available</SelectItem>
-                    <SelectItem value="maintenance">Maintenance</SelectItem>
-                    <SelectItem value="out_of_service">Out of Service</SelectItem>
+                    <SelectItem value="available">{t('status.available')}</SelectItem>
+                    <SelectItem value="maintenance">{t('status.maintenance')}</SelectItem>
+                    <SelectItem value="out_of_service">{t('status.out_of_service')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t('fields.description')}</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={e => handleInputChange('description', e.target.value)}
-                placeholder="Enter equipment description"
+                placeholder={t('fields.descriptionPlaceholder')}
                 rows={3}
               />
             </div>
@@ -214,68 +214,68 @@ export default function AddEquipmentModal({
 
           {/* Manufacturer & Model Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">Manufacturer & Model</h3>
+            <h3 className="text-lg font-medium">{t('fields.technicalInfo')}</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="manufacturer">Manufacturer</Label>
+                <Label htmlFor="manufacturer">{t('fields.manufacturer')}</Label>
                 <Input
                   id="manufacturer"
                   value={formData.manufacturer}
                   onChange={e => handleInputChange('manufacturer', e.target.value)}
-                  placeholder="Enter manufacturer name"
+                  placeholder={t('fields.manufacturerPlaceholder')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="modelNumber">Model Number</Label>
+                <Label htmlFor="modelNumber">{t('fields.modelNumber')}</Label>
                 <Input
                   id="modelNumber"
                   value={formData.modelNumber}
                   onChange={e => handleInputChange('modelNumber', e.target.value)}
-                  placeholder="Enter model number"
+                  placeholder={t('fields.modelNumberPlaceholder')}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="serialNumber">Serial Number</Label>
+              <Label htmlFor="serialNumber">{t('fields.serialNumber')}</Label>
               <Input
                 id="serialNumber"
                 value={formData.serialNumber}
                 onChange={e => handleInputChange('serialNumber', e.target.value)}
-                placeholder="Enter serial number"
+                placeholder={t('fields.serialNumberPlaceholder')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="chassisNumber">Chassis Number</Label>
+              <Label htmlFor="chassisNumber">{t('fields.chassisNumber')}</Label>
               <Input
                 id="chassisNumber"
                 value={formData.chassisNumber}
                 onChange={e => handleInputChange('chassisNumber', e.target.value)}
-                placeholder="Enter chassis number"
+                placeholder={t('fields.chassisNumberPlaceholder')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="doorNumber">Door Number</Label>
+              <Label htmlFor="doorNumber">{t('equipment_management.door_number')}</Label>
               <Input
                 id="doorNumber"
                 value={formData.doorNumber}
                 onChange={e => handleInputChange('doorNumber', e.target.value)}
-                placeholder="Enter door number"
+                placeholder={t('fields.doorNumberPlaceholder')}
               />
             </div>
           </div>
 
           {/* Purchase Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">Purchase Information</h3>
+            <h3 className="text-lg font-medium">{t('fields.purchaseInfo')}</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="purchaseDate">Purchase Date</Label>
+                <Label htmlFor="purchaseDate">{t('fields.purchaseDate')}</Label>
                 <Input
                   id="purchaseDate"
                   type="date"
@@ -285,7 +285,7 @@ export default function AddEquipmentModal({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="purchasePrice">Purchase Price</Label>
+                <Label htmlFor="purchasePrice">{t('fields.purchasePrice')}</Label>
                 <Input
                   id="purchasePrice"
                   type="number"
@@ -301,11 +301,11 @@ export default function AddEquipmentModal({
 
           {/* Rental Rates */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">Rental Rates</h3>
+            <h3 className="text-lg font-medium">{t('fields.financialInfo')}</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="dailyRate">Daily Rate</Label>
+                <Label htmlFor="dailyRate">{t('fields.dailyRate')}</Label>
                 <Input
                   id="dailyRate"
                   type="number"
@@ -318,7 +318,7 @@ export default function AddEquipmentModal({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="weeklyRate">Weekly Rate</Label>
+                <Label htmlFor="weeklyRate">{t('fields.weeklyRate')}</Label>
                 <Input
                   id="weeklyRate"
                   type="number"
@@ -331,7 +331,7 @@ export default function AddEquipmentModal({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="monthlyRate">Monthly Rate</Label>
+                <Label htmlFor="monthlyRate">{t('fields.monthlyRate')}</Label>
                 <Input
                   id="monthlyRate"
                   type="number"
@@ -347,36 +347,36 @@ export default function AddEquipmentModal({
 
           {/* ERPNext Integration */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">ERPNext Integration</h3>
+            <h3 className="text-lg font-medium">{t('fields.erpnextIntegration')}</h3>
 
             <div className="space-y-2">
-              <Label htmlFor="erpnextId">ERPNext ID</Label>
+              <Label htmlFor="erpnextId">{t('fields.erpnextId')}</Label>
               <Input
                 id="erpnextId"
                 value={formData.erpnextId}
                 onChange={e => handleInputChange('erpnextId', e.target.value)}
-                placeholder="Enter ERPNext ID for synchronization"
+                placeholder={t('fields.erpnextIdPlaceholder')}
               />
             </div>
           </div>
 
           {/* Istimara Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">Istimara (Vehicle Registration)</h3>
+            <h3 className="text-lg font-medium">{t('fields.istimaraInfo')}</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="istimara">Istimara Number</Label>
+                <Label htmlFor="istimara">{t('fields.istimaraNumber')}</Label>
                 <Input
                   id="istimara"
                   value={formData.istimara}
                   onChange={e => handleInputChange('istimara', e.target.value)}
-                  placeholder="Enter Istimara number"
+                  placeholder={t('fields.istimaraNumberPlaceholder')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="istimara_expiry_date">Istimara Expiry Date</Label>
+                <Label htmlFor="istimara_expiry_date">{t('fields.istimaraExpiryDate')}</Label>
                 <Input
                   id="istimara_expiry_date"
                   type="date"
@@ -395,18 +395,18 @@ export default function AddEquipmentModal({
               onClick={() => onOpenChange(false)}
               disabled={loading}
             >
-              Cancel
+              {t('actions.cancel')}
             </Button>
             <Button type="submit" disabled={loading}>
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Creating...
+                  {t('messages.creating')}
                 </>
               ) : (
                 <>
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Equipment
+                  {t('actions.addEquipment')}
                 </>
               )}
             </Button>

@@ -912,7 +912,7 @@ export default function DashboardPage() {
                       onClick={() => toggleSection('employeeAdvance')}
                       className="flex items-center gap-2"
                     >
-                      Show Employee Advance Section
+                      {t('dashboard.showEmployeeAdvanceSection')}
                     </Button>
                   )}
                   {!sectionVisibility.myTeam && (
@@ -922,7 +922,7 @@ export default function DashboardPage() {
                       onClick={() => toggleSection('myTeam')}
                       className="flex items-center gap-2"
                     >
-                      Show My Team Section
+                      {t('dashboard.showMyTeamSection')}
                     </Button>
                   )}
                 </div>

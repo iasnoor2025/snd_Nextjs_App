@@ -92,10 +92,10 @@ export function TimesheetsSection({
           <div>
             <CardTitle className="flex items-center gap-2">
               <Timer className="h-5 w-5" />
-              {t('timesheet.todaysAttendance')}
+              {t('dashboard.timesheets.todaysAttendance')}
             </CardTitle>
             <CardDescription>
-              {t('timesheet.attendanceDescription')}
+              {t('dashboard.timesheets.attendanceDescription')}
               <span className="ml-2 text-muted-foreground">
                 (
                               {currentTime.toLocaleDateString(isRTL ? 'ar-SA' : 'en-US', {
@@ -113,10 +113,10 @@ export function TimesheetsSection({
               <div className="flex items-center gap-2">
                 <Badge variant="outline">
                   <CheckCircle className="h-3 w-3 mr-1" />
-                  {t('timesheet.canApprove')}
+                  {t('dashboard.timesheets.canApprove')}
                 </Badge>
                 <div className="text-xs text-muted-foreground">
-                  {t('timesheet.role')}: {session?.user?.role?.replace('_', ' ')}
+                  {t('dashboard.timesheets.role')}: {session?.user?.role?.replace('_', ' ')}
                 </div>
               </div>
             </PermissionBased>
@@ -150,58 +150,58 @@ export function TimesheetsSection({
             <div className="text-2xl font-bold text-red-600">
               {safeTimesheetData.filter(item => item.status === 'absent').length}
             </div>
-            <div className="text-sm text-muted-foreground">{t('timesheet.attendance.absent')}</div>
+            <div className="text-sm text-muted-foreground">{t('dashboard.timesheets.status.absent')}</div>
           </div>
           <div className="text-center p-3 rounded-lg border bg-card">
             <div className="text-2xl font-bold text-blue-600">
               {safeTimesheetData.filter(item => item.approvalStatus === 'manager_approved').length}
             </div>
             <div className="text-sm text-muted-foreground">
-              {t('timesheet.attendance.approved')}
+              {t('dashboard.timesheets.status.approved')}
             </div>
           </div>
           <div className="text-center p-3 rounded-lg border bg-card">
             <div className="text-2xl font-bold text-orange-600">
               {safeTimesheetData.filter(item => item.approvalStatus !== 'manager_approved').length}
             </div>
-            <div className="text-sm text-muted-foreground">{t('timesheet.attendance.pending')}</div>
+            <div className="text-sm text-muted-foreground">{t('dashboard.timesheets.status.pending')}</div>
           </div>
         </div>
 
         {/* Approval Workflow Indicator */}
         <div className="p-4 rounded-lg border bg-muted/50">
           <div className="flex items-center justify-between mb-3">
-            <div className="text-sm font-medium">{t('timesheet.approvalWorkflow.title')}</div>
+            <div className="text-sm font-medium">{t('dashboard.timesheets.approvalWorkflow')}</div>
             <PermissionBased action="approve" subject="Timesheet">
               <div className="text-xs text-muted-foreground">
-                {t('timesheet.yourRole')}: {session?.user?.role?.replace('_', ' ')}
+                {t('dashboard.timesheets.role')}: {session?.user?.role?.replace('_', ' ')}
               </div>
             </PermissionBased>
           </div>
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-primary rounded-full"></div>
-              <span>{t('timesheet.approvalWorkflow.draftSubmitted')}</span>
+              <span>{t('dashboard.timesheets.workflowStages.draftSubmitted')}</span>
             </div>
             <div className="text-muted-foreground">→</div>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-primary rounded-full"></div>
-              <span>{t('timesheet.approvalWorkflow.foreman')}</span>
+              <span>{t('dashboard.timesheets.workflowStages.foreman')}</span>
             </div>
             <div className="text-muted-foreground">→</div>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-primary rounded-full"></div>
-              <span>{t('timesheet.approvalWorkflow.incharge')}</span>
+              <span>{t('dashboard.timesheets.workflowStages.incharge')}</span>
             </div>
             <div className="text-muted-foreground">→</div>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-primary rounded-full"></div>
-              <span>{t('timesheet.approvalWorkflow.checking')}</span>
+              <span>{t('dashboard.timesheets.workflowStages.checking')}</span>
             </div>
             <div className="text-muted-foreground">→</div>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="text-green-600">{t('timesheet.approvalWorkflow.managerFinal')}</span>
+              <span className="text-green-600">{t('dashboard.timesheets.workflowStages.manager')}</span>
             </div>
           </div>
         </div>

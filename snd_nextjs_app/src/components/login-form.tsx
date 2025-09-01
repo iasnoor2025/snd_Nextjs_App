@@ -10,8 +10,10 @@ import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useI18n } from '@/hooks/use-i18n';
 
 export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
+  const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -30,15 +32,15 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
       });
 
       if (result?.error) {
-        toast.error('Invalid email or password');
+        toast.error(t('auth.signin.invalidEmailOrPassword'));
       } else {
-        toast.success('Login successful!');
+        toast.success(t('auth.signin.loginSuccessful'));
         // Redirect to dashboard after successful login
         router.push('/');
       }
     } catch (error) {
       console.error('Login error:', error);
-      toast.error('An error occurred during login');
+      toast.error(t('auth.signin.loginError'));
     } finally {
       setIsLoading(false);
     }
@@ -53,14 +55,14 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
       });
 
       if (result?.error) {
-        toast.error('Google login failed. Please try again.');
+        toast.error(t('auth.signin.googleLoginFailed'));
       } else {
-        toast.success('Google login successful!');
+        toast.success(t('auth.signin.googleLoginSuccessful'));
         router.push('/');
       }
     } catch (error) {
       console.error('Google login error:', error);
-      toast.error('An error occurred during Google login');
+      toast.error(t('auth.signin.googleLoginError'));
     } finally {
       setIsGoogleLoading(false);
     }
@@ -70,8 +72,8 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
     <div className={cn('flex flex-col gap-6', className)} {...props}>
       <Card>
         <CardHeader className="text-center">
-          <CardTitle className="text-xl">Welcome back</CardTitle>
-          <CardDescription>Login to your rental management account</CardDescription>
+          <CardTitle className="text-xl">{t('auth.signin.welcomeBack')}</CardTitle>
+          <CardDescription>{t('auth.signin.loginToAccount')}</CardDescription>
         </CardHeader>
         <CardContent>
           {/* Google Login Button */}
@@ -86,7 +88,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
               {isGoogleLoading ? (
                 <div className="flex items-center gap-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
-                  Signing in with Google...
+                  {t('auth.signin.signingInWithGoogle')}
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
@@ -108,7 +110,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
                       d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                     />
                   </svg>
-                  Sign in with Google
+                  {t('auth.signin.signInWithGoogle')}
                 </div>
               )}
             </Button>
@@ -120,7 +122,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
               <Separator className="w-full" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+              <span className="bg-background px-2 text-muted-foreground">{t('auth.signin.orContinueWith')}</span>
             </div>
           </div>
 
@@ -129,7 +131,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
             <div className="grid gap-6">
               <div className="grid gap-6">
                 <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">{t('auth.signin.email')}</Label>
                   <Input
                     id="email"
                     type="email"
@@ -142,12 +144,12 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
                 </div>
                 <div className="grid gap-2">
                   <div className="flex items-center">
-                    <Label htmlFor="password">Password</Label>
+                    <Label htmlFor="password">{t('auth.signin.password')}</Label>
                     <a
                       href="/forgot-password"
                       className="ml-auto text-sm underline-offset-4 hover:underline text-left"
                     >
-                      Forgot your password?
+                      {t('auth.signin.forgotPassword')}
                     </a>
                   </div>
                   <Input
@@ -160,16 +162,16 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? 'Logging in...' : 'Login'}
+                  {isLoading ? t('auth.signin.loggingIn') : t('auth.signin.login')}
                 </Button>
               </div>
               <div className="text-center text-sm">
-                Don&apos;t have an account?{' '}
+                {t('auth.signin.dontHaveAccount')}{' '}
                 <a
                   href="/signup"
                   className="text-primary hover:underline underline-offset-4 font-medium"
                 >
-                  Sign up
+                  {t('auth.signin.signUp')}
                 </a>
               </div>
             </div>
@@ -177,8 +179,8 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
         </CardContent>
       </Card>
       <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 [&_a]:hover:text-primary  ">
-        By clicking continue, you agree to our <a href="#">Terms of Service</a> and{' '}
-        <a href="#">Privacy Policy</a>.
+        {t('auth.terms.byContinuing')} <a href="#">{t('auth.terms.termsOfService')}</a> {t('auth.terms.and')}{' '}
+        <a href="#">{t('auth.terms.privacyPolicy')}</a>.
       </div>
     </div>
   );

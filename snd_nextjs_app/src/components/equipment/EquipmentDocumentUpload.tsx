@@ -24,6 +24,7 @@ import { Progress } from '@/components/ui/progress';
 import { useCallback, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useRBAC } from '@/lib/rbac/rbac-context';
+import { useTranslation } from 'react-i18next';
 
 interface EquipmentDocument {
   id: number;
@@ -44,6 +45,7 @@ export default function EquipmentDocumentUpload({
   equipmentId,
   onDocumentsUpdated,
 }: EquipmentDocumentUploadProps) {
+  const { t } = useTranslation('equipment');
   const { hasPermission } = useRBAC();
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -69,16 +71,16 @@ export default function EquipmentDocumentUpload({
   };
 
   const documentTypeOptions = [
-    { label: 'User Manual', value: 'user_manual' },
-    { label: 'Service Manual', value: 'service_manual' },
-    { label: 'Maintenance Manual', value: 'maintenance_manual' },
-    { label: 'Safety Certificate', value: 'safety_certificate' },
-    { label: 'Inspection Report', value: 'inspection_report' },
-    { label: 'Warranty Document', value: 'warranty' },
-    { label: 'Purchase Invoice', value: 'purchase_invoice' },
-    { label: 'Equipment Registration', value: 'registration' },
-    { label: 'Insurance Document', value: 'insurance' },
-    { label: 'Other', value: 'other' },
+    { label: t('documents.userManual'), value: 'user_manual' },
+    { label: t('documents.serviceManual'), value: 'service_manual' },
+    { label: t('documents.maintenanceManual'), value: 'maintenance_manual' },
+    { label: t('documents.safetyCertificate'), value: 'safety_certificate' },
+    { label: t('documents.inspectionReport'), value: 'inspection_report' },
+    { label: t('documents.warrantyDocument'), value: 'warranty' },
+    { label: t('documents.purchaseInvoice'), value: 'purchase_invoice' },
+    { label: t('documents.equipmentRegistration'), value: 'registration' },
+    { label: t('documents.insuranceDocument'), value: 'insurance' },
+    { label: t('documents.other'), value: 'other' },
   ];
 
   const loadDocuments = useCallback(async () => {
