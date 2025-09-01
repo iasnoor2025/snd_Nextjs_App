@@ -1,5 +1,6 @@
 'use client';
 
+import { useI18n } from '@/hooks/use-i18n';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -7,44 +8,42 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useI18n } from '@/hooks/use-i18n';
 import { Globe } from 'lucide-react';
 
 export function LanguageSwitcher() {
-  const { currentLanguage, changeLanguage, languages, isRTL } = useI18n();
+  const { currentLanguage, languages, changeLanguage, isLoading } = useI18n();
 
-  const handleLanguageChange = async (languageCode: string) => {
-    console.log('Language switcher: changing to', languageCode);
-    await changeLanguage(languageCode);
-  };
+  if (isLoading) {
+    return (
+      <Button variant="outline" size="sm" disabled>
+        <Globe className="h-4 w-4 mr-2" />
+        Loading...
+      </Button>
+    );
+  }
 
   const currentLang = languages.find(lang => lang.code === currentLanguage);
 
-
-
   return (
-    <div>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="flex items-center gap-2">
-            <Globe className="h-4 w-4" />
-            <span className="hidden sm:inline">{currentLang?.flag || '🌐'}</span>
-            <span className="hidden md:inline">{currentLang?.name || 'Language'}</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align={isRTL ? 'start' : 'end'}>
-          {languages.map(language => (
-            <DropdownMenuItem
-              key={language.code}
-              onClick={() => handleLanguageChange(language.code)}
-              className={currentLanguage === language.code ? 'bg-accent' : ''}
-            >
-              <span className={isRTL ? 'ml-2' : 'mr-2'}>{language.flag}</span>
-              <span>{language.name}</span>
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm">
+          <Globe className="h-4 w-4 mr-2" />
+          {currentLang?.flag} {currentLang?.name}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {languages.map((language) => (
+          <DropdownMenuItem
+            key={language.code}
+            onClick={() => changeLanguage(language.code)}
+            className={currentLanguage === language.code ? 'bg-accent' : ''}
+          >
+            <span className="mr-2">{language.flag}</span>
+            {language.name}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

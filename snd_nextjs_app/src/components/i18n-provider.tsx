@@ -1,71 +1,39 @@
 'use client';
 
-import i18n from '@/lib/i18n-browser';
-import { useEffect, useState } from 'react';
+import { I18nextProvider } from 'react-i18next';
+import { useEffect } from 'react';
 
 interface I18nProviderProps {
   children: React.ReactNode;
 }
 
 export function I18nProvider({ children }: I18nProviderProps) {
-  const [mounted, setMounted] = useState(false);
-  const [currentLanguage, setCurrentLanguage] = useState('en');
-  const [isRTL, setIsRTL] = useState(false);
-
-  // Set mounted state to prevent hydration mismatch
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Update document attributes when language changes, but only after mount
-  useEffect(() => {
-    if (mounted && i18n?.isInitialized) {
+    // Initialize i18n on client side
+    const initI18n = async () => {
       try {
-        const currentLang = i18n.language || 'en';
-        const isRTLValue = currentLang === 'ar';
+        const { default: i18n } = await import('@/lib/i18n-browser');
         
-        setCurrentLanguage(currentLang);
-        setIsRTL(isRTLValue);
-        
-        document.documentElement.lang = currentLang;
-        document.documentElement.dir = isRTLValue ? 'rtl' : 'ltr';
-
-        if (isRTLValue) {
-          document.documentElement.classList.add('rtl');
-        } else {
-          document.documentElement.classList.remove('rtl');
+        // Set up document attributes for RTL
+        if (typeof window !== 'undefined') {
+          const lang = i18n.language || 'en';
+          document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+          document.documentElement.lang = lang;
+          if (lang === 'ar') {
+            document.documentElement.classList.add('rtl');
+          } else {
+            document.documentElement.classList.remove('rtl');
+          }
         }
       } catch (error) {
-        console.warn('Failed to update document attributes:', error);
+        console.error('Failed to initialize i18n:', error);
       }
-    }
-  }, [mounted, i18n?.isInitialized, i18n?.language]);
+    };
 
-  // Listen to i18next language changes
-  useEffect(() => {
-    if (mounted && i18n?.isInitialized) {
-      const handleLanguageChanged = (lng: string) => {
-        const isRTLValue = lng === 'ar';
-        setCurrentLanguage(lng);
-        setIsRTL(isRTLValue);
-        
-        document.documentElement.lang = lng;
-        document.documentElement.dir = isRTLValue ? 'rtl' : 'ltr';
-        
-        if (isRTLValue) {
-          document.documentElement.classList.add('rtl');
-        } else {
-          document.documentElement.classList.remove('rtl');
-        }
-      };
-
-      i18n.on('languageChanged', handleLanguageChanged);
-      
-      return () => {
-        i18n.off('languageChanged', handleLanguageChanged);
-      };
+    if (typeof window !== 'undefined') {
+      initI18n();
     }
-  }, [mounted, i18n?.isInitialized]);
+  }, []);
 
   return <>{children}</>;
 }
