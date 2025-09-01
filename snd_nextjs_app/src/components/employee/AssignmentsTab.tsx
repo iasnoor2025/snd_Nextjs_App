@@ -3,6 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -76,6 +77,7 @@ interface AssignmentsTabProps {
 
 export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
   const { hasPermission } = useRBAC();
+  const { t } = useTranslation();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -111,11 +113,11 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
         setAssignments(data.data || []);
       } else {
         const errorData = await response.json();
-        setError(errorData.error || 'Failed to load assignments');
+        setError(errorData.error || t('assignment:messages.loadingError'));
       }
     } catch (error) {
       
-      setError('Failed to load assignments');
+      setError(t('assignment:messages.loadingError'));
     } finally {
       setLoading(false);
     }
@@ -135,7 +137,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
 
   const handleCreate = async () => {
     if (!formData.name || !formData.start_date) {
-      toast.error('Assignment name and start date are required');
+      toast.error(t('assignment:validation.assignmentNameRequired'));
       return;
     }
 
@@ -156,11 +158,11 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
         fetchAssignments();
       } else {
         const errorData = await response.json();
-        toast.error(errorData.error || 'Failed to create assignment');
+        toast.error(errorData.error || t('assignment:messages.saveError'));
       }
     } catch (error) {
       
-      toast.error('Failed to create assignment');
+      toast.error(t('assignment:messages.saveError'));
     } finally {
       setSubmitting(false);
     }
@@ -168,7 +170,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
 
   const handleEdit = async () => {
     if (!selectedAssignment || !formData.name || !formData.start_date) {
-      toast.error('Assignment name and start date are required');
+      toast.error(t('assignment:validation.assignmentNameRequired'));
       return;
     }
 
@@ -198,11 +200,11 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
       } else {
         const errorData = await response.json();
         
-        toast.error(errorData.error || 'Failed to update assignment');
+        toast.error(errorData.error || t('assignment:messages.updateError'));
       }
     } catch (error) {
       
-      toast.error('Failed to update assignment');
+      toast.error(t('assignment:messages.updateError'));
     } finally {
       setSubmitting(false);
     }
@@ -227,11 +229,11 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
         fetchAssignments();
       } else {
         const errorData = await response.json();
-        toast.error(errorData.error || 'Failed to delete assignment');
+        toast.error(errorData.error || t('assignment:messages.deleteError'));
       }
     } catch (error) {
       
-      toast.error('Failed to delete assignment');
+      toast.error(t('assignment:messages.deleteError'));
     } finally {
       setDeletingId(null);
     }
@@ -295,9 +297,6 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
 
     if (assignment.rental) {
       details.push(`Rental: ${assignment.rental.rental_number}`);
-      if (assignment.rental.customer_name) {
-        details.push(`Customer: ${assignment.rental.customer_name}`);
-      }
     }
 
     return details.join(' • ');
@@ -330,7 +329,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
     return (
       <div className="flex items-center justify-center p-8">
         <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Loading assignments...</span>
+        <span className="ml-2">{t('assignment:messages.loading')}</span>
       </div>
     );
   }
@@ -339,11 +338,11 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
     return (
       <div className="rounded-md border border-red-200 bg-red-50 p-4">
         <div className="text-center">
-          <div className="font-medium text-red-600">Error Loading Assignments</div>
+          <div className="font-medium text-red-600">{t('assignment:messages.loadingError')}</div>
           <div className="mt-1 text-sm text-red-600">{error}</div>
           <div className="mt-4 flex justify-center">
             <Button variant="outline" onClick={fetchAssignments} className="bg-white">
-              <RefreshCw className="mr-2 h-4 w-4" /> Try Again
+              <RefreshCw className="mr-2 h-4 w-4" /> {t('assignment:actions.refresh')}
             </Button>
           </div>
         </div>
@@ -359,9 +358,9 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Employee Assignments</h3>
+          <h3 className="text-lg font-semibold">{t('assignment:title')}</h3>
           <p className="text-sm text-muted-foreground">
-            Manage and view employee project and rental assignments
+            {t('assignment:subtitle')}
           </p>
         </div>
         {!currentAssignment && hasPermission('create', 'employee-assignment') && (
@@ -369,52 +368,52 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
             <DialogTrigger asChild>
               <Button onClick={() => resetForm()}>
                 <Plus className="mr-2 h-4 w-4" />
-                Add Assignment
+                {t('assignment:form.create')}
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle>Add New Assignment</DialogTitle>
-                <DialogDescription>Create a new assignment for this employee</DialogDescription>
+                <DialogTitle>{t('assignment:form.create')}</DialogTitle>
+                <DialogDescription>{t('assignment:form.create')}</DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="name">Assignment Name *</Label>
+                  <Label htmlFor="name">{t('assignment:form.assignmentName')}</Label>
                   <Input
                     id="name"
                     value={formData.name}
                     onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Enter assignment name"
+                    placeholder={t('assignment:form.assignmentNamePlaceholder')}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="type">Assignment Type</Label>
+                  <Label htmlFor="type">{t('assignment:form.assignmentType')}</Label>
                   <Select
                     value={formData.type}
                     onValueChange={value => setFormData(prev => ({ ...prev, type: value }))}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select assignment type" />
+                      <SelectValue placeholder={t('assignment:form.selectAssignmentType')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="manual">Manual</SelectItem>
-                      <SelectItem value="project">Project</SelectItem>
-                      <SelectItem value="rental">Rental</SelectItem>
+                      <SelectItem value="manual">{t('assignment:types.manual')}</SelectItem>
+                      <SelectItem value="project">{t('assignment:types.project')}</SelectItem>
+                      <SelectItem value="rental">{t('assignment:types.rental')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="location">Location</Label>
+                  <Label htmlFor="location">{t('assignment:form.location')}</Label>
                   <Input
                     id="location"
                     value={formData.location}
                     onChange={e => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                    placeholder="Enter location"
+                    placeholder={t('assignment:form.locationPlaceholder')}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="start_date">Start Date *</Label>
+                    <Label htmlFor="start_date">{t('assignment:form.startDate')}</Label>
                     <Input
                       id="start_date"
                       type="date"
@@ -423,7 +422,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="end_date">End Date</Label>
+                    <Label htmlFor="end_date">{t('assignment:form.endDate')}</Label>
                     <Input
                       id="end_date"
                       type="date"
@@ -433,35 +432,35 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="status">Status</Label>
+                  <Label htmlFor="status">{t('assignment:form.status')}</Label>
                   <Select
                     value={formData.status}
                     onValueChange={value => setFormData(prev => ({ ...prev, status: value }))}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
+                      <SelectValue placeholder={t('assignment:form.selectStatus')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="active">{t('assignment:status.active')}</SelectItem>
+                      <SelectItem value="completed">{t('assignment:status.completed')}</SelectItem>
+                      <SelectItem value="cancelled">{t('assignment:status.cancelled')}</SelectItem>
+                      <SelectItem value="pending">{t('assignment:status.pending')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="notes">Notes</Label>
+                  <Label htmlFor="notes">{t('assignment:form.notes')}</Label>
                   <Textarea
                     id="notes"
                     value={formData.notes}
                     onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                    placeholder="Enter notes (optional)"
+                    placeholder={t('assignment:form.notesPlaceholder')}
                   />
                 </div>
               </div>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
-                  Cancel
+                  {t('assignment:form.cancel')}
                 </Button>
                 <Button
                   onClick={handleCreate}
@@ -470,12 +469,12 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                   {submitting ? (
                     <>
                       <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                      Creating...
+                      {t('assignment:form.creating')}
                     </>
                   ) : (
                     <>
                       <Plus className="mr-2 h-4 w-4" />
-                      Create
+                      {t('assignment:form.create')}
                     </>
                   )}
                 </Button>
@@ -492,7 +491,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Briefcase className="h-5 w-5" />
-                Current Assignment
+                {t('assignment:currentAssignment.title')}
               </div>
               <div className="flex gap-2">
                 {hasPermission('update', 'employee-assignment') && (
@@ -502,7 +501,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                     onClick={() => openEditDialog(currentAssignment)}
                   >
                     <Edit className="mr-1 h-4 w-4" />
-                    Edit
+                    {t('assignment:form.update')}
                   </Button>
                 )}
                 {hasPermission('delete', 'employee-assignment') && (
@@ -512,7 +511,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                     onClick={() => openDeleteDialog(currentAssignment)}
                   >
                     <Trash2 className="mr-1 h-4 w-4" />
-                    Delete
+                    {t('assignment:form.delete')}
                   </Button>
                 )}
               </div>
@@ -525,13 +524,13 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>Location:</strong> {currentAssignment.location || 'Not specified'}
+                    <strong>{t('assignment:currentAssignment.location')}:</strong> {currentAssignment.location || t('assignment:currentAssignment.notSpecified')}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>Period:</strong>{' '}
+                    <strong>{t('assignment:currentAssignment.period')}:</strong>{' '}
                     {format(new Date(currentAssignment.start_date), 'MMM d, yyyy')}
                     {currentAssignment.end_date &&
                       ` - ${format(new Date(currentAssignment.end_date), 'MMM d, yyyy')}`}
@@ -541,7 +540,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                   <div className="flex items-center gap-2">
                     <Briefcase className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm">
-                      <strong>Details:</strong> {getAssignmentDetails(currentAssignment)}
+                      <strong>{t('assignment:currentAssignment.details')}:</strong> {getAssignmentDetails(currentAssignment)}
                     </span>
                   </div>
                 )}
@@ -559,7 +558,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                 </Badge>
                 {currentAssignment.notes && (
                   <div className="text-sm text-muted-foreground">
-                    <strong>Notes:</strong> {currentAssignment.notes}
+                    <strong>{t('assignment:currentAssignment.notes')}:</strong> {currentAssignment.notes}
                   </div>
                 )}
               </div>
@@ -570,13 +569,13 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
 
       {/* Assignment History */}
       <div>
-        <h3 className="mb-4 text-lg font-semibold">Assignment History</h3>
+        <h3 className="mb-4 text-lg font-semibold">{t('assignment:assignmentHistory.title')}</h3>
         {assignmentHistory.length === 0 ? (
           <div className="rounded-lg bg-muted/30 p-8 text-center">
             <FileText className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
-            <h3 className="mb-2 text-lg font-medium">No Assignment History</h3>
+            <h3 className="mb-2 text-lg font-medium">{t('assignment:assignmentHistory.noHistory')}</h3>
             <p className="text-sm text-muted-foreground">
-              This employee has no previous assignments.
+              {t('assignment:assignmentHistory.noHistoryDescription')}
             </p>
           </div>
         ) : (
@@ -584,14 +583,14 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Assignment Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Details</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Start Date</TableHead>
-                  <TableHead>End Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t('assignment:table.assignmentName')}</TableHead>
+                  <TableHead>{t('assignment:table.type')}</TableHead>
+                  <TableHead>{t('assignment:table.details')}</TableHead>
+                  <TableHead>{t('assignment:table.location')}</TableHead>
+                  <TableHead>{t('assignment:table.startDate')}</TableHead>
+                  <TableHead>{t('assignment:table.endDate')}</TableHead>
+                  <TableHead>{t('assignment:table.status')}</TableHead>
+                  <TableHead className="text-right">{t('assignment:table.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -646,8 +645,8 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit Assignment</DialogTitle>
-            <DialogDescription>Update assignment details</DialogDescription>
+            <DialogTitle>{t('assignment:form.editAssignment')}</DialogTitle>
+            <DialogDescription>{t('assignment:form.updateAssignmentDetails')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -669,9 +668,9 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                   <SelectValue placeholder="Select assignment type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="manual">Manual</SelectItem>
-                  <SelectItem value="project">Project</SelectItem>
-                  <SelectItem value="rental">Rental</SelectItem>
+                  <SelectItem value="manual">{t('assignment:types.manual')}</SelectItem>
+                  <SelectItem value="project">{t('assignment:types.project')}</SelectItem>
+                  <SelectItem value="rental">{t('assignment:types.rental')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -714,10 +713,10 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="active">{t('assignment:status.active')}</SelectItem>
+                  <SelectItem value="completed">{t('assignment:status.completed')}</SelectItem>
+                  <SelectItem value="cancelled">{t('assignment:status.cancelled')}</SelectItem>
+                  <SelectItem value="pending">{t('assignment:status.pending')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -733,23 +732,23 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setShowEditDialog(false)}>
-              Cancel
+              {t('assignment:form.cancel')}
             </Button>
             <Button
               onClick={handleEdit}
               disabled={submitting || !formData.name || !formData.start_date}
             >
-              {submitting ? (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                <>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Update
-                </>
-              )}
+                                {submitting ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      {t('assignment:form.updating')}
+                    </>
+                  ) : (
+                    <>
+                      <Edit className="mr-2 h-4 w-4" />
+                      {t('assignment:form.update')}
+                    </>
+                  )}
             </Button>
           </div>
         </DialogContent>
@@ -759,25 +758,25 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Assignment</DialogTitle>
+            <DialogTitle>{t('assignment:form.deleteAssignment')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this assignment? This action cannot be undone.
+              {t('assignment:form.deleteConfirmation')}
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-              Cancel
+              {t('assignment:form.cancel')}
             </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={deletingId !== null}>
               {deletingId !== null ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting...
+                  {t('assignment:form.deleting')}
                 </>
               ) : (
                 <>
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
+                  {t('assignment:form.delete')}
                 </>
               )}
             </Button>

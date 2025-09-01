@@ -4,6 +4,7 @@ import { useCallback } from 'react';
 import DocumentManager, { type DocumentItem } from '@/components/shared/DocumentManager';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface PersonalPhotosSectionProps {
   employeeId: number;
@@ -11,6 +12,7 @@ interface PersonalPhotosSectionProps {
 
 export default function PersonalPhotosSection({ employeeId }: PersonalPhotosSectionProps) {
   const { hasPermission } = useRBAC();
+  const { t } = useTranslation();
 
   // Helper function to get document type label
   const getDocumentTypeLabel = (documentType: string) => {
@@ -32,13 +34,12 @@ export default function PersonalPhotosSection({ employeeId }: PersonalPhotosSect
   return (
     <div className="space-y-4">
       <div className="text-blue-600 text-xs bg-blue-50 p-2 rounded border border-blue-200">
-        📸 <strong>Note:</strong> Personal photos, Iqama, and Passport documents are displayed here. 
-        Upload new documents in the Documents tab.
+        📸 <strong>{t('employee:personalInformation.note')}</strong> {t('employee:personalInformation.noteText')}
       </div>
       
       <DocumentManager
-        title="Personal Photos & Documents"
-        description="Employee photos, Iqama, Passport, and identification documents"
+        title={t('employee:personalInformation.personalPhotosDocuments')}
+        description={t('employee:personalInformation.employeePhotosDocuments')}
         loadDocuments={async () => {
           try {
             const response = await fetch(`/api/employees/${employeeId}/documents`);
@@ -102,13 +103,13 @@ export default function PersonalPhotosSection({ employeeId }: PersonalPhotosSect
             }) as DocumentItem[];
           } catch (error) {
             console.error('Error loading personal documents:', error);
-            toast.error('Failed to load personal documents');
+            toast.error(t('employee:messages.loadingError'));
             return [] as DocumentItem[];
           }
         }}
         uploadDocument={async () => {
           // No upload functionality in Personal tab - redirect to Documents tab
-          toast.info('Please upload documents in the Documents tab');
+          toast.info(t('employee:personalInformation.uploadNewDocuments'));
           return false;
         }}
         deleteDocument={async (id) => {

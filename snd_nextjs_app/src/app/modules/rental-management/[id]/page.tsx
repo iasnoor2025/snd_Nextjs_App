@@ -61,6 +61,7 @@ import {
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { 
   RentalItemConfirmationDialog
 } from '@/components/rental';
@@ -709,6 +710,7 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
 export default function RentalDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const { t } = useTranslation();
   const rentalId = params.id as string;
 
   const [rental, setRental] = useState<Rental | null>(null);
@@ -1410,11 +1412,11 @@ export default function RentalDetailPage() {
         <div className="lg:col-span-2 space-y-6">
           <Tabs defaultValue="details" className="w-full">
             <TabsList>
-              <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="workflow">Workflow</TabsTrigger>
-              <TabsTrigger value="items">Items</TabsTrigger>
-              <TabsTrigger value="payments">Payments</TabsTrigger>
-              <TabsTrigger value="invoices">Invoices</TabsTrigger>
+              <TabsTrigger value="details">{t('rental:tabs.details')}</TabsTrigger>
+              <TabsTrigger value="workflow">{t('rental:tabs.workflow')}</TabsTrigger>
+              <TabsTrigger value="items">{t('rental:tabs.items')}</TabsTrigger>
+              <TabsTrigger value="payments">{t('rental:tabs.payments')}</TabsTrigger>
+              <TabsTrigger value="invoices">{t('rental:tabs.invoices')}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="details" className="space-y-6">

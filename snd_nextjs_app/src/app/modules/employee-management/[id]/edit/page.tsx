@@ -19,6 +19,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface Employee {
   id: number;
@@ -87,6 +88,7 @@ interface Designation {
 export default function EditEmployeePage() {
   const params = useParams();
   const router = useRouter();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [employee, setEmployee] = useState<Employee | null>(null);
@@ -577,7 +579,7 @@ export default function EditEmployeePage() {
             </Button>
           </Link>
           <User className="h-6 w-6" />
-          <h1 className="text-2xl font-bold">Edit Employee</h1>
+          <h1 className="text-2xl font-bold">{t('employee:actions.editEmployee')}</h1>
         </div>
       </div>
 
@@ -587,39 +589,39 @@ export default function EditEmployeePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              Personal Information
+              {t('employee:personalInformation.title')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="first_name">First Name *</Label>
+                <Label htmlFor="first_name">{t('employee:fields.firstName')} *</Label>
                 <Input
                   id="first_name"
                   value={formData.first_name}
                   onChange={e => handleInputChange('first_name', e.target.value)}
-                  placeholder="Enter first name"
+                  placeholder={t('employee:fields.firstName')}
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="middle_name">Middle Name</Label>
+                <Label htmlFor="middle_name">{t('employee:fields.middleName')}</Label>
                 <Input
                   id="middle_name"
                   value={formData.middle_name}
                   onChange={e => handleInputChange('middle_name', e.target.value)}
-                  placeholder="Enter middle name"
+                  placeholder={t('employee:fields.middleName')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="last_name">Last Name *</Label>
+                <Label htmlFor="last_name">{t('employee:fields.lastName')} *</Label>
                 <Input
                   id="last_name"
                   value={formData.last_name}
                   onChange={e => handleInputChange('last_name', e.target.value)}
-                  placeholder="Enter last name"
+                  placeholder={t('employee:fields.lastName')}
                   required
                 />
               </div>
@@ -627,30 +629,30 @@ export default function EditEmployeePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t('employee:fields.email')}</Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
                   onChange={e => handleInputChange('email', e.target.value)}
-                  placeholder="Enter email address"
+                  placeholder={t('employee:fields.email')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
+                <Label htmlFor="phone">{t('employee:fields.phone')}</Label>
                 <Input
                   id="phone"
                   value={formData.phone}
                   onChange={e => handleInputChange('phone', e.target.value)}
-                  placeholder="Enter phone number"
+                  placeholder={t('employee:fields.phone')}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="date_of_birth">Date of Birth</Label>
+                <Label htmlFor="date_of_birth">{t('employee:fields.dateOfBirth')}</Label>
                 <Input
                   id="date_of_birth"
                   type="date"
@@ -660,11 +662,11 @@ export default function EditEmployeePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="nationality">Nationality</Label>
+                <Label htmlFor="nationality">{t('employee:fields.nationality')}</Label>
                 <NationalityDropdown
                   value={formData.nationality || ''}
                   onValueChange={(value) => handleInputChange('nationality', value)}
-                  placeholder="Select nationality"
+                  placeholder={t('employee:fields.nationality')}
                 />
               </div>
             </div>
@@ -676,7 +678,7 @@ export default function EditEmployeePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              Employment Information
+              {t('employee:employment.title')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -1035,40 +1037,40 @@ export default function EditEmployeePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Phone className="h-5 w-5" />
-              Emergency Contact
+              {t('employee:personalInformation.emergencyContact')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="emergency_contact_name">Contact Name</Label>
+                <Label htmlFor="emergency_contact_name">{t('employee:fields.name')}</Label>
                 <Input
                   id="emergency_contact_name"
                   value={formData.emergency_contact_name}
                   onChange={e => handleInputChange('emergency_contact_name', e.target.value)}
-                  placeholder="Enter emergency contact name"
+                  placeholder={t('employee:fields.name')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="emergency_contact_phone">Contact Phone</Label>
+                <Label htmlFor="emergency_contact_phone">{t('employee:fields.phone')}</Label>
                 <Input
                   id="emergency_contact_phone"
                   value={formData.emergency_contact_phone}
                   onChange={e => handleInputChange('emergency_contact_phone', e.target.value)}
-                  placeholder="Enter emergency contact phone"
+                  placeholder={t('employee:fields.phone')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="emergency_contact_relationship">Relationship</Label>
+                <Label htmlFor="emergency_contact_relationship">{t('employee:fields.relationship')}</Label>
                 <Input
                   id="emergency_contact_relationship"
                   value={formData.emergency_contact_relationship}
                   onChange={e =>
                     handleInputChange('emergency_contact_relationship', e.target.value)
                   }
-                  placeholder="Enter relationship"
+                  placeholder={t('employee:fields.relationship')}
                 />
               </div>
             </div>

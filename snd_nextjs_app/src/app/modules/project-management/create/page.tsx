@@ -33,6 +33,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
 
 interface Customer {
@@ -62,6 +63,7 @@ interface Employee {
 
 export default function CreateProjectPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -252,13 +254,13 @@ export default function CreateProjectPage() {
           <Link href="/modules/project-management">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Projects
+              {t('project:actions.backToProjects')}
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold">Create New Project</h1>
+            <h1 className="text-3xl font-bold">{t('project:create.title')}</h1>
             <p className="text-muted-foreground">
-              Set up a new construction project with all necessary details
+              {t('project:create.description')}
             </p>
           </div>
         </div>
@@ -272,28 +274,28 @@ export default function CreateProjectPage() {
               <Building2 className="h-5 w-5" />
               <span>Basic Information</span>
             </CardTitle>
-            <CardDescription>Essential project details and identification</CardDescription>
+                            <CardDescription>{t('project:create.essentialDetails')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Project Name *</Label>
+                <Label htmlFor="name">{t('project:fields.name')} *</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={e => handleInputChange('name', e.target.value)}
-                  placeholder="Enter project name"
+                  placeholder={t('project:fields.name')}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="customer_id">Client *</Label>
+                <Label htmlFor="customer_id">{t('project:fields.client')} *</Label>
                 <Select
                   value={formData.customer_id}
                   onValueChange={value => handleInputChange('customer_id', value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a client">
+                    <SelectValue placeholder={t('project:fields.selectClient')}>
                       {formData.customer_id &&
                         customers.find(c => c.id.toString() === formData.customer_id.toString())
                           ?.companyName || customers.find(c => c.id.toString() === formData.customer_id.toString())
@@ -312,25 +314,25 @@ export default function CreateProjectPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Project Description</Label>
+              <Label htmlFor="description">{t('project:fields.description')}</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={e => handleInputChange('description', e.target.value)}
-                placeholder="Describe the project scope and objectives"
+                placeholder={t('project:fields.descriptionPlaceholder')}
                 rows={3}
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="location_id">Project Location</Label>
+                <Label htmlFor="location_id">{t('project:fields.location')}</Label>
                 <Select
                   value={formData.location_id}
                   onValueChange={value => handleInputChange('location_id', value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a location">
+                    <SelectValue placeholder={t('project:fields.selectLocation')}>
                       {formData.location_id &&
                         locations.find(l => l.id.toString() === formData.location_id.toString()) &&
                         `${locations.find(l => l.id.toString() === formData.location_id.toString())?.name}, ${locations.find(l => l.id.toString() === formData.location_id.toString())?.city}, ${locations.find(l => l.id.toString() === formData.location_id.toString())?.state}`}
@@ -356,12 +358,12 @@ export default function CreateProjectPage() {
               <CalendarIcon className="h-5 w-5" />
               <span>Timeline & Status</span>
             </CardTitle>
-            <CardDescription>Project timeline and current status</CardDescription>
+                            <CardDescription>{t('project:create.timelineDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="start_date">Start Date *</Label>
+                <Label htmlFor="start_date">{t('project:fields.startDate')} *</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -369,7 +371,7 @@ export default function CreateProjectPage() {
                       className="w-full justify-start text-left font-normal"
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.start_date ? format(formData.start_date, 'PPP') : 'Pick a date'}
+                      {formData.start_date ? format(formData.start_date, 'PPP') : t('project:fields.pickDate')}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
@@ -383,7 +385,7 @@ export default function CreateProjectPage() {
                 </Popover>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="end_date">End Date</Label>
+                <Label htmlFor="end_date">{t('project:fields.endDate')}</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -391,7 +393,7 @@ export default function CreateProjectPage() {
                       className="w-full justify-start text-left font-normal"
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.end_date ? format(formData.end_date, 'PPP') : 'Pick a date'}
+                      {formData.end_date ? format(formData.end_date, 'PPP') : t('project:fields.pickDate')}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
@@ -458,7 +460,7 @@ export default function CreateProjectPage() {
               <DollarSign className="h-5 w-5" />
               <span>Budget Information</span>
             </CardTitle>
-            <CardDescription>Project budget and financial details</CardDescription>
+                            <CardDescription>{t('project:create.budgetDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

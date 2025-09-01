@@ -6,6 +6,7 @@ import { useRBAC } from '@/lib/rbac/rbac-context';
 import { Shield, Settings } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface Permission {
   id: number;
@@ -26,6 +27,7 @@ interface Role {
 
 export default function PermissionsPage() {
   const { getAllowedActions } = useRBAC();
+  const { t } = useTranslation();
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
@@ -136,7 +138,7 @@ export default function PermissionsPage() {
     return (
       <ProtectedRoute requiredPermission={{ action: 'manage', subject: 'Permission' }}>
         <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Loading permissions...</div>
+          <div className="text-lg">{t('permissions:messages.loading')}</div>
         </div>
       </ProtectedRoute>
     );
@@ -162,15 +164,15 @@ export default function PermissionsPage() {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <Shield className="h-8 w-8" />
-              Permission Management
+              {t('permissions:title')}
             </h1>
             <p className="text-muted-foreground">
-              Manage role permissions with an organized, grouped interface
+              {t('permissions:subtitle')}
             </p>
           </div>
           <div className="flex gap-2">
             <div className="text-sm text-muted-foreground">
-              {permissions.length} permissions • {roles.length} roles
+              {t('permissions:stats.permissionsCount', { count: permissions.length })} • {t('permissions:stats.rolesCount', { count: roles.length })}
             </div>
           </div>
         </div>
@@ -193,10 +195,10 @@ export default function PermissionsPage() {
               <div>
                 <h3 className="text-lg font-semibold flex items-center gap-2">
                   <Settings className="h-5 w-5" />
-                  Save Changes
+                  {t('permissions:actions.saveChanges')}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  Save the permission changes for {selectedRole.name}
+                  {t('permissions:messages.saveChangesFor', { role: selectedRole.name })}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -207,7 +209,7 @@ export default function PermissionsPage() {
                     setSelectedPermissions([]);
                   }}
                 >
-                  Cancel
+                  {t('permissions:actions.cancel')}
                 </button>
                 <button
                   className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
@@ -217,7 +219,7 @@ export default function PermissionsPage() {
                   }}
                   disabled={loadingPermissions}
                 >
-                  Save Permissions
+                  {t('permissions:actions.savePermissions')}
                 </button>
               </div>
             </div>

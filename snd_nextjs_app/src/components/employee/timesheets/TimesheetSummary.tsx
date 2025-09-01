@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/table';
 import { Loader2 } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface TimesheetRecord {
   date: string;
@@ -37,6 +38,7 @@ export default function TimesheetSummary({
   employeeId,
   showEmployeeSelector = false,
 }: TimesheetSummaryProps) {
+  const { t } = useTranslation();
   // Initialize with current month (July 2025)
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date()); // Current month
   const [dailyRecords, setDailyRecords] = useState<TimesheetRecord[]>([]);
@@ -48,18 +50,18 @@ export default function TimesheetSummary({
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i); // 2 years back, 2 years forward
   const months = [
-    { value: 0, label: 'January' },
-    { value: 1, label: 'February' },
-    { value: 2, label: 'March' },
-    { value: 3, label: 'April' },
-    { value: 4, label: 'May' },
-    { value: 5, label: 'June' },
-    { value: 6, label: 'July' },
-    { value: 7, label: 'August' },
-    { value: 8, label: 'September' },
-    { value: 9, label: 'October' },
-    { value: 10, label: 'November' },
-    { value: 11, label: 'December' },
+    { value: 0, label: t('timesheet:months.january') },
+    { value: 1, label: t('timesheet:months.february') },
+    { value: 2, label: t('timesheet:months.march') },
+    { value: 3, label: t('timesheet:months.april') },
+    { value: 4, label: t('timesheet:months.may') },
+    { value: 5, label: t('timesheet:months.june') },
+    { value: 6, label: t('timesheet:months.july') },
+    { value: 7, label: t('timesheet:months.august') },
+    { value: 8, label: t('timesheet:months.september') },
+    { value: 9, label: t('timesheet:months.october') },
+    { value: 10, label: t('timesheet:months.november') },
+    { value: 11, label: t('timesheet:months.december') },
   ];
 
   const handleMonthChange = (value: string) => {
@@ -190,7 +192,7 @@ export default function TimesheetSummary({
           <div className="flex items-center gap-2">
             <Select value={selectedMonth.getMonth().toString()} onValueChange={handleMonthChange}>
               <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Select Month" />
+                <SelectValue placeholder={t('timesheet:selectMonth')} />
               </SelectTrigger>
               <SelectContent>
                 {months.map(month => (
@@ -202,7 +204,7 @@ export default function TimesheetSummary({
             </Select>
             <Select value={selectedMonth.getFullYear().toString()} onValueChange={handleYearChange}>
               <SelectTrigger className="w-[100px]">
-                <SelectValue placeholder="Select Year" />
+                <SelectValue placeholder={t('timesheet:selectYear')} />
               </SelectTrigger>
               <SelectContent>
                 {years.map(year => (
@@ -220,19 +222,19 @@ export default function TimesheetSummary({
         <div className="flex justify-center py-8">
           <div className="flex items-center gap-2">
             <Loader2 className="h-6 w-6 animate-spin" />
-            <span>Loading timesheet data...</span>
+            <span>{t('timesheet:loading')}</span>
           </div>
         </div>
       ) : (
         <>
           <Card>
             <CardHeader>
-              <CardTitle>Monthly Timesheet Records</CardTitle>
+              <CardTitle>{t('timesheet:monthlyRecords')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="overflow-hidden rounded-lg border">
                 <div className="bg-muted/50 px-3 py-2">
-                  <h3 className="text-xs font-medium">Daily Timesheet Records</h3>
+                  <h3 className="text-xs font-medium">{t('timesheet:dailyRecords')}</h3>
                 </div>
                 <div className="overflow-x-auto">
                   <Table>

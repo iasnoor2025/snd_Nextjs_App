@@ -1,87 +1,129 @@
 {
-  "page": {
-    "title": "Maintenance & Repairs",
-    "subtitle": "Track and manage equipment maintenance and repair activities.",
-    "createTitle": "Create Maintenance",
-    "editTitle": "Edit Maintenance",
-    "detailsTitle": "Maintenance Details"
+  "title": "Maintenance Management",
+  "subtitle": "Schedule and track equipment maintenance activities",
+  "description": "Manage all maintenance activities and equipment",
+  "create": {
+    "title": "Create New Maintenance",
+    "description": "Create a new maintenance record for equipment"
   },
-  "filters": {
-    "equipment": "Equipment",
-    "mechanic": "Mechanic",
-    "start": "Start",
-    "end": "End",
-    "status": "Status",
-    "all": "All",
-    "reset": "Reset",
-    "create": "Create Maintenance"
+  "actions": {
+    "createMaintenance": "Create Maintenance",
+    "editMaintenance": "Edit Maintenance",
+    "deleteMaintenance": "Delete Maintenance",
+    "viewMaintenance": "View Maintenance",
+    "scheduleMaintenance": "Schedule Maintenance",
+    "backToMaintenance": "Back to Maintenance",
+    "save": "Save",
+    "cancel": "Cancel",
+    "update": "Update",
+    "delete": "Delete",
+    "search": "Search",
+    "filter": "Filter",
+    "refresh": "Refresh",
+    "export": "Export",
+    "import": "Import"
   },
-  "table": {
+  "fields": {
     "equipment": "Equipment",
-    "mechanic": "Mechanic",
-    "date": "Date",
-    "items": "Items",
-    "totalCost": "Total Cost",
-    "status": "Status",
-    "actions": "Actions"
-  },
-  "form": {
-    "equipment": "Equipment",
-    "mechanic": "Mechanic",
-    "type": "Type",
-    "status": "Status",
-    "title": "Title",
-    "description": "Description",
-    "date": "Date",
-    "dueDate": "Due Date",
-    "itemsUsed": "Items Used",
-    "item": "Item",
-    "qty": "Qty",
-    "unitCost": "Unit Cost",
-    "total": "Total",
-    "addItem": "Add Item",
-    "maintenanceTitlePlaceholder": "Maintenance title",
     "selectEquipment": "Select equipment",
-    "selectMechanic": "Select mechanic",
-    "selectType": "Select type",
-    "selectStatus": "Select status"
+    "type": "Maintenance Type",
+    "title": "Title",
+    "titlePlaceholder": "Maintenance title",
+    "description": "Description",
+    "descriptionPlaceholder": "Describe the maintenance work needed",
+    "scheduledDate": "Scheduled Date",
+    "dueDate": "Due Date",
+    "assignedTo": "Assigned To",
+    "cost": "Cost",
+    "status": "Status",
+    "createdAt": "Created At",
+    "updatedAt": "Updated At"
   },
-  "type": {
-    "repair": "Repair",
-    "scheduled": "Scheduled"
+  "types": {
+    "scheduled": "Scheduled",
+    "corrective": "Corrective",
+    "emergency": "Emergency",
+    "inspection": "Inspection",
+    "preventive": "Preventive"
   },
   "status": {
     "open": "Open",
     "in_progress": "In Progress",
-    "completed": "Completed"
-  },
-  "actions": {
-    "markCompleted": "Mark Completed",
     "completed": "Completed",
-    "edit": "Edit",
-    "view": "View",
-    "delete": "Delete",
-    "cancel": "Cancel",
-    "create": "Create",
-    "save": "Save",
-    "saving": "Saving...",
-    "addItem": "Add Item"
+    "cancelled": "Cancelled",
+    "overdue": "Overdue",
+    "scheduled": "Scheduled"
   },
-  "view": {
-    "detailsTitle": "Maintenance Details",
-    "equipment": "Equipment",
-    "mechanic": "Mechanic",
-    "type": "Type",
-    "status": "Status",
-    "date": "Date",
-    "due": "Due",
-    "title": "Title",
-    "description": "Description",
-    "itemsUsed": "Items Used",
+  "messages": {
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "createSuccess": "Maintenance record created successfully",
+    "createError": "Failed to create maintenance record",
+    "updateSuccess": "Maintenance record updated successfully",
+    "updateError": "Failed to update maintenance record",
+    "deleteSuccess": "Maintenance record deleted successfully",
+    "deleteError": "Failed to delete maintenance record",
+    "fetchError": "Error fetching maintenance records",
+    "validationError": "Please fill in all required fields",
+    "maintenanceNotFound": "Maintenance record not found",
+    "accessDenied": "Access denied. You don't have permission to manage maintenance.",
+    "errorGeneral": "An error occurred during the operation",
+    "failedToLoad": "Failed to load maintenance records",
+    "failedToCreate": "Failed to create maintenance record",
+    "failedToUpdate": "Failed to update maintenance record",
+    "failedToDelete": "Failed to delete maintenance record"
+  },
+  "validation": {
+    "required": "This field is required",
+    "invalidDate": "Invalid date",
+    "invalidDateRange": "Invalid date range",
+    "equipmentRequired": "Equipment is required",
+    "titleRequired": "Title is required",
+    "descriptionRequired": "Description is required",
+    "scheduledDateRequired": "Scheduled date is required",
+    "dueDateAfterScheduled": "Due date must be after scheduled date",
+    "invalidCost": "Invalid cost"
+  },
+  "table": {
+    "headers": {
+      "equipment": "Equipment",
+      "type": "Type",
+      "title": "Title",
+      "status": "Status",
+      "scheduledDate": "Scheduled Date",
+      "dueDate": "Due Date",
+      "assignedTo": "Assigned To",
+      "cost": "Cost",
+      "actions": "Actions"
+    }
+  },
+  "pagination": {
+    "showing": "Showing {{start}} to {{end}} of {{total}} maintenance records",
+    "page": "Page {{current}} of {{total}}",
+    "previous": "Previous",
+    "next": "Next",
+    "itemsPerPage": "Items per page"
+  },
+  "search": {
+    "placeholder": "Search maintenance records...",
+    "title": "Search and Filter",
+    "noResults": "No maintenance records found",
+    "resultCount": "Maintenance Records ({{count}})"
+  },
+  "stats": {
+    "totalMaintenance": "Total Maintenance",
+    "scheduledMaintenance": "Scheduled Maintenance",
+    "inProgressMaintenance": "In Progress Maintenance",
+    "completedMaintenance": "Completed Maintenance",
+    "overdueMaintenance": "Overdue Maintenance",
     "totalCost": "Total Cost"
   },
-  "confirm": {
-    "deleteTitle": "Delete maintenance record?",
-    "deleteDescription": "This action cannot be undone. The maintenance record and its items will be permanently deleted."
+  "filters": {
+    "type": "Type",
+    "status": "Status",
+    "allTypes": "All Types",
+    "allStatus": "All Status",
+    "applyFilters": "Apply Filters",
+    "clearFilters": "Clear Filters"
   }
 }

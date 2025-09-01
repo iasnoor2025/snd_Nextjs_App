@@ -2,6 +2,10 @@
   "title": "إدارة العملاء",
   "subtitle": "إدارة علاقاتك مع العملاء",
   "description": "إدارة قاعدة بيانات العملاء والعلاقات التجارية",
+  "customer_management": "إدارة العملاء",
+  "manage_customer_information": "إدارة معلومات العملاء",
+  "add_customer": "إضافة عميل",
+  "sync_from_erpnext": "مزامنة من ERPNext",
   "actions": {
     "addCustomer": "إضافة عميل",
     "editCustomer": "تعديل العميل",

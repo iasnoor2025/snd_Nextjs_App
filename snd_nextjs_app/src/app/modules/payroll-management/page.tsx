@@ -137,7 +137,7 @@ interface PayrollResponse {
 }
 
 export default function PayrollManagementPage() {
-  const { getAllowedActions: _ } = useRBAC();
+  const { hasPermission } = useRBAC();
   const { t } = useTranslation(['common', 'payroll']);
   const { isRTL } = useI18n();
   const [payrolls, setPayrolls] = useState<PayrollResponse | null>(null);

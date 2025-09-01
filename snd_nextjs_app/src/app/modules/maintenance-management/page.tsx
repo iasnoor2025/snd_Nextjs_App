@@ -16,6 +16,7 @@ import { useRBAC } from '@/lib/rbac/rbac-context';
 import { Calendar, Plus, Search, Wrench, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 import ApiService from '@/lib/api-service';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface MaintenanceRecord {
   id: number;
@@ -43,6 +44,7 @@ interface MaintenanceRecord {
 
 export default function MaintenanceManagementPage() {
   const { user, hasPermission, getAllowedActions } = useRBAC();
+  const { t } = useTranslation();
   const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -287,33 +289,33 @@ export default function MaintenanceManagementPage() {
       <div className="container mx-auto p-6 space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Maintenance Management</h1>
-            <p className="text-muted-foreground">Schedule and track equipment maintenance activities</p>
+            <h1 className="text-3xl font-bold">{t('maintenance:title')}</h1>
+            <p className="text-muted-foreground">{t('maintenance:subtitle')}</p>
           </div>
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                Schedule Maintenance
+                {t('maintenance:actions.scheduleMaintenance')}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>Schedule Maintenance</DialogTitle>
+                <DialogTitle>{t('maintenance:actions.scheduleMaintenance')}</DialogTitle>
                 <DialogDescription>
-                  Create a new maintenance record for equipment
+                  {t('maintenance:create.description')}
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleCreateMaintenance} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="equipment_id">Equipment *</Label>
+                    <Label htmlFor="equipment_id">{t('maintenance:fields.equipment')} *</Label>
                     <Select
                       value={formData.equipment_id}
                       onValueChange={(value: string) => setFormData({ ...formData, equipment_id: value })}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select equipment" />
+                        <SelectValue placeholder={t('maintenance:fields.selectEquipment')} />
                       </SelectTrigger>
                       <SelectContent>
                         {equipmentList.map(equipment => (
@@ -333,45 +335,45 @@ export default function MaintenanceManagementPage() {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="type">Maintenance Type *</Label>
+                    <Label htmlFor="type">{t('maintenance:fields.type')} *</Label>
                     <Select value={formData.type} onValueChange={(value: any) => setFormData({ ...formData, type: value })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="scheduled">Scheduled</SelectItem>
-                        <SelectItem value="corrective">Corrective</SelectItem>
-                        <SelectItem value="emergency">Emergency</SelectItem>
-                        <SelectItem value="inspection">Inspection</SelectItem>
+                        <SelectItem value="scheduled">{t('maintenance:types.scheduled')}</SelectItem>
+                        <SelectItem value="corrective">{t('maintenance:types.corrective')}</SelectItem>
+                        <SelectItem value="emergency">{t('maintenance:types.emergency')}</SelectItem>
+                        <SelectItem value="inspection">{t('maintenance:types.inspection')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 
                 <div>
-                  <Label htmlFor="title">Title *</Label>
+                  <Label htmlFor="title">{t('maintenance:fields.title')} *</Label>
                   <Input
                     id="title"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Maintenance title"
+                    placeholder={t('maintenance:fields.titlePlaceholder')}
                     required
                   />
                 </div>
                 <div>
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">{t('maintenance:fields.description')}</Label>
                   <Textarea
                     id="description"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Describe the maintenance work needed"
+                    placeholder={t('maintenance:fields.descriptionPlaceholder')}
                     rows={3}
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="scheduled_date">Scheduled Date *</Label>
+                    <Label htmlFor="scheduled_date">{t('maintenance:fields.scheduledDate')} *</Label>
                     <Input
                       id="scheduled_date"
                       type="date"
@@ -381,7 +383,7 @@ export default function MaintenanceManagementPage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="due_date">Due Date</Label>
+                    <Label htmlFor="due_date">{t('maintenance:fields.dueDate')}</Label>
                     <Input
                       id="due_date"
                       type="date"

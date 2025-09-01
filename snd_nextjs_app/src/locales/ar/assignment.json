@@ -1,0 +1,209 @@
+{
+  "title": "إدارة التعيينات",
+  "subtitle": "إدارة تعيينات الموظفين والمشاريع",
+  "description": "إدارة تعيينات الموظفين على المشاريع والمهام المختلفة",
+  "actions": {
+    "createAssignment": "إنشاء تعيين",
+    "editAssignment": "تعديل التعيين",
+    "deleteAssignment": "حذف التعيين",
+    "viewAssignment": "عرض التعيين",
+    "approveAssignment": "موافقة على التعيين",
+    "rejectAssignment": "رفض التعيين",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "back": "رجوع",
+    "create": "إنشاء",
+    "update": "تحديث",
+    "delete": "حذف",
+    "search": "البحث",
+    "filter": "تصفية",
+    "refresh": "تحديث",
+    "export": "تصدير",
+    "import": "استيراد"
+  },
+  "fields": {
+    "basicInfo": "المعلومات الأساسية",
+    "employeeInfo": "معلومات الموظف",
+    "projectInfo": "معلومات المشروع",
+    "assignmentInfo": "معلومات التعيين",
+    "employee": "الموظف",
+    "project": "المشروع",
+    "assignmentType": "نوع التعيين",
+    "startDate": "تاريخ البدء",
+    "endDate": "تاريخ الانتهاء",
+    "location": "الموقع",
+    "role": "الدور",
+    "responsibilities": "المسؤوليات",
+    "status": "الحالة",
+    "notes": "ملاحظات",
+    "assignedBy": "تم التعيين بواسطة",
+    "assignedAt": "تاريخ التعيين",
+    "approvedBy": "تمت الموافقة بواسطة",
+    "approvedAt": "تاريخ الموافقة",
+    "rejectedBy": "تم الرفض بواسطة",
+    "rejectedAt": "تاريخ الرفض",
+    "rejectionReason": "سبب الرفض",
+    "isActive": "نشط",
+    "isPrimary": "تعيين أساسي",
+    "hoursPerWeek": "ساعات في الأسبوع",
+    "salary": "الراتب",
+    "currency": "العملة"
+  },
+  "assignmentType": {
+    "fullTime": "دوام كامل",
+    "partTime": "دوام جزئي",
+    "contract": "عقد",
+    "temporary": "مؤقت",
+    "consultant": "مستشار",
+    "intern": "متدرب",
+    "volunteer": "متطوع",
+    "other": "أخرى"
+  },
+  "status": {
+    "draft": "مسودة",
+    "pending": "معلق",
+    "approved": "موافق عليه",
+    "rejected": "مرفوض",
+    "active": "نشط",
+    "completed": "مكتمل",
+    "cancelled": "ملغي",
+    "terminated": "منتهي"
+  },
+  "messages": {
+    "loading": "جاري تحميل التعيينات...",
+    "saving": "جاري حفظ التعيين...",
+    "loadingError": "خطأ في تحميل التعيينات",
+    "saveSuccess": "تم حفظ التعيين بنجاح",
+    "saveError": "فشل في حفظ التعيين",
+    "updateError": "فشل في تحديث التعيين",
+    "deleteConfirm": "هل أنت متأكد من حذف هذا التعيين؟",
+    "deleteSuccess": "تم حذف التعيين بنجاح",
+    "deleteError": "فشل في حذف التعيين",
+    "approvalSuccess": "تمت الموافقة على التعيين بنجاح",
+    "approvalError": "فشل في الموافقة على التعيين",
+    "rejectionSuccess": "تم رفض التعيين بنجاح",
+    "rejectionError": "فشل في رفض التعيين",
+    "validationError": "يرجى إدخال جميع الحقول المطلوبة",
+    "assignmentNotFound": "لم يتم العثور على التعيين",
+    "accessDenied": "الوصول مرفوض. ليس لديك صلاحية لإدارة التعيينات.",
+    "errorGeneral": "حدث خطأ أثناء العملية",
+    "employeeRequired": "الموظف مطلوب",
+    "projectRequired": "المشروع مطلوب",
+    "startDateRequired": "تاريخ البدء مطلوب",
+    "endDateAfterStart": "تاريخ الانتهاء يجب أن يكون بعد تاريخ البدء",
+    "noAssignmentsFound": "لم يتم العثور على تعيينات",
+    "noAssignmentsDescription": "لا توجد تعيينات لعرضها"
+  },
+  "validation": {
+    "required": "هذا الحقل مطلوب",
+    "invalidDate": "التاريخ غير صحيح",
+    "invalidDateRange": "نطاق التاريخ غير صحيح",
+    "employeeRequired": "الموظف مطلوب",
+    "projectRequired": "المشروع مطلوب",
+    "startDateRequired": "تاريخ البدء مطلوب",
+    "endDateRequired": "تاريخ الانتهاء مطلوب",
+    "endDateAfterStart": "تاريخ الانتهاء يجب أن يكون بعد تاريخ البدء",
+    "assignmentTypeRequired": "نوع التعيين مطلوب",
+    "locationRequired": "الموقع مطلوب",
+    "roleRequired": "الدور مطلوب",
+    "assignmentNameRequired": "اسم التعيين وتاريخ البدء مطلوبان"
+  },
+  "search": {
+    "placeholder": "البحث بالاسم أو المشروع...",
+    "title": "البحث والتصفية",
+    "noResults": "لم يتم العثور على تعيينات",
+    "resultCount": "التعيينات ({{count}})"
+  },
+  "table": {
+    "headers": {
+      "employee": "الموظف",
+      "project": "المشروع",
+      "assignmentType": "نوع التعيين",
+      "startDate": "تاريخ البدء",
+      "endDate": "تاريخ الانتهاء",
+      "location": "الموقع",
+      "status": "الحالة",
+      "actions": "الإجراءات"
+    }
+  },
+  "pagination": {
+    "showing": "عرض {{start}} إلى {{end}} من {{total}} تعيين",
+    "page": "الصفحة {{current}} من {{total}}",
+    "previous": "السابق",
+    "next": "التالي",
+    "itemsPerPage": "عنصر في الصفحة"
+  },
+  "stats": {
+    "totalAssignments": "إجمالي التعيينات",
+    "activeAssignments": "التعيينات النشطة",
+    "pendingAssignments": "التعيينات المعلقة",
+    "completedAssignments": "التعيينات المكتملة",
+    "employeesAssigned": "الموظفون المعينون",
+    "projectsWithAssignments": "المشاريع مع التعيينات"
+  },
+  "filters": {
+    "allStatus": "جميع الحالات",
+    "allTypes": "جميع الأنواع",
+    "allProjects": "جميع المشاريع",
+    "allEmployees": "جميع الموظفين",
+    "allLocations": "جميع المواقع"
+  },
+
+  "assignmentHistory": {
+    "title": "تاريخ التعيينات",
+    "noHistory": "لا يوجد تاريخ تعيينات",
+    "noHistoryDescription": "هذا الموظف ليس لديه تعيينات سابقة."
+  },
+
+  "currentAssignment": {
+    "title": "التعيين الحالي",
+    "location": "الموقع",
+    "period": "الفترة",
+    "details": "التفاصيل",
+    "notes": "ملاحظات",
+    "notSpecified": "غير محدد"
+  },
+
+  "form": {
+    "assignmentName": "اسم التعيين *",
+    "assignmentNamePlaceholder": "أدخل اسم التعيين",
+    "assignmentType": "نوع التعيين",
+    "selectAssignmentType": "اختر نوع التعيين",
+    "location": "الموقع",
+    "locationPlaceholder": "أدخل الموقع",
+    "startDate": "تاريخ البدء *",
+    "endDate": "تاريخ الانتهاء",
+    "status": "الحالة",
+    "selectStatus": "اختر الحالة",
+    "notes": "ملاحظات",
+    "notesPlaceholder": "أدخل ملاحظات (اختياري)",
+    "editAssignment": "تعديل التعيين",
+    "updateAssignmentDetails": "تحديث تفاصيل التعيين",
+    "deleteAssignment": "حذف التعيين",
+    "deleteConfirmation": "هل أنت متأكد من حذف هذا التعيين؟ لا يمكن التراجع عن هذا الإجراء.",
+    "creating": "جاري الإنشاء...",
+    "updating": "جاري التحديث...",
+    "deleting": "جاري الحذف...",
+    "create": "إنشاء",
+    "update": "تحديث",
+    "cancel": "إلغاء",
+    "delete": "حذف"
+  },
+
+  "types": {
+    "manual": "يدوي",
+    "project": "مشروع",
+    "rental": "إيجار"
+  },
+
+  "table": {
+    "assignmentName": "اسم التعيين",
+    "type": "النوع",
+    "details": "التفاصيل",
+    "location": "الموقع",
+    "startDate": "تاريخ البدء",
+    "endDate": "تاريخ الانتهاء",
+    "status": "الحالة",
+    "actions": "الإجراءات"
+  }
+}

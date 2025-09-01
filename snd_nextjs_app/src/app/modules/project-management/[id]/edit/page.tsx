@@ -31,6 +31,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
 
 interface Customer {
@@ -106,6 +107,7 @@ interface Project {
 export default function EditProjectPage() {
   const router = useRouter();
   const params = useParams();
+  const { t } = useTranslation();
   const projectId = params.id as string;
 
   const [loading, setLoading] = useState(false);
@@ -346,10 +348,10 @@ export default function EditProjectPage() {
       <div className="container mx-auto py-6">
         <div className="text-center">
           <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Project Not Found</h2>
-          <p className="text-gray-600 mb-4">The project you're looking for doesn't exist.</p>
+          <h2 className="text-xl font-semibold mb-2">{t('project:messages.projectNotFound')}</h2>
+          <p className="text-gray-600 mb-4">{t('project:messages.projectNotFound')}</p>
           <Link href="/modules/project-management">
-            <Button>Back to Projects</Button>
+            <Button>{t('project:actions.backToProjects')}</Button>
           </Link>
         </div>
       </div>
@@ -364,12 +366,12 @@ export default function EditProjectPage() {
           <Link href={`/modules/project-management/${projectId}`}>
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Project
+              {t('project:actions.backToProject')}
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold">Edit Project</h1>
-            <p className="text-muted-foreground">Update project details and information</p>
+            <h1 className="text-3xl font-bold">{t('project:actions.editProject')}</h1>
+            <p className="text-muted-foreground">{t('project:edit.description')}</p>
           </div>
         </div>
       </div>
@@ -382,28 +384,28 @@ export default function EditProjectPage() {
               <Building2 className="h-5 w-5" />
               <span>Basic Information</span>
             </CardTitle>
-            <CardDescription>Essential project details and identification</CardDescription>
+            <CardDescription>{t('project:create.essentialDetails')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Project Name *</Label>
+                <Label htmlFor="name">{t('project:fields.name')} *</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={e => handleInputChange('name', e.target.value)}
-                  placeholder="Enter project name"
+                  placeholder={t('project:fields.name')}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="customer_id">Client *</Label>
+                <Label htmlFor="customer_id">{t('project:fields.client')} *</Label>
                 <Select
                   value={formData.customer_id}
                   onValueChange={value => handleInputChange('customer_id', value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a client">
+                    <SelectValue placeholder={t('project:fields.selectClient')}>
                       {formData.customer_id &&
                         customers.find(c => c.id.toString() === formData.customer_id.toString())
                           ?.companyName || customers.find(c => c.id.toString() === formData.customer_id.toString())
@@ -422,12 +424,12 @@ export default function EditProjectPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Project Description</Label>
+              <Label htmlFor="description">{t('project:fields.description')}</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={e => handleInputChange('description', e.target.value)}
-                placeholder="Describe the project scope and objectives"
+                placeholder={t('project:fields.descriptionPlaceholder')}
                 rows={3}
               />
             </div>

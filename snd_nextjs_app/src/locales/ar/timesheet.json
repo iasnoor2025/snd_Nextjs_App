@@ -178,5 +178,24 @@
   "moves_to_next_approval_level": "ينتقل إلى مستوى الموافقة التالي",
   "no_manual_stage_selection_needed": "لا حاجة للاختيار اليدوي للمرحلة",
   "automatic_stage_determination": "تحديد المرحلة تلقائياً",
-  "employees": "الموظفون"
+  "employees": "الموظفون",
+  "loading": "جاري تحميل بيانات الجدول الزمني...",
+  "monthlyRecords": "سجلات الجدول الزمني الشهرية",
+  "dailyRecords": "سجلات الجدول الزمني اليومية",
+  "selectMonth": "اختر الشهر",
+  "selectYear": "اختر السنة",
+  "months": {
+    "january": "يناير",
+    "february": "فبراير",
+    "march": "مارس",
+    "april": "أبريل",
+    "may": "مايو",
+    "june": "يونيو",
+    "july": "يوليو",
+    "august": "أغسطس",
+    "september": "سبتمبر",
+    "october": "أكتوبر",
+    "november": "نوفمبر",
+    "december": "ديسمبر"
+  }
 }

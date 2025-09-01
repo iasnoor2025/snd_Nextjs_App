@@ -2,6 +2,12 @@
   "title": "إدارة الإشعارات",
   "subtitle": "إدارة الإشعارات والتنبيهات",
   "description": "إدارة نظام الإشعارات والتنبيهات للمستخدمين",
+  "newNotification": "إشعار جديد",
+  "notificationsTitle": "الإشعارات",
+  "notificationsDescription": "عرض وإدارة جميع الإشعارات",
+  "markAllRead": "تحديد الكل كمقروء",
+  "noNotifications": "لا توجد إشعارات",
+  "noNotificationsDescription": "لا توجد إشعارات لعرضها حالياً",
   "actions": {
     "addNotification": "إضافة إشعار",
     "editNotification": "تعديل الإشعار",

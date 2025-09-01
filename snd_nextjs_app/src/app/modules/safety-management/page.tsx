@@ -15,6 +15,7 @@ import { useRBAC } from '@/lib/rbac/rbac-context';
 import { AlertTriangle, Plus, Search, Filter, FileText, Shield, AlertCircle } from 'lucide-react';
 import ApiService from '@/lib/api-service';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface SafetyIncident {
   id: number;
@@ -39,6 +40,7 @@ interface SafetyIncident {
 
 export default function SafetyManagementPage() {
   const { user, hasPermission, getAllowedActions } = useRBAC();
+  const { t } = useTranslation();
   const [incidents, setIncidents] = useState<SafetyIncident[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -165,9 +167,9 @@ export default function SafetyManagementPage() {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <Shield className="h-8 w-8 text-blue-600" />
-              Safety Management
+              {t('safety:title')}
             </h1>
-            <p className="text-muted-foreground">Monitor and manage safety incidents and compliance</p>
+            <p className="text-muted-foreground">{t('safety:subtitle')}</p>
           </div>
           <div className="flex gap-2">
             {hasPermission('create', 'Safety') && (
@@ -176,7 +178,7 @@ export default function SafetyManagementPage() {
                 className="flex items-center gap-2"
               >
                 <Plus className="h-4 w-4" />
-                Report Incident
+                {t('safety:actions.reportIncident')}
               </Button>
             )}
           </div>
@@ -186,7 +188,7 @@ export default function SafetyManagementPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Incidents</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('safety:stats.totalIncidents')}</CardTitle>
               <AlertTriangle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -196,7 +198,7 @@ export default function SafetyManagementPage() {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Open Cases</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('safety:stats.openCases')}</CardTitle>
               <AlertCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -206,7 +208,7 @@ export default function SafetyManagementPage() {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Under Investigation</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('safety:stats.underInvestigation')}</CardTitle>
               <Search className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -216,7 +218,7 @@ export default function SafetyManagementPage() {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Critical Issues</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('safety:stats.criticalIssues')}</CardTitle>
               <Shield className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -228,15 +230,15 @@ export default function SafetyManagementPage() {
         {/* Filters */}
         <Card>
           <CardHeader>
-            <CardTitle>Safety Incidents</CardTitle>
-            <CardDescription>Monitor and manage all reported safety incidents</CardDescription>
+            <CardTitle>{t('safety:incidents.title')}</CardTitle>
+            <CardDescription>{t('safety:incidents.description')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col sm:flex-row gap-4 mb-4">
               <div className="flex-1">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search incidents..."
+                  placeholder={t('safety:search.placeholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-8"
@@ -244,43 +246,43 @@ export default function SafetyManagementPage() {
               </div>
               <Select value={severityFilter} onValueChange={setSeverityFilter}>
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filter by severity" />
+                  <SelectValue placeholder={t('safety:filters.severityPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Severities</SelectItem>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="critical">Critical</SelectItem>
+                  <SelectItem value="all">{t('safety:filters.allSeverities')}</SelectItem>
+                  <SelectItem value="low">{t('safety:severity.low')}</SelectItem>
+                  <SelectItem value="medium">{t('safety:severity.medium')}</SelectItem>
+                  <SelectItem value="high">{t('safety:severity.high')}</SelectItem>
+                  <SelectItem value="critical">{t('safety:severity.critical')}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filter by status" />
+                  <SelectValue placeholder={t('safety:filters.statusPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="open">Open</SelectItem>
-                  <SelectItem value="investigating">Investigating</SelectItem>
-                  <SelectItem value="resolved">Resolved</SelectItem>
-                  <SelectItem value="closed">Closed</SelectItem>
+                  <SelectItem value="all">{t('safety:filters.allStatuses')}</SelectItem>
+                  <SelectItem value="open">{t('safety:status.open')}</SelectItem>
+                  <SelectItem value="investigating">{t('safety:status.investigating')}</SelectItem>
+                  <SelectItem value="resolved">{t('safety:status.resolved')}</SelectItem>
+                  <SelectItem value="closed">{t('safety:status.closed')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {loading ? (
-              <div className="text-center py-8">Loading incidents...</div>
+              <div className="text-center py-8">{t('safety:messages.loading')}</div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Severity</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Reported By</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Cost</TableHead>
+                    <TableHead>{t('safety:table.headers.title')}</TableHead>
+                    <TableHead>{t('safety:table.headers.severity')}</TableHead>
+                    <TableHead>{t('safety:table.headers.status')}</TableHead>
+                    <TableHead>{t('safety:table.headers.location')}</TableHead>
+                    <TableHead>{t('safety:table.headers.reportedBy')}</TableHead>
+                    <TableHead>{t('safety:table.headers.date')}</TableHead>
+                    <TableHead>{t('safety:table.headers.cost')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

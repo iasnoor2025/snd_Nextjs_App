@@ -198,5 +198,24 @@
   "moves_to_next_approval_level": "Moves to next approval level",
   "no_manual_stage_selection_needed": "No manual stage selection needed",
   "automatic_stage_determination": "Automatic stage determination",
-  "employees": "Employees"
+  "employees": "Employees",
+  "loading": "Loading timesheet data...",
+  "monthlyRecords": "Monthly Timesheet Records",
+  "dailyRecords": "Daily Timesheet Records",
+  "selectMonth": "Select Month",
+  "selectYear": "Select Year",
+  "months": {
+    "january": "January",
+    "february": "February",
+    "march": "March",
+    "april": "April",
+    "may": "May",
+    "june": "June",
+    "july": "July",
+    "august": "August",
+    "september": "September",
+    "october": "October",
+    "november": "November",
+    "december": "December"
+  }
 }
