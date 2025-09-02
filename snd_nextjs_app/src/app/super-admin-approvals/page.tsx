@@ -1,10 +1,6 @@
 
 'use client';
 
-
-// Force dynamic rendering to prevent SSR issues
-export const dynamic = 'force-dynamic';
-
 import { ProtectedRoute } from '@/components/protected-route';
 import { SuperAdminApprovals } from '@/components/super-admin-approvals';
 import { Badge } from '@/components/ui/badge';
