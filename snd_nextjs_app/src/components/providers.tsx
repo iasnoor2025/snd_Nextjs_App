@@ -1,7 +1,6 @@
 'use client';
 
 import { I18nProvider } from '@/components/i18n-provider';
-import { I18nWrapper } from '@/components/i18n-wrapper';
 import { ConfirmationProvider } from '@/components/providers/confirmation-provider';
 import { NotificationProvider } from '@/contexts/notification-context';
 import SSEProvider from '@/contexts/sse-context';
@@ -109,16 +108,15 @@ export function Providers({ children }: ProvidersProps) {
             defaultTheme="system"
             enableSystem
             disableTransitionOnChange
+            storageKey="theme"
           >
             <QueryClientProvider client={queryClient}>
               <SSEProvider>
-                <I18nWrapper>
-                  <I18nProvider>
-                    <ConfirmationProvider>
-                      <NotificationProvider>{children}</NotificationProvider>
-                    </ConfirmationProvider>
-                  </I18nProvider>
-                </I18nWrapper>
+                <I18nProvider>
+                  <ConfirmationProvider>
+                    <NotificationProvider>{children}</NotificationProvider>
+                  </ConfirmationProvider>
+                </I18nProvider>
                 {/* Only load devtools in development */}
                 {process.env.NODE_ENV === 'development' && (
                   <Suspense fallback={null}>

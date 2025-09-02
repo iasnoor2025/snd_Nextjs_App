@@ -1,3 +1,7 @@
+'use client';
+
+import { useTranslations } from './use-translations';
+
 // Simple server-safe fallback that always works
 const serverFallback = {
   t: (key: string) => key,
@@ -24,7 +28,12 @@ const serverFallback = {
 };
 
 export function useI18n() {
-  // For now, return fallback values to ensure build success
-  // This will be enhanced later with proper client-side functionality
-  return serverFallback;
+  try {
+    // Use the actual translations hook for client-side functionality
+    return useTranslations();
+  } catch (error) {
+    // Fallback to server-safe values if there's an error
+    console.warn('useI18n fallback to server-safe values:', error);
+    return serverFallback;
+  }
 }

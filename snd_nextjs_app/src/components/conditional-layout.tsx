@@ -16,12 +16,11 @@ interface ConditionalLayoutProps {
 
 export function ConditionalLayout({ children }: ConditionalLayoutProps) {
   const pathname = usePathname();
-  const { isRTL } = useI18n();
-  const { data: session, status } = useSession();
-  const isLoginPage = pathname === '/login';
-  const isSignupPage = pathname === '/signup';
-  const isForgotPasswordPage = pathname === '/forgot-password';
-  const isResetPasswordPage = pathname === '/reset-password';
+  const { data: session } = useSession();
+  const isLoginPage = pathname.endsWith('/login');
+  const isSignupPage = pathname.endsWith('/signup');
+  const isForgotPasswordPage = pathname.endsWith('/forgot-password');
+  const isResetPasswordPage = pathname.endsWith('/reset-password');
   const isPublicPage = isLoginPage || isSignupPage || isForgotPasswordPage || isResetPasswordPage;
   const { isModalOpen, closeModal, nationIdData, isChecking, refreshCheck } = useNationIdCheck();
 
@@ -59,7 +58,7 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
   if (isEmployee) {
     return (
       <>
-        <div className={`min-h-screen bg-background ${isRTL ? 'rtl' : ''}`}>
+        <div className="min-h-screen bg-background">
           <SiteHeader />
           <main className="flex-1 overflow-auto p-6 transition-all duration-200 ease-linear main-content w-full">
             <div className="w-full h-full max-w-none content-wrapper content-full-width">{children}</div>
@@ -92,7 +91,7 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
           } as React.CSSProperties
         }
       >
-        <div className={`flex h-screen w-full overflow-hidden bg-background ${isRTL ? 'rtl' : ''}`}>
+        <div className="flex h-screen w-full overflow-hidden bg-background">
           <AppSidebar />
           <SidebarInset className="flex-1 flex flex-col min-w-0 overflow-hidden peer">
             <SiteHeader />

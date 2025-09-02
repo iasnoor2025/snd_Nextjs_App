@@ -19,7 +19,11 @@
   "project_team": "Project Team",
   "client": "Client",
   "location": "Location",
-  "actions": "Actions",
+  "actions": {
+    "backToProjects": "Back to Projects",
+    "backToProject": "Back to Project",
+    "editProject": "Edit Project"
+  },
   "view": "View",
   "edit": "Edit",
   "delete": "Delete",

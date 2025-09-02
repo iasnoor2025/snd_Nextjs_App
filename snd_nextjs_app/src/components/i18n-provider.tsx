@@ -1,39 +1,32 @@
 'use client';
 
-import { I18nextProvider } from 'react-i18next';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import i18n from '@/lib/i18n-browser';
 
 interface I18nProviderProps {
   children: React.ReactNode;
 }
 
 export function I18nProvider({ children }: I18nProviderProps) {
-  useEffect(() => {
-    // Initialize i18n on client side
-    const initI18n = async () => {
-      try {
-        const { default: i18n } = await import('@/lib/i18n-browser');
-        
-        // Set up document attributes for RTL
-        if (typeof window !== 'undefined') {
-          const lang = i18n.language || 'en';
-          document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
-          document.documentElement.lang = lang;
-          if (lang === 'ar') {
-            document.documentElement.classList.add('rtl');
-          } else {
-            document.documentElement.classList.remove('rtl');
-          }
-        }
-      } catch (error) {
-        console.error('Failed to initialize i18n:', error);
-      }
-    };
+  const [isInitialized, setIsInitialized] = useState(false);
 
-    if (typeof window !== 'undefined') {
-      initI18n();
+  useEffect(() => {
+    // i18next is already initialized when the module is imported
+    if (i18n.isInitialized) {
+      setIsInitialized(true);
+    } else {
+      // Wait for initialization to complete
+      const checkInitialization = () => {
+        if (i18n.isInitialized) {
+          setIsInitialized(true);
+        } else {
+          setTimeout(checkInitialization, 100);
+        }
+      };
+      checkInitialization();
     }
   }, []);
 
+  // Always render children to prevent hydration mismatch
   return <>{children}</>;
 }

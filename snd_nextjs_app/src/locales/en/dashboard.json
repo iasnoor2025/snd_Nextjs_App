@@ -380,7 +380,8 @@
     "actions": {
       "view": "View",
       "refresh": "Refresh",
-      "hide": "Hide"
+      "hide": "Hide",
+      "tryAgain": "Try Again"
     }
   },
   "manualAssignments": {

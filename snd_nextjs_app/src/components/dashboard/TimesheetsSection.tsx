@@ -34,7 +34,7 @@ interface TimesheetData {
 
 interface TimesheetsSectionProps {
   timesheetData: TimesheetData[];
-  currentTime: Date;
+  currentTime: Date | null;
   session: any;
   onApproveTimesheet: (id: number) => void;
   onRejectTimesheet: (id: number) => void;
@@ -96,16 +96,18 @@ export function TimesheetsSection({
             </CardTitle>
             <CardDescription>
               {t('dashboard.timesheets.attendanceDescription')}
-              <span className="ml-2 text-muted-foreground">
-                (
-                              {currentTime.toLocaleDateString(isRTL ? 'ar-SA' : 'en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
-                )
-              </span>
+              {currentTime && (
+                <span className="ml-2 text-muted-foreground">
+                  (
+                  {currentTime.toLocaleDateString(isRTL ? 'ar-SA' : 'en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                  )
+                </span>
+              )}
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">

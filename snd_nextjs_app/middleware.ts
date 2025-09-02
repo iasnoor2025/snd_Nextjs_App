@@ -53,19 +53,16 @@ export async function middleware(request: NextRequest) {
   }
 
   // Additional check for login pages specifically
-  if (pathname === '/en/login' || pathname === '/ar/login') {
+  if (pathname === '/login' || pathname === '/en/login' || pathname === '/ar/login') {
     return NextResponse.next();
-  }
-  
-  // Redirect /login to locale-prefixed login
-  if (pathname === '/login') {
-    const locale = getLocale(request);
-    return NextResponse.redirect(new URL(`/${locale}/login`, request.url));
   }
 
   // Check if it's an API route that should bypass middleware
-  // Bypass ALL API routes - they handle their own auth and don't need locale prefixes
-  if (pathname.startsWith('/api/')) {
+  // Only bypass auth routes and public endpoints
+  if (pathname.startsWith('/api/auth') || 
+      pathname.startsWith('/api/debug') ||
+      pathname.startsWith('/api/cron') ||
+      pathname.startsWith('/api/webhooks')) {
     return NextResponse.next();
   }
 

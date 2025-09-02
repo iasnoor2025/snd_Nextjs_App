@@ -12,12 +12,12 @@ export function RBACInitializer() {
   useEffect(() => {
     // Only run RBAC initialization after authentication is confirmed
     if (authStatus === 'loading') {
-      console.log('⏳ Waiting for authentication to complete...');
+      // Don't log during loading to reduce console noise
       return; // Still loading, wait
     }
     
     if (authStatus === 'unauthenticated') {
-      console.log('🚫 User not authenticated, skipping RBAC initialization');
+      // Don't log when user is not authenticated to reduce console noise
       // User is not authenticated, skip RBAC initialization
       setStatus('completed');
       return;

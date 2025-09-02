@@ -1,7 +1,6 @@
 'use client';
 import { NavDocuments } from '@/components/nav-documents';
 import { NavMain } from '@/components/nav-main';
-import { NavSecondary } from '@/components/nav-secondary';
 import { NavUser } from '@/components/nav-user';
 import {
   BarChart3,
@@ -13,11 +12,9 @@ import {
   Layers,
   LayoutDashboard,
   MapPin,
-  Search,
   User,
   Users,
   Wrench,
-
   Car,
 } from 'lucide-react';
 import * as React from 'react';
@@ -33,12 +30,19 @@ import {
 } from '@/components/ui/sidebar';
 import { useI18n } from '@/hooks/use-i18n';
 import { useRBAC } from '@/lib/rbac/rbac-context';
-import { useTranslation } from 'react-i18next';
+import { validateLocale } from '@/lib/locale-utils';
+import { useParams } from 'next/navigation';
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { isRTL } = useI18n();
-  const { t } = useTranslation('sidebar');
+  const { t, isRTL } = useI18n();
   const { canAccessRoute, user, hasPermission } = useRBAC();
+  const params = useParams();
+  const [locale, setLocale] = React.useState('en');
+
+  React.useEffect(() => {
+    const currentLocale = validateLocale(params?.locale as string);
+    setLocale(currentLocale);
+  }, [params?.locale]);
 
 
   // Debug logging removed for cleaner console
@@ -46,98 +50,98 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   // Define all possible menu items with their routes
   const allMenuItems = [
     {
-      title: t('dashboard'),
+      title: t('sidebar.dashboard'),
       icon: LayoutDashboard,
-      url: '/',
+      url: `/${locale}`,
     },
     {
-      title: t('employeeDashboard'),
+      title: t('sidebar.employeeDashboard'),
       url: '/employee-dashboard',
       icon: User,
     },
     {
-      title: t('customerManagement'),
+      title: t('sidebar.customerManagement'),
       url: '/modules/customer-management',
       icon: Users,
     },
     {
-      title: t('companyManagement'),
+      title: t('sidebar.companyManagement'),
       url: '/modules/company-management',
       icon: Building,
     },
     {
-      title: t('employeeManagement'),
+      title: t('sidebar.employeeManagement'),
       url: '/modules/employee-management',
       icon: Users,
     },
 
     {
-      title: t('equipmentManagement'),
+      title: t('sidebar.equipmentManagement'),
       url: '/modules/equipment-management',
       icon: Car,
     },
     {
-      title: t('maintenanceManagement'),
+      title: t('sidebar.maintenanceManagement'),
       url: '/modules/maintenance-management',
       icon: Wrench,
     },
     {
-      title: t('rentalManagement'),
+      title: t('sidebar.rentalManagement'),
       url: '/modules/rental-management',
       icon: Calendar,
     },
     {
-      title: t('quotationManagement'),
+      title: t('sidebar.quotationManagement'),
       url: '/modules/quotation-management',
       icon: FileText,
     },
     {
-      title: t('timesheetManagement'),
+      title: t('sidebar.timesheetManagement'),
       url: '/modules/timesheet-management',
       icon: Calendar,
     },
     {
-      title: t('projectManagement'),
+      title: t('sidebar.projectManagement'),
       url: '/modules/project-management',
       icon: FileText,
     },
     {
-      title: t('payrollManagement'),
+      title: t('sidebar.payrollManagement'),
       url: '/modules/payroll-management',
       icon: BarChart3,
     },
     {
-      title: t('salaryIncrements'),
+      title: t('sidebar.salaryIncrements'),
       url: '/modules/salary-increments',
       icon: BarChart3,
     },
     {
-      title: t('leaveManagement'),
+      title: t('sidebar.leaveManagement'),
       url: '/modules/leave-management',
       icon: Calendar,
     },
     {
-      title: t('safetyManagement'),
+      title: t('sidebar.safetyManagement'),
       url: '/modules/safety-management',
       icon: HelpCircle,
     },
     {
-      title: t('locationManagement'),
+      title: t('sidebar.locationManagement'),
       url: '/modules/location-management',
       icon: MapPin,
     },
     {
-      title: t('reporting'),
+      title: t('sidebar.reporting'),
       url: '/modules/reporting',
       icon: FileSpreadsheet,
     },
     {
-      title: t('documentManagement'),
+      title: t('sidebar.documentManagement'),
       url: '/modules/document-management',
       icon: FileText,
     },
     {
-      title: t('userManagement'),
+      title: t('sidebar.userManagement'),
       url: '/modules/user-management',
       icon: Users,
     },

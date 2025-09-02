@@ -179,9 +179,11 @@ export default function EmployeeManagementPage() {
   };
 
   // Make debug function available globally
-  if (typeof window !== 'undefined') {
-    (window as any).debugAssignments = debugAssignments;
-  }
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).debugAssignments = debugAssignments;
+    }
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
@@ -499,22 +501,17 @@ export default function EmployeeManagementPage() {
     itemsPerPage,
   ]);
 
-  if (isLoading) {
-    return (
-      <ProtectedRoute requiredPermission={{ action: 'read', subject: 'Employee' }}>
+  return (
+    <ProtectedRoute requiredPermission={{ action: 'read', subject: 'Employee' }}>
+      {isLoading ? (
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
             <p className="text-muted-foreground">{t('employee:messages.loading')}</p>
           </div>
         </div>
-      </ProtectedRoute>
-    );
-  }
-
-  return (
-    <ProtectedRoute requiredPermission={{ action: 'read', subject: 'Employee' }}>
-      <div className="space-y-6">
+      ) : (
+        <div className="space-y-6">
         <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
           <div className={isRTL ? 'text-right' : 'text-left'}>
             <h1 className="text-3xl font-bold">
@@ -1199,6 +1196,7 @@ export default function EmployeeManagementPage() {
           </CardContent>
         </Card>
       </div>
+      )}
     </ProtectedRoute>
   );
 }

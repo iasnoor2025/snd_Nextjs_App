@@ -1,6 +1,4 @@
-import i18n from 'i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
-import { initReactI18next } from 'react-i18next';
+import type { Locale } from '@/lib/i18n-config';
 
 // Import all translation files
 import enCommon from '@/locales/en/common.json';
@@ -9,9 +7,7 @@ import enDashboard from '@/locales/en/dashboard.json';
 import enEquipment from '@/locales/en/equipment.json';
 import enEmployee from '@/locales/en/employee.json';
 import enRental from '@/locales/en/rental.json';
-
 import enReporting from '@/locales/en/reporting.json';
-
 import enProject from '@/locales/en/project.json';
 import enQuotation from '@/locales/en/quotation.json';
 import enPayroll from '@/locales/en/payroll.json';
@@ -29,8 +25,6 @@ import enTimesheet from '@/locales/en/timesheet.json';
 import enFinancial from '@/locales/en/financial.json';
 import enMaintenance from '@/locales/en/maintenance.json';
 import enAssignment from '@/locales/en/assignment.json';
-
-
 import enCountries from '@/locales/en/countries.json';
 import enLocations from '@/locales/en/locations.json';
 import enDepartments from '@/locales/en/departments.json';
@@ -45,9 +39,7 @@ import arDashboard from '@/locales/ar/dashboard.json';
 import arEquipment from '@/locales/ar/equipment.json';
 import arEmployee from '@/locales/ar/employee.json';
 import arRental from '@/locales/ar/rental.json';
-
 import arReporting from '@/locales/ar/reporting.json';
-
 import arProject from '@/locales/ar/project.json';
 import arQuotation from '@/locales/ar/quotation.json';
 import arPayroll from '@/locales/ar/payroll.json';
@@ -65,8 +57,6 @@ import arTimesheet from '@/locales/ar/timesheet.json';
 import arFinancial from '@/locales/ar/financial.json';
 import arMaintenance from '@/locales/ar/maintenance.json';
 import arAssignment from '@/locales/ar/assignment.json';
-
-
 import arCountries from '@/locales/ar/countries.json';
 import arLocations from '@/locales/ar/locations.json';
 import arDepartments from '@/locales/ar/departments.json';
@@ -75,7 +65,7 @@ import arRoles from '@/locales/ar/roles.json';
 import arProjectTemplates from '@/locales/ar/project-templates.json';
 import arTranslate from '@/locales/ar/translate.json';
 
-const resources = {
+const dictionaries = {
   en: {
     common: enCommon,
     auth: enAuth,
@@ -83,9 +73,7 @@ const resources = {
     equipment: enEquipment,
     employee: enEmployee,
     rental: enRental,
-
     reporting: enReporting,
-
     project: enProject,
     quotation: enQuotation,
     payroll: enPayroll,
@@ -103,7 +91,6 @@ const resources = {
     financial: enFinancial,
     maintenance: enMaintenance,
     assignment: enAssignment,
-
     countries: enCountries,
     locations: enLocations,
     departments: enDepartments,
@@ -119,9 +106,7 @@ const resources = {
     equipment: arEquipment,
     employee: arEmployee,
     rental: arRental,
-
     reporting: arReporting,
-
     project: arProject,
     quotation: arQuotation,
     payroll: arPayroll,
@@ -139,7 +124,6 @@ const resources = {
     financial: arFinancial,
     maintenance: arMaintenance,
     assignment: arAssignment,
-
     countries: arCountries,
     locations: arLocations,
     departments: arDepartments,
@@ -150,57 +134,4 @@ const resources = {
   },
 };
 
-// Initialize i18next if not already initialized
-if (!i18n.isInitialized) {
-  i18n
-    .use(initReactI18next)
-    .use(LanguageDetector)
-    .init({
-      resources,
-      fallbackLng: 'en',
-      debug: process.env.NODE_ENV === 'development',
-      interpolation: {
-        escapeValue: false,
-      },
-      defaultNS: 'common',
-      ns: [
-        'common',
-        'auth',
-        'dashboard',
-        'equipment',
-        'employee',
-        'assignment',
-        'rental',
-        'settings',
-        'reporting',
-        'project',
-        'quotation',
-        'payroll',
-        'customer',
-        'company',
-        'leave',
-        'safety',
-        'location',
-        'user',
-        'profile',
-        'notifications',
-        'admin',
-        'sidebar',
-        'timesheet',
-        'financial',
-        'maintenance',
-        'countries',
-        'locations',
-        'departments',
-        'designations',
-        'roles',
-        'projectTemplates',
-        'translate',
-      ],
-      react: {
-        useSuspense: false,
-      },
-    });
-}
-
-export default i18n;
+export const getDictionary = async (locale: Locale) => dictionaries[locale];

@@ -87,8 +87,8 @@ export default function DashboardPage() {
   // State for success messages
   const [approvalSuccess, setApprovalSuccess] = useState<string | null>(null);
 
-  // Current time for display
-  const [currentTime, setCurrentTime] = useState(new Date());
+  // Current time for display - initialize as null to prevent hydration mismatch
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
   // State for section visibility
   const [sectionVisibility, setSectionVisibility] = useState({
@@ -140,6 +140,9 @@ export default function DashboardPage() {
 
   // Update current time every minute
   useEffect(() => {
+    // Initialize current time on mount to prevent hydration mismatch
+    setCurrentTime(new Date());
+    
     const interval = setInterval(() => {
       setCurrentTime(new Date());
     }, 60000);

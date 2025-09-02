@@ -1,6 +1,6 @@
 'use client';
 
-import { useI18n } from '@/hooks/use-i18n';
+import { useTranslations } from '@/hooks/use-translations';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -11,7 +11,7 @@ import {
 import { Globe } from 'lucide-react';
 
 export function LanguageSwitcher() {
-  const { currentLanguage, languages, changeLanguage, isLoading } = useI18n();
+  const { locale, languages, changeLanguage, isLoading } = useTranslations();
 
   if (isLoading) {
     return (
@@ -22,7 +22,7 @@ export function LanguageSwitcher() {
     );
   }
 
-  const currentLang = languages.find(lang => lang.code === currentLanguage);
+  const currentLang = languages.find(lang => lang.code === locale);
 
   return (
     <DropdownMenu>
@@ -37,7 +37,7 @@ export function LanguageSwitcher() {
           <DropdownMenuItem
             key={language.code}
             onClick={() => changeLanguage(language.code)}
-            className={currentLanguage === language.code ? 'bg-accent' : ''}
+            className={locale === language.code ? 'bg-accent' : ''}
           >
             <span className="mr-2">{language.flag}</span>
             {language.name}
