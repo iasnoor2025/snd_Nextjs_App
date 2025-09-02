@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
 import {
   Dialog,
   DialogContent,
@@ -35,20 +35,16 @@ import { format } from 'date-fns';
 import {
   Briefcase,
   Calendar,
-  CheckCircle,
   Edit,
   FileText,
   MapPin,
   Plus,
   RefreshCw,
   Trash2,
-  XCircle,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import i18n from '@/lib/i18n-browser';
-import arAssignment from '@/dictionaries/ar/assignment.json';
-import enAssignment from '@/dictionaries/en/assignment.json';
+
 
 interface Assignment {
   id: number;
@@ -80,7 +76,7 @@ interface AssignmentsTabProps {
 
 export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
   const { hasPermission } = useRBAC();
-  const { t } = useTranslation('assignment');
+  const { t } = useI18n();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -90,32 +86,8 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
-  const [nsReady, setNsReady] = useState<boolean>(i18n.hasResourceBundle(i18n.language, 'assignment'));
 
-  // Ensure assignment namespace is available even if i18n was initialized earlier
-  useEffect(() => {
-    try {
-      if (!i18n.hasResourceBundle('ar', 'assignment')) {
-        // @ts-ignore: JSON import type
-        i18n.addResourceBundle('ar', 'assignment', arAssignment, true, true);
-      }
-      if (!i18n.hasResourceBundle('en', 'assignment')) {
-        // @ts-ignore: JSON import type
-        i18n.addResourceBundle('en', 'assignment', enAssignment, true, true);
-      }
-      if (!nsReady) {
-        i18n.loadNamespaces(['assignment']).finally(() => setNsReady(true));
-      }
-    } catch (e) {
-      // no-op safeguard
-    }
-  }, [nsReady]);
-
-  if (!nsReady) {
-    return null;
-  }
-
-  // Form state
+  // Form state - moved up before any conditional returns
   const [formData, setFormData] = useState({
     name: '',
     type: 'manual',
@@ -125,10 +97,6 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
     status: 'active',
     notes: '',
   });
-
-  useEffect(() => {
-    fetchAssignments();
-  }, [employeeId]);
 
   const fetchAssignments = async () => {
     setLoading(true);
@@ -142,13 +110,16 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
         const errorData = await response.json();
         setError(errorData.error || t('assignment.messages.loadingError'));
       }
-    } catch (error) {
-      
-              setError(t('assignment.messages.loadingError'));
+    } catch {
+      setError(t('assignment.messages.loadingError'));
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchAssignments();
+  }, [employeeId]);
 
   const resetForm = () => {
     setFormData({
@@ -187,7 +158,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
         const errorData = await response.json();
         toast.error(errorData.error || t('assignment.messages.saveError'));
       }
-    } catch (error) {
+        } catch {
       
       toast.error(t('assignment.messages.saveError'));
     } finally {
@@ -217,8 +188,6 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
       });
 
       if (response.ok) {
-        const responseData = await response.json();
-
         toast.success('Assignment updated successfully');
         setShowEditDialog(false);
         setSelectedAssignment(null);
@@ -226,10 +195,10 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
         fetchAssignments();
       } else {
         const errorData = await response.json();
-        
+
         toast.error(errorData.error || t('assignment.messages.updateError'));
       }
-    } catch (error) {
+        } catch {
       
       toast.error(t('assignment.messages.updateError'));
     } finally {
@@ -258,7 +227,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
         const errorData = await response.json();
         toast.error(errorData.error || t('assignment.messages.deleteError'));
       }
-    } catch (error) {
+        } catch {
       
       toast.error(t('assignment.messages.deleteError'));
     } finally {
@@ -385,9 +354,9 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-                  <h3 className="text-lg font-semibold">{t('assignment.title')}</h3>
-        <p className="text-sm text-muted-foreground">
-          {t('assignment.subtitle')}
+          <h3 className="text-lg font-semibold">{t('assignment.title')}</h3>
+          <p className="text-sm text-muted-foreground">
+            {t('assignment.subtitle')}
           </p>
         </div>
         {!currentAssignment && hasPermission('create', 'employee-assignment') && (
@@ -400,8 +369,8 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                        <DialogTitle>{t('assignment.form.create')}</DialogTitle>
-        <DialogDescription>{t('assignment.form.create')}</DialogDescription>
+                <DialogTitle>{t('assignment.form.create')}</DialogTitle>
+                <DialogDescription>{t('assignment.form.create')}</DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
@@ -420,27 +389,27 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                     onValueChange={value => setFormData(prev => ({ ...prev, type: value }))}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={t('assignment:form.selectAssignmentType')} />
+                      <SelectValue placeholder={t('assignment.form.selectAssignmentType')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="manual">{t('assignment:types.manual')}</SelectItem>
-                      <SelectItem value="project">{t('assignment:types.project')}</SelectItem>
-                      <SelectItem value="rental">{t('assignment:types.rental')}</SelectItem>
+                      <SelectItem value="manual">{t('assignment.types.manual')}</SelectItem>
+                      <SelectItem value="project">{t('assignment.types.project')}</SelectItem>
+                      <SelectItem value="rental">{t('assignment.types.rental')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="location">{t('assignment:form.location')}</Label>
+                  <Label htmlFor="location">{t('assignment.form.location')}</Label>
                   <Input
                     id="location"
                     value={formData.location}
                     onChange={e => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                    placeholder={t('assignment:form.locationPlaceholder')}
+                    placeholder={t('assignment.form.locationPlaceholder')}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="start_date">{t('assignment:form.startDate')}</Label>
+                    <Label htmlFor="start_date">{t('assignment.form.startDate')}</Label>
                     <Input
                       id="start_date"
                       type="date"
@@ -449,7 +418,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="end_date">{t('assignment:form.endDate')}</Label>
+                    <Label htmlFor="end_date">{t('assignment.form.endDate')}</Label>
                     <Input
                       id="end_date"
                       type="date"
@@ -459,35 +428,35 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="status">{t('assignment:form.status')}</Label>
+                  <Label htmlFor="status">{t('assignment.form.status')}</Label>
                   <Select
                     value={formData.status}
                     onValueChange={value => setFormData(prev => ({ ...prev, status: value }))}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={t('assignment:form.selectStatus')} />
+                      <SelectValue placeholder={t('assignment.form.selectStatus')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="active">{t('assignment:status.active')}</SelectItem>
-                      <SelectItem value="completed">{t('assignment:status.completed')}</SelectItem>
-                      <SelectItem value="cancelled">{t('assignment:status.cancelled')}</SelectItem>
-                      <SelectItem value="pending">{t('assignment:status.pending')}</SelectItem>
+                      <SelectItem value="active">{t('assignment.status.active')}</SelectItem>
+                      <SelectItem value="completed">{t('assignment.status.completed')}</SelectItem>
+                      <SelectItem value="cancelled">{t('assignment.status.cancelled')}</SelectItem>
+                      <SelectItem value="pending">{t('assignment.status.pending')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="notes">{t('assignment:form.notes')}</Label>
+                  <Label htmlFor="notes">{t('assignment.form.notes')}</Label>
                   <Textarea
                     id="notes"
                     value={formData.notes}
                     onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                    placeholder={t('assignment:form.notesPlaceholder')}
+                    placeholder={t('assignment.form.notesPlaceholder')}
                   />
                 </div>
               </div>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
-                  {t('assignment:form.cancel')}
+                  {t('assignment.form.cancel')}
                 </Button>
                 <Button
                   onClick={handleCreate}
@@ -496,12 +465,12 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                   {submitting ? (
                     <>
                       <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                      {t('assignment:form.creating')}
+                      {t('assignment.form.creating')}
                     </>
                   ) : (
                     <>
                       <Plus className="mr-2 h-4 w-4" />
-                      {t('assignment:form.create')}
+                      {t('assignment.form.create')}
                     </>
                   )}
                 </Button>
@@ -518,7 +487,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Briefcase className="h-5 w-5" />
-                {t('assignment:currentAssignment.title')}
+                {t('assignment.currentAssignment.title')}
               </div>
               <div className="flex gap-2">
                 {hasPermission('update', 'employee-assignment') && (
@@ -528,7 +497,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                     onClick={() => openEditDialog(currentAssignment)}
                   >
                     <Edit className="mr-1 h-4 w-4" />
-                    {t('assignment:form.update')}
+                    {t('assignment.form.update')}
                   </Button>
                 )}
                 {hasPermission('delete', 'employee-assignment') && (
@@ -538,7 +507,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                     onClick={() => openDeleteDialog(currentAssignment)}
                   >
                     <Trash2 className="mr-1 h-4 w-4" />
-                    {t('assignment:form.delete')}
+                    {t('assignment.form.delete')}
                   </Button>
                 )}
               </div>
@@ -551,13 +520,13 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>{t('assignment:currentAssignment.location')}:</strong> {currentAssignment.location || t('assignment:currentAssignment.notSpecified')}
+                    <strong>{t('assignment.currentAssignment.location')}:</strong> {currentAssignment.location || t('assignment.currentAssignment.notSpecified')}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>{t('assignment:currentAssignment.period')}:</strong>{' '}
+                    <strong>{t('assignment.currentAssignment.period')}:</strong>{' '}
                     {format(new Date(currentAssignment.start_date), 'MMM d, yyyy')}
                     {currentAssignment.end_date &&
                       ` - ${format(new Date(currentAssignment.end_date), 'MMM d, yyyy')}`}
@@ -567,7 +536,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                   <div className="flex items-center gap-2">
                     <Briefcase className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm">
-                      <strong>{t('assignment:currentAssignment.details')}:</strong> {getAssignmentDetails(currentAssignment)}
+                      <strong>{t('assignment.currentAssignment.details')}:</strong> {getAssignmentDetails(currentAssignment)}
                     </span>
                   </div>
                 )}
@@ -585,7 +554,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                 </Badge>
                 {currentAssignment.notes && (
                   <div className="text-sm text-muted-foreground">
-                    <strong>{t('assignment:currentAssignment.notes')}:</strong> {currentAssignment.notes}
+                    <strong>{t('assignment.currentAssignment.notes')}:</strong> {currentAssignment.notes}
                   </div>
                 )}
               </div>
@@ -596,13 +565,13 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
 
       {/* Assignment History */}
       <div>
-        <h3 className="mb-4 text-lg font-semibold">{t('assignment:assignmentHistory.title')}</h3>
+        <h3 className="mb-4 text-lg font-semibold">{t('assignment.assignmentHistory.title')}</h3>
         {assignmentHistory.length === 0 ? (
           <div className="rounded-lg bg-muted/30 p-8 text-center">
             <FileText className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
-            <h3 className="mb-2 text-lg font-medium">{t('assignment:assignmentHistory.noHistory')}</h3>
+            <h3 className="mb-2 text-lg font-medium">{t('assignment.assignmentHistory.noHistory')}</h3>
             <p className="text-sm text-muted-foreground">
-              {t('assignment:assignmentHistory.noHistoryDescription')}
+              {t('assignment.assignmentHistory.noHistoryDescription')}
             </p>
           </div>
         ) : (
@@ -765,17 +734,17 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
               onClick={handleEdit}
               disabled={submitting || !formData.name || !formData.start_date}
             >
-                                {submitting ? (
-                    <>
-                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                      {t('assignment:form.updating')}
-                    </>
-                  ) : (
-                    <>
-                      <Edit className="mr-2 h-4 w-4" />
-                      {t('assignment:form.update')}
-                    </>
-                  )}
+              {submitting ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  {t('assignment:form.updating')}
+                </>
+              ) : (
+                <>
+                  <Edit className="mr-2 h-4 w-4" />
+                  {t('assignment:form.update')}
+                </>
+              )}
             </Button>
           </div>
         </DialogContent>
