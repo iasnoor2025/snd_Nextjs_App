@@ -224,24 +224,7 @@
     "noPermission": "ليس لديك صلاحية لتنفيذ هذا الإجراء",
     "editDescription": "تحديث معلومات المعدات والإعدادات"
   },
-  "actions": {
-    "editEquipment": "تعديل المعدات",
-    "save": "حفظ",
-    "cancel": "إلغاء",
-    "back": "رجوع",
-    "submit": "إرسال",
-    "create": "إنشاء",
-    "update": "تحديث",
-    "delete": "حذف",
-    "search": "بحث",
-    "filter": "تصفية",
-    "export": "تصدير",
-    "import": "استيراد",
-    "refresh": "تحديث",
-    "loading": "جاري التحميل...",
-    "saving": "جاري الحفظ...",
-    "noData": "لا توجد بيانات متاحة"
-  },
+
   "status": {
     "available": "متاح",
     "rented": "مؤجر",

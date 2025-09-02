@@ -85,11 +85,13 @@
     "edit": "Edit Employee",
     "editEmployee": "Edit Employee",
     "delete": "Delete Employee",
+    "back": "Back",
     "sync": "Sync Employees",
     "export": "Export Employees",
     "import": "Import Employees",
     "view": "View Employee",
     "save": "Save Employee",
+    "saveChanges": "Save Changes",
     "cancel": "Cancel",
     "backToList": "Back to Employee List",
     "confirm": "Confirm",
@@ -177,7 +179,27 @@
     "city": "City",
     "state": "State/Province",
     "postalCode": "Postal Code",
-    "country": "Country"
+    "country": "Country",
+    "currentLocation": "Current Location",
+    "contractDaysPerMonth": "Contract Days Per Month (Auto-set)",
+    "contractHoursPerDay": "Contract Hours Per Day",
+    "selectDepartment": "Select Department",
+    "selectDesignation": "Select Designation",
+    "noDepartment": "No Department",
+    "overtimeFixedRateDescription": "Fixed amount per overtime hour (overrides multiplier)",
+    "overtimeRateMultiplierDescription": "Multiplies the hourly rate (e.g., 1.5x for time and a half) - Auto-calculated",
+    "chooseOvertimeMethod": "Choose one overtime calculation method:",
+    "addressInformation": "Address Information",
+    "spspLicenseFile": "SPSP License File",
+    "tuvCertificationFile": "TUV Certification File",
+    "visa": "Visa",
+    "visaNumber": "Visa Number",
+    "visaExpiry": "Visa Expiry",
+    "workPermit": "Work Permit",
+    "workPermitExpiry": "Work Permit Expiry",
+    "medicalInsurance": "Medical Insurance",
+    "medicalInsuranceExpiry": "Medical Insurance Expiry",
+    "iban": "IBAN"
   },
 
   "status": {
@@ -392,9 +414,7 @@
     }
   },
 
-  "documents": {
-    "title": "Documents & Licenses"
-  },
+
 
   "fileUpload": {
     "uploadedDocuments": "✅ Uploaded Documents:",
@@ -522,22 +542,7 @@
     "viewAll": "View All"
   },
 
-  "advances": {
-    "currentBalance": "Current Balance",
-    "remainingBalance": "Remaining Balance",
-    "active": "Active",
-    "noBalance": "No Balance",
-    "basedOnCurrentBalance": "Based on current balance and monthly deduction",
-    "loadingPaymentHistory": "Loading payment history...",
-    "repaymentHistory": "Repayment History",
-    "amount": "Amount",
-    "date": "Date",
-    "notes": "Notes",
-    "actions": "Actions",
-    "noRepaymentHistory": "No repayment history found.",
-    "deleteRepayment": "Delete Repayment",
-    "deleteRepaymentConfirm": "Are you sure you want to delete this repayment? This action cannot be undone."
-  },
+
 
   "servicePeriod": {
     "year": "year",
@@ -562,6 +567,22 @@
   "advances": {
     "title": "Advance Payment Management",
     "description": "Track and manage employee advance payments and deductions",
+    "configurable": "Configurable",
+    "noAdvanceRecordsFound": "No advance records found",
+    "currentBalance": "Current Balance",
+    "remainingBalance": "Remaining Balance",
+    "active": "Active",
+    "noBalance": "No Balance",
+    "basedOnCurrentBalance": "Based on current balance and monthly deduction",
+    "loadingPaymentHistory": "Loading payment history...",
+    "repaymentHistory": "Repayment History",
+    "amount": "Amount",
+    "date": "Date",
+    "notes": "Notes",
+    "actions": "Actions",
+    "noRepaymentHistory": "No repayment history found.",
+    "deleteRepayment": "Delete Repayment",
+    "deleteRepaymentConfirm": "Are you sure you want to delete this repayment? This action cannot be undone.",
     "newAdvance": "New Advance",
     "makeRepayment": "Make Repayment",
     "recordRepayment": "Record Repayment",
@@ -573,6 +594,7 @@
     "currentMonthlyDeduction": "Current Monthly Deduction",
     "companyWillDecide": "Company will decide monthly deduction",
     "setMonthlyDeduction": "Set monthly deduction amount",
+    "monthlyDeduction": "Monthly Deduction",
     "estimatedRepayment": "Estimated Repayment",
     "projected": "Projected",
     "months": "months",
@@ -590,21 +612,7 @@
       "actions": "Actions"
     }
   },
-  "actions": {
-    "close": "Close",
-    "back": "Back",
-    "edit": "Edit",
-    "delete": "Delete",
-    "saving": "Saving...",
-    "saveChanges": "Save Changes",
-    "cancel": "Cancel",
-    "adding": "Adding...",
-    "addDepartment": "Add Department",
-    "addDesignation": "Add Designation",
-    "updating": "Updating...",
-    "updateDepartment": "Update Department",
-    "updateDesignation": "Update Designation"
-  },
+
   "personalInformation": {
     "title": "Personal Information",
     "subtitle": "Personal information and identification details",
@@ -625,43 +633,6 @@
     "positionInformation": "Position Information",
     "employmentTimeline": "Employment Timeline",
     "servicePeriod": "Service Period"
-  },
-  "fields": {
-    "spspLicenseExpiry": "SPSP License Expiry",
-    "fileNumber": "File Number",
-    "name": "Name",
-    "phone": "Phone",
-    "dateOfBirth": "Date of Birth",
-    "iqamaNumber": "Iqama Number",
-    "iqamaExpiry": "Iqama Expiry",
-    "passportNumber": "Passport Number",
-    "passportExpiry": "Passport Expiry",
-    "noDesignation": "No Designation",
-    "employeeId": "Employee ID",
-    "designation": "Designation",
-    "department": "Department",
-    "supervisor": "Supervisor",
-    "status": "Status",
-    "hireDate": "Hire Date",
-    "noDepartment": "No Department",
-    "currentLocation": "Current Location",
-    "contractDaysPerMonth": "Contract Days Per Month (Auto-set)",
-    "contractHoursPerDay": "Contract Hours Per Day",
-    "hourlyRate": "Hourly Rate (Auto-calculated)",
-    "chooseOvertimeMethod": "Choose one overtime calculation method:",
-    "overtimeRateMultiplier": "Overtime Rate Multiplier",
-    "overtimeRateMultiplierDescription": "Multiplies the hourly rate (e.g., 1.5x for time and a half) - Auto-calculated",
-    "overtimeFixedRate": "Overtime Fixed Rate",
-    "overtimeFixedRateDescription": "Fixed amount per overtime hour (overrides multiplier)",
-    "addressInformation": "Address Information",
-    "address": "Address",
-    "city": "City",
-    "state": "State/Province",
-    "postalCode": "Postal Code",
-    "country": "Country",
-    "departmentName": "Department Name",
-    "departmentCode": "Department Code",
-    "designationName": "Designation Name",
-    "description": "Description"
   }
+  
 }
