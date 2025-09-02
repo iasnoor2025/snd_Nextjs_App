@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/hooks/use-i18n';
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -23,6 +24,7 @@ export function NavMain({
   }[];
 }) {
   const pathname = usePathname();
+  const { t } = useI18n();
 
   return (
     <SidebarGroup>
@@ -30,11 +32,11 @@ export function NavMain({
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center gap-2">
             <SidebarMenuButton
-              tooltip="Quick Create"
+              tooltip={t('common.actions.quickCreate')}
               className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
             >
               <PlusCircle />
-              <span>Quick Create</span>
+              <span>{t('common.actions.quickCreate')}</span>
             </SidebarMenuButton>
             <Button
               size="icon"
@@ -42,13 +44,26 @@ export function NavMain({
               variant="outline"
             >
               <Mail />
-              <span className="sr-only">Inbox</span>
+              <span className="sr-only">{t('common.inbox')}</span>
             </Button>
           </SidebarMenuItem>
         </SidebarMenu>
         <SidebarMenu>
           {items.map(item => {
-            const isActive = pathname === item.url || pathname.startsWith(item.url + '/');
+            // Special handling for dashboard to avoid conflicts with other routes
+            let isActive = false;
+            
+            // Check if this is the dashboard item (URL is just locale like /en or /ar)
+            const isDashboard = item.url.match(/^\/[a-z]{2}$/);
+            
+            if (isDashboard) {
+              // Dashboard case - only match exact locale path
+              isActive = pathname === item.url;
+            } else {
+              // Other routes - match exact or starts with
+              isActive = pathname === item.url || pathname.startsWith(item.url + '/');
+            }
+            
             return (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton

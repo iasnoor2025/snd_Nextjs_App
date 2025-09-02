@@ -227,7 +227,7 @@ export default function PaymentHistory({ employeeId }: PaymentHistoryProps) {
                       <td className="px-6 py-4 whitespace-nowrap">
                         {new Date(p.payment_date).toLocaleDateString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">{p.notes || t('common:common.na')}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{p.notes || t('common.na')}</td>
                       <td className="px-6 py-4 text-right flex gap-2 justify-end">
                         <Button
                           variant="outline"

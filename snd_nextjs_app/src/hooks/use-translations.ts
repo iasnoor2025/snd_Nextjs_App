@@ -38,6 +38,7 @@ export function useTranslations() {
       try {
         const { getDictionary } = await import('@/lib/get-dictionary');
         const dict = await getDictionary(locale as any);
+
         setDictionary(dict);
       } catch (error) {
         console.error('Failed to load dictionary:', error);
@@ -58,7 +59,9 @@ export function useTranslations() {
   }, [locale]);
 
   const t = (key: string, params?: Record<string, string>) => {
-    if (!dictionary || isLoading) return key;
+    if (!dictionary || isLoading) {
+      return key;
+    }
 
     // Handle namespace.key format (e.g., "common.save", "dashboard.title")
     if (key.includes('.')) {
@@ -72,7 +75,9 @@ export function useTranslations() {
       let value: any = namespaceDict;
       for (const k of fullKey.split('.')) {
         value = value?.[k];
-        if (value === undefined) return key;
+        if (value === undefined) {
+          return key;
+        }
       }
 
       // Replace parameters

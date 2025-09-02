@@ -55,13 +55,13 @@ const PaginationPrevious = ({
 
   return (
     <PaginationLink
-      aria-label={t('common:pagination.previous')}
+                    aria-label={t('common.pagination.previous')}
       size="default"
       className={cn('gap-1 pl-2.5', className)}
       {...props}
     >
       <ChevronLeft className="h-4 w-4" />
-      <span>{t('common:pagination.previous')}</span>
+                      <span>{t('common.pagination.previous')}</span>
     </PaginationLink>
   );
 };
@@ -72,12 +72,12 @@ const PaginationNext = ({ className, ...props }: React.ComponentProps<typeof Pag
 
   return (
     <PaginationLink
-      aria-label={t('common:pagination.next')}
+                    aria-label={t('common.pagination.next')}
       size="default"
       className={cn('gap-1 pr-2.5', className)}
       {...props}
     >
-      <span>{t('common:pagination.next')}</span>
+                      <span>{t('common.pagination.next')}</span>
       <ChevronRight className="h-4 w-4" />
     </PaginationLink>
   );

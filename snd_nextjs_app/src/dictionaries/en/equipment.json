@@ -168,7 +168,7 @@
     "perPage": "per page",
     "previous": "Previous",
     "next": "Next",
-    "page": "Page {current} of {total}",
+    "page": "Page {{current}} of {{total}}",
     "perPageText": "per page"
   },
   "assignmentHistory": {

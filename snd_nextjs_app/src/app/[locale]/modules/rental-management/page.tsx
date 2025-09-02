@@ -69,7 +69,7 @@ import {
   getTranslatedName,
 } from '@/lib/translation-utils';
 import { useDeleteConfirmations } from '@/lib/utils/confirmation-utils';
-import { useTranslation } from 'react-i18next';
+
 
 interface RentalItem {
   id: string;

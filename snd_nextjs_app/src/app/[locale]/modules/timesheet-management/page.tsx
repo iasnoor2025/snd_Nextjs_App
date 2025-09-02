@@ -78,7 +78,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+
 import { toast } from 'sonner';
 
 interface Timesheet {
@@ -136,8 +136,7 @@ interface PaginatedResponse {
 }
 
 export default function TimesheetManagementPage() {
-  const { t } = useTranslation('timesheet');
-  const { isRTL } = useI18n();
+  const { t, isRTL } = useI18n();
   const { user, hasPermission, getAllowedActions } = useRBAC();
   const [timesheets, setTimesheets] = useState<PaginatedResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -222,7 +221,7 @@ export default function TimesheetManagementPage() {
         }
 
         if (result && result.success && result.created > 0) {
-          toast.success(`${t('auto_generated_timesheets', { count: result.created })}`);
+          toast.success(`${t('timesheet.auto_generated_timesheets', { count: result.created })}`);
           // Store the execution time
           localStorage.setItem('lastAutoGeneration', now.toString());
           // Refresh the timesheets table to show newly created timesheets
@@ -296,7 +295,7 @@ export default function TimesheetManagementPage() {
       }
     } catch (error) {
       
-      toast.error(t('failed_to_fetch_timesheets'));
+      toast.error(t('timesheet.failed_to_fetch_timesheets'));
     } finally {
       setLoading(false);
     }

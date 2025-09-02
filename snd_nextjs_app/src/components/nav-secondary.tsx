@@ -30,7 +30,20 @@ export function NavSecondary({
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map(item => {
-            const isActive = pathname === item.url || pathname.startsWith(item.url + '/');
+            // Special handling for dashboard to avoid conflicts with other routes
+            let isActive = false;
+            
+            // Check if this is the dashboard item (URL is just locale like /en or /ar)
+            const isDashboard = item.url.match(/^\/[a-z]{2}$/);
+            
+            if (isDashboard) {
+              // Dashboard case - only match exact locale path
+              isActive = pathname === item.url;
+            } else {
+              // Other routes - match exact or starts with
+              isActive = pathname === item.url || pathname.startsWith(item.url + '/');
+            }
+            
             return (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton

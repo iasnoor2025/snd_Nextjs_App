@@ -38,6 +38,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { PermissionManagement } from '@/components/permission-management';
+import { useI18n } from '@/hooks/use-i18n';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import {
   Calendar,
@@ -55,7 +56,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+
 import { toast } from 'sonner';
 
 // Drizzle schema types
@@ -89,7 +90,7 @@ interface Permission {
 }
 
 export default function UserManagementPage() {
-  const { t } = useTranslation('user');
+  const { t } = useI18n();
   const { user, hasPermission, getAllowedActions } = useRBAC();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
@@ -396,20 +397,20 @@ export default function UserManagementPage() {
         throw new Error(errorData.error || 'Failed to update user');
       }
 
-      toast.success('User updated successfully');
+      toast.success(t('user.messages.updateSuccess'));
       setIsEditUserDialogOpen(false);
       setSelectedUser(null);
       setUserFormData({ name: '', email: '', password: '', roleId: '', isActive: true });
       fetchUsers();
     } catch (error) {
       console.error('Error updating user:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to update user');
+      toast.error(error instanceof Error ? error.message : t('user.messages.updateError'));
     }
   };
 
   // Delete user
   const deleteUser = async (userId: number) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
+    if (!confirm(t('user.messages.deleteConfirm'))) return;
 
     try {
       const response = await fetch('/api/users', {
@@ -425,11 +426,11 @@ export default function UserManagementPage() {
         throw new Error(errorData.error || 'Failed to delete user');
       }
 
-      toast.success('User deleted successfully');
+      toast.success(t('user.messages.deleteSuccess'));
       fetchUsers();
     } catch (error) {
       console.error('Error deleting user:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to delete user');
+      toast.error(error instanceof Error ? error.message : t('user.messages.deleteError'));
     }
   };
 

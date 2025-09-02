@@ -35,7 +35,14 @@
     "loading": "جاري التحميل...",
     "saving": "جاري الحفظ...",
     "syncing": "جاري المزامنة...",
-    "noData": "لا توجد بيانات متاحة"
+    "quickCreate": "إنشاء سريع",
+    "noData": "لا توجد بيانات متاحة",
+    "refreshSession": "تحديث الجلسة",
+    "settings": "الإعدادات",
+    "profile": "الملف الشخصي",
+    "logout": "تسجيل الخروج",
+    "signIn": "تسجيل الدخول",
+    "inbox": "صندوق الوارد"
   },
   "status": {
     "active": "نشط",
@@ -70,7 +77,18 @@
     "success": "تم إنجاز العملية بنجاح",
     "error": "حدث خطأ",
     "confirmDelete": "هل أنت متأكد من حذف هذا العنصر؟",
-    "unsavedChanges": "لديك تغييرات غير محفوظة. هل أنت متأكد من المغادرة؟"
+    "unsavedChanges": "لديك تغييرات غير محفوظة. هل أنت متأكد من المغادرة؟",
+    "accessDenied": "تم رفض الوصول",
+    "loadingError": "خطأ في تحميل البيانات",
+    "syncStarted": "بدأت المزامنة",
+    "syncSuccess": "تمت المزامنة بنجاح",
+    "syncError": "فشلت المزامنة",
+    "errorGeneral": "حدث خطأ",
+    "deleteConfirm": "هل أنت متأكد من حذف هذا العنصر؟",
+    "deleteSuccess": "تم حذف العنصر بنجاح",
+    "deleteError": "خطأ في حذف العنصر",
+    "exportComingSoon": "ميزة التصدير قريباً",
+    "importComingSoon": "ميزة الاستيراد قريباً"
   },
   "error": {
     "invalidId": "معرف غير صالح",

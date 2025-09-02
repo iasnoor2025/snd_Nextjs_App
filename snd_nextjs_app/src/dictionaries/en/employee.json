@@ -91,11 +91,17 @@
     "view": "View Employee",
     "save": "Save Employee",
     "cancel": "Cancel",
+    "backToList": "Back to Employee List",
     "confirm": "Confirm",
     "search": "Search employees...",
     "filter": "Filter",
     "refresh": "Refresh",
     "clear": "Clear"
+  },
+
+  "sync": {
+    "button": "Sync from ERPNext",
+    "syncing": "Syncing..."
   },
 
   "fields": {
@@ -141,6 +147,7 @@
     "name": "Name",
     "employeeId": "Employee ID",
     "fileNumber": "File Number",
+    "noDesignation": "No Designation",
     "supervisor": "Supervisor",
     "status": "Status",
     "relationship": "Relationship",
@@ -185,6 +192,7 @@
     "inactive": "Inactive",
     "terminated": "Terminated",
     "onLeave": "On Leave",
+    "left": "Exit the company",
     "probation": "Probation",
     "unknown": "Unknown"
   },
@@ -218,6 +226,8 @@
     "fetchError": "Failed to fetch employees",
     "confirmDelete": "Are you sure you want to delete this employee?",
     "noCreatePermission": "You don't have permission to create employees",
+    "employeeNotFound": "Employee Not Found",
+    "employeeNotFoundDescription": "The employee with ID {{id}} could not be found.",
     "fileUploadSuccess": "File uploaded successfully",
     "fileUploadError": "Failed to upload file",
     "selectDepartmentToEdit": "Please select a department to edit",
@@ -229,28 +239,36 @@
   "confirmDelete": {
     "department": {
       "title": "Delete Department",
-      "description": "Are you sure you want to delete the department '{name}'? This action cannot be undone."
+      "description": "Are you sure you want to delete the department '{{name}}'? This action cannot be undone."
     },
     "designation": {
       "title": "Delete Designation",
-      "description": "Are you sure you want to delete the designation '{name}'? This action cannot be undone."
+      "description": "Are you sure you want to delete the designation '{{name}}'? This action cannot be undone."
     }
   },
 
   "pagination": {
-    "showing": "Showing {start}-{end} of {total} employees",
+    "showing": "Showing {{start}}-{{end}} of {{total}} employees",
     "show": "Show",
     "perPage": "per page",
     "previous": "Previous",
     "next": "Next",
-    "page": "Page {current} of {total}"
+    "page": "Page {{current}} of {{total}}"
   },
 
   "filters": {
     "all": "All",
     "status": "Status",
     "department": "Department",
+    "assignmentStatus": "Assignment Status",
+    "allAssignments": "All Assignments",
+    "currentlyAssigned": "Currently Assigned",
+    "notAssigned": "Not Assigned",
     "clear": "Clear Filters"
+  },
+
+  "searchResults": {
+    "summary": "Showing {{filtered}} of {{total}} employees{{#searchTerm}} matching \"{{searchTerm}}\"{{/searchTerm}}{{#statusFilter}} with status \"{{statusFilter}}\"{{/statusFilter}}{{#departmentFilter}} in department \"{{departmentFilter}}\"{{/departmentFilter}}{{#assignmentFilter}}{{#assigned}} who are currently assigned{{/assigned}}{{^assigned}} who are not currently assigned{{/assigned}}{{/assignmentFilter}}"
   },
 
   "table": {
@@ -260,6 +278,7 @@
       "email": "Email",
       "department": "Department",
       "iqamaNumber": "Iqama Number",
+      "iqamaExpiry": "Iqama Expiry",
       "currentAssignment": "Current Assignment",
       "status": "Status",
       "hireDate": "Hire Date",
@@ -489,5 +508,50 @@
     "day": "day",
     "days": "days",
     "lessThanDay": "Less than a day"
+  },
+
+  "na": "N/A",
+  "currency": {
+    "symbol": "SAR"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "terminated": "Terminated",
+    "suspended": "Suspended"
+  },
+  "advances": {
+    "title": "Advance Payment Management",
+    "description": "Track and manage employee advance payments and deductions",
+    "newAdvance": "New Advance",
+    "makeRepayment": "Make Repayment",
+    "recordRepayment": "Record Repayment",
+    "repaymentDescription": "Only approved and partially repaid advances can be repaid. Enter the repayment amount. For partial repayments, the amount must be at least the total monthly deduction.",
+    "noAdvancesForRepayment": "No Advances Available for Repayment",
+    "noAdvancesForRepaymentDescription": "Only approved and partially repaid advances can be repaid. There are no advances available for repayment.",
+    "selectAdvance": "Select Advance",
+    "selectAdvancePlaceholder": "Select an advance to repay",
+    "currentMonthlyDeduction": "Current Monthly Deduction",
+    "companyWillDecide": "Company will decide monthly deduction",
+    "setMonthlyDeduction": "Set monthly deduction amount",
+    "estimatedRepayment": "Estimated Repayment",
+    "projected": "Projected",
+    "months": "months",
+    "basedOnCurrentBalance": "Based on current balance and monthly deduction",
+    "setMonthlyDeductionToSeeEstimate": "Set monthly deduction to see estimate",
+    "history": "Advance History",
+    "table": {
+      "amount": "Amount",
+      "monthlyDeduction": "Monthly Deduction",
+      "repaidAmount": "Repaid Amount",
+      "reason": "Reason",
+      "date": "Date",
+      "status": "Status",
+      "type": "Type",
+      "actions": "Actions"
+    }
+  },
+  "actions": {
+    "close": "Close"
   }
 }

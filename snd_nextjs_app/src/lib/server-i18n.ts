@@ -1,10 +1,10 @@
 import { NextRequest } from 'next/server';
 
 // Import translation files
-import enPayroll from '@/locales/en/payroll.json';
-import arPayroll from '@/locales/ar/payroll.json';
-import enCommon from '@/locales/en/common.json';
-import arCommon from '@/locales/ar/common.json';
+import enPayroll from '@/dictionaries/en/payroll.json';
+import arPayroll from '@/dictionaries/ar/payroll.json';
+import enCommon from '@/dictionaries/en/common.json';
+import arCommon from '@/dictionaries/ar/common.json';
 
 const translations = {
   en: {

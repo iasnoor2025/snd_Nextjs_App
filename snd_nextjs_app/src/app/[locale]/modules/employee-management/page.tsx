@@ -38,7 +38,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+
 import { toast } from 'sonner';
 
 import {
@@ -97,8 +97,7 @@ interface Employee {
 }
 
 export default function EmployeeManagementPage() {
-  const { t } = useTranslation(['common', 'employee']);
-  const { isRTL } = useI18n();
+  const { t, isRTL } = useI18n();
   const { user } = useRBAC();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -131,7 +130,7 @@ export default function EmployeeManagementPage() {
 
   // Helper function to format dates
   const formatDate = (dateString: string | null | undefined): string => {
-    if (!dateString) return t('common.na');
+    if (!dateString) return t('employee.na');
     try {
       const date = new Date(dateString);
       return date.toLocaleDateString('en-US', {
@@ -140,7 +139,7 @@ export default function EmployeeManagementPage() {
         day: 'numeric',
       });
     } catch (error) {
-      return t('common.na');
+      return t('employee.na'); 
     }
   };
 
@@ -225,12 +224,12 @@ export default function EmployeeManagementPage() {
         }
       } else {
         setEmployees([]);
-        toast.error(t('employee:messages.fetchError'));
+        toast.error(t('employee.messages.fetchError'));
       }
     } catch (error) {
       console.error('Error in fetchEmployees:', error);
       setEmployees([]);
-      toast.error(t('employee:messages.fetchError'));
+      toast.error(t('employee.messages.fetchError'));
     } finally {
       setIsLoading(false);
     }
@@ -303,14 +302,14 @@ export default function EmployeeManagementPage() {
       });
 
       if (response.ok) {
-        toast.success(t('employee:messages.syncSuccess'));
+        toast.success(t('employee.messages.syncSuccess'));
 
         await fetchEmployees(); // Refresh the list
-      } else {
-        toast.error(t('employee:messages.syncError'));
-      }
-    } catch (_error) {
-      toast.error(t('employee:messages.syncError'));
+              } else {
+          toast.error(t('employee.messages.syncError'));
+        }
+      } catch (_error) {
+        toast.error(t('employee.messages.syncError'));
     } finally {
       setIsSyncing(false);
     }
@@ -507,7 +506,7 @@ export default function EmployeeManagementPage() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">{t('employee:messages.loading')}</p>
+            <p className="text-muted-foreground">{t('employee.messages.loading')}</p>
           </div>
         </div>
       ) : (
@@ -516,13 +515,13 @@ export default function EmployeeManagementPage() {
           <div className={isRTL ? 'text-right' : 'text-left'}>
             <h1 className="text-3xl font-bold">
               {user?.role === 'EMPLOYEE'
-                ? t('employee:title') + ' - My Profile'
-                : t('employee:title')}
+                ? t('employee.title') + ' - My Profile'
+                : t('employee.title')}
             </h1>
             <p className="text-muted-foreground">
               {user?.role === 'EMPLOYEE'
-                ? t('employee:subtitle') + ' - You are viewing your own employee record'
-                : t('employee:subtitle')}
+                ? t('employee.subtitle') + ' - You are viewing your own employee record'
+                : t('employee.subtitle')}
             </p>
           </div>
 
@@ -535,7 +534,7 @@ export default function EmployeeManagementPage() {
                 className="flex items-center gap-2"
               >
                 <Upload className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                {isSyncing ? t('employee:sync.syncing') : t('employee:sync.button')}
+                {isSyncing ? t('employee.sync.syncing') : t('employee.sync.button')}
               </Button>
             </PermissionContent>
 
@@ -543,7 +542,7 @@ export default function EmployeeManagementPage() {
               <Link href="/modules/employee-management/create">
                 <Button>
                   <Plus className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                  {t('employee:actions.add')}
+                  {t('employee.actions.add')}
                 </Button>
               </Link>
             </PermissionContent>
@@ -551,7 +550,7 @@ export default function EmployeeManagementPage() {
             <PermissionContent action="export" subject="Employee">
               <Button variant="outline" onClick={handleExport}>
                 <Download className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                {t('employee:actions.export')}
+                {t('employee.actions.export')}
               </Button>
             </PermissionContent>
           </div>
@@ -564,7 +563,7 @@ export default function EmployeeManagementPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
-                    {t('employee:statistics.totalEmployees')}
+                    {t('employee.statistics.totalEmployees')}
                   </p>
                   <p className="text-2xl font-bold">{statistics.totalEmployees}</p>
                 </div>
@@ -580,7 +579,7 @@ export default function EmployeeManagementPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
-                    {t('employee:statistics.currentlyAssigned')}
+                    {t('employee.statistics.currentlyAssigned')}
                   </p>
                   <p className="text-2xl font-bold">{statistics.currentlyAssigned}</p>
                 </div>
@@ -596,7 +595,7 @@ export default function EmployeeManagementPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
-                    {t('employee:statistics.projectAssignments')}
+                    {t('employee.statistics.projectAssignments')}
                   </p>
                   <p className="text-2xl font-bold">{statistics.projectAssignments}</p>
                 </div>
@@ -612,7 +611,7 @@ export default function EmployeeManagementPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
-                    {t('employee:statistics.rentalAssignments')}
+                    {t('employee.statistics.rentalAssignments')}
                   </p>
                   <p className="text-2xl font-bold">{statistics.rentalAssignments}</p>
                 </div>
@@ -626,9 +625,9 @@ export default function EmployeeManagementPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{t('employee:title')}</CardTitle>
+            <CardTitle>{t('employee.title')}</CardTitle>
             <CardDescription>
-              {t('employee:pagination.showing', {
+              {t('employee.pagination.showing', {
                 start: startIndex + 1,
                 end: Math.min(endIndex, totalItems),
                 total: totalItems,
@@ -643,7 +642,7 @@ export default function EmployeeManagementPage() {
                     className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4`}
                   />
                   <Input
-                    placeholder={t('employee:actions.search')}
+                    placeholder={t('employee.actions.search')}
                     value={searchTerm}
                     onChange={e => {
                       setSearchTerm(e.target.value);
@@ -662,14 +661,14 @@ export default function EmployeeManagementPage() {
                 }}
               >
                 <SelectTrigger className="w-48">
-                  <SelectValue placeholder={t('employee:filters.status')} />
+                  <SelectValue placeholder={t('employee.filters.status')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('employee:filters.all')}</SelectItem>
-                  <SelectItem value="active">{t('employee:status.active')}</SelectItem>
-                  <SelectItem value="inactive">{t('employee:status.inactive')}</SelectItem>
-                  <SelectItem value="on_leave">On Leave</SelectItem>
-                  <SelectItem value="left">Exit the company</SelectItem>
+                  <SelectItem value="all">{t('employee.filters.all')}</SelectItem>
+                  <SelectItem value="active">{t('employee.status.active')}</SelectItem>
+                  <SelectItem value="inactive">{t('employee.status.inactive')}</SelectItem>
+                  <SelectItem value="on_leave">{t('employee.status.onLeave')}</SelectItem>
+                  <SelectItem value="left">{t('employee.status.left')}</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -681,13 +680,13 @@ export default function EmployeeManagementPage() {
                 }}
               >
                 <SelectTrigger className="w-48">
-                  <SelectValue placeholder={t('employee:filters.department')} />
+                  <SelectValue placeholder={t('employee.filters.department')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('employee:filters.all')}</SelectItem>
-                  <SelectItem value="HR">{t('employee:departments.hr')}</SelectItem>
-                  <SelectItem value="IT">{t('employee:departments.it')}</SelectItem>
-                  <SelectItem value="Finance">{t('employee:departments.finance')}</SelectItem>
+                  <SelectItem value="all">{t('employee.filters.all')}</SelectItem>
+                  <SelectItem value="HR">{t('employee.departments.hr')}</SelectItem>
+                  <SelectItem value="IT">{t('employee.departments.it')}</SelectItem>
+                  <SelectItem value="Finance">{t('employee.departments.finance')}</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -699,12 +698,12 @@ export default function EmployeeManagementPage() {
                 }}
               >
                 <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Assignment Status" />
+                  <SelectValue placeholder={t('employee.filters.assignmentStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Assignments</SelectItem>
-                  <SelectItem value="assigned">Currently Assigned</SelectItem>
-                  <SelectItem value="unassigned">Not Assigned</SelectItem>
+                  <SelectItem value="all">{t('employee.filters.allAssignments')}</SelectItem>
+                  <SelectItem value="assigned">{t('employee.filters.currentlyAssigned')}</SelectItem>
+                  <SelectItem value="unassigned">{t('employee.filters.notAssigned')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -716,14 +715,14 @@ export default function EmployeeManagementPage() {
               assignmentFilter !== 'all') && (
               <div className="mb-4 p-3 bg-muted/50 rounded-md">
                 <div className="text-sm text-muted-foreground">
-                  Showing {filteredAndSortedEmployees.length} of {employees.length} employees
-                  {searchTerm && ` matching "${searchTerm}"`}
-                  {statusFilter !== 'all' && ` with status "${statusFilter}"`}
-                  {departmentFilter !== 'all' && ` in department "${departmentFilter}"`}
-                  {assignmentFilter !== 'all' &&
-                    (assignmentFilter === 'assigned'
-                      ? ` who are currently assigned`
-                      : ` who are not currently assigned`)}
+                  {t('employee.searchResults.summary', {
+                    filtered: filteredAndSortedEmployees.length,
+                    total: employees.length,
+                    searchTerm: searchTerm,
+                    statusFilter: statusFilter !== 'all' ? statusFilter : null,
+                    departmentFilter: departmentFilter !== 'all' ? departmentFilter : null,
+                    assignmentFilter: assignmentFilter !== 'all' ? assignmentFilter : null
+                  })}
                 </div>
               </div>
             )}
@@ -747,7 +746,7 @@ export default function EmployeeManagementPage() {
                       onClick={() => handleSort('file_number')}
                     >
                       <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        {t('employee:table.headers.fileNumber')}
+                        {t('employee.table.headers.fileNumber')}
                         {getSortIcon('file_number')}
                       </div>
                     </TableHead>
@@ -756,7 +755,7 @@ export default function EmployeeManagementPage() {
                       onClick={() => handleSort('full_name')}
                     >
                       <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        {t('employee:table.headers.name')}
+                        {t('employee.table.headers.name')}
                         {getSortIcon('full_name')}
                       </div>
                     </TableHead>
@@ -765,7 +764,7 @@ export default function EmployeeManagementPage() {
                       onClick={() => handleSort('email')}
                     >
                       <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        {t('employee:table.headers.email')}
+                        {t('employee.table.headers.email')}
                         {getSortIcon('email')}
                       </div>
                     </TableHead>
@@ -774,7 +773,7 @@ export default function EmployeeManagementPage() {
                       onClick={() => handleSort('department')}
                     >
                       <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        {t('employee:table.headers.department')}
+                        {t('employee.table.headers.department')}
                         {getSortIcon('department')}
                       </div>
                     </TableHead>
@@ -783,7 +782,7 @@ export default function EmployeeManagementPage() {
                       onClick={() => handleSort('iqama_number')}
                     >
                       <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        {t('employee:table.headers.iqamaNumber')}
+                        {t('employee.table.headers.iqamaNumber')}
                         {getSortIcon('iqama_number')}
                       </div>
                     </TableHead>
@@ -792,13 +791,13 @@ export default function EmployeeManagementPage() {
                       onClick={() => handleSort('iqama_expiry')}
                     >
                       <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        Iqama Expiry
+                        {t('employee.table.headers.iqamaExpiry')}
                         {getSortIcon('iqama_expiry')}
                       </div>
                     </TableHead>
                     <TableHead className={isRTL ? 'text-right' : 'text-left'}>
                       <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        {t('employee:table.headers.currentAssignment')}
+                        {t('employee.table.headers.currentAssignment')}
                       </div>
                     </TableHead>
                     <TableHead
@@ -806,7 +805,7 @@ export default function EmployeeManagementPage() {
                       onClick={() => handleSort('status')}
                     >
                       <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        {t('employee:table.headers.status')}
+                        {t('employee.table.headers.status')}
                         {getSortIcon('status')}
                       </div>
                     </TableHead>
@@ -815,12 +814,12 @@ export default function EmployeeManagementPage() {
                       onClick={() => handleSort('hireDate')}
                     >
                       <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        {t('employee:table.headers.hireDate')}
+                        {t('employee.table.headers.hireDate')}
                         {getSortIcon('hireDate')}
                       </div>
                     </TableHead>
                     <TableHead className={isRTL ? 'text-left' : 'text-right'}>
-                      {t('employee:table.headers.actions')}
+                      {t('employee.table.headers.actions')}
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -835,26 +834,26 @@ export default function EmployeeManagementPage() {
                                 statusFilter !== 'all' ||
                                 departmentFilter !== 'all' ||
                                 assignmentFilter !== 'all'
-                              ? t('employee:messages.noEmployeesFilter')
-                              : t('employee:messages.noEmployees')}
+                              ? t('employee.messages.noEmployeesFilter')
+                              : t('employee.messages.noEmployees')}
                         </div>
                       </TableCell>
                     </TableRow>
                   ) : (
                     currentEmployees.map(employee => (
                       <TableRow key={employee.id}>
-                        <TableCell className={`font-mono ${isRTL ? 'text-right' : 'text-left'}`}>
-                          {convertToArabicNumerals(employee.file_number, isRTL) || t('common.na')}
-                        </TableCell>
+                                                 <TableCell className={`font-mono ${isRTL ? 'text-right' : 'text-left'}`}>
+                           {convertToArabicNumerals(employee.file_number, isRTL) || t('employee.na')}
+                         </TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
                           <div>
                             <div className="font-medium flex items-center gap-2">
-                              {getTranslatedName(
-                                employee.full_name,
-                                isRTL,
-                                translatedNames,
-                                setTranslatedNames
-                              ) || t('common.na')}
+                                                             {getTranslatedName(
+                                 employee.full_name,
+                                 isRTL,
+                                 translatedNames,
+                                 setTranslatedNames
+                               ) || t('employee.na')}
                               {employee.current_assignment && (
                                 <Badge 
                                   variant="outline" 
@@ -869,63 +868,63 @@ export default function EmployeeManagementPage() {
                                           : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
                                   )}
                                 >
-                                  {employee.current_assignment.type === 'project'
-                                    ? `📋 ${t('employee:assignment.project')}`
-                                    : employee.current_assignment.type === 'rental'
-                                      ? `🚛 ${t('employee:assignment.rental')}`
-                                      : employee.current_assignment.type === 'manual'
-                                        ? `🔧 ${t('employee:assignment.manual')}`
-                                        : `📋 ${t('employee:assignment.assigned')}`}
+                                                                      {employee.current_assignment.type === 'project'
+                                      ? `📋 ${t('employee.assignment.project')}`
+                                      : employee.current_assignment.type === 'rental'
+                                        ? `🚛 ${t('employee.assignment.rental')}`
+                                        : employee.current_assignment.type === 'manual'
+                                          ? `🔧 ${t('employee.assignment.manual')}`
+                                          : `📋 ${t('employee.assignment.assigned')}`}
                                 </Badge>
                               )}
                             </div>
-                            <div className="text-sm text-muted-foreground">
-                              {employee.designation || t('common.na')}
-                            </div>
+                                                         <div className="text-sm text-muted-foreground">
+                               {employee.designation || t('employee.na')}
+                             </div>
                           </div>
                         </TableCell>
+                                                 <TableCell className={isRTL ? 'text-right' : 'text-left'}>
+                           {employee.email || t('employee.na')}
+                         </TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
-                          {employee.email || t('common.na')}
+                                                      {employee.department
+                              ? employee.department.toLowerCase() === 'general'
+                                ? t('employee.departments.general')
+                                : employee.department.toLowerCase() === 'hr'
+                                  ? t('employee.departments.hr')
+                                  : employee.department.toLowerCase() === 'it'
+                                    ? t('employee.departments.it')
+                                    : employee.department.toLowerCase() === 'finance'
+                                      ? t('employee.departments.finance')
+                                      : employee.department.toLowerCase() === 'operations'
+                                        ? t('employee.departments.operations')
+                                        : employee.department.toLowerCase() === 'sales'
+                                          ? t('employee.departments.sales')
+                                          : employee.department.toLowerCase() === 'marketing'
+                                            ? t('employee.departments.marketing')
+                                            : employee.department.toLowerCase() === 'engineering'
+                                              ? t('employee.departments.engineering')
+                                              : employee.department.toLowerCase() === 'maintenance'
+                                                ? t('employee.departments.maintenance')
+                                                                               : employee.department
+                               : t('employee.na')}
                         </TableCell>
-                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>
-                          {employee.department
-                            ? employee.department.toLowerCase() === 'general'
-                              ? t('employee:departments.general')
-                              : employee.department.toLowerCase() === 'hr'
-                                ? t('employee:departments.hr')
-                                : employee.department.toLowerCase() === 'it'
-                                  ? t('employee:departments.it')
-                                  : employee.department.toLowerCase() === 'finance'
-                                    ? t('employee:departments.finance')
-                                    : employee.department.toLowerCase() === 'operations'
-                                      ? t('employee:departments.operations')
-                                      : employee.department.toLowerCase() === 'sales'
-                                        ? t('employee:departments.sales')
-                                        : employee.department.toLowerCase() === 'marketing'
-                                          ? t('employee:departments.marketing')
-                                          : employee.department.toLowerCase() === 'engineering'
-                                            ? t('employee:departments.engineering')
-                                            : employee.department.toLowerCase() === 'maintenance'
-                                              ? t('employee:departments.maintenance')
-                                              : employee.department
-                            : t('common.na')}
-                        </TableCell>
-                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>
-                          {employee.iqama_number ? (
-                            <div>
-                              <div className="font-medium">
-                                {convertToArabicNumerals(employee.iqama_number, isRTL)}
-                              </div>
-                              {employee.iqama_expiry && isIqamaExpired(employee.iqama_expiry) && (
-                                <div className="text-sm text-red-500">
-                                  ({t('employee:iqama.expired')})
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            t('common.na')
-                          )}
-                        </TableCell>
+                                                 <TableCell className={isRTL ? 'text-right' : 'text-left'}>
+                           {employee.iqama_number ? (
+                             <div>
+                               <div className="font-medium">
+                                 {convertToArabicNumerals(employee.iqama_number, isRTL)}
+                               </div>
+                               {employee.iqama_expiry && isIqamaExpired(employee.iqama_expiry) && (
+                                 <div className="text-sm text-red-500">
+                                   ({t('employee.iqama.expired')})
+                                 </div>
+                               )}
+                             </div>
+                           ) : (
+                             t('employee.na')
+                           )}
+                         </TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
                           {employee.iqama_expiry ? (
                             <div
@@ -936,28 +935,28 @@ export default function EmployeeManagementPage() {
                                 <div className="text-xs text-red-500">(Expired)</div>
                               )}
                             </div>
-                          ) : (
-                            t('common.na')
-                          )}
+                                                     ) : (
+                             t('employee.na')
+                           )}
                         </TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
                           {employee.current_assignment ? (
                             <div>
                               <div className="font-medium">{employee.current_assignment.name}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {employee.current_assignment.type === 'project'
-                                  ? t('employee:assignment.project')
-                                  : employee.current_assignment.type === 'rental'
-                                    ? t('employee:assignment.rental')
-                                    : employee.current_assignment.type === 'manual'
-                                      ? t('employee:assignment.manual')
-                                      : t('employee:assignment.assigned')}
-                              </div>
+                                                              <div className="text-sm text-muted-foreground">
+                                  {employee.current_assignment.type === 'project'
+                                    ? t('employee.assignment.project')
+                                    : employee.current_assignment.type === 'rental'
+                                      ? t('employee.assignment.rental')
+                                      : employee.current_assignment.type === 'manual'
+                                        ? t('employee.assignment.manual')
+                                        : t('employee.assignment.assigned')}
+                                </div>
                             </div>
                           ) : (
-                            <span className="text-muted-foreground">
-                              {t('employee:assignment.noAssignment')}
-                            </span>
+                                                          <span className="text-muted-foreground">
+                                {t('employee.assignment.noAssignment')}
+                              </span>
                           )}
                         </TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
@@ -986,14 +985,14 @@ export default function EmployeeManagementPage() {
                             )}
                           >
                             {employee.status === 'active'
-                              ? t('employee:status.active')
+                              ? t('employee.status.active')
                               : employee.status === 'inactive'
-                                ? t('employee:status.inactive')
+                                ? t('employee.status.inactive')
                                 : employee.status === 'on_leave'
-                                  ? 'On Leave'
+                                  ? t('employee.status.onLeave')
                                 : employee.status === 'left'
-                                  ? 'Exit the company'
-                                  : employee.status || t('common.na')}
+                                  ? t('employee.status.left')
+                                                                     : employee.status || t('employee.na')}
                           </Badge>
                         </TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
@@ -1058,21 +1057,21 @@ export default function EmployeeManagementPage() {
                 <div
                   className={`text-sm text-muted-foreground ${isRTL ? 'text-right' : 'text-left'}`}
                 >
-                  {totalPages > 1
-                    ? t('employee:pagination.showing', {
-                        start: startIndex + 1,
-                        end: Math.min(endIndex, totalItems),
-                        total: totalItems,
-                      })
-                    : t('employee:pagination.showing', {
-                        start: totalItems,
-                        end: totalItems,
-                        total: totalItems,
-                      })}
+                                     {totalPages > 1
+                     ? t('employee.pagination.showing', {
+                         start: startIndex + 1,
+                         end: Math.min(endIndex, totalItems),
+                         total: totalItems,
+                       })
+                     : t('employee.pagination.showing', {
+                         start: totalItems,
+                         end: totalItems,
+                         total: totalItems,
+                       })}
                 </div>
                 <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                   <span className="text-sm text-muted-foreground">
-                    {t('employee:pagination.show')}:
+                    {t('employee.pagination.show')}:
                   </span>
                   <Select
                     value={itemsPerPage.toString()}
@@ -1090,7 +1089,7 @@ export default function EmployeeManagementPage() {
                     </SelectContent>
                   </Select>
                   <span className="text-sm text-muted-foreground">
-                    {t('employee:pagination.perPage')}
+                                          {t('employee.pagination.perPage')}
                   </span>
                 </div>
               </div>
@@ -1102,16 +1101,16 @@ export default function EmployeeManagementPage() {
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
                   >
-                    {isRTL ? (
-                      <>
-                        {t('employee:pagination.next')}
-                        <ChevronRight className="h-4 w-4 ml-1" />
-                      </>
-                    ) : (
-                      <>
-                        <ChevronLeft className="h-4 w-4 mr-1" />
-                        {t('employee:pagination.previous')}
-                      </>
+                                          {isRTL ? (
+                        <>
+                          {t('employee.pagination.next')}
+                          <ChevronRight className="h-4 w-4 ml-1" />
+                        </>
+                      ) : (
+                                              <>
+                          <ChevronLeft className="h-4 w-4 mr-1" />
+                          {t('employee.pagination.previous')}
+                        </>
                     )}
                   </Button>
 
@@ -1178,16 +1177,16 @@ export default function EmployeeManagementPage() {
                     onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages}
                   >
-                    {isRTL ? (
-                      <>
-                        {t('employee:pagination.previous')}
-                        <ChevronLeft className="h-4 w-4 ml-1" />
-                      </>
-                    ) : (
-                      <>
-                        {t('employee:pagination.next')}
-                        <ChevronRight className="h-4 w-4 mr-1" />
-                      </>
+                                          {isRTL ? (
+                        <>
+                          {t('employee.pagination.previous')}
+                          <ChevronLeft className="h-4 w-4 ml-1" />
+                        </>
+                      ) : (
+                                              <>
+                          {t('employee.pagination.next')}
+                          <ChevronRight className="h-4 w-4 mr-1" />
+                        </>
                     )}
                   </Button>
                 </div>

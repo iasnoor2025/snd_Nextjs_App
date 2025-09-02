@@ -52,7 +52,7 @@ import {
   convertToArabicNumerals,
   getTranslatedName,
 } from '@/lib/translation-utils';
-import { useTranslation } from 'react-i18next';
+
 
 interface Equipment {
   id: number;
@@ -103,8 +103,7 @@ interface Equipment {
 }
 
 export default function EquipmentManagementPage() {
-  const { t } = useTranslation('equipment');
-  const { isRTL } = useI18n();
+  const { t, isRTL } = useI18n();
   const { user, hasPermission, getAllowedActions } = useRBAC();
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(false);
@@ -254,23 +253,23 @@ export default function EquipmentManagementPage() {
     const statusConfig = {
       available: {
         className: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200',
-        label: t('status.available'),
+        label: t('equipment.status.available'),
       },
       assigned: {
         className: 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200',
-        label: t('status.assigned'),
+        label: t('equipment.status.assigned'),
       },
       rented: {
         className: 'bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-200',
-        label: t('status.rented'),
+        label: t('equipment.status.rented'),
       },
       maintenance: {
         className: 'bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200',
-        label: t('status.maintenance'),
+        label: t('equipment.status.maintenance'),
       },
       out_of_service: {
         className: 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200',
-        label: t('status.out_of_service'),
+        label: t('equipment.status.out_of_service'),
       },
     };
 
@@ -298,15 +297,15 @@ export default function EquipmentManagementPage() {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <Package className="h-8 w-8 text-blue-600" />
-              {t('equipment_management.title')}
+              {t('equipment.title')}
             </h1>
-            <p className="text-muted-foreground">{t('manage_equipment_inventory')}</p>
+            <p className="text-muted-foreground">{t('equipment.manage_equipment_inventory')}</p>
           </div>
           <div className="flex gap-2">
             {hasPermission('create', 'Equipment') && (
               <Button onClick={() => setShowAddEquipmentModal(true)} className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
-                {t('add_equipment')}
+                {t('equipment.add_equipment')}
               </Button>
             )}
             {hasPermission('sync', 'Equipment') && (
@@ -321,7 +320,7 @@ export default function EquipmentManagementPage() {
                 ) : (
                   <RotateCw className="h-4 w-4" />
                 )}
-                {syncing ? t('syncing') : t('sync_from_erpnext')}
+                {syncing ? t('equipment.syncing') : t('equipment.sync_from_erpnext')}
               </Button>
             )}
           </div>
@@ -335,7 +334,7 @@ export default function EquipmentManagementPage() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
-                    placeholder={t('equipment_management.search_placeholder')}
+                    placeholder={t('equipment.equipment_management.search_placeholder')}
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
                     className="pl-10"
@@ -344,7 +343,7 @@ export default function EquipmentManagementPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Label htmlFor="status-filter" className="text-sm font-medium">
-                  {t('equipment_management.status_filter_label')}:
+                  {t('equipment.equipment_management.status_filter_label')}:
                 </Label>
                 <select
                   id="status-filter"
@@ -352,16 +351,16 @@ export default function EquipmentManagementPage() {
                   onChange={e => setFilterStatus(e.target.value)}
                   className="border rounded-md px-3 py-2 text-sm"
                 >
-                  <option value="all">{t('equipment_management.all_status')}</option>
-                  <option value="available">{t('status.available')}</option>
-                  <option value="rented">{t('status.rented')}</option>
-                  <option value="maintenance">{t('status.maintenance')}</option>
-                  <option value="out_of_service">{t('status.out_of_service')}</option>
+                  <option value="all">{t('equipment.equipment_management.all_status')}</option>
+                  <option value="available">{t('equipment.status.available')}</option>
+                  <option value="rented">{t('equipment.status.rented')}</option>
+                  <option value="maintenance">{t('equipment.status.maintenance')}</option>
+                  <option value="out_of_service">{t('equipment.status.out_of_service')}</option>
                 </select>
               </div>
               <div className="flex items-center gap-2">
                 <Label htmlFor="assignment-filter" className="text-sm font-medium">
-                  {t('equipment_management.assignment_filter_label')}:
+                  {t('equipment.equipment_management.assignment_filter_label')}:
                 </Label>
                 <select
                   id="assignment-filter"
@@ -369,14 +368,14 @@ export default function EquipmentManagementPage() {
                   onChange={e => setFilterAssignment(e.target.value)}
                   className="border rounded-md px-3 py-2 text-sm"
                 >
-                  <option value="all">{t('equipment_management.all_assignments')}</option>
-                  <option value="assigned">{t('equipment_management.currently_assigned')}</option>
-                  <option value="unassigned">{t('equipment_management.not_assigned')}</option>
+                  <option value="all">{t('equipment.equipment_management.all_assignments')}</option>
+                  <option value="assigned">{t('equipment.equipment_management.currently_assigned')}</option>
+                  <option value="unassigned">{t('equipment.equipment_management.not_assigned')}</option>
                 </select>
               </div>
               <div className="flex items-center gap-2">
                 <Label htmlFor="istimara-filter" className="text-sm font-medium">
-                  {t('equipment_management.istimara_status')}:
+                  {t('equipment.equipment_management.istimara_status')}:
                 </Label>
                 <select
                   id="istimara-filter"
@@ -384,10 +383,10 @@ export default function EquipmentManagementPage() {
                   onChange={e => setFilterIstimara(e.target.value)}
                   className="border rounded-md px-3 py-2 text-sm"
                 >
-                  <option value="all">{t('equipment_management.all_istimara')}</option>
-                  <option value="valid">{t('equipment_management.valid')}</option>
-                  <option value="expired">{t('equipment_management.expired')}</option>
-                  <option value="expiring_soon">{t('equipment_management.expiring_soon')}</option>
+                  <option value="all">{t('equipment.equipment_management.all_istimara')}</option>
+                  <option value="valid">{t('equipment.equipment_management.valid')}</option>
+                  <option value="expired">{t('equipment.equipment_management.expired')}</option>
+                  <option value="expiring_soon">{t('equipment.equipment_management.expiring_soon')}</option>
                 </select>
               </div>
               {(filterStatus !== 'all' ||
@@ -405,7 +404,7 @@ export default function EquipmentManagementPage() {
                   }}
                   className="text-xs"
                 >
-                  {t('equipment_management.clear_filters')}
+                  {t('equipment.equipment_management.clear_filters')}
                 </Button>
               )}
             </div>
@@ -417,11 +416,11 @@ export default function EquipmentManagementPage() {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Database className="h-5 w-5" />
-              <span>{t('equipment_management.equipment_inventory')}</span>
+              <span>{t('equipment.equipment_management.equipment_inventory')}</span>
             </CardTitle>
             <CardDescription className="flex items-center gap-4 text-sm">
               <span>
-                {t('equipment_management.total_equipment')}: {equipment.length}
+                {t('equipment.equipment_management.total_equipment')}: {equipment.length}
               </span>
               {(() => {
                 const expiredCount = equipment.filter(
@@ -444,12 +443,12 @@ export default function EquipmentManagementPage() {
                   <>
                     {expiredCount > 0 && (
                       <span className="text-red-600 font-medium">
-                        ⚠️ {expiredCount} {t('equipment_management.expired_istimara')}
+                        ⚠️ {expiredCount} {t('equipment.equipment_management.expired_istimara')}
                       </span>
                     )}
                     {expiringSoonCount > 0 && (
                       <span className="text-orange-600 font-medium">
-                        ⏰ {expiringSoonCount} {t('equipment_management.expiring_soon_istimara')}
+                        ⏰ {expiringSoonCount} {t('equipment.equipment_management.expiring_soon_istimara')}
                       </span>
                     )}
                   </>
@@ -461,7 +460,7 @@ export default function EquipmentManagementPage() {
             {loading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin" />
-                <span className="ml-2">{t('equipment_management.loading_equipment')}</span>
+                <span className="ml-2">{t('equipment.equipment_management.loading_equipment')}</span>
               </div>
             ) : (
               <>
@@ -469,18 +468,18 @@ export default function EquipmentManagementPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{t('equipment_management.name')}</TableHead>
-                        <TableHead>{t('equipment_management.door_number')}</TableHead>
-                        <TableHead>{t('equipment_management.model')}</TableHead>
-                        <TableHead>{t('equipment_management.manufacturer')}</TableHead>
-                        <TableHead>{t('equipment_management.status')}</TableHead>
-                        <TableHead>{t('equipment_management.current_assignment')}</TableHead>
-                        <TableHead>{t('equipment_management.daily_rate')}</TableHead>
-                        <TableHead>{t('equipment_management.erpnext_id')}</TableHead>
-                        <TableHead>{t('equipment_management.chassis_number')}</TableHead>
+                        <TableHead>{t('equipment.equipment_management.name')}</TableHead>
+                        <TableHead>{t('equipment.equipment_management.door_number')}</TableHead>
+                        <TableHead>{t('equipment.equipment_management.model')}</TableHead>
+                        <TableHead>{t('equipment.equipment_management.manufacturer')}</TableHead>
+                        <TableHead>{t('equipment.equipment_management.status')}</TableHead>
+                        <TableHead>{t('equipment.equipment_management.current_assignment')}</TableHead>
+                        <TableHead>{t('equipment.equipment_management.daily_rate')}</TableHead>
+                        <TableHead>{t('equipment.equipment_management.erpnext_id')}</TableHead>
+                        <TableHead>{t('equipment.equipment_management.chassis_number')}</TableHead>
                         <TableHead>
                           <div className="flex items-center gap-2">
-                            <span>{t('equipment_management.istimara')}</span>
+                            <span>{t('equipment.equipment_management.istimara')}</span>
                             {(() => {
                               const expiredCount = equipment.filter(
                                 item =>
@@ -489,13 +488,13 @@ export default function EquipmentManagementPage() {
                               ).length;
                               return expiredCount > 0 ? (
                                 <Badge variant="destructive" className="text-xs">
-                                  {expiredCount} {t('equipment_management.expired')}
+                                  {expiredCount} {t('equipment.equipment_management.expired')}
                                 </Badge>
                               ) : null;
                             })()}
                           </div>
                         </TableHead>
-                        <TableHead>{t('equipment_management.actions')}</TableHead>
+                        <TableHead>{t('equipment.equipment_management.actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -505,13 +504,13 @@ export default function EquipmentManagementPage() {
                             {equipment.length === 0 ? (
                               <div className="flex flex-col items-center space-y-2">
                                 <Package className="h-8 w-8 text-muted-foreground" />
-                                <p>{t('equipment_management.no_equipment_found')}</p>
+                                <p>{t('equipment.equipment_management.no_equipment_found')}</p>
                                 <p className="text-sm">
-                                  {t('equipment_management.sync_erpnext_to_get_started')}
+                                  {t('equipment.equipment_management.sync_erpnext_to_get_started')}
                                 </p>
                               </div>
                             ) : (
-                              t('equipment_management.no_equipment_matches_search_criteria')
+                              t('equipment.equipment_management.no_equipment_matches_search_criteria')
                             )}
                           </TableCell>
                         </TableRow>
@@ -531,7 +530,7 @@ export default function EquipmentManagementPage() {
                                 convertToArabicNumerals(item.door_number, isRTL)
                               ) : (
                                 <span className="text-muted-foreground text-sm">
-                                  {t('equipment_management.not_specified')}
+                                  {t('equipment.equipment_management.not_specified')}
                                 </span>
                               )}
                             </TableCell>
@@ -540,7 +539,7 @@ export default function EquipmentManagementPage() {
                                 convertToArabicNumerals(item.model_number, isRTL)
                               ) : (
                                 <span className="text-muted-foreground text-sm">
-                                  {t('equipment_management.not_specified')}
+                                  {t('equipment.equipment_management.not_specified')}
                                 </span>
                               )}
                             </TableCell>
@@ -554,7 +553,7 @@ export default function EquipmentManagementPage() {
                                 )
                               ) : (
                                 <span className="text-muted-foreground text-sm">
-                                  {t('equipment_management.not_specified')}
+                                  {t('equipment.equipment_management.not_specified')}
                                 </span>
                               )}
                             </TableCell>
@@ -567,7 +566,7 @@ export default function EquipmentManagementPage() {
                                       item.current_assignment.project?.name ||
                                       item.current_assignment.rental?.rental_number ||
                                       item.current_assignment.name ||
-                                      t('equipment_management.assigned')}
+                                      t('equipment.equipment_management.assigned')}
                                   </div>
                                   <div className="text-xs text-muted-foreground">
                                     {item.current_assignment.type === 'project' &&
@@ -587,7 +586,7 @@ export default function EquipmentManagementPage() {
                                 </div>
                               ) : (
                                 <span className="text-muted-foreground">
-                                  {t('equipment_management.no_assignment')}
+                                  {t('equipment.equipment_management.no_assignment')}
                                 </span>
                               )}
                             </TableCell>
@@ -595,11 +594,11 @@ export default function EquipmentManagementPage() {
                               {item.daily_rate ? (
                                 <span className="font-medium">
                                   {convertToArabicNumerals(item.daily_rate.toString(), isRTL)}{' '}
-                                  {t('equipment_management.per_day')}
+                                  {t('equipment.equipment_management.per_day')}
                                 </span>
                               ) : (
                                 <span className="text-muted-foreground text-sm">
-                                  {t('equipment_management.not_specified')}
+                                  {t('equipment.equipment_management.not_specified')}
                                 </span>
                               )}
                             </TableCell>
@@ -611,7 +610,7 @@ export default function EquipmentManagementPage() {
                                 convertToArabicNumerals(item.chassis_number, isRTL)
                               ) : (
                                 <span className="text-muted-foreground text-sm">
-                                  {t('equipment_management.not_specified')}
+                                  {t('equipment.equipment_management.not_specified')}
                                 </span>
                               )}
                             </TableCell>
@@ -629,7 +628,7 @@ export default function EquipmentManagementPage() {
                                 </div>
                               ) : (
                                 <span className="text-muted-foreground text-sm">
-                                  {t('equipment_management.not_specified')}
+                                  {t('equipment.equipment_management.not_specified')}
                                 </span>
                               )}
                             </TableCell>
@@ -662,7 +661,7 @@ export default function EquipmentManagementPage() {
                                     onClick={() =>
                                       router.push(`/modules/equipment-management/${item.id}/assign`)
                                     }
-                                    title={t('equipment_management.manage_assignments')}
+                                    title={t('equipment.equipment_management.manage_assignments')}
                                   >
                                     <div className="h-4 w-4 flex items-center justify-center">
                                       <span className="text-xs">📋</span>
@@ -687,7 +686,7 @@ export default function EquipmentManagementPage() {
                 {totalPages > 1 && (
                   <div className="flex items-center justify-between px-2 py-4">
                     <div className="flex-1 text-sm text-muted-foreground">
-                      {t('equipment_management.showing_results', {
+                      {t('equipment.equipment_management.showing_results', {
                         start: startIndex + 1,
                         end: Math.min(endIndex, totalItems),
                         total: totalItems,
@@ -697,7 +696,7 @@ export default function EquipmentManagementPage() {
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2">
                         <Label htmlFor="items-per-page" className="text-sm font-medium">
-                          {t('equipment_management.show')}:
+                          {t('equipment.equipment_management.show')}:
                         </Label>
                         <select
                           id="items-per-page"

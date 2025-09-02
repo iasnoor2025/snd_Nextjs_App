@@ -17,7 +17,7 @@ import { useI18n } from '@/hooks/use-i18n';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { Edit, Eye, Plus, Search, Trash2, RefreshCw, Users, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+
 import { toast } from 'sonner';
 
 // Force dynamic rendering to prevent SSR issues
@@ -34,8 +34,7 @@ interface Customer {
 }
 
 export default function CustomerManagementPage() {
-  const { t } = useTranslation('customer');
-  const { isRTL } = useI18n();
+  const { t, isRTL } = useI18n();
   const { user, hasPermission, getAllowedActions } = useRBAC();
   
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -61,9 +60,9 @@ export default function CustomerManagementPage() {
 
       if (!response.ok) {
         if (response.status === 403) {
-          setError(t('messages.accessDenied'));
+          setError(t('common.messages.accessDenied'));
         } else if (response.status === 404) {
-          setError(t('messages.loadingError'));
+          setError(t('common.messages.loadingError'));
         } else {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -73,12 +72,12 @@ export default function CustomerManagementPage() {
           setCustomers(data.customers || []);
           setTotalPages(data.pagination?.totalPages || 1);
         } else {
-          setError(data.message || t('messages.loadingError'));
+          setError(data.message || t('common.messages.loadingError'));
         }
       }
     } catch (err) {
       
-      setError(t('messages.loadingError'));
+      setError(t('common.messages.loadingError'));
     } finally {
       setLoading(false);
     }
@@ -101,7 +100,7 @@ export default function CustomerManagementPage() {
 
   const handleSyncFromERPNext = async () => {
     setSyncing(true);
-    toast.info(t('messages.syncStarted'));
+    toast.info(t('common.messages.syncStarted'));
 
     try {
       // Use the new enhanced sync endpoint
@@ -115,17 +114,17 @@ export default function CustomerManagementPage() {
       const syncResult = await syncResponse.json();
 
       if (syncResult.success) {
-        const message = t('messages.syncSuccess', { count: syncResult.data.processed });
+        const message = t('common.messages.syncSuccess', { count: syncResult.data.processed });
         toast.success(message);
 
         // Refresh the customer list
         fetchCustomers();
       } else {
-        const errorMessage = t('messages.syncError') + ': ' + syncResult.message;
+        const errorMessage = t('common.messages.syncError') + ': ' + syncResult.message;
         toast.error(errorMessage);
       }
     } catch (error) {
-      const errorMessage = t('messages.syncError') + ': ' + (error instanceof Error ? error.message : t('messages.errorGeneral'));
+      const errorMessage = t('common.messages.syncError') + ': ' + (error instanceof Error ? error.message : t('common.messages.errorGeneral'));
       toast.error(errorMessage);
     } finally {
       setSyncing(false);
@@ -146,7 +145,7 @@ export default function CustomerManagementPage() {
 
   const handleDeleteCustomer = async (customer: Customer) => {
     
-    if (confirm(t('messages.deleteConfirm'))) {
+    if (confirm(t('common.messages.deleteConfirm'))) {
       try {
         const response = await fetch(`/api/customers`, {
           method: 'DELETE',
@@ -157,15 +156,15 @@ export default function CustomerManagementPage() {
         });
 
         if (response.ok) {
-          toast.success(t('messages.deleteSuccess'));
+          toast.success(t('common.messages.deleteSuccess'));
           fetchCustomers(); // Refresh the list
         } else {
           const error = await response.json();
-          toast.error(t('messages.deleteError') + ': ' + error.message);
+          toast.error(t('common.messages.deleteError') + ': ' + error.message);
         }
       } catch (error) {
         
-        toast.error(t('messages.deleteError'));
+        toast.error(t('common.messages.deleteError'));
       }
     }
   };
@@ -178,19 +177,19 @@ export default function CustomerManagementPage() {
 
   const handleExportCustomers = () => {
     
-    toast.info(t('messages.exportComingSoon'));
+    toast.info(t('common.messages.exportComingSoon'));
   };
 
   const handleImportCustomers = () => {
     
-    toast.info(t('messages.importComingSoon'));
+    toast.info(t('common.messages.importComingSoon'));
   };
 
   const getStatusBadge = (status: string) => {
     return status === 'active' ? (
-      <Badge className="bg-green-100 text-green-800">{t('status.active')}</Badge>
+      <Badge className="bg-green-100 text-green-800">{t('common.status.active')}</Badge>
     ) : (
-      <Badge className="bg-gray-100 text-gray-800">{t('status.inactive')}</Badge>
+              <Badge className="bg-gray-100 text-gray-800">{t('common.status.inactive')}</Badge>
     );
   };
 
@@ -199,7 +198,7 @@ export default function CustomerManagementPage() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">{t('messages.loading')}</p>
+          <p className="text-muted-foreground">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -213,15 +212,15 @@ export default function CustomerManagementPage() {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <Users className="h-8 w-8 text-blue-600" />
-              {t('customer_management')}
+              {t('customer.title')}
             </h1>
-            <p className="text-muted-foreground">{t('manage_customer_information')}</p>
+            <p className="text-muted-foreground">{t('customer.description')}</p>
           </div>
           <div className="flex gap-2">
             {hasPermission('create', 'Customer') && (
               <Button className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
-                {t('add_customer')}
+                {t('customer.add_customer')}
               </Button>
             )}
             {hasPermission('sync', 'Customer') && (
@@ -236,7 +235,7 @@ export default function CustomerManagementPage() {
                 ) : (
                   <RefreshCw className="h-4 w-4" />
                 )}
-                {syncing ? t('syncing') : t('sync_from_erpnext')}
+                {syncing ? t('common.syncing') : t('customer.sync_from_erpnext')}
               </Button>
             )}
           </div>

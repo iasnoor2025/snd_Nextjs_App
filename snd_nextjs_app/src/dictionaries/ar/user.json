@@ -145,6 +145,13 @@
   "create": "إنشاء",
   "update": "تحديث",
   "loading": "جاري التحميل...",
+  "messages": {
+    "updateSuccess": "تم تحديث المستخدم بنجاح",
+    "updateError": "فشل في تحديث المستخدم",
+    "deleteConfirm": "هل أنت متأكد من حذف هذا المستخدم؟",
+    "deleteSuccess": "تم حذف المستخدم بنجاح",
+    "deleteError": "فشل في حذف المستخدم"
+  },
   "permissionDetails": {
     "users": {
       "read": "عرض المستخدمين",

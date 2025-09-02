@@ -107,17 +107,21 @@
   },
 
   "actions": {
+    "add": "إضافة موظف",
     "addEmployee": "إضافة موظف",
+    "edit": "تعديل الموظف",
     "editEmployee": "تعديل الموظف",
+    "delete": "حذف الموظف",
     "deleteEmployee": "حذف الموظف",
+    "view": "عرض الموظف",
     "viewEmployee": "عرض الموظف",
     "save": "حفظ",
     "cancel": "إلغاء",
+    "backToList": "العودة لقائمة الموظفين",
     "back": "رجوع",
     "create": "إنشاء",
     "update": "تحديث",
-    "delete": "حذف",
-    "search": "البحث",
+    "search": "البحث عن الموظفين...",
     "filter": "تصفية",
     "refresh": "تحديث",
     "export": "تصدير",
@@ -139,6 +143,7 @@
     "name": "الاسم",
     "email": "البريد الإلكتروني",
     "phone": "الهاتف",
+    "noDesignation": "لا يوجد مسمى وظيفي",
     "address": "العنوان",
     "city": "المدينة",
     "state": "المنطقة/المحافظة",
@@ -168,6 +173,11 @@
   },
   "iqama": {
     "expired": "منتهي الصلاحية"
+  },
+
+  "sync": {
+    "button": "مزامنة من ERPNext",
+    "syncing": "جاري المزامنة..."
   },
   "employment": {
     "title": "تفاصيل التوظيف",
@@ -248,6 +258,7 @@
     "suspended": "معلق",
     "terminated": "منتهي",
     "onLeave": "في إجازة",
+    "left": "خرج من الشركة",
     "probation": "فترة تجريبية",
     "unknown": "غير معروف"
   },
@@ -389,6 +400,7 @@
     "deleteError": "فشل في حذف الموظف",
     "validationError": "يرجى إدخال جميع الحقول المطلوبة",
     "employeeNotFound": "لم يتم العثور على الموظف",
+    "employeeNotFoundDescription": "لم يتم العثور على الموظف برقم {{id}}.",
     "accessDenied": "الوصول مرفوض. ليس لديك صلاحية لإدارة الموظفين.",
     "errorGeneral": "حدث خطأ أثناء العملية",
     "departmentAdded": "تم إضافة القسم بنجاح",
@@ -432,7 +444,11 @@
       "designation": "المسمى الوظيفي",
       "status": "الحالة",
       "hireDate": "تاريخ التوظيف",
-      "actions": "الإجراءات"
+      "actions": "الإجراءات",
+      "fileNumber": "رقم الملف",
+      "iqamaNumber": "رقم الإقامة",
+      "iqamaExpiry": "تاريخ انتهاء الإقامة",
+      "currentAssignment": "التعيين الحالي"
     }
   },
 
@@ -441,7 +457,40 @@
     "page": "الصفحة {{current}} من {{total}}",
     "previous": "السابق",
     "next": "التالي",
-    "itemsPerPage": "عنصر في الصفحة"
+    "itemsPerPage": "عنصر في الصفحة",
+    "show": "عرض",
+    "perPage": "في الصفحة"
+  },
+
+  "filters": {
+    "all": "الكل",
+    "status": "الحالة",
+    "department": "القسم",
+    "assignmentStatus": "حالة التعيين",
+    "allAssignments": "جميع التعيينات",
+    "currentlyAssigned": "معين حالياً",
+    "notAssigned": "غير معين",
+    "clear": "مسح المرشحات"
+  },
+
+  "searchResults": {
+    "summary": "عرض {{filtered}} من {{total}} موظف{{#searchTerm}} يطابق \"{{searchTerm}}\"{{/searchTerm}}{{#statusFilter}} بحالة \"{{statusFilter}}\"{{/statusFilter}}{{#departmentFilter}} في قسم \"{{departmentFilter}}\"{{/departmentFilter}}{{#assignmentFilter}}{{#assigned}} معين حالياً{{/assigned}}{{^assigned}} غير معين{{/assigned}}{{/assignmentFilter}}"
+  },
+
+  "statistics": {
+    "totalEmployees": "إجمالي الموظفين",
+    "currentlyAssigned": "معين حالياً",
+    "projectAssignments": "تعيينات المشاريع",
+    "rentalAssignments": "تعيينات الإيجار"
+  },
+
+  "assignment": {
+    "project": "مشروع",
+    "rental": "إيجار",
+    "manual": "يدوي",
+    "equipment": "معدات",
+    "assigned": "معين",
+    "noAssignment": "لا يوجد تعيين"
   },
 
   "iqama": {
@@ -526,5 +575,50 @@
     "day": "يوم",
     "days": "أيام",
     "lessThanDay": "أقل من يوم"
+  },
+
+  "na": "غير متاح",
+  "currency": {
+    "symbol": "ر.س"
+  },
+  "status": {
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "terminated": "منتهي",
+    "suspended": "معلق"
+  },
+  "advances": {
+    "title": "إدارة السلف المالية",
+    "description": "تتبع وإدارة السلف المالية والخصومات للموظفين",
+    "newAdvance": "سلفة جديدة",
+    "makeRepayment": "تسديد دفعة",
+    "recordRepayment": "تسجيل تسديد",
+    "repaymentDescription": "يمكن تسديد السلف المعتمدة والمُسدد جزئياً فقط. أدخل مبلغ التسديد. للتسديدات الجزئية، يجب أن يكون المبلغ على الأقل إجمالي الخصم الشهري.",
+    "noAdvancesForRepayment": "لا توجد سلف متاحة للتسديد",
+    "noAdvancesForRepaymentDescription": "يمكن تسديد السلف المعتمدة والمُسدد جزئياً فقط. لا توجد سلف متاحة للتسديد.",
+    "selectAdvance": "اختر السلفة",
+    "selectAdvancePlaceholder": "اختر سلفة للتسديد",
+    "currentMonthlyDeduction": "الخصم الشهري الحالي",
+    "companyWillDecide": "ستقرر الشركة الخصم الشهري",
+    "setMonthlyDeduction": "حدد مبلغ الخصم الشهري",
+    "estimatedRepayment": "التسديد المقدر",
+    "projected": "متوقع",
+    "months": "أشهر",
+    "basedOnCurrentBalance": "بناءً على الرصيد الحالي والخصم الشهري",
+    "setMonthlyDeductionToSeeEstimate": "حدد الخصم الشهري لرؤية التقدير",
+    "history": "تاريخ السلف",
+    "table": {
+      "amount": "المبلغ",
+      "monthlyDeduction": "الخصم الشهري",
+      "repaidAmount": "المبلغ المُسدد",
+      "reason": "السبب",
+      "date": "التاريخ",
+      "status": "الحالة",
+      "type": "النوع",
+      "actions": "الإجراءات"
+    }
+  },
+  "actions": {
+    "close": "إغلاق"
   }
 }

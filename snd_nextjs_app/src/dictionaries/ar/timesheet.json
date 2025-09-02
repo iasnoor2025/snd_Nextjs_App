@@ -73,6 +73,8 @@
     "sickLeave": "إجازة مرضية",
     "vacation": "إجازة سنوية"
   },
+  "auto_generated_timesheets": "تم إنشاء {{count}} جدول زمني جديد تلقائياً للشهور الثلاثة الماضية",
+  "failed_to_fetch_timesheets": "فشل في جلب الجداول الزمنية",
   "messages": {
     "loading": "جاري تحميل الجداول الزمنية...",
     "saving": "جاري حفظ الجدول الزمني...",

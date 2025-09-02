@@ -56,93 +56,93 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
     {
       title: t('sidebar.employeeDashboard'),
-      url: '/employee-dashboard',
+      url: `/${locale}/employee-dashboard`,
       icon: User,
     },
     {
       title: t('sidebar.customerManagement'),
-      url: '/modules/customer-management',
+      url: `/${locale}/modules/customer-management`,
       icon: Users,
     },
     {
       title: t('sidebar.companyManagement'),
-      url: '/modules/company-management',
+      url: `/${locale}/modules/company-management`,
       icon: Building,
     },
     {
       title: t('sidebar.employeeManagement'),
-      url: '/modules/employee-management',
+      url: `/${locale}/modules/employee-management`,
       icon: Users,
     },
 
     {
       title: t('sidebar.equipmentManagement'),
-      url: '/modules/equipment-management',
+      url: `/${locale}/modules/equipment-management`,
       icon: Car,
     },
     {
       title: t('sidebar.maintenanceManagement'),
-      url: '/modules/maintenance-management',
+      url: `/${locale}/modules/maintenance-management`,
       icon: Wrench,
     },
     {
       title: t('sidebar.rentalManagement'),
-      url: '/modules/rental-management',
+      url: `/${locale}/modules/rental-management`,
       icon: Calendar,
     },
     {
       title: t('sidebar.quotationManagement'),
-      url: '/modules/quotation-management',
+      url: `/${locale}/modules/quotation-management`,
       icon: FileText,
     },
     {
       title: t('sidebar.timesheetManagement'),
-      url: '/modules/timesheet-management',
+      url: `/${locale}/modules/timesheet-management`,
       icon: Calendar,
     },
     {
       title: t('sidebar.projectManagement'),
-      url: '/modules/project-management',
+      url: `/${locale}/modules/project-management`,
       icon: FileText,
     },
     {
       title: t('sidebar.payrollManagement'),
-      url: '/modules/payroll-management',
+      url: `/${locale}/modules/payroll-management`,
       icon: BarChart3,
     },
     {
       title: t('sidebar.salaryIncrements'),
-      url: '/modules/salary-increments',
+      url: `/${locale}/modules/salary-increments`,
       icon: BarChart3,
     },
     {
       title: t('sidebar.leaveManagement'),
-      url: '/modules/leave-management',
+      url: `/${locale}/modules/leave-management`,
       icon: Calendar,
     },
     {
       title: t('sidebar.safetyManagement'),
-      url: '/modules/safety-management',
+      url: `/${locale}/modules/safety-management`,
       icon: HelpCircle,
     },
     {
       title: t('sidebar.locationManagement'),
-      url: '/modules/location-management',
+      url: `/${locale}/modules/location-management`,
       icon: MapPin,
     },
     {
       title: t('sidebar.reporting'),
-      url: '/modules/reporting',
+      url: `/${locale}/modules/reporting`,
       icon: FileSpreadsheet,
     },
     {
       title: t('sidebar.documentManagement'),
-      url: '/modules/document-management',
+      url: `/${locale}/modules/document-management`,
       icon: FileText,
     },
     {
       title: t('sidebar.userManagement'),
-      url: '/modules/user-management',
+      url: `/${locale}/modules/user-management`,
       icon: Users,
     },
   ];
@@ -185,14 +185,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       if (item.url === '#' || !item.url) return false;
       
       // Hide employee dashboard for non-EMPLOYEE users
-      if (item.url === '/employee-dashboard') {
+      if (item.url === `/${locale}/employee-dashboard`) {
         const hasEmployeePermission = hasPermission('read', 'mydashboard');  
         // Employee Dashboard permission check
         return hasEmployeePermission;
       }
       
       // For all other routes, check if user can access them
-      const canAccess = canAccessRoute(item.url);
+      // Remove locale prefix for permission checking
+      const routeWithoutLocale = item.url.replace(`/${locale}`, '');
+      const canAccess = canAccessRoute(routeWithoutLocale);
               // Route access check
       return canAccess;
     });
@@ -228,7 +230,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
               <a href="#">
                 <Layers className="!size-5" />
-                <span className="text-base font-semibold">{t('appTitle')}</span>
+                <span className="text-base font-semibold">{t('sidebar.appTitle')}</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>

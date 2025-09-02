@@ -47,8 +47,8 @@ import {
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import i18n from '@/lib/i18n-browser';
-import arAssignment from '@/locales/ar/assignment.json';
-import enAssignment from '@/locales/en/assignment.json';
+import arAssignment from '@/dictionaries/ar/assignment.json';
+import enAssignment from '@/dictionaries/en/assignment.json';
 
 interface Assignment {
   id: number;
@@ -140,11 +140,11 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
         setAssignments(data.data || []);
       } else {
         const errorData = await response.json();
-        setError(errorData.error || t('assignment:messages.loadingError'));
+        setError(errorData.error || t('assignment.messages.loadingError'));
       }
     } catch (error) {
       
-      setError(t('assignment:messages.loadingError'));
+              setError(t('assignment.messages.loadingError'));
     } finally {
       setLoading(false);
     }
@@ -164,7 +164,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
 
   const handleCreate = async () => {
     if (!formData.name || !formData.start_date) {
-      toast.error(t('assignment:validation.assignmentNameRequired'));
+      toast.error(t('assignment.validation.assignmentNameRequired'));
       return;
     }
 
@@ -185,11 +185,11 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
         fetchAssignments();
       } else {
         const errorData = await response.json();
-        toast.error(errorData.error || t('assignment:messages.saveError'));
+        toast.error(errorData.error || t('assignment.messages.saveError'));
       }
     } catch (error) {
       
-      toast.error(t('assignment:messages.saveError'));
+      toast.error(t('assignment.messages.saveError'));
     } finally {
       setSubmitting(false);
     }
@@ -197,7 +197,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
 
   const handleEdit = async () => {
     if (!selectedAssignment || !formData.name || !formData.start_date) {
-      toast.error(t('assignment:validation.assignmentNameRequired'));
+      toast.error(t('assignment.validation.assignmentNameRequired'));
       return;
     }
 
@@ -227,11 +227,11 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
       } else {
         const errorData = await response.json();
         
-        toast.error(errorData.error || t('assignment:messages.updateError'));
+        toast.error(errorData.error || t('assignment.messages.updateError'));
       }
     } catch (error) {
       
-      toast.error(t('assignment:messages.updateError'));
+      toast.error(t('assignment.messages.updateError'));
     } finally {
       setSubmitting(false);
     }
@@ -256,11 +256,11 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
         fetchAssignments();
       } else {
         const errorData = await response.json();
-        toast.error(errorData.error || t('assignment:messages.deleteError'));
+        toast.error(errorData.error || t('assignment.messages.deleteError'));
       }
     } catch (error) {
       
-      toast.error(t('assignment:messages.deleteError'));
+      toast.error(t('assignment.messages.deleteError'));
     } finally {
       setDeletingId(null);
     }
@@ -356,7 +356,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
     return (
       <div className="flex items-center justify-center p-8">
         <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">{t('assignment:messages.loading')}</span>
+        <span className="ml-2">{t('assignment.messages.loading')}</span>
       </div>
     );
   }
@@ -365,11 +365,11 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
     return (
       <div className="rounded-md border border-red-200 bg-red-50 p-4">
         <div className="text-center">
-          <div className="font-medium text-red-600">{t('assignment:messages.loadingError')}</div>
+          <div className="font-medium text-red-600">{t('assignment.messages.loadingError')}</div>
           <div className="mt-1 text-sm text-red-600">{error}</div>
           <div className="mt-4 flex justify-center">
             <Button variant="outline" onClick={fetchAssignments} className="bg-white">
-              <RefreshCw className="mr-2 h-4 w-4" /> {t('assignment:actions.refresh')}
+              <RefreshCw className="mr-2 h-4 w-4" /> {t('assignment.actions.refresh')}
             </Button>
           </div>
         </div>
@@ -385,9 +385,9 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">{t('assignment:title')}</h3>
-          <p className="text-sm text-muted-foreground">
-            {t('assignment:subtitle')}
+                  <h3 className="text-lg font-semibold">{t('assignment.title')}</h3>
+        <p className="text-sm text-muted-foreground">
+          {t('assignment.subtitle')}
           </p>
         </div>
         {!currentAssignment && hasPermission('create', 'employee-assignment') && (
@@ -395,26 +395,26 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
             <DialogTrigger asChild>
               <Button onClick={() => resetForm()}>
                 <Plus className="mr-2 h-4 w-4" />
-                {t('assignment:form.create')}
+                {t('assignment.form.create')}
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle>{t('assignment:form.create')}</DialogTitle>
-                <DialogDescription>{t('assignment:form.create')}</DialogDescription>
+                        <DialogTitle>{t('assignment.form.create')}</DialogTitle>
+        <DialogDescription>{t('assignment.form.create')}</DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="name">{t('assignment:form.assignmentName')}</Label>
+                  <Label htmlFor="name">{t('assignment.form.assignmentName')}</Label>
                   <Input
                     id="name"
                     value={formData.name}
                     onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder={t('assignment:form.assignmentNamePlaceholder')}
+                    placeholder={t('assignment.form.assignmentNamePlaceholder')}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="type">{t('assignment:form.assignmentType')}</Label>
+                  <Label htmlFor="type">{t('assignment.form.assignmentType')}</Label>
                   <Select
                     value={formData.type}
                     onValueChange={value => setFormData(prev => ({ ...prev, type: value }))}

@@ -98,6 +98,13 @@
   "exportAllUsers": "Export All Users",
   "bulkUserOperations": "Bulk User Operations",
   "userAdministration": "User Administration",
+  "messages": {
+    "updateSuccess": "User updated successfully",
+    "updateError": "Failed to update user",
+    "deleteConfirm": "Are you sure you want to delete this user?",
+    "deleteSuccess": "User deleted successfully",
+    "deleteError": "Failed to delete user"
+  },
   "advancedUserManagementFeaturesForAdministrators": "Advanced user management features for administrators",
   "loadingUserManagement": "Loading user management...",
   "loadingPermissions": "Loading permissions...",

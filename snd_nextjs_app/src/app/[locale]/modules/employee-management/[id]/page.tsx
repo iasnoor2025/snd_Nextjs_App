@@ -45,7 +45,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
 
 import TimesheetSummary from '@/components/employee/timesheets/TimesheetSummary';
 import { useConfirmationDialog } from '@/components/providers/confirmation-provider';
@@ -119,7 +119,7 @@ interface Employee {
 export default function EmployeeShowPage() {
   const { hasPermission } = useRBAC();
   const { confirm } = useConfirmationDialog();
-  const { t } = useTranslation();
+  const { t, isRTL } = useI18n();
   const params = useParams();
   const router = useRouter();
   const employeeId = params?.id as string;
@@ -595,7 +595,7 @@ export default function EmployeeShowPage() {
       <div className="flex h-screen items-center justify-center">
         <div className="flex items-center gap-2">
           <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Loading employee data...</span>
+          <span>{t('employee.messages.loading')}</span>
         </div>
       </div>
     );
@@ -606,10 +606,10 @@ export default function EmployeeShowPage() {
       <div className="flex h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <AlertCircle className="h-12 w-12 text-red-500" />
-          <h2 className="text-xl font-semibold">Employee Not Found</h2>
-          <p className="text-gray-600">The employee with ID {employeeId} could not be found.</p>
+          <h2 className="text-xl font-semibold">{t('employee.messages.employeeNotFound')}</h2>
+          <p className="text-gray-600">{t('employee.messages.employeeNotFoundDescription', { id: employeeId })}</p>
           <Button onClick={() => router.push('/modules/employee-management')}>
-            Back to Employee List
+            {t('employee.actions.backToList')}
           </Button>
         </div>
       </div>
@@ -633,10 +633,14 @@ export default function EmployeeShowPage() {
               {employee.last_name}
             </h1>
             <div className="flex items-center gap-2 text-muted-foreground">
-              <span>{employee.designation?.name || 'No Designation'}</span>
+              <span>{employee.designation?.name || t('employee.fields.noDesignation')}</span>
               <span className="text-xs">•</span>
-              <span>File Number: {employee.file_number || 'N/A'}</span>
-              {employee.status && getStatusBadge(employee.status)}
+              <span>{t('employee.fields.fileNumber')}: {employee.file_number || t('employee.na')}</span>
+              {employee.status && (
+                <Badge variant={employee.status === 'active' ? 'default' : 'secondary'}>
+                  {t(`employee.status.${employee.status}`)}
+                </Badge>
+              )}
             </div>
           </div>
         </div>
@@ -644,21 +648,21 @@ export default function EmployeeShowPage() {
           <Button variant="outline" size="sm" asChild>
             <Link href="/modules/employee-management">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
+              {t('employee.actions.back')}
             </Link>
           </Button>
           {hasPermission('edit', 'Employee') && (
             <Button size="sm" asChild>
               <Link href={`/modules/employee-management/${employee.id}/edit`}>
                 <Edit className="mr-2 h-4 w-4" />
-                Edit
+                {t('employee.actions.edit')}
               </Link>
             </Button>
           )}
           {hasPermission('delete', 'Employee') && (
             <Button variant="destructive" size="sm">
               <Trash2 className="mr-2 h-4 w-4" />
-              Delete
+              {t('employee.actions.delete')}
             </Button>
           )}
         </div>
@@ -676,52 +680,52 @@ export default function EmployeeShowPage() {
         <TabsList className="flex w-full justify-between rounded-lg border bg-muted/30 p-1 shadow-sm">
           <TabsTrigger value="personal-info" className="flex items-center gap-2 px-3 py-2">
             <User className="h-4 w-4" />
-            <span className="hidden font-medium sm:inline">{t('employee:tabs.personal')}</span>
+            <span className="hidden font-medium sm:inline">{t('employee.tabs.personal')}</span>
           </TabsTrigger>
           <TabsTrigger value="employment" className="flex items-center gap-2 px-3 py-2">
             <Briefcase className="h-4 w-4" />
-            <span className="hidden font-medium sm:inline">{t('employee:tabs.employment')}</span>
+            <span className="hidden font-medium sm:inline">{t('employee.tabs.employment')}</span>
           </TabsTrigger>
           {hasPermission('read', 'employee-document') && (
             <TabsTrigger value="documents" className="flex items-center gap-2 px-3 py-2">
               <FileBox className="h-4 w-4" />
-              <span className="hidden font-medium sm:inline">{t('employee:tabs.documents')}</span>
+              <span className="hidden font-medium sm:inline">{t('employee.tabs.documents')}</span>
             </TabsTrigger>
           )}
           {hasPermission('read', 'employee-assignment') && (
             <TabsTrigger value="assignments" className="flex items-center gap-2 px-3 py-2">
               <Calendar className="h-4 w-4" />
-              <span className="hidden font-medium sm:inline">{t('employee:tabs.assignments')}</span>
+              <span className="hidden font-medium sm:inline">{t('employee.tabs.assignments')}</span>
             </TabsTrigger>
           )}
           {hasPermission('read', 'Timesheet') && (
             <TabsTrigger value="timesheets" className="flex items-center gap-2 px-3 py-2">
               <Clock className="h-4 w-4" />
-              <span className="hidden font-medium sm:inline">{t('employee:tabs.timesheets')}</span>
+              <span className="hidden font-medium sm:inline">{t('employee.tabs.timesheets')}</span>
             </TabsTrigger>
           )}
           {hasPermission('read', 'leave-request') && (
             <TabsTrigger value="leaves" className="flex items-center gap-2 px-3 py-2">
               <Calendar className="h-4 w-4" />
-              <span className="hidden font-medium sm:inline">{t('employee:tabs.leaves')}</span>
+              <span className="hidden font-medium sm:inline">{t('employee.tabs.leaves')}</span>
             </TabsTrigger>
           )}
           {hasPermission('read', 'advance') && (
             <TabsTrigger value="advances" className="flex items-center gap-2 px-3 py-2">
               <CreditCard className="h-4 w-4" />
-              <span className="hidden font-medium sm:inline">{t('employee:tabs.advances')}</span>
+              <span className="hidden font-medium sm:inline">{t('employee.tabs.advances')}</span>
             </TabsTrigger>
           )}
           {hasPermission('read', 'resignation') && (
             <TabsTrigger value="resignations" className="flex items-center gap-2 px-3 py-2">
               <FileText className="h-4 w-4" />
-              <span className="hidden font-medium sm:inline">{t('employee:tabs.resignations')}</span>
+              <span className="hidden font-medium sm:inline">{t('employee.tabs.resignations')}</span>
             </TabsTrigger>
           )}
           {hasPermission('read', 'final-settlement') && (
             <TabsTrigger value="final-settlements" className="flex items-center gap-2 px-3 py-2">
               <Receipt className="h-4 w-4" />
-              <span className="hidden font-medium sm:inline">{t('employee:tabs.finalSettlements')}</span>
+              <span className="hidden font-medium sm:inline">{t('employee.tabs.finalSettlements')}</span>
             </TabsTrigger>
           )}
         </TabsList>
@@ -730,19 +734,19 @@ export default function EmployeeShowPage() {
         <TabsContent value="personal-info" className="mt-6 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>{t('employee:personalInformation.title')}</CardTitle>
-              <CardDescription>{t('employee:personalInformation.subtitle')}</CardDescription>
+              <CardTitle>{t('employee.personalInformation.title')}</CardTitle>
+              <CardDescription>{t('employee.personalInformation.subtitle')}</CardDescription>
             </CardHeader>
             <CardContent className="p-6">
               <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                 <div className="space-y-4">
                   <div>
                     <h3 className="mb-3 text-sm font-medium text-muted-foreground">
-                      {t('employee:personalInformation.contactInformation')}
+                      {t('employee.personalInformation.contactInformation')}
                     </h3>
                     <dl className="space-y-2">
                       <div className="flex justify-between border-b pb-2">
-                        <dt className="text-sm font-medium">{t('employee:fields.name')}</dt>
+                        <dt className="text-sm font-medium">{t('employee.fields.name')}</dt>
                         <dd className="text-sm">
                           {employee.first_name}{' '}
                           {employee.middle_name ? `${employee.middle_name} ` : ''}
@@ -750,18 +754,18 @@ export default function EmployeeShowPage() {
                         </dd>
                       </div>
                       <div className="flex justify-between border-b pb-2">
-                        <dt className="text-sm font-medium">{t('employee:fields.phone')}</dt>
-                        <dd className="text-sm">{employee.phone || t('common:common.na')}</dd>
+                        <dt className="text-sm font-medium">{t('employee.fields.phone')}</dt>
+                        <dd className="text-sm">{employee.phone || t('employee.na')}</dd>
                       </div>
                       {employee.nationality && (
                         <div className="flex justify-between border-b pb-2">
-                          <dt className="text-sm font-medium">{t('employee:fields.nationality')}</dt>
+                          <dt className="text-sm font-medium">{t('employee.fields.nationality')}</dt>
                           <dd className="text-sm">{employee.nationality}</dd>
                         </div>
                       )}
                       {employee.date_of_birth && (
                         <div className="flex justify-between border-b pb-2">
-                          <dt className="text-sm font-medium">{t('employee:fields.dateOfBirth')}</dt>
+                                                      <dt className="text-sm font-medium">{t('employee.fields.dateOfBirth')}</dt>
                           <dd className="text-sm">
                             {format(new Date(employee.date_of_birth), 'PPP')}
                           </dd>
@@ -772,26 +776,26 @@ export default function EmployeeShowPage() {
 
                   <div>
                     <h3 className="mb-3 text-sm font-medium text-muted-foreground">
-                      {t('employee:personalInformation.emergencyContact')}
+                      {t('employee.personalInformation.emergencyContact')}
                     </h3>
                     {employee.emergency_contact_name || employee.emergency_contact_phone ? (
                       <dl className="space-y-2">
                         {employee.emergency_contact_name && (
                           <div className="flex justify-between border-b pb-2">
-                            <dt className="text-sm font-medium">{t('employee:fields.name')}</dt>
+                            <dt className="text-sm font-medium">{t('employee.fields.name')}</dt>
                             <dd className="text-sm">{employee.emergency_contact_name}</dd>
                           </div>
                         )}
                         {employee.emergency_contact_phone && (
                           <div className="flex justify-between border-b pb-2">
-                            <dt className="text-sm font-medium">{t('employee:fields.phone')}</dt>
+                            <dt className="text-sm font-medium">{t('employee.fields.phone')}</dt>
                             <dd className="text-sm">{employee.emergency_contact_phone}</dd>
                           </div>
                         )}
                       </dl>
                     ) : (
                       <p className="text-sm text-muted-foreground italic">
-                        {t('employee:personalInformation.noEmergencyContact')}
+                        {t('employee.personalInformation.noEmergencyContact')}
                       </p>
                     )}
                   </div>
@@ -800,25 +804,25 @@ export default function EmployeeShowPage() {
                 <div className="space-y-4">
                   <div>
                     <h3 className="mb-3 text-sm font-medium text-muted-foreground">
-                      {t('employee:personalInformation.identification')}
+                      {t('employee.personalInformation.identification')}
                     </h3>
                     <dl className="space-y-2">
                       {employee.iqama_number && (
                         <div className="flex justify-between border-b pb-2">
-                          <dt className="text-sm font-medium">{t('employee:fields.iqamaNumber')}</dt>
+                          <dt className="text-sm font-medium">{t('employee.fields.iqamaNumber')}</dt>
                           <dd
                             className={`text-sm ${isIqamaExpired(employee.iqama_expiry) ? 'text-red-600 font-medium' : ''}`}
                           >
                             {employee.iqama_number}
                             {isIqamaExpired(employee.iqama_expiry) && (
-                              <span className="ml-1 text-xs text-red-500">({t('employee:iqama.expired')})</span>
+                              <span className="ml-1 text-xs text-red-500">({t('employee.iqama.expired')})</span>
                             )}
                           </dd>
                         </div>
                       )}
                       {employee.iqama_expiry && (
                         <div className="flex justify-between border-b pb-2">
-                          <dt className="text-sm font-medium">{t('employee:fields.iqamaExpiry')}</dt>
+                          <dt className="text-sm font-medium">{t('employee.fields.iqamaExpiry')}</dt>
                           <dd className="text-sm">
                             {format(new Date(employee.iqama_expiry), 'PPP')}
                           </dd>
@@ -826,13 +830,13 @@ export default function EmployeeShowPage() {
                       )}
                       {employee.passport_number && (
                         <div className="flex justify-between border-b pb-2">
-                          <dt className="text-sm font-medium">{t('employee:fields.passportNumber')}</dt>
+                          <dt className="text-sm font-medium">{t('employee.fields.passportNumber')}</dt>
                           <dd className="text-sm">{employee.passport_number}</dd>
                         </div>
                       )}
                       {employee.passport_expiry && (
                         <div className="flex justify-between border-b pb-2">
-                          <dt className="text-sm font-medium">{t('employee:fields.passportExpiry')}</dt>
+                          <dt className="text-sm font-medium">{t('employee.fields.passportExpiry')}</dt>
                           <dd className="text-sm">
                             {format(new Date(employee.passport_expiry), 'PPP')}
                           </dd>
@@ -843,7 +847,7 @@ export default function EmployeeShowPage() {
 
                   <div>
                     <h3 className="mb-3 text-sm font-medium text-muted-foreground">
-                      {t('employee:personalInformation.licensesCertifications')}
+                      {t('employee.personalInformation.licensesCertifications')}
                     </h3>
                     {employee.driving_license_number ||
                     employee.operator_license_number ||
@@ -852,13 +856,13 @@ export default function EmployeeShowPage() {
                       <dl className="space-y-2">
                         {employee.driving_license_number && (
                           <div className="flex justify-between border-b pb-2">
-                            <dt className="text-sm font-medium">{t('employee:fields.drivingLicense')}</dt>
+                            <dt className="text-sm font-medium">{t('employee.fields.drivingLicense')}</dt>
                             <dd className="text-sm">{employee.driving_license_number}</dd>
                           </div>
                         )}
                         {employee.driving_license_expiry && (
                           <div className="flex justify-between border-b pb-2">
-                            <dt className="text-sm font-medium">{t('employee:fields.drivingLicenseExpiry')}</dt>
+                            <dt className="text-sm font-medium">{t('employee.fields.drivingLicenseExpiry')}</dt>
                             <dd className="text-sm">
                               {format(new Date(employee.driving_license_expiry), 'PPP')}
                             </dd>
@@ -866,13 +870,13 @@ export default function EmployeeShowPage() {
                         )}
                         {employee.operator_license_number && (
                           <div className="flex justify-between border-b pb-2">
-                            <dt className="text-sm font-medium">{t('employee:fields.operatorLicense')}</dt>
+                            <dt className="text-sm font-medium">{t('employee.fields.operatorLicense')}</dt>
                             <dd className="text-sm">{employee.operator_license_number}</dd>
                           </div>
                         )}
                         {employee.operator_license_expiry && (
                           <div className="flex justify-between border-b pb-2">
-                            <dt className="text-sm font-medium">{t('employee:fields.operatorLicenseExpiry')}</dt>
+                            <dt className="text-sm font-medium">{t('employee.fields.operatorLicenseExpiry')}</dt>
                             <dd className="text-sm">
                               {format(new Date(employee.operator_license_expiry), 'PPP')}
                             </dd>
@@ -880,13 +884,13 @@ export default function EmployeeShowPage() {
                         )}
                         {employee.tuv_certification_number && (
                           <div className="flex justify-between border-b pb-2">
-                            <dt className="text-sm font-medium">{t('employee:fields.tuvCertification')}</dt>
+                            <dt className="text-sm font-medium">{t('employee.fields.tuvCertification')}</dt>
                             <dd className="text-sm">{employee.tuv_certification_number}</dd>
                           </div>
                         )}
                         {employee.tuv_certification_expiry && (
                           <div className="flex justify-between border-b pb-2">
-                            <dt className="text-sm font-medium">{t('employee:fields.tuvCertificationExpiry')}</dt>
+                            <dt className="text-sm font-medium">{t('employee.fields.tuvCertificationExpiry')}</dt>
                             <dd className="text-sm">
                               {format(new Date(employee.tuv_certification_expiry), 'PPP')}
                             </dd>
@@ -894,7 +898,7 @@ export default function EmployeeShowPage() {
                         )}
                         {employee.spsp_license_number && (
                           <div className="flex justify-between border-b pb-2">
-                            <dt className="text-sm font-medium">{t('employee:fields.spspLicense')}</dt>
+                            <dt className="text-sm font-medium">{t('employee.fields.spspLicense')}</dt>
                             <dd className="text-sm">{employee.spsp_license_number}</dd>
                           </div>
                         )}
@@ -950,37 +954,37 @@ export default function EmployeeShowPage() {
                     </h3>
                     <dl className="space-y-2">
                       <div className="flex justify-between border-b pb-2">
-                        <dt className="text-sm font-medium">{t('employee:fields.employeeId')}</dt>
+                        <dt className="text-sm font-medium">{t('employee.fields.employeeId')}</dt>
                         <dd className="text-sm">{employee.employee_id}</dd>
                       </div>
                       <div className="flex justify-between border-b pb-2">
-                        <dt className="text-sm font-medium">{t('employee:fields.fileNumber')}</dt>
-                        <dd className="text-sm">{employee.file_number || t('common:common.na')}</dd>
+                        <dt className="text-sm font-medium">{t('employee.fields.fileNumber')}</dt>
+                        <dd className="text-sm">{employee.file_number || t('employee.na')}</dd>
                       </div>
                       <div className="flex justify-between border-b pb-2">
-                        <dt className="text-sm font-medium">{t('employee:fields.designation')}</dt>
-                        <dd className="text-sm">{employee.designation?.name || t('common:common.na')}</dd>
+                        <dt className="text-sm font-medium">{t('employee.fields.designation')}</dt>
+                        <dd className="text-sm">{employee.designation?.name || t('employee.na')}</dd>
                       </div>
                       <div className="flex justify-between border-b pb-2">
-                        <dt className="text-sm font-medium">{t('employee:fields.department')}</dt>
-                        <dd className="text-sm">{employee.department?.name || t('common:common.na')}</dd>
+                        <dt className="text-sm font-medium">{t('employee.fields.department')}</dt>
+                        <dd className="text-sm">{employee.department?.name || t('employee.na')}</dd>
                       </div>
                       {employee.supervisor_details && (
                         <div className="flex justify-between border-b pb-2">
-                          <dt className="text-sm font-medium">{t('employee:fields.supervisor')}</dt>
+                          <dt className="text-sm font-medium">{t('employee.fields.supervisor')}</dt>
                           <dd className="text-sm">
-                            {employee.supervisor_details.name} ({t('employee:fields.fileNumber')}: {employee.supervisor_details.file_number})
+                            {employee.supervisor_details.name} ({t('employee.fields.fileNumber')}: {employee.supervisor_details.file_number})
                           </dd>
                         </div>
                       )}
                       {employee.supervisor && !employee.supervisor_details && (
                         <div className="flex justify-between border-b pb-2">
-                          <dt className="text-sm font-medium">{t('employee:fields.supervisor')}</dt>
+                          <dt className="text-sm font-medium">{t('employee.fields.supervisor')}</dt>
                           <dd className="text-sm">{employee.supervisor}</dd>
                         </div>
                       )}
                       <div className="flex justify-between border-b pb-2">
-                        <dt className="text-sm font-medium">{t('employee:fields.status')}</dt>
+                        <dt className="text-sm font-medium">{t('employee.fields.status')}</dt>
                         <dd className="text-sm">{getStatusBadge(employee.status)}</dd>
                       </div>
                     </dl>
@@ -988,15 +992,15 @@ export default function EmployeeShowPage() {
 
                   <div>
                     <h3 className="mb-3 text-sm font-medium text-muted-foreground">
-                      {t('employee:employment.employmentTimeline')}
+                      {t('employee.employment.employmentTimeline')}
                     </h3>
                     <dl className="space-y-2">
                       <div className="flex justify-between border-b pb-2">
-                        <dt className="text-sm font-medium">{t('employee:fields.hireDate')}</dt>
+                        <dt className="text-sm font-medium">{t('employee.fields.hireDate')}</dt>
                         <dd className="text-sm">
                           {employee.hire_date
                             ? format(new Date(employee.hire_date), 'PPP')
-                            : t('common:common.na')}
+                            : t('employee.na')}
                         </dd>
                       </div>
                       <div className="flex justify-between border-b pb-2">
@@ -1037,13 +1041,13 @@ export default function EmployeeShowPage() {
 
                 <div>
                   <h3 className="mb-3 text-sm font-medium text-muted-foreground">
-                    {t('employee:salary.title')}
+                    {t('employee.salary.title')}
                   </h3>
                   <div className="mb-4 rounded-lg bg-muted/30 p-5">
                     <div className="mb-2 flex justify-between">
-                      <span className="text-sm font-medium">{t('employee:salary.basicSalary')}</span>
+                      <span className="text-sm font-medium">{t('employee.salary.basicSalary')}</span>   
                       <span className="text-base font-semibold">
-                        SAR {Number(employee.basic_salary || 0).toFixed(2)}
+                        {t('employee.currency.symbol')} {Number(employee.basic_salary || 0).toFixed(2)}
                       </span>
                     </div>
                     <div className="h-1.5 w-full rounded-full bg-muted">
@@ -1056,32 +1060,32 @@ export default function EmployeeShowPage() {
 
                   <dl className="space-y-2">
                     <div className="flex justify-between border-b pb-2">
-                      <dt className="text-sm font-medium">{t('employee:salary.hourlyRate')}</dt>
+                      <dt className="text-sm font-medium">{t('employee.salary.hourlyRate')}</dt>
                       <dd className="text-sm">
-                        SAR {Number(employee.hourly_rate || 0).toFixed(2)}
+                        {t('employee.currency.symbol')} {Number(employee.hourly_rate || 0).toFixed(2)}
                       </dd>
                     </div>
                     {Number(employee.food_allowance || 0) > 0 && (
                       <div className="flex justify-between border-b pb-2">
-                        <dt className="text-sm font-medium">{t('employee:salary.foodAllowance')}</dt>
+                        <dt className="text-sm font-medium">{t('employee.salary.foodAllowance')}</dt>
                         <dd className="text-sm">
-                          SAR {Number(employee.food_allowance).toFixed(2)}
+                          {t('employee.currency.symbol')} {Number(employee.food_allowance).toFixed(2)}
                         </dd>
                       </div>
                     )}
                     {Number(employee.housing_allowance || 0) > 0 && (
                       <div className="flex justify-between border-b pb-2">
-                        <dt className="text-sm font-medium">{t('employee:salary.housingAllowance')}</dt>
+                        <dt className="text-sm font-medium">{t('employee.salary.housingAllowance')}</dt>
                         <dd className="text-sm">
-                          SAR {Number(employee.housing_allowance).toFixed(2)}
+                          {t('employee.currency.symbol')} {Number(employee.housing_allowance).toFixed(2)}
                         </dd>
                       </div>
                     )}
                     {Number(employee.transport_allowance || 0) > 0 && (
                       <div className="flex justify-between border-b pb-2">
-                        <dt className="text-sm font-medium">{t('employee:salary.transportAllowance')}</dt>
+                        <dt className="text-sm font-medium">{t('employee.salary.transportAllowance')}</dt>
                         <dd className="text-sm">
-                          SAR {Number(employee.transport_allowance).toFixed(2)}
+                          {t('employee.currency.symbol')} {Number(employee.transport_allowance).toFixed(2)}
                         </dd>
                       </div>
                     )}
@@ -1096,8 +1100,8 @@ export default function EmployeeShowPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>{t('employee:salary.salaryHistory')}</CardTitle>
-                  <CardDescription>{t('employee:salary.salaryHistoryDescription')}</CardDescription>
+                  <CardTitle>{t('employee.salary.salaryHistory')}</CardTitle>
+                  <CardDescription>{t('employee.salary.salaryHistoryDescription')}</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -1107,28 +1111,28 @@ export default function EmployeeShowPage() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t('employee:salary.effectiveDate')}
+                        {t('employee.salary.effectiveDate')}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t('employee:salary.currentSalary')}
+                        {t('employee.salary.currentSalary')}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t('employee:salary.newSalary')}
+                        {t('employee.salary.newSalary')}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t('employee:salary.increment')}
+                        {t('employee.salary.increment')}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t('employee:salary.type')}
+                        {t('employee.salary.type')}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t('employee:salary.status')}
+                        {t('employee.salary.status')}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t('employee:salary.requestedBy')}
+                        {t('employee.salary.requestedBy')}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t('employee:salary.approvedBy')}
+                        {t('employee.salary.approvedBy')}
                       </th>
                     </tr>
                   </thead>
@@ -1151,7 +1155,7 @@ export default function EmployeeShowPage() {
                           colSpan={8}
                           className="px-6 py-8 text-center text-sm text-muted-foreground italic"
                         >
-                          {t('employee:salary.noSalaryHistory')}
+                          {t('employee.salary.noSalaryHistory')}
                         </td>
                       </tr>
                     ) : (
@@ -1161,13 +1165,13 @@ export default function EmployeeShowPage() {
                             {format(new Date(inc.effective_date), 'MMM dd, yyyy')}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            SAR {salaryIncrementService.getCurrentTotalSalary(inc).toLocaleString()}
+                            {t('employee.currency.symbol')} {salaryIncrementService.getCurrentTotalSalary(inc).toLocaleString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            SAR {salaryIncrementService.getNewTotalSalary(inc).toLocaleString()}
+                            {t('employee.currency.symbol')} {salaryIncrementService.getNewTotalSalary(inc).toLocaleString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            +SAR{' '}
+                            +{t('employee.currency.symbol')}{' '}
                             {salaryIncrementService.getTotalIncrementAmount(inc).toLocaleString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -1215,8 +1219,8 @@ export default function EmployeeShowPage() {
           <TabsContent value="timesheets" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>{t('employee:timesheet.title')}</CardTitle>
-                <CardDescription>{t('employee:timesheet.description')}</CardDescription>
+                <CardTitle>{t('employee.timesheet.title')}</CardTitle>
+                <CardDescription>{t('employee.timesheet.description')}</CardDescription>
               </CardHeader>
               <CardContent>
                 {/* Timesheet Summary */}
@@ -1233,14 +1237,14 @@ export default function EmployeeShowPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>{t('employee:leave.title')}</CardTitle>
-                  <CardDescription>{t('employee:leave.description')}</CardDescription>
+                  <CardTitle>{t('employee.leave.title')}</CardTitle>
+                  <CardDescription>{t('employee.leave.description')}</CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
                   {hasPermission('read', 'leave-request') && (
                     <Button variant="outline">
                       <History className="mr-2 h-4 w-4" />
-                      {t('employee:leave.viewAll')}
+                      {t('employee.leave.viewAll')}
                     </Button>
                   )}
                 </div>
@@ -1409,9 +1413,9 @@ export default function EmployeeShowPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Advance Payment Management</CardTitle>
+                  <CardTitle>{t('employee.advances.title')}</CardTitle>
                   <CardDescription>
-                    Track and manage employee advance payments and deductions
+                    {t('employee.advances.description')}
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
@@ -1422,7 +1426,7 @@ export default function EmployeeShowPage() {
                       className="flex items-center gap-2"
                     >
                       <CreditCard className="h-4 w-4" />
-                      New Advance
+                      {t('employee.advances.newAdvance')}
                     </Button>
                   )}
                   {hasPermission('update', 'AdvancePayment') && (
@@ -1438,16 +1442,14 @@ export default function EmployeeShowPage() {
                           }
                         >
                           <CreditCard className="h-4 w-4" />
-                          Make Repayment
+                          {t('employee.advances.makeRepayment')}
                         </Button>
                       </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>
-                          <DialogTitle>Record Repayment</DialogTitle>
+                          <DialogTitle>{t('employee.advances.recordRepayment')}</DialogTitle>
                           <DialogDescription>
-                            Only approved and partially repaid advances can be repaid. Enter the
-                            repayment amount. For partial repayments, the amount must be at least
-                            the total monthly deduction.
+                            {t('employee.advances.repaymentDescription')}
                           </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
@@ -1455,24 +1457,23 @@ export default function EmployeeShowPage() {
                             <div className="p-6 text-center">
                               <AlertCircle className="mx-auto mb-4 h-12 w-12 text-amber-500" />
                               <h3 className="mb-2 text-lg font-medium">
-                                No Advances Available for Repayment
+                                {t('employee.advances.noAdvancesForRepayment')}
                               </h3>
                               <p className="mb-4 text-sm text-muted-foreground">
-                                Only approved and partially repaid advances can be repaid. There are
-                                no advances available for repayment.
+                                {t('employee.advances.noAdvancesForRepaymentDescription')}
                               </p>
                               <Button
                                 variant="outline"
                                 onClick={() => setIsRepaymentDialogOpen(false)}
                               >
-                                Close
+                                {t('employee.actions.close')}
                               </Button>
                             </div>
                           ) : (
                             <div className="space-y-4">
                               <div className="grid gap-2">
                                 <label htmlFor="repaymentAdvance" className="text-sm font-medium">
-                                  Select Advance
+                                  {t('employee.advances.selectAdvance')}
                                 </label>
                                 <Select
                                   value={selectedAdvanceForRepayment?.id?.toString() || ''}
@@ -1485,12 +1486,12 @@ export default function EmployeeShowPage() {
                                   }}
                                 >
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Select an advance to repay" />
+                                    <SelectValue placeholder={t('employee.advances.selectAdvancePlaceholder')} />
                                   </SelectTrigger>
                                   <SelectContent>
                                     {approvedAdvances.map(advance => (
                                       <SelectItem key={advance.id} value={advance.id.toString()}>
-                                        SAR {Number(advance.amount).toFixed(2)} - {advance.reason} (
+                                        {t('employee.currency.symbol')} {Number(advance.amount).toFixed(2)} - {advance.reason} (
                                         {advance.status.replace('_', ' ')})
                                       </SelectItem>
                                     ))}
@@ -1813,18 +1814,18 @@ export default function EmployeeShowPage() {
                         className="w-32 text-2xl font-bold text-primary"
                         placeholder="0.00"
                       />
-                      <span className="text-2xl font-bold text-primary">SAR</span>
+                      <span className="text-2xl font-bold text-primary">{t('employee.currency.symbol')}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm text-muted-foreground">
-                      <span>Current Monthly Deduction</span>
+                      <span>{t('employee.advances.currentMonthlyDeduction')}</span>
                       <span className="font-medium">
-                        SAR {Number(monthlyDeduction || 0).toFixed(2)}
+                        {t('employee.currency.symbol')} {Number(monthlyDeduction || 0).toFixed(2)}
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {monthlyDeduction && Number(monthlyDeduction) > 0
-                        ? 'Company will decide monthly deduction'
-                        : 'Set monthly deduction amount'}
+                        ? t('employee.advances.companyWillDecide')
+                        : t('employee.advances.setMonthlyDeduction')}
                     </p>
                   </div>
                 </div>
@@ -1833,10 +1834,10 @@ export default function EmployeeShowPage() {
                 <div className="rounded-lg border bg-white p-6 shadow-sm">
                   <div className="mb-4 flex items-center justify-between">
                     <h3 className="text-sm font-medium text-muted-foreground">
-                      Estimated Repayment
+                      {t('employee.advances.estimatedRepayment')}
                     </h3>
                     <Badge variant="outline" className="bg-muted/50">
-                      Projected
+                      {t('employee.advances.projected')}
                     </Badge>
                   </div>
                   <div className="space-y-2">
@@ -1849,7 +1850,7 @@ export default function EmployeeShowPage() {
                           ? Math.ceil(Number(currentBalance) / Number(monthlyDeduction))
                           : 0}
                         <span className="ml-1 text-sm font-normal text-muted-foreground">
-                          months
+                          {t('employee.advances.months')}
                         </span>
                       </p>
                     </div>
@@ -1857,8 +1858,8 @@ export default function EmployeeShowPage() {
                       {monthlyDeduction &&
                       Number(monthlyDeduction) > 0 &&
                       Number(currentBalance) > 0
-                        ? t('employee:advances.basedOnCurrentBalance')
-                        : `Set monthly deduction to see estimate`}
+                        ? t('employee.advances.basedOnCurrentBalance')
+                        : t('employee.advances.setMonthlyDeductionToSeeEstimate')}
                     </p>
                   </div>
                 </div>
@@ -1868,7 +1869,7 @@ export default function EmployeeShowPage() {
               <Card className="mt-6 shadow-sm border border-gray-200 bg-white rounded-lg">
                 <CardHeader className="bg-muted/50 rounded-t-lg p-4 flex flex-row items-center gap-2">
                   <History className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-lg font-semibold">Advance History</CardTitle>
+                  <CardTitle className="text-lg font-semibold">{t('employee.advances.history')}</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
@@ -1876,28 +1877,28 @@ export default function EmployeeShowPage() {
                       <thead className="bg-muted/50">
                         <tr>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Amount
+                            {t('employee.advances.table.amount')}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Monthly Deduction
+                            {t('employee.advances.table.monthlyDeduction')}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Repaid Amount
+                            {t('employee.advances.table.repaidAmount')}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Reason
+                            {t('employee.advances.table.reason')}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Date
+                            {t('employee.advances.table.date')}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Status
+                            {t('employee.advances.table.status')}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Type
+                            {t('employee.advances.table.type')}
                           </th>
                           <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Actions
+                            {t('employee.advances.table.actions')}
                           </th>
                         </tr>
                       </thead>
