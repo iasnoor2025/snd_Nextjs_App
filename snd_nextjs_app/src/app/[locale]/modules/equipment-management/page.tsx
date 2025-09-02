@@ -289,6 +289,148 @@ export default function EquipmentManagementPage() {
     setCurrentPage(1);
   };
 
+  // Calculate equipment statistics by grouping equipment names
+  const calculateEquipmentStats = () => {
+    const stats: { [key: string]: number } = {};
+    
+    equipment.forEach(item => {
+      if (item.name) {
+        // Extract only text/letters from equipment name
+        // Examples: "AAALOADER" -> "LOADER", "1301-DOZER" -> "DOZER"
+        const name = item.name.trim();
+        
+        // Extract only letters (A-Z, a-z) from the name
+        const lettersOnly = name.replace(/[^A-Za-z]/g, '');
+        
+        if (lettersOnly.length > 0) {
+          // Find the main equipment type by looking for common equipment keywords
+          let equipmentType = lettersOnly;
+          let foundMatch = false;
+          
+          // Common equipment types to look for
+          const equipmentTypes = [
+            'LOADER', 'DOZER', 'EXCAVATOR', 'CRANE', 'BULLDOZER', 'GRADER', 
+            'COMPACTOR', 'ROLLER', 'FORKLIFT', 'TRUCK', 'TRACTOR', 'GENERATOR',
+            'COMPRESSOR', 'PUMP', 'WELDER', 'CUTTER', 'DRILL', 'HAMMER',
+            'MILLER', 'GRINDER', 'SAW', 'PLANER', 'ROUTER', 'LATHE',
+            'WATERTANKER', 'WATER TANKER', 'TANKER', 'WATER'
+          ];
+          
+          // Check if the letters contain any of the common equipment types
+          // Sort by length (longest first) to prioritize more specific matches
+          const sortedTypes = equipmentTypes.sort((a, b) => b.length - a.length);
+          
+          for (const type of sortedTypes) {
+            if (lettersOnly.toUpperCase().includes(type)) {
+              // Special handling for water tanker variations
+              if (type === 'WATERTANKER' || type === 'WATER TANKER' || type === 'TANKER' || type === 'WATER') {
+                equipmentType = 'WATER TANKER';
+              } else {
+                equipmentType = type;
+              }
+              foundMatch = true;
+              break;
+            }
+          }
+          
+          // If no match found, try fuzzy matching for common typos/variations
+          if (!foundMatch) {
+            const upperLetters = lettersOnly.toUpperCase();
+            
+            // Handle common variations and typos
+            if (upperLetters.includes('DOZE') || upperLetters.includes('DOZER')) {
+              equipmentType = 'DOZER';
+              foundMatch = true;
+            } else if (upperLetters.includes('LOADER') || upperLetters.includes('LOADE')) {
+              equipmentType = 'LOADER';
+              foundMatch = true;
+            } else if (upperLetters.includes('EXCAVATOR') || upperLetters.includes('EXCAVATO')) {
+              equipmentType = 'EXCAVATOR';
+              foundMatch = true;
+            } else if (upperLetters.includes('CRANE') || upperLetters.includes('CRAN')) {
+              equipmentType = 'CRANE';
+              foundMatch = true;
+            } else if (upperLetters.includes('TRUCK') || upperLetters.includes('TRUC')) {
+              equipmentType = 'TRUCK';
+              foundMatch = true;
+            } else if (upperLetters.includes('TRACTOR') || upperLetters.includes('TRACT')) {
+              equipmentType = 'TRACTOR';
+              foundMatch = true;
+            } else if (upperLetters.includes('FORKLIFT') || upperLetters.includes('FORKLIF')) {
+              equipmentType = 'FORKLIFT';
+              foundMatch = true;
+            } else if (upperLetters.includes('COMPRESSOR') || upperLetters.includes('COMPRES')) {
+              equipmentType = 'COMPRESSOR';
+              foundMatch = true;
+            } else if (upperLetters.includes('GENERATOR') || upperLetters.includes('GENERAT')) {
+              equipmentType = 'GENERATOR';
+              foundMatch = true;
+            } else if (upperLetters.includes('WELDER') || upperLetters.includes('WELDE')) {
+              equipmentType = 'WELDER';
+              foundMatch = true;
+            } else if (upperLetters.includes('PUMP') || upperLetters.includes('PUM')) {
+              equipmentType = 'PUMP';
+              foundMatch = true;
+            } else if (upperLetters.includes('DRILL') || upperLetters.includes('DRIL')) {
+              equipmentType = 'DRILL';
+              foundMatch = true;
+            } else if (upperLetters.includes('HAMMER') || upperLetters.includes('HAMME')) {
+              equipmentType = 'HAMMER';
+              foundMatch = true;
+            } else if (upperLetters.includes('GRINDER') || upperLetters.includes('GRINDE')) {
+              equipmentType = 'GRINDER';
+              foundMatch = true;
+            } else if (upperLetters.includes('SAW')) {
+              equipmentType = 'SAW';
+              foundMatch = true;
+            } else if (upperLetters.includes('MILLER') || upperLetters.includes('MILLE')) {
+              equipmentType = 'MILLER';
+              foundMatch = true;
+            } else if (upperLetters.includes('PLANER') || upperLetters.includes('PLANE')) {
+              equipmentType = 'PLANER';
+              foundMatch = true;
+            } else if (upperLetters.includes('ROUTER') || upperLetters.includes('ROUTE')) {
+              equipmentType = 'ROUTER';
+              foundMatch = true;
+            } else if (upperLetters.includes('LATHE') || upperLetters.includes('LATH')) {
+              equipmentType = 'LATHE';
+              foundMatch = true;
+            } else if (upperLetters.includes('CUTTER') || upperLetters.includes('CUTTE')) {
+              equipmentType = 'CUTTER';
+              foundMatch = true;
+            } else if (upperLetters.includes('ROLLER') || upperLetters.includes('ROLLE')) {
+              equipmentType = 'ROLLER';
+              foundMatch = true;
+            } else if (upperLetters.includes('COMPACTOR') || upperLetters.includes('COMPAC')) {
+              equipmentType = 'COMPACTOR';
+              foundMatch = true;
+            } else if (upperLetters.includes('GRADER') || upperLetters.includes('GRADE')) {
+              equipmentType = 'GRADER';
+              foundMatch = true;
+            } else if (upperLetters.includes('BULLDOZER') || upperLetters.includes('BULLDOZE')) {
+              equipmentType = 'BULLDOZER';
+              foundMatch = true;
+            }
+          }
+          
+          // Only count if we found a valid equipment type match
+          // Skip short strings that might be just prefixes/suffixes (like AAA, AA)
+          if (foundMatch && equipmentType.length >= 3) {
+            // Clean up the equipment type
+            equipmentType = equipmentType.toUpperCase().trim();
+            
+            // Count by equipment type
+            stats[equipmentType] = (stats[equipmentType] || 0) + 1;
+          }
+        }
+      }
+    });
+    
+    return stats;
+  };
+
+  const equipmentStats = calculateEquipmentStats();
+
   return (
     <ProtectedRoute>
       <div className="container mx-auto py-6 space-y-6">
@@ -325,6 +467,28 @@ export default function EquipmentManagementPage() {
             )}
           </div>
         </div>
+
+        {/* Equipment Statistics Cards */}
+        {Object.keys(equipmentStats).length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-3">
+            {Object.entries(equipmentStats)
+              .sort(([,a], [,b]) => b - a) // Sort by count descending
+              .map(([equipmentType, count]) => (
+                <Card key={equipmentType} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-3">
+                    <div className="flex flex-col items-center text-center">
+                      <p className="text-xs font-medium text-muted-foreground mb-1 truncate w-full">
+                        {equipmentType}
+                      </p>
+                      <p className="text-xl font-bold text-primary">
+                        {count}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+          </div>
+        )}
 
         {/* Search and Filters */}
         <Card>
@@ -687,9 +851,9 @@ export default function EquipmentManagementPage() {
                   <div className="flex items-center justify-between px-2 py-4">
                     <div className="flex-1 text-sm text-muted-foreground">
                       {t('equipment.equipment_management.showing_results', {
-                        start: startIndex + 1,
-                        end: Math.min(endIndex, totalItems),
-                        total: totalItems,
+                        start: String(startIndex + 1),
+                        end: String(Math.min(endIndex, totalItems)),
+                        total: String(totalItems),
                       })}
                     </div>
 
