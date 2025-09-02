@@ -152,7 +152,7 @@ export async function GET(_request: NextRequest) {
           supervisor: 'N/A',
           location: 'N/A',
           contract_hours_per_day: 8,
-          contract_days_per_month: 26,
+          contract_days_per_month: 30,
           address: 'N/A',
           city: 'N/A',
           country: 'N/A',

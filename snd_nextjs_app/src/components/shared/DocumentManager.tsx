@@ -10,6 +10,7 @@ import { Download, Eye, FileText, Loader2, Trash2, Upload, X } from 'lucide-reac
 import { useCallback, useEffect, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { toast } from 'sonner';
+import { useI18n } from '@/hooks/use-i18n';
 
 export interface DocumentItem {
   id: number;
@@ -53,6 +54,8 @@ interface DocumentManagerProps {
 }
 
 export default function DocumentManager(props: DocumentManagerProps) {
+  const { t } = useI18n();
+  
   // Debug logging
   console.log('DocumentManager rendered with props:', {
     hasLoadDocuments: !!props.loadDocuments,
@@ -64,13 +67,13 @@ export default function DocumentManager(props: DocumentManagerProps) {
   });
 
   const {
-    title = 'Documents',
-    description = 'Upload and manage documents',
+    title = t('employee.documents.title'),
+    description = t('employee.documents.description'),
     loadDocuments,
     uploadDocument,
     deleteDocument,
     showNameInput = false,
-    nameInputLabel = 'Document Name (Optional)',
+    nameInputLabel = t('employee.documents.documentName'),
     renderExtraControls,
     getExtraUploadData,
     canUpload = true,
@@ -196,7 +199,7 @@ export default function DocumentManager(props: DocumentManagerProps) {
       }
     } catch (error) {
       console.error('Error loading documents:', error);
-      toast.error('Failed to load documents');
+      toast.error(t('employee.documents.errorLoadingDocuments'));
     } finally {
       setLoading(false);
     }
@@ -227,11 +230,11 @@ export default function DocumentManager(props: DocumentManagerProps) {
           };
           await uploadDocument(file, extra);
         }
-        toast.success('Documents uploaded successfully');
+        toast.success(t('employee.documents.uploadSuccess'));
         setDocumentName('');
         await refresh();
       } catch (error) {
-        toast.error('Failed to upload documents');
+        toast.error(t('employee.documents.uploadFailed'));
       } finally {
         setUploading(false);
       }
@@ -260,11 +263,11 @@ export default function DocumentManager(props: DocumentManagerProps) {
       console.log('Attempting to delete document:', id);
       const result = await deleteDocument(id);
       console.log('Delete result:', result);
-      toast.success('Document deleted successfully');
+      toast.success(t('employee.documents.deleteSuccess'));
       await refresh();
     } catch (error) {
       console.error('Delete error:', error);
-      toast.error('Failed to delete document: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      toast.error(t('employee.documents.deleteFailed'));
     } finally {
       setDeleting(null);
     }
@@ -316,7 +319,7 @@ export default function DocumentManager(props: DocumentManagerProps) {
         
         // Clean up the blob URL
         window.URL.revokeObjectURL(url);
-        toast.success('Download started');
+        toast.success(t('employee.documents.downloadStarted'));
         return;
       }
 
@@ -348,10 +351,10 @@ export default function DocumentManager(props: DocumentManagerProps) {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      toast.success('Download started');
+      toast.success(t('employee.documents.downloadStarted'));
     } catch (error) {
       console.error('Download error:', error);
-      toast.error('Failed to download document: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      toast.error(t('employee.documents.downloadFailed'));
     }
   };
 
@@ -433,13 +436,13 @@ export default function DocumentManager(props: DocumentManagerProps) {
                 <Label htmlFor="doc-name" className="text-sm font-medium">
                   {nameInputLabel}
                 </Label>
-                <Input
-                  id="doc-name"
-                  placeholder="Enter custom document name"
-                  value={documentName}
-                  onChange={e => setDocumentName(e.target.value)}
-                  className="max-w-xs"
-                />
+                                  <Input
+                    id="doc-name"
+                    placeholder={t('employee.documents.descriptionPlaceholder')}
+                    value={documentName}
+                    onChange={e => setDocumentName(e.target.value)}
+                    className="max-w-xs"
+                  />
               </div>
             )}
 
@@ -458,18 +461,18 @@ export default function DocumentManager(props: DocumentManagerProps) {
                 {uploading ? (
                   <div className="flex items-center justify-center space-x-2">
                     <Loader2 className="h-6 w-6 animate-spin" />
-                    <span>Uploading documents...</span>
+                    <span>{t('employee.documents.uploading')}</span>
                   </div>
                 ) : (
                   <>
                     <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
                     <div>
                       <p className="text-sm font-medium">
-                        {isDragActive ? 'Drop files here' : 'Drag & drop files here'}
+                        {isDragActive ? t('employee.documents.dropFilesHere') : t('employee.documents.dragAndDropFiles')}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1">or click to browse files</p>
+                      <p className="text-xs text-muted-foreground mt-1">{t('employee.documents.orClickToBrowse')}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Supports PDF, Word, Excel, Images (max 10MB)
+                        {t('employee.documents.supportedFileTypes')}
                       </p>
                     </div>
                   </>
@@ -484,22 +487,22 @@ export default function DocumentManager(props: DocumentManagerProps) {
         {/* Documents List */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium">Uploaded Documents</h4>
+            <h4 className="text-sm font-medium">{t('employee.documents.uploadedDocuments')}</h4>
             {documents.length > 0 && (
-              <Badge variant="secondary">{documents.length} document(s)</Badge>
+              <Badge variant="secondary">{documents.length} {t('employee.documents.document')}</Badge>
             )}
           </div>
 
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin" />
-              <span className="ml-2">Loading documents...</span>
+              <span className="ml-2">{t('employee.documents.loadingDocuments')}</span>
             </div>
           ) : documents.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No documents uploaded yet</p>
-              <p className="text-xs">Upload documents to get started</p>
+              <p className="text-sm">{t('employee.documents.noDocumentsYet')}</p>
+              <p className="text-xs">{t('employee.documents.uploadDocumentsToStart')}</p>
             </div>
           ) : (
                                                    <div
@@ -591,17 +594,17 @@ export default function DocumentManager(props: DocumentManagerProps) {
                            {isPhotoDocument(document) && (
                              <div className="flex items-center justify-center gap-2 text-xs">
                                <span className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1.5 rounded-full font-semibold shadow-md">
-                                 {document.name.toLowerCase().includes('passport') ? '📸 Employee Passport' : 
-                                  document.name.toLowerCase().includes('iqama') ? '📸 Employee Iqama' : '📸 Employee Photo'}
+                                 {document.name.toLowerCase().includes('passport') ? t('employee.documents.employeePassport') : 
+                                  document.name.toLowerCase().includes('iqama') ? t('employee.documents.employeeIqama') : t('employee.documents.employeePhoto')}
                                </span>
                                {document.name.toLowerCase().includes('passport') && (
                                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
-                                   Travel Document
+                                   {t('employee.documents.travelDocument')}
                                  </span>
                                )}
                                {document.name.toLowerCase().includes('iqama') && (
                                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
-                                   ID Card
+                                   {t('employee.documents.idCard')}
                                  </span>
                                )}
                              </div>
@@ -625,7 +628,7 @@ export default function DocumentManager(props: DocumentManagerProps) {
                              }
                            }}
                            className="h-8 w-8 p-0 shadow-lg"
-                           title={isImageFile(document.file_type) ? "Preview image" : "Open document"}
+                           title={isImageFile(document.file_type) ? t('employee.documents.previewImage') : t('employee.documents.openDocument')}
                          >
                            <Eye className="h-4 w-4" />
                          </Button>
@@ -712,14 +715,14 @@ export default function DocumentManager(props: DocumentManagerProps) {
                     <div className="text-6xl">🖼️</div>
                     <div className="text-center">
                       <p className="text-lg font-medium text-gray-600">{previewImage.name}</p>
-                      <p className="text-sm text-gray-500 mt-2">
-                        Failed to load image preview. The image may not be accessible.
-                      </p>
+                                             <p className="text-sm text-gray-500 mt-2">
+                         {t('employee.documents.failedToLoadImage')}
+                       </p>
                       <Button
                         onClick={() => window.open(previewImage.url, '_blank')}
                         className="mt-4"
                       >
-                        Open in New Tab
+                        {t('employee.documents.openInNewTab')}
                       </Button>
                     </div>
                   </div>
@@ -738,21 +741,21 @@ export default function DocumentManager(props: DocumentManagerProps) {
                   <div className="text-center">
                     <p className="text-lg font-medium text-gray-600">{previewImage.name}</p>
                     <p className="text-sm text-gray-500 mt-2">
-                      This file type cannot be previewed directly.
+                      {t('employee.documents.cannotPreviewFileType')}
                     </p>
                     <Button
                       onClick={() => window.open(previewImage.url, '_blank')}
                       className="mt-4"
                     >
-                      Open in New Tab
+                      {t('employee.documents.openInNewTab')}
                     </Button>
                   </div>
                 </div>
               )}
             </div>
             <div className="mt-4 text-sm text-muted-foreground text-center">
-              <p>Size: {formatFileSize(previewImage.size)}</p>
-              <p>Uploaded: {new Date(previewImage.created_at).toLocaleDateString()}</p>
+              <p>{t('employee.documents.size')}: {formatFileSize(previewImage.size)}</p>
+              <p>{t('employee.documents.uploaded')}: {new Date(previewImage.created_at).toLocaleDateString()}</p>
             </div>
           </div>
         </div>

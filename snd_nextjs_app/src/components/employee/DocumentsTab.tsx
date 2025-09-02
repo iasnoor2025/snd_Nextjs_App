@@ -27,7 +27,7 @@ import { useSession } from 'next-auth/react';
 import { useCallback, useEffect, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
 
 interface Document {
   id: number;
@@ -48,7 +48,7 @@ interface DocumentsTabProps {
 }
 
 export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const { hasPermission } = useRBAC();
   const { data: session, status: sessionStatus } = useSession();
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -93,7 +93,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
     return (
       <div className="flex items-center justify-center p-8">
         <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">{t('employee:documents.loadingSession')}</span>
+        <span className="ml-2">{t('employee.documents.loadingSession')}</span>
       </div>
     );
   }
@@ -103,8 +103,8 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
     return (
       <div className="rounded-md border border-red-200 bg-red-50 p-4">
         <div className="text-center">
-          <div className="font-medium text-red-600">{t('employee:documents.authenticationRequired')}</div>
-          <div className="mt-1 text-sm text-red-600">{t('employee:documents.pleaseLogin')}</div>
+          <div className="font-medium text-red-600">{t('employee.documents.authenticationRequired')}</div>
+          <div className="mt-1 text-sm text-red-600">{t('employee.documents.pleaseLogin')}</div>
         </div>
       </div>
     );
@@ -201,7 +201,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
 
   const handleUpload = async () => {
     if (!uploadForm.file || !uploadForm.document_name.trim()) {
-      toast.error(t('employee:documents.selectFileAndName'));
+      toast.error(t('employee.documents.selectFileAndName'));
       return;
     }
 
@@ -220,24 +220,24 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
       });
 
       if (response.ok) {
-        toast.success(t('employee:documents.uploadSuccess'));
+        toast.success(t('employee.documents.uploadSuccess'));
         setShowUploadDialog(false);
         setUploadForm({ document_name: '', document_type: '', file: null, description: '' });
         fetchDocuments(); // Refresh the list
       } else {
         const errorData = await response.json();
-        toast.error(errorData.error || t('employee:documents.uploadFailed'));
+        toast.error(errorData.error || t('employee.documents.uploadFailed'));
       }
     } catch (error) {
       
-      toast.error(t('employee:documents.uploadFailed'));
+      toast.error(t('employee.documents.uploadFailed'));
     } finally {
       setUploading(false);
     }
   };
 
   const handleDelete = async (documentId: number) => {
-    if (!confirm(t('employee:documents.confirmDelete'))) {
+    if (!confirm(t('employee.documents.confirmDelete'))) {
       return;
     }
 
@@ -249,15 +249,15 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
       });
 
       if (response.ok) {
-        toast.success(t('employee:documents.deleteSuccess'));
+        toast.success(t('employee.documents.deleteSuccess'));
         fetchDocuments(); // Refresh the list
       } else {
         const errorData = await response.json();
-        toast.error(errorData.error || t('employee:documents.deleteFailed'));
+        toast.error(errorData.error || t('employee.documents.deleteFailed'));
       }
     } catch (error) {
       
-      toast.error(t('employee:documents.deleteFailed'));
+      toast.error(t('employee.documents.deleteFailed'));
     } finally {
       setDeletingId(null);
     }
@@ -279,18 +279,18 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
       } else {
-        toast.error(t('employee:documents.downloadFailed'));
+        toast.error(t('employee.documents.downloadFailed'));
       }
     } catch (error) {
       
-      toast.error(t('employee:documents.downloadFailed'));
+      toast.error(t('employee.documents.downloadFailed'));
     }
   };
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return `0 ${t('employee:documents.bytes')}`;
+    if (bytes === 0) return `0 ${t('employee.documents.bytes')}`;
     const k = 1024;
-    const sizes = [t('employee:documents.bytes'), t('employee:documents.kb'), t('employee:documents.mb'), t('employee:documents.gb')];
+    const sizes = [t('employee.documents.bytes'), t('employee.documents.kb'), t('employee.documents.mb'), t('employee.documents.gb')];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
@@ -330,7 +330,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
     s.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
 
   const getDocumentTypeLabel = (type?: string) => {
-    if (!type) return t('employee:documents.document');
+    if (!type) return t('employee.documents.document');
     return toTitleCase(type.replace(/_/g, ' '));
   };
 
@@ -368,7 +368,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
     return (
       <div className="flex items-center justify-center p-8">
         <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">{t('employee:documents.loadingDocuments')}</span>
+        <span className="ml-2">{t('employee.documents.loadingDocuments')}</span>
       </div>
     );
   }
@@ -377,11 +377,11 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
     return (
       <div className="rounded-md border border-red-200 bg-red-50 p-4">
         <div className="text-center">
-          <div className="font-medium text-red-600">{t('employee:documents.errorLoadingDocuments')}</div>
+          <div className="font-medium text-red-600">{t('employee.documents.errorLoadingDocuments')}</div>
           <div className="mt-1 text-sm text-red-600">{error}</div>
           <div className="mt-4 flex justify-center">
             <Button variant="outline" onClick={fetchDocuments} className="bg-white">
-              <RefreshCw className="mr-2 h-4 w-4" /> {t('employee:documents.tryAgain')}
+              <RefreshCw className="mr-2 h-4 w-4" /> {t('employee.documents.tryAgain')}
             </Button>
           </div>
         </div>
@@ -393,9 +393,9 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
     return (
       <div className="rounded-md border border-red-200 bg-red-50 p-4">
         <div className="text-center">
-          <div className="font-medium text-red-600">{t('employee:documents.criticalError')}</div>
+          <div className="font-medium text-red-600">{t('employee.documents.criticalError')}</div>
           <div className="mt-1 text-sm text-red-600">
-            {error || t('employee:documents.unexpectedError')}
+                          {error || t('employee.documents.unexpectedError')}
           </div>
           <div className="mt-4 flex justify-center space-x-2">
             <Button
@@ -407,7 +407,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
               }}
               className="bg-white"
             >
-              <RefreshCw className="mr-2 h-4 w-4" /> {t('employee:documents.retry')}
+              <RefreshCw className="mr-2 h-4 w-4" /> {t('employee.documents.retry')}
             </Button>
             <Button
               variant="outline"
@@ -420,7 +420,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
               }}
               className="bg-white"
             >
-              <RefreshCw className="mr-2 h-4 w-4" /> {t('employee:documents.forceReload')}
+              <RefreshCw className="mr-2 h-4 w-4" /> {t('employee.documents.forceReload')}
             </Button>
           </div>
         </div>
@@ -432,8 +432,8 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
     <>
       <div className="w-full">
         <DocumentManager
-          title={t('employee:documents.title')}
-          description={t('employee:documents.description')}
+          title={t('employee.documents.title')}
+          description={t('employee.documents.description')}
           beforeUpload={files => {
             if (!uploadForm.document_name.trim() || !uploadForm.document_type.trim()) {
               setPendingFiles(files);
@@ -601,12 +601,12 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
           renderExtraControls={
             <div className="grid gap-3">
               <div>
-                <Label htmlFor="description">{t('employee:documents.description')}</Label>
+                <Label htmlFor="description">{t('employee.documents.description')}</Label>
                 <Input
                   id="description"
                   value={uploadForm.description}
                   onChange={e => setUploadForm(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder={t('employee:documents.descriptionPlaceholder')}
+                  placeholder={t('employee.documents.descriptionPlaceholder')}
                 />
               </div>
             </div>
@@ -623,14 +623,14 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t('employee:documents.documentDetails')}</DialogTitle>
+            <DialogTitle>{t('employee.documents.documentDetails')}</DialogTitle>
             <DialogDescription>
-              {t('employee:documents.provideNameAndType')}
+                              {t('employee.documents.provideNameAndType')}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
             <div>
-              <Label htmlFor="doc_name_popup">{t('employee:documents.documentName')}</Label>
+              <Label htmlFor="doc_name_popup">{t('employee.documents.documentName')}</Label>
               <Select
                 value={uploadForm.document_type}
                 onValueChange={v => {
@@ -643,7 +643,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
                 }}
               >
                 <SelectTrigger id="doc_name_popup">
-                  <SelectValue placeholder={t('employee:documents.selectDocumentName')} />
+                  <SelectValue placeholder={t('employee.documents.selectDocumentName')} />
                 </SelectTrigger>
                 <SelectContent>
                   {documentNameOptions.map(o => (
@@ -660,14 +660,14 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
               <div className="space-y-3">
                 <div className="text-sm text-muted-foreground">
                   <div className="mb-2">
-                    <strong>{t('employee:documents.filesToUpload')}:</strong> {pendingFiles.length} {t('employee:documents.file')}(s)
+                    <strong>{t('employee.documents.filesToUpload')}:</strong> {pendingFiles.length} {t('employee.documents.file')}(s)
                   </div>
                   <div className="mb-2">
-                    <strong>{t('employee:documents.totalSize')}:</strong> {formatFileSize(pendingFiles.reduce((total, file) => total + file.size, 0))}
+                    <strong>{t('employee.documents.totalSize')}:</strong> {formatFileSize(pendingFiles.reduce((total, file) => total + file.size, 0))}
                   </div>
                               {pendingFiles.some(f => f.type.startsWith('image/')) && (
               <div className="text-green-600 text-xs">
-                📸 {t('employee:documents.imagesWillBeCompressed')}
+                📸 {t('employee.documents.imagesWillBeCompressed')}
               </div>
             )}
             
@@ -676,7 +676,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
                 {/* Upload Progress Display */}
                 {uploading && Object.keys(uploadProgress).length > 0 && (
                   <div className="space-y-2">
-                    <Label>{t('employee:documents.uploadProgress')}</Label>
+                    <Label>{t('employee.documents.uploadProgress')}</Label>
                     {pendingFiles.map((file) => (
                       <div key={file.name} className="space-y-1">
                         <div className="flex items-center justify-between text-xs">
@@ -700,7 +700,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
                 setUploadProgress({});
               }}
             >
-              {t('employee:documents.cancel')}
+              {t('employee.documents.cancel')}
             </Button>
             <Button
               onClick={async () => {
@@ -770,7 +770,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
                   }
 
                   if (errorCount === 0) {
-                    toast.success(t('employee:documents.uploadSuccessMultiple', { count: successCount }));
+                    toast.success(t('employee.documents.uploadSuccessMultiple', { count: successCount }));
                     setPendingFiles(null);
                     setShowDetailsDialog(false);
                     setUploadForm({
@@ -782,7 +782,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
                     setUploadProgress({});
                     fetchDocuments();
                   } else if (successCount > 0) {
-                    toast.success(t('employee:documents.uploadPartialSuccess', { success: successCount, failed: errorCount }));
+                    toast.success(t('employee.documents.uploadPartialSuccess', { success: successCount, failed: errorCount }));
                     setPendingFiles(null);
                     setShowDetailsDialog(false);
                     setUploadForm({
@@ -794,17 +794,17 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
                     setUploadProgress({});
                     fetchDocuments();
                   } else {
-                    toast.error(t('employee:documents.uploadAllFailed'));
+                    toast.error(t('employee.documents.uploadAllFailed'));
                   }
                 } catch (e) {
                   
-                  toast.error(t('employee:documents.uploadFailed'));
+                  toast.error(t('employee.documents.uploadFailed'));
                 } finally {
                   setUploading(false);
                 }
               }}
             >
-              {uploading ? t('employee:documents.uploading') : t('employee:documents.upload')}
+              {uploading ? t('employee.documents.uploading') : t('employee.documents.upload')}
             </Button>
           </DialogFooter>
         </DialogContent>

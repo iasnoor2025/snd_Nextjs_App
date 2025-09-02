@@ -196,7 +196,9 @@ export async function POST(_request: NextRequest) {
         let overtimeAmount = 0;
         if (totalOvertimeHours > 0) {
           const basicSalary = Number(employee.basicSalary);
-          const hourlyRate = basicSalary / 30 / 8; // basic/30/8
+          const totalDaysInMonth = daysInMonth; // Use actual days in the month
+          const contractHours = Number(employee.contractHoursPerDay) || 8;
+          const hourlyRate = basicSalary / (totalDaysInMonth * contractHours);
 
           if (employee.overtimeFixedRate && Number(employee.overtimeFixedRate) > 0) {
             overtimeAmount = totalOvertimeHours * Number(employee.overtimeFixedRate);

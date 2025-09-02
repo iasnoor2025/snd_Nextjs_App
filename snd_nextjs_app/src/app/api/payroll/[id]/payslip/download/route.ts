@@ -177,8 +177,8 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
       housing_allowance: Number(payroll.employee?.housingAllowance || 0),
       transport_allowance: Number(payroll.employee?.transportAllowance || 0),
       overtime_rate_multiplier: Number(payroll.employee?.overtimeRateMultiplier || 1.5),
-      overtime_fixed_rate: Number(payroll.employee?.overtimeFixedRate || 0),
-      contract_days_per_month: Number(payroll.employee?.contractDaysPerMonth || 26),
+              overtime_fixed_rate: Number(payroll.employee?.overtimeFixedRate || 6),
+        contract_days_per_month: Number(payroll.employee?.contractDaysPerMonth || 30),
       contract_hours_per_day: Number(payroll.employee?.contractHoursPerDay || 8),
     };
 

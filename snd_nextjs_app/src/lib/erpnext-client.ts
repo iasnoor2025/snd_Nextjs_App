@@ -218,14 +218,14 @@ export class ERPNextClient {
       transportAllowance: erpEmployee.transport_allowance || 0,
       absentDeductionRate: erpEmployee.absent_deduction_rate || 0,
       overtimeRateMultiplier: erpEmployee.overtime_rate_multiplier || 1.5,
-      overtimeFixedRate: erpEmployee.overtime_fixed_rate || 0,
+              overtimeFixedRate: erpEmployee.overtime_fixed_rate || 6,
       // Banking information
       bankName: erpEmployee.bank_name || null,
       bankAccountNumber: erpEmployee.bank_account_number || null,
       bankIban: erpEmployee.bank_iban || null,
       // Contract details
       contractHoursPerDay: erpEmployee.contract_hours_per_day || 8,
-      contractDaysPerMonth: erpEmployee.contract_days_per_month || 26,
+              contractDaysPerMonth: erpEmployee.contract_days_per_month || 30,
       // Emergency contacts
       emergencyContactName: erpEmployee.emergency_contact_name || null,
       emergencyContactPhone: erpEmployee.emergency_contact_phone || null,

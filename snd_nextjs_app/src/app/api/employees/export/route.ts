@@ -162,7 +162,7 @@ export async function GET() {
       employee.bankAccountNumber || '',
       employee.bankIban || '',
       employee.contractHoursPerDay?.toString() || '8',
-      employee.contractDaysPerMonth?.toString() || '26',
+              employee.contractDaysPerMonth?.toString() || '30',
       employee.emergencyContactName || '',
       employee.emergencyContactPhone || '',
       employee.emergencyContactRelationship || '',

@@ -474,7 +474,7 @@ const createEmployeeHandler = async (request: NextRequest) => {
         bankAccountNumber: bank_account_number || null,
         bankIban: bank_iban || null,
         contractHoursPerDay: contract_hours_per_day ? parseInt(contract_hours_per_day) : 8,
-        contractDaysPerMonth: contract_days_per_month ? parseInt(contract_days_per_month) : 26,
+        contractDaysPerMonth: contract_days_per_month ? parseInt(contract_days_per_month) : 30,
         emergencyContactName: emergency_contact_name || null,
         emergencyContactPhone: emergency_contact_phone || null,
         emergencyContactRelationship: emergency_contact_relationship || null,

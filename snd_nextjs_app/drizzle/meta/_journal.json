@@ -120,6 +120,13 @@
       "when": 1756714824646,
       "tag": "0016_gifted_nightcrawler",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1756802581597,
+      "tag": "0017_magenta_professor_monster",
+      "breakpoints": true
     }
   ]
 }

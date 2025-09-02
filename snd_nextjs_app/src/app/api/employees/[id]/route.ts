@@ -486,7 +486,7 @@ const updateEmployeeHandler = async (
       (Object.prototype.hasOwnProperty.call(drizzleData, 'contractDaysPerMonth') ||
         Object.prototype.hasOwnProperty.call(drizzleData, 'contractHoursPerDay'))
     ) {
-      const days = drizzleData.contractDaysPerMonth ?? 26;
+              const days = drizzleData.contractDaysPerMonth ?? 30;
       const hours = drizzleData.contractHoursPerDay ?? 8;
       if (days > 0 && hours > 0) {
         drizzleData.hourlyRate =

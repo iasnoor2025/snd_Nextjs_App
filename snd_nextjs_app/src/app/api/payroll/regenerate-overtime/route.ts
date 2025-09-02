@@ -64,9 +64,14 @@ export async function POST() {
         // Calculate overtime amount based on employee's overtime settings
         let overtimeAmount = 0;
         if (Number(payroll.overtimeHours) > 0) {
-          // Use the formula: basic/30/8*overtime rate
+          // Use the formula: basic/(total_days_in_month * contract_hours)*overtime rate
           const basicSalary = Number(payroll.employee.basicSalary);
-          const hourlyRate = basicSalary / 30 / 8; // basic/30/8
+          // Get the actual days in the month for this payroll
+          const payrollMonth = Number(payroll.month);
+          const payrollYear = Number(payroll.year);
+          const totalDaysInMonth = new Date(payrollYear, payrollMonth, 0).getDate();
+          const contractHours = Number(payroll.employee.contractHoursPerDay) || 8;
+          const hourlyRate = basicSalary / (totalDaysInMonth * contractHours);
 
           console.log(`Hourly rate calculated: ${hourlyRate}`);
 
@@ -80,7 +85,7 @@ export async function POST() {
               Number(payroll.overtimeHours) * Number(payroll.employee.overtimeFixedRate);
             console.log(`Using fixed overtime rate: ${payroll.employee.overtimeFixedRate} SAR/hr`);
           } else {
-            // Use overtime multiplier with basic/30/8 formula
+            // Use overtime multiplier with calculated hourly rate
             const overtimeMultiplier = Number(payroll.employee.overtimeRateMultiplier) || 1.5;
             overtimeAmount = Number(payroll.overtimeHours) * (hourlyRate * overtimeMultiplier);
             console.log(`Using overtime multiplier: ${overtimeMultiplier}x basic rate`);

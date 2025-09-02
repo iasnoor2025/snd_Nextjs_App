@@ -163,7 +163,7 @@ export default function CreateEmployeePage() {
   const [updatingDepartment, setUpdatingDepartment] = useState(false);
   const [updatingDesignation, setUpdatingDesignation] = useState(false);
 
-  const [formData, setFormData] = useState<EmployeeFormData>({
+    const [formData, setFormData] = useState<EmployeeFormData>({
     fileNumber: '',
     first_name: '',
     middle_name: '',
@@ -189,12 +189,12 @@ export default function CreateEmployeePage() {
     hourly_rate: 0,
     absent_deduction_rate: 0,
     overtime_rate_multiplier: 1.5,
-    overtime_fixed_rate: 0,
+    overtime_fixed_rate: 6,
     bank_name: '',
     bank_account_number: '',
     bank_iban: '',
     contract_hours_per_day: 8,
-    contract_days_per_month: 26,
+    contract_days_per_month: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate(),
     emergency_contact_name: '',
     emergency_contact_phone: '',
     emergency_contact_relationship: '',
@@ -973,7 +973,7 @@ export default function CreateEmployeePage() {
                     </div>
                     <div>
                       <Label htmlFor="contract_days_per_month">
-                        {t('employee:fields.contractDaysPerMonth')}
+                        {t('employee:fields.contractDaysPerMonth')} (Auto-set)
                       </Label>
                       <Input
                         id="contract_days_per_month"
@@ -982,7 +982,13 @@ export default function CreateEmployeePage() {
                         onChange={e =>
                           handleInputChange('contract_days_per_month', parseInt(e.target.value))
                         }
+                        readOnly
+                        className="bg-gray-50 cursor-not-allowed"
+                        title="This field is automatically set to the total days in the current month"
                       />
+                      <div className="text-xs text-muted-foreground">
+                        Automatically set to the total days in the current month (read-only)
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -1153,7 +1159,7 @@ export default function CreateEmployeePage() {
                 <CardContent className="space-y-6">
                   {/* Iqama Information */}
                   <div className="border rounded-lg p-4">
-                    <h3 className="font-semibold mb-4">{t('employee:documents.iqama')}</h3>
+                    <h3 className="font-semibold mb-4">{t('employee.documents.iqama')}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <Label htmlFor="iqama_number">{t('employee:fields.iqamaNumber')}</Label>
@@ -1201,7 +1207,7 @@ export default function CreateEmployeePage() {
 
                   {/* Passport Information */}
                   <div className="border rounded-lg p-4">
-                    <h3 className="font-semibold mb-4">{t('employee:documents.passport')}</h3>
+                    <h3 className="font-semibold mb-4">{t('employee.documents.passport')}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="passport_number">
@@ -1241,7 +1247,7 @@ export default function CreateEmployeePage() {
 
                   {/* Driving License Information */}
                   <div className="border rounded-lg p-4">
-                    <h3 className="font-semibold mb-4">{t('employee:documents.drivingLicense')}</h3>
+                    <h3 className="font-semibold mb-4">{t('employee.documents.drivingLicense')}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <Label htmlFor="driving_license_number">
@@ -1302,7 +1308,7 @@ export default function CreateEmployeePage() {
                   {/* Operator License Information */}
                   <div className="border rounded-lg p-4">
                     <h3 className="font-semibold mb-4">
-                      {t('employee:documents.operatorLicense')}
+                      {t('employee.documents.operatorLicense')}
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
@@ -1364,7 +1370,7 @@ export default function CreateEmployeePage() {
                   {/* TUV Certification Information */}
                   <div className="border rounded-lg p-4">
                     <h3 className="font-semibold mb-4">
-                      {t('employee:documents.tuvCertification')}
+                      {t('employee.documents.tuvCertification')}
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
@@ -1412,7 +1418,7 @@ export default function CreateEmployeePage() {
                   {/* SPSP License Information */}
                   <div className="border rounded-lg p-4">
                     <h3 className="font-semibold mb-4">
-                      {t('employee:documents.spspLicense')}
+                      {t('employee.documents.spspLicense')}
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>

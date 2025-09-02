@@ -195,9 +195,11 @@ export async function POST() {
           // Calculate overtime amount based on employee's overtime settings
           let overtimeAmount = 0;
           if (totalOvertimeHours > 0) {
-            // Use the formula: basic/30/8*overtime rate
+            // Use the formula: basic/(total_days_in_month * contract_hours)*overtime rate
             const basicSalary = Number(employee.basicSalary);
-            const hourlyRate = basicSalary / 30 / 8; // basic/30/8
+            const totalDaysInMonth = daysInMonth; // Use actual days in the month
+            const contractHours = Number(employee.contractHoursPerDay) || 8;
+            const hourlyRate = basicSalary / (totalDaysInMonth * contractHours);
 
             // Use employee's overtime settings
             if (employee.overtimeFixedRate && Number(employee.overtimeFixedRate) > 0) {
@@ -205,7 +207,7 @@ export async function POST() {
               overtimeAmount = totalOvertimeHours * Number(employee.overtimeFixedRate);
               console.log(`Using fixed overtime rate: ${employee.overtimeFixedRate} SAR/hr`);
             } else {
-              // Use overtime multiplier with basic/30/8 formula
+              // Use overtime multiplier with calculated hourly rate
               const overtimeMultiplier = Number(employee.overtimeRateMultiplier) || 1.5;
               overtimeAmount = totalOvertimeHours * (hourlyRate * overtimeMultiplier);
               console.log(`Using overtime multiplier: ${overtimeMultiplier}x basic rate`);
@@ -215,7 +217,8 @@ export async function POST() {
 
           // Calculate absent deduction: (Basic Salary / Total Days in Month) * Absent Days
           const basicSalary = Number(employee.basicSalary);
-          const absentDeduction = absentDays > 0 ? (basicSalary / daysInMonth) * absentDays : 0;
+          const totalDaysInMonth = daysInMonth; // Use actual days in the month
+          const absentDeduction = absentDays > 0 ? (basicSalary / totalDaysInMonth) * absentDays : 0;
 
           console.log(`Absent deduction calculation: (${basicSalary} / ${daysInMonth}) * ${absentDays} = ${absentDeduction}`);
 

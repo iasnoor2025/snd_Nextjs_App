@@ -79,6 +79,10 @@ interface Employee {
   food_allowance?: number;
   housing_allowance?: number;
   transport_allowance?: number;
+  overtime_rate_multiplier?: number;
+  overtime_fixed_rate?: number;
+  contract_days_per_month?: number;
+  contract_hours_per_day?: number;
   department?: { id: number; name: string };
   designation?: { id: number; name: string };
   supervisor?: string;
@@ -114,6 +118,9 @@ interface Employee {
   spsp_license_number?: string;
   spsp_license_expiry?: string;
   spsp_license_file?: string;
+  access_start_date?: string;
+  access_end_date?: string;
+  access_restriction_reason?: string;
 }
 
 export default function EmployeeShowPage() {
@@ -1066,7 +1073,22 @@ export default function EmployeeShowPage() {
                     <div className="flex justify-between border-b pb-2">
                       <dt className="text-sm font-medium">{t('employee.salary.hourlyRate')}</dt>
                       <dd className="text-sm">
-                        {t('employee.currency.symbol')} {Number(employee.hourly_rate || 0).toFixed(2)}
+                        {t('employee.currency.symbol')} {(() => {
+                          // Calculate hourly rate if stored rate is 0 or missing
+                          if (Number(employee.hourly_rate || 0) > 0) {
+                            return Number(employee.hourly_rate).toFixed(2);
+                          }
+                          // Calculate based on basic salary and actual total days in month
+                          if (Number(employee.basic_salary || 0) > 0 && 
+                              Number(employee.contract_hours_per_day || 0) > 0) {
+                            // Use actual total days in current month
+                            const currentMonthDays = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+                            const calculatedRate = Number(employee.basic_salary) / 
+                              (currentMonthDays * Number(employee.contract_hours_per_day));
+                            return calculatedRate.toFixed(2);
+                          }
+                          return '0.00';
+                        })()}
                       </dd>
                     </div>
                     {Number(employee.food_allowance || 0) > 0 && (
@@ -1090,6 +1112,40 @@ export default function EmployeeShowPage() {
                         <dt className="text-sm font-medium">{t('employee.salary.transportAllowance')}</dt>
                         <dd className="text-sm">
                           {t('employee.currency.symbol')} {Number(employee.transport_allowance).toFixed(2)}
+                        </dd>
+                      </div>
+                    )}
+                    {Number(employee.overtime_rate_multiplier || 0) > 0 && (
+                      <div className="flex justify-between border-b pb-2">
+                        <dt className="text-sm font-medium">{t('employee.salary.overtimeRateMultiplier')}</dt>
+                        <dd className="text-sm">
+                          {Number(employee.overtime_rate_multiplier).toFixed(2)}x
+                        </dd>
+                      </div>
+                    )}
+                    {Number(employee.overtime_fixed_rate || 0) > 0 && (
+                      <div className="flex justify-between border-b pb-2">
+                        <dt className="text-sm font-medium">{t('employee.salary.overtimeFixedRate')}</dt>
+                        <dd className="text-sm">
+                          {t('employee.currency.symbol')} {Number(employee.overtime_fixed_rate).toFixed(2)}/hr
+                        </dd>
+                      </div>
+                    )}
+                    <div className="flex justify-between border-b pb-2">
+                      <dt className="text-sm font-medium">{t('employee.salary.contractDaysPerMonth')} (Auto-set)</dt>
+                      <dd className="text-sm">
+                        {(() => {
+                          // Show actual total days in current month
+                          const currentMonthDays = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+                          return `${currentMonthDays} ${t('employee.salary.days')} (current month)`;
+                        })()}
+                      </dd>
+                    </div>
+                    {Number(employee.contract_hours_per_day || 0) > 0 && (
+                      <div className="flex justify-between border-b pb-2">
+                        <dt className="text-sm font-medium">{t('employee.salary.contractHoursPerDay')}</dt>
+                        <dd className="text-sm">
+                          {employee.contract_hours_per_day} {t('employee.salary.hours')}
                         </dd>
                       </div>
                     )}

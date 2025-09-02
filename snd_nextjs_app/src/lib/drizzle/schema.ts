@@ -1022,12 +1022,14 @@ export const employees = pgTable(
     overtimeRateMultiplier: numeric('overtime_rate_multiplier', { precision: 10, scale: 2 })
       .default('1.5')
       .notNull(),
-    overtimeFixedRate: numeric('overtime_fixed_rate', { precision: 10, scale: 2 }),
+    overtimeFixedRate: numeric('overtime_fixed_rate', { precision: 10, scale: 2 })
+      .default('6')
+      .notNull(),
     bankName: text('bank_name'),
     bankAccountNumber: text('bank_account_number'),
     bankIban: text('bank_iban'),
     contractHoursPerDay: integer('contract_hours_per_day').default(8).notNull(),
-    contractDaysPerMonth: integer('contract_days_per_month').default(26).notNull(),
+    contractDaysPerMonth: integer('contract_days_per_month').default(30).notNull(),
     emergencyContactName: text('emergency_contact_name'),
     emergencyContactPhone: text('emergency_contact_phone'),
     emergencyContactRelationship: text('emergency_contact_relationship'),

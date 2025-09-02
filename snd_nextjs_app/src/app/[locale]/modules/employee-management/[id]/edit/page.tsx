@@ -212,9 +212,7 @@ export default function EditEmployeePage() {
                 ? emp.overtime_rate_multiplier.toString()
                 : '1.5',
             overtime_fixed_rate: emp.overtime_fixed_rate ? emp.overtime_fixed_rate.toString() : '',
-            contract_days_per_month: emp.contract_days_per_month
-              ? emp.contract_days_per_month.toString()
-              : '26',
+            contract_days_per_month: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate().toString(),
             contract_hours_per_day: emp.contract_hours_per_day
               ? emp.contract_hours_per_day.toString()
               : '8',
@@ -333,13 +331,14 @@ export default function EditEmployeePage() {
 
   const calculateHourlyRate = (
     basicSalary: number,
-    contractDays: number,
     contractHours: number
   ): number => {
-    if (contractDays <= 0 || contractHours <= 0) {
+    if (contractHours <= 0) {
       return 0;
     }
-    return Math.round((basicSalary / (contractDays * contractHours)) * 100) / 100;
+    // Use actual total days in current month
+    const currentMonthDays = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+    return Math.round((basicSalary / (currentMonthDays * contractHours)) * 100) / 100;
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -349,17 +348,15 @@ export default function EditEmployeePage() {
         [field]: value,
       };
 
-      // Auto-calculate hourly rate when basic salary, contract days, or contract hours change
+      // Auto-calculate hourly rate when basic salary or contract hours change
       if (
         field === 'basic_salary' ||
-        field === 'contract_days_per_month' ||
         field === 'contract_hours_per_day'
       ) {
         const basicSalary = parseFloat(newData.basic_salary) || 0;
-        const contractDays = parseFloat(newData.contract_days_per_month) || 26;
         const contractHours = parseFloat(newData.contract_hours_per_day) || 8;
 
-        const calculatedHourlyRate = calculateHourlyRate(basicSalary, contractDays, contractHours);
+        const calculatedHourlyRate = calculateHourlyRate(basicSalary, contractHours);
         newData.hourly_rate = calculatedHourlyRate.toString();
       }
 
@@ -871,7 +868,7 @@ export default function EditEmployeePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="contract_days_per_month">Contract Days Per Month</Label>
+                <Label htmlFor="contract_days_per_month">Contract Days Per Month (Auto-set)</Label>
                 <Input
                   id="contract_days_per_month"
                   type="number"
@@ -879,8 +876,14 @@ export default function EditEmployeePage() {
                   max="31"
                   value={formData.contract_days_per_month}
                   onChange={e => handleInputChange('contract_days_per_month', e.target.value)}
-                  placeholder="Enter contract days per month"
+                  placeholder="Auto-set to current month total"
+                  readOnly
+                  className="bg-gray-50 cursor-not-allowed"
+                  title="This field is automatically set to the total days in the current month"
                 />
+                <div className="text-xs text-muted-foreground">
+                  Automatically set to the total days in the current month (read-only)
+                </div>
               </div>
             </div>
 

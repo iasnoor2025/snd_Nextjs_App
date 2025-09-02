@@ -345,7 +345,7 @@ export async function POST() {
               parseFloat(erpEmployee.overtime_rate_multiplier?.toString() || '1.5')
             ),
             overtimeFixedRate: String(
-              parseFloat(erpEmployee.overtime_fixed_rate?.toString() || '0')
+              parseFloat(erpEmployee.overtime_fixed_rate?.toString() || '6')
             ),
             // Banking information
             bankName: erpEmployee.bank_name || null,
@@ -353,7 +353,7 @@ export async function POST() {
             bankIban: erpEmployee.bank_iban || null,
             // Contract details
             contractHoursPerDay: parseInt(erpEmployee.contract_hours_per_day?.toString() || '8'),
-            contractDaysPerMonth: parseInt(erpEmployee.contract_days_per_month?.toString() || '26'),
+            contractDaysPerMonth: parseInt(erpEmployee.contract_days_per_month?.toString() || '30'),
             // Emergency contacts
             emergencyContactName: erpEmployee.emergency_contact_name || null,
             emergencyContactPhone: erpEmployee.emergency_contact_phone || null,
