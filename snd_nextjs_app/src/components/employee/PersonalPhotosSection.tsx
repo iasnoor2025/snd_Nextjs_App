@@ -4,7 +4,7 @@ import { useCallback } from 'react';
 import DocumentManager, { type DocumentItem } from '@/components/shared/DocumentManager';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
 
 interface PersonalPhotosSectionProps {
   employeeId: number;
@@ -12,7 +12,7 @@ interface PersonalPhotosSectionProps {
 
 export default function PersonalPhotosSection({ employeeId }: PersonalPhotosSectionProps) {
   const { hasPermission } = useRBAC();
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   // Helper function to get document type label
   const getDocumentTypeLabel = (documentType: string) => {
@@ -34,12 +34,12 @@ export default function PersonalPhotosSection({ employeeId }: PersonalPhotosSect
   return (
     <div className="space-y-4">
       <div className="text-blue-600 text-xs bg-blue-50 p-2 rounded border border-blue-200">
-        📸 <strong>{t('employee:personalInformation.note')}</strong> {t('employee:personalInformation.noteText')}
+        📸 <strong>{t('employee.personalInformation.note')}</strong> {t('employee.personalInformation.noteText')}
       </div>
       
       <DocumentManager
-        title={t('employee:personalInformation.personalPhotosDocuments')}
-        description={t('employee:personalInformation.employeePhotosDocuments')}
+        title={t('employee.personalInformation.personalPhotosDocuments')}
+        description={t('employee.personalInformation.employeePhotosDocuments')}
         loadDocuments={async () => {
           try {
             const response = await fetch(`/api/employees/${employeeId}/documents`);

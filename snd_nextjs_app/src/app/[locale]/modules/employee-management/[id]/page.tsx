@@ -904,7 +904,7 @@ export default function EmployeeShowPage() {
                         )}
                         {employee.spsp_license_expiry && (
                           <div className="flex justify-between border-b pb-2">
-                            <dt className="text-sm font-medium">{t('employee:fields.spspLicenseExpiry')}</dt>
+                            <dt className="text-sm font-medium">{t('employee.fields.spspLicenseExpiry')}</dt>
                             <dd className="text-sm">
                               {format(new Date(employee.spsp_license_expiry), 'PPP')}
                             </dd>
@@ -913,7 +913,7 @@ export default function EmployeeShowPage() {
                       </dl>
                     ) : (
                       <p className="text-sm text-muted-foreground italic">
-                        {t('employee:personalInformation.noLicensesCertifications')}
+                        {t('employee.personalInformation.noLicensesCertifications')}
                       </p>
                     )}
                   </div>
@@ -926,8 +926,8 @@ export default function EmployeeShowPage() {
           {hasPermission('read', 'employee-document') && (
             <Card>
               <CardHeader>
-                <CardTitle>{t('employee:personalInformation.personalPhotosDocuments')}</CardTitle>
-                <CardDescription>{t('employee:personalInformation.employeePhotosDocuments')}</CardDescription>
+                <CardTitle>{t('employee.personalInformation.personalPhotosDocuments')}</CardTitle>
+                <CardDescription>{t('employee.personalInformation.employeePhotosDocuments')}</CardDescription>
               </CardHeader>
               <CardContent>
                 {employeeId && !isNaN(parseInt(employeeId)) && (
@@ -942,15 +942,15 @@ export default function EmployeeShowPage() {
         <TabsContent value="employment" className="mt-6 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>{t('employee:employment.title')}</CardTitle>
-              <CardDescription>{t('employee:employment.subtitle')}</CardDescription>
+              <CardTitle>{t('employee.employment.title')}</CardTitle>
+              <CardDescription>{t('employee.employment.subtitle')}</CardDescription>
             </CardHeader>
             <CardContent className="p-6">
               <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                 <div className="space-y-4">
                   <div>
                     <h3 className="mb-3 text-sm font-medium text-muted-foreground">
-                      {t('employee:employment.positionInformation')}
+                      {t('employee.employment.positionInformation')}
                     </h3>
                     <dl className="space-y-2">
                       <div className="flex justify-between border-b pb-2">
@@ -985,7 +985,11 @@ export default function EmployeeShowPage() {
                       )}
                       <div className="flex justify-between border-b pb-2">
                         <dt className="text-sm font-medium">{t('employee.fields.status')}</dt>
-                        <dd className="text-sm">{getStatusBadge(employee.status)}</dd>
+                        <dd className="text-sm">
+                          <Badge variant={employee.status === 'active' ? 'default' : 'secondary'}>
+                            {t(`employee.status.${employee.status}`)}
+                          </Badge>
+                        </dd>
                       </div>
                     </dl>
                   </div>
@@ -1004,7 +1008,7 @@ export default function EmployeeShowPage() {
                         </dd>
                       </div>
                       <div className="flex justify-between border-b pb-2">
-                        <dt className="text-sm font-medium">{t('employee:employment.servicePeriod')}</dt>
+                        <dt className="text-sm font-medium">{t('employee.employment.servicePeriod')}</dt>
                         <dd className="text-sm">
                           {(() => {
                             const hireDate = employee.hire_date
@@ -1027,11 +1031,11 @@ export default function EmployeeShowPage() {
                             }
 
                             const parts: string[] = [];
-                            if (years > 0) parts.push(`${years} ${years !== 1 ? t('employee:servicePeriod.years') : t('employee:servicePeriod.year')}`);
-                            if (months > 0) parts.push(`${months} ${months !== 1 ? t('employee:servicePeriod.months') : t('employee:servicePeriod.month')}`);
-                            if (days > 0) parts.push(`${days} ${days !== 1 ? t('employee:servicePeriod.days') : t('employee:servicePeriod.day')}`);
+                            if (years > 0) parts.push(`${years} ${years !== 1 ? t('employee.servicePeriod.years') : t('employee.servicePeriod.year')}`);
+                            if (months > 0) parts.push(`${months} ${months !== 1 ? t('employee.servicePeriod.months') : t('employee.servicePeriod.month')}`);
+                            if (days > 0) parts.push(`${days} ${days !== 1 ? t('employee.servicePeriod.days') : t('employee.servicePeriod.day')}`);
 
-                            return parts.join(', ') || t('employee:servicePeriod.lessThanDay');
+                            return parts.join(', ') || t('employee.servicePeriod.lessThanDay');
                           })()}
                         </dd>
                       </div>

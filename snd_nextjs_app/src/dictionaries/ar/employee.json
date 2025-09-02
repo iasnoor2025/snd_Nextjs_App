@@ -619,6 +619,48 @@
     }
   },
   "actions": {
-    "close": "إغلاق"
+    "close": "إغلاق",
+    "back": "رجوع",
+    "edit": "تعديل",
+    "delete": "حذف"
+  },
+  "personalInformation": {
+    "title": "المعلومات الشخصية",
+    "subtitle": "المعلومات الشخصية وتفاصيل الهوية",
+    "identification": "الهوية",
+    "contactInformation": "معلومات الاتصال",
+    "emergencyContact": "جهة اتصال الطوارئ",
+    "licensesCertifications": "الرخص والشهادات",
+    "noEmergencyContact": "لا توجد معلومات جهة اتصال طوارئ",
+    "noLicensesCertifications": "لا توجد رخص أو شهادات",
+    "personalPhotosDocuments": "الصور الشخصية والمستندات",
+    "employeePhotosDocuments": "صور الموظف والإقامة وجواز السفر ومستندات الهوية",
+    "note": "ملاحظة:",
+    "noteText": "الصور الشخصية والإقامة وجواز السفر معروضة هنا. ارفع مستندات جديدة في تبويب المستندات"
+  },
+  "employment": {
+    "title": "معلومات التوظيف",
+    "subtitle": "منصب الموظف والقسم وجدول التوظيف الزمني",
+    "positionInformation": "معلومات المنصب",
+    "employmentTimeline": "جدول التوظيف الزمني",
+    "servicePeriod": "فترة الخدمة"
+  },
+  "fields": {
+    "spspLicenseExpiry": "تاريخ انتهاء رخصة SPSP",
+    "fileNumber": "رقم الملف",
+    "name": "الاسم",
+    "phone": "الهاتف",
+    "dateOfBirth": "تاريخ الميلاد",
+    "iqamaNumber": "رقم الإقامة",
+    "iqamaExpiry": "تاريخ انتهاء الإقامة",
+    "passportNumber": "رقم جواز السفر",
+    "passportExpiry": "تاريخ انتهاء جواز السفر",
+    "noDesignation": "لا يوجد مسمى وظيفي",
+    "employeeId": "رقم الموظف",
+    "designation": "المسمى الوظيفي",
+    "department": "القسم",
+    "supervisor": "المشرف",
+    "status": "الحالة",
+    "hireDate": "تاريخ التعيين"
   }
 }

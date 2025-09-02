@@ -552,6 +552,48 @@
     }
   },
   "actions": {
-    "close": "Close"
+    "close": "Close",
+    "back": "Back",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "personalInformation": {
+    "title": "Personal Information",
+    "subtitle": "Personal information and identification details",
+    "identification": "Identification",
+    "contactInformation": "Contact Information",
+    "emergencyContact": "Emergency Contact",
+    "licensesCertifications": "Licenses & Certifications",
+    "noEmergencyContact": "No emergency contact information available",
+    "noLicensesCertifications": "No licenses or certifications found",
+    "personalPhotosDocuments": "Personal Photos & Documents",
+    "employeePhotosDocuments": "Employee photos, Iqama, passport, and identification documents",
+    "note": "Note:",
+    "noteText": "Personal photos, Iqama, and passport are displayed here. Upload new documents in the Documents tab"
+  },
+  "employment": {
+    "title": "Employment Information",
+    "subtitle": "Employee position, department, and employment timeline",
+    "positionInformation": "Position Information",
+    "employmentTimeline": "Employment Timeline",
+    "servicePeriod": "Service Period"
+  },
+  "fields": {
+    "spspLicenseExpiry": "SPSP License Expiry",
+    "fileNumber": "File Number",
+    "name": "Name",
+    "phone": "Phone",
+    "dateOfBirth": "Date of Birth",
+    "iqamaNumber": "Iqama Number",
+    "iqamaExpiry": "Iqama Expiry",
+    "passportNumber": "Passport Number",
+    "passportExpiry": "Passport Expiry",
+    "noDesignation": "No Designation",
+    "employeeId": "Employee ID",
+    "designation": "Designation",
+    "department": "Department",
+    "supervisor": "Supervisor",
+    "status": "Status",
+    "hireDate": "Hire Date"
   }
 }
