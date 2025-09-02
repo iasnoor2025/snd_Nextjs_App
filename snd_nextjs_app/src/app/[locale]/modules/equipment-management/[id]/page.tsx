@@ -32,7 +32,7 @@ import {
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from '@/hooks/use-translations';
 
 interface Equipment {
   id: number;
@@ -56,7 +56,7 @@ interface Equipment {
 }
 
 export default function EquipmentShowPage() {
-  const { t } = useTranslation('equipment');
+  const { t } = useTranslations();
   const params = useParams();
   const router = useRouter();
   const { confirmDeleteEquipment } = useDeleteConfirmations();
@@ -83,11 +83,11 @@ export default function EquipmentShowPage() {
       if (response.success) {
         setEquipment(response.data);
       } else {
-        toast.error(t('messages.loadingError'));
+        toast.error(t('equipment.messages.loadingError'));
         router.push('/modules/equipment-management');
       }
     } catch {
-      toast.error(t('messages.loadingError'));
+      toast.error(t('equipment.messages.loadingError'));
       router.push('/modules/equipment-management');
     } finally {
       setLoading(false);
@@ -107,13 +107,13 @@ export default function EquipmentShowPage() {
       try {
         const response = await ApiService.deleteEquipment(equipment.id);
         if (response.success) {
-          toast.success(t('messages.deleteSuccess'));
+          toast.success(t('equipment.messages.deleteSuccess'));
           router.push('/modules/equipment-management');
         } else {
-          toast.error(t('messages.deleteError'));
+          toast.error(t('equipment.messages.deleteError'));
         }
       } catch {
-        toast.error(t('messages.deleteError'));
+        toast.error(t('equipment.messages.deleteError'));
       } finally {
         setDeleting(false);
       }
@@ -124,23 +124,23 @@ export default function EquipmentShowPage() {
     const statusConfig = {
       available: {
         className: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200',
-        label: t('status.available'),
+        label: t('equipment.status.available'),
       },
       assigned: {
         className: 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200',
-        label: t('status.assigned'),
+        label: t('equipment.status.assigned'),
       },
       rented: {
         className: 'bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-200',
-        label: t('status.rented'),
+        label: t('equipment.status.rented'),
       },
       maintenance: {
         className: 'bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200',
-        label: t('status.maintenance'),
+        label: t('equipment.status.maintenance'),
       },
       out_of_service: {
         className: 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200',
-        label: t('status.out_of_service'),
+        label: t('equipment.status.out_of_service'),
       },
     };
 
@@ -156,7 +156,7 @@ export default function EquipmentShowPage() {
       <div className="w-full p-6">
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin" />
-          <span className="ml-2">{t('messages.loading')}</span>
+          <span className="ml-2">{t('equipment.messages.loading')}</span>
         </div>
       </div>
     );
@@ -167,7 +167,7 @@ export default function EquipmentShowPage() {
       <div className="w-full p-6">
         <div className="flex items-center justify-center py-8">
           <AlertCircle className="h-8 w-8 text-destructive" />
-          <span className="ml-2">{t('messages.notFound')}</span>
+          <span className="ml-2">{t('equipment.messages.notFound')}</span>
         </div>
       </div>
     );
@@ -181,18 +181,18 @@ export default function EquipmentShowPage() {
           <div className="flex items-center space-x-4">
             <Button variant="ghost" onClick={() => router.push('/modules/equipment-management')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              {t('actions.back')}
+              {t('equipment.actions.back')}
             </Button>
             <div>
               <h1 className="text-2xl font-bold">{equipment.name}</h1>
-              <p className="text-muted-foreground">{t('messages.equipmentDetails')}</p>
+              <p className="text-muted-foreground">{t('equipment.messages.equipmentDetails')}</p>
             </div>
           </div>
           <div className="flex gap-2">
             {hasPermission('update', 'Equipment') && (
               <Button onClick={handleEdit}>
                 <Edit className="h-4 w-4 mr-2" />
-                {t('actions.editEquipment')}
+                {t('equipment.actions.editEquipment')}
               </Button>
             )}
 
@@ -203,7 +203,7 @@ export default function EquipmentShowPage() {
                 ) : (
                   <Trash2 className="h-4 w-4 mr-2" />
                 )}
-                {t('actions.deleteEquipment')}
+                {t('equipment.actions.deleteEquipment')}
               </Button>
             )}
           </div>
@@ -216,17 +216,17 @@ export default function EquipmentShowPage() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Package className="h-5 w-5" />
-                <span>{t('fields.basicInfo')}</span>
+                <span>{t('equipment.fields.basicInfo')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.name')}</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.name')}</Label>
                   <p className="text-lg font-medium">{equipment.name}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.status')}</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.status')}</Label>
                   <div className="mt-1">{getStatusBadge(equipment.status)}</div>
                 </div>
               </div>
@@ -235,16 +235,16 @@ export default function EquipmentShowPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment_management.door_number')}</Label>
-                  <p className="text-sm">{equipment.door_number || t('messages.notSpecified')}</p>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.equipment_management.door_number')}</Label>
+                  <p className="text-sm">{equipment.door_number || t('equipment.messages.notSpecified')}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.serialNumber')}</Label>
-                  <p className="text-sm font-mono">{equipment.serial_number || t('messages.notSpecified')}</p>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.serialNumber')}</Label>
+                  <p className="text-sm font-mono">{equipment.serial_number || t('equipment.messages.notSpecified')}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.chassisNumber')}</Label>
-                  <p className="text-sm font-mono">{equipment.chassis_number || t('messages.notSpecified')}</p>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.chassisNumber')}</Label>
+                  <p className="text-sm font-mono">{equipment.chassis_number || t('equipment.messages.notSpecified')}</p>
                 </div>
               </div>
 
@@ -252,20 +252,20 @@ export default function EquipmentShowPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.modelNumber')}</Label>
-                  <p className="text-sm">{equipment.model_number || t('messages.notSpecified')}</p>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.modelNumber')}</Label>
+                  <p className="text-sm">{equipment.model_number || t('equipment.messages.notSpecified')}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.manufacturer')}</Label>
-                  <p className="text-sm">{equipment.manufacturer || t('messages.notSpecified')}</p>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.manufacturer')}</Label>
+                  <p className="text-sm">{equipment.manufacturer || t('equipment.messages.notSpecified')}</p>
                 </div>
               </div>
 
               <Separator />
 
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">{t('fields.description')}</Label>
-                <p className="text-sm">{equipment.description || t('messages.noDescriptionAvailable')}</p>
+                <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.description')}</Label>
+                <p className="text-sm">{equipment.description || t('equipment.messages.noDescriptionAvailable')}</p>
               </div>
             </CardContent>
           </Card>
@@ -275,27 +275,27 @@ export default function EquipmentShowPage() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <DollarSign className="h-5 w-5" />
-                <span>{t('fields.financialInfo')}</span>
+                <span>{t('equipment.fields.financialInfo')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.dailyRate')}</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.dailyRate')}</Label>
                   <p className="text-lg font-medium">
-                    {equipment.daily_rate ? `SAR ${Number(equipment.daily_rate).toFixed(2)}` : t('messages.notSet')}
+                    {equipment.daily_rate ? `SAR ${Number(equipment.daily_rate).toFixed(2)}` : t('equipment.messages.notSet')}
                   </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.weeklyRate')}</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.weeklyRate')}</Label>
                   <p className="text-lg font-medium">
-                    {equipment.weekly_rate ? `SAR ${Number(equipment.weekly_rate).toFixed(2)}` : t('messages.notSet')}
+                    {equipment.weekly_rate ? `SAR ${Number(equipment.weekly_rate).toFixed(2)}` : t('equipment.messages.notSet')}
                   </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.monthlyRate')}</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.monthlyRate')}</Label>
                   <p className="text-lg font-medium">
-                    {equipment.monthly_rate ? `SAR ${Number(equipment.monthly_rate).toFixed(2)}` : t('messages.notSet')}
+                    {equipment.monthly_rate ? `SAR ${Number(equipment.monthly_rate).toFixed(2)}` : t('equipment.messages.notSet')}
                   </p>
                 </div>
               </div>
@@ -307,22 +307,22 @@ export default function EquipmentShowPage() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Database className="h-5 w-5" />
-                <span>{t('messages.systemInfo')}</span>
+                <span>{t('equipment.messages.systemInfo')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('messages.equipmentId')}</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.messages.equipmentId')}</Label>
                   <p className="text-sm font-mono">{equipment.id}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.erpnextId')}</Label>
-                  <p className="text-sm font-mono">{equipment.erpnext_id || t('messages.notSynced')}</p>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.erpnextId')}</Label>
+                  <p className="text-sm font-mono">{equipment.erpnext_id || t('equipment.messages.notSynced')}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.categoryId')}</Label>
-                  <p className="text-sm">{equipment.category_id || t('messages.notAssigned')}</p>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.categoryId')}</Label>
+                  <p className="text-sm">{equipment.category_id || t('equipment.messages.notAssigned')}</p>
                 </div>
               </div>
             </CardContent>
@@ -333,17 +333,17 @@ export default function EquipmentShowPage() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Hash className="h-5 w-5" />
-                <span>{t('fields.istimaraInfo')}</span>
+                <span>{t('equipment.fields.istimaraInfo')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.istimaraNumber')}</Label>
-                  <p className="text-sm font-mono">{equipment.istimara || t('messages.notSpecified')}</p>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.istimaraNumber')}</Label>
+                  <p className="text-sm font-mono">{equipment.istimara || t('equipment.messages.notSpecified')}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.istimaraExpiryDate')}</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.istimaraExpiryDate')}</Label>
                   <ExpiryDateDisplay
                     date={equipment.istimara_expiry_date}
                     showIcon={true}
@@ -359,25 +359,25 @@ export default function EquipmentShowPage() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Calendar className="h-5 w-5" />
-                <span>{t('fields.timestamps')}</span>
+                <span>{t('equipment.fields.timestamps')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.createdAt')}</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.createdAt')}</Label>
                   <p className="text-sm">
                     {equipment.created_at
                       ? new Date(equipment.created_at).toLocaleString()
-                      : t('messages.notAvailable')}
+                      : t('equipment.messages.notAvailable')}
                   </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.lastUpdated')}</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.lastUpdated')}</Label>
                   <p className="text-sm">
                     {equipment.updated_at
                       ? new Date(equipment.updated_at).toLocaleString()
-                      : t('messages.notAvailable')}
+                      : t('equipment.messages.notAvailable')}
                   </p>
                 </div>
               </div>

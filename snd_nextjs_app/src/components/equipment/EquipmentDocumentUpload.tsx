@@ -24,7 +24,7 @@ import { Progress } from '@/components/ui/progress';
 import { useCallback, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useRBAC } from '@/lib/rbac/rbac-context';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from '@/hooks/use-translations';
 
 // EquipmentDocument interface removed as it's not used
 
@@ -40,7 +40,7 @@ export default function EquipmentDocumentUpload({
   console.log('🔧 EquipmentDocumentUpload component rendering with equipmentId:', equipmentId);
   console.log('🚨 COMPONENT IS RENDERING - CHECK THIS LOG');
   
-  const { t } = useTranslation('equipment');
+  const { t } = useTranslations();
   const { hasPermission } = useRBAC();
   
   // Debug permission checks
@@ -89,16 +89,16 @@ export default function EquipmentDocumentUpload({
   };
 
   const documentTypeOptions = [
-    { label: t('documents.userManual'), value: 'user_manual' },
-    { label: t('documents.serviceManual'), value: 'service_manual' },
-    { label: t('documents.maintenanceManual'), value: 'maintenance_manual' },
-    { label: t('documents.safetyCertificate'), value: 'safety_certificate' },
-    { label: t('documents.inspectionReport'), value: 'inspection_report' },
-    { label: t('documents.warrantyDocument'), value: 'warranty' },
-    { label: t('documents.purchaseInvoice'), value: 'purchase_invoice' },
-    { label: t('documents.equipmentRegistration'), value: 'registration' },
-    { label: t('documents.insuranceDocument'), value: 'insurance' },
-    { label: t('documents.other'), value: 'other' },
+    { label: t('equipment.documents.userManual'), value: 'user_manual' },
+    { label: t('equipment.documents.serviceManual'), value: 'service_manual' },
+    { label: t('equipment.documents.maintenanceManual'), value: 'maintenance_manual' },
+    { label: t('equipment.documents.safetyCertificate'), value: 'safety_certificate' },
+    { label: t('equipment.documents.inspectionReport'), value: 'inspection_report' },
+    { label: t('equipment.documents.warrantyDocument'), value: 'warranty' },
+    { label: t('equipment.documents.purchaseInvoice'), value: 'purchase_invoice' },
+    { label: t('equipment.documents.equipmentRegistration'), value: 'registration' },
+    { label: t('equipment.documents.insuranceDocument'), value: 'insurance' },
+    { label: t('equipment.documents.other'), value: 'other' },
   ];
 
   const loadDocuments = useCallback(async () => {
@@ -279,7 +279,7 @@ export default function EquipmentDocumentUpload({
       }
       
       if (!hasErrors) {
-        toast.success('Documents uploaded successfully');
+        toast.success(t('equipment.documents.uploadSuccess'));
         setShowUploadDialog(false);
         setPendingFiles([]);
         setUploadForm({ document_name: '', document_type: '', description: '' });
@@ -287,7 +287,7 @@ export default function EquipmentDocumentUpload({
       }
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('Failed to upload documents');
+              toast.error(t('equipment.documents.uploadError'));
     } finally {
       setUploading(false);
     }
@@ -318,26 +318,26 @@ export default function EquipmentDocumentUpload({
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="document_name">Document Name *</Label>
+              <Label htmlFor="document_name">{t('equipment.documents.documentName')} *</Label>
               <Input
                 id="document_name"
                 value={uploadForm.document_name}
                 onChange={e => setUploadForm({ ...uploadForm, document_name: e.target.value })}
-                placeholder="Enter document name"
+                placeholder={t('equipment.documents.enterDocumentName')}
                 required
               />
               <p className="text-xs text-muted-foreground">
-                Each document name must be unique. If a document with this name already exists, please choose a different name or delete the existing document first.
+                {t('equipment.documents.uniqueNameWarning')}
               </p>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="document_type">Document Type</Label>
+              <Label htmlFor="document_type">{t('equipment.documents.documentType')}</Label>
               <Select
                 value={uploadForm.document_type}
                 onValueChange={value => setUploadForm({ ...uploadForm, document_type: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select document type" />
+                  <SelectValue placeholder={t('equipment.documents.selectDocumentType')} />
                 </SelectTrigger>
                 <SelectContent>
                   {documentTypeOptions.map(option => (
@@ -349,19 +349,19 @@ export default function EquipmentDocumentUpload({
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="document_description">Description</Label>
+              <Label htmlFor="document_description">{t('equipment.documents.description')}</Label>
               <Textarea
                 id="document_description"
                 value={uploadForm.description}
                 onChange={e => setUploadForm({ ...uploadForm, description: e.target.value })}
-                placeholder="Describe the document (optional)"
+                placeholder={t('equipment.documents.describeDocumentOptional')}
               />
             </div>
 
             {/* Upload Progress Display */}
             {uploading && Object.keys(uploadProgress).length > 0 && (
               <div className="space-y-3">
-                <Label>Upload Progress</Label>
+                <Label>{t('equipment.documents.uploadProgress')}</Label>
                 {pendingFiles.map((file) => (
                   <div key={file.name} className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
@@ -380,10 +380,10 @@ export default function EquipmentDocumentUpload({
               setPendingFiles([]);
               setUploadForm({ document_name: '', document_type: '', description: '' });
             }}>
-              Cancel
+              {t('equipment.actions.cancel')}
             </Button>
             <Button onClick={handleUpload} disabled={uploading}>
-              {uploading ? 'Uploading...' : `Upload ${pendingFiles.length > 1 ? `${pendingFiles.length} Files` : 'File'}`}
+              {uploading ? t('equipment.documents.uploading') : `${t('equipment.documents.upload')} ${pendingFiles.length > 1 ? `${pendingFiles.length} ${t('equipment.documents.files')}` : t('equipment.documents.file')}`}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -392,12 +392,12 @@ export default function EquipmentDocumentUpload({
       {/* Document Manager */}
       {!loadDocuments || !uploadDocument || !deleteDocument ? (
         <div className="text-center py-8 text-gray-500">
-          <p>Loading document manager...</p>
+          <p>{t('equipment.documents.loadingDocumentManager')}</p>
         </div>
       ) : (
         <DocumentManager
-          title="Documents"
-          description="Upload and manage equipment documents, manuals, and certificates"
+          title={t('equipment.documents.title')}
+          description={t('equipment.documents.description')}
           loadDocuments={loadDocuments}
           uploadDocument={uploadDocument}
           deleteDocument={deleteDocument}

@@ -71,14 +71,14 @@
     "delete": "حذف",
     "search": "البحث",
     "filter": "تصفية",
-    "refresh": "تحديث",
     "export": "تصدير",
     "import": "استيراد",
     "addDocument": "إضافة مستند",
     "editDocument": "تعديل المستند",
     "deleteDocument": "حذف المستند",
     "uploadFile": "رفع ملف",
-    "downloadFile": "تحميل ملف"
+    "downloadFile": "تحميل ملف",
+    "addManualAssignment": "إضافة مهمة يدوية"
   },
   "fields": {
     "basicInfo": "المعلومات الأساسية",
@@ -148,7 +148,10 @@
     "stolen": "مسروق",
     "available": "متاح",
     "rented": "مؤجر",
-    "out_of_service": "خارج الخدمة"
+    "out_of_service": "خارج الخدمة",
+    "completed": "مكتمل",
+    "cancelled": "ملغي",
+    "pending": "قيد الانتظار"
   },
   "condition": {
     "excellent": "ممتاز",
@@ -207,7 +210,9 @@
     "confirmDeleteAssignment": "هل أنت متأكد من حذف هذه المهمة؟ لا يمكن التراجع عن هذا الإجراء.",
     "assignmentDeletedSuccess": "تم حذف المهمة بنجاح",
     "deleteAssignmentError": "فشل في حذف المهمة",
-    "loadingAssignmentHistory": "جاري تحميل سجل المهام..."
+    "loadingAssignmentHistory": "جاري تحميل سجل المهام...",
+    "noAssignmentHistoryFound": "لم يتم العثور على سجل مهام",
+    "equipmentNotAssignedYet": "لم يتم تعيين هذه المعدات بعد"
   },
   "filters": {
     "all": "جميع المعدات",
@@ -250,7 +255,24 @@
     "currentStatus": "الحالة الحالية",
     "currentAssignment": "المهمة الحالية",
     "noHistory": "لم يتم العثور على سجل مهام",
-    "noHistoryDescription": "لم يتم تعيين هذه المعدات بعد"
+    "noHistoryDescription": "لم يتم تعيين هذه المعدات بعد",
+    "table": {
+      "equipment": "المعدات",
+      "type": "النوع",
+      "reference": "المرجع",
+      "customerProjectEmployee": "العميل/المشروع/الموظف",
+      "period": "الفترة",
+      "amount": "المبلغ",
+      "status": "الحالة",
+      "actions": "الإجراءات"
+    },
+    "type": {
+      "rental": "الإيجار",
+      "project": "المشروع",
+      "manual": "يدوي"
+    },
+    "noAssignmentHistoryFound": "لم يتم العثور على سجل مهام",
+    "equipmentNotAssignedYet": "لم يتم تعيين هذه المعدات بعد"
   },
   "documents": {
     "title": "المستندات",
@@ -267,7 +289,22 @@
     "other": "أخرى",
     "uploadedDocuments": "المستندات المرفوعة",
     "dragDropText": "اسحب وأفلت الملفات هنا أو انقر لتصفح الملفات",
-    "supportedFiles": "يدعم PDF، Word، Excel، الصور (الحد الأقصى 10 ميجابايت)"
+    "supportedFiles": "يدعم PDF، Word، Excel، الصور (الحد الأقصى 10 ميجابايت)",
+    "documentName": "اسم المستند",
+    "enterDocumentName": "أدخل اسم المستند",
+    "uniqueNameWarning": "يجب أن يكون كل اسم مستند فريداً. إذا كان مستند بهذا الاسم موجود بالفعل، يرجى اختيار اسم مختلف أو حذف المستند الموجود أولاً.",
+    "documentType": "نوع المستند",
+    "selectDocumentType": "اختر نوع المستند",
+    "description": "الوصف",
+    "describeDocumentOptional": "وصف المستند (اختياري)",
+    "uploadProgress": "تقدم الرفع",
+    "uploading": "جاري الرفع...",
+    "upload": "رفع",
+    "files": "ملفات",
+    "file": "ملف",
+    "loadingDocumentManager": "جاري تحميل مدير المستندات...",
+    "uploadSuccess": "تم رفع المستندات بنجاح",
+    "uploadError": "فشل في رفع المستندات"
   },
 
   "maintenance": {

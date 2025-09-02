@@ -54,7 +54,7 @@ import {
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from '@/hooks/use-translations';
 
 interface AssignmentHistoryItem {
   id: number;
@@ -100,7 +100,7 @@ interface EquipmentAssignmentHistoryProps {
 export default function EquipmentAssignmentHistory({
   equipmentId,
 }: EquipmentAssignmentHistoryProps) {
-  const { t } = useTranslation('equipment');
+  const { t } = useTranslations();
   const [assignmentHistory, setAssignmentHistory] = useState<AssignmentHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -154,19 +154,19 @@ export default function EquipmentAssignmentHistory({
     const statusConfig = {
       active: {
         className: 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200',
-        label: 'Active',
+        label: t('equipment.status.active'),
       },
       completed: {
         className: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200',
-        label: 'Completed',
+        label: t('equipment.status.completed'),
       },
       cancelled: {
         className: 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200',
-        label: 'Cancelled',
+        label: t('equipment.status.cancelled'),
       },
       pending: {
         className: 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200',
-        label: 'Pending',
+        label: t('equipment.status.pending'),
       },
     };
 
@@ -593,15 +593,15 @@ export default function EquipmentAssignmentHistory({
           {/* Assignment History Table */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">{t('assignmentHistory.title')}</h3>
+              <h3 className="text-lg font-semibold">{t('equipment.assignmentHistory.title')}</h3>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={fetchAssignmentHistory}>
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  {t('actions.refresh')}
+                  {t('equipment.actions.refresh')}
                 </Button>
                 <Button variant="default" size="sm" onClick={openManualAssignmentDialog}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Manual Assignment
+                  {t('equipment.actions.addManualAssignment')}
                 </Button>
               </div>
             </div>
@@ -609,22 +609,22 @@ export default function EquipmentAssignmentHistory({
             {assignmentHistory.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Package className="h-8 w-8 mx-auto mb-2" />
-                <p>No assignment history found</p>
-                <p className="text-sm">This equipment hasn't been assigned yet</p>
+                <p>{t('equipment.messages.noAssignmentHistoryFound')}</p>
+                <p className="text-sm">{t('equipment.messages.equipmentNotAssignedYet')}</p>
               </div>
             ) : (
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Equipment</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Reference</TableHead>
-                      <TableHead>Customer/Project/Employee</TableHead>
-                      <TableHead>Period</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead>{t('equipment.assignmentHistory.table.equipment')}</TableHead>
+                      <TableHead>{t('equipment.assignmentHistory.table.type')}</TableHead>
+                      <TableHead>{t('equipment.assignmentHistory.table.reference')}</TableHead>
+                      <TableHead>{t('equipment.assignmentHistory.table.customerProjectEmployee')}</TableHead>
+                      <TableHead>{t('equipment.assignmentHistory.table.period')}</TableHead>
+                      <TableHead>{t('equipment.assignmentHistory.table.amount')}</TableHead>
+                      <TableHead>{t('equipment.assignmentHistory.table.status')}</TableHead>
+                      <TableHead>{t('equipment.assignmentHistory.table.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -647,10 +647,10 @@ export default function EquipmentAssignmentHistory({
                             }
                           >
                             {assignment.assignment_type === 'rental'
-                              ? 'Rental'
+                              ? t('equipment.assignmentHistory.type.rental')
                               : assignment.assignment_type === 'project'
-                                ? 'Project'
-                                : 'Manual'}
+                                ? t('equipment.assignmentHistory.type.project')
+                                : t('equipment.assignmentHistory.type.manual')}
                           </Badge>
                         </TableCell>
                         <TableCell className="font-medium">
