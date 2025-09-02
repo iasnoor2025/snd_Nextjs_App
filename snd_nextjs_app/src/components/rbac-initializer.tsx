@@ -25,12 +25,9 @@ export function RBACInitializer() {
 
     // Ensure we have a valid session with user data
     if (!session?.user) {
-      console.log('⚠️ No user data in session, skipping RBAC initialization');
       setStatus('completed');
       return;
     }
-
-    console.log('✅ Authentication confirmed, proceeding with RBAC initialization');
 
     const initializeRBAC = async () => {
       // Add a small delay to ensure session is fully established
@@ -43,7 +40,6 @@ export function RBACInitializer() {
         
         // If we checked within the last 5 minutes, use cached status
         if (cachedStatus && lastCheck && (now - parseInt(lastCheck)) < 300000) {
-          console.log('📋 Using cached RBAC status:', cachedStatus);
           setStatus('completed');
           setMessage('RBAC system ready (cached)');
           return;
@@ -59,37 +55,22 @@ export function RBACInitializer() {
         });
 
         // First check if RBAC system is already initialized
-        console.log('🔍 Checking RBAC system status...');
         const checkPromise = fetch('/api/rbac/initialize');
         const checkResponse = await Promise.race([checkPromise, timeoutPromise]) as Response;
         
-        console.log('📡 Status check response:', {
-          status: checkResponse.status,
-          statusText: checkResponse.statusText,
-          headers: Object.fromEntries(checkResponse.headers.entries())
-        });
-        
         if (!checkResponse.ok) {
           const errorText = await checkResponse.text();
-          console.error('❌ Status check failed:', {
-            status: checkResponse.status,
-            statusText: checkResponse.statusText,
-            responseText: errorText
-          });
           throw new Error(`Status check failed: ${checkResponse.status} ${checkResponse.statusText}`);
         }
         
         let checkData;
         try {
           const responseText = await checkResponse.text();
-          console.log('📄 Raw response text:', responseText);
           checkData = JSON.parse(responseText);
         } catch (parseError) {
-          console.error('❌ Failed to parse JSON response:', parseError);
+          console.error('Failed to parse JSON response:', parseError);
           throw new Error('Invalid response from server');
         }
-        
-        console.log('RBAC status check response:', checkData);
 
         // Cache the status
         sessionStorage.setItem('rbac-status', checkData.initialized ? 'initialized' : 'needs-init');

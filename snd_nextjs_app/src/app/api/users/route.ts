@@ -13,15 +13,12 @@ import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
 // GET /api/users - Get all users
 export const GET = withPermission(PermissionConfigs.user.read)(async (request: NextRequest) => {
   try {
-    console.log('🚀 USERS API CALLED - Starting to fetch users...');
-    
     // Temporarily disable caching for debugging
     // const cacheKey = generateCacheKey('users', 'list', {});
     
     // return await cacheQueryResult(
     //   cacheKey,
     //   async () => {
-        console.log('📊 Fetching users from database...');
         const users = await db
           .select({
             id: usersTable.id,
@@ -35,8 +32,6 @@ export const GET = withPermission(PermissionConfigs.user.read)(async (request: N
           .from(usersTable)
           .orderBy(desc(usersTable.createdAt));
 
-        console.log('👥 Users fetched:', users);
-
         // Fetch all roles for fallback role determination
         const allRoles = await db
           .select({
@@ -44,9 +39,6 @@ export const GET = withPermission(PermissionConfigs.user.read)(async (request: N
             name: rolesTable.name,
           })
           .from(rolesTable);
-
-        console.log('🔍 Debug: All roles fetched:', allRoles);
-        console.log('🔍 Debug: Users with role_id:', users.map(u => ({ id: u.id, name: u.name, role_id: u.role_id })));
 
         // Fetch roles per user
         const userIds = users.map(u => u.id as number);
@@ -87,16 +79,13 @@ export const GET = withPermission(PermissionConfigs.user.read)(async (request: N
             // Fallback: If no user_roles found, try to get role from the roles table using role_id
             // This handles the transition period where users still have role_id but no modelHasRoles entries
             if (user.role_id) {
-              // Find the role name from the roles table
-              const roleName = allRoles?.find(r => r.id === user.role_id)?.name;
-              console.log(`🔍 Debug: User ${user.name} (ID: ${user.id}) has role_id: ${user.role_id}, found role name: ${roleName}`);
-              if (roleName) {
-                role = roleName.toUpperCase();
-              }
+                          // Find the role name from the roles table
+            const roleName = allRoles?.find(r => r.id === user.role_id)?.name;
+            if (roleName) {
+              role = roleName.toUpperCase();
             }
           }
-
-          console.log(`🔍 Debug: Final role for ${user.name}: ${role}`);
+        }
 
           return {
             ...user,

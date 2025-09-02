@@ -579,14 +579,14 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('assignment:table.assignmentName')}</TableHead>
-                  <TableHead>{t('assignment:table.type')}</TableHead>
-                  <TableHead>{t('assignment:table.details')}</TableHead>
-                  <TableHead>{t('assignment:table.location')}</TableHead>
-                  <TableHead>{t('assignment:table.startDate')}</TableHead>
-                  <TableHead>{t('assignment:table.endDate')}</TableHead>
-                  <TableHead>{t('assignment:table.status')}</TableHead>
-                  <TableHead className="text-right">{t('assignment:table.actions')}</TableHead>
+                  <TableHead>{t('assignment.table.assignmentName')}</TableHead>
+                  <TableHead>{t('assignment.table.type')}</TableHead>
+                  <TableHead>{t('assignment.table.details')}</TableHead>
+                  <TableHead>{t('assignment.table.location')}</TableHead>
+                  <TableHead>{t('assignment.table.startDate')}</TableHead>
+                  <TableHead>{t('assignment.table.endDate')}</TableHead>
+                  <TableHead>{t('assignment.table.status')}</TableHead>
+                  <TableHead className="text-right">{t('assignment.table.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -641,8 +641,8 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t('assignment:form.editAssignment')}</DialogTitle>
-            <DialogDescription>{t('assignment:form.updateAssignmentDetails')}</DialogDescription>
+            <DialogTitle>{t('assignment.form.editAssignment')}</DialogTitle>
+            <DialogDescription>{t('assignment.form.updateAssignmentDetails')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -664,9 +664,9 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                   <SelectValue placeholder="Select assignment type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="manual">{t('assignment:types.manual')}</SelectItem>
-                  <SelectItem value="project">{t('assignment:types.project')}</SelectItem>
-                  <SelectItem value="rental">{t('assignment:types.rental')}</SelectItem>
+                  <SelectItem value="manual">{t('assignment.types.manual')}</SelectItem>
+                  <SelectItem value="project">{t('assignment.types.project')}</SelectItem>
+                  <SelectItem value="rental">{t('assignment.types.rental')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -709,10 +709,10 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">{t('assignment:status.active')}</SelectItem>
-                  <SelectItem value="completed">{t('assignment:status.completed')}</SelectItem>
-                  <SelectItem value="cancelled">{t('assignment:status.cancelled')}</SelectItem>
-                  <SelectItem value="pending">{t('assignment:status.pending')}</SelectItem>
+                  <SelectItem value="active">{t('assignment.status.active')}</SelectItem>
+                  <SelectItem value="completed">{t('assignment.status.completed')}</SelectItem>
+                  <SelectItem value="cancelled">{t('assignment.status.cancelled')}</SelectItem>
+                  <SelectItem value="pending">{t('assignment.status.pending')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -728,7 +728,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setShowEditDialog(false)}>
-              {t('assignment:form.cancel')}
+              {t('assignment.form.cancel')}
             </Button>
             <Button
               onClick={handleEdit}
@@ -737,12 +737,12 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
               {submitting ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  {t('assignment:form.updating')}
+                  {t('assignment.form.updating')}
                 </>
               ) : (
                 <>
                   <Edit className="mr-2 h-4 w-4" />
-                  {t('assignment:form.update')}
+                  {t('assignment.form.update')}
                 </>
               )}
             </Button>
@@ -754,25 +754,25 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('assignment:form.deleteAssignment')}</DialogTitle>
+            <DialogTitle>{t('assignment.form.deleteAssignment')}</DialogTitle>
             <DialogDescription>
-              {t('assignment:form.deleteConfirmation')}
+              {t('assignment.form.deleteConfirmation')}
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-              {t('assignment:form.cancel')}
+              {t('assignment.form.cancel')}
             </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={deletingId !== null}>
               {deletingId !== null ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  {t('assignment:form.deleting')}
+                  {t('assignment.form.deleting')}
                 </>
               ) : (
                 <>
                   <Trash2 className="mr-2 h-4 w-4" />
-                  {t('assignment:form.delete')}
+                  {t('assignment.form.delete')}
                 </>
               )}
             </Button>

@@ -6,14 +6,25 @@ export const LOG_LEVELS = {
   DEBUG: 3,
 } as const;
 
-export type LogLevel = keyof typeof LOG_LEVELS;
+export type LogLevel = 'ERROR' | 'WARN' | 'INFO' | 'DEBUG';
 
 // Set this to control logging verbosity
 export const CURRENT_LOG_LEVEL: LogLevel =
   process.env.NODE_ENV === 'development' ? 'INFO' : 'ERROR';
 
 export function shouldLog(level: LogLevel): boolean {
-  return LOG_LEVELS[level] <= LOG_LEVELS[CURRENT_LOG_LEVEL];
+  // Only log in development or when explicitly enabled
+  if (process.env.NODE_ENV === 'development') {
+    return true;
+  }
+  
+  // In production, only log errors and warnings
+  if (process.env.NODE_ENV === 'production') {
+    return level === 'ERROR' || level === 'WARN';
+  }
+  
+  // Default to false for other environments
+  return false;
 }
 
 export function log(level: LogLevel, message: string, ...args: any[]): void {
@@ -21,16 +32,16 @@ export function log(level: LogLevel, message: string, ...args: any[]): void {
     const prefix = `[${level}]`;
     switch (level) {
       case 'ERROR':
-        
+        console.error(prefix, message, ...args);
         break;
       case 'WARN':
-        
+        console.warn(prefix, message, ...args);
         break;
       case 'INFO':
-        
+        console.info(prefix, message, ...args);
         break;
       case 'DEBUG':
-        
+        console.log(prefix, message, ...args);
         break;
     }
   }
