@@ -53,7 +53,6 @@ import { toast } from 'sonner';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { useI18n } from '@/hooks/use-i18n';
 import { getTranslatedName } from '@/lib/translation-utils';
-import { useTranslation } from 'react-i18next';
 
 interface LeaveRequest {
   id: string;
@@ -84,7 +83,7 @@ interface LeaveRequestResponse {
 }
 
 export default function LeaveManagementPage() {
-  const { t } = useTranslation('leave');
+  const { t } = useI18n();
   const { isRTL } = useI18n();
   const { user, hasPermission, getAllowedActions } = useRBAC();
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequestResponse | null>(null);

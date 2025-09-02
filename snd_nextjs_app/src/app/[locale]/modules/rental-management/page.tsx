@@ -130,8 +130,7 @@ interface Filters {
 export default function RentalManagementPage() {
   const router = useRouter();
   const { user, hasPermission, getAllowedActions } = useRBAC();
-  const { t } = useTranslation('rental');
-  const { isRTL } = useI18n();
+  const { t, isRTL } = useI18n();
   const { confirmDeleteRental } = useDeleteConfirmations();
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);

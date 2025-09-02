@@ -23,7 +23,7 @@ import { ArrowLeft, Download, Edit, RefreshCw, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
 import { toast } from 'sonner';
 
 interface Report {
@@ -46,7 +46,7 @@ interface ReportData {
 }
 
 export default function ViewReportPage() {
-  const { t } = useTranslation('reporting');
+  const { t } = useI18n();
   const params = useParams();
   const router = useRouter();
   const [report, setReport] = useState<Report | null>(null);

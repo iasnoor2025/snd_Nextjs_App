@@ -36,7 +36,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
 import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
 
 interface Customer {
@@ -66,7 +66,7 @@ interface Employee {
 
 export default function CreateProjectPage() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);

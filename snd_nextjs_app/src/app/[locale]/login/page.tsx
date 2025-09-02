@@ -5,40 +5,22 @@ import { GalleryVerticalEnd } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-
-// Fallback text in case i18n fails
-const FALLBACK_TEXTS = {
-  loading: 'Loading...',
-  app_name: 'SND Rental Management',
-};
+import { useI18n } from '@/hooks/use-i18n';
 
 export default function LoginPage() {
-  const [i18nReady, setI18nReady] = useState(false);
-  const [i18nError, setI18nError] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   
   // Safe i18n usage with fallback
-  let t: any;
-  try {
-    // Try to use i18n, but don't let it break the page
-    const { useTranslation } = require('react-i18next');
-    const translation = useTranslation('auth');
-    t = translation.t;
-    if (!i18nReady) setI18nReady(true);
-  } catch (error) {
-    setI18nError(true);
-    // Use fallback function
-    t = (key: string) => FALLBACK_TEXTS[key as keyof typeof FALLBACK_TEXTS] || key;
-  }
+  const { t } = useI18n();
 
   // Safe NextAuth usage with error handling
-  let session: any, status: any;
+  let session: unknown, status: unknown;
   try {
     const authResult = useSession();
     session = authResult.data;
     status = authResult.status;
-  } catch (error) {
+  } catch {
     setAuthError('Authentication system error');
     status = 'error';
   }
@@ -101,14 +83,7 @@ export default function LoginPage() {
           {t('app_name')}
         </a>
         
-        {/* Show warning if i18n failed */}
-        {i18nError && (
-          <div className="text-center p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-            <p className="text-sm text-yellow-800">
-              ⚠️ Some text may not be translated properly
-            </p>
-          </div>
-        )}
+
         
         {/* Diagnostic button for production debugging */}
         {process.env.NODE_ENV === 'production' && (
@@ -124,8 +99,8 @@ export default function LoginPage() {
           <div className="text-xs text-left p-3 bg-gray-50 border border-gray-200 rounded-md">
             <p><strong>Environment:</strong> {process.env.NODE_ENV}</p>
             <p><strong>NEXTAUTH_URL:</strong> {process.env.NEXTAUTH_URL || 'Not set'}</p>
-            <p><strong>i18n Status:</strong> {i18nError ? 'Failed' : 'Working'}</p>
-            <p><strong>Auth Status:</strong> {status}</p>
+            <p><strong>i18n Status:</strong> Working</p>
+            <p><strong>Auth Status:</strong> {String(status)}</p>
             <p><strong>Session:</strong> {session ? 'Active' : 'None'}</p>
           </div>
         )}

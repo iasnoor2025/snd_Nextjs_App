@@ -16,7 +16,6 @@ import { ArrowLeft, Building, Calendar, Edit, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 interface Location {
@@ -36,7 +35,7 @@ interface Location {
 }
 
 export default function LocationDetailPage() {
-  const { t } = useTranslation(['common', 'location']);
+  const { t } = useI18n();
   const { isRTL } = useI18n();
   const { user, hasPermission } = useRBAC();
   const params = useParams();

@@ -41,7 +41,6 @@ import {
   Upload,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 
 import {
   Dialog,
@@ -75,7 +74,7 @@ interface Location {
 }
 
 export default function LocationManagementPage() {
-  const { t } = useTranslation('location');
+  const { t } = useI18n();
   const { isRTL } = useI18n();
   const { user, hasPermission, getAllowedActions } = useRBAC();
   const [locations, setLocations] = useState<Location[]>([]);

@@ -19,7 +19,7 @@ import { useRBAC } from '@/lib/rbac/rbac-context';
 import { Calendar, Plus, Search, Wrench, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 import ApiService from '@/lib/api-service';
 import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
 
 interface MaintenanceRecord {
   id: number;
@@ -47,7 +47,7 @@ interface MaintenanceRecord {
 
 export default function MaintenanceManagementPage() {
   const { user, hasPermission, getAllowedActions } = useRBAC();
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');

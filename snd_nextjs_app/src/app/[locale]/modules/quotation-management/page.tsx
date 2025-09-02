@@ -42,7 +42,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 // i18n refactor: All user-facing strings now use useTranslation('quotation')
-import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
 
 interface Customer {
   id: number;
@@ -102,7 +102,7 @@ interface PaginatedResponse {
 }
 
 export default function QuotationManagementPage() {
-  const { t } = useTranslation('quotation');
+  const { t } = useI18n();
   const { user, hasPermission, getAllowedActions } = useRBAC();
   const [quotations, setQuotations] = useState<PaginatedResponse | null>(null);
   const [loading, setLoading] = useState(true);

@@ -14,10 +14,10 @@ import { useNotificationContext } from '@/contexts/notification-context';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { formatDistanceToNow } from 'date-fns';
 import { Bell, Check, ExternalLink, Plus, Trash2 } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
 
 export default function NotificationsPage() {
-  const { t } = useTranslation('notifications');
+  const { t } = useI18n();
   const { user, hasPermission, getAllowedActions } = useRBAC();
   const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll, loading } =
     useNotificationContext();

@@ -39,7 +39,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 
 export default function SalaryIncrementsPage() {
@@ -67,7 +67,7 @@ export default function SalaryIncrementsPage() {
 
   const router = useRouter();
   const { data: session, status } = useSession();
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const { hasPermission } = useRBAC();
 
   useEffect(() => {

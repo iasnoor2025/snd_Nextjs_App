@@ -21,7 +21,7 @@ import { ArrowLeft, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
 import { toast } from 'sonner';
 
 interface ReportFormData {
@@ -33,7 +33,7 @@ interface ReportFormData {
 }
 
 export default function CreateReportPage() {
-  const { t } = useTranslation('reporting');
+  const { t } = useI18n();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<ReportFormData>({

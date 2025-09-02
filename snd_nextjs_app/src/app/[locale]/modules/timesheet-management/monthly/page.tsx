@@ -44,7 +44,6 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 interface Timesheet {
@@ -112,7 +111,7 @@ interface MonthlyData {
 }
 
 export default function MonthlyTimesheetPage() {
-  const { t } = useTranslation('timesheet');
+  const { t } = useI18n();
   const { isRTL } = useI18n();
   const { user, hasPermission } = useRBAC();
   const [monthlyData, setMonthlyData] = useState<MonthlyData | null>(null);

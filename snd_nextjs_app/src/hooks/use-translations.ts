@@ -37,7 +37,7 @@ export function useTranslations() {
       setIsLoading(true);
       try {
         const { getDictionary } = await import('@/lib/get-dictionary');
-        const dict = await getDictionary(locale as any);
+        const dict = await getDictionary(locale as 'en' | 'ar');
 
         setDictionary(dict);
       } catch (error) {
@@ -69,10 +69,15 @@ export function useTranslations() {
       const fullKey = keyParts.join('.');
       
       const namespaceDict = dictionary[namespace as keyof typeof dictionary];
-      if (!namespaceDict) return key;
+      if (!namespaceDict) {
+        return key;
+      }
+      
+
 
       // Navigate to nested key
       let currentValue: unknown = namespaceDict;
+      
       for (const k of fullKey.split('.')) {
         currentValue = (currentValue as Record<string, unknown>)?.[k];
         if (currentValue === undefined) {

@@ -11,7 +11,7 @@ import { useRBAC } from '@/lib/rbac/rbac-context';
 import { Shield, Settings } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
 
 interface Permission {
   id: number;
@@ -32,7 +32,7 @@ interface Role {
 
 export default function PermissionsPage() {
   const { getAllowedActions } = useRBAC();
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);

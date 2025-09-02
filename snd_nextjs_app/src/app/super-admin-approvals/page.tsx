@@ -7,10 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, CheckCircle, Clock, Shield, XCircle } from 'lucide-react';
 // i18n refactor: All user-facing strings now use useTranslation('admin')
-import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
 
 export default function SuperAdminApprovalsPage() {
-  const { t } = useTranslation('admin');
+  const { t } = useI18n();
 
   return (
     <ProtectedRoute requiredRole="SUPER_ADMIN">

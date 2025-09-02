@@ -38,7 +38,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
 import { toast } from 'sonner';
 
 interface Department {
@@ -138,7 +138,7 @@ interface EmployeeFormData {
 }
 
 export default function CreateEmployeePage() {
-  const { t } = useTranslation(['common', 'employee']);
+  const { t } = useI18n();
   const router = useRouter();
   const { hasPermission } = useRBAC();
   const { confirm } = useConfirmationDialog();

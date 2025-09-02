@@ -31,7 +31,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
 import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
 
 interface Customer {
@@ -107,7 +107,7 @@ interface Project {
 export default function EditProjectPage() {
   const router = useRouter();
   const params = useParams();
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const projectId = params.id as string;
 
   const [loading, setLoading] = useState(false);

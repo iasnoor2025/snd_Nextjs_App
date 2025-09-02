@@ -61,7 +61,7 @@ import {
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
 import { 
   RentalItemConfirmationDialog
 } from '@/components/rental';
@@ -710,7 +710,7 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
 export default function RentalDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const rentalId = params.id as string;
 
   const [rental, setRental] = useState<Rental | null>(null);

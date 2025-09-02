@@ -20,7 +20,6 @@ import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { use, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
 import { useI18n } from '@/hooks/use-i18n';
 
 interface Customer {
@@ -62,7 +61,7 @@ interface Customer {
 
 export default function EditCustomerPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  const { t } = useTranslation('customer');
+  const { t } = useI18n();
   const { isRTL } = useI18n();
   // Unwrap params Promise immediately - this must be called unconditionally
   const { id } = use(params);

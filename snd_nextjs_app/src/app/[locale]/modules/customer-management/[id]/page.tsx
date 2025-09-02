@@ -30,7 +30,6 @@ import {
 import Link from 'next/link';
 import { use, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
 import { useI18n } from '@/hooks/use-i18n';
 
 interface Customer {
@@ -106,7 +105,7 @@ interface Invoice {
 }
 
 function CustomerDetailClient({ customerId }: { customerId: string }) {
-  const { t } = useTranslation('customer');
+  const { t } = useI18n();
   const { isRTL } = useI18n();
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [rentals, setRentals] = useState<Rental[]>([]);

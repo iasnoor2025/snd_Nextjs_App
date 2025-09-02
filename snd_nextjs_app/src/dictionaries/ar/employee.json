@@ -129,7 +129,13 @@
     "addDepartment": "إضافة قسم",
     "addDesignation": "إضافة مسمى وظيفي",
     "editDepartment": "تعديل القسم",
-    "editDesignation": "تعديل المسمى الوظيفي"
+    "editDesignation": "تعديل المسمى الوظيفي",
+    "saving": "جاري الحفظ...",
+    "saveChanges": "حفظ التغييرات",
+    "adding": "جاري الإضافة...",
+    "updating": "جاري التحديث...",
+    "updateDepartment": "تحديث القسم",
+    "updateDesignation": "تحديث المسمى الوظيفي"
   },
 
   "fields": {
@@ -169,7 +175,11 @@
     "hireDate": "تاريخ التوظيف",
     "supervisor": "المشرف",
     "status": "الحالة",
-    "relationship": "العلاقة"
+    "relationship": "العلاقة",
+    "departmentName": "اسم القسم",
+    "departmentCode": "رمز القسم",
+    "designationName": "اسم المسمى الوظيفي",
+    "description": "الوصف"
   },
   "iqama": {
     "expired": "منتهي الصلاحية"
@@ -440,7 +450,13 @@
     "selectDepartmentToEdit": "يرجى اختيار قسم للتعديل",
     "selectDepartmentToDelete": "يرجى اختيار قسم للحذف",
     "selectDesignationToEdit": "يرجى اختيار مسمى وظيفي للتعديل",
-    "selectDesignationToDelete": "يرجى اختيار مسمى وظيفي للحذف"
+    "selectDesignationToDelete": "يرجى اختيار مسمى وظيفي للحذف",
+    "departmentNameRequired": "اسم القسم مطلوب",
+    "departmentAddedSuccess": "تم إضافة القسم بنجاح",
+    "departmentAddError": "فشل في إضافة القسم",
+    "designationNameRequired": "اسم المسمى الوظيفي مطلوب",
+    "designationUpdatedSuccess": "تم تحديث المسمى الوظيفي بنجاح",
+    "designationUpdateError": "فشل في تحديث المسمى الوظيفي"
   },
 
   "validation": {
@@ -682,7 +698,6 @@
     "servicePeriod": "فترة الخدمة"
   },
   "fields": {
-    "spspLicenseExpiry": "تاريخ انتهاء رخصة SPSP",
     "fileNumber": "رقم الملف",
     "name": "الاسم",
     "phone": "الهاتف",
@@ -697,6 +712,18 @@
     "department": "القسم",
     "supervisor": "المشرف",
     "status": "الحالة",
-    "hireDate": "تاريخ التعيين"
+    "hireDate": "تاريخ التعيين",
+    "noDepartment": "لا يوجد قسم",
+    "currentLocation": "الموقع الحالي",
+    "contractDaysPerMonth": "أيام العقد شهرياً (تلقائي)",
+    "contractHoursPerDay": "ساعات العقد يومياً",
+    "hourlyRate": "المعدل بالساعة (محسوب تلقائياً)",
+    "chooseOvertimeMethod": "اختر طريقة حساب العمل الإضافي:",
+    "overtimeRateMultiplier": "مضاعف معدل العمل الإضافي",
+    "overtimeRateMultiplierDescription": "يضاعف المعدل بالساعة (مثل 1.5x للوقت ونصف) - محسوب تلقائياً",
+    "overtimeFixedRate": "المعدل الثابت للعمل الإضافي",
+    "overtimeFixedRateDescription": "مبلغ ثابت لكل ساعة عمل إضافي (يتجاوز المضاعف)",
+    "addressInformation": "معلومات العنوان",
+    "address": "العنوان"
   }
 }

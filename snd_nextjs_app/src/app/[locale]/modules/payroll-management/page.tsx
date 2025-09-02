@@ -69,7 +69,6 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 interface PayrollItem {
@@ -142,7 +141,7 @@ interface PayrollResponse {
 
 export default function PayrollManagementPage() {
   const { hasPermission } = useRBAC();
-  const { t } = useTranslation(['common', 'payroll']);
+  const { t } = useI18n();
   const { isRTL } = useI18n();
   const [payrolls, setPayrolls] = useState<PayrollResponse | null>(null);
   const [loading, setLoading] = useState(true);

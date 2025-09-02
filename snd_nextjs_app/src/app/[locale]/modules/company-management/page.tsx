@@ -53,7 +53,7 @@ import {
   MapPin
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
 
 interface Company {
   id: number;
@@ -106,7 +106,7 @@ interface CompanyResponse {
 }
 
 export default function CompanyManagementPage() {
-  const { t } = useTranslation('company');
+  const { t } = useI18n();
   const [companies, setCompanies] = useState<CompanyResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');

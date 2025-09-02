@@ -1,5 +1,8 @@
 'use client';
 
+// Force dynamic rendering to prevent SSR issues
+export const dynamic = 'force-dynamic';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,7 +22,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
 
 interface Employee {
   id: number;
@@ -88,7 +91,7 @@ interface Designation {
 export default function EditEmployeePage() {
   const params = useParams();
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t } = useI18n(); 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [employee, setEmployee] = useState<Employee | null>(null);
@@ -127,8 +130,8 @@ export default function EditEmployeePage() {
     hourly_rate: '',
     basic_salary: '',
     overtime_rate_multiplier: '1.5',
-    overtime_fixed_rate: '',
-    contract_days_per_month: '26',
+    overtime_fixed_rate: '6',
+    contract_days_per_month: '30',
     contract_hours_per_day: '8',
     address: '',
     city: '',
@@ -316,14 +319,14 @@ export default function EditEmployeePage() {
       const result = await response.json();
 
       if (result.success) {
-        toast.success('Employee updated successfully');
+        toast.success(t('employee.messages.saveSuccess'));
         router.push(`/modules/employee-management/${params.id}`);
       } else {
-        toast.error(result.message || 'Failed to update employee');
+        toast.error(result.message || t('employee.messages.saveError'));
       }
     } catch (error) {
       
-      toast.error('Failed to update employee');
+      toast.error(t('employee.messages.saveError'));
     } finally {
       setSaving(false);
     }
@@ -367,7 +370,7 @@ export default function EditEmployeePage() {
   // Add new department
   const handleAddDepartment = async () => {
     if (!newDepartment.name.trim()) {
-      toast.error('Department name is required');
+      toast.error(t('employee.messages.departmentNameRequired'));
       return;
     }
 
@@ -388,14 +391,14 @@ export default function EditEmployeePage() {
       const result = await response.json();
 
       if (result.success) {
-        toast.success('Department added successfully');
+        toast.success(t('employee.messages.departmentAddedSuccess'));
         setDepartments(prev => [...prev, result.data]);
         setFormData(prev => ({ ...prev, department_id: result.data.id.toString() }));
         setNewDepartment({ name: '', code: '' });
         setShowAddDepartment(false);
       } else {
         // If creation fails, try to refresh the departments list
-        toast.error(result.message || 'Failed to add department');
+        toast.error(result.message || t('employee.messages.departmentAddError'));
 
         // Refresh departments list in case there was a sync issue
         try {
@@ -511,7 +514,7 @@ export default function EditEmployeePage() {
   // Edit designation
   const handleEditDesignation = async () => {
     if (!editingDesignation || !editingDesignation.name.trim()) {
-      toast.error('Designation name is required');
+      toast.error(t('employee.messages.designationNameRequired'));
       return;
     }
 
@@ -532,18 +535,18 @@ export default function EditEmployeePage() {
       const result = await response.json();
 
       if (result.success) {
-        toast.success('Designation updated successfully');
+        toast.success(t('employee.messages.designationUpdatedSuccess'));
         setDesignations(prev =>
           prev.map(desig => (desig.id === editingDesignation.id ? result.data : desig))
         );
         setEditingDesignation(null);
         setShowEditDesignation(false);
       } else {
-        toast.error(result.message || 'Failed to update designation');
+        toast.error(result.message || t('employee.messages.designationUpdateError'));
       }
     } catch (error) {
       
-      toast.error('Failed to update designation');
+      toast.error(t('employee.messages.designationUpdateError'));
     } finally {
       setUpdatingDesignation(false);
     }
@@ -552,7 +555,7 @@ export default function EditEmployeePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Loading employee...</div>
+        <div className="text-lg">{t('employee.messages.loading')}</div>
       </div>
     );
   }
@@ -560,7 +563,7 @@ export default function EditEmployeePage() {
   if (!employee) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Employee not found</div>
+        <div className="text-lg">{t('employee.messages.employeeNotFound')}</div>
       </div>
     );
   }
@@ -572,11 +575,11 @@ export default function EditEmployeePage() {
           <Link href={`/modules/employee-management/${params.id}`}>
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              {t('employee.actions.back')}
             </Button>
           </Link>
           <User className="h-6 w-6" />
-          <h1 className="text-2xl font-bold">{t('employee:actions.editEmployee')}</h1>
+          <h1 className="text-2xl font-bold">{t('employee.actions.editEmployee')}</h1>
         </div>
       </div>
 
@@ -586,39 +589,39 @@ export default function EditEmployeePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              {t('employee:personalInformation.title')}
+              {t('employee.personalInformation.title')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="first_name">{t('employee:fields.firstName')} *</Label>
+                <Label htmlFor="first_name">{t('employee.fields.firstName')} *</Label>
                 <Input
                   id="first_name"
                   value={formData.first_name}
                   onChange={e => handleInputChange('first_name', e.target.value)}
-                  placeholder={t('employee:fields.firstName')}
+                  placeholder={t('employee.fields.firstName')}
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="middle_name">{t('employee:fields.middleName')}</Label>
+                <Label htmlFor="middle_name">{t('employee.fields.middleName')}</Label>
                 <Input
                   id="middle_name"
                   value={formData.middle_name}
                   onChange={e => handleInputChange('middle_name', e.target.value)}
-                  placeholder={t('employee:fields.middleName')}
+                  placeholder={t('employee.fields.middleName')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="last_name">{t('employee:fields.lastName')} *</Label>
+                <Label htmlFor="last_name">{t('employee.fields.lastName')} *</Label>
                 <Input
                   id="last_name"
                   value={formData.last_name}
                   onChange={e => handleInputChange('last_name', e.target.value)}
-                  placeholder={t('employee:fields.lastName')}
+                  placeholder={t('employee.fields.lastName')}
                   required
                 />
               </div>
@@ -626,30 +629,30 @@ export default function EditEmployeePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="email">{t('employee:fields.email')}</Label>
+                <Label htmlFor="email">{t('employee.fields.email')}</Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
                   onChange={e => handleInputChange('email', e.target.value)}
-                  placeholder={t('employee:fields.email')}
+                  placeholder={t('employee.fields.email')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">{t('employee:fields.phone')}</Label>
+                <Label htmlFor="phone">{t('employee.fields.phone')}</Label>
                 <Input
                   id="phone"
                   value={formData.phone}
                   onChange={e => handleInputChange('phone', e.target.value)}
-                  placeholder={t('employee:fields.phone')}
+                  placeholder={t('employee.fields.phone')}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="date_of_birth">{t('employee:fields.dateOfBirth')}</Label>
+                <Label htmlFor="date_of_birth">{t('employee.fields.dateOfBirth')}</Label>
                 <Input
                   id="date_of_birth"
                   type="date"
@@ -659,11 +662,11 @@ export default function EditEmployeePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="nationality">{t('employee:fields.nationality')}</Label>
+                <Label htmlFor="nationality">{t('employee.fields.nationality')}</Label>
                 <NationalityDropdown
                   value={formData.nationality || ''}
                   onValueChange={(value) => handleInputChange('nationality', value)}
-                  placeholder={t('employee:fields.nationality')}
+                  placeholder={t('employee.fields.nationality')}
                 />
               </div>
             </div>
@@ -675,7 +678,7 @@ export default function EditEmployeePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              {t('employee:employment.title')}
+              {t('employee.employment.title')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -683,17 +686,17 @@ export default function EditEmployeePage() {
 
 
               <div className="space-y-2">
-                <Label htmlFor="file_number">File Number</Label>
+                <Label htmlFor="file_number">{t('employee.fields.fileNumber')}</Label>
                 <Input
                   id="file_number"
                   value={formData.file_number}
                   onChange={e => handleInputChange('file_number', e.target.value)}
-                  placeholder="Enter file number"
+                  placeholder={t('employee.fields.fileNumber')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">{t('employee.fields.status')}</Label>
                 <Select
                   value={formData.status}
                   onValueChange={value => handleInputChange('status', value)}
@@ -702,9 +705,9 @@ export default function EditEmployeePage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                    <SelectItem value="terminated">Terminated</SelectItem>
+                    <SelectItem value="active">{t('employee.status.active')}</SelectItem>
+                    <SelectItem value="inactive">{t('employee.status.inactive')}</SelectItem>
+                    <SelectItem value="terminated">{t('employee.status.terminated')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -712,7 +715,7 @@ export default function EditEmployeePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="department_id">Department</Label>
+                <Label htmlFor="department_id">{t('employee.fields.department')}</Label>
                 <div className="flex gap-2">
                   <Select
                     value={formData.department_id || 'none'}
@@ -721,10 +724,10 @@ export default function EditEmployeePage() {
                     }
                   >
                     <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Select department" />
+                      <SelectValue placeholder={t('employee.fields.selectDepartment')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">No Department</SelectItem>
+                      <SelectItem value="none">{t('employee.fields.noDepartment')}</SelectItem>
                       {departments.map(department => (
                         <SelectItem key={`dept-${department.id}`} value={department.id.toString()}>
                           {department.name}
@@ -753,7 +756,7 @@ export default function EditEmployeePage() {
                         setEditingDepartment(selectedDept);
                         setShowEditDepartment(true);
                       } else {
-                        toast.error('Please select a department to edit');
+                        toast.error(t('employee.messages.selectDepartmentToEdit'));
                       }
                     }}
                     className="px-3"
@@ -764,7 +767,7 @@ export default function EditEmployeePage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="designation_id">Designation</Label>
+                <Label htmlFor="designation_id">{t('employee.fields.designation')}</Label>
                 <div className="flex gap-2">
                   <Select
                     value={formData.designation_id || 'none'}
@@ -773,10 +776,10 @@ export default function EditEmployeePage() {
                     }
                   >
                     <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Select designation" />
+                      <SelectValue placeholder={t('employee.fields.selectDesignation')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">No Designation</SelectItem>
+                      <SelectItem value="none">{t('employee.fields.noDesignation')}</SelectItem>
                       {designations.map(designation => (
                         <SelectItem
                           key={`desig-${designation.id}`}
@@ -808,7 +811,7 @@ export default function EditEmployeePage() {
                         setEditingDesignation(selectedDesig);
                         setShowEditDesignation(true);
                       } else {
-                        toast.error('Please select a designation to edit');
+                        toast.error(t('employee.messages.selectDesignationToEdit'));
                       }
                     }}
                     className="px-3"
@@ -822,11 +825,11 @@ export default function EditEmployeePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="supervisor">Supervisor</Label>
+                <Label htmlFor="supervisor">{t('employee.fields.supervisor')}</Label>
                 <EmployeeDropdown
                   value={formData.supervisor}
                   onValueChange={(value) => handleInputChange('supervisor', value)}
-                  placeholder="Select supervisor"
+                  placeholder={t('employee.fields.supervisor')}
                   showSearch={true}
                 />
               </div>
@@ -834,7 +837,7 @@ export default function EditEmployeePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="hire_date">Hire Date</Label>
+                <Label htmlFor="hire_date">{t('employee.fields.hireDate')}</Label>
                 <Input
                   id="hire_date"
                   type="date"
@@ -844,31 +847,31 @@ export default function EditEmployeePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="current_location">Current Location</Label>
+                <Label htmlFor="current_location">{t('employee.fields.currentLocation')}</Label>
                 <Input
                   id="current_location"
                   value={formData.current_location}
                   onChange={e => handleInputChange('current_location', e.target.value)}
-                  placeholder="Enter current location"
+                  placeholder={t('employee.fields.currentLocation')}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="basic_salary">Basic Salary</Label>
+                <Label htmlFor="basic_salary">{t('employee.fields.basicSalary')}</Label>
                 <Input
                   id="basic_salary"
                   type="number"
                   step="0.01"
                   value={formData.basic_salary}
                   onChange={e => handleInputChange('basic_salary', e.target.value)}
-                  placeholder="Enter basic salary"
+                  placeholder={t('employee.fields.basicSalary')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="contract_days_per_month">Contract Days Per Month (Auto-set)</Label>
+                <Label htmlFor="contract_days_per_month">{t('employee.fields.contractDaysPerMonth')}</Label>
                 <Input
                   id="contract_days_per_month"
                   type="number"
@@ -876,20 +879,20 @@ export default function EditEmployeePage() {
                   max="31"
                   value={formData.contract_days_per_month}
                   onChange={e => handleInputChange('contract_days_per_month', e.target.value)}
-                  placeholder="Auto-set to current month total"
+                  placeholder={t('employee.fields.contractDaysPerMonth')}
                   readOnly
                   className="bg-gray-50 cursor-not-allowed"
-                  title="This field is automatically set to the total days in the current month"
+                  title={t('employee.fields.contractDaysPerMonth')}
                 />
                 <div className="text-xs text-muted-foreground">
-                  Automatically set to the total days in the current month (read-only)
+                  {t('employee.fields.contractDaysPerMonth')}
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="contract_hours_per_day">Contract Hours Per Day</Label>
+                <Label htmlFor="contract_hours_per_day">{t('employee.fields.contractHoursPerDay')}</Label>
                 <Input
                   id="contract_hours_per_day"
                   type="number"
@@ -897,19 +900,19 @@ export default function EditEmployeePage() {
                   max="24"
                   value={formData.contract_hours_per_day}
                   onChange={e => handleInputChange('contract_hours_per_day', e.target.value)}
-                  placeholder="Enter contract hours per day"
+                  placeholder={t('employee.fields.contractHoursPerDay')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="hourly_rate">Hourly Rate (Auto-calculated)</Label>
+                <Label htmlFor="hourly_rate">{t('employee.fields.hourlyRate')}</Label>
                 <Input
                   id="hourly_rate"
                   type="number"
                   step="0.01"
                   value={formData.hourly_rate}
                   onChange={e => handleInputChange('hourly_rate', e.target.value)}
-                  placeholder="Auto-calculated hourly rate"
+                  placeholder={t('employee.fields.hourlyRate')}
                   readOnly
                   className="bg-gray-50"
                 />
@@ -918,12 +921,12 @@ export default function EditEmployeePage() {
 
             <div className="space-y-4">
               <div className="text-sm text-muted-foreground">
-                Choose one overtime calculation method:
+                {t('employee.fields.chooseOvertimeMethod')}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="overtime_rate_multiplier">Overtime Rate Multiplier</Label>
+                  <Label htmlFor="overtime_rate_multiplier">{t('employee.fields.overtimeRateMultiplier')}</Label>
                   <Input
                     id="overtime_rate_multiplier"
                     type="number"
@@ -934,17 +937,17 @@ export default function EditEmployeePage() {
                         ? '0'
                         : formData.overtime_rate_multiplier
                     }
-                    placeholder="1.5"
+                    placeholder={t('employee.fields.overtimeRateMultiplier')}
                     readOnly
                     className="bg-gray-50"
                   />
                   <div className="text-xs text-muted-foreground">
-                    Multiplies the hourly rate (e.g., 1.5x for time and a half) - Auto-calculated
+                    {t('employee.fields.overtimeRateMultiplierDescription')}
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="overtime_fixed_rate">Overtime Fixed Rate</Label>
+                  <Label htmlFor="overtime_fixed_rate">{t('employee.fields.overtimeFixedRate')}</Label>
                   <Input
                     id="overtime_fixed_rate"
                     type="number"
@@ -960,10 +963,10 @@ export default function EditEmployeePage() {
                         handleInputChange('overtime_rate_multiplier', '1.5');
                       }
                     }}
-                    placeholder="Fixed rate per hour"
+                    placeholder={t('employee.fields.overtimeFixedRate')}
                   />
                   <div className="text-xs text-muted-foreground">
-                    Fixed amount per overtime hour (overrides multiplier)
+                    {t('employee.fields.overtimeFixedRateDescription')}
                   </div>
                 </div>
               </div>
@@ -976,59 +979,59 @@ export default function EditEmployeePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MapPin className="h-5 w-5" />
-              Address Information
+              {t('employee.fields.addressInformation')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
+              <Label htmlFor="address">{t('employee.fields.address')}</Label>
               <Textarea
                 id="address"
                 value={formData.address}
                 onChange={e => handleInputChange('address', e.target.value)}
-                placeholder="Enter address"
+                placeholder={t('employee.fields.address')}
                 rows={3}
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="city">City</Label>
+                <Label htmlFor="city">{t('employee.fields.city')}</Label>
                 <Input
                   id="city"
                   value={formData.city}
                   onChange={e => handleInputChange('city', e.target.value)}
-                  placeholder="Enter city"
+                  placeholder={t('employee.fields.city')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="state">State</Label>
+                <Label htmlFor="state">{t('employee.fields.state')}</Label>
                 <Input
                   id="state"
                   value={formData.state}
                   onChange={e => handleInputChange('state', e.target.value)}
-                  placeholder="Enter state"
+                  placeholder={t('employee.fields.state')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="postal_code">Postal Code</Label>
+                <Label htmlFor="postal_code">{t('employee.fields.postalCode')}</Label>
                 <Input
                   id="postal_code"
                   value={formData.postal_code}
                   onChange={e => handleInputChange('postal_code', e.target.value)}
-                  placeholder="Enter postal code"
+                  placeholder={t('employee.fields.postalCode')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="country">Country</Label>
+                <Label htmlFor="country">{t('employee.fields.country')}</Label>
                 <Input
                   id="country"
                   value={formData.country}
                   onChange={e => handleInputChange('country', e.target.value)}
-                  placeholder="Enter country"
+                  placeholder={t('employee.fields.country')}
                 />
               </div>
             </div>
@@ -1040,40 +1043,40 @@ export default function EditEmployeePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Phone className="h-5 w-5" />
-              {t('employee:personalInformation.emergencyContact')}
+              {t('employee.personalInformation.emergencyContact')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="emergency_contact_name">{t('employee:fields.name')}</Label>
+                <Label htmlFor="emergency_contact_name">{t('employee.fields.name')}</Label>
                 <Input
                   id="emergency_contact_name"
                   value={formData.emergency_contact_name}
                   onChange={e => handleInputChange('emergency_contact_name', e.target.value)}
-                  placeholder={t('employee:fields.name')}
+                  placeholder={t('employee.fields.name')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="emergency_contact_phone">{t('employee:fields.phone')}</Label>
+                <Label htmlFor="emergency_contact_phone">{t('employee.fields.phone')}</Label>
                 <Input
                   id="emergency_contact_phone"
                   value={formData.emergency_contact_phone}
                   onChange={e => handleInputChange('emergency_contact_phone', e.target.value)}
-                  placeholder={t('employee:fields.phone')}
+                  placeholder={t('employee.fields.phone')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="emergency_contact_relationship">{t('employee:fields.relationship')}</Label>
+                <Label htmlFor="emergency_contact_relationship">{t('employee.fields.relationship')}</Label>
                 <Input
                   id="emergency_contact_relationship"
                   value={formData.emergency_contact_relationship}
                   onChange={e =>
                     handleInputChange('emergency_contact_relationship', e.target.value)
                   }
-                  placeholder={t('employee:fields.relationship')}
+                  placeholder={t('employee.fields.relationship')}
                 />
               </div>
             </div>
@@ -1085,23 +1088,23 @@ export default function EditEmployeePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <IdCard className="h-5 w-5" />
-              Documents & Licenses
+              {t('employee.documents.title')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="iqama_number">Iqama Number</Label>
+                <Label htmlFor="iqama_number">{t('employee.fields.iqamaNumber')}</Label>
                 <Input
                   id="iqama_number"
                   value={formData.iqama_number}
                   onChange={e => handleInputChange('iqama_number', e.target.value)}
-                  placeholder="Enter Iqama number"
+                  placeholder={t('employee.fields.iqamaNumber')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="iqama_expiry">Iqama Expiry</Label>
+                <Label htmlFor="iqama_expiry">{t('employee.fields.iqamaExpiry')}</Label>
                 <Input
                   id="iqama_expiry"
                   type="date"
@@ -1113,17 +1116,17 @@ export default function EditEmployeePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="passport_number">Passport Number</Label>
+                <Label htmlFor="passport_number">{t('employee.fields.passportNumber')}</Label>
                 <Input
                   id="passport_number"
                   value={formData.passport_number}
                   onChange={e => handleInputChange('passport_number', e.target.value)}
-                  placeholder="Enter passport number"
+                  placeholder={t('employee.fields.passportNumber')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="passport_expiry">Passport Expiry</Label>
+                <Label htmlFor="passport_expiry">{t('employee.fields.passportExpiry')}</Label>
                 <Input
                   id="passport_expiry"
                   type="date"
@@ -1135,17 +1138,17 @@ export default function EditEmployeePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="driving_license_number">Driving License Number</Label>
+                <Label htmlFor="driving_license_number">{t('employee.fields.drivingLicenseNumber')}</Label>
                 <Input
                   id="driving_license_number"
                   value={formData.driving_license_number}
                   onChange={e => handleInputChange('driving_license_number', e.target.value)}
-                  placeholder="Enter driving license number"
+                  placeholder={t('employee.fields.drivingLicenseNumber')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="driving_license_expiry">Driving License Expiry</Label>
+                <Label htmlFor="driving_license_expiry">{t('employee.fields.drivingLicenseExpiry')}</Label>
                 <Input
                   id="driving_license_expiry"
                   type="date"
@@ -1157,17 +1160,17 @@ export default function EditEmployeePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="operator_license_number">Operator License Number</Label>
+                <Label htmlFor="operator_license_number">{t('employee.fields.operatorLicenseNumber')}</Label>
                 <Input
                   id="operator_license_number"
                   value={formData.operator_license_number}
                   onChange={e => handleInputChange('operator_license_number', e.target.value)}
-                  placeholder="Enter operator license number"
+                  placeholder={t('employee.fields.operatorLicenseNumber')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="operator_license_expiry">Operator License Expiry</Label>
+                <Label htmlFor="operator_license_expiry">{t('employee.fields.operatorLicenseExpiry')}</Label>
                 <Input
                   id="operator_license_expiry"
                   type="date"
@@ -1179,17 +1182,17 @@ export default function EditEmployeePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="tuv_certification_number">TUV Certification Number</Label>
+                <Label htmlFor="tuv_certification_number">{t('employee.fields.tuvCertificationNumber')}</Label>
                 <Input
                   id="tuv_certification_number"
                   value={formData.tuv_certification_number}
                   onChange={e => handleInputChange('tuv_certification_number', e.target.value)}
-                  placeholder="Enter TUV certification number"
+                  placeholder={t('employee.fields.tuvCertificationNumber')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="tuv_certification_expiry">TUV Certification Expiry</Label>
+                <Label htmlFor="tuv_certification_expiry">{t('employee.fields.tuvCertificationExpiry')}</Label>
                 <Input
                   id="tuv_certification_expiry"
                   type="date"
@@ -1201,17 +1204,17 @@ export default function EditEmployeePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="spsp_license_number">SPSP License Number</Label>
+                <Label htmlFor="spsp_license_number">{t('employee.fields.spspLicenseNumber')}</Label>
                 <Input
                   id="spsp_license_number"
                   value={formData.spsp_license_number}
                   onChange={e => handleInputChange('spsp_license_number', e.target.value)}
-                  placeholder="Enter SPSP license number"
+                  placeholder={t('employee.fields.spspLicenseNumber')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="spsp_license_expiry">SPSP License Expiry</Label>
+                <Label htmlFor="spsp_license_expiry">{t('employee.fields.spspLicenseExpiry')}</Label>
                 <Input
                   id="spsp_license_expiry"
                   type="date"
@@ -1227,11 +1230,11 @@ export default function EditEmployeePage() {
         <div className="flex gap-4">
           <Button type="submit" disabled={saving}>
             <Save className="h-4 w-4 mr-2" />
-            {saving ? 'Saving...' : 'Save Changes'}
+            {saving ? t('employee.actions.saving') : t('employee.actions.saveChanges')}
           </Button>
           <Link href={`/modules/employee-management/${params.id}`}>
             <Button type="button" variant="outline">
-              Cancel
+              {t('employee.actions.cancel')}
             </Button>
           </Link>
         </div>
@@ -1241,24 +1244,24 @@ export default function EditEmployeePage() {
       {showAddDepartment && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">Add New Department</h3>
+            <h3 className="text-lg font-semibold mb-4">{t('employee.modals.addDepartment.title')}</h3>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="dept_name">Department Name *</Label>
+                <Label htmlFor="dept_name">{t('employee.fields.departmentName')} *</Label>
                 <Input
                   id="dept_name"
                   value={newDepartment.name}
                   onChange={e => setNewDepartment(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Enter department name"
+                  placeholder={t('employee.fields.departmentName')}
                 />
               </div>
               <div>
-                <Label htmlFor="dept_code">Department Code</Label>
+                <Label htmlFor="dept_code">{t('employee.fields.departmentCode')}</Label>
                 <Input
                   id="dept_code"
                   value={newDepartment.code}
                   onChange={e => setNewDepartment(prev => ({ ...prev, code: e.target.value }))}
-                  placeholder="Enter department code"
+                  placeholder={t('employee.fields.departmentCode')}
                 />
               </div>
               <div className="flex gap-2 justify-end">
@@ -1270,10 +1273,10 @@ export default function EditEmployeePage() {
                     setNewDepartment({ name: '', code: '' });
                   }}
                 >
-                  Cancel
+                  {t('employee.actions.cancel')}
                 </Button>
                 <Button type="button" onClick={handleAddDepartment} disabled={addingDepartment}>
-                  {addingDepartment ? 'Adding...' : 'Add Department'}
+                  {addingDepartment ? t('employee.actions.adding') : t('employee.actions.addDepartment')}
                 </Button>
               </div>
             </div>
@@ -1285,26 +1288,26 @@ export default function EditEmployeePage() {
       {showAddDesignation && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">Add New Designation</h3>
+            <h3 className="text-lg font-semibold mb-4">{t('employee.modals.addDesignation.title')}</h3>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="desig_name">Designation Name *</Label>
+                <Label htmlFor="desig_name">{t('employee.fields.designationName')} *</Label>
                 <Input
                   id="desig_name"
                   value={newDesignation.name}
                   onChange={e => setNewDesignation(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Enter designation name"
+                  placeholder={t('employee.fields.designationName')}
                 />
               </div>
               <div>
-                <Label htmlFor="desig_description">Description</Label>
+                <Label htmlFor="desig_description">{t('employee.fields.description')}</Label>
                 <Textarea
                   id="desig_description"
                   value={newDesignation.description}
                   onChange={e =>
                     setNewDesignation(prev => ({ ...prev, description: e.target.value }))
                   }
-                  placeholder="Enter description"
+                  placeholder={t('employee.fields.description')}
                   rows={3}
                 />
               </div>
@@ -1317,10 +1320,10 @@ export default function EditEmployeePage() {
                     setNewDesignation({ name: '', description: '' });
                   }}
                 >
-                  Cancel
+                  {t('employee.actions.cancel')}
                 </Button>
                 <Button type="button" onClick={handleAddDesignation} disabled={addingDesignation}>
-                  {addingDesignation ? 'Adding...' : 'Add Designation'}
+                  {addingDesignation ? t('employee.actions.adding') : t('employee.actions.addDesignation')}
                 </Button>
               </div>
             </div>
@@ -1332,28 +1335,28 @@ export default function EditEmployeePage() {
       {showEditDepartment && editingDepartment && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">Edit Department</h3>
+            <h3 className="text-lg font-semibold mb-4">{t('employee.modals.editDepartment.title')}</h3>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="edit_dept_name">Department Name *</Label>
+                <Label htmlFor="edit_dept_name">{t('employee.fields.departmentName')} *</Label>
                 <Input
                   id="edit_dept_name"
                   value={editingDepartment.name}
                   onChange={e =>
                     setEditingDepartment(prev => (prev ? { ...prev, name: e.target.value } : null))
                   }
-                  placeholder="Enter department name"
+                  placeholder={t('employee.fields.departmentName')}
                 />
               </div>
               <div>
-                <Label htmlFor="edit_dept_code">Department Code</Label>
+                <Label htmlFor="edit_dept_code">{t('employee.fields.departmentCode')}</Label>
                 <Input
                   id="edit_dept_code"
                   value={editingDepartment.code || ''}
                   onChange={e =>
                     setEditingDepartment(prev => (prev ? { ...prev, code: e.target.value } : null))
                   }
-                  placeholder="Enter department code"
+                  placeholder={t('employee.fields.departmentCode')}
                 />
               </div>
               <div className="flex gap-2 justify-end">
@@ -1365,10 +1368,10 @@ export default function EditEmployeePage() {
                     setEditingDepartment(null);
                   }}
                 >
-                  Cancel
+                  {t('employee.actions.cancel')}
                 </Button>
                 <Button type="button" onClick={handleEditDepartment} disabled={updatingDepartment}>
-                  {updatingDepartment ? 'Updating...' : 'Update Department'}
+                  {updatingDepartment ? t('employee.actions.updating') : t('employee.actions.updateDepartment')}
                 </Button>
               </div>
             </div>
@@ -1380,21 +1383,21 @@ export default function EditEmployeePage() {
       {showEditDesignation && editingDesignation && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">Edit Designation</h3>
+            <h3 className="text-lg font-semibold mb-4">{t('employee.modals.editDesignation.title')}</h3>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="edit_desig_name">Designation Name *</Label>
+                <Label htmlFor="edit_desig_name">{t('employee.fields.designationName')} *</Label>
                 <Input
                   id="edit_desig_name"
                   value={editingDesignation.name}
                   onChange={e =>
                     setEditingDesignation(prev => (prev ? { ...prev, name: e.target.value } : null))
                   }
-                  placeholder="Enter designation name"
+                  placeholder={t('employee.fields.designationName')}
                 />
               </div>
               <div>
-                <Label htmlFor="edit_desig_description">Description</Label>
+                <Label htmlFor="edit_desig_description">{t('employee.fields.description')}</Label>
                 <Textarea
                   id="edit_desig_description"
                   value={editingDesignation.description || ''}
@@ -1403,7 +1406,7 @@ export default function EditEmployeePage() {
                       prev ? { ...prev, description: e.target.value } : null
                     )
                   }
-                  placeholder="Enter description"
+                  placeholder={t('employee.fields.description')}
                   rows={3}
                 />
               </div>
@@ -1416,14 +1419,14 @@ export default function EditEmployeePage() {
                     setEditingDesignation(null);
                   }}
                 >
-                  Cancel
+                  {t('employee.actions.cancel')}
                 </Button>
                 <Button
                   type="button"
                   onClick={handleEditDesignation}
                   disabled={updatingDesignation}
                 >
-                  {updatingDesignation ? 'Updating...' : 'Update Designation'}
+                  {updatingDesignation ? t('employee.actions.updating') : t('employee.actions.updateDesignation')}
                 </Button>
               </div>
             </div>

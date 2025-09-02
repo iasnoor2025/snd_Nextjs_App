@@ -18,7 +18,7 @@ import { useRBAC } from '@/lib/rbac/rbac-context';
 import { AlertTriangle, Plus, Search, Filter, FileText, Shield, AlertCircle } from 'lucide-react';
 import ApiService from '@/lib/api-service';
 import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
 
 interface SafetyIncident {
   id: number;
@@ -43,7 +43,7 @@ interface SafetyIncident {
 
 export default function SafetyManagementPage() {
   const { user, hasPermission, getAllowedActions } = useRBAC();
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [incidents, setIncidents] = useState<SafetyIncident[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');

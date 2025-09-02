@@ -28,7 +28,7 @@ import { useRBAC } from '@/lib/rbac/rbac-context';
 import { Download, Edit, Eye, Plus, RefreshCw, Search, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
 import { toast } from 'sonner';
 
 interface Report {
@@ -54,7 +54,7 @@ interface PaginatedResponse {
 }
 
 export default function ReportingPage() {
-  const { t } = useTranslation('reporting');
+  const { t } = useI18n();
   const { user, hasPermission, getAllowedActions } = useRBAC();
   const [reports, setReports] = useState<PaginatedResponse | null>(null);
   const [loading, setLoading] = useState(true);

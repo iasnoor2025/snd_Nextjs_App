@@ -146,30 +146,23 @@
     "passportFile": "Passport File",
     "name": "Name",
     "employeeId": "Employee ID",
-    "fileNumber": "File Number",
     "noDesignation": "No Designation",
-    "supervisor": "Supervisor",
-    "status": "Status",
     "relationship": "Relationship",
     "drivingLicense": "Driving License",
-    "drivingLicenseExpiry": "License Expiry",
-    "operatorLicense": "Operator License",
-    "operatorLicenseExpiry": "Operator License Expiry",
-    "tuvCertification": "TÜV Certification",
-    "tuvCertificationExpiry": "TÜV Certification Expiry",
-    "spspLicense": "SPSP License",
-    "spspLicenseExpiry": "SPSP License Expiry",
     "drivingLicenseNumber": "Driving License Number",
     "drivingLicenseExpiry": "Driving License Expiry",
     "drivingLicenseCost": "Driving License Cost",
     "drivingLicenseFile": "Driving License File",
+    "operatorLicense": "Operator License",
     "operatorLicenseNumber": "Operator License Number",
     "operatorLicenseExpiry": "Operator License Expiry",
     "operatorLicenseCost": "Operator License Cost",
     "operatorLicenseFile": "Operator License File",
+    "tuvCertification": "TÜV Certification",
     "tuvCertificationNumber": "TUV Certification Number",
     "tuvCertificationExpiry": "TUV Certification Expiry",
     "tuvCertificationCost": "TUV Certification Cost",
+    "spspLicense": "SPSP License",
     "spspLicenseNumber": "SPSP License Number",
     "spspLicenseExpiry": "SPSP License Expiry",
     "spspLicenseCost": "SPSP License Cost",
@@ -233,7 +226,13 @@
     "selectDepartmentToEdit": "Please select a department to edit",
     "selectDepartmentToDelete": "Please select a department to delete",
     "selectDesignationToEdit": "Please select a designation to edit",
-    "selectDesignationToDelete": "Please select a designation to delete"
+    "selectDesignationToDelete": "Please select a designation to delete",
+    "departmentNameRequired": "Department name is required",
+    "departmentAddedSuccess": "Department added successfully",
+    "departmentAddError": "Failed to add department",
+    "designationNameRequired": "Designation name is required",
+    "designationUpdatedSuccess": "Designation updated successfully",
+    "designationUpdateError": "Failed to update designation"
   },
 
   "confirmDelete": {
@@ -391,6 +390,10 @@
       "update": "Update Designation",
       "updating": "Updating..."
     }
+  },
+
+  "documents": {
+    "title": "Documents & Licenses"
   },
 
   "fileUpload": {
@@ -591,7 +594,16 @@
     "close": "Close",
     "back": "Back",
     "edit": "Edit",
-    "delete": "Delete"
+    "delete": "Delete",
+    "saving": "Saving...",
+    "saveChanges": "Save Changes",
+    "cancel": "Cancel",
+    "adding": "Adding...",
+    "addDepartment": "Add Department",
+    "addDesignation": "Add Designation",
+    "updating": "Updating...",
+    "updateDepartment": "Update Department",
+    "updateDesignation": "Update Designation"
   },
   "personalInformation": {
     "title": "Personal Information",
@@ -630,6 +642,26 @@
     "department": "Department",
     "supervisor": "Supervisor",
     "status": "Status",
-    "hireDate": "Hire Date"
+    "hireDate": "Hire Date",
+    "noDepartment": "No Department",
+    "currentLocation": "Current Location",
+    "contractDaysPerMonth": "Contract Days Per Month (Auto-set)",
+    "contractHoursPerDay": "Contract Hours Per Day",
+    "hourlyRate": "Hourly Rate (Auto-calculated)",
+    "chooseOvertimeMethod": "Choose one overtime calculation method:",
+    "overtimeRateMultiplier": "Overtime Rate Multiplier",
+    "overtimeRateMultiplierDescription": "Multiplies the hourly rate (e.g., 1.5x for time and a half) - Auto-calculated",
+    "overtimeFixedRate": "Overtime Fixed Rate",
+    "overtimeFixedRateDescription": "Fixed amount per overtime hour (overrides multiplier)",
+    "addressInformation": "Address Information",
+    "address": "Address",
+    "city": "City",
+    "state": "State/Province",
+    "postalCode": "Postal Code",
+    "country": "Country",
+    "departmentName": "Department Name",
+    "departmentCode": "Department Code",
+    "designationName": "Designation Name",
+    "description": "Description"
   }
 }
