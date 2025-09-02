@@ -16,7 +16,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,25 +35,21 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
+
 import { PermissionManagement } from '@/components/permission-management';
-import { useI18n } from '@/hooks/use-i18n';
+import { useTranslations } from '@/hooks/use-translations';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import {
-  Calendar,
-  CheckCircle,
   Edit,
   Eye,
-  Mail,
   Plus,
   RefreshCw,
   Settings,
   Shield,
   Trash2,
   User,
-  XCircle,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+
 import { useEffect, useState } from 'react';
 
 import { toast } from 'sonner';
@@ -90,9 +85,8 @@ interface Permission {
 }
 
 export default function UserManagementPage() {
-  const { t } = useI18n();
-  const { user, hasPermission, getAllowedActions } = useRBAC();
-  const router = useRouter();
+  const { t } = useTranslations();
+  const { getAllowedActions } = useRBAC();
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
@@ -719,7 +713,7 @@ export default function UserManagementPage() {
                   // Promise.all completed
       } catch (err) {
         console.error('Error loading user management data:', err);
-        setError(err instanceof Error ? err.message : t('loadDataFailed'));
+        setError(err instanceof Error ? err.message : t('user.loadDataFailed'));
         
         // Ensure we always have arrays even on error
         setUsers([]);
@@ -754,7 +748,7 @@ export default function UserManagementPage() {
     return (
       <ProtectedRoute requiredPermission={{ action: 'manage', subject: 'User' }}>
         <div className="flex items-center justify-center h-64">
-          <div className="text-lg">{t('loadingUserManagement')}</div>
+          <div className="text-lg">{t('user.loadingUserManagement')}</div>
         </div>
       </ProtectedRoute>
     );
@@ -765,7 +759,7 @@ export default function UserManagementPage() {
       <ProtectedRoute requiredPermission={{ action: 'manage', subject: 'User' }}>
         <div className="flex items-center justify-center h-64">
           <div className="text-red-500">
-            {t('error')}: {error}
+            {t('user.error')}: {error}
           </div>
         </div>
       </ProtectedRoute>
@@ -778,7 +772,7 @@ export default function UserManagementPage() {
       <ProtectedRoute requiredPermission={{ action: 'manage', subject: 'User' }}>
         <div className="flex items-center justify-center h-64">
           <div className="text-red-500">
-            {t('error')}: Data not properly initialized
+            {t('user.error')}: Data not properly initialized
           </div>
         </div>
       </ProtectedRoute>
@@ -793,17 +787,17 @@ export default function UserManagementPage() {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">{t('userRoleManagementTitle')}</h1>
-            <p className="text-muted-foreground">{t('userRoleManagementDescription')}</p>
+            <h1 className="text-3xl font-bold">{t('user.userRoleManagementTitle')}</h1>
+            <p className="text-muted-foreground">{t('user.userRoleManagementDescription')}</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm">
               <Shield className="h-4 w-4 mr-2" />
-              {t('exportUsers')}
+              {t('user.exportUsers')}
             </Button>
             <Button variant="outline" size="sm">
               <Settings className="h-4 w-4 mr-2" />
-              {t('userSettings')}
+              {t('user.userSettings')}
             </Button>
           </div>
         </div>
@@ -813,15 +807,15 @@ export default function UserManagementPage() {
           <TabsList>
             <TabsTrigger value="users" className="flex items-center gap-2">
               <User className="h-4 w-4" />
-              {t('users')} ({safeUsers.length})
+              {t('user.users')} ({safeUsers.length})
             </TabsTrigger>
             <TabsTrigger value="roles" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
-              {t('roles')} ({safeRoles.length})
+              {t('user.roles')} ({safeRoles.length})
             </TabsTrigger>
             <TabsTrigger value="permissions" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
-              {t('permissions')} ({safePermissions.length})
+              {t('user.permissions')} ({safePermissions.length})
             </TabsTrigger>
           </TabsList>
 
@@ -831,13 +825,13 @@ export default function UserManagementPage() {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
-                    <CardTitle>{t('users')}</CardTitle>
-                    <CardDescription>{t('manageUsersDescription')}</CardDescription>
+                    <CardTitle>{t('user.users')}</CardTitle>
+                    <CardDescription>{t('user.manageUsersDescription')}</CardDescription>
                   </div>
                   {allowedActions.includes('create') && (
                     <Button onClick={() => setIsCreateUserDialogOpen(true)}>
                       <Plus className="h-4 w-4 mr-2" />
-                      {t('createUser')}
+                      {t('user.createUser')}
                     </Button>
                   )}
                 </div>
@@ -846,12 +840,12 @@ export default function UserManagementPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('name')}</TableHead>
-                      <TableHead>{t('email')}</TableHead>
-                      <TableHead>{t('role')}</TableHead>
-                      <TableHead>{t('status')}</TableHead>
-                      <TableHead>{t('lastLogin')}</TableHead>
-                      <TableHead>{t('actions')}</TableHead>
+                      <TableHead>{t('user.name')}</TableHead>
+                      <TableHead>{t('user.email')}</TableHead>
+                      <TableHead>{t('user.role')}</TableHead>
+                      <TableHead>{t('user.status')}</TableHead>
+                      <TableHead>{t('user.lastLogin')}</TableHead>
+                      <TableHead>{t('user.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -864,9 +858,9 @@ export default function UserManagementPage() {
                             <Badge variant="secondary">{user.role || 'Unknown'}</Badge>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={user.isActive ? 'default' : 'secondary'}>
-                              {user.isActive ? t('active') : t('inactive')}
-                            </Badge>
+                                                          <Badge variant={user.isActive ? 'default' : 'secondary'}>
+                                {user.isActive ? t('user.active') : t('user.inactive')}
+                              </Badge>
                           </TableCell>
                           <TableCell>
                             {user.lastLoginAt
@@ -882,7 +876,7 @@ export default function UserManagementPage() {
                               )
                               : (
                                 <span className="text-muted-foreground text-sm">
-                                  {t('never')}
+                                  {t('user.never')}
                                 </span>
                               )}
                           </TableCell>
@@ -999,7 +993,7 @@ export default function UserManagementPage() {
                     {allowedActions.includes('create') && (
                       <Button onClick={() => setIsCreateRoleDialogOpen(true)}>
                         <Plus className="h-4 w-4 mr-2" />
-                        {t('createRole')}
+                        {t('user.createRole')}
                       </Button>
                     )}
                   </div>
@@ -1009,12 +1003,12 @@ export default function UserManagementPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('name')}</TableHead>
-                      <TableHead>{t('guardName')}</TableHead>
-                      <TableHead>{t('permissions')}</TableHead>
-                      <TableHead>{t('users')}</TableHead>
-                      <TableHead>{t('createdAt')}</TableHead>
-                      <TableHead>{t('actions')}</TableHead>
+                      <TableHead>{t('user.name')}</TableHead>
+                      <TableHead>{t('user.guardName')}</TableHead>
+                      <TableHead>{t('user.permissions')}</TableHead>
+                      <TableHead>{t('user.users')}</TableHead>
+                      <TableHead>{t('user.createdAt')}</TableHead>
+                      <TableHead>{t('user.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1094,7 +1088,7 @@ export default function UserManagementPage() {
                     ) : (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center text-muted-foreground">
-                          {loading ? t('loading') : t('noRolesFound')}
+                          {loading ? t('user.loading') : t('user.noRolesFound')}
                         </TableCell>
                       </TableRow>
                     )}
@@ -1219,14 +1213,14 @@ export default function UserManagementPage() {
                   checked={userFormData.isActive}
                   onChange={e => setUserFormData(prev => ({ ...prev, isActive: e.target.checked }))}
                 />
-                <Label htmlFor="isActive">{t('isActive')}</Label>
+                <Label htmlFor="isActive">{t('user.isActive')}</Label>
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsCreateUserDialogOpen(false)}>
-                {t('cancel')}
+                {t('user.cancel')}
               </Button>
-              <Button onClick={createUser}>{t('create')}</Button>
+              <Button onClick={createUser}>{t('user.create')}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -1235,12 +1229,12 @@ export default function UserManagementPage() {
         <Dialog open={isEditUserDialogOpen} onOpenChange={setIsEditUserDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{t('editUser')}</DialogTitle>
-              <DialogDescription>{t('editUserDescription')}</DialogDescription>
+              <DialogTitle>{t('user.editUser')}</DialogTitle>
+              <DialogDescription>{t('user.editUserDescription')}</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="edit-name">{t('name')}</Label>
+                <Label htmlFor="edit-name">{t('user.name')}</Label>
                 <Input
                   id="edit-name"
                   value={userFormData.name}
@@ -1248,7 +1242,7 @@ export default function UserManagementPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="edit-email">{t('email')}</Label>
+                <Label htmlFor="edit-email">{t('user.email')}</Label>
                 <Input
                   id="edit-email"
                   type="email"
@@ -1258,7 +1252,7 @@ export default function UserManagementPage() {
               </div>
               <div>
                 <Label htmlFor="edit-password">
-                  {t('password')} ({t('leaveBlankToKeep')})
+                  {t('user.password')} ({t('user.leaveBlankToKeep')})
                 </Label>
                 <Input
                   id="edit-password"
@@ -1268,13 +1262,13 @@ export default function UserManagementPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="edit-role">{t('role')}</Label>
+                <Label htmlFor="edit-role">{t('user.role')}</Label>
                 <Select
                   value={userFormData.roleId}
                   onValueChange={value => setUserFormData(prev => ({ ...prev, roleId: value }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={t('selectRole')} />
+                    <SelectValue placeholder={t('user.selectRole')} />
                   </SelectTrigger>
                   <SelectContent>
                     {safeRoles.length > 0 ? (
@@ -1410,10 +1404,7 @@ export default function UserManagementPage() {
                     Array.isArray(selectedRolePermissions) && 
                     selectedRolePermissions.some(sp => sp.id === p.id)
                   );
-                  const someSelected = permissions.some(p => 
-                    Array.isArray(selectedRolePermissions) && 
-                    selectedRolePermissions.some(sp => sp.id === p.id)
-                  );
+
 
                   return (
                     <div key={category} className="space-y-3 border rounded-lg p-4">
@@ -1478,7 +1469,7 @@ export default function UserManagementPage() {
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => setIsPermissionDialogOpen(false)}>
-                    {t('cancel')}
+                    {t('user.cancel')}
                   </Button>
                   <Button onClick={() => {
                     console.log('Update button clicked with permissions:', selectedRolePermissions);
@@ -1486,7 +1477,7 @@ export default function UserManagementPage() {
                     console.log('Permission IDs to update:', permissionIds);
                     updateRolePermissions(permissionIds);
                   }}>
-                    {t('updatePermissions')}
+                    {t('user.updatePermissions')}
                   </Button>
                 </div>
               </div>

@@ -11,7 +11,7 @@ export function useTranslations() {
   
   // Safely extract locale with fallback
   const locale = validateLocale(params?.locale as string);
-  const [dictionary, setDictionary] = useState<any>(null);
+  const [dictionary, setDictionary] = useState<Record<string, Record<string, unknown>> | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const languages = [
@@ -72,37 +72,54 @@ export function useTranslations() {
       if (!namespaceDict) return key;
 
       // Navigate to nested key
-      let value: any = namespaceDict;
+      let currentValue: unknown = namespaceDict;
       for (const k of fullKey.split('.')) {
-        value = value?.[k];
-        if (value === undefined) {
+        currentValue = (currentValue as Record<string, unknown>)?.[k];
+        if (currentValue === undefined) {
           return key;
         }
       }
+      const value = currentValue;
+
+      // Ensure we return a string, not an object
+      if (typeof value !== 'string') {
+        return key;
+      }
+
+      // Now we know value is a string
+      let stringValue: string = value;
 
       // Replace parameters
-      if (params && typeof value === 'string') {
+      if (params) {
         Object.entries(params).forEach(([param, replacement]) => {
-          value = value.replace(new RegExp(`{{${param}}}`, 'g'), replacement);
+          stringValue = stringValue.replace(new RegExp(`{{${param}}}`, 'g'), replacement);
         });
       }
 
-      return value || key;
+      return stringValue || key;
     }
 
     // Fallback to common namespace if no namespace specified
     const commonDict = dictionary.common;
     if (commonDict && commonDict[key]) {
-      let value = commonDict[key];
+      const value = commonDict[key];
+      
+      // Ensure we return a string, not an object
+      if (typeof value !== 'string') {
+        return key;
+      }
+      
+      // Now we know value is a string
+      let stringValue: string = value;
       
       // Replace parameters
-      if (params && typeof value === 'string') {
+      if (params) {
         Object.entries(params).forEach(([param, replacement]) => {
-          value = value.replace(new RegExp(`{{${param}}}`, 'g'), replacement);
+          stringValue = stringValue.replace(new RegExp(`{{${param}}}`, 'g'), replacement);
         });
       }
       
-      return value;
+      return stringValue;
     }
 
     return key;
