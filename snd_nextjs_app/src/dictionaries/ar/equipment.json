@@ -212,7 +212,13 @@
     "deleteAssignmentError": "فشل في حذف المهمة",
     "loadingAssignmentHistory": "جاري تحميل سجل المهام...",
     "noAssignmentHistoryFound": "لم يتم العثور على سجل مهام",
-    "equipmentNotAssignedYet": "لم يتم تعيين هذه المعدات بعد"
+    "equipmentNotAssignedYet": "لم يتم تعيين هذه المعدات بعد",
+    "assignmentCreatedSuccess": "تم إنشاء المهمة اليدوية بنجاح",
+    "createManualAssignmentError": "فشل في إنشاء المهمة اليدوية",
+    "assignmentUpdatedSuccess": "تم تحديث المهمة بنجاح",
+    "updateAssignmentError": "فشل في تحديث المهمة",
+    "onlyManualAssignmentsCanBeEdited": "يمكن تعديل المهام اليدوية فقط",
+    "confirmCompleteAssignment": "هل أنت متأكد من إكمال هذه المهمة؟"
   },
   "filters": {
     "all": "جميع المعدات",

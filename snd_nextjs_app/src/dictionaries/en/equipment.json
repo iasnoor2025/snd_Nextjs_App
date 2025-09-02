@@ -161,7 +161,13 @@
     "deleteAssignmentError": "Failed to delete assignment",
     "loadingAssignmentHistory": "Loading assignment history...",
     "noAssignmentHistoryFound": "No assignment history found",
-    "equipmentNotAssignedYet": "This equipment hasn't been assigned yet"
+    "equipmentNotAssignedYet": "This equipment hasn't been assigned yet",
+    "assignmentCreatedSuccess": "Manual assignment created successfully",
+    "createManualAssignmentError": "Failed to create manual assignment",
+    "assignmentUpdatedSuccess": "Assignment updated successfully",
+    "updateAssignmentError": "Failed to update assignment",
+    "onlyManualAssignmentsCanBeEdited": "Only manual assignments can be edited",
+    "confirmCompleteAssignment": "Are you sure you want to complete this assignment?"
   },
   "filters": {
     "all": "All Equipment",
