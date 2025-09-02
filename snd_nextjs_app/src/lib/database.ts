@@ -3,6 +3,7 @@ import { db } from '@/lib/drizzle';
 import { customers, equipment, rentalItems, rentals, users } from '@/lib/drizzle/schema';
 import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
+import bcrypt from 'bcryptjs';
 
 export class DatabaseService {
   // Customer operations
@@ -226,16 +227,85 @@ export class DatabaseService {
   // Note: The following methods were using Prisma and have been implemented with Drizzle
   // For now, they return null to indicate they need proper implementation
 
-  static async syncCustomerFromERPNext(erpnextId: string, customerData: any) {
-    // TODO: Implement with Drizzle
-    
-    return null;
+  static async syncCustomerFromERPNext(erpnextId: string, customerData: {
+    name?: string;
+    contactPerson?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    country?: string;
+    companyName?: string;
+  }) {
+    try {
+      // Check if customer already exists
+      const existingCustomer = await db
+        .select()
+        .from(customers)
+        .where(eq(customers.erpnextId, erpnextId))
+        .limit(1);
+
+      if (existingCustomer.length > 0) {
+        // Update existing customer
+        const updatedCustomer = await db
+          .update(customers)
+          .set({
+            name: customerData.name || existingCustomer[0].name,
+            contactPerson: customerData.contactPerson || existingCustomer[0].contactPerson,
+            email: customerData.email || existingCustomer[0].email,
+            phone: customerData.phone || existingCustomer[0].phone,
+            address: customerData.address || existingCustomer[0].address,
+            city: customerData.city || existingCustomer[0].city,
+            country: customerData.country || existingCustomer[0].country,
+            companyName: customerData.companyName || existingCustomer[0].companyName,
+            updatedAt: new Date().toISOString().split('T')[0],
+          })
+          .where(eq(customers.erpnextId, erpnextId))
+          .returning();
+
+        return updatedCustomer[0] || null;
+      } else {
+        // Create new customer
+        const newCustomer = await db
+          .insert(customers)
+          .values({
+            name: customerData.name || 'Unknown Customer',
+            contactPerson: customerData.contactPerson,
+            email: customerData.email,
+            phone: customerData.phone,
+            address: customerData.address,
+            city: customerData.city,
+            country: customerData.country,
+            companyName: customerData.companyName,
+            erpnextId: erpnextId,
+            isActive: true,
+            status: 'active',
+            createdAt: new Date().toISOString().split('T')[0],
+            updatedAt: new Date().toISOString().split('T')[0],
+          })
+          .returning();
+
+        return newCustomer[0] || null;
+      }
+    } catch (error) {
+      console.error('Error syncing customer from ERPNext:', error);
+      return null;
+    }
   }
 
   static async getCustomerByERPNextId(erpnextId: string) {
-    // TODO: Implement with Drizzle
-    
-    return null;
+    try {
+      const customerRows = await db
+        .select()
+        .from(customers)
+        .where(eq(customers.erpnextId, erpnextId))
+        .limit(1);
+
+      return customerRows[0] || null;
+    } catch (error) {
+      console.error('Error getting customer by ERPNext ID:', error);
+      return null;
+    }
   }
 
   // Equipment operations - Implemented with Drizzle
@@ -593,7 +663,9 @@ export class DatabaseService {
     password: string;
   }) {
     try {
-      // TODO: Implement password hashing
+      // Hash password with bcrypt
+      const saltRounds = 12;
+      const hashedPassword = await bcrypt.hash(data.password, saltRounds);
 
       const userRows = await db
         .insert(users)
@@ -601,7 +673,7 @@ export class DatabaseService {
           email: data.email,
           name: data.name || 'Unknown User',
           roleId: data.role || 'USER',
-          password: data.password, // Should be hashed
+          password: hashedPassword,
           isActive: true,
           createdAt: new Date().toISOString().split('T')[0],
           updatedAt: new Date().toISOString().split('T')[0],
@@ -610,7 +682,7 @@ export class DatabaseService {
 
       return userRows[0] || null;
     } catch (error) {
-      
+      console.error('Error creating user:', error);
       return null;
     }
   }
@@ -647,7 +719,17 @@ export class DatabaseService {
 
       return true;
     } catch (error) {
-      
+      console.error('Error deleting user:', error);
+      return false;
+    }
+  }
+
+  // Password verification function for login
+  static async verifyPassword(plainPassword: string, hashedPassword: string): Promise<boolean> {
+    try {
+      return await bcrypt.compare(plainPassword, hashedPassword);
+    } catch (error) {
+      console.error('Error verifying password:', error);
       return false;
     }
   }

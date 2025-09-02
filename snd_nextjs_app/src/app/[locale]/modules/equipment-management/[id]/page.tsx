@@ -60,7 +60,7 @@ export default function EquipmentShowPage() {
   const params = useParams();
   const router = useRouter();
   const { confirmDeleteEquipment } = useDeleteConfirmations();
-  const { user, hasPermission, getAllowedActions } = useRBAC();
+  const { hasPermission } = useRBAC();
   const [equipment, setEquipment] = useState<Equipment | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
@@ -68,7 +68,7 @@ export default function EquipmentShowPage() {
   const equipmentId = params.id as string;
 
   // Get allowed actions for equipment management
-  const allowedActions = getAllowedActions('Equipment');
+  // const allowedActions = getAllowedActions('Equipment');
 
   useEffect(() => {
     if (equipmentId) {
@@ -213,23 +213,23 @@ export default function EquipmentShowPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Basic Information */}
           <Card>
-                          <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Package className="h-5 w-5" />
-                  <span>{t('fields.basicInfo')}</span>
-                </CardTitle>
-              </CardHeader>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Package className="h-5 w-5" />
+                <span>{t('fields.basicInfo')}</span>
+              </CardTitle>
+            </CardHeader>
             <CardContent className="space-y-4">
-                              <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">{t('fields.name')}</Label>
-                    <p className="text-lg font-medium">{equipment.name}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">{t('fields.status')}</Label>
-                    <div className="mt-1">{getStatusBadge(equipment.status)}</div>
-                  </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.name')}</Label>
+                  <p className="text-lg font-medium">{equipment.name}</p>
                 </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('fields.status')}</Label>
+                  <div className="mt-1">{getStatusBadge(equipment.status)}</div>
+                </div>
+              </div>
 
               <Separator />
 
@@ -260,8 +260,6 @@ export default function EquipmentShowPage() {
                   <p className="text-sm">{equipment.manufacturer || t('messages.notSpecified')}</p>
                 </div>
               </div>
-
-
 
               <Separator />
 
@@ -391,9 +389,7 @@ export default function EquipmentShowPage() {
         <EquipmentAssignmentHistory equipmentId={equipment.id} />
 
         {/* Documents */}
-        {console.log('🔍 About to render EquipmentDocumentUpload with equipmentId:', equipment.id)}
         <EquipmentDocumentUpload equipmentId={equipment.id} />
-        {console.log('🔍 EquipmentDocumentUpload component rendered')}
       </div>
     </ProtectedRoute>
   );

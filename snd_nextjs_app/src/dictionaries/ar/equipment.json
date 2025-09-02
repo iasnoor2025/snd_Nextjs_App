@@ -53,9 +53,9 @@
     "total_equipment": "المجموع",
     "expired_istimara": "استمارة منتهية الصلاحية",
     "expiring_soon_istimara": "تنتهي قريباً",
-        "door_number": "رقم الباب",
+    "door_number": "رقم الباب",
     "chassis_number": "رقم الشاسيه"
-   },
+  },
   "actions": {
     "addEquipment": "إضافة معدات",
     "editEquipment": "تعديل المعدات",

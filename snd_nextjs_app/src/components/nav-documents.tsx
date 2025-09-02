@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/hooks/use-i18n';
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -22,6 +23,7 @@ export function NavMain({
     icon?: LucideIcon;
   }[];
 }) {
+  const { t } = useI18n();
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
@@ -32,7 +34,7 @@ export function NavMain({
               className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
             >
               <PlusCircle />
-              <span>Quick Create</span>
+              <span>{t('common.actions.quickCreate')}</span>
             </SidebarMenuButton>
             <Button
               size="icon"
@@ -40,7 +42,7 @@ export function NavMain({
               variant="outline"
             >
               <Mail />
-              <span className="sr-only">Inbox</span>
+              <span className="sr-only">{t('common.actions.inbox')}</span>
             </Button>
           </SidebarMenuItem>
         </SidebarMenu>

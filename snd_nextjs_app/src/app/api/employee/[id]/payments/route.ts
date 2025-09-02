@@ -83,6 +83,7 @@ const getEmployeePaymentsHandler = async (
         payment_date: advancePaymentHistories.paymentDate,
         notes: advancePaymentHistories.notes,
         advance_payment_id: advancePaymentHistories.advancePaymentId,
+        recorded_by: advancePaymentHistories.recordedBy,
       })
       .from(advancePaymentHistories)
       .where(eq(advancePaymentHistories.employeeId, employeeId))
@@ -128,7 +129,7 @@ const getEmployeePaymentsHandler = async (
           amount: Number(payment.amount),
           payment_date: payment.payment_date.slice(0, 10), // YYYY-MM-DD
           notes: payment.notes,
-          recorded_by: 'System', // TODO: Add user lookup
+          recorded_by: payment.recorded_by ? `User ${payment.recorded_by}` : 'System',
           advance_payment_id: payment.advance_payment_id,
         });
 

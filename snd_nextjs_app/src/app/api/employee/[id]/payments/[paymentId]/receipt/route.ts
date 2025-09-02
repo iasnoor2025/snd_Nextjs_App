@@ -66,6 +66,7 @@ const getEmployeePaymentReceiptHandler = async (
         notes: advancePaymentHistories.notes,
         createdAt: advancePaymentHistories.createdAt,
         advancePaymentId: advancePaymentHistories.advancePaymentId,
+        recordedBy: advancePaymentHistories.recordedBy,
         advancePayment: {
           id: advancePayments.id,
           amount: advancePayments.amount,
@@ -143,7 +144,7 @@ const getEmployeePaymentReceiptHandler = async (
             ? payment.paymentDate.slice(0, 10)
             : new Date(payment.paymentDate).toISOString().slice(0, 10), // YYYY-MM-DD
         notes: payment.notes,
-        recorded_by: 'System', // TODO: Add user lookup
+        recorded_by: payment.recordedBy ? `User ${payment.recordedBy}` : 'System',
         created_at:
           typeof payment.createdAt === 'string'
             ? payment.createdAt.slice(0, 19).replace('T', ' ')

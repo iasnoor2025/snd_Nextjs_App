@@ -2,6 +2,7 @@
 
 import { useTranslations } from '@/hooks/use-translations';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/hooks/use-i18n';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,12 +13,13 @@ import { Globe } from 'lucide-react';
 
 export function LanguageSwitcher() {
   const { locale, languages, changeLanguage, isLoading } = useTranslations();
+  const { t } = useI18n();
 
   if (isLoading) {
     return (
       <Button variant="outline" size="sm" disabled>
         <Globe className="h-4 w-4 mr-2" />
-        Loading...
+        {t('common.loading')}
       </Button>
     );
   }
