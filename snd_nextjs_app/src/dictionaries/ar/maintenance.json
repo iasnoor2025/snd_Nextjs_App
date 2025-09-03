@@ -125,5 +125,25 @@
     "allStatus": "جميع الحالات",
     "applyFilters": "تطبيق التصفية",
     "clearFilters": "مسح التصفية"
+  },
+  "dashboard": {
+    "title": "سجلات الصيانة",
+    "subtitle": "عرض وإدارة جميع أنشطة صيانة المعدات",
+    "overdue": "متأخر",
+    "inProgress": "قيد التنفيذ",
+    "scheduled": "مجدول",
+    "totalRecords": "إجمالي السجلات",
+    "searchPlaceholder": "البحث في سجلات الصيانة...",
+    "allTypes": "جميع الأنواع",
+    "allStatuses": "جميع الحالات",
+    "noRecordsFound": "لم يتم العثور على سجلات صيانة تطابق معاييرك",
+    "technician": "الفني",
+    "scheduledDate": "تاريخ الجدولة",
+    "description": "الوصف",
+    "type": "النوع",
+    "equipment": "المعدات",
+    "actions": "الإجراءات",
+    "cost": "التكلفة",
+    "status": "الحالة"
   }
 }

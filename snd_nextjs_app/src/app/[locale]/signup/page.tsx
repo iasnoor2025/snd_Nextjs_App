@@ -11,7 +11,10 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { useI18n } from '@/hooks/use-i18n';
+
 export default function SignUpPage() {
+  const { t } = useI18n();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -40,13 +43,13 @@ export default function SignUpPage() {
       });
 
       if (result?.error) {
-        toast.error('Google sign up failed. Please try again.');
+        toast.error(t('auth.messages.googleSignUpFailed'));
       } else {
-        toast.success('Google sign up successful!');
+        toast.success(t('auth.messages.googleSignUpSuccessful'));
         router.push('/');
       }
     } catch (error) {
-      toast.error('An error occurred during Google sign up');
+      toast.error(t('auth.messages.googleSignUpError'));
     } finally {
       setIsGoogleLoading(false);
     }
@@ -57,12 +60,12 @@ export default function SignUpPage() {
     
     // Basic validation
     if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match');
+      toast.error(t('auth.messages.passwordsDoNotMatch'));
       return;
     }
 
     if (formData.password.length < 6) {
-      toast.error('Password must be at least 6 characters long');
+      toast.error(t('auth.messages.passwordTooShort'));
       return;
     }
 
@@ -86,15 +89,15 @@ export default function SignUpPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to create account');
+        throw new Error(data.error || t('auth.messages.failedToCreateAccount'));
       }
       
-      toast.success('Account created successfully! Please sign in.');
+      toast.success(t('auth.messages.accountCreatedSuccessfully'));
       
       // Redirect to login page
       router.push('/login');
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create account. Please try again.';
+      const errorMessage = error instanceof Error ? error.message : t('auth.messages.failedToCreateAccountRetry');
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -109,15 +112,15 @@ export default function SignUpPage() {
           <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <GalleryVerticalEnd className="size-4" />
           </div>
-          SND Rental Management
+          {t('auth.app_name')}
         </a>
 
         {/* Sign Up Card */}
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Create Account</CardTitle>
+            <CardTitle className="text-2xl">{t('auth.signup.title')}</CardTitle>
             <CardDescription>
-              Sign up for your rental management account
+              {t('auth.signup.subtitle')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -133,7 +136,7 @@ export default function SignUpPage() {
                 {isGoogleLoading ? (
                   <div className="flex items-center gap-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
-                    Signing up with Google...
+                    {t('auth.signup.loading')}
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
@@ -155,7 +158,7 @@ export default function SignUpPage() {
                         d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                       />
                     </svg>
-                    Sign up with Google
+                    {t('auth.signin.signInWithGoogle')}
                   </div>
                 )}
               </Button>
@@ -167,7 +170,7 @@ export default function SignUpPage() {
                 <Separator className="w-full" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                <span className="bg-background px-2 text-muted-foreground">{t('auth.signin.orContinueWith')}</span>
               </div>
             </div>
 
@@ -175,7 +178,7 @@ export default function SignUpPage() {
               {/* Name Fields */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
+                  <Label htmlFor="firstName">{t('auth.signup.firstName')}</Label>
                   <Input
                     id="firstName"
                     name="firstName"
@@ -183,11 +186,11 @@ export default function SignUpPage() {
                     value={formData.firstName}
                     onChange={handleInputChange}
                     required
-                    placeholder="John"
+                    placeholder={t('auth.signup.firstNamePlaceholder')}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
+                  <Label htmlFor="lastName">{t('auth.signup.lastName')}</Label>
                   <Input
                     id="lastName"
                     name="lastName"
@@ -195,14 +198,14 @@ export default function SignUpPage() {
                     value={formData.lastName}
                     onChange={handleInputChange}
                     required
-                    placeholder="Doe"
+                    placeholder={t('auth.signup.lastNamePlaceholder')}
                   />
                 </div>
               </div>
 
               {/* Email */}
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t('auth.signup.email')}</Label>
                 <Input
                   id="email"
                   name="email"
@@ -210,7 +213,7 @@ export default function SignUpPage() {
                   value={formData.email}
                   onChange={handleInputChange}
                   required
-                  placeholder="john@example.com"
+                  placeholder={t('auth.signup.emailPlaceholder')}
                 />
               </div>
 
@@ -218,7 +221,7 @@ export default function SignUpPage() {
 
               {/* Password Fields */}
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t('auth.signup.password')}</Label>
                 <Input
                   id="password"
                   name="password"
@@ -226,12 +229,12 @@ export default function SignUpPage() {
                   value={formData.password}
                   onChange={handleInputChange}
                   required
-                  placeholder="Create a password"
+                  placeholder={t('auth.signup.passwordPlaceholder')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Label htmlFor="confirmPassword">{t('auth.signup.confirmPassword')}</Label>
                 <Input
                   id="confirmPassword"
                   name="confirmPassword"
@@ -239,34 +242,34 @@ export default function SignUpPage() {
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
                   required
-                  placeholder="Confirm your password"
+                  placeholder={t('auth.signup.confirmPasswordPlaceholder')}
                 />
               </div>
 
               {/* Submit Button */}
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Creating Account...' : 'Create Account'}
+                {isLoading ? t('auth.signup.loading') : t('auth.signup.submit')}
               </Button>
             </form>
 
             {/* Back to Login */}
             <div className="mt-6 text-center space-y-2">
               <p className="text-sm text-muted-foreground">
-                Already have an account?{' '}
+                {t('auth.signup.alreadyHaveAccount')}{' '}
                 <button
                   onClick={() => router.push('/login')}
                   className="text-primary hover:underline font-medium"
                 >
-                  Sign in
+                  {t('auth.signup.signIn')}
                 </button>
               </p>
               <p className="text-sm text-muted-foreground">
-                Forgot your password?{' '}
+                {t('auth.signup.forgotPassword')}{' '}
                 <button
                   onClick={() => router.push('/forgot-password')}
                   className="text-primary hover:underline font-medium"
                 >
-                  Reset it here
+                  {t('auth.signup.resetItHere')}
                 </button>
               </p>
             </div>

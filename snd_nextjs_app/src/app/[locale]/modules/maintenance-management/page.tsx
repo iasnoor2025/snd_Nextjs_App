@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useRBAC } from '@/lib/rbac/rbac-context';
-import { Calendar, Plus, Search, Wrench, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { Calendar, Plus, Search, Wrench, AlertTriangle, Clock } from 'lucide-react';
 import ApiService from '@/lib/api-service';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
@@ -46,7 +46,7 @@ interface MaintenanceRecord {
 }
 
 export default function MaintenanceManagementPage() {
-  const { user, hasPermission, getAllowedActions } = useRBAC();
+  const { hasPermission } = useRBAC();
   const { t } = useI18n();
   const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
   const [loading, setLoading] = useState(false);
@@ -60,7 +60,7 @@ export default function MaintenanceManagementPage() {
   const [equipmentList, setEquipmentList] = useState<Array<{ id: number; name: string; doorNumber?: string }>>([]);
   const [formData, setFormData] = useState({
     equipment_id: '',
-    type: 'corrective' as const,
+    type: 'corrective' as 'scheduled' | 'corrective' | 'emergency' | 'inspection',
     title: 'Maintenance',
     description: '',
     scheduled_date: '',
@@ -70,7 +70,7 @@ export default function MaintenanceManagementPage() {
   });
 
   // Get allowed actions for maintenance management
-  const allowedActions = getAllowedActions('Maintenance');
+  // const allowedActions = getAllowedActions('Maintenance');
 
   useEffect(() => {
     fetchMaintenanceRecords();
@@ -111,7 +111,7 @@ export default function MaintenanceManagementPage() {
     e.preventDefault();
 
     if (!formData.equipment_id || !formData.description || !formData.scheduled_date) {
-      toast.error('Please fill in all required fields');
+      toast.error(t('maintenance.validation.validationError'));
       return;
     }
 
@@ -125,7 +125,7 @@ export default function MaintenanceManagementPage() {
       });
       
       if (response.success) {
-        toast.success('Maintenance record created successfully');
+        toast.success(t('maintenance.messages.createSuccess'));
         setIsCreateDialogOpen(false);
         setFormData({
           equipment_id: '',
@@ -139,11 +139,11 @@ export default function MaintenanceManagementPage() {
         });
         fetchMaintenanceRecords();
       } else {
-        toast.error(response.message || 'Failed to create maintenance record');
+        toast.error(response.message || t('maintenance.messages.createError'));
       }
     } catch (error) {
       console.error('Error creating maintenance record:', error);
-      toast.error('Failed to create maintenance record');
+      toast.error(t('maintenance.messages.createError'));
     } finally {
       setLoading(false);
     }
@@ -183,7 +183,7 @@ export default function MaintenanceManagementPage() {
       setSelectedMaintenance(maintenance);
       setFormData({
         equipment_id: maintenance.equipment_id.toString(),
-        type: maintenance.type as any,
+        type: maintenance.type as 'scheduled' | 'corrective' | 'emergency' | 'inspection',
         title: maintenance.title,
         description: maintenance.description,
         scheduled_date: maintenance.scheduled_date,
@@ -196,7 +196,7 @@ export default function MaintenanceManagementPage() {
   };
 
   const handleDeleteMaintenance = async (id: number) => {
-    if (confirm('Are you sure you want to delete this maintenance record?')) {
+    if (confirm(t('common.messages.deleteConfirm'))) {
       try {
         setLoading(true);
         console.log(`Attempting to delete maintenance record with ID: ${id}`);
@@ -205,10 +205,10 @@ export default function MaintenanceManagementPage() {
         console.log('Delete response:', response);
         
         if (response.success) {
-          toast.success('Maintenance record deleted successfully');
+          toast.success(t('maintenance.messages.deleteSuccess'));
           fetchMaintenanceRecords();
         } else {
-          toast.error(response.message || 'Failed to delete maintenance record');
+          toast.error(response.message || t('maintenance.messages.deleteError'));
         }
       } catch (error) {
         console.error('Error deleting maintenance record:', error);
@@ -216,16 +216,16 @@ export default function MaintenanceManagementPage() {
         // Handle specific error types
         if (error instanceof Error) {
           if (error.message.includes('403')) {
-            toast.error('Access denied: You do not have permission to delete maintenance records');
+            toast.error(t('maintenance.messages.accessDenied'));
           } else if (error.message.includes('404')) {
-            toast.error('Maintenance record not found');
+            toast.error(t('maintenance.messages.maintenanceNotFound'));
           } else if (error.message.includes('500')) {
-            toast.error('Server error: Please try again later');
+            toast.error(t('maintenance.messages.errorGeneral'));
           } else {
-            toast.error(`Failed to delete maintenance record: ${error.message}`);
+            toast.error(t('maintenance.messages.deleteError'));
           }
         } else {
-          toast.error('Failed to delete maintenance record');
+          toast.error(t('maintenance.messages.deleteError'));
         }
       } finally {
         setLoading(false);
@@ -239,7 +239,7 @@ export default function MaintenanceManagementPage() {
     if (!selectedMaintenance) return;
 
     if (!formData.equipment_id || !formData.description || !formData.scheduled_date) {
-      toast.error('Please fill in all required fields');
+      toast.error(t('maintenance.validation.validationError'));
       return;
     }
 
@@ -253,16 +253,16 @@ export default function MaintenanceManagementPage() {
       });
       
       if (response.success) {
-        toast.success('Maintenance record updated successfully');
+        toast.success(t('maintenance.messages.updateSuccess'));
         setIsEditDialogOpen(false);
         setSelectedMaintenance(null);
         fetchMaintenanceRecords();
       } else {
-        toast.error(response.message || 'Failed to update maintenance record');
+        toast.error(response.message || t('maintenance.messages.updateError'));
       }
     } catch (error) {
       console.error('Error updating maintenance record:', error);
-      toast.error('Failed to update maintenance record');
+      toast.error(t('maintenance.messages.updateError'));
     } finally {
       setLoading(false);
     }
@@ -292,21 +292,21 @@ export default function MaintenanceManagementPage() {
       <div className="container mx-auto p-6 space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">{t('maintenance:title')}</h1>
-            <p className="text-muted-foreground">{t('maintenance:subtitle')}</p>
+            <h1 className="text-3xl font-bold">{t('maintenance.title')}</h1>
+            <p className="text-muted-foreground">{t('maintenance.subtitle')}</p>
           </div>
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                {t('maintenance:actions.scheduleMaintenance')}
+                {t('maintenance.actions.scheduleMaintenance')} +
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>{t('maintenance:actions.scheduleMaintenance')}</DialogTitle>
+                <DialogTitle>{t('maintenance.actions.scheduleMaintenance')}</DialogTitle>
                 <DialogDescription>
-                  {t('maintenance:create.description')}
+                  {t('maintenance.create.description')}
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleCreateMaintenance} className="space-y-4">
@@ -338,8 +338,8 @@ export default function MaintenanceManagementPage() {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="type">{t('maintenance:fields.type')} *</Label>
-                    <Select value={formData.type} onValueChange={(value: any) => setFormData({ ...formData, type: value })}>
+                    <Label htmlFor="type">{t('maintenance.fields.type')} *</Label>
+                    <Select value={formData.type} onValueChange={(value: string) => setFormData({ ...formData, type: value as 'scheduled' | 'corrective' | 'emergency' | 'inspection' })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -502,7 +502,7 @@ export default function MaintenanceManagementPage() {
                 </div>
 
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Status</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('maintenance.fields.status')}</Label>
                   <Badge variant={getStatusColor(selectedMaintenance.status)}>
                     {selectedMaintenance.status.replace('_', ' ')}
                   </Badge>
@@ -511,7 +511,7 @@ export default function MaintenanceManagementPage() {
             )}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsViewDialogOpen(false)}>
-                Close
+                {t('common.actions.close')}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -521,21 +521,21 @@ export default function MaintenanceManagementPage() {
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Edit Maintenance</DialogTitle>
+              <DialogTitle>{t('maintenance.actions.editMaintenance')}</DialogTitle>
               <DialogDescription>
-                Update maintenance record information
+                {t('maintenance.create.description')}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleUpdateMaintenance} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="edit_equipment_id">Equipment *</Label>
+                  <Label htmlFor="edit_equipment_id">{t('maintenance.fields.equipment')} *</Label>
                   <Select
                     value={formData.equipment_id}
                     onValueChange={(value: string) => setFormData({ ...formData, equipment_id: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select equipment" />
+                      <SelectValue placeholder={t('maintenance.fields.selectEquipment')} />
                     </SelectTrigger>
                     <SelectContent>
                       {equipmentList.map(equipment => (
@@ -555,45 +555,45 @@ export default function MaintenanceManagementPage() {
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="edit_type">Maintenance Type *</Label>
-                  <Select value={formData.type} onValueChange={(value: any) => setFormData({ ...formData, type: value })}>
+                  <Label htmlFor="edit_type">{t('maintenance.fields.type')} *</Label>
+                  <Select value={formData.type} onValueChange={(value: string) => setFormData({ ...formData, type: value as 'scheduled' | 'corrective' | 'emergency' | 'inspection' })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="scheduled">Scheduled</SelectItem>
-                      <SelectItem value="corrective">Corrective</SelectItem>
-                      <SelectItem value="emergency">Emergency</SelectItem>
-                      <SelectItem value="inspection">Inspection</SelectItem>
+                      <SelectItem value="scheduled">{t('maintenance.types.scheduled')}</SelectItem>
+                      <SelectItem value="corrective">{t('maintenance.types.corrective')}</SelectItem>
+                      <SelectItem value="emergency">{t('maintenance.types.emergency')}</SelectItem>
+                      <SelectItem value="inspection">{t('maintenance.types.inspection')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               
               <div>
-                <Label htmlFor="edit_title">Title *</Label>
+                <Label htmlFor="edit_title">{t('maintenance.fields.title')} *</Label>
                 <Input
                   id="edit_title"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Maintenance title"
+                  placeholder={t('maintenance.fields.titlePlaceholder')}
                   required
                 />
               </div>
               <div>
-                <Label htmlFor="edit_description">Description</Label>
+                <Label htmlFor="edit_description">{t('maintenance.fields.description')}</Label>
                 <Textarea
                   id="edit_description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Describe the maintenance work needed"
+                  placeholder={t('maintenance.fields.descriptionPlaceholder')}
                   rows={3}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="edit_scheduled_date">Scheduled Date *</Label>
+                  <Label htmlFor="edit_scheduled_date">{t('maintenance.fields.scheduledDate')} *</Label>
                   <Input
                     id="edit_scheduled_date"
                     type="date"
@@ -603,7 +603,7 @@ export default function MaintenanceManagementPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_due_date">Due Date</Label>
+                  <Label htmlFor="edit_due_date">{t('maintenance.fields.dueDate')}</Label>
                   <Input
                     id="edit_due_date"
                     type="date"
@@ -618,13 +618,13 @@ export default function MaintenanceManagementPage() {
                   <EmployeeDropdown
                     value={formData.assigned_to_employee_id}
                     onValueChange={(value: string) => setFormData({ ...formData, assigned_to_employee_id: value })}
-                    label="Assigned Employee"
-                    placeholder="Select employee (optional)"
+                    label={t('maintenance.fields.assignedTo')}
+                    placeholder={t('maintenance.fields.selectEmployee')}
                     required={false}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_cost">Estimated Cost</Label>
+                  <Label htmlFor="edit_cost">{t('maintenance.fields.cost')}</Label>
                   <Input
                     id="edit_cost"
                     type="number"
@@ -637,10 +637,10 @@ export default function MaintenanceManagementPage() {
 
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                  Cancel
+                  {t('common.actions.cancel')}
                 </Button>
                 <Button type="submit" disabled={loading}>
-                  {loading ? 'Updating...' : 'Update Maintenance'}
+                  {loading ? t('maintenance.messages.saving') : t('maintenance.actions.update')}
                 </Button>
               </DialogFooter>
             </form>
@@ -651,7 +651,7 @@ export default function MaintenanceManagementPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Records</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('maintenance.dashboard.totalRecords')}</CardTitle>
               <Wrench className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -661,7 +661,7 @@ export default function MaintenanceManagementPage() {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Scheduled</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('maintenance.dashboard.scheduled')}</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -671,7 +671,7 @@ export default function MaintenanceManagementPage() {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('maintenance.dashboard.inProgress')}</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -681,7 +681,7 @@ export default function MaintenanceManagementPage() {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Overdue</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('maintenance.dashboard.overdue')}</CardTitle>
               <AlertTriangle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -693,15 +693,15 @@ export default function MaintenanceManagementPage() {
         {/* Filters */}
         <Card>
           <CardHeader>
-            <CardTitle>Maintenance Records</CardTitle>
-            <CardDescription>View and manage all equipment maintenance activities</CardDescription>
+            <CardTitle>{t('maintenance.dashboard.title')}</CardTitle>
+            <CardDescription>{t('maintenance.dashboard.subtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col sm:flex-row gap-4 mb-4">
               <div className="flex-1">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search maintenance records..."
+                  placeholder={t('maintenance.dashboard.searchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-8"
@@ -712,11 +712,11 @@ export default function MaintenanceManagementPage() {
                   <SelectValue placeholder="Filter by type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="scheduled">Scheduled</SelectItem>
-                  <SelectItem value="corrective">Corrective</SelectItem>
-                  <SelectItem value="emergency">Emergency</SelectItem>
-                  <SelectItem value="inspection">Inspection</SelectItem>
+                  <SelectItem value="all">{t('maintenance.dashboard.allTypes')}</SelectItem>
+                  <SelectItem value="scheduled">{t('maintenance.types.scheduled')}</SelectItem>
+                  <SelectItem value="corrective">{t('maintenance.types.corrective')}</SelectItem>
+                  <SelectItem value="emergency">{t('maintenance.types.emergency')}</SelectItem>
+                  <SelectItem value="inspection">{t('maintenance.types.inspection')}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -724,29 +724,29 @@ export default function MaintenanceManagementPage() {
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="open">Open</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="overdue">Overdue</SelectItem>
+                  <SelectItem value="all">{t('maintenance.dashboard.allStatuses')}</SelectItem>
+                  <SelectItem value="open">{t('maintenance.status.open')}</SelectItem>
+                  <SelectItem value="in_progress">{t('maintenance.status.in_progress')}</SelectItem>
+                  <SelectItem value="completed">{t('maintenance.status.completed')}</SelectItem>
+                  <SelectItem value="overdue">{t('maintenance.status.overdue')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {loading ? (
-              <div className="text-center py-8">Loading maintenance records...</div>
+              <div className="text-center py-8">{t('maintenance.messages.loading')}</div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Equipment</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Scheduled Date</TableHead>
-                    <TableHead>Technician</TableHead>
-                    <TableHead>Cost</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>{t('maintenance.dashboard.equipment')}</TableHead>
+                    <TableHead>{t('maintenance.dashboard.type')}</TableHead>
+                    <TableHead>{t('maintenance.dashboard.description')}</TableHead>
+                    <TableHead>{t('maintenance.dashboard.status')}</TableHead>
+                    <TableHead>{t('maintenance.dashboard.scheduledDate')}</TableHead>
+                    <TableHead>{t('maintenance.dashboard.technician')}</TableHead>
+                    <TableHead>{t('maintenance.dashboard.cost')}</TableHead>
+                    <TableHead>{t('maintenance.dashboard.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -783,7 +783,7 @@ export default function MaintenanceManagementPage() {
                             size="sm"
                             onClick={() => handleViewMaintenance(record.id)}
                           >
-                            View
+                            {t('maintenance.actions.viewMaintenance')}
                           </Button>
                           {hasPermission('update', 'Maintenance') && (
                             <Button
@@ -791,7 +791,7 @@ export default function MaintenanceManagementPage() {
                               size="sm"
                               onClick={() => handleEditMaintenance(record.id)}
                             >
-                              Edit
+                              {t('maintenance.actions.editMaintenance')}
                             </Button>
                           )}
                           {hasPermission('delete', 'Maintenance') && (
@@ -800,7 +800,7 @@ export default function MaintenanceManagementPage() {
                               size="sm"
                               onClick={() => handleDeleteMaintenance(record.id)}
                             >
-                              Delete
+                              {t('maintenance.actions.deleteMaintenance')}
                             </Button>
                           )}
                         </div>
@@ -813,7 +813,7 @@ export default function MaintenanceManagementPage() {
 
             {filteredRecords.length === 0 && !loading && (
               <div className="text-center py-8 text-muted-foreground">
-                No maintenance records found matching your criteria
+                {t('maintenance.dashboard.noRecordsFound')}
               </div>
             )}
           </CardContent>

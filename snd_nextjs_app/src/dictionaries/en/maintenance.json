@@ -125,5 +125,25 @@
     "allStatus": "All Status",
     "applyFilters": "Apply Filters",
     "clearFilters": "Clear Filters"
+  },
+  "dashboard": {
+    "title": "Maintenance Records",
+    "subtitle": "View and manage all equipment maintenance activities",
+    "overdue": "Overdue",
+    "inProgress": "In Progress",
+    "scheduled": "Scheduled",
+    "totalRecords": "Total Records",
+    "searchPlaceholder": "Search maintenance records...",
+    "allTypes": "All Types",
+    "allStatuses": "All Statuses",
+    "noRecordsFound": "No maintenance records found matching your criteria",
+    "technician": "Technician",
+    "scheduledDate": "Scheduled Date",
+    "description": "Description",
+    "type": "Type",
+    "equipment": "Equipment",
+    "actions": "Actions",
+    "cost": "Cost",
+    "status": "Status"
   }
 }
