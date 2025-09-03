@@ -402,9 +402,10 @@ export class RentalService {
       startDate = new Date();
     }
     
-    // Set default start date if not provided (required by database)
+    // For pending rentals, set a placeholder date that will be updated when status becomes active
     if (!startDate) {
-      startDate = new Date();
+      // Set to a far future date to indicate "not started yet"
+      startDate = new Date('2099-12-31');
     }
 
     const [rental] = await db

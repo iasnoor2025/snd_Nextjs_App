@@ -2,6 +2,13 @@
   "title": "إدارة الإيجارات",
   "subtitle": "إدارة عقود الإيجار والمعدات",
   "description": "إدارة جميع عقود الإيجار والمعدات والمدفوعات",
+  "dashboard": {
+    "title": "إدارة الإيجارات",
+    "description": "إدارة عقود الإيجار والمعدات",
+    "filterTitle": "المرشحات",
+    "showFilters": "إظهار المرشحات",
+    "noRentalsFound": "لم يتم العثور على إيجارات"
+  },
   "rentalManagement": "إدارة الإيجارات",
   "manageEquipmentRentals": "إدارة عقود الإيجار والمعدات",
   "newRental": "إيجار جديد",
@@ -158,6 +165,19 @@
     "reject": "رفض",
     "manage": "إدارة"
   },
+  "table": {
+    "headers": {
+      "rentalNumber": "رقم الإيجار",
+      "customer": "العميل",
+      "supervisor": "المشرف",
+      "startDate": "تاريخ البدء",
+      "endDate": "تاريخ الانتهاء",
+      "status": "الحالة",
+      "paymentStatus": "حالة الدفع",
+      "totalAmount": "المبلغ الإجمالي",
+      "actions": "الإجراءات"
+    }
+  },
   "administration": {
     "title": "الإدارة",
     "subtitle": "خيارات إدارة الإيجار المتقدمة"
@@ -216,6 +236,6 @@
   "hourly": "ساعي",
   "inactive": "غير نشط",
       "maintenance": "صيانة",
-    "status": "الحالة",
-    "actions": "الإجراءات"
+    "notStarted": "لم يبدأ بعد",
+    "status": "الحالة"
   }

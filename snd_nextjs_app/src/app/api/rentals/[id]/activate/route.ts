@@ -25,6 +25,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       .update(rentals)
       .set({
         status: 'active',
+        startDate: new Date().toISOString().split('T')[0], // Set startDate when activated
       })
       .where(eq(rentals.id, parseInt(id)))
       .returning();

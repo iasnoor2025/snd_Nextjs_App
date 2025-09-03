@@ -1440,9 +1440,15 @@ export default function RentalDetailPage() {
                     <div>
                       <Label className="text-sm font-medium">{t('rental.fields.startDate')}</Label>
                       <p className="text-sm text-muted-foreground">
-                        {rental.startDate && !isNaN(new Date(rental.startDate).getTime())
-                          ? format(new Date(rental.startDate), 'MMM dd, yyyy')
-                          : 'N/A'}
+                        {rental.startDate && !isNaN(new Date(rental.startDate).getTime()) ? (
+                          new Date(rental.startDate).getFullYear() === 2099 ? (
+                            t('rental.notStarted')
+                          ) : (
+                            format(new Date(rental.startDate), 'MMM dd, yyyy')
+                          )
+                        ) : (
+                          'N/A'
+                        )}
                       </p>
                     </div>
                     <div>

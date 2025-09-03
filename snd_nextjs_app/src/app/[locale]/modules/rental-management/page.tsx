@@ -678,9 +678,17 @@ export default function RentalManagementPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {rental.startDate && !isNaN(new Date(rental.startDate).getTime())
-                        ? format(new Date(rental.startDate), 'MMM dd, yyyy')
-                        : t('rental.na')}
+                      {rental.startDate && !isNaN(new Date(rental.startDate).getTime()) ? (
+                        new Date(rental.startDate).getFullYear() === 2099 ? (
+                          <span className="text-muted-foreground text-sm">
+                            {t('rental.notStarted')}
+                          </span>
+                        ) : (
+                          format(new Date(rental.startDate), 'MMM dd, yyyy')
+                        )
+                      ) : (
+                        t('rental.na')
+                      )}
                     </TableCell>
                     <TableCell>
                       {rental.expectedEndDate && !isNaN(new Date(rental.expectedEndDate).getTime())

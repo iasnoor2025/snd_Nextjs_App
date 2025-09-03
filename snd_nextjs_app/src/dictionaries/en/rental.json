@@ -2,6 +2,13 @@
   "title": "Rental Management",
   "subtitle": "Manage equipment rentals and contracts",
   "description": "Track and manage rental agreements, equipment assignments, and customer contracts",
+  "dashboard": {
+    "title": "Rental Management",
+    "description": "Manage equipment rentals and contracts",
+    "filterTitle": "Filters",
+    "showFilters": "Show Filters",
+    "noRentalsFound": "No rentals found"
+  },
   "rentalManagement": "Rental Management",
   "manageEquipmentRentals": "Manage equipment rentals and contracts",
   "newRental": "New Rental",
@@ -158,6 +165,19 @@
     "reject": "Reject",
     "manage": "Manage"
   },
+  "table": {
+    "headers": {
+      "rentalNumber": "Rental Number",
+      "customer": "Customer",
+      "supervisor": "Supervisor",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "status": "Status",
+      "paymentStatus": "Payment Status",
+      "totalAmount": "Total Amount",
+      "actions": "Actions"
+    }
+  },
   "administration": {
     "title": "Administration",
     "subtitle": "Advanced rental management options"
@@ -216,6 +236,6 @@
   "hourly": "Hourly",
   "inactive": "Inactive",
   "maintenance": "Maintenance",
-  "status": "Status",
-  "actions": "Actions"
+  "notStarted": "Not Started",
+  "status": "Status"
 }
