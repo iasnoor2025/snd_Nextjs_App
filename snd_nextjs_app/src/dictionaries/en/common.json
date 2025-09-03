@@ -18,6 +18,7 @@
   },
   "actions": {
     "create": "Create",
+    "createRental": "Create Rental",
     "edit": "Edit",
     "delete": "Delete",
     "save": "Save",
@@ -70,6 +71,8 @@
     "actions": "Actions",
     "description": "Description",
     "notes": "Notes",
+    "selectCustomer": "Select Customer",
+    "createRental": "Create Rental",
     "na": "N/A"
   },
   "messages": {

@@ -69,6 +69,8 @@ import {
   getTranslatedName,
 } from '@/lib/translation-utils';
 import { useDeleteConfirmations } from '@/lib/utils/confirmation-utils';
+import { SearchableSelect } from '@/components/ui/searchable-select';
+import { cn } from '@/lib/utils';
 
 
 interface RentalItem {
@@ -151,14 +153,7 @@ export default function RentalManagementPage() {
   const [formData, setFormData] = useState({
     customerId: '',
     rentalNumber: '',
-    startDate: '',
     expectedEndDate: '',
-    depositAmount: '',
-    paymentTermsDays: '30',
-    hasTimesheet: false,
-    hasOperators: false,
-    status: 'pending',
-    paymentStatus: 'pending',
     supervisor: '',
     notes: '',
     rentalItems: [] as RentalItem[],
@@ -169,6 +164,9 @@ export default function RentalManagementPage() {
     tax: 0,
     finalAmount: 0,
   });
+  const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [customerSearchTerm, setCustomerSearchTerm] = useState('');
 
   // Get allowed actions for rental management
   const allowedActions = getAllowedActions('Rental');
@@ -189,18 +187,18 @@ export default function RentalManagementPage() {
   // Get status badge color
   const getStatusBadge = (status?: string) => {
     if (!status) {
-      return <Badge variant="outline">{t('unknown')}</Badge>;
+      return <Badge variant="outline">{t('rental.unknown')}</Badge>;
     }
 
     switch (status.toLowerCase()) {
       case 'pending':
-        return <Badge variant="secondary">{t('pending')}</Badge>;
+        return <Badge variant="secondary">{t('rental.pending')}</Badge>;
       case 'active':
-        return <Badge variant="default">{t('active')}</Badge>;
+        return <Badge variant="default">{t('rental.active')}</Badge>;
       case 'completed':
-        return <Badge variant="default">{t('completed')}</Badge>;
+        return <Badge variant="default">{t('rental.completed')}</Badge>;
       case 'cancelled':
-        return <Badge variant="destructive">{t('cancelled')}</Badge>;
+        return <Badge variant="destructive">{t('rental.cancelled')}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -209,18 +207,18 @@ export default function RentalManagementPage() {
   // Get payment status badge
   const getPaymentStatusBadge = (status?: string) => {
     if (!status) {
-      return <Badge variant="outline">{t('unknown')}</Badge>;
+      return <Badge variant="outline">{t('rental.unknown')}</Badge>;
     }
 
     switch (status.toLowerCase()) {
       case 'pending':
-        return <Badge variant="secondary">{t('pending')}</Badge>;
+        return <Badge variant="secondary">{t('rental.pending')}</Badge>;
       case 'partial':
-        return <Badge variant="default">{t('partial')}</Badge>;
+        return <Badge variant="default">{t('rental.partial')}</Badge>;
       case 'paid':
-        return <Badge variant="default">{t('paid')}</Badge>;
+        return <Badge variant="default">{t('rental.paid')}</Badge>;
       case 'overdue':
-        return <Badge variant="destructive">{t('overdue')}</Badge>;
+        return <Badge variant="destructive">{t('rental.overdue')}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -239,7 +237,7 @@ export default function RentalManagementPage() {
 
       const response = await fetch(`/api/rentals?${queryParams.toString()}`);
       if (!response.ok) {
-        throw new Error('Failed to fetch rentals');
+        throw new Error(t('rental.messages.fetchError'));
       }
       const data = await response.json();
       
@@ -254,8 +252,8 @@ export default function RentalManagementPage() {
       
       setRentals(rentalsWithCalculatedTotals);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      toast.error('Failed to fetch rentals');
+      setError(err instanceof Error ? err.message : t('rental.messages.generalError'));
+      toast.error(t('rental.messages.fetchError'));
       setRentals([]); // Ensure rentals is always an array
     } finally {
       setLoading(false);
@@ -299,8 +297,30 @@ export default function RentalManagementPage() {
     };
   };
 
+  // Validate form
+  const validateForm = () => {
+    const errors: {[key: string]: string} = {};
+    
+    if (!formData.customerId) {
+      errors.customerId = t('rental.validation.customerRequired');
+    }
+    
+    if (!formData.rentalNumber) {
+      errors.rentalNumber = t('rental.validation.rentalNumberRequired');
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   // Create rental
   const createRental = async () => {
+    if (!validateForm()) {
+      toast.error(t('rental.validation.fixErrors'));
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
       // Calculate financial fields
       const financials = calculateFinancials(formData.rentalItems);
@@ -311,9 +331,6 @@ export default function RentalManagementPage() {
         body: JSON.stringify({
           ...formData,
           ...financials,
-          depositAmount: parseFloat(formData.depositAmount) || 0,
-          paymentTermsDays: parseInt(formData.paymentTermsDays),
-          startDate: new Date(formData.startDate).toISOString(),
           expectedEndDate: formData.expectedEndDate
             ? new Date(formData.expectedEndDate).toISOString()
             : null,
@@ -321,15 +338,18 @@ export default function RentalManagementPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create rental');
+        const errorData = await response.json();
+        throw new Error(errorData.error || t('rental.messages.createError'));
       }
 
-      toast.success('Rental created successfully');
+      toast.success(t('rental.messages.createSuccess'));
       setIsCreateDialogOpen(false);
       resetForm();
       fetchRentals();
     } catch (err) {
-      toast.error('Failed to create rental');
+      toast.error(err instanceof Error ? err.message : t('rental.messages.createError'));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -347,9 +367,6 @@ export default function RentalManagementPage() {
         body: JSON.stringify({
           ...formData,
           ...financials,
-          depositAmount: parseFloat(formData.depositAmount) || 0,
-          paymentTermsDays: parseInt(formData.paymentTermsDays),
-          startDate: new Date(formData.startDate).toISOString(),
           expectedEndDate: formData.expectedEndDate
             ? new Date(formData.expectedEndDate).toISOString()
             : null,
@@ -358,15 +375,15 @@ export default function RentalManagementPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update rental');
+        throw new Error(t('rental.messages.updateError'));
       }
 
-      toast.success('Rental updated successfully');
+      toast.success(t('rental.messages.updateSuccess'));
       setIsEditDialogOpen(false);
       resetForm();
       fetchRentals();
     } catch (err) {
-      toast.error('Failed to update rental');
+      toast.error(t('rental.messages.updateError'));
     }
   };
 
@@ -380,13 +397,13 @@ export default function RentalManagementPage() {
         });
 
         if (!response.ok) {
-          throw new Error('Failed to delete rental');
+          throw new Error(t('rental.messages.deleteError'));
         }
 
-        toast.success('Rental deleted successfully');
+        toast.success(t('rental.messages.deleteSuccess'));
         fetchRentals();
       } catch (err) {
-        toast.error('Failed to delete rental');
+        toast.error(t('rental.messages.deleteError'));
       }
     }
   };
@@ -396,14 +413,7 @@ export default function RentalManagementPage() {
     setFormData({
       customerId: '',
       rentalNumber: '',
-      startDate: '',
       expectedEndDate: '',
-      depositAmount: '',
-      paymentTermsDays: '30',
-      hasTimesheet: false,
-      hasOperators: false,
-      status: 'pending',
-      paymentStatus: 'pending',
       supervisor: '',
       notes: '',
       rentalItems: [],
@@ -495,7 +505,7 @@ export default function RentalManagementPage() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">{t('loading')}</p>
+            <p className="text-muted-foreground">{t('rental.messages.loading')}</p>
           </div>
         </div>
       </ProtectedRoute>
@@ -508,21 +518,21 @@ export default function RentalManagementPage() {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">{t('title')}</h1>
-            <p className="text-muted-foreground">{t('description')}</p>
+            <h1 className="text-3xl font-bold">{t('rental.dashboard.title')}</h1>
+            <p className="text-muted-foreground">{t('rental.dashboard.description')}</p>
           </div>
           <div className="flex items-center gap-2">
             <PermissionContent action="export" subject="Rental">
               <Button variant="outline">
                 <Download className="h-4 w-4 mr-2" />
-                {t('actions.export')}
+                {t('rental.actions.export')}
               </Button>
             </PermissionContent>
 
             <PermissionContent action="create" subject="Rental">
               <Button onClick={() => setIsCreateDialogOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
-                {t('actions.add')}
+                {t('rental.actions.add')}
               </Button>
             </PermissionContent>
           </div>
@@ -532,10 +542,10 @@ export default function RentalManagementPage() {
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">
-              <CardTitle>{t('filterTitle')}</CardTitle>
+              <CardTitle>{t('rental.dashboard.filterTitle')}</CardTitle>
               <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}>
                 <Filter className="w-4 h-4 mr-2" />
-                {showFilters ? t('hideFilters') : t('showFilters')}
+                {showFilters ? t('rental.hideFilters') : t('rental.dashboard.showFilters')}
               </Button>
             </div>
           </CardHeader>
@@ -620,22 +630,22 @@ export default function RentalManagementPage() {
         {/* Rentals Table */}
         <Card>
           <CardHeader>
-            <CardTitle>{t('title')}</CardTitle>
-            <CardDescription>{t('description')}</CardDescription>
+            <CardTitle>{t('rental.dashboard.title')}</CardTitle>
+            <CardDescription>{t('rental.dashboard.description')}</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('table.headers.rentalNumber')}</TableHead>
-                  <TableHead>{t('table.headers.customer')}</TableHead>
-                  <TableHead>{t('table.headers.supervisor')}</TableHead>
-                  <TableHead>{t('table.headers.startDate')}</TableHead>
-                  <TableHead>{t('table.headers.endDate')}</TableHead>
-                  <TableHead>{t('table.headers.status')}</TableHead>
-                  <TableHead>{t('table.headers.paymentStatus')}</TableHead>
-                  <TableHead>{t('table.headers.totalAmount')}</TableHead>
-                  <TableHead>{t('table.headers.actions')}</TableHead>
+                  <TableHead>{t('rental.table.headers.rentalNumber')}</TableHead>
+                  <TableHead>{t('rental.table.headers.customer')}</TableHead>
+                  <TableHead>{t('rental.table.headers.supervisor')}</TableHead>
+                  <TableHead>{t('rental.table.headers.startDate')}</TableHead>
+                  <TableHead>{t('rental.table.headers.endDate')}</TableHead>
+                  <TableHead>{t('rental.table.headers.status')}</TableHead>
+                  <TableHead>{t('rental.table.headers.paymentStatus')}</TableHead>
+                  <TableHead>{t('rental.table.headers.totalAmount')}</TableHead>
+                  <TableHead>{t('rental.table.headers.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -663,19 +673,19 @@ export default function RentalManagementPage() {
                         </span>
                       ) : (
                         <span className="text-muted-foreground text-sm">
-                          {t('na')}
+                          {t('rental.na')}
                         </span>
                       )}
                     </TableCell>
                     <TableCell>
                       {rental.startDate && !isNaN(new Date(rental.startDate).getTime())
                         ? format(new Date(rental.startDate), 'MMM dd, yyyy')
-                        : t('na')}
+                        : t('rental.na')}
                     </TableCell>
                     <TableCell>
                       {rental.expectedEndDate && !isNaN(new Date(rental.expectedEndDate).getTime())
                         ? format(new Date(rental.expectedEndDate), 'MMM dd, yyyy')
-                        : t('na')}
+                        : t('rental.na')}
                     </TableCell>
                     <TableCell>{getStatusBadge(rental.status)}</TableCell>
                     <TableCell>{getPaymentStatusBadge(rental.paymentStatus)}</TableCell>
@@ -720,7 +730,7 @@ export default function RentalManagementPage() {
               </TableBody>
             </Table>
             {(rentals || []).length === 0 && (
-              <div className="text-center py-8 text-muted-foreground">{t('noRentalsFound')}</div>
+              <div className="text-center py-8 text-muted-foreground">{t('rental.dashboard.noRentalsFound')}</div>
             )}
           </CardContent>
         </Card>
@@ -729,47 +739,61 @@ export default function RentalManagementPage() {
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>{t('createNewRental')}</DialogTitle>
-              <DialogDescription>{t('createEquipmentRentalContract')}</DialogDescription>
+              <DialogTitle>{t('rental.createNewRental')}</DialogTitle>
+              <DialogDescription>{t('rental.createEquipmentRentalContract')}</DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="rentalNumber">{t('rentalNumber')}</Label>
-                <Input
-                  id="rentalNumber"
-                  value={formData.rentalNumber}
-                  onChange={e => setFormData(prev => ({ ...prev, rentalNumber: e.target.value }))}
-                />
+                        <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="rentalNumber" className={cn("text-sm font-medium", formErrors.rentalNumber && "text-red-500")}>
+                    {t('rental.fields.rentalNumber')} *
+                  </Label>
+                  <Input
+                    id="rentalNumber"
+                    value={formData.rentalNumber}
+                    onChange={e => {
+                      setFormData(prev => ({ ...prev, rentalNumber: e.target.value }));
+                      setFormErrors(prev => ({ ...prev, rentalNumber: '' }));
+                    }}
+                    className={cn(formErrors.rentalNumber && "border-red-500 focus:border-red-500")}
+                    readOnly
+                  />
+                  {formErrors.rentalNumber && (
+                    <p className="mt-1 text-sm text-red-500">{formErrors.rentalNumber}</p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="customerId" className={cn("text-sm font-medium", formErrors.customerId && "text-red-500")}>
+                    {t('rental.fields.customer')} *
+                  </Label>
+                  <SearchableSelect
+                    value={formData.customerId}
+                    onValueChange={value => {
+                      console.log('Selected customer:', value); // Debug log
+                      setFormData(prev => ({ ...prev, customerId: value }));
+                      setFormErrors(prev => ({ ...prev, customerId: '' }));
+                    }}
+                    options={customers.map(customer => ({
+                      value: customer.id.toString(),
+                      label: customer.name,
+                      email: customer.email,
+                      phone: customer.phone
+                    }))}
+                    placeholder={t('rental.fields.selectCustomer')}
+                    searchPlaceholder={t('rental.searchCustomers')}
+                    emptyMessage={t('rental.noCustomersFound')}
+                    required
+                    searchFields={['label', 'email', 'phone']}
+                    loading={loading}
+                    error={formErrors.customerId || undefined}
+                  />
+                </div>
               </div>
+              
               <div>
-                <Label htmlFor="customerId">{t('customer')}</Label>
-                <Select
-                  value={formData.customerId}
-                  onValueChange={value => setFormData(prev => ({ ...prev, customerId: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('selectCustomer')} />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60 overflow-y-auto">
-                    {(customers || []).map(customer => (
-                      <SelectItem key={customer.id} value={customer.id}>
-                        {customer.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="startDate">{t('startDate')}</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={formData.startDate}
-                  onChange={e => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="expectedEndDate">{t('expectedEndDate')}</Label>
+                <Label htmlFor="expectedEndDate" className="text-sm font-medium">
+                  {t('rental.fields.expectedEndDate')}
+                </Label>
                 <Input
                   id="expectedEndDate"
                   type="date"
@@ -777,86 +801,15 @@ export default function RentalManagementPage() {
                   onChange={e =>
                     setFormData(prev => ({ ...prev, expectedEndDate: e.target.value }))
                   }
+                  className="w-full"
                 />
-              </div>
-              <div>
-                <Label htmlFor="depositAmount">{t('depositAmount')}</Label>
-                <Input
-                  id="depositAmount"
-                  type="number"
-                  step="0.01"
-                  value={formData.depositAmount}
-                  onChange={e => setFormData(prev => ({ ...prev, depositAmount: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="paymentTermsDays">{t('paymentTermsDays')}</Label>
-                <Input
-                  id="paymentTermsDays"
-                  type="number"
-                  value={formData.paymentTermsDays}
-                  onChange={e =>
-                    setFormData(prev => ({ ...prev, paymentTermsDays: e.target.value }))
-                  }
-                />
-              </div>
-              <div>
-                <Label htmlFor="status">{t('status')}</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={value => setFormData(prev => ({ ...prev, status: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60 overflow-y-auto">
-                    <SelectItem value="pending">{t('pending')}</SelectItem>
-                    <SelectItem value="active">{t('active')}</SelectItem>
-                    <SelectItem value="completed">{t('completed')}</SelectItem>
-                    <SelectItem value="cancelled">{t('cancelled')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="paymentStatus">{t('paymentStatus')}</Label>
-                <Select
-                  value={formData.paymentStatus}
-                  onValueChange={value => setFormData(prev => ({ ...prev, paymentStatus: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60 overflow-y-auto">
-                    <SelectItem value="pending">{t('pending')}</SelectItem>
-                    <SelectItem value="partial">{t('partial')}</SelectItem>
-                    <SelectItem value="paid">{t('paid')}</SelectItem>
-                    <SelectItem value="overdue">{t('overdue')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="hasTimesheet"
-                  checked={formData.hasTimesheet}
-                  onChange={e => setFormData(prev => ({ ...prev, hasTimesheet: e.target.checked }))}
-                />
-                <Label htmlFor="hasTimesheet">{t('hasTimesheet')}</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="hasOperators"
-                  checked={formData.hasOperators}
-                  onChange={e => setFormData(prev => ({ ...prev, hasOperators: e.target.checked }))}
-                />
-                <Label htmlFor="hasOperators">{t('hasOperators')}</Label>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {t('rental.expectedEndDateOptional')}
+                </p>
               </div>
             </div>
             <div>
-              <Label htmlFor="notes">{t('notes')}</Label>
+              <Label htmlFor="notes">{t('rental.fields.notes')}</Label>
               <Textarea
                 id="notes"
                 value={formData.notes}
@@ -865,10 +818,30 @@ export default function RentalManagementPage() {
               />
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                {t('cancel')}
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setIsCreateDialogOpen(false);
+                  setFormErrors({});
+                }}
+                disabled={isSubmitting}
+              >
+                {t('rental.actions.cancel')}
               </Button>
-              <Button onClick={createRental}>{t('createRental')}</Button>
+              <Button 
+                onClick={createRental} 
+                disabled={isSubmitting}
+                className="min-w-[120px]"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    {t('rental.creating')}
+                  </>
+                ) : (
+                  t('rental.actions.createRental')
+                )}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -877,12 +850,12 @@ export default function RentalManagementPage() {
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>{t('editRental')}</DialogTitle>
-              <DialogDescription>{t('updateRentalContractDetails')}</DialogDescription>
+              <DialogTitle>{t('rental.actions.editRental')}</DialogTitle>
+              <DialogDescription>{t('rental.updateRentalContractDetails')}</DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="editRentalNumber">{t('rentalNumber')}</Label>
+                <Label htmlFor="editRentalNumber">{t('rental.fields.rentalNumber')}</Label>
                 <Input
                   id="editRentalNumber"
                   value={formData.rentalNumber}
@@ -890,13 +863,13 @@ export default function RentalManagementPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="editCustomerId">{t('customer')}</Label>
+                <Label htmlFor="editCustomerId">{t('rental.fields.customer')}</Label>
                 <Select
                   value={formData.customerId}
                   onValueChange={value => setFormData(prev => ({ ...prev, customerId: value }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={t('selectCustomer')} />
+                    <SelectValue placeholder={t('rental.fields.selectCustomer')} />
                   </SelectTrigger>
                   <SelectContent className="max-h-60 overflow-y-auto">
                     {(customers || []).map(customer => (
@@ -908,7 +881,7 @@ export default function RentalManagementPage() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="editStartDate">{t('startDate')}</Label>
+                <Label htmlFor="editStartDate">{t('rental.fields.startDate')}</Label>
                 <Input
                   id="editStartDate"
                   type="date"
@@ -917,7 +890,7 @@ export default function RentalManagementPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="editExpectedEndDate">{t('expectedEndDate')}</Label>
+                <Label htmlFor="editExpectedEndDate">{t('rental.fields.expectedEndDate')}</Label>
                 <Input
                   id="editExpectedEndDate"
                   type="date"
@@ -928,7 +901,7 @@ export default function RentalManagementPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="editDepositAmount">{t('depositAmount')}</Label>
+                <Label htmlFor="editDepositAmount">{t('rental.depositAmount')}</Label>
                 <Input
                   id="editDepositAmount"
                   type="number"
@@ -938,7 +911,7 @@ export default function RentalManagementPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="editPaymentTermsDays">{t('paymentTermsDays')}</Label>
+                <Label htmlFor="editPaymentTermsDays">{t('rental.paymentTermsDays')}</Label>
                 <Input
                   id="editPaymentTermsDays"
                   type="number"
@@ -949,7 +922,7 @@ export default function RentalManagementPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="editStatus">{t('status')}</Label>
+                <Label htmlFor="editStatus">{t('rental.fields.status')}</Label>
                 <Select
                   value={formData.status}
                   onValueChange={value => setFormData(prev => ({ ...prev, status: value }))}
@@ -958,15 +931,15 @@ export default function RentalManagementPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="max-h-60 overflow-y-auto">
-                    <SelectItem value="pending">{t('pending')}</SelectItem>
-                    <SelectItem value="active">{t('active')}</SelectItem>
-                    <SelectItem value="completed">{t('completed')}</SelectItem>
-                    <SelectItem value="cancelled">{t('cancelled')}</SelectItem>
+                    <SelectItem value="pending">{t('rental.status.pending')}</SelectItem>
+                    <SelectItem value="active">{t('rental.status.active')}</SelectItem>
+                    <SelectItem value="completed">{t('rental.status.completed')}</SelectItem>
+                    <SelectItem value="cancelled">{t('rental.status.cancelled')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label htmlFor="editPaymentStatus">{t('paymentStatus')}</Label>
+                <Label htmlFor="editPaymentStatus">{t('rental.fields.paymentStatus')}</Label>
                 <Select
                   value={formData.paymentStatus}
                   onValueChange={value => setFormData(prev => ({ ...prev, paymentStatus: value }))}
@@ -975,15 +948,15 @@ export default function RentalManagementPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="max-h-60 overflow-y-auto">
-                    <SelectItem value="pending">{t('pending')}</SelectItem>
-                    <SelectItem value="partial">{t('partial')}</SelectItem>
-                    <SelectItem value="paid">{t('paid')}</SelectItem>
-                    <SelectItem value="overdue">{t('overdue')}</SelectItem>
+                    <SelectItem value="pending">{t('rental.paymentStatus.pending')}</SelectItem>
+                    <SelectItem value="partial">{t('rental.paymentStatus.partial')}</SelectItem>
+                    <SelectItem value="paid">{t('rental.paymentStatus.paid')}</SelectItem>
+                    <SelectItem value="overdue">{t('rental.paymentStatus.overdue')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label htmlFor="editSupervisor">Supervisor/Foreman</Label>
+                <Label htmlFor="editSupervisor">{t('rental.fields.supervisor')}</Label>
                 {/* EmployeeDropdown for supervisor selection */}
                 <EmployeeDropdown
                   value={formData.supervisor}
@@ -991,7 +964,7 @@ export default function RentalManagementPage() {
                     console.log('Supervisor selected in edit:', value);
                     setFormData(prev => ({ ...prev, supervisor: value }));
                   }}
-                  placeholder="Select supervisor"
+                  placeholder={t('rental.fields.selectSupervisor')}
                 />
               </div>
             </div>
@@ -1003,7 +976,7 @@ export default function RentalManagementPage() {
                   checked={formData.hasTimesheet}
                   onChange={e => setFormData(prev => ({ ...prev, hasTimesheet: e.target.checked }))}
                 />
-                <Label htmlFor="editHasTimesheet">{t('hasTimesheet')}</Label>
+                <Label htmlFor="editHasTimesheet">{t('rental.hasTimesheet')}</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <input
@@ -1012,11 +985,11 @@ export default function RentalManagementPage() {
                   checked={formData.hasOperators}
                   onChange={e => setFormData(prev => ({ ...prev, hasOperators: e.target.checked }))}
                 />
-                <Label htmlFor="editHasOperators">{t('hasOperators')}</Label>
+                <Label htmlFor="editHasOperators">{t('rental.hasOperators')}</Label>
               </div>
             </div>
             <div>
-              <Label htmlFor="editNotes">{t('notes')}</Label>
+              <Label htmlFor="editNotes">{t('rental.notes')}</Label>
               <Textarea
                 id="editNotes"
                 value={formData.notes}
@@ -1026,9 +999,9 @@ export default function RentalManagementPage() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                {t('cancel')}
+                {t('rental.cancel')}
               </Button>
-              <Button onClick={updateRental}>{t('updateRental')}</Button>
+              <Button onClick={updateRental}>{t('rental.updateRental')}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -1037,29 +1010,29 @@ export default function RentalManagementPage() {
         <PermissionBased action="manage" subject="Rental">
           <Card>
             <CardHeader>
-              <CardTitle>{t('rentalAdministration')}</CardTitle>
-              <CardDescription>{t('advancedRentalManagementFeatures')}</CardDescription>
+              <CardTitle>{t('rental.administration.title')}</CardTitle>
+              <CardDescription>{t('rental.administration.subtitle')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex gap-2">
                 <PermissionContent action="approve" subject="Rental">
                   <Button variant="outline">
                     <CheckCircle className="h-4 w-4 mr-2" />
-                    {t('approveRentals')}
+                    {t('rental.actions.approve')}
                   </Button>
                 </PermissionContent>
 
                 <PermissionContent action="reject" subject="Rental">
                   <Button variant="outline">
                     <XCircle className="h-4 w-4 mr-2" />
-                    {t('rejectRentals')}
+                    {t('rental.actions.reject')}
                   </Button>
                 </PermissionContent>
 
                 <PermissionContent action="manage" subject="Rental">
                   <Button variant="outline">
                     <Settings className="h-4 w-4 mr-2" />
-                    {t('rentalSettings')}
+                    {t('rental.actions.manage')}
                   </Button>
                 </PermissionContent>
               </div>

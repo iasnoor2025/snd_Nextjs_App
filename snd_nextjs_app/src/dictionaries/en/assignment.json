@@ -4,7 +4,11 @@
   "description": "Manage all employee assignments and project allocations",
   "create": {
     "title": "Create New Assignment",
-    "description": "Create a new assignment for an employee"
+    "description": "Create a new assignment for an employee",
+    "modalTitle": "Add New Assignment",
+    "modalDescription": "Create a new assignment for this employee",
+    "editModalTitle": "Edit Assignment",
+    "editModalDescription": "Update the employee assignment details"
   },
   "actions": {
     "createAssignment": "Create Assignment",
@@ -20,7 +24,9 @@
     "filter": "Filter",
     "refresh": "Refresh",
     "export": "Export",
-    "import": "Import"
+    "import": "Import",
+    "addNewAssignment": "Add New Assignment",
+    "updateAssignment": "Update Assignment"
   },
   "fields": {
     "employee": "Employee",
@@ -40,7 +46,19 @@
     "rate": "Rate",
     "ratePlaceholder": "Hourly rate",
     "createdAt": "Created At",
-    "updatedAt": "Updated At"
+    "updatedAt": "Updated At",
+    "assignmentName": "Assignment Name",
+    "assignmentNamePlaceholder": "Enter assignment name",
+    "location": "Location",
+    "locationPlaceholder": "Enter location",
+    "notes": "Notes",
+    "notesPlaceholder": "Enter any additional notes",
+    "projectOptional": "Project (Optional)",
+    "selectProjectPlaceholder": "Select a project",
+    "noProject": "No Project",
+    "rentalOptional": "Rental (Optional)",
+    "selectRentalPlaceholder": "Select a rental",
+    "noRental": "No Rental"
   },
   "status": {
     "active": "Active",

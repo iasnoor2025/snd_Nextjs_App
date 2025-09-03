@@ -147,41 +147,41 @@ export default function AssignmentModal({
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>{assignment ? 'Edit Assignment' : 'Add New Assignment'}</DialogTitle>
+          <DialogTitle>{assignment ? t('assignment.form.editModalTitle') : t('assignment.form.modalTitle')}</DialogTitle>
           <DialogDescription>
             {assignment
-              ? 'Update the employee assignment details'
-              : 'Create a new assignment for this employee'}
+              ? t('assignment.form.editModalDescription')
+              : t('assignment.form.modalDescription')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Assignment Name *</Label>
+              <Label htmlFor="name">{t('assignment.fields.assignmentName')}</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={e => handleInputChange('name', e.target.value)}
-                placeholder="Enter assignment name"
+                placeholder={t('assignment.fields.assignmentNamePlaceholder')}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
+              <Label htmlFor="location">{t('assignment.fields.location')}</Label>
               <Input
                 id="location"
                 value={formData.location}
                 onChange={e => handleInputChange('location', e.target.value)}
-                placeholder="Enter location"
+                placeholder={t('assignment.fields.locationPlaceholder')}
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="startDate">Start Date *</Label>
+              <Label htmlFor="startDate">{t('assignment.fields.startDate')}</Label>
               <Input
                 id="startDate"
                 type="date"
@@ -192,7 +192,7 @@ export default function AssignmentModal({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="endDate">End Date</Label>
+              <Label htmlFor="endDate">{t('assignment.fields.endDate')}</Label>
               <Input
                 id="endDate"
                 type="date"
@@ -205,16 +205,16 @@ export default function AssignmentModal({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="projectId">Project (Optional)</Label>
+              <Label htmlFor="projectId">{t('assignment.fields.projectOptional')}</Label>
               <Select
                 value={formData.projectId}
                 onValueChange={value => handleInputChange('projectId', value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a project" />
+                  <SelectValue placeholder={t('assignment.fields.selectProjectPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No Project</SelectItem>
+                  <SelectItem value="none">{t('assignment.fields.noProject')}</SelectItem>
                   {/* Project options would be loaded from API */}
                   <SelectItem value="project1">Project 1</SelectItem>
                   <SelectItem value="project2">Project 2</SelectItem>
@@ -223,16 +223,16 @@ export default function AssignmentModal({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="rentalId">Rental (Optional)</Label>
+              <Label htmlFor="rentalId">{t('assignment.fields.rentalOptional')}</Label>
               <Select
                 value={formData.rentalId}
                 onValueChange={value => handleInputChange('rentalId', value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a rental" />
+                  <SelectValue placeholder={t('assignment.fields.selectRentalPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No Rental</SelectItem>
+                  <SelectItem value="none">{t('assignment.fields.noRental')}</SelectItem>
                   {/* Rental options would be loaded from API */}
                   <SelectItem value="rental1">Rental 1</SelectItem>
                   <SelectItem value="rental2">Rental 2</SelectItem>
@@ -242,23 +242,23 @@ export default function AssignmentModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes">{t('assignment.fields.notes')}</Label>
             <Textarea
               id="notes"
               value={formData.notes}
               onChange={e => handleInputChange('notes', e.target.value)}
-              placeholder="Enter any additional notes"
+              placeholder={t('assignment.fields.notesPlaceholder')}
               rows={3}
             />
           </div>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              {t('assignment.actions.cancel')}
             </Button>
             <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {assignment ? 'Update Assignment' : 'Create Assignment'}
+              {assignment ? t('assignment.actions.updateAssignment') : t('assignment.actions.addNewAssignment')}
             </Button>
           </DialogFooter>
         </form>

@@ -52,33 +52,27 @@ const createRentalHandler = async (request: NextRequest) => {
       return NextResponse.json({ error: 'Customer is required' }, { status: 400 });
     }
 
-    if (!body.startDate) {
-      return NextResponse.json({ error: 'Start date is required' }, { status: 400 });
-    }
-
     // Set default values
     const rentalData: any = {
       customerId: parseInt(body.customerId),
       rentalNumber: body.rentalNumber,
-      startDate: new Date(body.startDate),
-      status: body.status || 'pending',
-      paymentStatus: body.paymentStatus || 'pending',
+      status: 'pending', // Default status, will be changed by workflow
+      paymentStatus: 'pending', // Default payment status, will be changed by workflow
       subtotal: parseFloat(body.subtotal) || 0,
       taxAmount: parseFloat(body.taxAmount) || 0,
       totalAmount: parseFloat(body.totalAmount) || 0,
       discount: parseFloat(body.discount) || 0,
       tax: parseFloat(body.tax) || 0,
       finalAmount: parseFloat(body.finalAmount) || 0,
-      depositAmount: parseFloat(body.depositAmount) || 0,
-      paymentTermsDays: parseInt(body.paymentTermsDays) || 30,
-      hasTimesheet: body.hasTimesheet || false,
-      hasOperators: body.hasOperators || false,
       supervisor: body.supervisor || null,
       notes: body.notes || '',
       rentalItems: body.rentalItems || [],
     };
 
     // Add optional date fields only if they exist
+    if (body.startDate) {
+      rentalData.startDate = new Date(body.startDate);
+    }
     if (body.expectedEndDate) {
       rentalData.expectedEndDate = new Date(body.expectedEndDate);
     }

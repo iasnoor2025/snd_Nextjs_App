@@ -18,6 +18,7 @@
   },
   "actions": {
     "create": "إنشاء",
+    "createRental": "إنشاء إيجار",
     "edit": "تعديل",
     "delete": "حذف",
     "save": "حفظ",
@@ -71,6 +72,8 @@
     "actions": "الإجراءات",
     "description": "الوصف",
     "notes": "ملاحظات",
+    "selectCustomer": "اختر العميل",
+    "createRental": "إنشاء إيجار",
     "na": "غير متاح"
   },
   "messages": {

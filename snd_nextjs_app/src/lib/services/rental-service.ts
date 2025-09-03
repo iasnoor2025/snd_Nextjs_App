@@ -379,7 +379,7 @@ export class RentalService {
   static async createRental(data: {
     customerId: number;
     rentalNumber: string;
-    startDate: Date;
+    startDate?: Date;
     expectedEndDate?: Date;
     actualEndDate?: Date;
     status?: string;
@@ -390,21 +390,29 @@ export class RentalService {
     discount?: number;
     tax?: number;
     finalAmount?: number;
-    depositAmount?: number;
-    paymentTermsDays?: number;
-    hasTimesheet?: boolean;
-    hasOperators?: boolean;
+    supervisor?: string | null;
     notes?: string;
     rentalItems?: any[];
   }) {
     const { rentalItems: itemsToCreate, ...rentalData } = data;
+
+    // Auto-set start date when status becomes active
+    let startDate = rentalData.startDate;
+    if (rentalData.status === 'active' && !startDate) {
+      startDate = new Date();
+    }
+    
+    // Set default start date if not provided (required by database)
+    if (!startDate) {
+      startDate = new Date();
+    }
 
     const [rental] = await db
       .insert(rentals)
       .values({
         customerId: rentalData.customerId || null,
         rentalNumber: rentalData.rentalNumber || `RENTAL-${Date.now()}`,
-        startDate: rentalData.startDate.toISOString().split('T')[0],
+        startDate: startDate.toISOString().split('T')[0],
         expectedEndDate: rentalData.expectedEndDate?.toISOString().split('T')[0],
         actualEndDate: rentalData.actualEndDate?.toISOString().split('T')[0],
         status: rentalData.status || 'pending',
@@ -415,10 +423,7 @@ export class RentalService {
         discount: rentalData.discount || 0,
         tax: rentalData.tax || 0,
         finalAmount: rentalData.finalAmount || 0,
-        depositAmount: rentalData.depositAmount || 0,
-        paymentTermsDays: rentalData.paymentTermsDays || 30,
-        hasTimesheet: rentalData.hasTimesheet || false,
-        hasOperators: rentalData.hasOperators || false,
+        supervisor: rentalData.supervisor || null,
         notes: rentalData.notes || '',
         updatedAt: new Date().toISOString().split('T')[0],
       } as any)
@@ -444,8 +449,8 @@ export class RentalService {
       );
     }
 
-    // Create automatic assignments if needed
-    if (rental.hasOperators) {
+    // Create automatic assignments if status is active
+    if (rental.status === 'active') {
       await this.createAutomaticAssignments(rental.id);
     }
 

@@ -19,7 +19,9 @@
     "filter": "تصفية",
     "refresh": "تحديث",
     "export": "تصدير",
-    "import": "استيراد"
+    "import": "استيراد",
+    "addNewAssignment": "إضافة تعيين جديد",
+    "updateAssignment": "تحديث التعيين"
   },
   "fields": {
     "basicInfo": "المعلومات الأساسية",
@@ -47,7 +49,17 @@
     "isPrimary": "تعيين أساسي",
     "hoursPerWeek": "ساعات في الأسبوع",
     "salary": "الراتب",
-    "currency": "العملة"
+    "currency": "العملة",
+    "assignmentName": "اسم التعيين",
+    "assignmentNamePlaceholder": "أدخل اسم التعيين",
+    "locationPlaceholder": "أدخل الموقع",
+    "notesPlaceholder": "أدخل أي ملاحظات إضافية",
+    "projectOptional": "المشروع (اختياري)",
+    "selectProjectPlaceholder": "اختر مشروع",
+    "noProject": "لا يوجد مشروع",
+    "rentalOptional": "الإيجار (اختياري)",
+    "selectRentalPlaceholder": "اختر إيجار",
+    "noRental": "لا يوجد إيجار"
   },
   "assignmentType": {
     "fullTime": "دوام كامل",
@@ -187,7 +199,11 @@
     "create": "إنشاء",
     "update": "تحديث",
     "cancel": "إلغاء",
-    "delete": "حذف"
+    "delete": "حذف",
+    "modalTitle": "إضافة تعيين جديد",
+    "modalDescription": "إنشاء تعيين جديد لهذا الموظف",
+    "editModalTitle": "تعديل التعيين",
+    "editModalDescription": "تحديث تفاصيل تعيين الموظف"
   },
 
   "types": {
