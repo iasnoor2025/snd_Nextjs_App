@@ -584,6 +584,7 @@
     "suspended": "Suspended",
     "left": "Left",
     "onLeave": "On Leave",
+    "assigned": "Assigned",
     "unknown": "Unknown"
   },
   "advances": {

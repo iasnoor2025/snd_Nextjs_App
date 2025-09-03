@@ -966,37 +966,43 @@ export default function EmployeeManagementPage() {
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
                           <Badge
                             variant={
-                              employee.status === 'active'
+                              employee.current_assignment && employee.current_assignment.status === 'active'
                                 ? 'default'
-                                : employee.status === 'on_leave'
-                                  ? 'secondary'
-                                  : employee.status === 'inactive'
-                                    ? 'destructive'
-                                  : employee.status === 'left'
-                                    ? 'destructive'
-                                    : 'secondary'
+                                : employee.status === 'active'
+                                  ? 'default'
+                                  : employee.status === 'on_leave'
+                                    ? 'secondary'
+                                    : employee.status === 'inactive'
+                                      ? 'destructive'
+                                    : employee.status === 'left'
+                                      ? 'destructive'
+                                      : 'secondary'
                             }
                             className={cn(
-                              employee.status === 'active' 
-                                ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
-                                : employee.status === 'on_leave' 
-                                  ? 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200'
-                                  : employee.status === 'inactive'
-                                    ? 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200'
-                                  : employee.status === 'left'
-                                    ? 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200'
-                                    : 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200'
+                              employee.current_assignment && employee.current_assignment.status === 'active'
+                                ? 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200'
+                                : employee.status === 'active' 
+                                  ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
+                                  : employee.status === 'on_leave' 
+                                    ? 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200'
+                                    : employee.status === 'inactive'
+                                      ? 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200'
+                                      : employee.status === 'left'
+                                        ? 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200'
+                                        : 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200'
                             )}
                           >
-                            {employee.status === 'active'
-                              ? t('employee.status.active')
-                              : employee.status === 'inactive'
-                                ? t('employee.status.inactive')
-                                : employee.status === 'on_leave'
-                                  ? t('employee.status.onLeave')
-                                : employee.status === 'left'
-                                  ? t('employee.status.left')
-                                                                     : employee.status || t('employee.na')}
+                            {employee.current_assignment && employee.current_assignment.status === 'active'
+                              ? t('employee.status.assigned')
+                              : employee.status === 'active'
+                                ? t('employee.status.active')
+                                : employee.status === 'inactive'
+                                  ? t('employee.status.inactive')
+                                  : employee.status === 'on_leave'
+                                    ? t('employee.status.onLeave')
+                                    : employee.status === 'left'
+                                      ? t('employee.status.left')
+                                      : employee.status || t('employee.na')}
                           </Badge>
                         </TableCell>
 

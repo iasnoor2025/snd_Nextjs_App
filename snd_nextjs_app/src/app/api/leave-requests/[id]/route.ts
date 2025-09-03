@@ -133,7 +133,7 @@ export const DELETE = withPermission(PermissionConfigs.leave.delete)(async (requ
   // Extract id from URL params
   const url = new URL(request.url);
   const pathParts = url.pathname.split('/');
-  const id = pathParts[pathParts.length - 2]; // Get id from /api/leave-requests/[id]
+  const id = pathParts[pathParts.length - 1]; // Get id from /api/leave-requests/[id]
   
   if (!id) {
     return NextResponse.json({ error: 'Leave request ID is required' }, { status: 400 });
@@ -164,6 +164,7 @@ export const DELETE = withPermission(PermissionConfigs.leave.delete)(async (requ
       message: 'Leave request deleted successfully',
     });
   } catch (error) {
+    console.error('Error deleting leave request:', error);
     
     return NextResponse.json(
       {
@@ -181,7 +182,7 @@ export const PUT = withPermission(PermissionConfigs.leave.update)(async (request
     // Extract id from URL params
     const url = new URL(request.url);
     const pathParts = url.pathname.split('/');
-    const id = pathParts[pathParts.length - 2]; // Get id from /api/leave-requests/[id]
+    const id = pathParts[pathParts.length - 1]; // Get id from /api/leave-requests/[id]
     
     if (!id) {
       return NextResponse.json({ error: 'Leave request ID is required' }, { status: 400 });

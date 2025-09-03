@@ -131,41 +131,101 @@ export function EmployeeDropdown({
       employee.id.toString().includes(searchTerm)
   );
 
-  // Sort employees to prioritize exact file number matches first
-  const sortedEmployees = searchTerm ? filteredEmployees.sort((a, b) => {
-    const searchLower = searchTerm.toLowerCase();
+  // Sort employees to prioritize file number matches first, then others
+  const sortedEmployees = filteredEmployees.sort((a, b) => {
+    // If there's a search term, prioritize matches
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      
+             // Check for exact file number match first (highest priority)
+       const aFileExact = a.file_number?.toLowerCase() === searchLower;
+       const bFileExact = b.file_number?.toLowerCase() === searchLower;
+       
+       if (aFileExact && !bFileExact) return -1;
+       if (!aFileExact && bFileExact) return 1;
+       
+       // If both have exact file number matches, sort numerically
+       if (aFileExact && bFileExact) {
+         const aNumeric = parseInt(a.file_number?.replace(/\D/g, '') || '') || 0;
+         const bNumeric = parseInt(b.file_number?.replace(/\D/g, '') || '') || 0;
+         if (aNumeric !== 0 && bNumeric !== 0) {
+           return aNumeric - bNumeric;
+         }
+       }
+      
+             // Then check for file number starts with
+       const aFileStartsWith = a.file_number?.toLowerCase().startsWith(searchLower);
+       const bFileStartsWith = b.file_number?.toLowerCase().startsWith(searchLower);
+       
+       if (aFileStartsWith && !bFileStartsWith) return -1;
+       if (!aFileStartsWith && bFileStartsWith) return 1;
+       
+       // If both have file number starts with matches, sort numerically
+       if (aFileStartsWith && bFileStartsWith) {
+         const aNumeric = parseInt(a.file_number?.replace(/\D/g, '') || '') || 0;
+         const bNumeric = parseInt(b.file_number?.replace(/\D/g, '') || '') || 0;
+         if (aNumeric !== 0 && bNumeric !== 0) {
+           return aNumeric - bNumeric;
+         }
+       }
+      
+      // Then check for file number contains
+      const aFileContains = a.file_number?.toLowerCase().includes(searchLower);
+      const bFileContains = b.file_number?.toLowerCase().includes(searchLower);
+      
+      if (aFileContains && !bFileContains) return -1;
+      if (!aFileContains && bFileContains) return 1;
+      
+      // Then check for exact name matches
+      const aNameExact = `${a.first_name} ${a.last_name}`.toLowerCase() === searchLower;
+      const bNameExact = `${b.first_name} ${b.last_name}`.toLowerCase() === searchLower;
+      
+      if (aNameExact && !bNameExact) return -1;
+      if (!aNameExact && bNameExact) return 1;
+      
+      // Then check for name starts with
+      const aNameStartsWith = `${a.first_name} ${a.last_name}`.toLowerCase().startsWith(searchLower);
+      const bNameStartsWith = `${b.first_name} ${b.last_name}`.toLowerCase().startsWith(searchLower);
+      
+      if (aNameStartsWith && !bNameStartsWith) return -1;
+      if (!aNameStartsWith && bNameStartsWith) return 1;
+      
+      // Then check for name contains
+      const aNameContains = `${a.first_name} ${a.last_name}`.toLowerCase().includes(searchLower);
+      const bNameContains = `${b.first_name} ${b.last_name}`.toLowerCase().includes(searchLower);
+      
+      if (aNameContains && !bNameContains) return -1;
+      if (!aNameContains && bNameContains) return 1;
+    }
     
-    // Check for exact file number match first
-    const aFileExact = a.file_number?.toLowerCase() === searchLower;
-    const bFileExact = b.file_number?.toLowerCase() === searchLower;
+    // Default sorting: employees with file numbers first, then by name
+    const aHasFileNumber = !!a.file_number;
+    const bHasFileNumber = !!b.file_number;
     
-    if (aFileExact && !bFileExact) return -1;
-    if (!aFileExact && bFileExact) return 1;
+    if (aHasFileNumber && !bHasFileNumber) return -1;
+    if (!aHasFileNumber && bHasFileNumber) return 1;
     
-    // Then check for file number starts with
-    const aFileStartsWith = a.file_number?.toLowerCase().startsWith(searchLower);
-    const bFileStartsWith = b.file_number?.toLowerCase().startsWith(searchLower);
-    
-    if (aFileStartsWith && !bFileStartsWith) return -1;
-    if (!aFileStartsWith && bFileStartsWith) return 1;
-    
-    // Then check for exact name matches
-    const aNameExact = `${a.first_name} ${a.last_name}`.toLowerCase() === searchLower;
-    const bNameExact = `${b.first_name} ${b.last_name}`.toLowerCase() === searchLower;
-    
-    if (aNameExact && !bNameExact) return -1;
-    if (!aNameExact && bNameExact) return 1;
-    
-    // Then check for name starts with
-    const aNameStartsWith = `${a.first_name} ${a.last_name}`.toLowerCase().startsWith(searchLower);
-    const bNameStartsWith = `${b.first_name} ${b.last_name}`.toLowerCase().startsWith(searchLower);
-    
-    if (aNameStartsWith && !bNameStartsWith) return -1;
-    if (!aNameStartsWith && bNameStartsWith) return 1;
+         // If both have file numbers, sort by file number using natural numeric sorting
+     if (aHasFileNumber && bHasFileNumber) {
+       const aFileNum = a.file_number || '';
+       const bFileNum = b.file_number || '';
+       
+       // Extract numeric parts for natural sorting
+       const aNumeric = parseInt(aFileNum.replace(/\D/g, '')) || 0;
+       const bNumeric = parseInt(bFileNum.replace(/\D/g, '')) || 0;
+       
+       // If both have numeric parts, sort numerically
+       if (aNumeric !== 0 && bNumeric !== 0) {
+         return aNumeric - bNumeric;
+       }
+       
+       // Fallback to string comparison for non-numeric file numbers
+       return aFileNum.localeCompare(bFileNum);
+     }
     
     // Finally, sort by name alphabetically
     return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
-  }) : filteredEmployees;
+  });
 
   // Get selected employee for display
   const selectedEmployee = employees.find(emp => emp.id === value);
@@ -220,10 +280,21 @@ export function EmployeeDropdown({
                     value={employee.id}
                     className="cursor-pointer hover:bg-gray-100"
                   >
-                    <span className="font-medium">
-                      {employee.first_name} {employee.last_name}
-                      {employee.file_number && ` (File: ${employee.file_number})`}
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="font-medium">
+                        {employee.first_name} {employee.last_name}
+                      </span>
+                      {employee.file_number && (
+                        <span className="text-sm text-blue-600 font-mono">
+                          File: {employee.file_number}
+                        </span>
+                      )}
+                      {employee.designation && (
+                        <span className="text-xs text-gray-500">
+                          {employee.designation}
+                        </span>
+                      )}
+                    </div>
                   </SelectItem>
                 ))}
               {!searchTerm && employees.length > 100 && (
