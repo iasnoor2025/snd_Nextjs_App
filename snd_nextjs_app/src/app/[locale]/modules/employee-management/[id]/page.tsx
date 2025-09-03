@@ -37,6 +37,7 @@ import {
   FileText,
   History,
   Loader2,
+  Lock,
   Receipt,
   Trash2,
   User,
@@ -294,7 +295,10 @@ export default function EmployeeShowPage() {
         fetchAdvances();
         fetchPaymentHistory();
         fetchLeaves();
-        fetchSalaryHistory();
+        // Only fetch salary history if user has permission
+        if (hasPermission('read', 'SalaryIncrement')) {
+          fetchSalaryHistory();
+        }
       } else {
         // Employee not found
         setEmployee(null);
@@ -519,10 +523,16 @@ export default function EmployeeShowPage() {
     try {
       const data = await salaryIncrementService.getEmployeeSalaryHistory(parseInt(employeeId));
       setSalaryHistory(data || []);
-    } catch (error) {
+    } catch (error: any) {
       
-      toast.error('Failed to load salary history');
-      setSalaryHistory([]);
+      // Check if it's a permission error
+      if (error?.message?.includes('403') || error?.status === 403) {
+        // Don't show error toast for permission issues, just set empty array
+        setSalaryHistory([]);
+      } else {
+        toast.error('Failed to load salary history');
+        setSalaryHistory([]);
+      }
     } finally {
       setLoadingSalaryHistory(false);
     }
@@ -1209,108 +1219,132 @@ export default function EmployeeShowPage() {
           </Card>
 
           {/* Salary History */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>{t('employee.salary.salaryHistory')}</CardTitle>
-                  <CardDescription>{t('employee.salary.salaryHistoryDescription')}</CardDescription>
+          {hasPermission('read', 'SalaryIncrement') ? (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>{t('employee.salary.salaryHistory')}</CardTitle>
+                    <CardDescription>{t('employee.salary.salaryHistoryDescription')}</CardDescription>
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto rounded-md border">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t('employee.salary.effectiveDate')}
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t('employee.salary.currentSalary')}
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t('employee.salary.newSalary')}
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t('employee.salary.increment')}
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t('employee.salary.type')}
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t('employee.salary.status')}
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t('employee.salary.requestedBy')}
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t('employee.salary.approvedBy')}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {loadingSalaryHistory ? (
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto rounded-md border">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
                       <tr>
-                        <td
-                          colSpan={8}
-                          className="px-6 py-8 text-center text-sm text-muted-foreground"
-                        >
-                          <div className="flex items-center justify-center gap-2">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            {t('employee:salary.loadingSalaryHistory')}
-                          </div>
-                        </td>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          {t('employee.salary.effectiveDate')}
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          {t('employee.salary.currentSalary')}
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          {t('employee.salary.newSalary')}
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          {t('employee.salary.increment')}
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          {t('employee.salary.type')}
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          {t('employee.salary.status')}
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          {t('employee.salary.requestedBy')}
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          {t('employee.salary.approvedBy')}
+                        </th>
                       </tr>
-                    ) : salaryHistory.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={8}
-                          className="px-6 py-8 text-center text-sm text-muted-foreground italic"
-                        >
-                          {t('employee.salary.noSalaryHistory')}
-                        </td>
-                      </tr>
-                    ) : (
-                      salaryHistory.map(inc => (
-                        <tr key={inc.id} className="hover:bg-muted/50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {format(new Date(inc.effective_date), 'MMM dd, yyyy')}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            {t('employee.currency.symbol')} {salaryIncrementService.getCurrentTotalSalary(inc).toLocaleString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            {t('employee.currency.symbol')} {salaryIncrementService.getNewTotalSalary(inc).toLocaleString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            +{t('employee.currency.symbol')}{' '}
-                            {salaryIncrementService.getTotalIncrementAmount(inc).toLocaleString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            {salaryIncrementService.getIncrementTypeLabel(inc.increment_type)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <Badge
-                              variant={salaryIncrementService.getStatusColor(inc.status) as any}
-                            >
-                              {salaryIncrementService.getStatusLabel(inc.status)}
-                            </Badge>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            {inc.requested_by_user?.name || '-'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            {inc.approved_by_user?.name || '-'}
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {loadingSalaryHistory ? (
+                        <tr>
+                          <td
+                            colSpan={8}
+                            className="px-6 py-8 text-center text-sm text-muted-foreground"
+                          >
+                            <div className="flex items-center justify-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              {t('employee:salary.loadingSalaryHistory')}
+                            </div>
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
+                      ) : salaryHistory.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={8}
+                            className="px-6 py-8 text-center text-sm text-muted-foreground italic"
+                          >
+                            {t('employee.salary.noSalaryHistory')}
+                          </td>
+                        </tr>
+                      ) : (
+                        salaryHistory.map(inc => (
+                          <tr key={inc.id} className="hover:bg-muted/50">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {format(new Date(inc.effective_date), 'MMM dd, yyyy')}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              {t('employee.currency.symbol')} {salaryIncrementService.getCurrentTotalSalary(inc).toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              {t('employee.currency.symbol')} {salaryIncrementService.getNewTotalSalary(inc).toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              +{t('employee.currency.symbol')}{' '}
+                              {salaryIncrementService.getTotalIncrementAmount(inc).toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              {salaryIncrementService.getIncrementTypeLabel(inc.increment_type)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <Badge
+                                variant={salaryIncrementService.getStatusColor(inc.status) as any}
+                              >
+                                {salaryIncrementService.getStatusLabel(inc.status)}
+                              </Badge>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              {inc.requested_by_user?.name || '-'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              {inc.approved_by_user?.name || '-'}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>{t('employee.salary.salaryHistory')}</CardTitle>
+                    <CardDescription>{t('employee.salary.salaryHistoryDescription')}</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="p-6 text-center text-muted-foreground">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <Lock className="h-5 w-5" />
+                    <span className="font-medium">Access Restricted</span>
+                  </div>
+                  <p className="text-sm">
+                    You don't have permission to view salary history. Please contact your administrator for access.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
 

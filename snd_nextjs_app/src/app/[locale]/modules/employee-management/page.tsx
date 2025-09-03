@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/table';
 import { useI18n } from '@/hooks/use-i18n';
 import { PermissionContent } from '@/lib/rbac/rbac-components';
-import { useRBAC } from '@/lib/rbac/rbac-context';
+import { useRBAC, usePermission } from '@/lib/rbac/rbac-context';
 import {
   ChevronDown,
   ChevronLeft,
@@ -110,6 +110,7 @@ interface Employee {
 export default function EmployeeManagementPage() {
   const { t, isRTL } = useI18n();
   const { user } = useRBAC();
+  const { hasPermission } = usePermission();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -997,50 +998,50 @@ export default function EmployeeManagementPage() {
                           </Badge>
                         </TableCell>
 
-                        <TableCell className={isRTL ? 'text-left' : 'text-right'}>
-                          <div
-                            className={`flex items-center gap-2 ${isRTL ? 'justify-start' : 'justify-end'}`}
-                          >
-                            <PermissionContent action="read" subject="Employee">
-                              <Link href={`/modules/employee-management/${employee.id}`}>
-                                <Button variant="ghost" size="sm" title="View Details">
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </Link>
-                            </PermissionContent>
+                                                 <TableCell className={isRTL ? 'text-left' : 'text-right'}>
+                           <div
+                             className={`flex items-center gap-2 ${isRTL ? 'justify-start' : 'justify-end'}`}
+                           >
+                             {hasPermission('read', 'Employee') && (
+                               <Link href={`/modules/employee-management/${employee.id}`}>
+                                 <Button variant="ghost" size="sm" title="View Details">
+                                   <Eye className="h-4 w-4" />
+                                 </Button>
+                               </Link>
+                             )}
 
-                            <PermissionContent action="read" subject="Employee">
-                              <Link href={`/modules/employee-management/${employee.id}`}>
-                                <Button variant="ghost" size="sm" title="Manage Assignments">
-                                  <div className="h-4 w-4 flex items-center justify-center">
-                                    <span className="text-xs">📋</span>
-                                  </div>
-                                </Button>
-                              </Link>
-                            </PermissionContent>
+                                                           {hasPermission('read', 'Assignment') && (
+                                <Link href={`/modules/employee-management/${employee.id}`}>
+                                  <Button variant="ghost" size="sm" title="Manage Assignments">
+                                    <div className="h-4 w-4 flex items-center justify-center">
+                                      <span className="text-xs">📋</span>
+                                    </div>
+                                  </Button>
+                                </Link>
+                              )}
 
-                            <PermissionContent action="update" subject="Employee">
-                              <Link href={`/modules/employee-management/${employee.id}/edit`}>
-                                <Button variant="ghost" size="sm" title="Edit Employee">
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                              </Link>
-                            </PermissionContent>
+                             {hasPermission('update', 'Employee') && (
+                               <Link href={`/modules/employee-management/${employee.id}/edit`}>
+                                 <Button variant="ghost" size="sm" title="Edit Employee">
+                                   <Edit className="h-4 w-4" />
+                                 </Button>
+                               </Link>
+                             )}
 
-                            <PermissionContent action="delete" subject="Employee">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-destructive hover:text-destructive"
-                                onClick={() => handleDeleteEmployee(employee)}
-                                disabled={isDeleting}
-                                title="Delete Employee"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </PermissionContent>
-                          </div>
-                        </TableCell>
+                             {hasPermission('delete', 'Employee') && (
+                               <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 className="text-destructive hover:text-destructive"
+                                 onClick={() => handleDeleteEmployee(employee)}
+                                 disabled={isDeleting}
+                                 title="Delete Employee"
+                               >
+                                 <Trash2 className="h-4 w-4" />
+                               </Button>
+                             )}
+                           </div>
+                         </TableCell>
                       </TableRow>
                     ))
                   )}
