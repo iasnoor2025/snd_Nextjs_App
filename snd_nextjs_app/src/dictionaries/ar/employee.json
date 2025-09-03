@@ -572,7 +572,12 @@
   },
 
   "searchResults": {
-    "summary": "عرض {{filtered}} من {{total}} موظف{{#searchTerm}} يطابق \"{{searchTerm}}\"{{/searchTerm}}{{#statusFilter}} بحالة \"{{statusFilter}}\"{{/statusFilter}}{{#departmentFilter}} في قسم \"{{departmentFilter}}\"{{/departmentFilter}}{{#assignmentFilter}}{{#assigned}} معين حالياً{{/assigned}}{{^assigned}} غير معين{{/assigned}}{{/assignmentFilter}}"
+    "summary": "عرض {{filtered}} من {{total}} موظف",
+    "withSearchTerm": " يطابق \"{{searchTerm}}\"",
+    "withStatus": " بحالة \"{{statusFilter}}\"",
+    "withDepartment": " في قسم \"{{departmentFilter}}\"",
+    "assigned": " معين حالياً",
+    "notAssigned": " غير معين"
   },
 
   "statistics": {

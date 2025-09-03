@@ -291,7 +291,12 @@
   },
 
   "searchResults": {
-    "summary": "Showing {{filtered}} of {{total}} employees{{#searchTerm}} matching \"{{searchTerm}}\"{{/searchTerm}}{{#statusFilter}} with status \"{{statusFilter}}\"{{/statusFilter}}{{#departmentFilter}} in department \"{{departmentFilter}}\"{{/departmentFilter}}{{#assignmentFilter}}{{#assigned}} who are currently assigned{{/assigned}}{{^assigned}} who are not currently assigned{{/assigned}}{{/assignmentFilter}}"
+    "summary": "Showing {{filtered}} of {{total}} employees",
+    "withSearchTerm": " matching \"{{searchTerm}}\"",
+    "withStatus": " with status \"{{statusFilter}}\"",
+    "withDepartment": " in department \"{{departmentFilter}}\"",
+    "assigned": " who are currently assigned",
+    "notAssigned": " who are not currently assigned"
   },
 
   "table": {

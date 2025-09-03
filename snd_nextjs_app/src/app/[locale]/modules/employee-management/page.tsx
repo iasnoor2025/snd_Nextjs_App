@@ -756,24 +756,44 @@ export default function EmployeeManagementPage() {
               </Select>
             </div>
 
-            {/* Search Results Summary */}
-            {(searchTerm ||
-              statusFilter !== 'all' ||
-              departmentFilter !== 'all' ||
-              assignmentFilter !== 'all') && (
-              <div className="mb-4 p-3 bg-muted/50 rounded-md">
-                <div className="text-sm text-muted-foreground">
-                  {t('employee.searchResults.summary', {
-                    filtered: filteredAndSortedEmployees.length,
-                    total: employees.length,
-                    searchTerm: searchTerm,
-                    statusFilter: statusFilter !== 'all' ? statusFilter : null,
-                    departmentFilter: departmentFilter !== 'all' ? departmentFilter : null,
-                    assignmentFilter: assignmentFilter !== 'all' ? assignmentFilter : null
-                  })}
-                </div>
-              </div>
-            )}
+                         {/* Search Results Summary */}
+             {(searchTerm ||
+               statusFilter !== 'all' ||
+               departmentFilter !== 'all' ||
+               assignmentFilter !== 'all') && (
+               <div className="mb-4 p-3 bg-muted/50 rounded-md">
+                 <div className="text-sm text-muted-foreground">
+                   {(() => {
+                     let summary = t('employee.searchResults.summary', {
+                       filtered: String(filteredAndSortedEmployees.length),
+                       total: String(employees.length)
+                     });
+                     
+                     if (searchTerm) {
+                       summary += t('employee.searchResults.withSearchTerm', { searchTerm });
+                     }
+                     
+                     if (statusFilter !== 'all') {
+                       summary += t('employee.searchResults.withStatus', { statusFilter });
+                     }
+                     
+                     if (departmentFilter !== 'all') {
+                       summary += t('employee.searchResults.withDepartment', { departmentFilter });
+                     }
+                     
+                     if (assignmentFilter !== 'all') {
+                       if (assignmentFilter === 'assigned') {
+                         summary += t('employee.searchResults.assigned');
+                       } else {
+                         summary += t('employee.searchResults.notAssigned');
+                       }
+                     }
+                     
+                     return summary;
+                   })()}
+                 </div>
+               </div>
+             )}
 
             {/* Employee User Notice */}
             {user?.role === 'EMPLOYEE' && (
