@@ -21,6 +21,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { NationalityDropdown } from '@/components/shared/NationalityDropdown';
 import {
@@ -40,6 +41,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useI18n } from '@/hooks/use-i18n';
 import { toast } from 'sonner';
+import { ExpiryStatusDisplay, getExpiryStatus } from '@/lib/utils/expiry-utils';
 
 interface Department {
   id: number;
@@ -466,10 +468,24 @@ export default function CreateEmployeePage() {
   };
 
   const handleInputChange = (field: keyof EmployeeFormData, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [field]: value,
+      };
+
+      // Auto-set driving license number to iqama number when iqama is entered
+      if (field === 'iqama_number') {
+        if (value && value.trim() !== '') {
+          newData.driving_license_number = value;
+        } else {
+          // Clear driving license number when iqama is cleared
+          newData.driving_license_number = '';
+        }
+      }
+
+      return newData;
+    });
   };
 
   const handleFileUpload = async (field: string, file: File) => {
@@ -1162,11 +1178,24 @@ export default function CreateEmployeePage() {
                     <h3 className="font-semibold mb-4">{t('employee.documents.iqama')}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <Label htmlFor="iqama_number">{t('employee:fields.iqamaNumber')}</Label>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Label htmlFor="iqama_number">
+                                {t('employee:fields.iqamaNumber')}
+                                <span className="text-xs text-blue-600 ml-1">(ℹ)</span>
+                              </Label>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>When you enter an Iqama number, the Driving License number will be automatically set to the same value since they are typically the same number in Saudi Arabia.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                         <Input
                           id="iqama_number"
                           value={formData.iqama_number}
                           onChange={e => handleInputChange('iqama_number', e.target.value)}
+                          className={`${formData.iqama_number && formData.iqama_expiry ? (getExpiryStatus(formData.iqama_expiry).status === 'expired' ? 'border-red-500 text-red-600' : 'border-green-500 text-green-600') : ''}`}
                         />
                       </div>
                       <div>
@@ -1177,6 +1206,15 @@ export default function CreateEmployeePage() {
                           value={formData.iqama_expiry}
                           onChange={e => handleInputChange('iqama_expiry', e.target.value)}
                         />
+                        {formData.iqama_expiry && (
+                          <div className="mt-2">
+                            <ExpiryStatusDisplay 
+                              expiryDate={formData.iqama_expiry} 
+                              showAutoIndicator={true}
+                              className="text-xs"
+                            />
+                          </div>
+                        )}
                       </div>
                       <div>
                         <Label htmlFor="iqama_cost">{t('employee:fields.iqamaCost')}</Label>
@@ -1229,6 +1267,15 @@ export default function CreateEmployeePage() {
                           value={formData.passport_expiry}
                           onChange={e => handleInputChange('passport_expiry', e.target.value)}
                         />
+                        {formData.passport_expiry && (
+                          <div className="mt-2">
+                            <ExpiryStatusDisplay 
+                              expiryDate={formData.passport_expiry} 
+                              showAutoIndicator={true}
+                              className="text-xs"
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="mt-4">
@@ -1252,6 +1299,9 @@ export default function CreateEmployeePage() {
                       <div>
                         <Label htmlFor="driving_license_number">
                           {t('employee:fields.drivingLicenseNumber')}
+                          {formData.iqama_number && formData.iqama_number.trim() !== '' && (
+                            <span className="text-xs text-blue-600 ml-1">(Auto-set from Iqama)</span>
+                          )}
                         </Label>
                         <Input
                           id="driving_license_number"
@@ -1259,6 +1309,8 @@ export default function CreateEmployeePage() {
                           onChange={e =>
                             handleInputChange('driving_license_number', e.target.value)
                           }
+                          readOnly={!!(formData.iqama_number && formData.iqama_number.trim() !== '')}
+                          className={formData.iqama_number && formData.iqama_number.trim() !== '' ? 'bg-gray-100' : ''}
                         />
                       </div>
                       <div>
@@ -1273,6 +1325,15 @@ export default function CreateEmployeePage() {
                             handleInputChange('driving_license_expiry', e.target.value)
                           }
                         />
+                        {formData.driving_license_expiry && (
+                          <div className="mt-2">
+                            <ExpiryStatusDisplay 
+                              expiryDate={formData.driving_license_expiry} 
+                              showAutoIndicator={true}
+                              className="text-xs"
+                            />
+                          </div>
+                        )}
                       </div>
                       <div>
                         <Label htmlFor="driving_license_cost">
@@ -1335,6 +1396,15 @@ export default function CreateEmployeePage() {
                             handleInputChange('operator_license_expiry', e.target.value)
                           }
                         />
+                        {formData.operator_license_expiry && (
+                          <div className="mt-2">
+                            <ExpiryStatusDisplay 
+                              expiryDate={formData.operator_license_expiry} 
+                              showAutoIndicator={true}
+                              className="text-xs"
+                            />
+                          </div>
+                        )}
                       </div>
                       <div>
                         <Label htmlFor="operator_license_cost">
@@ -1397,6 +1467,15 @@ export default function CreateEmployeePage() {
                             handleInputChange('tuv_certification_expiry', e.target.value)
                           }
                         />
+                        {formData.tuv_certification_expiry && (
+                          <div className="mt-2">
+                            <ExpiryStatusDisplay 
+                              expiryDate={formData.tuv_certification_expiry} 
+                              showAutoIndicator={true}
+                              className="text-xs"
+                            />
+                          </div>
+                        )}
                       </div>
                       <div>
                         <Label htmlFor="tuv_certification_cost">
@@ -1445,6 +1524,15 @@ export default function CreateEmployeePage() {
                             handleInputChange('spsp_license_expiry', e.target.value)
                           }
                         />
+                        {formData.spsp_license_expiry && (
+                          <div className="mt-2">
+                            <ExpiryStatusDisplay 
+                              expiryDate={formData.spsp_license_expiry} 
+                              showAutoIndicator={true}
+                              className="text-xs"
+                            />
+                          </div>
+                        )}
                       </div>
                       <div>
                         <Label htmlFor="spsp_license_cost">

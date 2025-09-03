@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { NationalityDropdown } from '@/components/shared/NationalityDropdown';
 import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
 import { ArrowLeft, Calendar, Edit, IdCard, MapPin, Phone, Plus, Save, User } from 'lucide-react';
@@ -23,6 +24,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
+import { ExpiryStatusDisplay, getExpiryStatus } from '@/lib/utils/expiry-utils';
 
 interface Employee {
   id: number;
@@ -361,6 +363,16 @@ export default function EditEmployeePage() {
 
         const calculatedHourlyRate = calculateHourlyRate(basicSalary, contractHours);
         newData.hourly_rate = calculatedHourlyRate.toString();
+      }
+
+      // Auto-set driving license number to iqama number when iqama is entered
+      if (field === 'iqama_number') {
+        if (value && value.trim() !== '') {
+          newData.driving_license_number = value;
+        } else {
+          // Clear driving license number when iqama is cleared
+          newData.driving_license_number = '';
+        }
       }
 
       return newData;
@@ -1094,12 +1106,25 @@ export default function EditEmployeePage() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="iqama_number">{t('employee.fields.iqamaNumber')}</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Label htmlFor="iqama_number">
+                        {t('employee.fields.iqamaNumber')}
+                        <span className="text-xs text-blue-600 ml-1">(ℹ)</span>
+                      </Label>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>When you enter an Iqama number, the Driving License number will be automatically set to the same value since they are typically the same number in Saudi Arabia.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <Input
                   id="iqama_number"
                   value={formData.iqama_number}
                   onChange={e => handleInputChange('iqama_number', e.target.value)}
                   placeholder={t('employee.fields.iqamaNumber')}
+                  className={`${formData.iqama_number && formData.iqama_expiry ? (getExpiryStatus(formData.iqama_expiry).status === 'expired' ? 'border-red-500 text-red-600' : 'border-green-500 text-green-600') : ''}`}
                 />
               </div>
 
@@ -1138,12 +1163,19 @@ export default function EditEmployeePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="driving_license_number">{t('employee.fields.drivingLicenseNumber')}</Label>
+                <Label htmlFor="driving_license_number">
+                  {t('employee.fields.drivingLicenseNumber')}
+                  {formData.iqama_number && formData.iqama_number.trim() !== '' && (
+                    <span className="text-xs text-blue-600 ml-1">(Auto-set from Iqama)</span>
+                  )}
+                </Label>
                 <Input
                   id="driving_license_number"
                   value={formData.driving_license_number}
                   onChange={e => handleInputChange('driving_license_number', e.target.value)}
                   placeholder={t('employee.fields.drivingLicenseNumber')}
+                  readOnly={!!(formData.iqama_number && formData.iqama_number.trim() !== '')}
+                  className={formData.iqama_number && formData.iqama_number.trim() !== '' ? 'bg-gray-100' : ''}
                 />
               </div>
 

@@ -124,6 +124,8 @@
     "search": "البحث عن الموظفين...",
     "filter": "تصفية",
     "refresh": "تحديث",
+    "updateDrivingLicense": "تحديث رخصة القيادة",
+    "updating": "جاري التحديث...",
     "export": "تصدير",
     "import": "استيراد",
     "addDepartment": "إضافة قسم",
@@ -539,6 +541,11 @@
       "fileNumber": "رقم الملف",
       "iqamaNumber": "رقم الإقامة",
       "iqamaExpiry": "تاريخ انتهاء الإقامة",
+      "passportExpiry": "تاريخ انتهاء جواز السفر",
+      "drivingLicenseExpiry": "تاريخ انتهاء رخصة القيادة",
+      "operatorLicenseExpiry": "تاريخ انتهاء رخصة المشغل",
+      "tuvCertificationExpiry": "تاريخ انتهاء شهادة TUV",
+      "spspLicenseExpiry": "تاريخ انتهاء رخصة SPSP",
       "currentAssignment": "التعيين الحالي"
     }
   },
@@ -606,6 +613,13 @@
     "name": "الاسم",
     "edit": "تعديل",
     "quickCreate": "إنشاء سريع"
+  },
+
+  "expiry": {
+    "expired": "منتهي منذ {{days}} يوم",
+    "expiring": "ينتهي خلال {{days}} يوم",
+    "valid": "صالح ({{days}} يوم متبقي)",
+    "autoIndicator": "⚠️ منتهي تلقائياً"
   },
 
   "salary": {

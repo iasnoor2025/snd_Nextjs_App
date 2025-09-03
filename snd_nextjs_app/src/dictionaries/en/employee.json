@@ -98,6 +98,8 @@
     "search": "Search employees...",
     "filter": "Filter",
     "refresh": "Refresh",
+    "updateDrivingLicense": "Update Driving License",
+    "updating": "Updating...",
     "clear": "Clear"
   },
 
@@ -300,6 +302,11 @@
       "department": "Department",
       "iqamaNumber": "Iqama Number",
       "iqamaExpiry": "Iqama Expiry",
+      "passportExpiry": "Passport Expiry",
+      "drivingLicenseExpiry": "Driving License Expiry",
+      "operatorLicenseExpiry": "Operator License Expiry",
+      "tuvCertificationExpiry": "TUV Certification Expiry",
+      "spspLicenseExpiry": "SPSP License Expiry",
       "currentAssignment": "Current Assignment",
       "status": "Status",
       "hireDate": "Hire Date",
@@ -444,6 +451,13 @@
     "noRecordsFound": "No Iqama records found",
     "tryAdjustingSearch": "Try adjusting your search or filters",
     "allRecordsActive": "All Iqama records are currently active"
+  },
+
+  "expiry": {
+    "expired": "Expired {{days}} days ago",
+    "expiring": "Expires in {{days}} days",
+    "valid": "Valid ({{days}} days remaining)",
+    "autoIndicator": "⚠️ Auto-expired"
   },
 
   "assignment": {

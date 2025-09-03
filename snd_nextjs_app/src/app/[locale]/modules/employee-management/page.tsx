@@ -48,6 +48,7 @@ import {
 } from '@/lib/translation-utils';
 import { useDeleteConfirmations } from '@/lib/utils/confirmation-utils';
 import { cn } from '@/lib/utils';
+import { ExpiryStatusDisplay, getExpiryStatus, getExpiryStatusText, formatDate } from '@/lib/utils/expiry-utils';
 
 // Force dynamic rendering to prevent SSR issues
 export const dynamic = 'force-dynamic';
@@ -73,6 +74,16 @@ interface Employee {
   overtime_fixed_rate?: number | null;
   iqama_number?: string | null;
   iqama_expiry?: string | null;
+  passport_number?: string | null;
+  passport_expiry?: string | null;
+  driving_license_number?: string | null;
+  driving_license_expiry?: string | null;
+  operator_license_number?: string | null;
+  operator_license_expiry?: string | null;
+  tuv_certification_number?: string | null;
+  tuv_certification_expiry?: string | null;
+  spsp_license_number?: string | null;
+  spsp_license_expiry?: string | null;
   current_assignment?: {
     id: number;
     type: string;
@@ -111,6 +122,7 @@ export default function EmployeeManagementPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdatingDrivingLicense, setIsUpdatingDrivingLicense] = useState(false);
 
   // Statistics state
   const [statistics, setStatistics] = useState({
@@ -120,28 +132,7 @@ export default function EmployeeManagementPage() {
     rentalAssignments: 0,
   });
 
-  // Helper function to check if Iqama is expired
-  const isIqamaExpired = (expiryDate: string | null | undefined): boolean => {
-    if (!expiryDate) return false;
-    const expiry = new Date(expiryDate);
-    const today = new Date();
-    return expiry < today;
-  };
 
-  // Helper function to format dates
-  const formatDate = (dateString: string | null | undefined): string => {
-    if (!dateString) return t('employee.na');
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
-    } catch (error) {
-      return t('employee.na'); 
-    }
-  };
 
   // State for translated names
   const [translatedNames, setTranslatedNames] = useState<{ [key: string]: string }>({});
@@ -338,6 +329,38 @@ export default function EmployeeManagementPage() {
       } finally {
         setIsDeleting(false);
       }
+    }
+  };
+
+  const handleUpdateDrivingLicense = async () => {
+    try {
+      setIsUpdatingDrivingLicense(true);
+      console.log('Calling update driving license API...');
+      
+      const response = await fetch('/api/employees/update-driving-license', {
+        method: 'POST',
+      });
+
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+
+      const result = await response.json();
+      console.log('API response:', result);
+
+      if (result.success) {
+        toast.success(result.message);
+        if (result.data.updatedCount > 0) {
+          await fetchEmployees(); // Refresh the list to show updated data
+        }
+      } else {
+        console.error('API returned error:', result);
+        toast.error(result.message || 'Failed to update driving license numbers');
+      }
+    } catch (error) {
+      console.error('Error updating driving license numbers:', error);
+      toast.error('Failed to update driving license numbers');
+    } finally {
+      setIsUpdatingDrivingLicense(false);
     }
   };
 
@@ -653,6 +676,48 @@ export default function EmployeeManagementPage() {
                 </div>
               </div>
 
+              <PermissionContent action="update" subject="Employee">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleUpdateDrivingLicense}
+                  disabled={isUpdatingDrivingLicense}
+                  className="flex items-center gap-2"
+                >
+                  {isUpdatingDrivingLicense ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                      {t('employee.actions.updating')}
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-sm">🚗</span>
+                      {t('employee.actions.updateDrivingLicense')}
+                    </>
+                  )}
+                </Button>
+              </PermissionContent>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    const response = await fetch('/api/employees/test-driving-license');
+                    const result = await response.json();
+                    console.log('Test endpoint result:', result);
+                    toast.success(`Found ${result.data.employeesToUpdate} employees to update`);
+                  } catch (error) {
+                    console.error('Test endpoint error:', error);
+                    toast.error('Test endpoint failed');
+                  }
+                }}
+                className="flex items-center gap-2"
+              >
+                <span className="text-sm">🔍</span>
+                Test
+              </Button>
+
               <Select
                 value={statusFilter}
                 onValueChange={value => {
@@ -759,24 +824,8 @@ export default function EmployeeManagementPage() {
                         {getSortIcon('full_name')}
                       </div>
                     </TableHead>
-                    <TableHead
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => handleSort('email')}
-                    >
-                      <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        {t('employee.table.headers.email')}
-                        {getSortIcon('email')}
-                      </div>
-                    </TableHead>
-                    <TableHead
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => handleSort('department')}
-                    >
-                      <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        {t('employee.table.headers.department')}
-                        {getSortIcon('department')}
-                      </div>
-                    </TableHead>
+                    
+                    
                     <TableHead
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => handleSort('iqama_number')}
@@ -786,15 +835,8 @@ export default function EmployeeManagementPage() {
                         {getSortIcon('iqama_number')}
                       </div>
                     </TableHead>
-                    <TableHead
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => handleSort('iqama_expiry')}
-                    >
-                      <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        {t('employee.table.headers.iqamaExpiry')}
-                        {getSortIcon('iqama_expiry')}
-                      </div>
-                    </TableHead>
+                    
+                    
                     <TableHead className={isRTL ? 'text-right' : 'text-left'}>
                       <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
                         {t('employee.table.headers.currentAssignment')}
@@ -809,15 +851,7 @@ export default function EmployeeManagementPage() {
                         {getSortIcon('status')}
                       </div>
                     </TableHead>
-                    <TableHead
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => handleSort('hireDate')}
-                    >
-                      <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        {t('employee.table.headers.hireDate')}
-                        {getSortIcon('hireDate')}
-                      </div>
-                    </TableHead>
+
                     <TableHead className={isRTL ? 'text-left' : 'text-right'}>
                       {t('employee.table.headers.actions')}
                     </TableHead>
@@ -826,7 +860,7 @@ export default function EmployeeManagementPage() {
                 <TableBody>
                   {currentEmployees.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-8">
+                                             <TableCell colSpan={7} className="text-center py-8">
                         <div className="text-muted-foreground">
                           {user?.role === 'EMPLOYEE'
                             ? 'No employee record found for your account. Please contact your administrator.'
@@ -883,41 +917,20 @@ export default function EmployeeManagementPage() {
                              </div>
                           </div>
                         </TableCell>
-                                                 <TableCell className={isRTL ? 'text-right' : 'text-left'}>
-                           {employee.email || t('employee.na')}
-                         </TableCell>
-                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>
-                                                      {employee.department
-                              ? employee.department.toLowerCase() === 'general'
-                                ? t('employee.departments.general')
-                                : employee.department.toLowerCase() === 'hr'
-                                  ? t('employee.departments.hr')
-                                  : employee.department.toLowerCase() === 'it'
-                                    ? t('employee.departments.it')
-                                    : employee.department.toLowerCase() === 'finance'
-                                      ? t('employee.departments.finance')
-                                      : employee.department.toLowerCase() === 'operations'
-                                        ? t('employee.departments.operations')
-                                        : employee.department.toLowerCase() === 'sales'
-                                          ? t('employee.departments.sales')
-                                          : employee.department.toLowerCase() === 'marketing'
-                                            ? t('employee.departments.marketing')
-                                            : employee.department.toLowerCase() === 'engineering'
-                                              ? t('employee.departments.engineering')
-                                              : employee.department.toLowerCase() === 'maintenance'
-                                                ? t('employee.departments.maintenance')
-                                                                               : employee.department
-                               : t('employee.na')}
-                        </TableCell>
+                                                 
+                        
                                                  <TableCell className={isRTL ? 'text-right' : 'text-left'}>
                            {employee.iqama_number ? (
                              <div>
-                               <div className="font-medium">
+                                                               <div className={`font-medium ${employee.iqama_expiry ? (getExpiryStatus(employee.iqama_expiry).status === 'expired' ? 'text-red-600' : 'text-green-600') : ''}`}>
                                  {convertToArabicNumerals(employee.iqama_number, isRTL)}
+                                 {employee.iqama_expiry && getExpiryStatus(employee.iqama_expiry).status === 'expired' && (
+                                   <span className="ml-1 text-xs">⚠️</span>
+                                 )}
                                </div>
-                               {employee.iqama_expiry && isIqamaExpired(employee.iqama_expiry) && (
-                                 <div className="text-sm text-red-500">
-                                   ({t('employee.iqama.expired')})
+                               {employee.iqama_expiry && (
+                                 <div className={`text-xs ${getExpiryStatus(employee.iqama_expiry).textColor}`}>
+                                   {getExpiryStatusText(employee.iqama_expiry)}
                                  </div>
                                )}
                              </div>
@@ -925,20 +938,8 @@ export default function EmployeeManagementPage() {
                              t('employee.na')
                            )}
                          </TableCell>
-                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>
-                          {employee.iqama_expiry ? (
-                            <div
-                              className={`${isIqamaExpired(employee.iqama_expiry) ? 'text-red-600 font-medium' : ''}`}
-                            >
-                              {formatDate(employee.iqama_expiry)}
-                              {isIqamaExpired(employee.iqama_expiry) && (
-                                <div className="text-xs text-red-500">(Expired)</div>
-                              )}
-                            </div>
-                                                     ) : (
-                             t('employee.na')
-                           )}
-                        </TableCell>
+                        
+                        
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
                           {employee.current_assignment ? (
                             <div>
@@ -995,9 +996,7 @@ export default function EmployeeManagementPage() {
                                                                      : employee.status || t('employee.na')}
                           </Badge>
                         </TableCell>
-                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>
-                          {formatDate(employee.hire_date)}
-                        </TableCell>
+
                         <TableCell className={isRTL ? 'text-left' : 'text-right'}>
                           <div
                             className={`flex items-center gap-2 ${isRTL ? 'justify-start' : 'justify-end'}`}

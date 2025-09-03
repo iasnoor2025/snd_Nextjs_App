@@ -50,6 +50,7 @@ import { useI18n } from '@/hooks/use-i18n';
 import TimesheetSummary from '@/components/employee/timesheets/TimesheetSummary';
 import { useConfirmationDialog } from '@/components/providers/confirmation-provider';
 import { useRBAC } from '@/lib/rbac/rbac-context';
+import { ExpiryStatusDisplay, getExpiryStatus } from '@/lib/utils/expiry-utils';
 
 import AssignmentsTab from '@/components/employee/AssignmentsTab';
 import DocumentsTab from '@/components/employee/DocumentsTab';
@@ -817,13 +818,13 @@ export default function EmployeeShowPage() {
                       {employee.iqama_number && (
                         <div className="flex justify-between border-b pb-2">
                           <dt className="text-sm font-medium">{t('employee.fields.iqamaNumber')}</dt>
-                          <dd
-                            className={`text-sm ${isIqamaExpired(employee.iqama_expiry) ? 'text-red-600 font-medium' : ''}`}
-                          >
-                            {employee.iqama_number}
-                            {isIqamaExpired(employee.iqama_expiry) && (
-                              <span className="ml-1 text-xs text-red-500">({t('employee.iqama.expired')})</span>
-                            )}
+                          <dd className="text-sm">
+                            <div className={`font-medium ${employee.iqama_expiry ? (getExpiryStatus(employee.iqama_expiry).status === 'expired' ? 'text-red-600' : 'text-green-600') : ''}`}>
+                              {employee.iqama_number}
+                              {employee.iqama_expiry && getExpiryStatus(employee.iqama_expiry).status === 'expired' && (
+                                <span className="ml-1 text-xs">⚠️</span>
+                              )}
+                            </div>
                           </dd>
                         </div>
                       )}
@@ -831,7 +832,11 @@ export default function EmployeeShowPage() {
                         <div className="flex justify-between border-b pb-2">
                           <dt className="text-sm font-medium">{t('employee.fields.iqamaExpiry')}</dt>
                           <dd className="text-sm">
-                            {format(new Date(employee.iqama_expiry), 'PPP')}
+                            <ExpiryStatusDisplay 
+                              expiryDate={employee.iqama_expiry} 
+                              showAutoIndicator={true}
+                              className="text-xs"
+                            />
                           </dd>
                         </div>
                       )}
@@ -845,7 +850,11 @@ export default function EmployeeShowPage() {
                         <div className="flex justify-between border-b pb-2">
                           <dt className="text-sm font-medium">{t('employee.fields.passportExpiry')}</dt>
                           <dd className="text-sm">
-                            {format(new Date(employee.passport_expiry), 'PPP')}
+                            <ExpiryStatusDisplay 
+                              expiryDate={employee.passport_expiry} 
+                              showAutoIndicator={true}
+                              className="text-xs"
+                            />
                           </dd>
                         </div>
                       )}
@@ -864,56 +873,100 @@ export default function EmployeeShowPage() {
                         {employee.driving_license_number && (
                           <div className="flex justify-between border-b pb-2">
                             <dt className="text-sm font-medium">{t('employee.fields.drivingLicense')}</dt>
-                            <dd className="text-sm">{employee.driving_license_number}</dd>
+                            <dd className="text-sm">
+                              <div className={`font-medium ${employee.driving_license_expiry ? (getExpiryStatus(employee.driving_license_expiry).status === 'expired' ? 'text-red-600' : 'text-green-600') : ''}`}>
+                                {employee.driving_license_number}
+                                {employee.driving_license_expiry && getExpiryStatus(employee.driving_license_expiry).status === 'expired' && (
+                                  <span className="ml-1 text-xs">⚠️</span>
+                                )}
+                              </div>
+                            </dd>
                           </div>
                         )}
                         {employee.driving_license_expiry && (
                           <div className="flex justify-between border-b pb-2">
                             <dt className="text-sm font-medium">{t('employee.fields.drivingLicenseExpiry')}</dt>
                             <dd className="text-sm">
-                              {format(new Date(employee.driving_license_expiry), 'PPP')}
+                              <ExpiryStatusDisplay 
+                                expiryDate={employee.driving_license_expiry} 
+                                showAutoIndicator={true}
+                                className="text-xs"
+                              />
                             </dd>
                           </div>
                         )}
                         {employee.operator_license_number && (
                           <div className="flex justify-between border-b pb-2">
                             <dt className="text-sm font-medium">{t('employee.fields.operatorLicense')}</dt>
-                            <dd className="text-sm">{employee.operator_license_number}</dd>
+                            <dd className="text-sm">
+                              <div className={`font-medium ${employee.operator_license_expiry ? (getExpiryStatus(employee.operator_license_expiry).status === 'expired' ? 'text-red-600' : 'text-green-600') : ''}`}>
+                                {employee.operator_license_number}
+                                {employee.operator_license_expiry && getExpiryStatus(employee.operator_license_expiry).status === 'expired' && (
+                                  <span className="ml-1 text-xs">⚠️</span>
+                                )}
+                              </div>
+                            </dd>
                           </div>
                         )}
                         {employee.operator_license_expiry && (
                           <div className="flex justify-between border-b pb-2">
                             <dt className="text-sm font-medium">{t('employee.fields.operatorLicenseExpiry')}</dt>
                             <dd className="text-sm">
-                              {format(new Date(employee.operator_license_expiry), 'PPP')}
+                              <ExpiryStatusDisplay 
+                                expiryDate={employee.operator_license_expiry} 
+                                showAutoIndicator={true}
+                                className="text-xs"
+                              />
                             </dd>
                           </div>
                         )}
                         {employee.tuv_certification_number && (
                           <div className="flex justify-between border-b pb-2">
                             <dt className="text-sm font-medium">{t('employee.fields.tuvCertification')}</dt>
-                            <dd className="text-sm">{employee.tuv_certification_number}</dd>
+                            <dd className="text-sm">
+                              <div className={`font-medium ${employee.tuv_certification_expiry ? (getExpiryStatus(employee.tuv_certification_expiry).status === 'expired' ? 'text-red-600' : 'text-green-600') : ''}`}>
+                                {employee.tuv_certification_number}
+                                {employee.tuv_certification_expiry && getExpiryStatus(employee.tuv_certification_expiry).status === 'expired' && (
+                                  <span className="ml-1 text-xs">⚠️</span>
+                                )}
+                              </div>
+                            </dd>
                           </div>
                         )}
                         {employee.tuv_certification_expiry && (
                           <div className="flex justify-between border-b pb-2">
                             <dt className="text-sm font-medium">{t('employee.fields.tuvCertificationExpiry')}</dt>
                             <dd className="text-sm">
-                              {format(new Date(employee.tuv_certification_expiry), 'PPP')}
+                              <ExpiryStatusDisplay 
+                                expiryDate={employee.tuv_certification_expiry} 
+                                showAutoIndicator={true}
+                                className="text-xs"
+                              />
                             </dd>
                           </div>
                         )}
                         {employee.spsp_license_number && (
                           <div className="flex justify-between border-b pb-2">
                             <dt className="text-sm font-medium">{t('employee.fields.spspLicense')}</dt>
-                            <dd className="text-sm">{employee.spsp_license_number}</dd>
+                            <dd className="text-sm">
+                              <div className={`font-medium ${employee.spsp_license_expiry ? (getExpiryStatus(employee.spsp_license_expiry).status === 'expired' ? 'text-red-600' : 'text-green-600') : ''}`}>
+                                {employee.spsp_license_number}
+                                {employee.spsp_license_expiry && getExpiryStatus(employee.spsp_license_expiry).status === 'expired' && (
+                                  <span className="ml-1 text-xs">⚠️</span>
+                                )}
+                              </div>
+                            </dd>
                           </div>
                         )}
                         {employee.spsp_license_expiry && (
                           <div className="flex justify-between border-b pb-2">
                             <dt className="text-sm font-medium">{t('employee.fields.spspLicenseExpiry')}</dt>
                             <dd className="text-sm">
-                              {format(new Date(employee.spsp_license_expiry), 'PPP')}
+                              <ExpiryStatusDisplay 
+                                expiryDate={employee.spsp_license_expiry} 
+                                showAutoIndicator={true}
+                                className="text-xs"
+                              />
                             </dd>
                           </div>
                         )}
