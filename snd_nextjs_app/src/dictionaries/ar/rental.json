@@ -215,5 +215,7 @@
   "monthly": "شهري",
   "hourly": "ساعي",
   "inactive": "غير نشط",
-  "maintenance": "صيانة"
-}
+      "maintenance": "صيانة",
+    "status": "الحالة",
+    "actions": "الإجراءات"
+  }
