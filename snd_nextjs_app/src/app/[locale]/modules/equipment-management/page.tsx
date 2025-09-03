@@ -525,12 +525,10 @@ export default function EquipmentManagementPage() {
                     <div className="flex flex-col items-center text-center">
                       <div className="text-2xl mb-1">
                         {(() => {
+                          const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#F97316', '#84CC16', '#EC4899', '#14B8A6', '#F43F5E', '#6366F1'];
                           const category = categories.find(cat => cat.name.toUpperCase() === equipmentType);
-                          return category ? (
-                            <span style={{ color: category.color }}>{category.icon}</span>
-                          ) : (
-                            <span style={{ color: '#9E9E9E' }}>🔧</span>
-                          );
+                          const colorIndex = category ? categories.indexOf(category) % colors.length : 0;
+                          return <span style={{ color: colors[colorIndex] }}>●</span>;
                         })()}
                       </div>
                       <p className="text-xs font-medium text-muted-foreground mb-1 truncate w-full">
@@ -622,10 +620,7 @@ export default function EquipmentManagementPage() {
                   <option value="all">{t('equipment.equipment_management.all_types')}</option>
                   {Object.keys(equipmentStats).map(type => (
                     <option key={type} value={type}>
-                      {(() => {
-                        const category = categories.find(cat => cat.name.toUpperCase() === type);
-                        return category ? category.icon : '🔧';
-                      })()} {type}
+                      {type}
                     </option>
                   ))}
                 </select>
@@ -761,18 +756,12 @@ export default function EquipmentManagementPage() {
                             <TableCell className="font-medium">
                               <div className="flex items-center gap-2">
                                 <span className="text-lg">
-                                  {item.category_id ? (
-                                    (() => {
-                                      const category = categories.find(cat => cat.id === item.category_id);
-                                      return category ? (
-                                        <span style={{ color: category.color }}>{category.icon}</span>
-                                      ) : (
-                                        <span style={{ color: '#9E9E9E' }}>🔧</span>
-                                      );
-                                    })()
-                                  ) : (
-                                    <span style={{ color: '#9E9E9E' }}>🔧</span>
-                                  )}
+                                  {(() => {
+                                    const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#F97316', '#84CC16', '#EC4899', '#14B8A6', '#F43F5E', '#6366F1'];
+                                    const category = categories.find(cat => cat.id === item.category_id);
+                                    const colorIndex = category ? categories.indexOf(category) % colors.length : 0;
+                                    return <span style={{ color: colors[colorIndex] }}>●</span>;
+                                  })()}
                                 </span>
                                 <span>
                                   {getTranslatedName(
