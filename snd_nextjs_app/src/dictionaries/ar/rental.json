@@ -67,9 +67,17 @@
   "finalAmount": "المبلغ النهائي",
   "rentalTimeline": "الجدول الزمني للإيجار",
   "workflowTimeline": "الجدول الزمني الكامل لسير العمل والأنشطة",
+  "workflowProgress": "تقدم سير العمل",
+  "keyEvents": "الأحداث الرئيسية",
+  "rentalCreated": "تم إنشاء الإيجار",
   "created": "تم الإنشاء",
+  "rentalRequestCreated": "تم إنشاء طلب الإيجار",
   "quotation": "عرض السعر",
   "quotationApproved": "تمت الموافقة على العرض",
+  "invoiceCreated": "تم إنشاء الفاتورة",
+  "invoiceGenerated": "تم إنشاء الفاتورة",
+  "overdue": "متأخر",
+  "paymentOverdue": "الدفع متأخر",
   "mobilization": "التعبئة",
   "quotationGenerated": "تم إنشاء عرض السعر",
   "approvedByCustomer": "تمت الموافقة من قبل العميل",
@@ -146,7 +154,9 @@
     "pending": "معلق",
     "active": "نشط",
     "completed": "مكتمل",
-    "cancelled": "ملغي"
+    "cancelled": "ملغي",
+    "current": "الحالي",
+    "upcoming": "قادم"
   },
   "paymentStatus": {
     "pending": "معلق",
@@ -237,5 +247,7 @@
   "inactive": "غير نشط",
       "maintenance": "صيانة",
     "notStarted": "لم يبدأ بعد",
+    "current": "الحالي",
+    "upcoming": "قادم",
     "status": "الحالة"
   }

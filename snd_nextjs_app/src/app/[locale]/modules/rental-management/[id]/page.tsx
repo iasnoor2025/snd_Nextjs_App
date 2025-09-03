@@ -281,8 +281,8 @@ function UnifiedTimeline({ rental, t }: { rental: Rental; t: any }) {
       },
       {
         id: 'invoice',
-        name: 'Invoice Created',
-        description: 'Invoice generated',
+        name: t('rental.invoiceCreated'),
+        description: t('rental.invoiceGenerated'),
         date: safeFormatDate(rental.invoiceDate),
         icon: Receipt,
         color: 'bg-purple-100 text-purple-700 border-purple-200',
@@ -294,8 +294,8 @@ function UnifiedTimeline({ rental, t }: { rental: Rental; t: any }) {
       },
       {
         id: 'overdue',
-        name: 'Overdue',
-        description: 'Payment overdue',
+        name: t('rental.overdue'),
+        description: t('rental.paymentOverdue'),
         date: safeFormatDate(rental.paymentDueDate),
         icon: AlertCircle,
         color: 'bg-red-100 text-red-700 border-red-200',
@@ -434,7 +434,7 @@ function UnifiedTimeline({ rental, t }: { rental: Rental; t: any }) {
           return (
             <Button size="sm" onClick={handleGenerateQuotation} className="mt-2">
               <FileText className="w-3 h-3 mr-1" />
-              Generate Quotation
+              {t('rental.generateQuotation')}
             </Button>
           );
         }
@@ -448,7 +448,7 @@ function UnifiedTimeline({ rental, t }: { rental: Rental; t: any }) {
           return (
             <Button size="sm" onClick={handleApproveQuotation} className="mt-2">
               <CheckCircle className="w-3 h-3 mr-1" />
-              Approve Quotation
+              {t('rental.approveQuotation')}
             </Button>
           );
         }
@@ -463,7 +463,7 @@ function UnifiedTimeline({ rental, t }: { rental: Rental; t: any }) {
           return (
             <Button size="sm" onClick={handleStartMobilization} className="mt-2">
               <Truck className="w-3 h-3 mr-1" />
-              Start Mobilization
+              {t('rental.startMobilization')}
             </Button>
           );
         }
@@ -477,7 +477,7 @@ function UnifiedTimeline({ rental, t }: { rental: Rental; t: any }) {
           return (
             <Button size="sm" onClick={handleActivateRental} className="mt-2">
               <Clock className="w-3 h-3 mr-1" />
-              Activate Rental
+              {t('rental.activateRental')}
             </Button>
           );
         }
@@ -487,7 +487,7 @@ function UnifiedTimeline({ rental, t }: { rental: Rental; t: any }) {
           return (
             <Button size="sm" onClick={handleCompleteRental} className="mt-2">
               <CalendarCheck className="w-3 h-3 mr-1" />
-              Complete Rental
+              {t('rental.completeRental')}
             </Button>
           );
         }
@@ -497,7 +497,7 @@ function UnifiedTimeline({ rental, t }: { rental: Rental; t: any }) {
           return (
             <Button size="sm" onClick={handleGenerateInvoice} className="mt-2">
               <Receipt className="w-3 h-3 mr-1" />
-              Generate Invoice
+              {t('rental.generateInvoice')}
             </Button>
           );
         } else if (rental.invoiceDate && rental.invoices && rental.invoices.length > 0) {
@@ -535,14 +535,14 @@ function UnifiedTimeline({ rental, t }: { rental: Rental; t: any }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Rental Timeline</CardTitle>
-        <CardDescription>Complete workflow and activity timeline</CardDescription>
+        <CardTitle>{t('rental.rentalTimeline')}</CardTitle>
+        <CardDescription>{t('rental.workflowTimeline')}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
           {/* Workflow Timeline */}
           <div>
-            <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Workflow Progress</h3>
+            <h3 className="text-sm font-semibold mb-3 text-muted-foreground">{t('rental.workflowProgress')}</h3>
             <ol className="relative border-l border-muted">
               {timelineEvents.map((event, index) => (
                 <li key={event.id} className="mb-6 ml-6">
@@ -570,7 +570,9 @@ function UnifiedTimeline({ rental, t }: { rental: Rental; t: any }) {
                         }
                         className="mt-1"
                       >
-                        {event.status}
+                        {event.status === 'completed' ? t('rental.completed') :
+                         event.status === 'current' ? t('rental.current') :
+                         event.status === 'upcoming' ? t('rental.upcoming') : event.status}
                       </Badge>
                     </div>
                     {getActionButton(event)}
@@ -620,12 +622,12 @@ function UnifiedTimeline({ rental, t }: { rental: Rental; t: any }) {
 
           {/* Key Events Summary */}
           <div>
-            <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Key Events</h3>
+            <h3 className="text-sm font-semibold mb-3 text-muted-foreground">{t('rental.keyEvents')}</h3>
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <div>
-                  <p className="text-sm font-medium">Rental Created</p>
+                  <p className="text-sm font-medium">{t('rental.rentalCreated')}</p>
                   <p className="text-xs text-muted-foreground">
                     {rental.createdAt && !isNaN(new Date(rental.createdAt).getTime())
                       ? format(new Date(rental.createdAt), 'MMM dd, yyyy HH:mm')
@@ -637,7 +639,7 @@ function UnifiedTimeline({ rental, t }: { rental: Rental; t: any }) {
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                   <div>
-                    <p className="text-sm font-medium">Quotation Generated</p>
+                    <p className="text-sm font-medium">{t('rental.quotationGenerated')}</p>
                     <p className="text-xs text-muted-foreground">
                       {rental.createdAt && !isNaN(new Date(rental.createdAt).getTime())
                         ? format(new Date(rental.createdAt), 'MMM dd, yyyy')
@@ -650,7 +652,7 @@ function UnifiedTimeline({ rental, t }: { rental: Rental; t: any }) {
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                   <div>
-                    <p className="text-sm font-medium">Quotation Approved</p>
+                    <p className="text-sm font-medium">{t('rental.quotationApproved')}</p>
                     <p className="text-xs text-muted-foreground">
                       {rental.approvedAt && !isNaN(new Date(rental.approvedAt).getTime())
                         ? format(new Date(rental.approvedAt), 'MMM dd, yyyy')

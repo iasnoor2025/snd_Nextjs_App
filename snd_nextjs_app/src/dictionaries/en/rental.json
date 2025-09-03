@@ -67,9 +67,17 @@
   "finalAmount": "Final Amount",
   "rentalTimeline": "Rental Timeline",
   "workflowTimeline": "Complete workflow and activity timeline",
+  "workflowProgress": "Workflow Progress",
+  "keyEvents": "Key Events",
+  "rentalCreated": "Rental Created",
   "created": "Created",
+  "rentalRequestCreated": "Rental request created",
   "quotation": "Quotation",
   "quotationApproved": "Quotation Approved",
+  "invoiceCreated": "Invoice Created",
+  "invoiceGenerated": "Invoice generated",
+  "overdue": "Overdue",
+  "paymentOverdue": "Payment overdue",
   "mobilization": "Mobilization",
   "quotationGenerated": "Quotation generated",
   "approvedByCustomer": "Approved by customer",
@@ -146,7 +154,9 @@
     "pending": "Pending",
     "active": "Active",
     "completed": "Completed",
-    "cancelled": "Cancelled"
+    "cancelled": "Cancelled",
+    "current": "Current",
+    "upcoming": "Upcoming"
   },
   "paymentStatus": {
     "pending": "Pending",
@@ -237,5 +247,7 @@
   "inactive": "Inactive",
   "maintenance": "Maintenance",
   "notStarted": "Not Started",
+  "current": "Current",
+  "upcoming": "Upcoming",
   "status": "Status"
 }
