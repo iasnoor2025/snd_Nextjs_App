@@ -153,6 +153,7 @@ export default function RentalManagementPage() {
   const [formData, setFormData] = useState({
     customerId: '',
     rentalNumber: '',
+    startDate: '',
     expectedEndDate: '',
     supervisor: '',
     notes: '',
@@ -365,12 +366,15 @@ export default function RentalManagementPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formData,
-          ...financials,
+          customerId: formData.customerId,
+          rentalNumber: formData.rentalNumber,
+          startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
           expectedEndDate: formData.expectedEndDate
             ? new Date(formData.expectedEndDate).toISOString()
             : null,
           supervisor: formData.supervisor || null,
+          notes: formData.notes || '',
+          ...financials,
         }),
       });
 
@@ -413,6 +417,7 @@ export default function RentalManagementPage() {
     setFormData({
       customerId: '',
       rentalNumber: '',
+      startDate: '',
       expectedEndDate: '',
       supervisor: '',
       notes: '',
@@ -441,12 +446,6 @@ export default function RentalManagementPage() {
         rental.expectedEndDate && rental.expectedEndDate.includes('T')
           ? rental.expectedEndDate.split('T')[0]
           : rental.expectedEndDate || '',
-      depositAmount: formatAmount(rental.depositAmount),
-      paymentTermsDays: rental.paymentTermsDays.toString(),
-      hasTimesheet: rental.hasTimesheet,
-      hasOperators: rental.hasOperators,
-      status: rental.status || 'pending',
-      paymentStatus: rental.paymentStatus || 'pending',
       supervisor: rental.supervisor || '',
       notes: rental.notes || '',
       rentalItems: rental.rentalItems || [],
@@ -909,61 +908,6 @@ export default function RentalManagementPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="editDepositAmount">{t('rental.depositAmount')}</Label>
-                <Input
-                  id="editDepositAmount"
-                  type="number"
-                  step="0.01"
-                  value={formData.depositAmount}
-                  onChange={e => setFormData(prev => ({ ...prev, depositAmount: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="editPaymentTermsDays">{t('rental.paymentTermsDays')}</Label>
-                <Input
-                  id="editPaymentTermsDays"
-                  type="number"
-                  value={formData.paymentTermsDays}
-                  onChange={e =>
-                    setFormData(prev => ({ ...prev, paymentTermsDays: e.target.value }))
-                  }
-                />
-              </div>
-              <div>
-                <Label htmlFor="editStatus">{t('rental.fields.status')}</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={value => setFormData(prev => ({ ...prev, status: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60 overflow-y-auto">
-                    <SelectItem value="pending">{t('rental.status.pending')}</SelectItem>
-                    <SelectItem value="active">{t('rental.status.active')}</SelectItem>
-                    <SelectItem value="completed">{t('rental.status.completed')}</SelectItem>
-                    <SelectItem value="cancelled">{t('rental.status.cancelled')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="editPaymentStatus">{t('rental.fields.paymentStatus')}</Label>
-                <Select
-                  value={formData.paymentStatus}
-                  onValueChange={value => setFormData(prev => ({ ...prev, paymentStatus: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60 overflow-y-auto">
-                    <SelectItem value="pending">{t('rental.paymentStatus.pending')}</SelectItem>
-                    <SelectItem value="partial">{t('rental.paymentStatus.partial')}</SelectItem>
-                    <SelectItem value="paid">{t('rental.paymentStatus.paid')}</SelectItem>
-                    <SelectItem value="overdue">{t('rental.paymentStatus.overdue')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
                 <Label htmlFor="editSupervisor">{t('rental.fields.supervisor')}</Label>
                 {/* EmployeeDropdown for supervisor selection */}
                 <EmployeeDropdown
@@ -974,26 +918,6 @@ export default function RentalManagementPage() {
                   }}
                   placeholder={t('rental.fields.selectSupervisor')}
                 />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="editHasTimesheet"
-                  checked={formData.hasTimesheet}
-                  onChange={e => setFormData(prev => ({ ...prev, hasTimesheet: e.target.checked }))}
-                />
-                <Label htmlFor="editHasTimesheet">{t('rental.hasTimesheet')}</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="editHasOperators"
-                  checked={formData.hasOperators}
-                  onChange={e => setFormData(prev => ({ ...prev, hasOperators: e.target.checked }))}
-                />
-                <Label htmlFor="editHasOperators">{t('rental.hasOperators')}</Label>
               </div>
             </div>
             <div>

@@ -66,6 +66,7 @@ import {
   RentalItemConfirmationDialog
 } from '@/components/rental';
 import { useRentalItemConfirmation } from '@/hooks/use-rental-item-confirmation';
+import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
 
 interface RentalItem {
   id: string;
@@ -727,12 +728,6 @@ export default function RentalDetailPage() {
     rentalNumber: '',
     startDate: '',
     expectedEndDate: '',
-    depositAmount: '',
-    paymentTermsDays: '30',
-    hasTimesheet: false,
-    hasOperators: false,
-    status: 'pending',
-    paymentStatus: 'pending',
     supervisor: '',
     notes: '',
   });
@@ -926,8 +921,6 @@ export default function RentalDetailPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          depositAmount: parseFloat(formData.depositAmount) || 0,
-          paymentTermsDays: parseInt(formData.paymentTermsDays),
           startDate: new Date(formData.startDate).toISOString(),
           expectedEndDate: formData.expectedEndDate
             ? new Date(formData.expectedEndDate).toISOString()
@@ -1107,12 +1100,6 @@ export default function RentalDetailPage() {
       rentalNumber: rental.rentalNumber,
       startDate: rental.startDate.split('T')[0],
       expectedEndDate: rental.expectedEndDate ? rental.expectedEndDate.split('T')[0] : '',
-      depositAmount: formatAmount(rental.depositAmount),
-      paymentTermsDays: rental.paymentTermsDays.toString(),
-      hasTimesheet: rental.hasTimesheet,
-      hasOperators: rental.hasOperators,
-      status: rental.status || 'pending',
-      paymentStatus: rental.paymentStatus || 'pending',
       supervisor: rental.supervisor || '',
       notes: rental.notes || '',
     });
@@ -1930,86 +1917,15 @@ export default function RentalDetailPage() {
               />
             </div>
             <div>
-              <Label htmlFor="editDepositAmount">{t('rental.fields.depositAmount')}</Label>
-              <Input
-                id="editDepositAmount"
-                type="number"
-                step="0.01"
-                value={formData.depositAmount}
-                onChange={e => setFormData(prev => ({ ...prev, depositAmount: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="editPaymentTermsDays">{t('rental.fields.paymentTermsDays')}</Label>
-              <Input
-                id="editPaymentTermsDays"
-                type="number"
-                value={formData.paymentTermsDays}
-                onChange={e => setFormData(prev => ({ ...prev, paymentTermsDays: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="editStatus">{t('rental.fields.status')}</Label>
-              <Select
-                value={formData.status}
-                onValueChange={value => setFormData(prev => ({ ...prev, status: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="editPaymentStatus">{t('rental.fields.paymentStatus')}</Label>
-              <Select
-                value={formData.paymentStatus}
-                onValueChange={value => setFormData(prev => ({ ...prev, paymentStatus: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="partial">Partial</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="overdue">Overdue</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
               <Label htmlFor="editSupervisor">{t('rental.fields.supervisor')}</Label>
-              <Input
-                id="editSupervisor"
+              <EmployeeDropdown
                 value={formData.supervisor}
-                onChange={e => setFormData(prev => ({ ...prev, supervisor: e.target.value }))}
+                onValueChange={(value) => {
+                  console.log('Supervisor selected in edit:', value);
+                  setFormData(prev => ({ ...prev, supervisor: value }));
+                }}
                 placeholder={t('rental.fields.selectSupervisor')}
               />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="editHasTimesheet"
-                checked={formData.hasTimesheet}
-                onChange={e => setFormData(prev => ({ ...prev, hasTimesheet: e.target.checked }))}
-              />
-              <Label htmlFor="editHasTimesheet">{t('rental.hasTimesheet')}</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="editHasOperators"
-                checked={formData.hasOperators}
-                onChange={e => setFormData(prev => ({ ...prev, hasOperators: e.target.checked }))}
-              />
-              <Label htmlFor="editHasOperators">{t('rental.hasOperators')}</Label>
             </div>
           </div>
           <div>
