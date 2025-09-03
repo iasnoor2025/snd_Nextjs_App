@@ -596,15 +596,17 @@ export default function EmployeeShowPage() {
   const getStatusBadge = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'active':
-        return <Badge className="bg-green-100 text-green-800">{t('employee:status.active')}</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t('employee.status.active')}</Badge>;
       case 'inactive':
-        return <Badge className="bg-red-100 text-red-800">{t('employee:status.inactive')}</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t('employee.status.inactive')}</Badge>;
       case 'on_leave':
-        return <Badge className="bg-yellow-100 text-yellow-800">{t('employee:status.onLeave')}</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800">{t('employee.status.onLeave')}</Badge>;
       case 'terminated':
-        return <Badge className="bg-gray-100 text-gray-800">{t('employee:status.terminated')}</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t('employee.status.terminated')}</Badge>;
+      case 'left':
+        return <Badge className="bg-red-100 text-red-800">{t('employee.status.left')}</Badge>;
       default:
-        return <Badge variant="secondary">{status || t('employee:status.unknown')}</Badge>;
+        return <Badge variant="secondary">{status || t('employee.status.unknown')}</Badge>;
     }
   };
 

@@ -699,25 +699,7 @@ export default function EmployeeManagementPage() {
                 </Button>
               </PermissionContent>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={async () => {
-                  try {
-                    const response = await fetch('/api/employees/test-driving-license');
-                    const result = await response.json();
-                    console.log('Test endpoint result:', result);
-                    toast.success(`Found ${result.data.employeesToUpdate} employees to update`);
-                  } catch (error) {
-                    console.error('Test endpoint error:', error);
-                    toast.error('Test endpoint failed');
-                  }
-                }}
-                className="flex items-center gap-2"
-              >
-                <span className="text-sm">🔍</span>
-                Test
-              </Button>
+
 
               <Select
                 value={statusFilter}

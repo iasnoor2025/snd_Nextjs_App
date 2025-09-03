@@ -576,7 +576,10 @@
     "active": "Active",
     "inactive": "Inactive",
     "terminated": "Terminated",
-    "suspended": "Suspended"
+    "suspended": "Suspended",
+    "left": "Left",
+    "onLeave": "On Leave",
+    "unknown": "Unknown"
   },
   "advances": {
     "title": "Advance Payment Management",
