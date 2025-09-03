@@ -54,7 +54,10 @@
     "expired_istimara": "استمارة منتهية الصلاحية",
     "expiring_soon_istimara": "تنتهي قريباً",
     "door_number": "رقم الباب",
-    "chassis_number": "رقم الشاسيه"
+    "chassis_number": "رقم الشاسيه",
+    "manage_categories": "إدارة الفئات",
+    "type": "النوع",
+    "all_types": "جميع الأنواع"
   },
   "actions": {
     "addEquipment": "إضافة معدات",
@@ -133,7 +136,9 @@
     "istimaraExpiryDate": "تاريخ انتهاء الصلاحية",
     "erpnextId": "معرف ERPNext",
     "erpnextIdPlaceholder": "أدخل معرف ERPNext للمزامنة",
-    "categoryId": "معرف الفئة",
+    "categoryId": "الفئة",
+    "selectCategory": "اختر الفئة",
+    "noCategory": "لا توجد فئة",
     "timestamps": "الطوابع الزمنية",
     "createdAt": "تاريخ الإنشاء",
     "lastUpdated": "آخر تحديث"
@@ -194,6 +199,7 @@
     "notSpecified": "غير محدد",
     "notSet": "غير محدد",
     "noDescriptionAvailable": "لا يوجد وصف متاح",
+    "noCategory": "لا توجد فئة معينة",
     "notSynced": "غير متزامن",
     "systemInfo": "معلومات النظام",
     "equipmentId": "معرف المعدات",

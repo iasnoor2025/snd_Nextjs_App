@@ -45,18 +45,31 @@ interface Equipment {
   door_number?: string;
 }
 
+interface EquipmentCategory {
+  id: number;
+  name: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export default function EquipmentEditPage() {
   const { t } = useTranslations();
   const params = useParams();
   const router = useRouter();
   const { hasPermission } = useRBAC();
   const [equipment, setEquipment] = useState<Equipment | null>(null);
+  const [categories, setCategories] = useState<EquipmentCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     model_number: '',
     status: 'available',
+    category_id: '',
     manufacturer: '',
     daily_rate: '',
     weekly_rate: '',
@@ -83,6 +96,7 @@ export default function EquipmentEditPage() {
   useEffect(() => {
     if (equipmentId) {
       fetchEquipment();
+      fetchCategories();
     }
   }, [equipmentId]);
 
@@ -96,6 +110,7 @@ export default function EquipmentEditPage() {
           name: response.data.name || '',
           model_number: response.data.model_number || '',
           status: response.data.status || 'available',
+          category_id: response.data.category_id?.toString() || 'none',
           manufacturer: response.data.manufacturer || '',
           daily_rate: response.data.daily_rate?.toString() || '',
           weekly_rate: response.data.weekly_rate?.toString() || '',
@@ -119,6 +134,20 @@ export default function EquipmentEditPage() {
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/equipment/categories');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setCategories(result.data || []);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+    }
+  };
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
@@ -134,11 +163,23 @@ export default function EquipmentEditPage() {
     setSaving(true);
     try {
       const updateData = {
-        ...formData,
-        daily_rate: formData.daily_rate ? parseFloat(formData.daily_rate) : null,
-        weekly_rate: formData.weekly_rate ? parseFloat(formData.weekly_rate) : null,
-        monthly_rate: formData.monthly_rate ? parseFloat(formData.monthly_rate) : null,
+        name: formData.name,
+        description: formData.description,
+        manufacturer: formData.manufacturer,
+        modelNumber: formData.model_number,
+        serialNumber: formData.serial_number,
+        chassisNumber: formData.chassis_number,
+        doorNumber: formData.door_number,
+        status: formData.status,
+        categoryId: formData.category_id === 'none' ? null : (formData.category_id ? parseInt(formData.category_id) : null),
+        dailyRate: formData.daily_rate ? parseFloat(formData.daily_rate) : null,
+        weeklyRate: formData.weekly_rate ? parseFloat(formData.weekly_rate) : null,
+        monthlyRate: formData.monthly_rate ? parseFloat(formData.monthly_rate) : null,
+        istimara: formData.istimara,
+        istimara_expiry_date: formData.istimara_expiry_date,
       };
+
+      console.log('Sending update data:', updateData);
 
       const response = await ApiService.updateEquipment(equipment.id, updateData);
       if (response.success) {
@@ -251,6 +292,29 @@ export default function EquipmentEditPage() {
                       <SelectItem value="maintenance">{t('equipment.status.maintenance')}</SelectItem>
                       <SelectItem value="out_of_service">{t('equipment.status.out_of_service')}</SelectItem>
                     </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="category_id">{t('equipment.fields.categoryId')}</Label>
+                  <Select
+                    value={formData.category_id}
+                    onValueChange={value => handleInputChange('category_id', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('equipment.fields.selectCategory')} />
+                    </SelectTrigger>
+                                      <SelectContent>
+                    <SelectItem value="none">{t('equipment.fields.noCategory')}</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id.toString()}>
+                        <div className="flex items-center gap-2">
+                          <span>{category.icon}</span>
+                          <span>{category.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                   </Select>
                 </div>
 

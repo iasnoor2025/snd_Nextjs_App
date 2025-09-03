@@ -158,9 +158,17 @@ export const equipmentRelations = relations(equipment, ({ one, many }) => ({
     fields: [equipment.assignedTo],
     references: [employees.id],
   }),
+  category: one(equipmentCategories, {
+    fields: [equipment.categoryId],
+    references: [equipmentCategories.id],
+  }),
   rentalItems: many(rentalItems),
   projectEquipment: many(projectEquipment),
   projectFuel: many(projectFuel),
+}));
+
+export const equipmentCategoriesRelations = relations(equipmentCategories, ({ one, many }) => ({
+  equipment: many(equipment),
 }));
 
 export const rentalsRelations = relations(rentals, ({ one, many }) => ({

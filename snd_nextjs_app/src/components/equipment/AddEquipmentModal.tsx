@@ -20,7 +20,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import ApiService from '@/lib/api-service';
 import { Loader2, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
@@ -41,12 +41,24 @@ interface EquipmentFormData {
   purchaseDate: string;
   purchasePrice: string;
   status: string;
+  categoryId: string | 'none';
   dailyRate: string;
   weeklyRate: string;
   monthlyRate: string;
   erpnextId: string;
   istimara: string;
   istimara_expiry_date: string;
+}
+
+interface EquipmentCategory {
+  id: number;
+  name: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export default function AddEquipmentModal({
@@ -56,6 +68,7 @@ export default function AddEquipmentModal({
 }: AddEquipmentModalProps) {
   const { t } = useTranslation('equipment');
   const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState<EquipmentCategory[]>([]);
   const [formData, setFormData] = useState<EquipmentFormData>({
     name: '',
     description: '',
@@ -67,6 +80,7 @@ export default function AddEquipmentModal({
     purchaseDate: '',
     purchasePrice: '',
     status: 'available',
+    categoryId: 'none',
     dailyRate: '',
     weeklyRate: '',
     monthlyRate: '',
@@ -74,6 +88,27 @@ export default function AddEquipmentModal({
     istimara: '',
     istimara_expiry_date: '',
   });
+
+  // Fetch categories when modal opens
+  useEffect(() => {
+    if (open) {
+      fetchCategories();
+    }
+  }, [open]);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/equipment/categories');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setCategories(result.data || []);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+    }
+  };
 
   const handleInputChange = (field: keyof EquipmentFormData, value: string) => {
     setFormData(prev => ({
@@ -103,6 +138,7 @@ export default function AddEquipmentModal({
         purchaseDate: formData.purchaseDate || undefined,
         purchasePrice: formData.purchasePrice ? parseFloat(formData.purchasePrice) : undefined,
         status: formData.status,
+        categoryId: formData.categoryId === 'none' ? null : (formData.categoryId ? parseInt(formData.categoryId) : null),
         dailyRate: formData.dailyRate ? parseFloat(formData.dailyRate) : undefined,
         weeklyRate: formData.weeklyRate ? parseFloat(formData.weeklyRate) : undefined,
         monthlyRate: formData.monthlyRate ? parseFloat(formData.monthlyRate) : undefined,
@@ -110,6 +146,8 @@ export default function AddEquipmentModal({
         istimara_expiry_date: formData.istimara_expiry_date || undefined,
         erpnextId: formData.erpnextId.trim() || undefined,
       };
+
+
 
       const response = await ApiService.createEquipment(payload);
 
@@ -135,6 +173,7 @@ export default function AddEquipmentModal({
           purchaseDate: '',
           purchasePrice: '',
           status: 'available',
+          categoryId: 'none',
           dailyRate: '',
           weeklyRate: '',
           monthlyRate: '',
@@ -151,6 +190,8 @@ export default function AddEquipmentModal({
       setLoading(false);
     }
   };
+
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -197,6 +238,32 @@ export default function AddEquipmentModal({
                     <SelectItem value="out_of_service">{t('status.out_of_service')}</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="categoryId">{t('fields.categoryId')}</Label>
+                <Select
+                  value={formData.categoryId}
+                  onValueChange={value => handleInputChange('categoryId', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('fields.selectCategory')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{t('fields.noCategory')}</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id.toString()}>
+                        <div className="flex items-center gap-2">
+                          <span>{category.icon}</span>
+                          <span>{category.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
               </div>
             </div>
 

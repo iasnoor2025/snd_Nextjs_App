@@ -9,14 +9,17 @@ import { ensureHttps } from '@/lib/utils/url-utils';
 
 const handler = async (
   request: NextRequest,
-  { params }: { params: { id: string } }
+  ...args: unknown[]
 ) => {
+  const { params } = args[0] as { params: Promise<{ id: string }> };
+  const resolvedParams = await params;
+  
   if (request.method === 'GET') {
-    return await getDocumentsHandler(request, { params });
+    return await getDocumentsHandler(request, { params: resolvedParams });
   }
   
   if (request.method === 'POST') {
-    return await uploadDocumentsHandler(request, { params });
+    return await uploadDocumentsHandler(request, { params: resolvedParams });
   }
   
   return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });

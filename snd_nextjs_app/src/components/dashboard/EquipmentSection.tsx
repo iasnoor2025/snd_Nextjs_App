@@ -15,6 +15,14 @@ import {
 } from '@/components/ui/table';
 import { useI18n } from '@/hooks/use-i18n';
 import { PDFGenerator } from '@/lib/utils/pdf-generator';
+import {
+  getEquipmentCategoryName,
+  getEquipmentCategoryIcon,
+  getEquipmentCategoryColor,
+  groupEquipmentByCategory,
+  filterEquipmentByCategory,
+  EquipmentCategory,
+} from '@/lib/utils/equipment-type-utils';
 import { Download, Edit, Plus, Search, Wrench } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -54,13 +62,30 @@ export function EquipmentSection({
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [driverFilter, setDriverFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [previousIssueCount, setPreviousIssueCount] = useState(0);
   const [equipmentData, setEquipmentData] = useState(initialEquipmentData || []);
+  const [categories, setCategories] = useState<EquipmentCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch categories
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/equipment/categories');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setCategories(result.data || []);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+    }
+  };
 
   // Use the data passed from parent component
   useEffect(() => {
@@ -72,6 +97,9 @@ export function EquipmentSection({
       // Only fetch if no data is passed from parent
       fetchEquipmentData();
     }
+    
+    // Always fetch categories
+    fetchCategories();
   }, [initialEquipmentData]);
 
   // Fetch equipment data from API (fallback)
@@ -145,6 +173,8 @@ export function EquipmentSection({
     const matchesDriver = driverFilter === 'all' || 
       (driverFilter === 'assigned' && item.driverName) ||
       (driverFilter === 'unassigned' && !item.driverName);
+    const matchesType = typeFilter === 'all' || 
+      getEquipmentCategoryName(item.categoryId || item.category_id || null, categories) === typeFilter;
     const matchesSearch =
       !search ||
       item.equipmentName?.toLowerCase().includes(search.toLowerCase()) ||
@@ -154,7 +184,7 @@ export function EquipmentSection({
       item.istimara?.toLowerCase().includes(search.toLowerCase()) ||
       item.driverName?.toLowerCase().includes(search.toLowerCase());
 
-    return matchesStatus && matchesDriver && matchesSearch;
+    return matchesStatus && matchesDriver && matchesType && matchesSearch;
   });
 
   const totalPages = Math.ceil(filteredData.length / pageSize);
@@ -282,6 +312,40 @@ export function EquipmentSection({
               </div>
             </div>
             
+            {/* Equipment Type Statistics */}
+            <div className="mb-4">
+              <h4 className="text-sm font-medium text-muted-foreground mb-2">
+                {t('equipment.istimara.equipmentByType')}
+              </h4>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                {Object.entries(groupEquipmentByCategory(safeEquipmentData, categories))
+                  .sort(([,a], [,b]) => b - a)
+                  .slice(0, 6)
+                  .map(([type, count]) => (
+                    <div 
+                      key={type}
+                      className={`text-center p-2 rounded-lg border cursor-pointer transition-colors ${
+                        typeFilter === type ? 'bg-primary/10 border-primary' : 'bg-card hover:bg-muted/50'
+                      }`}
+                      onClick={() => setTypeFilter(typeFilter === type ? 'all' : type)}
+                    >
+                      <div className="text-lg mb-1">
+                        {(() => {
+                          const category = categories.find(cat => cat.name.toUpperCase() === type);
+                          return category ? (
+                            <span style={{ color: category.color }}>{category.icon}</span>
+                          ) : (
+                            getEquipmentTypeIcon(type)
+                          );
+                        })()}
+                      </div>
+                      <div className="text-sm font-semibold">{count}</div>
+                      <div className="text-xs text-muted-foreground truncate">{type}</div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+            
             <div className="grid grid-cols-5 gap-4">
               <div className="text-center p-3 rounded-lg border bg-card">
                 <div className="text-2xl font-bold text-red-600">
@@ -392,11 +456,27 @@ export function EquipmentSection({
                         {paginatedData.map(item => (
                           <TableRow key={item.id}>
                             <TableCell className="font-medium">
-                              <div>
-                                <div>{item.equipmentName}</div>
-                                <div className="text-xs text-muted-foreground">
-                                  {item.manufacturer && ` • ${item.manufacturer}`}
-                                  {item.modelNumber && ` • ${item.modelNumber}`}
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg">
+                                  {item.categoryId ? (
+                                    (() => {
+                                      const category = categories.find(cat => cat.id === item.categoryId);
+                                      return category ? (
+                                        <span style={{ color: category.color }}>{category.icon}</span>
+                                      ) : (
+                                        getEquipmentTypeIcon(getEquipmentTypeFromName(item.equipmentName || ''))
+                                      );
+                                    })()
+                                  ) : (
+                                    getEquipmentTypeIcon(getEquipmentTypeFromName(item.equipmentName || ''))
+                                  )}
+                                </span>
+                                <div>
+                                  <div>{item.equipmentName}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {item.manufacturer && ` • ${item.manufacturer}`}
+                                    {item.modelNumber && ` • ${item.modelNumber}`}
+                                  </div>
                                 </div>
                               </div>
                             </TableCell>

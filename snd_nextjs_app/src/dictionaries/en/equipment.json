@@ -53,7 +53,10 @@
     "expired_istimara": "expired Istimara",
     "expiring_soon_istimara": "expiring soon",
     "door_number": "Door Number",
-    "chassis_number": "Chassis Number"
+    "chassis_number": "Chassis Number",
+    "manage_categories": "Manage Categories",
+    "type": "Type",
+    "all_types": "All Types"
   },
   "fields": {
     "basicInfo": "Basic Information",
@@ -65,6 +68,7 @@
     "erpnextIntegration": "ERPNext Integration",
     "name": "Equipment Name",
     "namePlaceholder": "Equipment name",
+    "type": "Type",
     "description": "Description",
     "descriptionPlaceholder": "Equipment description",
     "manufacturer": "Manufacturer",
@@ -90,7 +94,9 @@
     "istimaraExpiryDate": "Expiry Date",
     "erpnextId": "ERPNext ID",
     "erpnextIdPlaceholder": "Enter ERPNext ID for synchronization",
-    "categoryId": "Category ID",
+    "categoryId": "Category",
+    "selectCategory": "Select category",
+    "noCategory": "No category",
     "timestamps": "Timestamps",
     "createdAt": "Created At",
     "lastUpdated": "Last Updated"
@@ -141,6 +147,7 @@
     "notSpecified": "Not specified",
     "notSet": "Not set",
     "noDescriptionAvailable": "No description available",
+    "noCategory": "No category assigned",
     "notSynced": "Not synced",
     "systemInfo": "System Information",
     "equipmentId": "Equipment ID",

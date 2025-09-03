@@ -741,6 +741,19 @@ export const equipment = pgTable("equipment", {
 		}).onUpdate("cascade").onDelete("set null"),
 ]);
 
+export const equipmentCategories = pgTable("equipment_categories", {
+	id: serial().primaryKey().notNull(),
+	name: text().notNull(),
+	description: text(),
+	icon: text(),
+	color: text(),
+	isActive: boolean("is_active").default(true).notNull(),
+	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
+	updatedAt: date("updated_at").notNull(),
+}, (table) => [
+	uniqueIndex("equipment_categories_name_key").using("btree", table.name.asc().nullsLast().op("text_ops")),
+]);
+
 export const failedJobs = pgTable("failed_jobs", {
 	id: serial().primaryKey().notNull(),
 	uuid: text().notNull(),

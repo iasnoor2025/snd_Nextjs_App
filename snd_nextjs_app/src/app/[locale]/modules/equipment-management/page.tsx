@@ -52,6 +52,24 @@ import {
   convertToArabicNumerals,
   getTranslatedName,
 } from '@/lib/translation-utils';
+import {
+  getEquipmentCategoryName,
+  getEquipmentCategoryIcon,
+  getEquipmentCategoryColor,
+  groupEquipmentByCategory,
+  filterEquipmentByCategory,
+} from '@/lib/utils/equipment-type-utils';
+
+interface EquipmentCategory {
+  id: number;
+  name: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 
 interface Equipment {
@@ -112,6 +130,7 @@ export default function EquipmentManagementPage() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterAssignment, setFilterAssignment] = useState('all');
   const [filterIstimara, setFilterIstimara] = useState('all');
+  const [filterType, setFilterType] = useState('all');
   const [translatedNames, setTranslatedNames] = useState<{ [key: string]: string }>({});
 
   // Pagination state
@@ -120,6 +139,22 @@ export default function EquipmentManagementPage() {
 
   // Modal state
   const [showAddEquipmentModal, setShowAddEquipmentModal] = useState(false);
+  
+  // Category management state
+  const [categories, setCategories] = useState<EquipmentCategory[]>([]);
+  const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
+  const [showEditCategoryModal, setShowEditCategoryModal] = useState(false);
+  const [showCategoryManagementModal, setShowCategoryManagementModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<EquipmentCategory | null>(null);
+  const [newCategory, setNewCategory] = useState({
+    name: '',
+    description: '',
+    icon: '🔧',
+    color: '#9E9E9E',
+  });
+  const [editingCategory, setEditingCategory] = useState<EquipmentCategory | null>(null);
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [updatingCategory, setUpdatingCategory] = useState(false);
 
   const router = useRouter();
 
@@ -128,6 +163,7 @@ export default function EquipmentManagementPage() {
 
   useEffect(() => {
     fetchEquipment();
+    fetchCategories();
   }, []);
 
   // Trigger batch translation when equipment data changes
@@ -179,6 +215,131 @@ export default function EquipmentManagementPage() {
     }
   };
 
+  // Category management functions
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/equipment/categories');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setCategories(result.data || []);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+    }
+  };
+
+  const handleAddCategory = async () => {
+    if (!newCategory.name.trim()) {
+      toast.error('Category name is required');
+      return;
+    }
+
+    try {
+      setAddingCategory(true);
+      const response = await fetch('/api/equipment/categories', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newCategory.name.trim(),
+          description: newCategory.description?.trim() || null,
+          icon: newCategory.icon || '🔧',
+          color: newCategory.color || '#9E9E9E',
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success('Category added successfully');
+        setCategories(prev => [...prev, result.data]);
+        setNewCategory({ name: '', description: '', icon: '🔧', color: '#9E9E9E' });
+        setShowAddCategoryModal(false);
+      } else {
+        toast.error(result.message || 'Failed to add category');
+      }
+    } catch (error) {
+      console.error('Error adding category:', error);
+      toast.error('Failed to add category. Please try again.');
+    } finally {
+      setAddingCategory(false);
+    }
+  };
+
+  const handleEditCategory = async () => {
+    if (!editingCategory || !editingCategory.name.trim()) {
+      toast.error('Category name is required');
+      return;
+    }
+
+    try {
+      setUpdatingCategory(true);
+      const response = await fetch(`/api/equipment/categories/${editingCategory.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: editingCategory.name.trim(),
+          description: editingCategory.description?.trim() || null,
+          icon: editingCategory.icon || '🔧',
+          color: editingCategory.color || '#9E9E9E',
+          isActive: editingCategory.isActive,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success('Category updated successfully');
+        setCategories(prev => 
+          prev.map(cat => cat.id === editingCategory.id ? result.data : cat)
+        );
+        setEditingCategory(null);
+        setShowEditCategoryModal(false);
+      } else {
+        toast.error(result.message || 'Failed to update category');
+      }
+    } catch (error) {
+      console.error('Error updating category:', error);
+      toast.error('Failed to update category. Please try again.');
+    } finally {
+      setUpdatingCategory(false);
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId: number) => {
+    if (!confirm('Are you sure you want to delete this category?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/equipment/categories/${categoryId}`, {
+        method: 'DELETE',
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success('Category deleted successfully');
+        setCategories(prev => prev.filter(cat => cat.id !== categoryId));
+      } else {
+        toast.error(result.message || 'Failed to delete category');
+      }
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast.error('Failed to delete category. Please try again.');
+    }
+  };
+
+  const openEditCategoryModal = (category: EquipmentCategory) => {
+    setEditingCategory(category);
+    setShowEditCategoryModal(true);
+  };
+
   const filteredEquipment = equipment.filter(item => {
     const matchesSearch =
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -189,6 +350,10 @@ export default function EquipmentManagementPage() {
       filterAssignment === 'all' ||
       (filterAssignment === 'assigned' && item.current_assignment) ||
       (filterAssignment === 'unassigned' && !item.current_assignment);
+
+    // Category filtering
+    const matchesType = filterType === 'all' || 
+      getEquipmentCategoryName(item.category_id || null, categories) === filterType;
 
     // Istimara status filtering
     let matchesIstimara = true;
@@ -214,7 +379,7 @@ export default function EquipmentManagementPage() {
       }
     }
 
-    return matchesSearch && matchesStatus && matchesAssignment && matchesIstimara;
+    return matchesSearch && matchesStatus && matchesAssignment && matchesType && matchesIstimara;
   });
 
   // Pagination calculations
@@ -289,144 +454,9 @@ export default function EquipmentManagementPage() {
     setCurrentPage(1);
   };
 
-  // Calculate equipment statistics by grouping equipment names
+  // Calculate equipment statistics by grouping equipment by category
   const calculateEquipmentStats = () => {
-    const stats: { [key: string]: number } = {};
-    
-    equipment.forEach(item => {
-      if (item.name) {
-        // Extract only text/letters from equipment name
-        // Examples: "AAALOADER" -> "LOADER", "1301-DOZER" -> "DOZER"
-        const name = item.name.trim();
-        
-        // Extract only letters (A-Z, a-z) from the name
-        const lettersOnly = name.replace(/[^A-Za-z]/g, '');
-        
-        if (lettersOnly.length > 0) {
-          // Find the main equipment type by looking for common equipment keywords
-          let equipmentType = lettersOnly;
-          let foundMatch = false;
-          
-          // Common equipment types to look for
-          const equipmentTypes = [
-            'LOADER', 'DOZER', 'EXCAVATOR', 'CRANE', 'BULLDOZER', 'GRADER', 
-            'COMPACTOR', 'ROLLER', 'FORKLIFT', 'TRUCK', 'TRACTOR', 'GENERATOR',
-            'COMPRESSOR', 'PUMP', 'WELDER', 'CUTTER', 'DRILL', 'HAMMER',
-            'MILLER', 'GRINDER', 'SAW', 'PLANER', 'ROUTER', 'LATHE',
-            'WATERTANKER', 'WATER TANKER', 'TANKER', 'WATER'
-          ];
-          
-          // Check if the letters contain any of the common equipment types
-          // Sort by length (longest first) to prioritize more specific matches
-          const sortedTypes = equipmentTypes.sort((a, b) => b.length - a.length);
-          
-          for (const type of sortedTypes) {
-            if (lettersOnly.toUpperCase().includes(type)) {
-              // Special handling for water tanker variations
-              if (type === 'WATERTANKER' || type === 'WATER TANKER' || type === 'TANKER' || type === 'WATER') {
-                equipmentType = 'WATER TANKER';
-              } else {
-                equipmentType = type;
-              }
-              foundMatch = true;
-              break;
-            }
-          }
-          
-          // If no match found, try fuzzy matching for common typos/variations
-          if (!foundMatch) {
-            const upperLetters = lettersOnly.toUpperCase();
-            
-            // Handle common variations and typos
-            if (upperLetters.includes('DOZE') || upperLetters.includes('DOZER')) {
-              equipmentType = 'DOZER';
-              foundMatch = true;
-            } else if (upperLetters.includes('LOADER') || upperLetters.includes('LOADE')) {
-              equipmentType = 'LOADER';
-              foundMatch = true;
-            } else if (upperLetters.includes('EXCAVATOR') || upperLetters.includes('EXCAVATO')) {
-              equipmentType = 'EXCAVATOR';
-              foundMatch = true;
-            } else if (upperLetters.includes('CRANE') || upperLetters.includes('CRAN')) {
-              equipmentType = 'CRANE';
-              foundMatch = true;
-            } else if (upperLetters.includes('TRUCK') || upperLetters.includes('TRUC')) {
-              equipmentType = 'TRUCK';
-              foundMatch = true;
-            } else if (upperLetters.includes('TRACTOR') || upperLetters.includes('TRACT')) {
-              equipmentType = 'TRACTOR';
-              foundMatch = true;
-            } else if (upperLetters.includes('FORKLIFT') || upperLetters.includes('FORKLIF')) {
-              equipmentType = 'FORKLIFT';
-              foundMatch = true;
-            } else if (upperLetters.includes('COMPRESSOR') || upperLetters.includes('COMPRES')) {
-              equipmentType = 'COMPRESSOR';
-              foundMatch = true;
-            } else if (upperLetters.includes('GENERATOR') || upperLetters.includes('GENERAT')) {
-              equipmentType = 'GENERATOR';
-              foundMatch = true;
-            } else if (upperLetters.includes('WELDER') || upperLetters.includes('WELDE')) {
-              equipmentType = 'WELDER';
-              foundMatch = true;
-            } else if (upperLetters.includes('PUMP') || upperLetters.includes('PUM')) {
-              equipmentType = 'PUMP';
-              foundMatch = true;
-            } else if (upperLetters.includes('DRILL') || upperLetters.includes('DRIL')) {
-              equipmentType = 'DRILL';
-              foundMatch = true;
-            } else if (upperLetters.includes('HAMMER') || upperLetters.includes('HAMME')) {
-              equipmentType = 'HAMMER';
-              foundMatch = true;
-            } else if (upperLetters.includes('GRINDER') || upperLetters.includes('GRINDE')) {
-              equipmentType = 'GRINDER';
-              foundMatch = true;
-            } else if (upperLetters.includes('SAW')) {
-              equipmentType = 'SAW';
-              foundMatch = true;
-            } else if (upperLetters.includes('MILLER') || upperLetters.includes('MILLE')) {
-              equipmentType = 'MILLER';
-              foundMatch = true;
-            } else if (upperLetters.includes('PLANER') || upperLetters.includes('PLANE')) {
-              equipmentType = 'PLANER';
-              foundMatch = true;
-            } else if (upperLetters.includes('ROUTER') || upperLetters.includes('ROUTE')) {
-              equipmentType = 'ROUTER';
-              foundMatch = true;
-            } else if (upperLetters.includes('LATHE') || upperLetters.includes('LATH')) {
-              equipmentType = 'LATHE';
-              foundMatch = true;
-            } else if (upperLetters.includes('CUTTER') || upperLetters.includes('CUTTE')) {
-              equipmentType = 'CUTTER';
-              foundMatch = true;
-            } else if (upperLetters.includes('ROLLER') || upperLetters.includes('ROLLE')) {
-              equipmentType = 'ROLLER';
-              foundMatch = true;
-            } else if (upperLetters.includes('COMPACTOR') || upperLetters.includes('COMPAC')) {
-              equipmentType = 'COMPACTOR';
-              foundMatch = true;
-            } else if (upperLetters.includes('GRADER') || upperLetters.includes('GRADE')) {
-              equipmentType = 'GRADER';
-              foundMatch = true;
-            } else if (upperLetters.includes('BULLDOZER') || upperLetters.includes('BULLDOZE')) {
-              equipmentType = 'BULLDOZER';
-              foundMatch = true;
-            }
-          }
-          
-          // Only count if we found a valid equipment type match
-          // Skip short strings that might be just prefixes/suffixes (like AAA, AA)
-          if (foundMatch && equipmentType.length >= 3) {
-            // Clean up the equipment type
-            equipmentType = equipmentType.toUpperCase().trim();
-            
-            // Count by equipment type
-            stats[equipmentType] = (stats[equipmentType] || 0) + 1;
-          }
-        }
-      }
-    });
-    
-    return stats;
+    return groupEquipmentByCategory(equipment, categories);
   };
 
   const equipmentStats = calculateEquipmentStats();
@@ -448,6 +478,16 @@ export default function EquipmentManagementPage() {
               <Button onClick={() => setShowAddEquipmentModal(true)} className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
                 {t('equipment.add_equipment')}
+              </Button>
+            )}
+            {hasPermission('read', 'Equipment') && (
+              <Button 
+                onClick={() => setShowCategoryManagementModal(true)} 
+                variant="outline" 
+                className="flex items-center gap-2"
+              >
+                <Database className="h-4 w-4" />
+                {t('equipment.equipment_management.manage_categories')}
               </Button>
             )}
             {hasPermission('sync', 'Equipment') && (
@@ -474,9 +514,25 @@ export default function EquipmentManagementPage() {
             {Object.entries(equipmentStats)
               .sort(([,a], [,b]) => b - a) // Sort by count descending
               .map(([equipmentType, count]) => (
-                <Card key={equipmentType} className="hover:shadow-md transition-shadow">
+                <Card 
+                  key={equipmentType} 
+                  className={`hover:shadow-md transition-shadow cursor-pointer ${
+                    filterType === equipmentType ? 'ring-2 ring-primary' : ''
+                  }`}
+                  onClick={() => setFilterType(filterType === equipmentType ? 'all' : equipmentType)}
+                >
                   <CardContent className="p-3">
                     <div className="flex flex-col items-center text-center">
+                      <div className="text-2xl mb-1">
+                        {(() => {
+                          const category = categories.find(cat => cat.name.toUpperCase() === equipmentType);
+                          return category ? (
+                            <span style={{ color: category.color }}>{category.icon}</span>
+                          ) : (
+                            <span style={{ color: '#9E9E9E' }}>🔧</span>
+                          );
+                        })()}
+                      </div>
                       <p className="text-xs font-medium text-muted-foreground mb-1 truncate w-full">
                         {equipmentType}
                       </p>
@@ -553,9 +609,31 @@ export default function EquipmentManagementPage() {
                   <option value="expiring_soon">{t('equipment.equipment_management.expiring_soon')}</option>
                 </select>
               </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="type-filter" className="text-sm font-medium">
+                  {t('equipment.equipment_management.type')}:
+                </Label>
+                <select
+                  id="type-filter"
+                  value={filterType}
+                  onChange={e => setFilterType(e.target.value)}
+                  className="border rounded-md px-3 py-2 text-sm"
+                >
+                  <option value="all">{t('equipment.equipment_management.all_types')}</option>
+                  {Object.keys(equipmentStats).map(type => (
+                    <option key={type} value={type}>
+                      {(() => {
+                        const category = categories.find(cat => cat.name.toUpperCase() === type);
+                        return category ? category.icon : '🔧';
+                      })()} {type}
+                    </option>
+                  ))}
+                </select>
+              </div>
               {(filterStatus !== 'all' ||
                 filterAssignment !== 'all' ||
                 filterIstimara !== 'all' ||
+                filterType !== 'all' ||
                 searchTerm) && (
                 <Button
                   variant="outline"
@@ -564,6 +642,7 @@ export default function EquipmentManagementPage() {
                     setFilterStatus('all');
                     setFilterAssignment('all');
                     setFilterIstimara('all');
+                    setFilterType('all');
                     setSearchTerm('');
                   }}
                   className="text-xs"
@@ -635,12 +714,10 @@ export default function EquipmentManagementPage() {
                         <TableHead>{t('equipment.equipment_management.name')}</TableHead>
                         <TableHead>{t('equipment.equipment_management.door_number')}</TableHead>
                         <TableHead>{t('equipment.equipment_management.model')}</TableHead>
-                        <TableHead>{t('equipment.equipment_management.manufacturer')}</TableHead>
+                        <TableHead>{t('equipment.fields.type')}</TableHead>
                         <TableHead>{t('equipment.equipment_management.status')}</TableHead>
                         <TableHead>{t('equipment.equipment_management.current_assignment')}</TableHead>
                         <TableHead>{t('equipment.equipment_management.daily_rate')}</TableHead>
-                        <TableHead>{t('equipment.equipment_management.erpnext_id')}</TableHead>
-                        <TableHead>{t('equipment.equipment_management.chassis_number')}</TableHead>
                         <TableHead>
                           <div className="flex items-center gap-2">
                             <span>{t('equipment.equipment_management.istimara')}</span>
@@ -664,7 +741,7 @@ export default function EquipmentManagementPage() {
                     <TableBody>
                       {currentEquipment.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                             {equipment.length === 0 ? (
                               <div className="flex flex-col items-center space-y-2">
                                 <Package className="h-8 w-8 text-muted-foreground" />
@@ -682,12 +759,30 @@ export default function EquipmentManagementPage() {
                         currentEquipment.map(item => (
                           <TableRow key={item.id}>
                             <TableCell className="font-medium">
-                              {getTranslatedName(
-                                item.name,
-                                isRTL,
-                                translatedNames,
-                                setTranslatedNames
-                              )}
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg">
+                                  {item.category_id ? (
+                                    (() => {
+                                      const category = categories.find(cat => cat.id === item.category_id);
+                                      return category ? (
+                                        <span style={{ color: category.color }}>{category.icon}</span>
+                                      ) : (
+                                        <span style={{ color: '#9E9E9E' }}>🔧</span>
+                                      );
+                                    })()
+                                  ) : (
+                                    <span style={{ color: '#9E9E9E' }}>🔧</span>
+                                  )}
+                                </span>
+                                <span>
+                                  {getTranslatedName(
+                                    item.name,
+                                    isRTL,
+                                    translatedNames,
+                                    setTranslatedNames
+                                  )}
+                                </span>
+                              </div>
                             </TableCell>
                             <TableCell>
                               {item.door_number ? (
@@ -708,16 +803,23 @@ export default function EquipmentManagementPage() {
                               )}
                             </TableCell>
                             <TableCell>
-                              {item.manufacturer ? (
-                                getTranslatedName(
-                                  item.manufacturer,
-                                  isRTL,
-                                  translatedNames,
-                                  setTranslatedNames
-                                )
+                              {item.category_id ? (
+                                (() => {
+                                  const category = categories.find(cat => cat.id === item.category_id);
+                                  return category ? (
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-lg">{category.icon}</span>
+                                      <span className="text-sm font-medium">{category.name}</span>
+                                    </div>
+                                  ) : (
+                                    <span className="text-muted-foreground text-sm">
+                                      {t('equipment.equipment_management.not_specified')}
+                                    </span>
+                                  );
+                                })()
                               ) : (
                                 <span className="text-muted-foreground text-sm">
-                                  {t('equipment.equipment_management.not_specified')}
+                                  {t('equipment.fields.noCategory')}
                                 </span>
                               )}
                             </TableCell>
@@ -760,18 +862,6 @@ export default function EquipmentManagementPage() {
                                   {convertToArabicNumerals(item.daily_rate.toString(), isRTL)}{' '}
                                   {t('equipment.equipment_management.per_day')}
                                 </span>
-                              ) : (
-                                <span className="text-muted-foreground text-sm">
-                                  {t('equipment.equipment_management.not_specified')}
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {convertToArabicNumerals(item.erpnext_id?.toString(), isRTL) || '-'}
-                            </TableCell>
-                            <TableCell>
-                              {item.chassis_number ? (
-                                convertToArabicNumerals(item.chassis_number, isRTL)
                               ) : (
                                 <span className="text-muted-foreground text-sm">
                                   {t('equipment.equipment_management.not_specified')}
@@ -977,6 +1067,223 @@ export default function EquipmentManagementPage() {
           onOpenChange={setShowAddEquipmentModal}
           onSuccess={fetchEquipment}
         />
+
+        {/* Category Management Modal */}
+        {showCategoryManagementModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Equipment Categories</h2>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => setShowAddCategoryModal(true)}
+                    className="flex items-center gap-2"
+                    disabled={!hasPermission('create', 'Equipment')}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Category
+                  </Button>
+                  <Button
+                    onClick={() => setShowCategoryManagementModal(false)}
+                    variant="outline"
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {categories.map((category) => (
+                  <Card key={category.id} className="relative">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl">{category.icon}</span>
+                          <div>
+                            <CardTitle className="text-sm">{category.name}</CardTitle>
+                            <CardDescription className="text-xs">
+                              {category.description || 'No description'}
+                            </CardDescription>
+                          </div>
+                        </div>
+                        <div className="flex gap-1">
+                          {hasPermission('update', 'Equipment') && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openEditCategoryModal(category)}
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                          )}
+                          {hasPermission('delete', 'Equipment') && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDeleteCategory(category.id)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: category.color }}
+                        />
+                        <span>Color: {category.color}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                        <Badge variant={category.isActive ? "default" : "secondary"}>
+                          {category.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Category Modal */}
+        {showAddCategoryModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h2 className="text-xl font-semibold mb-4">Add Equipment Category</h2>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="category-name">Name</Label>
+                  <Input
+                    id="category-name"
+                    value={newCategory.name}
+                    onChange={(e) => setNewCategory(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Enter category name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="category-description">Description</Label>
+                  <Input
+                    id="category-description"
+                    value={newCategory.description}
+                    onChange={(e) => setNewCategory(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Enter description (optional)"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="category-icon">Icon</Label>
+                  <Input
+                    id="category-icon"
+                    value={newCategory.icon}
+                    onChange={(e) => setNewCategory(prev => ({ ...prev, icon: e.target.value }))}
+                    placeholder="🔧"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="category-color">Color</Label>
+                  <Input
+                    id="category-color"
+                    value={newCategory.color}
+                    onChange={(e) => setNewCategory(prev => ({ ...prev, color: e.target.value }))}
+                    placeholder="#9E9E9E"
+                  />
+                </div>
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    onClick={handleAddCategory}
+                    disabled={addingCategory}
+                    className="flex-1"
+                  >
+                    {addingCategory ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add Category'}
+                  </Button>
+                  <Button
+                    onClick={() => setShowAddCategoryModal(false)}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Category Modal */}
+        {showEditCategoryModal && editingCategory && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h2 className="text-xl font-semibold mb-4">Edit Equipment Category</h2>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="edit-category-name">Name</Label>
+                  <Input
+                    id="edit-category-name"
+                    value={editingCategory.name}
+                    onChange={(e) => setEditingCategory(prev => prev ? { ...prev, name: e.target.value } : null)}
+                    placeholder="Enter category name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-category-description">Description</Label>
+                  <Input
+                    id="edit-category-description"
+                    value={editingCategory.description || ''}
+                    onChange={(e) => setEditingCategory(prev => prev ? { ...prev, description: e.target.value } : null)}
+                    placeholder="Enter description (optional)"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-category-icon">Icon</Label>
+                  <Input
+                    id="edit-category-icon"
+                    value={editingCategory.icon || ''}
+                    onChange={(e) => setEditingCategory(prev => prev ? { ...prev, icon: e.target.value } : null)}
+                    placeholder="🔧"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-category-color">Color</Label>
+                  <Input
+                    id="edit-category-color"
+                    value={editingCategory.color || ''}
+                    onChange={(e) => setEditingCategory(prev => prev ? { ...prev, color: e.target.value } : null)}
+                    placeholder="#9E9E9E"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="edit-category-active"
+                    checked={editingCategory.isActive}
+                    onChange={(e) => setEditingCategory(prev => prev ? { ...prev, isActive: e.target.checked } : null)}
+                  />
+                  <Label htmlFor="edit-category-active">Active</Label>
+                </div>
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    onClick={handleEditCategory}
+                    disabled={updatingCategory}
+                    className="flex-1"
+                  >
+                    {updatingCategory ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Update Category'}
+                  </Button>
+                  <Button
+                    onClick={() => setShowEditCategoryModal(false)}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </ProtectedRoute>
   );

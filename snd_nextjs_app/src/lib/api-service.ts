@@ -343,7 +343,7 @@ class ApiService {
   }
 
   static async updateEquipment(id: number, data: any) {
-    return this.put(`/equipment/${id}/update`, data, {
+    return this.put(`/equipment`, { id, ...data }, {
       toastMessage: 'Equipment updated successfully',
       errorMessage: 'Failed to update equipment',
     });

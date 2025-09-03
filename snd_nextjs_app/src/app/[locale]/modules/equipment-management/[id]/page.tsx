@@ -55,6 +55,17 @@ interface Equipment {
   updated_at?: string;
 }
 
+interface EquipmentCategory {
+  id: number;
+  name: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export default function EquipmentShowPage() {
   const { t } = useTranslations();
   const params = useParams();
@@ -62,6 +73,7 @@ export default function EquipmentShowPage() {
   const { confirmDeleteEquipment } = useDeleteConfirmations();
   const { hasPermission } = useRBAC();
   const [equipment, setEquipment] = useState<Equipment | null>(null);
+  const [category, setCategory] = useState<EquipmentCategory | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
 
@@ -82,6 +94,10 @@ export default function EquipmentShowPage() {
       const response = await ApiService.getEquipmentItem(parseInt(equipmentId));
       if (response.success) {
         setEquipment(response.data);
+        // Fetch category if equipment has category_id
+        if (response.data.category_id) {
+          fetchCategory(response.data.category_id);
+        }
       } else {
         toast.error(t('equipment.messages.loadingError'));
         router.push('/modules/equipment-management');
@@ -91,6 +107,20 @@ export default function EquipmentShowPage() {
       router.push('/modules/equipment-management');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCategory = async (categoryId: number) => {
+    try {
+      const response = await fetch(`/api/equipment/categories/${categoryId}`);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setCategory(result.data);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch category:', error);
     }
   };
 
@@ -228,6 +258,28 @@ export default function EquipmentShowPage() {
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.status')}</Label>
                   <div className="mt-1">{getStatusBadge(equipment.status)}</div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.categoryId')}</Label>
+                  <div className="flex items-center gap-2">
+                    {category ? (
+                      <>
+                        <span className="text-lg">{category.icon}</span>
+                        <span className="text-sm font-medium">{category.name}</span>
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: category.color }}
+                        />
+                      </>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">{t('equipment.messages.noCategory')}</span>
+                    )}
+                  </div>
                 </div>
               </div>
 
