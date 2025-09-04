@@ -821,6 +821,9 @@ export const employeeLeaves = pgTable(
     rejectedAt: date('rejected_at'),
     rejectedBy: integer('rejected_by'),
     rejectionReason: text('rejection_reason'),
+    returnDate: date('return_date'),
+    returnedBy: integer('returned_by'),
+    returnReason: text('return_reason'),
   },
   table => [
     foreignKey({

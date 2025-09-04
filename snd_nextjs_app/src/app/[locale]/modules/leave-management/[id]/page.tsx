@@ -11,6 +11,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -61,6 +69,9 @@ interface LeaveRequest {
   submitted_date: string;
   approved_by: string | null;
   approved_date: string | null;
+  return_date?: string | null;
+  returned_by?: string | null;
+  return_reason?: string | null;
   comments: string | null;
   created_at: string;
   updated_at: string;
@@ -173,6 +184,10 @@ function LeaveRequestDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showReturnDialog, setShowReturnDialog] = useState(false);
+  const [returnDate, setReturnDate] = useState('');
+  const [returnReason, setReturnReason] = useState('');
+  const [returning, setReturning] = useState(false);
 
   const fetchLeaveRequest = useCallback(async () => {
     setLoading(true);
@@ -306,6 +321,41 @@ function LeaveRequestDetailPage() {
     }
   }, [leaveRequest, leaveId, fetchLeaveRequest]);
 
+  const handleReturn = useCallback(async () => {
+    if (!leaveRequest || !returnDate || !returnReason) return;
+
+    setReturning(true);
+    try {
+      const response = await fetch(`/api/leave-requests/${leaveId}/return`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          return_date: returnDate,
+          return_reason: returnReason,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to return employee');
+      }
+
+      toast.success(t('leave.employee_returned_successfully'));
+      setShowReturnDialog(false);
+      setReturnDate('');
+      setReturnReason('');
+      // Refresh the leave request data
+      await fetchLeaveRequest();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : t('leave.failed_to_return_employee');
+      toast.error(errorMessage);
+    } finally {
+      setReturning(false);
+    }
+  }, [leaveRequest, leaveId, returnDate, returnReason, fetchLeaveRequest]);
+
   const getStatusBadge = useCallback((status: string) => {
     // Normalize status to handle both uppercase and lowercase
     const normalizedStatus = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
@@ -328,6 +378,18 @@ function LeaveRequestDetailPage() {
         icon: XCircle,
         color: 'bg-red-100 text-red-800',
         text: t('leave.rejected'),
+      },
+      Returned: {
+        variant: 'default' as const,
+        icon: CheckCircle,
+        color: 'bg-blue-100 text-blue-800',
+        text: t('leave.returned'),
+      },
+      Active: {
+        variant: 'default' as const,
+        icon: CheckCircle,
+        color: 'bg-green-100 text-green-800',
+        text: t('leave.active'),
       },
     };
 
@@ -432,6 +494,12 @@ function LeaveRequestDetailPage() {
               <Button onClick={handleEdit} variant="outline">
                 <Edit className="h-4 w-4 mr-2" />
                 {t('leave.edit')}
+              </Button>
+            )}
+            {hasPermission('update', 'Leave') && leaveRequest.status === 'approved' && (
+              <Button onClick={() => setShowReturnDialog(true)} variant="outline">
+                <User className="h-4 w-4 mr-2" />
+                {t('leave.return_employee')}
               </Button>
             )}
             {hasPermission('delete', 'Leave') && (
@@ -700,6 +768,26 @@ function LeaveRequestDetailPage() {
                         </span>
                       </div>
                     )}
+                    {leaveRequest.return_date && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">{t('leave.return_date')}</span>
+                        <span className="text-sm font-medium">
+                          {formatDateTime(leaveRequest.return_date)}
+                        </span>
+                      </div>
+                    )}
+                    {leaveRequest.returned_by && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">{t('leave.returned_by')}</span>
+                        <span className="text-sm font-medium">{leaveRequest.returned_by}</span>
+                      </div>
+                    )}
+                    {leaveRequest.return_reason && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">{t('leave.return_reason')}</span>
+                        <span className="text-sm font-medium">{leaveRequest.return_reason}</span>
+                      </div>
+                    )}
                     {leaveRequest.comments && (
                       <div className="pt-2 border-t">
                         <div className="flex items-start gap-2">
@@ -835,6 +923,57 @@ function LeaveRequestDetailPage() {
         onConfirm={handleDelete}
         loading={deleting}
       />
+
+      {/* Return Dialog */}
+      <Dialog open={showReturnDialog} onOpenChange={setShowReturnDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('leave.return_employee')}</DialogTitle>
+            <DialogDescription>{t('leave.return_employee_description')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">{t('leave.return_date_required')}</label>
+              <input
+                type="date"
+                value={returnDate}
+                onChange={(e) => setReturnDate(e.target.value)}
+                className="w-full mt-1 p-2 border rounded-md"
+                min={leaveRequest?.start_date}
+                max={leaveRequest?.end_date}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">{t('leave.return_reason_required')}</label>
+              <textarea
+                value={returnReason}
+                onChange={(e) => setReturnReason(e.target.value)}
+                className="w-full mt-1 p-2 border rounded-md"
+                rows={3}
+                placeholder={t('leave.return_reason_placeholder')}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowReturnDialog(false);
+                setReturnDate('');
+                setReturnReason('');
+              }}
+            >
+              {t('leave.cancel')}
+            </Button>
+            <Button
+              onClick={handleReturn}
+              disabled={returning || !returnDate || !returnReason}
+            >
+              {returning ? t('leave.submitting') : t('leave.confirm')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </ErrorBoundary>
   );
 }

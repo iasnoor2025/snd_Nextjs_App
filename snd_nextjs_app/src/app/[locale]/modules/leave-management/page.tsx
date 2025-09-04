@@ -67,6 +67,8 @@ interface LeaveRequest {
   submitted_date: string;
   approved_by: string | null;
   approved_date: string | null;
+  return_date?: string | null;
+  return_reason?: string | null;
   comments: string | null;
   created_at: string;
   updated_at: string;
@@ -145,12 +147,14 @@ export default function LeaveManagementPage() {
             leave_type: leave.leave_type,
             start_date: leave.start_date,
             end_date: leave.end_date,
-            days_requested: leave.days,
+            days_requested: leave.days, // This now represents actual days taken for returned leaves
             reason: leave.reason || '',
             status: leave.status,
             submitted_date: leave.created_at,
             approved_by: null, // Not available in current API
             approved_date: null, // Not available in current API
+            return_date: leave.return_date || null,
+            return_reason: leave.return_reason || null,
             comments: null, // Not available in current API
             created_at: leave.created_at,
             updated_at: leave.updated_at,
@@ -264,6 +268,8 @@ export default function LeaveManagementPage() {
       Approved: 'bg-green-100 text-green-800',
       Rejected: 'bg-red-100 text-red-800',
       Cancelled: 'bg-gray-100 text-gray-800',
+      Returned: 'bg-blue-100 text-blue-800',
+      Active: 'bg-green-100 text-green-800',
     };
     return (
       <Badge
@@ -410,7 +416,20 @@ export default function LeaveManagementPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                                                     {request.days_requested} {t('leave.days')}
+                          <div className="text-sm">
+                            {request.status === 'returned' || request.status === 'completed' ? (
+                              <div>
+                                <span className="font-medium">{request.days_requested} {t('leave.days')}</span>
+                                {request.return_date && (
+                                  <div className="text-xs text-gray-500">
+                                    {t('leave.returned_on')}: {formatDate(request.return_date)}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span>{request.days_requested} {t('leave.days')}</span>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>{getStatusBadge(request.status)}</TableCell>
                         <TableCell>{formatDate(request.submitted_date)}</TableCell>

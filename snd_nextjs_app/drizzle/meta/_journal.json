@@ -134,6 +134,13 @@
       "when": 1756897756035,
       "tag": "0018_bent_colossus",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1756985558057,
+      "tag": "0019_low_agent_brand",
+      "breakpoints": true
     }
   ]
 }

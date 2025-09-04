@@ -6,37 +6,92 @@ export async function GET({ params }: { params: { id: string } }) {
     const { id } = params;
     console.log('Fetching leave request with ID:', id);
     
-    // Return mock data for now
-    const mockLeaveRequest = {
-      id: parseInt(id),
-      employee_name: 'John Doe',
-      employee_id: 5,
-      leave_type: 'Sick Leave',
-      start_date: '2025-09-04',
-      end_date: '2025-09-04',
-      days_requested: 1,
-      reason: 'Not feeling well',
-      status: 'pending',
-      submitted_date: '2025-09-04',
-      approved_by: null,
-      approved_date: null,
-      rejected_by: null,
-      rejected_at: null,
-      rejection_reason: null,
+    // Import database and schema
+    const { db } = await import('@/lib/drizzle');
+    const { employeeLeaves, employees, departments, designations } = await import('@/lib/drizzle/schema');
+    const { eq } = await import('drizzle-orm');
+
+    // Fetch leave request with employee details
+    const leaveRequestData = await db
+      .select({
+        id: employeeLeaves.id,
+        leaveType: employeeLeaves.leaveType,
+        startDate: employeeLeaves.startDate,
+        endDate: employeeLeaves.endDate,
+        days: employeeLeaves.days,
+        reason: employeeLeaves.reason,
+        status: employeeLeaves.status,
+        createdAt: employeeLeaves.createdAt,
+        updatedAt: employeeLeaves.updatedAt,
+        approvedBy: employeeLeaves.approvedBy,
+        approvedAt: employeeLeaves.approvedAt,
+        rejectedBy: employeeLeaves.rejectedBy,
+        rejectedAt: employeeLeaves.rejectedAt,
+        rejectionReason: employeeLeaves.rejectionReason,
+        returnDate: employeeLeaves.returnDate,
+        returnedBy: employeeLeaves.returnedBy,
+        returnReason: employeeLeaves.returnReason,
+        employee: {
+          id: employees.id,
+          firstName: employees.firstName,
+          lastName: employees.lastName,
+          fileNumber: employees.fileNumber,
+          email: employees.email,
+          phone: employees.phone,
+          department: {
+            name: departments.name,
+          } as any,
+          designation: {
+            name: designations.name,
+          } as any,
+        },
+      })
+      .from(employeeLeaves)
+      .leftJoin(employees, eq(employeeLeaves.employeeId, employees.id))
+      .leftJoin(departments, eq(employees.departmentId, departments.id))
+      .leftJoin(designations, eq(employees.designationId, designations.id))
+      .where(eq(employeeLeaves.id, parseInt(id)))
+      .limit(1);
+
+    const leaveRequest = leaveRequestData[0];
+    if (!leaveRequest) {
+      return NextResponse.json({ error: 'Leave request not found' }, { status: 404 });
+    }
+
+    // Transform the data to match the expected format
+    const transformedLeaveRequest = {
+      id: leaveRequest.id.toString(),
+      employee_name: `${leaveRequest.employee.firstName} ${leaveRequest.employee.lastName}`,
+      employee_id: leaveRequest.employee.id,
+      leave_type: leaveRequest.leaveType,
+      start_date: leaveRequest.startDate,
+      end_date: leaveRequest.endDate,
+      days_requested: leaveRequest.days,
+      reason: leaveRequest.reason,
+      status: leaveRequest.status,
+      submitted_date: leaveRequest.createdAt,
+      approved_by: leaveRequest.approvedBy,
+      approved_date: leaveRequest.approvedAt,
+      rejected_by: leaveRequest.rejectedBy,
+      rejected_at: leaveRequest.rejectedAt,
+      rejection_reason: leaveRequest.rejectionReason,
+      return_date: leaveRequest.returnDate,
+      returned_by: leaveRequest.returnedBy,
+      return_reason: leaveRequest.returnReason,
       comments: null,
-      created_at: '2025-09-04',
-      updated_at: '2025-09-04',
-      department: 'IT',
-      position: 'Developer',
-      total_leave_balance: 20,
-      leave_taken_this_year: 0,
+      created_at: leaveRequest.createdAt,
+      updated_at: leaveRequest.updatedAt,
+      department: leaveRequest.employee.department?.name || 'N/A',
+      position: leaveRequest.employee.designation?.name || 'N/A',
+      total_leave_balance: 20, // This would need to be calculated
+      leave_taken_this_year: 0, // This would need to be calculated
       attachments: [],
       approval_history: [
         {
           id: '1',
           action: 'Submitted',
-          approver: 'John Doe',
-          date: '2025-09-04',
+          approver: `${leaveRequest.employee.firstName} ${leaveRequest.employee.lastName}`,
+          date: leaveRequest.createdAt,
           comments: 'Leave request submitted for approval',
         },
       ],
@@ -44,7 +99,7 @@ export async function GET({ params }: { params: { id: string } }) {
 
     return NextResponse.json({
       success: true,
-      data: mockLeaveRequest,
+      data: transformedLeaveRequest,
     });
   } catch (error) {
     console.error('Error fetching leave request:', error);
@@ -69,6 +124,25 @@ export async function DELETE(request: NextRequest) {
     if (!id) {
       return NextResponse.json({ error: 'Leave request ID is required' }, { status: 400 });
     }
+
+    // Import database and schema
+    const { db } = await import('@/lib/drizzle');
+    const { employeeLeaves } = await import('@/lib/drizzle/schema');
+    const { eq } = await import('drizzle-orm');
+
+    // Check if leave request exists
+    const existingLeave = await db
+      .select({ id: employeeLeaves.id })
+      .from(employeeLeaves)
+      .where(eq(employeeLeaves.id, parseInt(id)))
+      .limit(1);
+
+    if (existingLeave.length === 0) {
+      return NextResponse.json({ error: 'Leave request not found' }, { status: 404 });
+    }
+
+    // Delete the leave request
+    await db.delete(employeeLeaves).where(eq(employeeLeaves.id, parseInt(id)));
 
     return NextResponse.json({
       success: true,

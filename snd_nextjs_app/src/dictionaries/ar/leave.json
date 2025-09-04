@@ -101,7 +101,9 @@
     "rejected": "مرفوض",
     "cancelled": "ملغي",
     "completed": "مكتمل",
-    "inProgress": "قيد التنفيذ"
+    "inProgress": "قيد التنفيذ",
+    "returned": "عاد",
+    "active": "نشط"
   },
   "messages": {
     "loading": "جاري تحميل طلبات الإجازات...",
@@ -340,5 +342,24 @@
   "please_try_refreshing": "يرجى محاولة تحديث الصفحة أو الاتصال بالدعم إذا استمرت المشكلة.",
   "back_to_leave_management": "العودة إلى إدارة الإجازات",
   "leave_request_not_found_title": "طلب الإجازة غير موجود",
-  "leave_request_not_found_description": "طلب الإجازة الذي تبحث عنه غير موجود أو تم حذفه."
+  "leave_request_not_found_description": "طلب الإجازة الذي تبحث عنه غير موجود أو تم حذفه.",
+  "return_date": "تاريخ العودة",
+  "return_reason": "سبب العودة",
+  "returned_by": "عاد بواسطة",
+  "return_employee": "عودة الموظف",
+  "return_employee_description": "تحديد الموظف كعاد من الإجازة",
+  "return_date_required": "تاريخ العودة *",
+  "return_reason_required": "سبب العودة *",
+  "employee_returned_successfully": "تمت عودة الموظف بنجاح",
+  "failed_to_return_employee": "فشل في عودة الموظف",
+  "return_date_cannot_be_before_start": "تاريخ العودة لا يمكن أن يكون قبل تاريخ بدء الإجازة",
+  "return_date_cannot_be_after_end": "تاريخ العودة لا يمكن أن يكون بعد تاريخ انتهاء الإجازة",
+  "return_date_placeholder": "اختر تاريخ العودة",
+  "return_reason_placeholder": "أدخل سبب العودة المبكرة",
+  "early_return": "عودة مبكرة",
+  "returned_early": "عاد مبكراً",
+  "returned_on_schedule": "عاد في الموعد المحدد",
+  "confirm": "تأكيد",
+  "actual_days_taken": "الأيام الفعلية المستخدمة",
+  "returned_on": "عاد في"
 }

@@ -101,7 +101,9 @@
     "rejected": "Rejected",
     "cancelled": "Cancelled",
     "completed": "Completed",
-    "inProgress": "In Progress"
+    "inProgress": "In Progress",
+    "returned": "Returned",
+    "active": "Active"
   },
   "messages": {
     "loading": "Loading leave requests...",
@@ -337,5 +339,24 @@
   "please_try_refreshing": "Please try refreshing the page or contact support if the problem persists.",
   "back_to_leave_management": "Back to Leave Management",
   "leave_request_not_found_title": "Leave Request Not Found",
-  "leave_request_not_found_description": "The leave request you're looking for doesn't exist or has been removed."
+  "leave_request_not_found_description": "The leave request you're looking for doesn't exist or has been removed.",
+  "return_date": "Return Date",
+  "return_reason": "Return Reason",
+  "returned_by": "Returned By",
+  "return_employee": "Return Employee",
+  "return_employee_description": "Mark employee as returned from leave",
+  "return_date_required": "Return Date *",
+  "return_reason_required": "Return Reason *",
+  "employee_returned_successfully": "Employee returned successfully",
+  "failed_to_return_employee": "Failed to return employee",
+  "return_date_cannot_be_before_start": "Return date cannot be before leave start date",
+  "return_date_cannot_be_after_end": "Return date cannot be after leave end date",
+  "return_date_placeholder": "Select return date",
+  "return_reason_placeholder": "Enter reason for early return",
+  "early_return": "Early Return",
+  "returned_early": "Returned Early",
+  "returned_on_schedule": "Returned on Schedule",
+  "confirm": "Confirm",
+  "actual_days_taken": "Actual days taken",
+  "returned_on": "Returned on"
 }

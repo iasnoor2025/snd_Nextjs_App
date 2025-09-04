@@ -214,7 +214,6 @@ function CreateLeaveRequestContent() {
                   type="date"
                   value={formData.start_date}
                   onChange={e => handleInputChange('start_date', e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
                 />
               </div>
               <div className="space-y-2">
@@ -223,7 +222,7 @@ function CreateLeaveRequestContent() {
                   type="date"
                   value={formData.end_date}
                   onChange={e => handleInputChange('end_date', e.target.value)}
-                  min={formData.start_date || new Date().toISOString().split('T')[0]}
+                  min={formData.start_date}
                 />
               </div>
             </div>

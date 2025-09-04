@@ -50,6 +50,8 @@ export async function GET(_request: NextRequest) {
         days: employeeLeaves.days,
         status: employeeLeaves.status,
         reason: employeeLeaves.reason,
+        returnDate: employeeLeaves.returnDate,
+        returnReason: employeeLeaves.returnReason,
         createdAt: employeeLeaves.createdAt,
         updatedAt: employeeLeaves.updatedAt,
         employee: {
@@ -84,6 +86,8 @@ export async function GET(_request: NextRequest) {
       days: leave.days,
       status: leave.status,
       reason: leave.reason,
+      return_date: leave.returnDate ? leave.returnDate.split('T')[0] : null,
+      return_reason: leave.returnReason,
       employee: {
         id: leave.employee?.id || 0,
         name: leave.employee
