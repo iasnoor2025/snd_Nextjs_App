@@ -51,13 +51,9 @@ export const GET = withPermission(PermissionConfigs.document.read)(async (reques
         // Simple test: just list all files in employee-documents bucket
         try {
           const testResponse = await SupabaseStorageService.listFiles('employee-documents');
-          console.log('TEST - All files in employee-documents bucket:', testResponse);
-          
-          if (testResponse.success && testResponse.files) {
-            console.log('TEST - Found files:', testResponse.files.map(f => ({ name: f.name, size: f.size })));
-          }
+
         } catch (error) {
-          console.log('TEST - Error listing employee files:', error);
+          
         }
         
         // Try to list files recursively from different paths

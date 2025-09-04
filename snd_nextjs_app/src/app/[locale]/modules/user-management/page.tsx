@@ -165,7 +165,14 @@ export default function UserManagementPage() {
   // Fetch roles
   const fetchRoles = async () => {
     try {
-      const response = await fetch('/api/roles');
+      // Add timestamp to prevent caching
+      const timestamp = new Date().getTime();
+      const response = await fetch(`/api/roles?t=${timestamp}`, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+        },
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch roles');
       }
@@ -1067,7 +1074,7 @@ export default function UserManagementPage() {
                           </TableCell>
                           <TableCell>
                             <Badge variant="secondary">
-                              {safeUsers.filter(u => u.role === role.name).length}
+                              {role.userCount || 0}
                             </Badge>
                           </TableCell>
                           <TableCell>{new Date(role.createdAt).toLocaleDateString()}</TableCell>

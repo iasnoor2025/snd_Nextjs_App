@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { modelHasRoles as modelHasRolesTable, roles as rolesTable } from '@/lib/drizzle/schema';
+import { modelHasRoles as modelHasRolesTable, roles as rolesTable, users as usersTable } from '@/lib/drizzle/schema';
 import { desc, eq, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
@@ -25,14 +25,24 @@ export async function GET() {
           .from(rolesTable)
           .orderBy(desc(rolesTable.createdAt));
 
-        // Count users per role
+        // Count users per role from both mechanisms while avoiding double counting:
+        // 1. Direct role assignment via users.roleId
+        // 2. Many-to-many relationship via model_has_roles
+        
         const counts = await db
-          .select({ role_id: modelHasRolesTable.roleId, count: sql<number>`count(*)` })
-          .from(modelHasRolesTable)
-          .groupBy(modelHasRolesTable.roleId);
+          .select({ 
+            role_id: sql<number>`COALESCE(${usersTable.roleId}, ${modelHasRolesTable.roleId})`,
+            count: sql<number>`count(DISTINCT ${usersTable.id})` 
+          })
+          .from(usersTable)
+          .leftJoin(modelHasRolesTable, eq(usersTable.id, modelHasRolesTable.userId))
+          .where(sql`${usersTable.roleId} IS NOT NULL OR ${modelHasRolesTable.roleId} IS NOT NULL`)
+          .groupBy(sql`COALESCE(${usersTable.roleId}, ${modelHasRolesTable.roleId})`);
 
         const roleIdToCount = new Map<number, number>();
-        for (const c of counts as any[]) roleIdToCount.set(c.role_id, Number(c.count || 0));
+        for (const c of counts as any[]) {
+          roleIdToCount.set(c.role_id, Number(c.count || 0));
+        }
 
         const rolesWithUserCount = roles.map(role => ({
           id: role.id,
@@ -43,7 +53,13 @@ export async function GET() {
           userCount: roleIdToCount.get(role.id as number) || 0,
         }));
 
-        return NextResponse.json(rolesWithUserCount);
+        return NextResponse.json(rolesWithUserCount, {
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+          },
+        });
       },
       {
         ttl: 600, // 10 minutes - roles change less frequently

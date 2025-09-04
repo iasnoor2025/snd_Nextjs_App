@@ -172,9 +172,6 @@ export const POST = async (request: NextRequest) => {
             continue;
           }
 
-          // TEMPORARILY SKIP PERMISSION CHECK FOR TESTING
-          console.log(`⚠️ SKIPPING PERMISSION CHECK FOR TESTING`);
-
           // Approve the timesheet to the next stage
           try {
             const newStatus = getApprovalStatusForStage(nextStage);
@@ -217,9 +214,6 @@ export const POST = async (request: NextRequest) => {
             });
             continue;
           }
-
-          // TEMPORARILY SKIP PERMISSION CHECK FOR TESTING
-          console.log(`⚠️ SKIPPING PERMISSION CHECK FOR TESTING`);
 
           // Reject the timesheet
           try {

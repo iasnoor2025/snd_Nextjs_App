@@ -192,13 +192,16 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
     const role = roleRows[0];
 
-    // Get user count for this role using Drizzle
+    // Get user count for this role from both mechanisms while avoiding double counting
     const userCountRows = await db
-      .select({ count: sql`count(*)` })
+      .select({ 
+        count: sql<number>`count(DISTINCT ${users.id})` 
+      })
       .from(users)
-      .where(eq(users.roleId, parseInt(id)));
+      .leftJoin(modelHasRoles, eq(users.id, modelHasRoles.userId))
+      .where(sql`${users.roleId} = ${parseInt(id)} OR ${modelHasRoles.roleId} = ${parseInt(id)}`);
 
-    const userCount = userCountRows.length;
+    const userCount = Number(userCountRows[0]?.count || 0);
 
     const roleWithUserCount = {
       id: role!.id,
