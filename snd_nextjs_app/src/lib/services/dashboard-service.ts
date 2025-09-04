@@ -540,10 +540,13 @@ export class DashboardService {
 
   static async getEquipmentData(limit: number = 50): Promise<EquipmentData[]> {
     try {
+      console.log('getEquipmentData - Starting to fetch equipment data with limit:', limit);
       const today = new Date();
       const thirtyDaysFromNow = new Date();
       thirtyDaysFromNow.setDate(today.getDate() + 30);
 
+      console.log('getEquipmentData - About to execute database query');
+      
       const equipmentData = await db
         .select({
           id: equipment.id,
@@ -557,13 +560,16 @@ export class DashboardService {
           serialNumber: equipment.serialNumber,
           categoryId: equipment.categoryId,
           assignedTo: equipment.assignedTo,
-          driverName: sql<string>`CONCAT(employees.first_name, ' ', COALESCE(employees.middle_name, ''), ' ', employees.last_name)`.as('driverName'),
-          driverFileNumber: employees.fileNumber,
-          department: null, // Equipment doesn't have department in current schema
+          driverName: sql<string>`NULL`.as('driverName'),
+          driverFileNumber: sql<string>`NULL`.as('driverFileNumber'),
+          department: sql<string>`NULL`.as('department'),
         })
         .from(equipment)
-        .leftJoin(employees, eq(equipment.assignedTo, employees.id))
         .limit(limit);
+
+      console.log('getEquipmentData - Raw database result:', equipmentData);
+      console.log('getEquipmentData - Raw data count:', equipmentData.length);
+      console.log('getEquipmentData - First record sample:', equipmentData[0]);
 
 
       const result = equipmentData.map(doc => {
@@ -573,9 +579,11 @@ export class DashboardService {
         // Check if istimara number exists
         if (!doc.istimara) {
           status = 'missing';
+          daysRemaining = null;
         } else if (!doc.istimaraExpiry) {
           // Has istimara but no expiry date - mark as missing expiry
           status = 'missing';
+          daysRemaining = null;
         } else {
           const expiryDate = new Date(doc.istimaraExpiry);
           const diffTime = expiryDate.getTime() - today.getTime();

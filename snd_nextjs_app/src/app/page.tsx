@@ -200,53 +200,132 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch dashboard data
-  const fetchDashboardData = async () => {
+  // Fetch dashboard stats only
+  const fetchDashboardStats = async () => {
     try {
-      setLoading(true);
-      
-      // Add timeout to prevent hanging requests
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000); // 12 second timeout
-      
-      const response = await fetch('/api/dashboard', {
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        if (response.status === 408) {
-          throw new Error('Dashboard request timed out. Please try again.');
-        }
-        throw new Error(t('dashboard.failedToFetchDashboardData'));
+      const response = await fetch('/api/dashboard/stats');
+      if (response.ok) {
+        const data = await response.json();
+        setStats(data.stats || {});
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+    }
+  };
+
+  // Fetch Iqama data
+  const fetchIqamaData = async () => {
+    try {
+      const response = await fetch('/api/dashboard/iqama?limit=10');
+      if (response.ok) {
+        const data = await response.json();
+        setIqamaData(data.iqamaData || []);
+      }
+    } catch (error) {
+      console.error('Error fetching Iqama data:', error);
+    }
+  };
+
+  // Fetch Equipment data
+  const fetchEquipmentData = async () => {
+    try {
+      console.log('Fetching equipment data...');
+      const response = await fetch('/api/dashboard/equipment?limit=10');
+      console.log('Equipment API response status:', response.status);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Equipment API data:', data);
+        setEquipmentData(data.equipment || []);
+      } else {
+        console.error('Equipment API error status:', response.status);
+        const errorText = await response.text();
+        console.error('Equipment API error text:', errorText);
+      }
+    } catch (error) {
+      console.error('Error fetching Equipment data:', error);
+    }
+  };
+
+  // Fetch Timesheet data
+  const fetchTimesheetData = async () => {
+    try {
+      const response = await fetch('/api/dashboard/timesheets?limit=10');
+      if (response.ok) {
+        const data = await response.json();
+        setTimesheetData(data.timesheetData || []);
+      }
+    } catch (error) {
+      console.error('Error fetching Timesheet data:', error);
+    }
+  };
+
+  // Fetch Recent Activity data
+  const fetchActivityData = async () => {
+    try {
+      const response = await fetch('/api/dashboard/activity?limit=10');
+      if (response.ok) {
+        const data = await response.json();
+        setActivities(data.recentActivity || []);
+      }
+    } catch (error) {
+      console.error('Error fetching Activity data:', error);
+    }
+  };
+
+  // Fetch all dashboard data in parallel
+  const fetchDashboardData = async (showLoading = false) => {
+    try {
+      if (showLoading) {
+        setLoading(true);
       }
       
-      const data = await response.json();
-
-      setStats(data.stats || {});
-      setIqamaData(data.iqamaData || []);
-      setEquipmentData(data.equipment || []);
-      setTimesheetData(data.timesheetData || []);
-      setProjectData(data.projectData || []);
-      setActivities(data.recentActivity || []);
+      // Fetch all data in parallel for better performance
+      await Promise.all([
+        fetchDashboardStats(),
+        fetchIqamaData(),
+        fetchEquipmentData(),
+        fetchTimesheetData(),
+        fetchActivityData()
+      ]);
 
     } catch (_error) {
       console.error('Error fetching dashboard data:', _error);
-      if (_error instanceof Error && _error.name === 'AbortError') {
-        console.error('Dashboard request timed out - increasing timeout or reducing data load');
-        // Show user-friendly message for timeout
-        setApprovalSuccess('Dashboard is loading... Please wait a moment.');
-        setTimeout(() => setApprovalSuccess(null), 3000);
-      }
-      // Handle error silently for production
+      // Show user-friendly message for any error
+      setApprovalSuccess('Dashboard loaded with basic data. Some sections may be limited.');
+      setTimeout(() => setApprovalSuccess(null), 5000);
+      
+      // Set default stats to prevent null errors
+      setStats({
+        totalEmployees: 0,
+        activeProjects: 0,
+        totalProjects: 0,
+        availableEquipment: 0,
+        totalEquipment: 0,
+        monthlyRevenue: 0,
+        pendingApprovals: 0,
+        activeRentals: 0,
+        totalRentals: 0,
+        totalCompanies: 0,
+        totalDocuments: 0,
+        equipmentUtilization: 0,
+        todayTimesheets: 0,
+        expiredDocuments: 0,
+        expiringDocuments: 0,
+        employeesOnLeave: 0,
+        totalMoneyReceived: 0,
+        totalMoneyLost: 0,
+        monthlyMoneyReceived: 0,
+        monthlyMoneyLost: 0,
+        netProfit: 0,
+        currency: 'SAR',
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch only timesheet data for quick updates
-  const fetchTimesheetData = async () => {
+  // Fetch only timesheet data for quick updates (legacy)
+  const fetchTimesheetDataLegacy = async () => {
     try {
       setRefreshingTimesheets(true);
       const response = await fetch('/api/timesheets/today');
@@ -262,8 +341,8 @@ export default function DashboardPage() {
     }
   };
 
-  // Fetch only Iqama data for quick updates
-  const fetchIqamaData = async () => {
+  // Fetch only Iqama data for quick updates (legacy)
+  const fetchIqamaDataLegacy = async () => {
     try {
       setUpdatingIqama(true);
       const response = await fetch('/api/employees/iqama');
@@ -281,23 +360,13 @@ export default function DashboardPage() {
 
 
 
-  // Fetch only Recent Activity data for quick updates
-  const fetchRecentActivity = async () => {
-    try {
-      const response = await fetch('/api/dashboard');
-      if (!response.ok) {
-        throw new Error(t('dashboard.failedToFetchDashboardData'));
-      }
-      const data = await response.json();
-      setActivities(data.recentActivity || []);
-    } catch (_error) {
-      // Handle error silently for production
-    }
-  };
 
-  // Initial data fetch
+
+  // Initial data fetch - show dashboard immediately, fetch data in background
   useEffect(() => {
     if (session) {
+      // Show dashboard immediately with loading states
+      // Fetch data in background without blocking UI
       fetchDashboardData();
     }
   }, [session]);
@@ -317,9 +386,11 @@ export default function DashboardPage() {
         fetchTimesheetData();
       }
       if (sectionVisibility.recentActivity) {
-        fetchRecentActivity();
+        fetchActivityData();
       }
-      // Equipment data comes from main dashboard API, no need for separate call
+      if (sectionVisibility.equipment) {
+        fetchEquipmentData();
+      }
     }, 30000); // Refresh every 30 seconds
     
     return () => clearInterval(interval);
@@ -328,9 +399,7 @@ export default function DashboardPage() {
   // Handle refresh
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchDashboardData();
-    // Also refresh recent activity separately to ensure we get the latest data
-    await fetchRecentActivity();
+    await fetchDashboardData(true); // Show loading for manual refresh
     setRefreshing(false);
   };
 
@@ -608,16 +677,13 @@ export default function DashboardPage() {
     }
   };
 
-  // Show loading state
-  if (loading) {
+  // Show loading state only for initial load, not for data fetching
+  if (!session) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">{t('dashboard.loading')}</p>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">
-            This may take a few moments...
-          </p>
         </div>
       </div>
     );
@@ -638,6 +704,7 @@ export default function DashboardPage() {
           onRefresh={handleRefresh}
           session={session}
           accessibleSections={accessibleSections}
+          loading={loading}
         />
 
         {/* Main Content */}
@@ -647,7 +714,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/50">
               <div>
                 <h3 className="text-lg font-semibold">{t('dashboard.dashboardSections')}</h3>
-                <p className="text-sm text-muted-foreground">
+                <div className="text-sm text-muted-foreground">
                   {!sectionsLoaded ? (
                     <span className="flex items-center gap-2">
                       <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
@@ -659,7 +726,7 @@ export default function DashboardPage() {
                       total: Object.keys(sectionVisibility).length,
                     })
                   )}
-                </p>
+                </div>
               </div>
               <div className="flex gap-2">
                 <ExportReportsPermission>
@@ -850,7 +917,7 @@ export default function DashboardPage() {
                 activities={activities}
                 onHideSection={() => toggleSection('recentActivity')}
                 currentUser={session?.user?.name || t('dashboard.unknownUser')}
-                onRefresh={fetchRecentActivity}
+                onRefresh={fetchActivityData}
               />
             </RecentActivityPermission>
           )}
