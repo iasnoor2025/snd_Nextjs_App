@@ -730,7 +730,7 @@ export default function EmployeeShowPage() {
               <span className="hidden font-medium sm:inline">{t('employee.tabs.leaves')}</span>
             </TabsTrigger>
           )}
-          {hasPermission('read', 'advance') && (
+          {hasPermission('read', 'Advance') && (
             <TabsTrigger value="advances" className="flex items-center gap-2 px-3 py-2">
               <CreditCard className="h-4 w-4" />
               <span className="hidden font-medium sm:inline">{t('employee.tabs.advances')}</span>
