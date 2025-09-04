@@ -230,7 +230,7 @@ export default function DashboardPage() {
   const fetchEquipmentData = async () => {
     try {
       console.log('Fetching equipment data...');
-      const response = await fetch('/api/dashboard/equipment?limit=10');
+      const response = await fetch('/api/dashboard/equipment?limit=250');
       console.log('Equipment API response status:', response.status);
       if (response.ok) {
         const data = await response.json();
