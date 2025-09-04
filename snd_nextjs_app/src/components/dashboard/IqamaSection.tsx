@@ -53,7 +53,7 @@ export function IqamaSection({ iqamaData, onUpdateIqama, onHideSection }: IqamaS
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(5);
 
   // Ensure iqamaData is always an array
   const safeIqamaData = iqamaData || [];
@@ -317,19 +317,20 @@ export function IqamaSection({ iqamaData, onUpdateIqama, onHideSection }: IqamaS
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t">
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">{t('dashboard.iqama.pagination.show')}</span>
-              <select
-                value={pageSize}
-                onChange={e => {
-                  setPageSize(Number(e.target.value));
-                  setCurrentPage(1);
-                }}
-                className="h-8 px-2 text-sm border border-input rounded-md bg-background"
-              >
-                <option value={10}>10</option>
-                <option value={25}>25</option>
-                <option value={50}>50</option>
-                <option value={100}>100</option>
-              </select>
+                              <select
+                  value={pageSize}
+                  onChange={e => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="h-8 px-2 text-sm border border-input rounded-md bg-background"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
               <span className="text-sm text-muted-foreground">
                 {t('dashboard.iqama.pagination.perPage')}
               </span>
@@ -346,20 +347,88 @@ export function IqamaSection({ iqamaData, onUpdateIqama, onHideSection }: IqamaS
               </Button>
 
               <div className="flex items-center gap-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  const page = i + 1;
-                  return (
-                    <Button
-                      key={page}
-                      variant={currentPage === page ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setCurrentPage(page)}
-                      className="h-8 w-8 p-0"
-                    >
-                      {page}
-                    </Button>
-                  );
-                })}
+                {(() => {
+                  const pages = [];
+                  const maxVisiblePages = 7;
+                  
+                  if (totalPages <= maxVisiblePages) {
+                    // Show all pages if total is small
+                    for (let i = 1; i <= totalPages; i++) {
+                      pages.push(
+                        <Button
+                          key={i}
+                          variant={currentPage === i ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setCurrentPage(i)}
+                          className="h-8 w-8 p-0"
+                        >
+                          {i}
+                        </Button>
+                      );
+                    }
+                  } else {
+                    // Show smart pagination for large numbers
+                    const startPage = Math.max(1, currentPage - 2);
+                    const endPage = Math.min(totalPages, currentPage + 2);
+                    
+                    // Always show first page
+                    if (startPage > 1) {
+                      pages.push(
+                        <Button
+                          key={1}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(1)}
+                          className="h-8 w-8 p-0"
+                        >
+                          1
+                        </Button>
+                      );
+                      if (startPage > 2) {
+                        pages.push(
+                          <span key="dots1" className="px-2 text-muted-foreground">...</span>
+                        );
+                      }
+                    }
+                    
+                    // Show pages around current page
+                    for (let i = startPage; i <= endPage; i++) {
+                      pages.push(
+                        <Button
+                          key={i}
+                          variant={currentPage === i ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setCurrentPage(i)}
+                          className="h-8 w-8 p-0"
+                        >
+                          {i}
+                        </Button>
+                      );
+                    }
+                    
+                    // Always show last page
+                    if (endPage < totalPages) {
+                      if (endPage < totalPages - 1) {
+                        pages.push(
+                          <span key="dots2" className="px-2 text-muted-foreground">...</span>
+                        );
+                      }
+                      pages.push(
+                        <Button
+                          key={totalPages}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(totalPages)}
+                          className="h-8 w-8 p-0"
+                        >
+                          {totalPages}
+                        </Button>
+                      );
+                    }
+                  }
+                  
+                  return pages;
+                })()}
               </div>
 
               <Button

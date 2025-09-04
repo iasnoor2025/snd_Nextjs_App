@@ -165,21 +165,24 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
 
 
     useEffect(() => {
-        // Filter assignments based on search term
+        // Filter assignments based on search term and status (only show active)
         if (searchTerm.trim() === '') {
-            // Show all assignments when no search term
-            setFilteredAssignments(assignments);
+            // Show only active assignments when no search term
+            const activeAssignments = assignments.filter(assignment => assignment.status === 'active');
+            setFilteredAssignments(activeAssignments);
             setShowAllEmployees(false);
         } else {
-            // Apply search filtering when there's a search term
+            // Apply search filtering when there's a search term (still only active)
             const filteredAssignments = assignments.filter(assignment =>
-                assignment.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                assignment.employee?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                assignment.type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                assignment.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                assignment.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                // Search by employee file number if available
-                (assignment.employee?.fileNumber && assignment.employee.fileNumber.toLowerCase().includes(searchTerm.toLowerCase()))
+                assignment.status === 'active' && (
+                    assignment.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    assignment.employee?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    assignment.type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    assignment.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    assignment.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    // Search by employee file number if available
+                    (assignment.employee?.fileNumber && assignment.employee.fileNumber.toLowerCase().includes(searchTerm.toLowerCase()))
+                )
             );
 
             // If we found assignments, show them
@@ -953,7 +956,7 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                                 <div className="text-sm text-muted-foreground">
                                     {t('dashboard.manualAssignments.assignmentsCount', { 
                                         filtered: filteredAssignments.length, 
-                                        total: assignments.length 
+                                        total: assignments.filter(a => a.status === 'active').length 
                                     })}
                                 </div>
                             </div>
@@ -1120,7 +1123,7 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                                         Total: {filteredAssignments.length} assignment{filteredAssignments.length !== 1 ? 's' : ''}
                                         {searchTerm && (
                                             <span className="ml-2 text-xs">
-                                                (filtered from {assignments.length} total)
+                                                (filtered from {assignments.filter(a => a.status === 'active').length} active)
                                             </span>
                                         )}
                                     </>

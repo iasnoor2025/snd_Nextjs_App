@@ -22,7 +22,7 @@ export const GET = withPermission(PermissionConfigs.dashboard.read)(async (_requ
 
     // Get query parameters
     const { searchParams } = new URL(_request.url);
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const limit = parseInt(searchParams.get('limit') || '250');
 
     // Fetch Iqama data
     const iqamaData = await DashboardService.getIqamaData(limit);

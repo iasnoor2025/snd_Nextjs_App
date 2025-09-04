@@ -216,7 +216,7 @@ export default function DashboardPage() {
   // Fetch Iqama data
   const fetchIqamaData = async () => {
     try {
-      const response = await fetch('/api/dashboard/iqama?limit=10');
+      const response = await fetch('/api/dashboard/iqama?limit=250');
       if (response.ok) {
         const data = await response.json();
         setIqamaData(data.iqamaData || []);
