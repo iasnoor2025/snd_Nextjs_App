@@ -211,7 +211,7 @@ function EditLeaveRequestPage() {
     setError(null);
 
     try {
-      const response = await fetch(`/api/leave-requests/${leaveId}/public`, {
+      const response = await fetch(`/api/leave-by-id?id=${leaveId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -363,7 +363,7 @@ function EditLeaveRequestPage() {
         }
 
         // Send update request to API
-        const response = await fetch(`/api/leave-requests/${leaveId}`, {
+        const response = await fetch(`/api/leave-by-id?id=${leaveId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -508,14 +508,14 @@ function EditLeaveRequestPage() {
               Back
             </Button>
             <div>
-              <h1 className="text-3xl font-bold">Edit Leave Request</h1>
-              <p className="text-muted-foreground">ID: {leaveRequest.id}</p>
+                          <h1 className="text-3xl font-bold">{t('leave.edit_leave_request')}</h1>
+            <p className="text-muted-foreground">ID: {leaveRequest.id}</p>
             </div>
           </div>
           {hasUnsavedChanges && (
             <Badge variant="outline" className="text-orange-600 border-orange-200">
               <AlertCircle className="h-3 w-3 mr-1" />
-              Unsaved Changes
+              {t('leave.unsaved_changes')}
             </Badge>
           )}
         </div>
@@ -540,26 +540,26 @@ function EditLeaveRequestPage() {
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-muted-foreground">Leave Balance</p>
+                <p className="text-sm text-muted-foreground">{t('leave.leave_balance')}</p>
                 <p className="font-semibold">
                   {(leaveRequest.total_leave_balance || 0) -
                     (leaveRequest.leave_taken_this_year || 0)}{' '}
-                  days remaining
+                  {t('leave.days_remaining')}
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <Form onSubmit={form.handleSubmit(onSubmit)}>
+          <div className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Leave Details */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Calendar className="h-5 w-5" />
-                    Leave Details
+                    {t('leave.leave_details')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -572,11 +572,11 @@ function EditLeaveRequestPage() {
                       field: ControllerRenderProps<LeaveRequestFormData, 'leave_type'>;
                     }) => (
                       <FormItem>
-                        <FormLabel>Leave Type</FormLabel>
+                        <FormLabel>{t('leave.leave_type_required')}</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select leave type" />
+                              <SelectValue placeholder={t('leave.select_leave_type')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -605,7 +605,7 @@ function EditLeaveRequestPage() {
                         field: ControllerRenderProps<LeaveRequestFormData, 'start_date'>;
                       }) => (
                         <FormItem>
-                          <FormLabel>Start Date</FormLabel>
+                          <FormLabel>{t('leave.start_date_required')}</FormLabel>
                           <FormControl>
                             <Input
                               type="date"
@@ -627,7 +627,7 @@ function EditLeaveRequestPage() {
                         field: ControllerRenderProps<LeaveRequestFormData, 'end_date'>;
                       }) => (
                         <FormItem>
-                          <FormLabel>End Date</FormLabel>
+                          <FormLabel>{t('leave.end_date_required')}</FormLabel>
                           <FormControl>
                             <Input
                               type="date"
@@ -650,7 +650,7 @@ function EditLeaveRequestPage() {
                       field: ControllerRenderProps<LeaveRequestFormData, 'days_requested'>;
                     }) => (
                       <FormItem>
-                        <FormLabel>Days Requested</FormLabel>
+                        <FormLabel>{t('leave.days_requested')}</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -660,7 +660,7 @@ function EditLeaveRequestPage() {
                           />
                         </FormControl>
                         <FormDescription>
-                          Automatically calculated based on start and end dates
+                          {t('leave.days_requested_description')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -674,7 +674,7 @@ function EditLeaveRequestPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <User className="h-5 w-5" />
-                    Status & Approval
+                    {t('leave.status_approval')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -687,11 +687,11 @@ function EditLeaveRequestPage() {
                       field: ControllerRenderProps<LeaveRequestFormData, 'status'>;
                     }) => (
                       <FormItem>
-                        <FormLabel>Status</FormLabel>
+                        <FormLabel>{t('leave.status')}</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select status" />
+                              <SelectValue placeholder={t('leave.select_status')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -715,9 +715,9 @@ function EditLeaveRequestPage() {
                     }) => (
                       <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                         <div className="space-y-0.5">
-                          <FormLabel className="text-base">Notify Employee</FormLabel>
+                          <FormLabel className="text-base">{t('leave.notify_employee')}</FormLabel>
                           <FormDescription>
-                            Send email notification to employee about status changes
+                            {t('leave.notify_employee_description')}
                           </FormDescription>
                         </div>
                         <FormControl>
@@ -740,9 +740,9 @@ function EditLeaveRequestPage() {
                     }) => (
                       <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                         <div className="space-y-0.5">
-                          <FormLabel className="text-base">Send Approval Notification</FormLabel>
+                          <FormLabel className="text-base">{t('leave.send_approval_notification')}</FormLabel>
                           <FormDescription>
-                            Notify relevant managers about approval decisions
+                            {t('leave.send_approval_notification_description')}
                           </FormDescription>
                         </div>
                         <FormControl>
@@ -758,10 +758,10 @@ function EditLeaveRequestPage() {
             {/* Reason and Comments */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Reason & Comments
-                </CardTitle>
+                                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    {t('leave.reason_comments')}
+                  </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <FormField
@@ -773,16 +773,16 @@ function EditLeaveRequestPage() {
                     field: ControllerRenderProps<LeaveRequestFormData, 'reason'>;
                   }) => (
                     <FormItem>
-                      <FormLabel>Reason for Leave</FormLabel>
+                      <FormLabel>{t('leave.reason_for_leave')}</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Please provide a detailed reason for the leave request..."
+                          placeholder={t('leave.provide_detailed_reason')}
                           className="min-h-[100px]"
                           {...field}
                         />
                       </FormControl>
                       <FormDescription>
-                        Provide a clear and detailed explanation for the leave request
+                        {t('leave.provide_detailed_reason')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -798,16 +798,16 @@ function EditLeaveRequestPage() {
                     field: ControllerRenderProps<LeaveRequestFormData, 'comments'>;
                   }) => (
                     <FormItem>
-                      <FormLabel>Additional Comments</FormLabel>
+                      <FormLabel>{t('leave.additional_comments')}</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Any additional comments or notes..."
+                          placeholder={t('leave.additional_comments_placeholder')}
                           className="min-h-[80px]"
                           {...field}
                         />
                       </FormControl>
                       <FormDescription>
-                        Optional comments for approval/rejection reasons
+                        {t('leave.additional_comments_description')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -820,14 +820,14 @@ function EditLeaveRequestPage() {
             <div className="flex justify-end gap-4 pt-6 border-t">
               <Button type="button" variant="outline" onClick={handleCancel} disabled={saving}>
                 <X className="h-4 w-4 mr-2" />
-                Cancel
+                {t('leave.cancel')}
               </Button>
               <Button type="submit" disabled={saving}>
                 <Save className="h-4 w-4 mr-2" />
-                {saving ? 'Saving Changes...' : 'Save Changes'}
+                {saving ? t('leave.saving_changes') : t('leave.save_changes')}
               </Button>
             </div>
-          </form>
+          </div>
         </Form>
 
         {/* Confirmation Dialog */}

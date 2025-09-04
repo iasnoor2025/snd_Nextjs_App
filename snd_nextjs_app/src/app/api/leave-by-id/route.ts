@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// GET /api/leave-requests/[id] - Get a specific leave request
-export async function GET({ params }: { params: { id: string } }) {
+export async function GET(request: NextRequest) {
   try {
-    const { id } = params;
-    console.log('Fetching leave request with ID:', id);
+    const url = new URL(request.url);
+    const id = url.searchParams.get('id');
     
-    // Return mock data for now
+    console.log('Fetching leave by ID:', id);
+    
+    if (!id) {
+      return NextResponse.json({ error: 'ID parameter is required' }, { status: 400 });
+    }
+    
+    // Return mock data
     const mockLeaveRequest = {
       id: parseInt(id),
       employee_name: 'John Doe',
@@ -47,7 +52,7 @@ export async function GET({ params }: { params: { id: string } }) {
       data: mockLeaveRequest,
     });
   } catch (error) {
-    console.error('Error fetching leave request:', error);
+    console.error('Error fetching leave by ID:', error);
     
     return NextResponse.json(
       {
@@ -59,23 +64,23 @@ export async function GET({ params }: { params: { id: string } }) {
   }
 }
 
-// DELETE /api/leave-requests/[id] - Delete a leave request
 export async function DELETE(request: NextRequest) {
   try {
     const url = new URL(request.url);
-    const pathParts = url.pathname.split('/');
-    const id = pathParts[pathParts.length - 1];
+    const id = url.searchParams.get('id');
+    
+    console.log('Deleting leave with ID:', id);
     
     if (!id) {
-      return NextResponse.json({ error: 'Leave request ID is required' }, { status: 400 });
+      return NextResponse.json({ error: 'ID parameter is required' }, { status: 400 });
     }
-
+    
     return NextResponse.json({
       success: true,
       message: 'Leave request deleted successfully',
     });
   } catch (error) {
-    console.error('Error deleting leave request:', error);
+    console.error('Error deleting leave:', error);
     
     return NextResponse.json(
       {
@@ -87,15 +92,15 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
-// PUT /api/leave-requests/[id] - Update a leave request
 export async function PUT(request: NextRequest) {
   try {
     const url = new URL(request.url);
-    const pathParts = url.pathname.split('/');
-    const id = pathParts[pathParts.length - 1];
+    const id = url.searchParams.get('id');
+    
+    console.log('Updating leave with ID:', id);
     
     if (!id) {
-      return NextResponse.json({ error: 'Leave request ID is required' }, { status: 400 });
+      return NextResponse.json({ error: 'ID parameter is required' }, { status: 400 });
     }
 
     const body = await request.json();
@@ -125,7 +130,7 @@ export async function PUT(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error updating leave request:', error);
+    console.error('Error updating leave:', error);
     
     return NextResponse.json(
       {

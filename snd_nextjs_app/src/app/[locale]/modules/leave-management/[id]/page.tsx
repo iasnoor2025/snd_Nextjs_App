@@ -179,7 +179,7 @@ function LeaveRequestDetailPage() {
     setError(null);
 
     try {
-      const response = await fetch(`/api/leave-requests/${leaveId}`, {
+      const response = await fetch(`/api/leave-by-id?id=${leaveId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -227,7 +227,7 @@ function LeaveRequestDetailPage() {
 
     setDeleting(true);
     try {
-      const response = await fetch(`/api/leave-requests/${leaveId}`, {
+      const response = await fetch(`/api/leave-by-id?id=${leaveId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -239,10 +239,10 @@ function LeaveRequestDetailPage() {
         throw new Error(error.error || 'Failed to delete leave request');
       }
 
-      toast.success('Leave request deleted successfully');
+      toast.success(t('leave.leave_request_deleted_successfully'));
       router.push('/modules/leave-management');
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete leave request';
+      const errorMessage = err instanceof Error ? err.message : t('leave.failed_to_delete_leave_request');
       toast.error(errorMessage);
     } finally {
       setDeleting(false);
@@ -266,11 +266,11 @@ function LeaveRequestDetailPage() {
         throw new Error(error.error || 'Failed to approve leave request');
       }
 
-      toast.success('Leave request approved successfully');
+      toast.success(t('leave.leave_request_approved_successfully'));
       // Refresh the leave request data
       await fetchLeaveRequest();
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to approve leave request';
+      const errorMessage = err instanceof Error ? err.message : t('leave.failed_to_approve_leave_request');
       toast.error(errorMessage);
     }
   }, [leaveRequest, leaveId, fetchLeaveRequest]);
@@ -278,7 +278,7 @@ function LeaveRequestDetailPage() {
   const handleReject = useCallback(async () => {
     if (!leaveRequest) return;
 
-    const reason = prompt('Please provide a reason for rejection:');
+    const reason = prompt(t('leave.please_provide_rejection_reason'));
     if (!reason) return;
 
     try {
@@ -297,11 +297,11 @@ function LeaveRequestDetailPage() {
         throw new Error(error.error || 'Failed to reject leave request');
       }
 
-      toast.success('Leave request rejected');
+      toast.success(t('leave.leave_request_rejected_successfully'));
       // Refresh the leave request data
       await fetchLeaveRequest();
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to reject leave request';
+      const errorMessage = err instanceof Error ? err.message : t('leave.failed_to_reject_leave_request');
       toast.error(errorMessage);
     }
   }, [leaveRequest, leaveId, fetchLeaveRequest]);
@@ -315,16 +315,19 @@ function LeaveRequestDetailPage() {
         variant: 'secondary' as const,
         icon: Clock,
         color: 'bg-yellow-100 text-yellow-800',
+        text: t('leave.pending'),
       },
       Approved: {
         variant: 'default' as const,
         icon: CheckCircle,
         color: 'bg-green-100 text-green-800',
+        text: t('leave.approved'),
       },
       Rejected: {
         variant: 'destructive' as const,
         icon: XCircle,
         color: 'bg-red-100 text-red-800',
+        text: t('leave.rejected'),
       },
     };
 
@@ -335,10 +338,10 @@ function LeaveRequestDetailPage() {
     return (
       <Badge variant={config.variant} className={`flex items-center gap-1 ${config.color}`}>
         <Icon className="h-3 w-3" />
-        {normalizedStatus}
+        {config.text}
       </Badge>
     );
-  }, []);
+  }, [t]);
 
   const formatDate = useCallback((dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -373,15 +376,15 @@ function LeaveRequestDetailPage() {
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            {error}. Please try refreshing the page or contact support if the problem persists.
+            {error}. {t('leave.please_try_refreshing')}
           </AlertDescription>
         </Alert>
         <div className="mt-4 flex gap-2">
           <Button onClick={fetchLeaveRequest} variant="outline">
-            Retry
+            {t('leave.retry')}
           </Button>
           <Button onClick={() => router.push('/modules/leave-management')}>
-            Back to Leave Management
+            {t('leave.back_to_leave_management')}
           </Button>
         </div>
       </div>
@@ -393,12 +396,12 @@ function LeaveRequestDetailPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center space-y-4">
           <AlertTriangle className="h-16 w-16 text-yellow-500 mx-auto" />
-          <h2 className="text-2xl font-bold">Leave Request Not Found</h2>
+          <h2 className="text-2xl font-bold">{t('leave.leave_request_not_found_title')}</h2>
           <p className="text-muted-foreground">
-            The leave request you're looking for doesn't exist or has been removed.
+            {t('leave.leave_request_not_found_description')}
           </p>
           <Button onClick={() => router.push('/modules/leave-management')}>
-            Back to Leave Management
+            {t('leave.back_to_leave_management')}
           </Button>
         </div>
       </div>
@@ -417,18 +420,18 @@ function LeaveRequestDetailPage() {
               onClick={() => router.push('/modules/leave-management')}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              {t('leave.back')}
             </Button>
             <div>
-              <h1 className="text-3xl font-bold">Leave Request Details</h1>
-              <p className="text-muted-foreground">ID: {leaveRequest.id}</p>
+              <h1 className="text-3xl font-bold">{t('leave.leave_request_details')}</h1>
+              <p className="text-muted-foreground">{t('leave.id')}: {leaveRequest.id}</p>
             </div>
           </div>
           <div className="flex gap-2">
             {hasPermission('update', 'Leave') && (
               <Button onClick={handleEdit} variant="outline">
                 <Edit className="h-4 w-4 mr-2" />
-                Edit
+                {t('leave.edit')}
               </Button>
             )}
             {hasPermission('delete', 'Leave') && (
@@ -438,7 +441,7 @@ function LeaveRequestDetailPage() {
                 disabled={deleting}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                {deleting ? 'Deleting...' : 'Delete'}
+                {deleting ? t('leave.deleting') : t('leave.delete')}
               </Button>
             )}
             <DropdownMenu>
@@ -450,16 +453,16 @@ function LeaveRequestDetailPage() {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem>
                   <Download className="h-4 w-4 mr-2" />
-                  Export Details
+                  {t('leave.export_details')}
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <Share2 className="h-4 w-4 mr-2" />
-                  Share
+                  {t('leave.share')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
                   <History className="h-4 w-4 mr-2" />
-                  View History
+                  {t('leave.view_history')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -492,23 +495,23 @@ function LeaveRequestDetailPage() {
                   )}
                   <span className="font-medium">
                     {normalizedStatus === 'Approved'
-                      ? 'Leave Request Approved'
+                      ? t('leave.leave_request_approved')
                       : normalizedStatus === 'Rejected'
-                        ? 'Leave Request Rejected'
+                        ? t('leave.leave_request_rejected')
                         : normalizedStatus === 'Pending'
-                          ? 'Leave Request Pending Approval'
-                          : `Leave Request ${normalizedStatus}`}
+                          ? t('leave.leave_request_pending_approval')
+                          : `${t('leave.leave_request_details')} ${normalizedStatus}`}
                   </span>
                 </div>
                 {normalizedStatus === 'Pending' && hasPermission('approve', 'Leave') && (
                   <div className="flex gap-2">
                     <Button size="sm" onClick={handleApprove}>
                       <CheckCircle className="h-4 w-4 mr-2" />
-                      Approve
+                      {t('leave.approve')}
                     </Button>
                     <Button size="sm" variant="destructive" onClick={handleReject}>
                       <XCircle className="h-4 w-4 mr-2" />
-                      Reject
+                      {t('leave.reject')}
                     </Button>
                   </div>
                 )}
@@ -520,10 +523,10 @@ function LeaveRequestDetailPage() {
         {/* Tabbed Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="attachments">Attachments</TabsTrigger>
-            <TabsTrigger value="history">History</TabsTrigger>
+            <TabsTrigger value="overview">{t('leave.overview')}</TabsTrigger>
+            <TabsTrigger value="details">{t('leave.details')}</TabsTrigger>
+            <TabsTrigger value="attachments">{t('leave.attachments')}</TabsTrigger>
+            <TabsTrigger value="history">{t('leave.history')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -533,7 +536,7 @@ function LeaveRequestDetailPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <User className="h-5 w-5" />
-                    Employee Information
+                    {t('leave.employee_information')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -555,15 +558,15 @@ function LeaveRequestDetailPage() {
                   <Separator />
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Department</span>
+                      <span className="text-sm text-muted-foreground">{t('leave.department')}</span>
                       <span className="text-sm font-medium">{leaveRequest.department}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Position</span>
+                      <span className="text-sm text-muted-foreground">{t('leave.position')}</span>
                       <span className="text-sm font-medium">{leaveRequest.position}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Status</span>
+                      <span className="text-sm text-muted-foreground">{t('leave.status')}</span>
                       {getStatusBadge(leaveRequest.status)}
                     </div>
                   </div>
@@ -575,29 +578,29 @@ function LeaveRequestDetailPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Calendar className="h-5 w-5" />
-                    Leave Details
+                    {t('leave.leave_details')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Leave Type</span>
+                      <span className="text-sm text-muted-foreground">{t('leave.leave_type')}</span>
                       <span className="text-sm font-medium">{leaveRequest.leave_type}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Days Requested</span>
+                      <span className="text-sm text-muted-foreground">{t('leave.days_requested')}</span>
                       <span className="text-sm font-medium">
-                        {leaveRequest.days_requested} days
+                        {leaveRequest.days_requested} {t('leave.days')}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Start Date</span>
+                      <span className="text-sm text-muted-foreground">{t('leave.start_date')}</span>
                       <span className="text-sm font-medium">
                         {formatDate(leaveRequest.start_date)}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">End Date</span>
+                      <span className="text-sm text-muted-foreground">{t('leave.end_date')}</span>
                       <span className="text-sm font-medium">
                         {formatDate(leaveRequest.end_date)}
                       </span>
@@ -611,37 +614,37 @@ function LeaveRequestDetailPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <CalendarDays className="h-5 w-5" />
-                    Leave Balance
+                    {t('leave.leave_balance')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Total Balance</span>
+                      <span className="text-sm text-muted-foreground">{t('leave.total_balance')}</span>
                       <span className="text-sm font-medium">
-                        {leaveRequest.total_leave_balance || 0} days
+                        {leaveRequest.total_leave_balance || 0} {t('leave.days')}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Used This Year</span>
+                      <span className="text-sm text-muted-foreground">{t('leave.used_this_year')}</span>
                       <span className="text-sm font-medium">
-                        {leaveRequest.leave_taken_this_year || 0} days
+                        {leaveRequest.leave_taken_this_year || 0} {t('leave.days')}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Remaining</span>
+                      <span className="text-sm text-muted-foreground">{t('leave.remaining')}</span>
                       <span className="text-sm font-medium">
                         {Math.max(
                           0,
                           (leaveRequest.total_leave_balance || 0) -
                             (leaveRequest.leave_taken_this_year || 0)
                         )}{' '}
-                        days
+                        {t('leave.days')}
                       </span>
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span>Usage</span>
+                        <span>{t('leave.usage')}</span>
                         <span>{Math.round(calculateLeaveProgress())}%</span>
                       </div>
                       <Progress value={calculateLeaveProgress()} className="h-2" />
@@ -656,7 +659,7 @@ function LeaveRequestDetailPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  Reason for Leave
+                  {t('leave.reason_for_leave')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -672,26 +675,26 @@ function LeaveRequestDetailPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <UserCheck className="h-5 w-5" />
-                    Approval Information
+                    {t('leave.approval_information')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Submitted Date</span>
+                      <span className="text-sm text-muted-foreground">{t('leave.submitted_date')}</span>
                       <span className="text-sm font-medium">
                         {formatDateTime(leaveRequest.submitted_date)}
                       </span>
                     </div>
                     {leaveRequest.approved_by && (
                       <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">Approved By</span>
+                        <span className="text-sm text-muted-foreground">{t('leave.approved_by')}</span>
                         <span className="text-sm font-medium">{leaveRequest.approved_by}</span>
                       </div>
                     )}
                     {leaveRequest.approved_date && (
                       <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">Approved Date</span>
+                        <span className="text-sm text-muted-foreground">{t('leave.approved_date')}</span>
                         <span className="text-sm font-medium">
                           {formatDateTime(leaveRequest.approved_date)}
                         </span>
@@ -702,7 +705,7 @@ function LeaveRequestDetailPage() {
                         <div className="flex items-start gap-2">
                           <MessageSquare className="h-4 w-4 mt-0.5 text-muted-foreground" />
                           <div>
-                            <p className="text-sm font-medium mb-1">Comments</p>
+                            <p className="text-sm font-medium mb-1">{t('leave.comments')}</p>
                             <p className="text-sm text-muted-foreground">{leaveRequest.comments}</p>
                           </div>
                         </div>
@@ -717,25 +720,25 @@ function LeaveRequestDetailPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Eye className="h-5 w-5" />
-                    System Information
+                    {t('leave.system_information')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Created</span>
+                      <span className="text-sm text-muted-foreground">{t('leave.created')}</span>
                       <span className="text-sm font-medium">
                         {formatDateTime(leaveRequest.created_at)}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Last Updated</span>
+                      <span className="text-sm text-muted-foreground">{t('leave.last_updated')}</span>
                       <span className="text-sm font-medium">
                         {formatDateTime(leaveRequest.updated_at)}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Request ID</span>
+                      <span className="text-sm text-muted-foreground">{t('leave.request_id')}</span>
                       <span className="text-sm font-medium font-mono">{leaveRequest.id}</span>
                     </div>
                   </div>
@@ -747,7 +750,7 @@ function LeaveRequestDetailPage() {
           <TabsContent value="attachments" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Attachments</CardTitle>
+                <CardTitle>{t('leave.attachments')}</CardTitle>
               </CardHeader>
               <CardContent>
                 {leaveRequest.attachments && leaveRequest.attachments.length > 0 ? (
@@ -766,7 +769,7 @@ function LeaveRequestDetailPage() {
                         </div>
                         <Button variant="outline" size="sm">
                           <Download className="h-4 w-4 mr-2" />
-                          Download
+                          {t('leave.download')}
                         </Button>
                       </div>
                     ))}
@@ -774,7 +777,7 @@ function LeaveRequestDetailPage() {
                 ) : (
                   <div className="text-center py-8">
                     <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">No attachments uploaded</p>
+                    <p className="text-muted-foreground">{t('leave.no_attachments_uploaded')}</p>
                   </div>
                 )}
               </CardContent>
@@ -784,7 +787,7 @@ function LeaveRequestDetailPage() {
           <TabsContent value="history" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Approval History</CardTitle>
+                <CardTitle>{t('leave.approval_history')}</CardTitle>
               </CardHeader>
               <CardContent>
                 {leaveRequest.approval_history && leaveRequest.approval_history.length > 0 ? (
@@ -811,7 +814,7 @@ function LeaveRequestDetailPage() {
                 ) : (
                   <div className="text-center py-8">
                     <History className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">No approval history available</p>
+                    <p className="text-muted-foreground">{t('leave.no_approval_history_available')}</p>
                   </div>
                 )}
               </CardContent>
@@ -824,10 +827,10 @@ function LeaveRequestDetailPage() {
       <ConfirmationDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
-        title="Delete Leave Request"
-        description="Are you sure you want to delete this leave request? This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t('leave.delete_leave_request_title')}
+        description={t('leave.delete_leave_request_description')}
+        confirmText={t('leave.delete_leave_request_confirm')}
+        cancelText={t('leave.delete_leave_request_cancel')}
         variant="destructive"
         onConfirm={handleDelete}
         loading={deleting}

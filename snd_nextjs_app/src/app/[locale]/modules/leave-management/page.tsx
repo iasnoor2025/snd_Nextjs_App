@@ -172,7 +172,7 @@ export default function LeaveManagementPage() {
       }
     } catch (error) {
       
-      toast.error(t('error_fetching_leave_requests'));
+             toast.error(t('leave.error_fetching_leave_requests'));
     } finally {
       setLoading(false);
     }
@@ -199,14 +199,14 @@ export default function LeaveManagementPage() {
       });
 
       if (response.ok) {
-        toast.success(t('leave_request_deleted_successfully'));
+                 toast.success(t('leave.leave_request_deleted_successfully'));
         fetchLeaveRequests(); // Refresh the data
       } else {
         throw new Error('Failed to delete leave request');
       }
     } catch (error) {
       
-      toast.error(t('error_deleting_leave_request'));
+             toast.error(t('leave.error_deleting_leave_request'));
     } finally {
       setShowDeleteDialog(false);
       setDeleteId(null);
@@ -223,14 +223,14 @@ export default function LeaveManagementPage() {
       });
 
       if (response.ok) {
-        toast.success(t('leave_request_approved_successfully'));
+                 toast.success(t('leave.leave_request_approved_successfully'));
         fetchLeaveRequests(); // Refresh the data
       } else {
         throw new Error('Failed to approve leave request');
       }
     } catch (error) {
       
-      toast.error(t('error_approving_leave_request'));
+             toast.error(t('leave.error_approving_leave_request'));
     }
   };
 
@@ -247,14 +247,14 @@ export default function LeaveManagementPage() {
       });
 
       if (response.ok) {
-        toast.success(t('leave_request_rejected'));
+                 toast.success(t('leave.leave_request_rejected'));
         fetchLeaveRequests(); // Refresh the data
       } else {
         throw new Error('Failed to reject leave request');
       }
     } catch (error) {
       
-      toast.error(t('error_rejecting_leave_request'));
+             toast.error(t('leave.error_rejecting_leave_request'));
     }
   };
 
@@ -296,7 +296,7 @@ export default function LeaveManagementPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg">{t('loading_leave_requests')}</div>
+                 <div className="text-lg">{t('leave.loading_leave_requests')}</div>
       </div>
     );
   }
@@ -307,13 +307,13 @@ export default function LeaveManagementPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Calendar className="h-6 w-6" />
-            <h1 className="text-2xl font-bold">{t('leave_management')}</h1>
+            <h1 className="text-2xl font-bold">{t('leave.leave_management')}</h1>
           </div>
           <PermissionContent action="create" subject="Leave">
             <Link href="/modules/leave-management/create">
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
-                {t('request_leave')}
+                {t('leave.request_leave')}
               </Button>
             </Link>
           </PermissionContent>
@@ -321,13 +321,13 @@ export default function LeaveManagementPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{t('leave_requests')}</CardTitle>
+            <CardTitle>{t('leave.leave_requests')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col sm:flex-row gap-4 mb-6">
               <div className="flex-1">
                 <Input
-                  placeholder={t('search_leave_requests')}
+                  placeholder={t('leave.search_leave_requests')}
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   className="max-w-sm"
@@ -339,11 +339,11 @@ export default function LeaveManagementPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">{t('all_status')}</SelectItem>
-                    <SelectItem value="Pending">{t('pending')}</SelectItem>
-                    <SelectItem value="Approved">{t('approved')}</SelectItem>
-                    <SelectItem value="Rejected">{t('rejected')}</SelectItem>
-                    <SelectItem value="Cancelled">{t('cancelled')}</SelectItem>
+                                         <SelectItem value="all">{t('leave.all_status')}</SelectItem>
+                     <SelectItem value="Pending">{t('leave.pending')}</SelectItem>
+                     <SelectItem value="Approved">{t('leave.approved')}</SelectItem>
+                     <SelectItem value="Rejected">{t('leave.rejected')}</SelectItem>
+                     <SelectItem value="Cancelled">{t('leave.cancelled')}</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={leaveType} onValueChange={setLeaveType}>
@@ -351,12 +351,12 @@ export default function LeaveManagementPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">{t('all_types')}</SelectItem>
-                    <SelectItem value="Annual Leave">{t('annual_leave')}</SelectItem>
-                    <SelectItem value="Sick Leave">{t('sick_leave')}</SelectItem>
-                    <SelectItem value="Personal Leave">{t('personal_leave')}</SelectItem>
-                    <SelectItem value="Maternity Leave">{t('maternity_leave')}</SelectItem>
-                    <SelectItem value="Study Leave">{t('study_leave')}</SelectItem>
+                                         <SelectItem value="all">{t('leave.all_types')}</SelectItem>
+                     <SelectItem value="Annual Leave">{t('leave.annual_leave')}</SelectItem>
+                     <SelectItem value="Sick Leave">{t('leave.sick_leave')}</SelectItem>
+                     <SelectItem value="Personal Leave">{t('leave.personal_leave')}</SelectItem>
+                     <SelectItem value="Maternity Leave">{t('leave.maternity_leave')}</SelectItem>
+                     <SelectItem value="Study Leave">{t('leave.study_leave')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -366,13 +366,13 @@ export default function LeaveManagementPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('employee')}</TableHead>
-                    <TableHead>{t('leave_type')}</TableHead>
-                    <TableHead>{t('dates')}</TableHead>
-                    <TableHead>{t('days')}</TableHead>
-                    <TableHead>{t('status')}</TableHead>
-                    <TableHead>{t('submitted')}</TableHead>
-                    <TableHead className="text-right">{t('actions')}</TableHead>
+                                         <TableHead>{t('leave.employee')}</TableHead>
+                     <TableHead>{t('leave.leave_type')}</TableHead>
+                     <TableHead>{t('leave.dates')}</TableHead>
+                     <TableHead>{t('leave.days')}</TableHead>
+                     <TableHead>{t('leave.status')}</TableHead>
+                     <TableHead>{t('leave.submitted')}</TableHead>
+                     <TableHead className="text-right">{t('leave.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -381,7 +381,7 @@ export default function LeaveManagementPage() {
                       <TableCell colSpan={7} className="text-center py-8">
                         <div className="flex items-center justify-center">
                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                          <span className="ml-2">{t('loading')}</span>
+                                                     <span className="ml-2">{t('leave.loading')}</span>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -410,7 +410,7 @@ export default function LeaveManagementPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {request.days_requested} {t('days')}
+                                                     {request.days_requested} {t('leave.days')}
                         </TableCell>
                         <TableCell>{getStatusBadge(request.status)}</TableCell>
                         <TableCell>{formatDate(request.submitted_date)}</TableCell>
@@ -472,10 +472,10 @@ export default function LeaveManagementPage() {
                       <TableCell colSpan={7} className="text-center py-8">
                         <div className="flex flex-col items-center">
                           <Calendar className="h-12 w-12 text-gray-400 mb-2" />
-                          <p className="text-gray-500">{t('no_leave_requests_found')}</p>
-                          <p className="text-sm text-gray-400 mt-1">
-                            {t('no_leave_requests_description')}
-                          </p>
+                                                     <p className="text-gray-500">{t('leave.no_leave_requests_found')}</p>
+                           <p className="text-sm text-gray-400 mt-1">
+                             {t('leave.no_leave_requests_description')}
+                           </p>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -488,15 +488,15 @@ export default function LeaveManagementPage() {
               <div className="flex items-center justify-between mt-4">
                 <div className="text-sm text-gray-500">
                   {leaveRequests.total > 0
-                    ? t('showing_results', {
-                        start: (leaveRequests.current_page - 1) * leaveRequests.per_page + 1,
-                        end: Math.min(
-                          leaveRequests.current_page * leaveRequests.per_page,
-                          leaveRequests.total
-                        ),
-                        total: leaveRequests.total,
-                      })
-                    : t('no_results_found')}
+                                         ? t('leave.showing_results', {
+                         start: (leaveRequests.current_page - 1) * leaveRequests.per_page + 1,
+                         end: Math.min(
+                           leaveRequests.current_page * leaveRequests.per_page,
+                           leaveRequests.total
+                         ),
+                         total: leaveRequests.total,
+                       })
+                     : t('leave.no_results_found')}
                 </div>
                 {leaveRequests.last_page > 1 && (
                   <div className="flex items-center gap-2">
@@ -507,7 +507,7 @@ export default function LeaveManagementPage() {
                       disabled={leaveRequests.current_page === 1}
                     >
                       <ChevronLeft className="h-4 w-4 mr-1" />
-                      {t('previous')}
+                                             {t('leave.previous')}
                     </Button>
 
                     <div className="flex items-center gap-1">
@@ -582,7 +582,7 @@ export default function LeaveManagementPage() {
                       }
                       disabled={leaveRequests.current_page === leaveRequests.last_page}
                     >
-                      {t('next')}
+                                             {t('leave.next')}
                       <ChevronRight className="h-4 w-4 ml-1" />
                     </Button>
                   </div>
@@ -596,26 +596,26 @@ export default function LeaveManagementPage() {
         <RoleContent role="ADMIN">
           <Card>
             <CardHeader>
-              <CardTitle>{t('leave_administration')}</CardTitle>
+                             <CardTitle>{t('leave.leave_administration')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex gap-2">
                 <PermissionContent action="manage" subject="Leave">
                   <Button variant="outline">
                     <CheckCircle className="h-4 w-4 mr-2" />
-                    {t('approve_all_pending')}
+                                         {t('leave.approve_all_pending')}
                   </Button>
                 </PermissionContent>
                 <PermissionContent action="manage" subject="Leave">
                   <Button variant="outline">
                     <Calendar className="h-4 w-4 mr-2" />
-                    {t('leave_settings')}
+                                         {t('leave.leave_settings')}
                   </Button>
                 </PermissionContent>
                 <PermissionContent action="manage" subject="Leave">
                   <Button variant="outline">
                     <Clock className="h-4 w-4 mr-2" />
-                    {t('leave_policies')}
+                                         {t('leave.leave_policies')}
                   </Button>
                 </PermissionContent>
               </div>
@@ -628,10 +628,10 @@ export default function LeaveManagementPage() {
       <ConfirmationDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
-        title={t('delete_leave_request')}
-        description={t('confirm_delete_leave_request')}
-        confirmText={t('delete')}
-        cancelText={t('cancel')}
+                 title={t('leave.delete_leave_request')}
+         description={t('leave.confirm_delete_leave_request')}
+         confirmText={t('leave.delete_leave_request_confirm')}
+         cancelText={t('leave.delete_leave_request_cancel')}
         variant="destructive"
         onConfirm={confirmDelete}
       />

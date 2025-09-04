@@ -23,6 +23,7 @@ import { ArrowLeft, Calendar, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useI18n } from '@/hooks/use-i18n';
 
 interface LeaveRequestForm {
   employee_id: string;
@@ -41,6 +42,7 @@ export default function CreateLeaveRequestPage() {
 }
 
 function CreateLeaveRequestContent() {
+  const { t } = useI18n();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<LeaveRequestForm>({
@@ -67,23 +69,23 @@ function CreateLeaveRequestContent() {
     try {
       // Validate form data
       if (!formData.employee_id) {
-        toast.error('Please select an employee');
+        toast.error(t('leave.please_select_employee'));
         return;
       }
       if (!formData.leave_type) {
-        toast.error('Please select a leave type');
+        toast.error(t('leave.please_select_leave_type'));
         return;
       }
       if (!formData.start_date) {
-        toast.error('Please select a start date');
+        toast.error(t('leave.please_select_start_date'));
         return;
       }
       if (!formData.end_date) {
-        toast.error('Please select an end date');
+        toast.error(t('leave.please_select_end_date'));
         return;
       }
       if (!formData.reason) {
-        toast.error('Please provide a reason for leave');
+        toast.error(t('leave.please_provide_reason'));
         return;
       }
 
@@ -94,7 +96,7 @@ function CreateLeaveRequestContent() {
         Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
       if (daysRequested < 1) {
-        toast.error('End date must be after start date');
+        toast.error(t('leave.end_date_after_start'));
         return;
       }
 
@@ -111,20 +113,20 @@ function CreateLeaveRequestContent() {
       });
 
       if (response.ok) {
-        toast.success('Leave request submitted successfully');
+        toast.success(t('leave.leave_request_submitted_successfully'));
         router.push('/modules/leave-management');
       } else {
         try {
           const error = await response.json();
-          toast.error(error.error || error.message || 'Failed to submit leave request');
+          toast.error(error.error || error.message || t('leave.failed_to_submit_leave_request'));
         } catch (parseError) {
           
-          toast.error('Failed to submit leave request');
+          toast.error(t('leave.failed_to_submit_leave_request'));
         }
       }
     } catch (error) {
       
-      toast.error('Failed to submit leave request');
+      toast.error(t('leave.failed_to_submit_leave_request'));
     } finally {
       setLoading(false);
     }
@@ -144,11 +146,11 @@ function CreateLeaveRequestContent() {
         <div className="flex items-center space-x-4">
           <Button variant="ghost" onClick={() => router.push('/modules/leave-management')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Leave Management
+            {t('leave.back_to_leave_management')}
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Request Leave</h1>
-            <p className="text-muted-foreground">Submit a new leave request</p>
+            <h1 className="text-2xl font-bold">{t('leave.request_leave')}</h1>
+            <p className="text-muted-foreground">{t('leave.submit_new_leave_request')}</p>
           </div>
         </div>
       </div>
@@ -159,9 +161,9 @@ function CreateLeaveRequestContent() {
           <CardHeader>
             <CardTitle className="flex items-center">
               <User className="mr-2 h-5 w-5" />
-              Employee Selection
+              {t('leave.employee_selection')}
             </CardTitle>
-            <CardDescription>Select the employee requesting leave</CardDescription>
+            <CardDescription>{t('leave.select_employee_requesting_leave')}</CardDescription>
           </CardHeader>
           <CardContent>
             <EmployeeDropdown
@@ -179,20 +181,20 @@ function CreateLeaveRequestContent() {
           <CardHeader>
             <CardTitle className="flex items-center">
               <Calendar className="mr-2 h-5 w-5" />
-              Leave Details
+              {t('leave.leave_details')}
             </CardTitle>
-            <CardDescription>Provide leave request details</CardDescription>
+            <CardDescription>{t('leave.provide_leave_request_details')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Leave Type */}
             <div className="space-y-2">
-              <Label htmlFor="leave_type">Leave Type *</Label>
+              <Label htmlFor="leave_type">{t('leave.leave_type_required')}</Label>
               <Select
                 value={formData.leave_type}
                 onValueChange={value => handleInputChange('leave_type', value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select leave type" />
+                  <SelectValue placeholder={t('leave.select_leave_type')} />
                 </SelectTrigger>
                 <SelectContent>
                   {leaveTypes.map(type => (
@@ -207,7 +209,7 @@ function CreateLeaveRequestContent() {
             {/* Date Range */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="start_date">Start Date *</Label>
+                <Label htmlFor="start_date">{t('leave.start_date_required')}</Label>
                 <Input
                   type="date"
                   value={formData.start_date}
@@ -216,7 +218,7 @@ function CreateLeaveRequestContent() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="end_date">End Date *</Label>
+                <Label htmlFor="end_date">{t('leave.end_date_required')}</Label>
                 <Input
                   type="date"
                   value={formData.end_date}
@@ -228,11 +230,11 @@ function CreateLeaveRequestContent() {
 
             {/* Reason */}
             <div className="space-y-2">
-              <Label htmlFor="reason">Reason for Leave *</Label>
+              <Label htmlFor="reason">{t('leave.reason_for_leave')}</Label>
               <Textarea
                 value={formData.reason}
                 onChange={e => handleInputChange('reason', e.target.value)}
-                placeholder="Please provide a detailed reason for your leave request"
+                placeholder={t('leave.provide_detailed_reason')}
                 rows={4}
               />
             </div>
@@ -246,10 +248,10 @@ function CreateLeaveRequestContent() {
             variant="outline"
             onClick={() => router.push('/modules/leave-management')}
           >
-            Cancel
+            {t('leave.cancel')}
           </Button>
           <Button type="submit" disabled={loading}>
-            {loading ? 'Submitting...' : 'Submit Leave Request'}
+            {loading ? t('leave.submitting') : t('leave.submit_leave_request')}
           </Button>
         </div>
       </form>

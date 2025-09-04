@@ -1,35 +1,28 @@
-import { db } from '@/lib/db';
-import { employees } from '@/lib/drizzle/schema';
+import { db } from '@/lib/drizzle';
+import { employeeLeaves } from '@/lib/drizzle/schema';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    console.log('🧪 Test DB API - Starting...');
+    console.log('Testing database connection...');
     
-    // Simple test: count employees
-    const result = await db
-      .select({ count: employees.id })
-      .from(employees)
-      .limit(1);
-    
-    console.log('🧪 Test DB API - Result:', result);
+    // Test basic connection
+    const result = await db.select().from(employeeLeaves).limit(1);
+    console.log('Database connection successful, found', result.length, 'leave requests');
     
     return NextResponse.json({
       success: true,
-      message: 'Database connection working',
-      result: result.length,
-      timestamp: new Date().toISOString()
+      message: 'Database connection successful',
+      leaveCount: result.length,
+      sampleData: result[0] || null
     });
   } catch (error) {
-    console.error('🧪 Test DB API - Error:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Database connection failed',
-        details: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
-      },
-      { status: 500 }
-    );
+    console.error('Database test failed:', error);
+    
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    }, { status: 500 });
   }
 }
