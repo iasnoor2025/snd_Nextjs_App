@@ -1,10 +1,8 @@
 'use client';
 
-import { Mail, PlusCircle, type LucideIcon } from 'lucide-react';
+import { type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-
-import { Button } from '@/components/ui/button';
 import { useI18n } from '@/hooks/use-i18n';
 import {
   SidebarGroup,
@@ -29,25 +27,7 @@ export function NavMain({
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
-        <SidebarMenu>
-          <SidebarMenuItem className="flex items-center gap-2">
-            <SidebarMenuButton
-              tooltip={t('common.actions.quickCreate')}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
-            >
-              <PlusCircle />
-              <span>{t('common.actions.quickCreate')}</span>
-            </SidebarMenuButton>
-            <Button
-              size="icon"
-              className="size-8 group-data-[collapsible=icon]:opacity-0"
-              variant="outline"
-            >
-              <Mail />
-              <span className="sr-only">{t('common.inbox')}</span>
-            </Button>
-          </SidebarMenuItem>
-        </SidebarMenu>
+
         <SidebarMenu>
           {items.map(item => {
             // Special handling for dashboard to avoid conflicts with other routes
