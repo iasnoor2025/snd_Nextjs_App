@@ -1,7 +1,7 @@
 import { authConfig } from '@/lib/auth-config';
 import { db } from '@/lib/db';
 import { advancePayments, employees, users } from '@/lib/drizzle/schema';
-import { withEmployeeListPermission } from '@/lib/rbac/api-middleware';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { and, desc, eq, isNull, like, or } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
@@ -26,10 +26,31 @@ const getAdvancesHandler = async (
 
     let employeeFilter: ReturnType<typeof eq> | null = null;
 
-    // Use role-based access control instead of national_id
-    // Admin/Manager users can see all advances, Employee users see their own
-    if (user?.role === 'EMPLOYEE') {
-      // For employee users, find their employee record and restrict to their advances
+    // Use permission-based access control
+    // Check if user has permission to read all advances or only their own
+    const { checkUserPermission } = await import('@/lib/rbac/permission-service');
+    
+    if (!user?.id) {
+      return NextResponse.json(
+        { error: 'User not authenticated' },
+        { status: 401 }
+      );
+    }
+    
+    // Check if user can read all advances (has manage.Advance or read.Advance with full access)
+    const canReadAllAdvances = await checkUserPermission(user.id, 'manage', 'Advance');
+    const canReadOwnAdvances = await checkUserPermission(user.id, 'read', 'Advance');
+    
+    if (!canReadAllAdvances.hasPermission && !canReadOwnAdvances.hasPermission) {
+      return NextResponse.json(
+        { error: 'Insufficient permissions to access advances' },
+        { status: 403 }
+      );
+    }
+    
+    // If user can only read their own advances, restrict the query
+    if (!canReadAllAdvances.hasPermission && canReadOwnAdvances.hasPermission) {
+      // For users who can only read their own advances, find their employee record
       try {
         const [ownEmployee] = await db
           .select({ id: employees.id })
@@ -38,14 +59,16 @@ const getAdvancesHandler = async (
           .limit(1);
         if (ownEmployee) {
           employeeFilter = eq(advancePayments.employeeId, ownEmployee.id);
+        } else {
+          // If no employee record found, don't show any advances
+          employeeFilter = eq(advancePayments.employeeId, -1);
         }
       } catch (error) {
         console.error('Error finding employee for user:', error);
-        // If we can't find the employee, don't show any advances
-        employeeFilter = eq(advancePayments.employeeId, -1); // This will ensure no results
+        employeeFilter = eq(advancePayments.employeeId, -1);
       }
     }
-    // For ADMIN, MANAGER, SUPERVISOR, SUPER_ADMIN roles, show all advances (no restriction)
+    // If user has manage.Advance permission, they can see all advances (no restriction)
 
     // Build where conditions
     const whereConditions: Array<ReturnType<typeof eq> | ReturnType<typeof isNull> | ReturnType<typeof like>> = [isNull(advancePayments.deletedAt)];
@@ -265,7 +288,7 @@ const createAdvanceHandler = async (
 };
 
 // PUT /api/advances - Update employee advance with permission check
-export const PUT = withEmployeeListPermission(
+export const PUT = withPermission(PermissionConfigs.advance.update)(
   async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
     try {
       const body = await request.json();
@@ -346,7 +369,7 @@ export const PUT = withEmployeeListPermission(
 );
 
 // DELETE /api/advances - Delete employee advance with permission check
-export const DELETE = withEmployeeListPermission(
+export const DELETE = withPermission(PermissionConfigs.advance.delete)(
   async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
     try {
       const body = await request.json();
@@ -370,5 +393,5 @@ export const DELETE = withEmployeeListPermission(
 );
 
 // Export the wrapped handlers
-export const GET = withEmployeeListPermission(getAdvancesHandler);
-export const POST = withEmployeeListPermission(createAdvanceHandler);
+export const GET = withPermission(PermissionConfigs.advance.read)(getAdvancesHandler);
+export const POST = withPermission(PermissionConfigs.advance.create)(createAdvanceHandler);

@@ -1568,7 +1568,7 @@ export default function EmployeeShowPage() {
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  {hasPermission('create', 'AdvancePayment') && (
+                  {hasPermission('create', 'Advance') && (
                     <Button
                       variant="outline"
                       onClick={() => setIsAdvanceRequestDialogOpen(true)}
@@ -1578,7 +1578,7 @@ export default function EmployeeShowPage() {
                       {t('employee.advances.newAdvance')}
                     </Button>
                   )}
-                  {hasPermission('update', 'AdvancePayment') && (
+                  {hasPermission('update', 'Advance') && (
                     <Dialog open={isRepaymentDialogOpen} onOpenChange={setIsRepaymentDialogOpen}>
                       <DialogTrigger asChild>
                         <Button

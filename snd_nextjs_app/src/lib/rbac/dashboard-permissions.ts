@@ -63,7 +63,7 @@ export const dashboardSectionPermissions: DashboardSectionPermission[] = [
   {
     section: 'employeeAdvance',
     action: 'read',
-    subject: 'AdvancePayment',
+    subject: 'Advance',
     description: 'View and manage employee advance payments and repayments'
   },
   {

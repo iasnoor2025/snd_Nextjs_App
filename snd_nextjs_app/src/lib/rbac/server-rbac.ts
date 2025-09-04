@@ -174,12 +174,7 @@ export const PERMISSION_MAPPING: Record<string, string[]> = {
   'delete.Advance': ['delete.Advance', 'delete.advance'],
   'manage.Advance': ['manage.Advance', 'manage.advance'],
 
-  // AdvancePayment permissions (for dashboard sections)
-  'read.AdvancePayment': ['read.AdvancePayment', 'read.advancepayment', 'read.advance'],
-  'create.AdvancePayment': ['create.AdvancePayment', 'create.advancepayment', 'create.advance'],
-  'update.AdvancePayment': ['update.AdvancePayment', 'update.advancepayment', 'update.advance'],
-  'delete.AdvancePayment': ['delete.AdvancePayment', 'delete.advancepayment', 'delete.advance'],
-  'manage.AdvancePayment': ['manage.AdvancePayment', 'manage.advancepayment', 'manage.advance'],
+
 
   // Assignment permissions
   'read.Assignment': ['read.Assignment', 'read.assignment'],

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ChevronDown, ChevronRight, Shield, Users, Settings, FileText, Calendar, Truck, Wrench, Building, ChartBar, UserCheck, CreditCard, Clock, FolderOpen, Briefcase, MapPin, Shield as Safety } from 'lucide-react';
+import { ChevronDown, ChevronRight, Shield, Users, Settings, FileText, Calendar, Truck, Wrench, Building, ChartBar, UserCheck, CreditCard, Clock, FolderOpen, Briefcase, MapPin, Shield as Safety, DollarSign } from 'lucide-react';
 
 interface Permission {
   id: number;
@@ -79,7 +79,12 @@ const PERMISSION_CATEGORIES = {
   'Payroll Management': {
     icon: CreditCard,
     color: 'bg-emerald-100 text-emerald-800',
-    permissions: ['Payroll', 'payroll-item', 'payroll-run', 'tax-document', 'SalaryIncrement', 'Advance']
+    permissions: ['Payroll', 'payroll-item', 'payroll-run', 'tax-document', 'SalaryIncrement']
+  },
+  'Advance Management': {
+    icon: DollarSign,
+    color: 'bg-blue-100 text-blue-800',
+    permissions: ['Advance', 'advance-payment', 'advance-history']
   },
   'Timesheet Management': {
     icon: Clock,
@@ -154,13 +159,15 @@ export function PermissionManagement({
       'employee-dashboard': 'Employee Management',
       'employee-data': 'Employee Management',
       'SalaryIncrement': 'Payroll Management',
-      'Advance': 'Payroll Management',
+      'Advance': 'Advance Management',
       'document-approval': 'Document Management',
       'Assignment': 'Assignment Management',
       'Iqama': 'Iqama Management',
       'iqama-application': 'Iqama Management',
       'iqama-renewal': 'Iqama Management',
-      'iqama-expiry': 'Iqama Management'
+      'iqama-expiry': 'Iqama Management',
+      'advance-payment': 'Advance Management',
+      'advance-history': 'Advance Management'
     };
 
     // Check direct mappings first
@@ -187,6 +194,7 @@ export function PermissionManagement({
       'Rental': 'Rental Management',
       'Quotation': 'Quotation Management',
       'Payroll': 'Payroll Management',
+      'Advance': 'Advance Management',
       'Timesheet': 'Timesheet Management',
       'Project': 'Project Management',
       'Leave': 'Leave Management',
@@ -199,7 +207,9 @@ export function PermissionManagement({
       'Location': 'Company & Safety',
       'Skill': 'Department & Organization',
       'Training': 'Department & Organization',
-      'Iqama': 'Iqama Management'
+      'Iqama': 'Iqama Management',
+      'advance-payment': 'Advance Management',
+      'advance-history': 'Advance Management'
     };
 
     return (subject && fallbackMappings[subject]) || 'Core System';

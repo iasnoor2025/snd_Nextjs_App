@@ -529,14 +529,16 @@ export default function UserManagementPage() {
       'employee-dashboard': 'Employee Management',
       'employee-data': 'Employee Management',
       'SalaryIncrement': 'Payroll Management',
-      'Advance': 'Payroll Management',
+      'Advance': 'Advance Management',
       'document-approval': 'Document Management',
       'Assignment': 'Assignment Management',
       'equipment-document': 'Equipment Management',
       'Iqama': 'Iqama Management',
       'iqama-application': 'Iqama Management',
       'iqama-renewal': 'Iqama Management',
-      'iqama-expiry': 'Iqama Management'
+      'iqama-expiry': 'Iqama Management',
+      'advance-payment': 'Advance Management',
+      'advance-history': 'Advance Management'
     };
 
     // Check direct mappings first
@@ -586,6 +588,10 @@ export default function UserManagementPage() {
       case 'payroll-run':
       case 'tax-document':
         return 'Payroll Management';
+      case 'Advance':
+      case 'advance-payment':
+      case 'advance-history':
+        return 'Advance Management';
       case 'Timesheet':
       case 'time-entry':
       case 'weekly-timesheet':
@@ -639,6 +645,7 @@ export default function UserManagementPage() {
           'Rental': 'Rental Management',
           'Quotation': 'Quotation Management',
           'Payroll': 'Payroll Management',
+          'Advance': 'Advance Management',
           'Timesheet': 'Timesheet Management',
           'Project': 'Project Management',
           'Leave': 'Leave Management',
