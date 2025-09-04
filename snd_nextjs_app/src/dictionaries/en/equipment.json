@@ -273,6 +273,13 @@
     "expiringSoon": "Expiring Soon",
     "missing": "Missing",
     "available": "Available",
+    "status": {
+      "available": "Available",
+      "expiring": "Expiring Soon",
+      "expired": "Expired",
+      "missing": "Missing"
+    },
+    "assigned": "Assigned",
     "clear": "Clear",
     "requiringAttention": "Equipment Requiring Attention",
     "attentionDescription": "Expired, expiring soon, or missing Istimara expiry dates",

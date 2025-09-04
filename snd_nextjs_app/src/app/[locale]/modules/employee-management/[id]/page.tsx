@@ -1918,9 +1918,9 @@ export default function EmployeeShowPage() {
                 {/* Current Balance Card */}
                 <div className="rounded-lg border bg-white p-6 shadow-sm">
                   <div className="mb-4 flex items-center justify-between">
-                    <h3 className="text-sm font-medium text-muted-foreground">{t('employee:advances.currentBalance')}</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground">{t('employee.advances.currentBalance')}</h3>
                     <Badge variant="outline" className="bg-muted/50">
-                      {Number(currentBalance) > 0 ? t('employee:advances.active') : t('employee:advances.noBalance')}
+                      {Number(currentBalance) > 0 ? t('employee.advances.active') : t('employee.advances.noBalance')}
                     </Badge>
                   </div>
                   <div className="space-y-2">
@@ -1942,9 +1942,9 @@ export default function EmployeeShowPage() {
                 {/* Monthly Deduction Card */}
                 <div className="rounded-lg border bg-white p-6 shadow-sm">
                   <div className="mb-4 flex items-center justify-between">
-                    <h3 className="text-sm font-medium text-muted-foreground">Monthly Deduction</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground">{t('employee.advances.monthlyDeduction')}</h3>
                     <Badge variant="outline" className="bg-muted/50">
-                      Configurable
+                      {t('employee.advances.configurable')}
                     </Badge>
                   </div>
                   <div className="space-y-4">
@@ -2057,7 +2057,7 @@ export default function EmployeeShowPage() {
                             <td colSpan={8} className="px-6 py-8 text-center">
                               <div className="flex items-center justify-center gap-2">
                                 <Loader2 className="h-4 w-4 animate-spin" />
-                                <span className="text-muted-foreground">Loading advances...</span>
+                                <span className="text-muted-foreground">{t('employee.advances.loadingAdvances')}</span>
                               </div>
                             </td>
                           </tr>
@@ -2067,7 +2067,7 @@ export default function EmployeeShowPage() {
                               colSpan={8}
                               className="px-6 py-8 text-center text-muted-foreground italic"
                             >
-                              No advance records found.
+                              {t('employee.advances.noAdvanceRecordsFound')}
                             </td>
                           </tr>
                         ) : (
@@ -2243,7 +2243,7 @@ export default function EmployeeShowPage() {
           <Card className="mt-6 shadow-sm border border-gray-200 bg-white rounded-lg">
             <CardHeader className="bg-muted/50 rounded-t-lg p-4 flex flex-row items-center gap-2">
               <CreditCard className="h-5 w-5 text-primary" />
-              <CardTitle className="text-lg font-semibold">Repayment History</CardTitle>
+              <CardTitle className="text-lg font-semibold">{t('employee.advances.repaymentHistory')}</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
@@ -2251,16 +2251,16 @@ export default function EmployeeShowPage() {
                   <thead className="bg-muted/50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Amount
+                        {t('employee.advances.amount')}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Date
+                        {t('employee.advances.date')}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Notes
+                        {t('employee.advances.notes')}
                       </th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Actions
+                        {t('employee.advances.actions')}
                       </th>
                     </tr>
                   </thead>
@@ -2271,7 +2271,7 @@ export default function EmployeeShowPage() {
                           <div className="flex items-center justify-center gap-2">
                             <Loader2 className="h-4 w-4 animate-spin" />
                             <span className="text-muted-foreground">
-                              Loading repayment history...
+                              {t('employee.advances.loadingPaymentHistory')}
                             </span>
                           </div>
                         </td>
@@ -2325,7 +2325,7 @@ export default function EmployeeShowPage() {
                           colSpan={4}
                           className="px-6 py-8 text-center text-muted-foreground italic"
                         >
-                          No repayment history found.
+                          {t('employee.advances.noRepaymentHistory')}
                         </td>
                       </tr>
                     )}

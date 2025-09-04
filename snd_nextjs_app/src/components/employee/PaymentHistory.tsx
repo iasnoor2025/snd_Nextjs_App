@@ -119,7 +119,7 @@ export default function PaymentHistory({ employeeId }: PaymentHistoryProps) {
   };
 
   if (loading)
-    return <div className="p-4 text-center text-muted-foreground">{t('employee:advances.loadingPaymentHistory')}</div>;
+    return <div className="p-4 text-center text-muted-foreground">{t('employee.advances.loadingPaymentHistory')}</div>;
 
   return (
     <>
@@ -140,7 +140,7 @@ export default function PaymentHistory({ employeeId }: PaymentHistoryProps) {
                 <p className="text-2xl font-bold text-destructive">SAR {employeeInfo.total_advance_balance.toFixed(2)}</p>
               </div>
               <div className="text-center">
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Monthly Deduction</h3>
+                <h3 className="text-sm font-medium text-muted-foreground mb-2">{t('employee.advances.monthlyDeduction')}</h3>
                 <p className="text-2xl font-bold text-primary">SAR {totals.monthly_deduction.toFixed(2)}</p>
               </div>
             </div>
@@ -164,7 +164,7 @@ export default function PaymentHistory({ employeeId }: PaymentHistoryProps) {
                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Repaid</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Balance</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Monthly Deduction</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('employee.advances.monthlyDeduction')}</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
@@ -196,7 +196,7 @@ export default function PaymentHistory({ employeeId }: PaymentHistoryProps) {
       <Card className="mt-6 shadow-sm border border-gray-200 bg-white rounded-lg">
         <CardHeader className="bg-muted/50 rounded-t-lg p-4 flex flex-row items-center gap-2">
           <CreditCard className="h-5 w-5 text-primary" />
-          <CardTitle className="text-lg font-semibold">{t('employee:advances.repaymentHistory')}</CardTitle>
+          <CardTitle className="text-lg font-semibold">{t('employee.advances.repaymentHistory')}</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -204,16 +204,16 @@ export default function PaymentHistory({ employeeId }: PaymentHistoryProps) {
               <thead className="bg-muted/50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    {t('employee:advances.amount')}
+                    {t('employee.advances.amount')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    {t('employee:advances.date')}
+                    {t('employee.advances.date')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    {t('employee:advances.notes')}
+                    {t('employee.advances.notes')}
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    {t('employee:advances.actions')}
+                    {t('employee.advances.actions')}
                   </th>
                 </tr>
               </thead>
@@ -264,7 +264,7 @@ export default function PaymentHistory({ employeeId }: PaymentHistoryProps) {
                 ) : (
                   <tr>
                     <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground italic">
-                      {t('employee:advances.noRepaymentHistory')}
+                      {t('employee.advances.noRepaymentHistory')}
                     </td>
                   </tr>
                 )}
@@ -274,9 +274,9 @@ export default function PaymentHistory({ employeeId }: PaymentHistoryProps) {
           <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>{t('employee:advances.deleteRepayment')}</DialogTitle>
-                <DialogDescription>
-                  {t('employee:advances.deleteRepaymentConfirm')}
+                        <DialogTitle>{t('employee.advances.deleteRepayment')}</DialogTitle>
+        <DialogDescription>
+          {t('employee.advances.deleteRepaymentConfirm')}
                 </DialogDescription>
               </DialogHeader>
               <div className="flex justify-end gap-2">

@@ -697,6 +697,7 @@
     "description": "تتبع وإدارة السلف المالية والخصومات للموظفين",
     "configurable": "قابل للتكوين",
     "noAdvanceRecordsFound": "لم يتم العثور على سجلات سلف",
+    "loadingAdvances": "جاري تحميل السلف...",
     "currentBalance": "الرصيد الحالي",
     "remainingBalance": "الرصيد المتبقي",
     "active": "نشط",

@@ -339,6 +339,7 @@
     "downloadPDF": "تحميل PDF",
     "searchByNameFileNumberNationalityPosition": "البحث بالاسم أو رقم الملف أو الجنسية أو المنصب",
     "allCases": "جميع الحالات",
+    "allStatuses": "جميع الحالات",
     "missing": "مفقود",
     "active": "نشط",
     "expiringSoon": "ينتهي قريباً",
@@ -351,6 +352,7 @@
     "status": "الحالة",
     "istimaraNumber": "رقم الإستمارة",
     "noIstimara": "لا توجد إستمارة",
+    "noExpiryDate": "لا يوجد تاريخ انتهاء",
     "unassigned": "غير مخصص",
     "file": "ملف",
     "totalEquipment": "إجمالي المعدات",
@@ -377,6 +379,13 @@
     "allTypes": "جميع الأنواع",
     "withDriver": "مع سائق",
     "noDriver": "بدون سائق",
+    "status": {
+      "available": "متاح",
+      "expiring": "ينتهي قريباً",
+      "expired": "منتهي",
+      "missing": "مفقود"
+    },
+    "assigned": "معين",
     "tableHeaders": {
       "equipmentName": "اسم المعدات",
       "istimaraNumber": "رقم الإستمارة #",
