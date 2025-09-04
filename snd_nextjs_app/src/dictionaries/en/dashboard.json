@@ -502,6 +502,7 @@
     }
   },
   "iqama": {
+    "overview": "Iqama Overview",
     "management": "Iqama Management",
     "description": "Monitor and manage employee Iqama status and expiry dates",
     "manage": "Manage Iqama",

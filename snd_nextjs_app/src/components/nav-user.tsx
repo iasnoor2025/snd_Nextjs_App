@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/use-auth';
+import { useI18n } from '@/hooks/use-i18n';
 import { LogOut, User } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import Link from 'next/link';
@@ -15,6 +16,7 @@ import React from 'react';
 
 export function NavUser() {
   const { session, status } = useAuth();
+  const { t, isRTL } = useI18n();
 
   if (status === 'loading') {
     return (
@@ -65,14 +67,14 @@ export function NavUser() {
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href="/profile" className="flex items-center">
-            <User className="mr-2 h-4 w-4" />
-            <span>Profile</span>
+            <User className={`${isRTL ? 'ml-2' : 'mr-2'} h-4 w-4`} />
+            <span>{t('common.actions.profile') || 'Profile'}</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleSignOut}>
-          <LogOut className="mr-2 h-4 w-4" />
-          <span>Log out</span>
+          <LogOut className={`${isRTL ? 'ml-2' : 'mr-2'} h-4 w-4`} />
+          <span>{t('common.actions.logout') || 'Log out'}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

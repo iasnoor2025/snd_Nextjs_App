@@ -35,13 +35,13 @@ import { Download } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { getUserAccessibleSections } from '@/lib/rbac/dashboard-permissions';
+import { getUserAccessibleSectionsClient } from '@/lib/rbac/client-permission-service';
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { t } = useI18n();
-  const { user, hasPermission, getAllowedActions } = useRBAC();
+  const { hasPermission } = useRBAC();
 
   // State for dashboard data
   const [stats, setStats] = useState<any>(null);
@@ -89,18 +89,19 @@ export default function DashboardPage() {
 
   // State for section visibility
   const [sectionVisibility, setSectionVisibility] = useState({
-    iqama: true,
-    equipment: true,
-    financial: true,
-    timesheets: true,
-    projectOverview: true,
-    manualAssignments: true,
-    quickActions: true,
-    recentActivity: true,
-    employeeAdvance: true,
-    myTeam: true,
+    iqama: false,
+    equipment: false,
+    financial: false,
+    timesheets: false,
+    projectOverview: false,
+    manualAssignments: false,
+    quickActions: false,
+    recentActivity: false,
+    employeeAdvance: false,
+    myTeam: false,
   });
   const [sectionsLoaded, setSectionsLoaded] = useState(false);
+  const [accessibleSections, setAccessibleSections] = useState<string[]>([]);
 
   // Check authentication
   useEffect(() => {
@@ -111,29 +112,82 @@ export default function DashboardPage() {
     }
   }, [session, status, router]);
 
-  // Set section visibility based on user permissions
+  // Set section visibility based on user permissions and saved preferences
   useEffect(() => {
-    if (session?.user?.role && !sectionsLoaded) {
-      const accessibleSections = getUserAccessibleSections(session.user.role);
-      
-      // Set visibility based on permissions
-      const newVisibility = {
-        iqama: accessibleSections.includes('iqama'),
-        equipment: accessibleSections.includes('equipment'),
-        financial: accessibleSections.includes('financial'),
-        timesheets: accessibleSections.includes('timesheets'),
-        projectOverview: accessibleSections.includes('projectOverview'),
-        manualAssignments: accessibleSections.includes('manualAssignments'),
-        quickActions: accessibleSections.includes('quickActions'),
-        recentActivity: accessibleSections.includes('recentActivity'),
-        employeeAdvance: accessibleSections.includes('employeeAdvance'),
-        myTeam: true, // Always show My Team for supervisors
+    if (session?.user?.id && !sectionsLoaded) {
+      const loadUserSections = async () => {
+        try {
+          const accessibleSections = await getUserAccessibleSectionsClient(session.user.id);
+          
+          // Get saved preferences from localStorage - default to true for first-time users
+          let savedVisibility = {
+            iqama: true,
+            equipment: true,
+            financial: true,
+            timesheets: true,
+            projectOverview: true,
+            manualAssignments: true,
+            quickActions: true,
+            recentActivity: true,
+            employeeAdvance: true,
+            myTeam: true,
+          };
+          
+          if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('dashboard-section-visibility');
+            if (saved) {
+              try {
+                const parsed = JSON.parse(saved);
+                savedVisibility = { ...savedVisibility, ...parsed };
+              } catch (e) {
+                // Handle error silently for production
+              }
+            }
+          }
+          
+          // Combine permissions with saved preferences
+          // If user has permission, show section by default unless explicitly hidden
+          const newVisibility = {
+            iqama: accessibleSections.includes('iqama') && (savedVisibility.iqama !== false),
+            equipment: accessibleSections.includes('equipment') && (savedVisibility.equipment !== false),
+            financial: accessibleSections.includes('financial') && (savedVisibility.financial !== false),
+            timesheets: accessibleSections.includes('timesheets') && (savedVisibility.timesheets !== false),
+            projectOverview: accessibleSections.includes('projectOverview') && (savedVisibility.projectOverview !== false),
+            manualAssignments: accessibleSections.includes('manualAssignments') && (savedVisibility.manualAssignments !== false),
+            quickActions: accessibleSections.includes('quickActions') && (savedVisibility.quickActions !== false),
+            recentActivity: accessibleSections.includes('recentActivity') && (savedVisibility.recentActivity !== false),
+            employeeAdvance: accessibleSections.includes('employeeAdvance') && (savedVisibility.employeeAdvance !== false),
+            myTeam: accessibleSections.includes('myTeam') && (savedVisibility.myTeam !== false),
+          };
+          
+          console.log('🔍 Debug - Saved visibility:', savedVisibility);
+          console.log('🔍 Debug - Accessible sections:', accessibleSections);
+
+          setAccessibleSections(accessibleSections);
+          setSectionVisibility(newVisibility);
+          setSectionsLoaded(true);
+        } catch (error) {
+          console.error('Error loading user sections:', error);
+          // No fallback - if database fails, show minimal access
+          setSectionVisibility({
+            iqama: false,
+            equipment: false,
+            financial: false,
+            timesheets: false,
+            projectOverview: false,
+            manualAssignments: false,
+            quickActions: false,
+            recentActivity: false,
+            employeeAdvance: false,
+            myTeam: false,
+          });
+          setSectionsLoaded(true);
+        }
       };
       
-      setSectionVisibility(newVisibility);
-      setSectionsLoaded(true);
+      loadUserSections();
     }
-  }, [session?.user?.role, sectionsLoaded]);
+  }, [session?.user?.id, sectionsLoaded]);
 
   // Update current time every minute
   useEffect(() => {
@@ -150,23 +204,41 @@ export default function DashboardPage() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/dashboard');
+      
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000); // 12 second timeout
+      
+      const response = await fetch('/api/dashboard', {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
       if (!response.ok) {
+        if (response.status === 408) {
+          throw new Error('Dashboard request timed out. Please try again.');
+        }
         throw new Error(t('dashboard.failedToFetchDashboardData'));
       }
+      
       const data = await response.json();
-
-
 
       setStats(data.stats || {});
       setIqamaData(data.iqamaData || []);
-      setEquipmentData(data.equipmentData || []);
+      setEquipmentData(data.equipment || []);
       setTimesheetData(data.timesheetData || []);
       setProjectData(data.projectData || []);
       setActivities(data.recentActivity || []);
 
     } catch (_error) {
       console.error('Error fetching dashboard data:', _error);
+      if (_error instanceof Error && _error.name === 'AbortError') {
+        console.error('Dashboard request timed out - increasing timeout or reducing data load');
+        // Show user-friendly message for timeout
+        setApprovalSuccess('Dashboard is loading... Please wait a moment.');
+        setTimeout(() => setApprovalSuccess(null), 3000);
+      }
       // Handle error silently for production
     } finally {
       setLoading(false);
@@ -207,22 +279,7 @@ export default function DashboardPage() {
     }
   };
 
-  // Fetch only Equipment data for quick updates
-  const fetchEquipmentData = async () => {
-    try {
-      setUpdatingEquipment(true);
-      const response = await fetch('/api/equipment/dashboard');
-      if (!response.ok) {
-        throw new Error(t('dashboard.failedToFetchEquipmentData'));
-      }
-      const data = await response.json();
-      setEquipmentData(data.equipment || []);
-    } catch (_error) {
-      // Handle error silently for production
-    } finally {
-      setUpdatingEquipment(false);
-    }
-  };
+
 
   // Fetch only Recent Activity data for quick updates
   const fetchRecentActivity = async () => {
@@ -245,35 +302,28 @@ export default function DashboardPage() {
     }
   }, [session]);
 
-  // Load section visibility from localStorage on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('dashboard-section-visibility');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          setSectionVisibility(parsed);
-        } catch (e) {
-          // Handle error silently for production
-        }
-      }
-      setSectionsLoaded(true);
-    }
-  }, []);
+
 
   // Auto-refresh critical data every 30 seconds
   useEffect(() => {
     if (!session) return;
     
     const interval = setInterval(() => {
-      fetchEquipmentData();
-      fetchIqamaData();
-      fetchTimesheetData();
-      fetchRecentActivity(); // Also refresh recent activity
+      // Only fetch data for sections user has permission to access
+      if (sectionVisibility.iqama) {
+        fetchIqamaData();
+      }
+      if (sectionVisibility.timesheets) {
+        fetchTimesheetData();
+      }
+      if (sectionVisibility.recentActivity) {
+        fetchRecentActivity();
+      }
+      // Equipment data comes from main dashboard API, no need for separate call
     }, 30000); // Refresh every 30 seconds
     
     return () => clearInterval(interval);
-  }, [session]);
+  }, [session, sectionVisibility]);
 
   // Handle refresh
   const handleRefresh = async () => {
@@ -348,7 +398,7 @@ export default function DashboardPage() {
         setNewEquipmentIstimara('');
         setSelectedEquipment(null);
         // Only refresh Equipment data instead of full dashboard
-        await fetchEquipmentData();
+        await fetchDashboardData();
         setTimeout(() => setApprovalSuccess(null), 5000);
       } else {
         const errorData = await response.json();
@@ -565,6 +615,9 @@ export default function DashboardPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">{t('dashboard.loading')}</p>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">
+            This may take a few moments...
+          </p>
         </div>
       </div>
     );
@@ -584,6 +637,7 @@ export default function DashboardPage() {
           refreshing={refreshing}
           onRefresh={handleRefresh}
           session={session}
+          accessibleSections={accessibleSections}
         />
 
         {/* Main Content */}
@@ -731,16 +785,20 @@ export default function DashboardPage() {
             </TimesheetsPermission>
           )}
 
-          {/* Iqama Management Section */}
+          {/* Unified Iqama Section */}
           {sectionVisibility.iqama && (
             <IqamaPermission>
               <IqamaSection
                 iqamaData={iqamaData as any}
                 onUpdateIqama={handleOpenIqamaModal as any}
-                onHideSection={() => toggleSection('iqama')}
+                onHideSection={() => {
+                  toggleSection('iqama');
+                }}
               />
             </IqamaPermission>
           )}
+          
+
 
           {/* Employee Advances & Repayments Section */}
           {sectionVisibility.employeeAdvance && (
@@ -756,7 +814,6 @@ export default function DashboardPage() {
                 equipmentData={equipmentData as any}
                 onUpdateEquipment={handleOpenEquipmentUpdateModal as any}
                 onHideSection={() => toggleSection('equipment')}
-                isRefreshing={updatingEquipment}
               />
             </EquipmentPermission>
           )}
@@ -807,22 +864,22 @@ export default function DashboardPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                                      onClick={() => {
-                    const newVisibility = {
-                      iqama: true,
-                      equipment: true,
-                      financial: true,
-                      timesheets: true,
-                      projectOverview: true,
-                      manualAssignments: true,
-                      quickActions: true,
-                      recentActivity: true,
-                      employeeAdvance: true,
-                      myTeam: true,
-                    };
-                    setSectionVisibility(newVisibility);
-                    saveSectionVisibility(newVisibility);
-                  }}
+                                         onClick={() => {
+                       const newVisibility = {
+                         iqama: true,
+                         equipment: true,
+                         financial: true,
+                         timesheets: true,
+                         projectOverview: true,
+                         manualAssignments: true,
+                         quickActions: true,
+                         recentActivity: true,
+                         employeeAdvance: true,
+                         myTeam: true,
+                       };
+                       setSectionVisibility(newVisibility);
+                       saveSectionVisibility(newVisibility);
+                     }}
                   >
                     {t('dashboard.showAll')}
                   </Button>

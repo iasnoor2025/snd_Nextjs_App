@@ -130,6 +130,13 @@ const allPermissions = [
   'create.Assignment', 'read.Assignment', 'update.Assignment', 'delete.Assignment', 'manage.Assignment',
   'approve.Assignment', 'reject.Assignment',
   
+  // Iqama management
+  'create.Iqama', 'read.Iqama', 'update.Iqama', 'delete.Iqama', 'manage.Iqama',
+  'approve.Iqama', 'reject.Iqama', 'renew.Iqama', 'expire.Iqama',
+  'create.iqama-application', 'read.iqama-application', 'update.iqama-application', 'delete.iqama-application', 'manage.iqama-application',
+  'create.iqama-renewal', 'read.iqama-renewal', 'update.iqama-renewal', 'delete.iqama-renewal', 'manage.iqama-renewal',
+  'create.iqama-expiry', 'read.iqama-expiry', 'update.iqama-expiry', 'delete.iqama-expiry', 'manage.iqama-expiry',
+  
   // Location management
   'create.Location', 'read.Location', 'update.Location', 'delete.Location', 'manage.Location',
   'create.geofence-zone', 'read.geofence-zone', 'update.geofence-zone', 'delete.geofence-zone', 'manage.geofence-zone',
@@ -206,7 +213,7 @@ const rolePermissions = {
     'manage.Project', 'manage.Leave', 'manage.Department', 'manage.Designation',
     'manage.Report', 'manage.Settings', 'manage.Company', 'manage.Safety',
     'manage.employee-document', 'manage.equipment-document', 'manage.SalaryIncrement', 'manage.Advance',
-    'manage.Assignment', 'manage.Location', 'manage.Maintenance',
+    'manage.Assignment', 'manage.Location', 'manage.Maintenance', 'manage.Iqama',
     'read.own-profile', 'update.own-profile'
   ],
   MANAGER: [
@@ -215,7 +222,7 @@ const rolePermissions = {
     'manage.Project', 'manage.Leave', 'read.Department', 'read.Designation',
     'read.Report', 'read.Settings', 'read.Company', 'read.Safety',
     'manage.employee-document', 'manage.equipment-document', 'manage.SalaryIncrement', 'manage.Advance',
-    'manage.Assignment', 'read.Location', 'read.Maintenance',
+    'manage.Assignment', 'read.Location', 'read.Maintenance', 'manage.Iqama',
     'read.own-profile', 'update.own-profile'
   ],
   SUPERVISOR: [
@@ -224,7 +231,7 @@ const rolePermissions = {
     'manage.Project', 'manage.Leave', 'read.Department', 'read.Designation',
     'read.Report', 'read.Settings', 'read.Company', 'read.Safety',
     'manage.employee-document', 'read.equipment-document', 'read.SalaryIncrement', 'read.Advance',
-    'read.Assignment', 'read.Location', 'read.Maintenance',
+    'read.Assignment', 'read.Location', 'read.Maintenance', 'manage.Iqama',
     'read.own-profile', 'update.own-profile'
   ],
   OPERATOR: [
@@ -233,7 +240,7 @@ const rolePermissions = {
     'read.Project', 'read.Leave', 'read.Department', 'read.Designation',
     'read.Report', 'read.Settings', 'read.Company', 'read.Safety',
     'read.employee-document', 'read.equipment-document', 'read.SalaryIncrement', 'read.Advance',
-    'read.Assignment', 'read.Location', 'read.Maintenance',
+    'read.Assignment', 'read.Location', 'read.Maintenance', 'read.Iqama',
     'read.own-profile', 'update.own-profile'
   ],
   EMPLOYEE: [

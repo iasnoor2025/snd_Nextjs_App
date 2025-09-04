@@ -167,6 +167,17 @@ export const PermissionConfigs = {
     delete: { action: 'delete' as Action, subject: 'Advance' },
     manage: { action: 'manage' as Action, subject: 'Advance' },
   },
+  iqama: {
+    read: { action: 'read' as Action, subject: 'Iqama' },
+    create: { action: 'create' as Action, subject: 'Iqama' },
+    update: { action: 'update' as Action, subject: 'Iqama' },
+    delete: { action: 'delete' as Action, subject: 'Iqama' },
+    manage: { action: 'manage' as Action, subject: 'Iqama' },
+    approve: { action: 'approve' as Action, subject: 'Iqama' },
+    reject: { action: 'reject' as Action, subject: 'Iqama' },
+    renew: { action: 'renew' as Action, subject: 'Iqama' },
+    expire: { action: 'expire' as Action, subject: 'Iqama' },
+  },
   assignment: {
     read: { action: 'read' as Action, subject: 'Assignment' },
     create: { action: 'create' as Action, subject: 'Assignment' },

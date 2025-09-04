@@ -110,7 +110,7 @@ export class ERPNextFinancialService {
       async () => {
         try {
           // Get invoice summary
-          const invoiceSummary = await ERPNextInvoiceService.getInvoiceSummary();
+          const invoiceSummary = await this.getInvoiceSummary();
           
           // Get account summary
           const accountSummary = await this.getAccountSummary();

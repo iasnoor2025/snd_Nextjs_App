@@ -120,6 +120,11 @@ const PERMISSION_CATEGORIES = {
     icon: MapPin,
     color: 'bg-lime-100 text-lime-800',
     permissions: ['Assignment']
+  },
+  'Iqama Management': {
+    icon: FileText,
+    color: 'bg-amber-100 text-amber-800',
+    permissions: ['Iqama', 'iqama-application', 'iqama-renewal', 'iqama-expiry']
   }
 };
 
@@ -151,7 +156,11 @@ export function PermissionManagement({
       'SalaryIncrement': 'Payroll Management',
       'Advance': 'Payroll Management',
       'document-approval': 'Document Management',
-      'Assignment': 'Assignment Management'
+      'Assignment': 'Assignment Management',
+      'Iqama': 'Iqama Management',
+      'iqama-application': 'Iqama Management',
+      'iqama-renewal': 'Iqama Management',
+      'iqama-expiry': 'Iqama Management'
     };
 
     // Check direct mappings first
@@ -189,7 +198,8 @@ export function PermissionManagement({
       'Safety': 'Company & Safety',
       'Location': 'Company & Safety',
       'Skill': 'Department & Organization',
-      'Training': 'Department & Organization'
+      'Training': 'Department & Organization',
+      'Iqama': 'Iqama Management'
     };
 
     return (subject && fallbackMappings[subject]) || 'Core System';

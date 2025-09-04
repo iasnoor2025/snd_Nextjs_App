@@ -1,8 +1,9 @@
-// Dashboard Section Permissions Configuration
+// Server-side Dashboard Section Permissions Configuration
 // This file defines which permissions are required to view each dashboard section
-// Fully database-driven - no hardcoded permissions or role arrays
+// For server-side use only (API routes, server components)
 
 import { Action, Subject } from './custom-rbac';
+import { checkUserPermission } from './permission-service';
 
 export interface DashboardSectionPermission {
   section: string;
@@ -91,8 +92,8 @@ export function getSectionPermission(section: string): DashboardSectionPermissio
   return dashboardSectionPermissions.find(perm => perm.section === section);
 }
 
-// Client-side permission check - uses API calls instead of direct database access
-export async function hasSectionPermission(
+// Server-side permission check - uses direct database access
+export async function hasSectionPermissionServer(
   userId: string,
   section: string
 ): Promise<boolean> {
@@ -100,24 +101,21 @@ export async function hasSectionPermission(
   if (!permission) return false;
   
   try {
-    // Use client-side permission checking
-    const { checkUserPermissionClient } = await import('./client-permission-service');
-    
-    const result = await checkUserPermissionClient(userId, permission.action, permission.subject);
+    const result = await checkUserPermission(userId, permission.action, permission.subject);
     return result.hasPermission;
   } catch (error) {
     console.error(`Error checking section permission for ${section}:`, error);
-    return false; // No fallback - if API fails, deny access
+    return false;
   }
 }
 
-// Database-driven function to get all sections user can access
-export async function getUserAccessibleSections(userId: string): Promise<string[]> {
+// Server-side function to get all sections user can access
+export async function getUserAccessibleSectionsServer(userId: string): Promise<string[]> {
   const accessibleSections: string[] = [];
   
   for (const permission of dashboardSectionPermissions) {
     try {
-      const hasAccess = await hasSectionPermission(userId, permission.section);
+      const hasAccess = await hasSectionPermissionServer(userId, permission.section);
       if (hasAccess) {
         accessibleSections.push(permission.section);
       }
@@ -128,15 +126,4 @@ export async function getUserAccessibleSections(userId: string): Promise<string[
   }
   
   return accessibleSections;
-}
-
-// Helper function to get permission object for a section
-export function getPermissionForSection(section: string): { action: Action; subject: Subject } | null {
-  const permission = getSectionPermission(section);
-  if (!permission) return null;
-  
-  return {
-    action: permission.action,
-    subject: permission.subject
-  };
 }

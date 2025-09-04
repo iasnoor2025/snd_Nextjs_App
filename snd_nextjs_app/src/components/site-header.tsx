@@ -80,7 +80,7 @@ export function SiteHeader() {
                 variant="ghost"
                 size="sm"
                 onClick={refreshSession}
-                title={t('common.refreshSession')}
+                title={t('common.actions.refreshSession') || 'Refresh Session'}
               >
                 <RefreshCw className="h-4 w-4" />
               </Button>
@@ -122,24 +122,24 @@ export function SiteHeader() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={refreshSession}>
                     <RefreshCw className={`${isRTL ? 'ml-2' : 'mr-2'} h-4 w-4`} />
-                    <span>{t('common.refreshSession')}</span>
+                    <span>{t('common.actions.refreshSession') || 'Refresh Session'}</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem>
                     <Settings className={`${isRTL ? 'ml-2' : 'mr-2'} h-4 w-4`} />
-                    <span>{t('common.settings')}</span>
+                    <span>{t('common.actions.settings') || 'Settings'}</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <a href="/profile" className="flex items-center">
                       <User className={`${isRTL ? 'ml-2' : 'mr-2'} h-4 w-4`} />
-                      <span>{t('common.profile')}</span>
+                      <span>{t('common.actions.profile') || 'Profile'}</span>
                     </a>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/login' })}>
                     <LogOut className={`${isRTL ? 'ml-2' : 'mr-2'} h-4 w-4`} />
-                    <span>{t('common.logout')}</span>
+                    <span>{t('common.actions.logout') || 'Log out'}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

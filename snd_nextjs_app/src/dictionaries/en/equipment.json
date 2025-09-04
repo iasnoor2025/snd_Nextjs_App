@@ -257,6 +257,7 @@
     "searchPlaceholderDashboard": "Search equipment, istimara, driver...",
     "allStatuses": "All Statuses",
     "allDrivers": "All Drivers",
+    "allTypes": "All Types",
     "withDriver": "With Driver",
     "noDriver": "No Driver",
     "tableHeaders": {

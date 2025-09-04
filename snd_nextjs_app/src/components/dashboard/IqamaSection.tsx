@@ -99,12 +99,14 @@ export function IqamaSection({ iqamaData, onUpdateIqama, onHideSection }: IqamaS
           <div>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              {t('dashboard.iqama.management')}
+              <PermissionBased action="manage" subject="Iqama">
+                {t('dashboard.iqama.management')}
+              </PermissionBased>
             </CardTitle>
             <CardDescription>{t('dashboard.iqama.description')}</CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            <PermissionBased action="manage" subject="Employee">
+            <PermissionBased action="manage" subject="Iqama">
               <Button
                 variant="outline"
                 size="sm"

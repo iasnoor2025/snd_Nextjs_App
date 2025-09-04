@@ -17,11 +17,22 @@ import {
   Target,
 } from 'lucide-react';
 
+// Helper function to format large numbers
+const formatNumber = (value: number): string => {
+  if (value >= 1000000) {
+    return `${(value / 1000000).toFixed(1)}M`;
+  } else if (value >= 1000) {
+    return `${(value / 1000).toFixed(1)}K`;
+  }
+  return value.toString();
+};
+
 interface DashboardHeaderProps {
   stats: any;
   refreshing: boolean;
   onRefresh: () => void;
   session: any;
+  accessibleSections?: string[];
 }
 
 export function DashboardHeader({
@@ -29,6 +40,7 @@ export function DashboardHeader({
   refreshing,
   onRefresh,
   session,
+  accessibleSections = [],
 }: DashboardHeaderProps) {
   const { t } = useI18n();
 
@@ -69,64 +81,107 @@ export function DashboardHeader({
         {/* Quick Stats Overview */}
         {stats && (
           <div className="mt-8 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-11 gap-4">
-            <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
-              <Users className="h-6 w-6 mx-auto mb-2 opacity-80" />
-              <div className="text-2xl font-bold">{stats.totalEmployees || 0}</div>
-              <div className="text-xs text-blue-100">{t('dashboard.totalEmployees')}</div>
-            </div>
-            <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
-              <Calendar className="h-6 w-6 mx-auto mb-2 opacity-80" />
-              <div className="text-2xl font-bold">{stats.activeProjects || 0}</div>
-              <div className="text-xs text-blue-100">{t('dashboard.activeProjects')}</div>
-            </div>
-            <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
-              <Target className="h-6 w-6 mx-auto mb-2 opacity-80" />
-              <div className="text-2xl font-bold">{stats.totalProjects || 0}</div>
-              <div className="text-xs text-blue-100">{t('dashboard.totalProjects')}</div>
-            </div>
-            <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
-              <TrendingUp className="h-6 w-6 mx-auto mb-2 opacity-80" />
-              <div className="text-2xl font-bold">{stats.monthlyMoneyReceived || 0}</div>
-              <div className="text-xs text-blue-100">{t('dashboard.moneyReceived')}</div>
-            </div>
-            <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
-              <TrendingUp
-                className="h-6 w-6 mx-auto mb-2 opacity-80"
-                style={{ transform: 'rotate(180deg)' }}
-              />
-              <div className="text-2xl font-bold">{stats.monthlyMoneyLost || 0}</div>
-              <div className="text-xs text-blue-100">{t('dashboard.moneyLost')}</div>
-            </div>
-            <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
-              <AlertTriangle className="h-6 w-6 mx-auto mb-2 opacity-80" />
-              <div className="text-2xl font-bold">{stats.pendingApprovals || 0}</div>
-              <div className="text-xs text-blue-100">{t('dashboard.pendingApprovals')}</div>
-            </div>
-            <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
-              <Building2 className="h-6 w-6 mx-auto mb-2 opacity-80" />
-              <div className="text-2xl font-bold">{stats.totalCompanies || 0}</div>
-              <div className="text-xs text-blue-100">{t('dashboard.totalCompanies')}</div>
-            </div>
-            <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
-              <Wrench className="h-6 w-6 mx-auto mb-2 opacity-80" />
-              <div className="text-2xl font-bold">{stats.totalEquipment || 0}</div>
-              <div className="text-xs text-blue-100">{t('dashboard.totalEquipment')}</div>
-            </div>
-            <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
-              <Truck className="h-6 w-6 mx-auto mb-2 opacity-80" />
-              <div className="text-2xl font-bold">{stats.activeRentals || 0}</div>
-              <div className="text-xs text-blue-100">{t('dashboard.activeRentals')}</div>
-            </div>
-            <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
-              <Truck className="h-6 w-6 mx-auto mb-2 opacity-80" />
-              <div className="text-2xl font-bold">{stats.totalRentals || 0}</div>
-              <div className="text-xs text-blue-100">{t('dashboard.totalRentals')}</div>
-            </div>
-            <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
-              <FileText className="h-6 w-6 mx-auto mb-2 opacity-80" />
-              <div className="text-2xl font-bold">{stats.totalDocuments || 0}</div>
-              <div className="text-xs text-blue-100">{t('dashboard.totalDocuments')}</div>
-            </div>
+            {/* Total Employees - Employee Management */}
+            {(accessibleSections.includes('myTeam') || accessibleSections.length === 0 || !accessibleSections) && (
+              <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
+                <Users className="h-6 w-6 mx-auto mb-2 opacity-80" />
+                <div className="text-2xl font-bold">{formatNumber(stats.totalEmployees || 0)}</div>
+                <div className="text-xs text-blue-100">{t('dashboard.totalEmployees')}</div>
+              </div>
+            )}
+            
+            {/* Active Projects - Project Management */}
+            {(accessibleSections.includes('projectOverview') || accessibleSections.length === 0 || !accessibleSections) && (
+              <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
+                <Calendar className="h-6 w-6 mx-auto mb-2 opacity-80" />
+                <div className="text-2xl font-bold">{stats.activeProjects || 0}</div>
+                <div className="text-xs text-blue-100">{t('dashboard.activeProjects')}</div>
+              </div>
+            )}
+            
+            {/* Total Projects - Project Management */}
+            {(accessibleSections.includes('projectOverview') || accessibleSections.length === 0 || !accessibleSections) && (
+              <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
+                <Target className="h-6 w-6 mx-auto mb-2 opacity-80" />
+                <div className="text-2xl font-bold">{stats.totalProjects || 0}</div>
+                <div className="text-xs text-blue-100">{t('dashboard.totalProjects')}</div>
+              </div>
+            )}
+            
+            {/* Money Received - Financial */}
+            {(accessibleSections.includes('financial') || accessibleSections.length === 0 || !accessibleSections) && (
+              <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
+                <TrendingUp className="h-6 w-6 mx-auto mb-2 opacity-80" />
+                <div className="text-2xl font-bold">{formatNumber(stats.monthlyMoneyReceived || 0)}</div>
+                <div className="text-xs text-blue-100">{t('dashboard.moneyReceived')}</div>
+              </div>
+            )}
+            
+            {/* Money Lost - Financial */}
+            {(accessibleSections.includes('financial') || accessibleSections.length === 0 || !accessibleSections) && (
+              <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
+                <TrendingUp
+                  className="h-6 w-6 mx-auto mb-2 opacity-80"
+                  style={{ transform: 'rotate(180deg)' }}
+                />
+                <div className="text-2xl font-bold">{formatNumber(stats.monthlyMoneyLost || 0)}</div>
+                <div className="text-xs text-blue-100">{t('dashboard.moneyLost')}</div>
+              </div>
+            )}
+            
+            {/* Pending Approvals - Today's Attendance */}
+            {(accessibleSections.includes('timesheets') || accessibleSections.length === 0 || !accessibleSections) && (
+              <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
+                <AlertTriangle className="h-6 w-6 mx-auto mb-2 opacity-80" />
+                <div className="text-2xl font-bold">{stats.pendingApprovals || 0}</div>
+                <div className="text-xs text-blue-100">{t('dashboard.pendingApprovals')}</div>
+              </div>
+            )}
+            
+            {/* Total Companies - Company Management */}
+            {(accessibleSections.includes('manualAssignments') || accessibleSections.length === 0 || !accessibleSections) && (
+              <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
+                <Building2 className="h-6 w-6 mx-auto mb-2 opacity-80" />
+                <div className="text-2xl font-bold">{stats.totalCompanies || 0}</div>
+                <div className="text-xs text-blue-100">{t('dashboard.totalCompanies')}</div>
+              </div>
+            )}
+            
+            {/* Total Equipment - Equipment Management */}
+            {(accessibleSections.includes('equipment') || accessibleSections.length === 0 || !accessibleSections) && (
+              <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
+                <Wrench className="h-6 w-6 mx-auto mb-2 opacity-80" />
+                <div className="text-2xl font-bold">{formatNumber(stats.totalEquipment || 0)}</div>
+                <div className="text-xs text-blue-100">{t('dashboard.totalEquipment')}</div>
+              </div>
+            )}
+            
+            {/* Active Rentals - Rental Management */}
+            {(accessibleSections.includes('quickActions') || accessibleSections.length === 0 || !accessibleSections) && (
+              <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
+                <Truck className="h-6 w-6 mx-auto mb-2 opacity-80" />
+                <div className="text-2xl font-bold">{stats.activeRentals || 0}</div>
+                <div className="text-xs text-blue-100">{t('dashboard.activeRentals')}</div>
+              </div>
+            )}
+            
+            {/* Total Rentals - Rental Management */}
+            {(accessibleSections.includes('quickActions') || accessibleSections.length === 0 || !accessibleSections) && (
+              <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
+                <Truck className="h-6 w-6 mx-auto mb-2 opacity-80" />
+                <div className="text-2xl font-bold">{stats.totalRentals || 0}</div>
+                <div className="text-xs text-blue-100">{t('dashboard.totalRentals')}</div>
+              </div>
+            )}
+            
+            {/* Total Documents - Document Management */}
+            {(accessibleSections.includes('recentActivity') || accessibleSections.length === 0 || !accessibleSections) && (
+              <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
+                <FileText className="h-6 w-6 mx-auto mb-2 opacity-80" />
+                <div className="text-2xl font-bold">{formatNumber(stats.totalDocuments || 0)}</div>
+                <div className="text-xs text-blue-100">{t('dashboard.totalDocuments')}</div>
+              </div>
+            )}
           </div>
         )}
       </div>

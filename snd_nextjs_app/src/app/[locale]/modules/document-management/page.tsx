@@ -356,7 +356,7 @@ export default function DocumentManagementPage() {
             </Button>
             <Button variant="outline">
               <Settings className="h-4 w-4 mr-2" />
-              Settings
+              {t('common.actions.settings') || 'Settings'}
             </Button>
           </div>
         </div>

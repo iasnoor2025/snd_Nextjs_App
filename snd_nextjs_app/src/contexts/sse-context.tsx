@@ -58,6 +58,8 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
   const isMountedRef = useRef(true);
   const cleanupRef = useRef<(() => void) | null>(null);
   const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectAttemptsRef = useRef(0);
+  const maxReconnectAttempts = 3; // Limit reconnection attempts
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -215,6 +217,12 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
 
   // Initialize SSE connection with performance optimization
   const connectSSE = useCallback(() => {
+    // Check if already connected or connecting to prevent multiple connections
+    if (isConnected || connectionStatus === 'connecting') {
+      console.log('SSE: Already connected or connecting, skipping connection attempt');
+      return;
+    }
+    
     if (!session?.user?.email || !isMountedRef.current) {
       setConnectionStatus('disconnected');
       return;
@@ -250,8 +258,8 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
         }
         setIsConnected(true);
         setConnectionStatus('connected');
-        // setReconnectAttempts(0); // This line was removed
-        // reconnectAttemptsRef.current = 0; // This line was removed
+        reconnectAttemptsRef.current = 0; // Reset reconnection attempts on successful connection
+        console.log('SSE: Connection established successfully');
       };
 
       const handleMessage = (event: MessageEvent) => {
@@ -268,12 +276,19 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
         setIsConnected(false);
         setConnectionStatus('error');
 
-        // Attempt to reconnect after a delay
-        setTimeout(() => {
-          if (isMountedRef.current) {
-            connectSSE();
-          }
-        }, 5000);
+        // Only reconnect if we haven't exceeded max attempts
+        if (reconnectAttemptsRef.current < maxReconnectAttempts) {
+          reconnectAttemptsRef.current += 1;
+          console.log(`SSE: Reconnection attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts}`);
+          
+          setTimeout(() => {
+            if (isMountedRef.current && !isConnected) {
+              connectSSE();
+            }
+          }, 5000);
+        } else {
+          console.log('SSE: Max reconnection attempts reached, stopping reconnection');
+        }
       };
 
       sse.addEventListener('open', handleOpen);
@@ -350,8 +365,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
   // Reconnect manually
   const reconnect = useCallback(() => {
     if (!isMountedRef.current) return;
-    // setReconnectAttempts(0); // This line was removed
-    // reconnectAttemptsRef.current = 0; // This line was removed
+    reconnectAttemptsRef.current = 0; // Reset attempts for manual reconnect
     connectSSE();
   }, [connectSSE]);
 
@@ -377,29 +391,30 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
 
   // Connect to SSE when session is available with delay for better performance
   useEffect(() => {
-    if (session?.user?.email) {
-      // Delay connection slightly to prioritize page load
-      setTimeout(() => {
-        if (isMountedRef.current) {
-          connectSSE();
-        }
-      }, 200);
-    } else {
-      setIsConnected(false);
-      setConnectionStatus('disconnected');
-    }
-  }, [session?.user?.email, connectSSE]);
+    // Temporarily disable SSE to reduce load and improve performance
+    // if (session?.user?.email && !isConnected && connectionStatus === 'disconnected') {
+    //   // Delay connection to prioritize page load and reduce initial load
+    //   setTimeout(() => {
+    //     if (isMountedRef.current && !isConnected && connectionStatus === 'disconnected') {
+    //       connectSSE();
+    //     }
+    //   }, 2000); // Increased delay to 2 seconds
+    // } else if (!session?.user?.email) {
+    //   setIsConnected(false);
+    //   setConnectionStatus('disconnected');
+    // }
+  }, [session?.user?.email, connectSSE, isConnected, connectionStatus]);
 
   // Auto-reconnect on network recovery with reduced frequency
   useEffect(() => {
     const handleOnline = () => {
-      if (session?.user?.email && !isConnected && isMountedRef.current) {
+      if (session?.user?.email && !isConnected && connectionStatus === 'disconnected' && isMountedRef.current) {
         // Delay reconnection to avoid rapid reconnections
         setTimeout(() => {
-          if (isMountedRef.current) {
+          if (isMountedRef.current && !isConnected) {
             reconnect();
           }
-        }, 1000);
+        }, 2000); // Increased delay to 2 seconds
       }
     };
 

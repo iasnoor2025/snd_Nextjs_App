@@ -10,7 +10,6 @@ export async function middleware(request: NextRequest) {
 
   // Define public routes that should bypass middleware completely
   const publicRoutes = [
-    '/login',
     '/signup', 
     '/forgot-password',
     '/reset-password',
@@ -42,7 +41,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check if it's a locale-specific public route (e.g., /en/login, /ar/login)
+  // Check if it's a locale-specific public route (e.g., /en/signup, /ar/forgot-password)
   const localeSpecificPublicRoutes = publicRoutes.flatMap(route => 
     i18n.locales.map(locale => `/${locale}${route}`)
   );
@@ -52,15 +51,42 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Additional check for login pages specifically
+  // Handle auth-related routes with locale prefixes
   if (pathname === '/en/login' || pathname === '/ar/login') {
     return NextResponse.next();
   }
   
-  // Redirect /login to locale-prefixed login
+  if (pathname === '/en/signup' || pathname === '/ar/signup') {
+    return NextResponse.next();
+  }
+  
+  if (pathname === '/en/forgot-password' || pathname === '/ar/forgot-password') {
+    return NextResponse.next();
+  }
+  
+  if (pathname === '/en/reset-password' || pathname === '/ar/reset-password') {
+    return NextResponse.next();
+  }
+  
+  // Redirect non-locale auth routes to locale-prefixed versions
   if (pathname === '/login') {
     const locale = getLocale(request);
     return NextResponse.redirect(new URL(`/${locale}/login`, request.url));
+  }
+  
+  if (pathname === '/signup') {
+    const locale = getLocale(request);
+    return NextResponse.redirect(new URL(`/${locale}/signup`, request.url));
+  }
+  
+  if (pathname === '/forgot-password') {
+    const locale = getLocale(request);
+    return NextResponse.redirect(new URL(`/${locale}/forgot-password`, request.url));
+  }
+  
+  if (pathname === '/reset-password') {
+    const locale = getLocale(request);
+    return NextResponse.redirect(new URL(`/${locale}/reset-password`, request.url));
   }
 
   // Check if it's an API route that should bypass middleware
@@ -179,9 +205,9 @@ function getClientSafeRoutePermission(pathname: string) {
 
 function getLocale(request: NextRequest): string {
   // Check for locale in cookie
-  const locale = request.cookies.get('NEXT_LOCALE')?.value;
-  if (locale && i18n.locales.includes(locale as "en" | "ar")) {
-    return locale;
+  const localeCookie = request.cookies.get('NEXT_LOCALE');
+  if (localeCookie && localeCookie.value && i18n.locales.includes(localeCookie.value as "en" | "ar")) {
+    return localeCookie.value;
   }
 
   // Check Accept-Language header

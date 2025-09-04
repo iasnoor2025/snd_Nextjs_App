@@ -50,6 +50,14 @@ export function IqamaPermission({ children, fallback }: { children: React.ReactN
   );
 }
 
+export function IqamaManagementPermission({ children, fallback }: { children: React.ReactNode; fallback?: React.ReactNode }) {
+  return (
+    <DashboardSectionPermission section="iqamaManagement" fallback={fallback}>
+      {children}
+    </DashboardSectionPermission>
+  );
+}
+
 export function EquipmentPermission({ children, fallback }: { children: React.ReactNode; fallback?: React.ReactNode }) {
   return (
     <DashboardSectionPermission section="equipment" fallback={fallback}>

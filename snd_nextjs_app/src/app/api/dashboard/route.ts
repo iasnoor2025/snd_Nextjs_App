@@ -6,6 +6,11 @@ import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 export const GET = withPermission(PermissionConfigs.dashboard.read)(async (_request: NextRequest) => {
   try {
+    // Add timeout to prevent hanging requests
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Request timeout')), 15000); // 15 second timeout
+    });
+
     // Check authentication
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -17,54 +22,33 @@ export const GET = withPermission(PermissionConfigs.dashboard.read)(async (_requ
     const limit = parseInt(searchParams.get('limit') || '50');
     const dataLimit = Math.min(limit, 500);
 
-    // Fetch all dashboard data sequentially to identify which call fails
+    // Fetch all dashboard data in parallel for better performance
+    const { checkUserPermission } = await import('@/lib/rbac/permission-service');
+    
+    // Check permissions in parallel
+    const [iqamaPermissionResult, equipmentPermissionResult, timesheetPermissionResult, settingsPermissionResult] = await Promise.all([
+      checkUserPermission(session.user.id, 'manage', 'Iqama'),
+      checkUserPermission(session.user.id, 'read', 'Equipment'),
+      checkUserPermission(session.user.id, 'read', 'Timesheet'),
+      checkUserPermission(session.user.id, 'read', 'Settings')
+    ]);
 
-    const stats = await DashboardService.getDashboardStats();
+    // Fetch all data in parallel with ultra-minimal limits for maximum performance
+    const dataFetchPromise = Promise.all([
+      DashboardService.getDashboardStats(),
+      iqamaPermissionResult.hasPermission ? DashboardService.getIqamaData(5) : Promise.resolve([]),
+      equipmentPermissionResult.hasPermission ? DashboardService.getEquipmentData(5) : Promise.resolve([]),
+      timesheetPermissionResult.hasPermission ? DashboardService.getTodayTimesheets(5) : Promise.resolve([]),
+      DashboardService.getExpiringDocuments(5),
+      DashboardService.getActiveLeaveRequests(5),
+      DashboardService.getEmployeesCurrentlyOnLeave(),
+      DashboardService.getActiveRentals(5),
+      DashboardService.getActiveProjects(5).catch(() => []),
+      settingsPermissionResult.hasPermission ? DashboardService.getRecentActivity(5) : Promise.resolve([])
+    ]);
 
-    const iqamaData = await DashboardService.getIqamaData(10000);
-
-    // Fetch equipment data using DashboardService
-    let equipmentData: Array<{
-      status: 'available' | 'expired' | 'expiring' | 'missing';
-      daysRemaining: number | null;
-      id: number;
-      equipmentName: string;
-      equipmentNumber: string | null;
-      istimara: string | null;
-      istimaraExpiry: string | null;
-    }> = [];
-
-    try {
-      equipmentData = await DashboardService.getEquipmentData(10000);
-      console.log('Dashboard API - Equipment fetched:', equipmentData.length);
-    } catch (error) {
-      console.error('Dashboard API - Error fetching equipment:', error);
-      equipmentData = [];
-    }
-
-    const timesheetData = await DashboardService.getTodayTimesheets(dataLimit);
-
-    const documentData = await DashboardService.getExpiringDocuments(dataLimit);
-
-    const leaveData = await DashboardService.getActiveLeaveRequests(dataLimit);
-
-    const employeesOnLeaveData = await DashboardService.getEmployeesCurrentlyOnLeave();
-
-    const rentalData = await DashboardService.getActiveRentals(dataLimit);
-
-    // Fetch project data with better error handling
-    let projectData: any[] = [];
-    try {
-      projectData = await DashboardService.getActiveProjects(dataLimit);
-      console.log('Dashboard API - Projects fetched:', projectData.length);
-    } catch (error) {
-      console.error('Dashboard API - Error fetching projects:', error);
-      projectData = [];
-    }
-
-    const activityData = await DashboardService.getRecentActivity(dataLimit);
-
-    return NextResponse.json({
+    // Race between data fetching and timeout
+    let [
       stats,
       iqamaData,
       equipmentData,
@@ -74,13 +58,97 @@ export const GET = withPermission(PermissionConfigs.dashboard.read)(async (_requ
       employeesOnLeaveData,
       rentalData,
       projectData,
+      activityData
+    ] = await Promise.race([dataFetchPromise, timeoutPromise]);
+
+    console.log('Dashboard API - All data fetched in parallel');
+
+    return NextResponse.json({
+      stats,
+      iqamaData,
+      equipment: equipmentData,
+      timesheetData,
+      documentData,
+      leaveData,
+      employeesOnLeaveData,
+      rentalData,
+      projectData,
       recentActivity: activityData,
     });
   } catch (error) {
+    // If the main fetch fails, try to get at least the essential stats
+    if (error instanceof Error && error.message === 'Request timeout') {
+      console.log('Dashboard API - Timeout occurred, fetching essential stats only');
+      
+      try {
+        const essentialStats = await DashboardService.getDashboardStats();
+        return NextResponse.json({
+          stats: essentialStats,
+          iqamaData: [],
+          equipment: [],
+          timesheetData: [],
+          documentData: [],
+          leaveData: [],
+          employeesOnLeaveData: [],
+          rentalData: [],
+          projectData: [],
+          recentActivity: [],
+        });
+      } catch (statsError) {
+        console.error('Dashboard API - Even essential stats failed:', statsError);
+        return NextResponse.json({
+          stats: {
+            totalEmployees: 0,
+            activeProjects: 0,
+            totalProjects: 0,
+            availableEquipment: 0,
+            totalEquipment: 0,
+            monthlyRevenue: 0,
+            pendingApprovals: 0,
+            activeRentals: 0,
+            totalRentals: 0,
+            totalCompanies: 0,
+            totalDocuments: 0,
+            equipmentUtilization: 0,
+            todayTimesheets: 0,
+            expiredDocuments: 0,
+            expiringDocuments: 0,
+            employeesOnLeave: 0,
+            totalMoneyReceived: 0,
+            totalMoneyLost: 0,
+            monthlyMoneyReceived: 0,
+            monthlyMoneyLost: 0,
+            netProfit: 0,
+            currency: 'SAR',
+          },
+          iqamaData: [],
+          equipment: [],
+          timesheetData: [],
+          documentData: [],
+          leaveData: [],
+          employeesOnLeaveData: [],
+          rentalData: [],
+          projectData: [],
+          recentActivity: [],
+        });
+      }
+    }
       // Log more detailed error information
       console.error('Dashboard API - Critical error:', error);
       if (error instanceof Error) {
         console.error('Dashboard API - Error details:', error.stack);
+      }
+
+      // Handle timeout specifically
+      if (error instanceof Error && error.message === 'Request timeout') {
+        return NextResponse.json(
+          {
+            error: 'Request timeout',
+            details: 'Dashboard data fetch took too long',
+            timestamp: new Date().toISOString(),
+          },
+          { status: 408 }
+        );
       }
 
     return NextResponse.json(

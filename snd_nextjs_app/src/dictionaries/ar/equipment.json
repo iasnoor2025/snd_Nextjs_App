@@ -374,6 +374,7 @@
     "allEquipmentDescription": "قائمة كاملة بجميع المعدات مع حالة الإستمارة",
     "searchPlaceholderDashboard": "البحث في المعدات والإستمارة والسائق...",
     "allDrivers": "جميع السائقين",
+    "allTypes": "جميع الأنواع",
     "withDriver": "مع سائق",
     "noDriver": "بدون سائق",
     "tableHeaders": {

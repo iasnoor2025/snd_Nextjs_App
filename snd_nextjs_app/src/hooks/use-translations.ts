@@ -10,7 +10,24 @@ export function useTranslations() {
   const pathname = usePathname();
   
   // Safely extract locale with fallback
-  const locale = validateLocale(params?.locale as string);
+  let locale = validateLocale(params?.locale as string);
+  
+  // If no locale in params, try to get from cookie or default to 'en'
+  if (!locale || locale === 'en') {
+    // Try to get locale from cookie
+    if (typeof document !== 'undefined') {
+      const cookieLocale = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('NEXT_LOCALE='))
+        ?.split('=')[1];
+      
+      if (cookieLocale && ['en', 'ar'].includes(cookieLocale)) {
+        locale = cookieLocale;
+      }
+    }
+  }
+  
+
   const [dictionary, setDictionary] = useState<Record<string, Record<string, unknown>> | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -32,13 +49,15 @@ export function useTranslations() {
   useEffect(() => {
     // Load dictionary
     const loadDictionary = async () => {
-      if (!locale) return;
+      if (!locale) {
+        return;
+      }
       
       setIsLoading(true);
       try {
         const { getDictionary } = await import('@/lib/get-dictionary');
         const dict = await getDictionary(locale as 'en' | 'ar');
-
+        
         setDictionary(dict);
       } catch (error) {
         console.error('Failed to load dictionary:', error);
@@ -60,7 +79,22 @@ export function useTranslations() {
 
   const t = (key: string, params?: Record<string, string>) => {
     if (!dictionary || isLoading) {
-      return key;
+      // Return fallback values for common keys
+      const fallbackValues: Record<string, string> = {
+        'common.actions.refreshSession': 'Refresh Session',
+        'common.actions.settings': 'Settings',
+        'common.actions.profile': 'Profile',
+        'common.actions.logout': 'Log out',
+        'common.app.name': 'SND App',
+        'common.loading': 'Loading...',
+        'equipment.istimara.allTypes': 'All Types',
+        'equipment.istimara.allDrivers': 'All Drivers',
+        'equipment.istimara.withDriver': 'With Driver',
+        'equipment.istimara.unassigned': 'Unassigned',
+        'equipment.istimara.clear': 'Clear',
+      };
+      
+      return fallbackValues[key] || key;
     }
 
     // Handle namespace.key format (e.g., "common.save", "dashboard.title")
@@ -70,27 +104,60 @@ export function useTranslations() {
       
       const namespaceDict = dictionary[namespace as keyof typeof dictionary];
       if (!namespaceDict) {
-        return key;
+        // Return fallback values for common keys
+        const fallbackValues: Record<string, string> = {
+          'common.actions.refreshSession': 'Refresh Session',
+          'common.actions.settings': 'Settings',
+          'common.actions.profile': 'Profile',
+          'common.actions.logout': 'Log out',
+          'common.app.name': 'SND App',
+          'common.loading': 'Loading...',
+        };
+        
+        return fallbackValues[key] || key;
       }
       
-
-
       // Navigate to nested key
       let currentValue: unknown = namespaceDict;
       
       for (const k of fullKey.split('.')) {
         currentValue = (currentValue as Record<string, unknown>)?.[k];
         if (currentValue === undefined) {
-          return key;
+          // Return fallback values for common keys
+          const fallbackValues: Record<string, string> = {
+            'common.actions.refreshSession': 'Refresh Session',
+            'common.actions.settings': 'Settings',
+            'common.actions.profile': 'Profile',
+            'common.actions.logout': 'Log out',
+            'common.app.name': 'SND App',
+            'common.loading': 'Loading...',
+            'equipment.istimara.allTypes': 'All Types',
+            'equipment.istimara.allDrivers': 'All Drivers',
+            'equipment.istimara.withDriver': 'With Driver',
+            'equipment.istimara.unassigned': 'Unassigned',
+            'equipment.istimara.clear': 'Clear',
+          };
+          
+          return fallbackValues[key] || key;
         }
       }
       const value = currentValue;
 
       // Ensure we return a string, not an object
       if (typeof value !== 'string') {
-        return key;
+        // Return fallback values for common keys
+        const fallbackValues: Record<string, string> = {
+          'common.actions.refreshSession': 'Refresh Session',
+          'common.actions.settings': 'Settings',
+          'common.actions.profile': 'Profile',
+          'common.actions.logout': 'Log out',
+          'common.app.name': 'SND App',
+          'common.loading': 'Loading...',
+        };
+        
+        return fallbackValues[key] || key;
       }
-
+      
       // Now we know value is a string
       let stringValue: string = value;
 
@@ -111,7 +178,22 @@ export function useTranslations() {
       
       // Ensure we return a string, not an object
       if (typeof value !== 'string') {
-        return key;
+        // Return fallback values for common keys
+        const fallbackValues: Record<string, string> = {
+          'common.actions.refreshSession': 'Refresh Session',
+          'common.actions.settings': 'Settings',
+          'common.actions.profile': 'Profile',
+          'common.actions.logout': 'Log out',
+          'common.app.name': 'SND App',
+          'common.loading': 'Loading...',
+          'equipment.istimara.allTypes': 'All Types',
+          'equipment.istimara.allDrivers': 'All Drivers',
+          'equipment.istimara.withDriver': 'With Driver',
+          'equipment.istimara.unassigned': 'Unassigned',
+          'equipment.istimara.clear': 'Clear',
+        };
+        
+        return fallbackValues[key] || key;
       }
       
       // Now we know value is a string
@@ -127,7 +209,22 @@ export function useTranslations() {
       return stringValue;
     }
 
-    return key;
+    // Return fallback values for common keys
+    const fallbackValues: Record<string, string> = {
+      'common.actions.refreshSession': 'Refresh Session',
+      'common.actions.settings': 'Settings',
+      'common.actions.profile': 'Profile',
+      'common.actions.logout': 'Log out',
+      'common.app.name': 'SND App',
+      'common.loading': 'Loading...',
+      'equipment.istimara.allTypes': 'All Types',
+      'equipment.istimara.allDrivers': 'All Drivers',
+      'equipment.istimara.withDriver': 'With Driver',
+      'equipment.istimara.unassigned': 'Unassigned',
+      'equipment.istimara.clear': 'Clear',
+    };
+    
+    return fallbackValues[key] || key;
   };
 
   const changeLanguage = async (newLocale: string) => {

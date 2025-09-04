@@ -59,6 +59,12 @@ const availablePermissions = [
   'projects.update',
   'projects.delete',
 
+  // Iqama Management
+  'iqama.read',
+  'iqama.create',
+  'iqama.update',
+  'iqama.delete',
+
   // Reporting
   'reports.read',
   'reports.create',
@@ -90,6 +96,7 @@ const permissionCategories = {
     'employees.delete',
   ],
   'Project Management': ['projects.read', 'projects.create', 'projects.update', 'projects.delete'],
+  'Iqama Management': ['iqama.read', 'iqama.create', 'iqama.update', 'iqama.delete'],
   Reporting: ['reports.read', 'reports.create', 'reports.export'],
   Settings: ['settings.read', 'settings.update'],
   Analytics: ['analytics.read', 'analytics.export'],
