@@ -417,17 +417,11 @@ export default function LeaveManagementPage() {
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">
-                            {request.status === 'returned' || request.status === 'completed' ? (
-                              <div>
-                                <span className="font-medium">{request.days_requested} {t('leave.days')}</span>
-                                {request.return_date && (
-                                  <div className="text-xs text-gray-500">
-                                    {t('leave.returned_on')}: {formatDate(request.return_date)}
-                                  </div>
-                                )}
+                            <span className="font-medium">{request.days_requested} {t('leave.days')}</span>
+                            {request.status === 'returned' && request.return_date && (
+                              <div className="text-xs text-gray-500">
+                                {t('leave.returned_on')}: {formatDate(request.return_date)}
                               </div>
-                            ) : (
-                              <span>{request.days_requested} {t('leave.days')}</span>
                             )}
                           </div>
                         </TableCell>

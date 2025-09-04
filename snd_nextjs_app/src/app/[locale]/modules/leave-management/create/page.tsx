@@ -100,6 +100,14 @@ function CreateLeaveRequestContent() {
         return;
       }
 
+      // Validate that dates are not in the far future (optional business rule)
+      const maxFutureDate = new Date();
+      maxFutureDate.setFullYear(maxFutureDate.getFullYear() + 1);
+      if (startDate > maxFutureDate) {
+        toast.error(t('leave.start_date_too_far_future'));
+        return;
+      }
+
       // Submit leave request
       const response = await fetch('/api/leave-requests', {
         method: 'POST',
@@ -224,8 +232,28 @@ function CreateLeaveRequestContent() {
                   onChange={e => handleInputChange('end_date', e.target.value)}
                   min={formData.start_date}
                 />
+                <p className="text-xs text-gray-500">
+                  {t('leave.end_date_can_be_updated')}
+                </p>
               </div>
             </div>
+
+            {/* Days Calculation Display */}
+            {formData.start_date && formData.end_date && (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-blue-800">
+                    {t('leave.requested_days')}:
+                  </span>
+                  <span className="text-sm font-bold text-blue-900">
+                    {Math.ceil((new Date(formData.end_date).getTime() - new Date(formData.start_date).getTime()) / (1000 * 60 * 60 * 24)) + 1} {t('leave.days')}
+                  </span>
+                </div>
+                <p className="text-xs text-blue-600 mt-1">
+                  {t('leave.days_calculation_note')}
+                </p>
+              </div>
+            )}
 
             {/* Reason */}
             <div className="space-y-2">
@@ -236,6 +264,22 @@ function CreateLeaveRequestContent() {
                 placeholder={t('leave.provide_detailed_reason')}
                 rows={4}
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Information Card */}
+        <Card className="border-green-200 bg-green-50">
+          <CardHeader>
+            <CardTitle className="text-green-800 text-lg">
+              {t('leave.early_return_info_title')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 text-sm text-green-700">
+              <p>• {t('leave.early_return_info_1')}</p>
+              <p>• {t('leave.early_return_info_2')}</p>
+              <p>• {t('leave.early_return_info_3')}</p>
             </div>
           </CardContent>
         </Card>

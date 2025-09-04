@@ -931,18 +931,20 @@ function LeaveRequestDetailPage() {
             <DialogTitle>{t('leave.return_employee')}</DialogTitle>
             <DialogDescription>{t('leave.return_employee_description')}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">{t('leave.return_date_required')}</label>
-              <input
-                type="date"
-                value={returnDate}
-                onChange={(e) => setReturnDate(e.target.value)}
-                className="w-full mt-1 p-2 border rounded-md"
-                min={leaveRequest?.start_date}
-                max={leaveRequest?.end_date}
-              />
-            </div>
+                     <div className="space-y-4">
+             <div>
+               <label className="text-sm font-medium">{t('leave.return_date_required')}</label>
+               <input
+                 type="date"
+                 value={returnDate}
+                 onChange={(e) => setReturnDate(e.target.value)}
+                 className="w-full mt-1 p-2 border rounded-md"
+                 min={leaveRequest?.start_date}
+               />
+               <p className="text-xs text-gray-500 mt-1">
+                 {t('leave.return_date_will_be_end_date')}
+               </p>
+             </div>
             <div>
               <label className="text-sm font-medium">{t('leave.return_reason_required')}</label>
               <textarea

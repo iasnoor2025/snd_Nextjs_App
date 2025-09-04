@@ -70,7 +70,7 @@ export const PUT = withPermission(PermissionConfigs.leave.update)(async (request
     // Validate return date
     const returnDate = new Date(return_date);
     const startDate = new Date(leaveRequest.startDate);
-    const endDate = new Date(leaveRequest.endDate);
+    const originalEndDate = new Date(leaveRequest.endDate);
 
     if (returnDate < startDate) {
       return NextResponse.json(
@@ -79,23 +79,18 @@ export const PUT = withPermission(PermissionConfigs.leave.update)(async (request
       );
     }
 
-    if (returnDate > endDate) {
-      return NextResponse.json(
-        { error: 'Return date cannot be after leave end date' },
-        { status: 400 }
-      );
-    }
-
-    // Determine if it's an early return or on-schedule return
-    const isEarlyReturn = returnDate < endDate;
-    const newStatus = isEarlyReturn ? 'returned' : 'completed';
-
-    // Calculate actual days taken based on return date
+    // Simple logic: Return date becomes the effective end date
+    // Calculate actual days taken from start date to return date
     const actualDaysTaken = Math.ceil(
       (returnDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
     ) + 1;
 
-    // Update the leave request
+    // Determine if it's an early return (before original end date) or extended (after original end date)
+    const isEarlyReturn = returnDate < originalEndDate;
+    const isExtended = returnDate > originalEndDate;
+    const newStatus = 'returned'; // Always mark as returned when employee returns
+
+    // Update the leave request - return date becomes the effective end date
     await db
       .update(employeeLeaves)
       .set({
@@ -104,6 +99,7 @@ export const PUT = withPermission(PermissionConfigs.leave.update)(async (request
         returnReason: return_reason,
         status: newStatus,
         days: actualDaysTaken, // Update the days field with actual days taken
+        endDate: returnDate.toISOString(), // Set return date as the new end date
         updatedAt: new Date().toISOString(),
       })
       .where(eq(employeeLeaves.id, parseInt(id)));
@@ -117,8 +113,11 @@ export const PUT = withPermission(PermissionConfigs.leave.update)(async (request
         return_reason: return_reason,
         status: newStatus,
         is_early_return: isEarlyReturn,
+        is_extended: isExtended,
         actual_days_taken: actualDaysTaken,
         original_days_requested: leaveRequest.days,
+        original_end_date: originalEndDate.toISOString(),
+        new_end_date: returnDate.toISOString(),
       },
     });
   } catch (error) {
