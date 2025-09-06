@@ -33,8 +33,6 @@ import {
   roles,
   salaryIncrements,
   skills,
-  taxDocumentPayrolls,
-  taxDocuments,
   timeEntries,
   timeOffRequests,
   timesheetApprovals,
@@ -115,7 +113,6 @@ export const employeesRelations = relations(employees, ({ one, many }) => ({
     relationName: 'organizationalUnits_managerId_employees_id',
   }),
   payrolls: many(payrolls),
-  taxDocuments: many(taxDocuments),
   timesheets: many(timesheets),
   timeEntries: many(timeEntries),
   equipment: many(equipment),
@@ -463,31 +460,12 @@ export const payrollsRelations = relations(payrolls, ({ one, many }) => ({
     fields: [payrolls.payrollRunId],
     references: [payrollRuns.id],
   }),
-  taxDocumentPayrolls: many(taxDocumentPayrolls),
 }));
 
 export const payrollRunsRelations = relations(payrollRuns, ({ many }) => ({
   payrolls: many(payrolls),
 }));
 
-export const taxDocumentPayrollsRelations = relations(taxDocumentPayrolls, ({ one }) => ({
-  taxDocument: one(taxDocuments, {
-    fields: [taxDocumentPayrolls.taxDocumentId],
-    references: [taxDocuments.id],
-  }),
-  payroll: one(payrolls, {
-    fields: [taxDocumentPayrolls.payrollId],
-    references: [payrolls.id],
-  }),
-}));
-
-export const taxDocumentsRelations = relations(taxDocuments, ({ one, many }) => ({
-  taxDocumentPayrolls: many(taxDocumentPayrolls),
-  employee: one(employees, {
-    fields: [taxDocuments.employeeId],
-    references: [employees.id],
-  }),
-}));
 
 export const timesheetsRelations = relations(timesheets, ({ one, many }) => ({
   employee: one(employees, {

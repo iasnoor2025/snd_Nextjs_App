@@ -92,8 +92,6 @@ export {
   telescopeMonitoring,
   rentalItems,
 
-  taxDocuments,
-  taxDocumentPayrolls,
   passwordResetTokens,
   sessions,
 } from './schema';

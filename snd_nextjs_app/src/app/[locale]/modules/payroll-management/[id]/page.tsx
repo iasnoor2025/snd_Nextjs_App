@@ -38,8 +38,6 @@ interface PayrollItem {
   type: string;
   description: string;
   amount: number;
-  is_taxable: boolean;
-  tax_rate: number;
   order: number;
 }
 
@@ -488,7 +486,7 @@ export default function PayrollDetailsPage() {
                         </h4>
                         <div className="space-y-3">
                           <div className="flex justify-between items-center py-2">
-                            <span className="text-gray-700">Tax & Other Deductions</span>
+                            <span className="text-gray-700">Other Deductions</span>
                             <span className="font-semibold text-red-600">
                               -{formatCurrency(payroll.deduction_amount)}
                             </span>

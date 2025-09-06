@@ -37,8 +37,6 @@ interface PayrollItem {
   type: string;
   description: string;
   amount: number;
-  is_taxable: boolean;
-  tax_rate: number;
   order: number;
 }
 

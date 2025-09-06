@@ -120,8 +120,6 @@ export async function GET(_request: NextRequest) {
             type: payrollItems.type,
             description: payrollItems.description,
             amount: payrollItems.amount,
-            isTaxable: payrollItems.isTaxable,
-            taxRate: payrollItems.taxRate,
             order: payrollItems.order,
           })
           .from(payrollItems)
@@ -140,8 +138,6 @@ export async function GET(_request: NextRequest) {
             type: item.type,
             description: item.description,
             amount: Number(item.amount),
-            is_taxable: item.isTaxable,
-            tax_rate: Number(item.taxRate),
             order: item.order,
           });
         });
@@ -310,8 +306,6 @@ export async function POST(_request: NextRequest) {
         type: item.type || 'earnings',
         description: item.description || '',
         amount: (item.amount || 0).toString(),
-        isTaxable: item.isTaxable || false,
-        taxRate: (item.taxRate || 0).toString(),
         order: index + 1,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

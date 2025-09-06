@@ -138,8 +138,6 @@ export async function POST() {
                 ? `Overtime Pay (Fixed Rate: ${payroll.employee.overtimeFixedRate} SAR/hr)`
                 : `Overtime Pay (${Number(payroll.employee.overtimeRateMultiplier) || 1.5}x Rate)`,
             amount: overtimeAmount.toString(),
-            isTaxable: true,
-            taxRate: '15',
             order: 2,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),

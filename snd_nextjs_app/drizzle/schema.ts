@@ -953,8 +953,6 @@ export const payrollItems = pgTable("payroll_items", {
 	type: text().notNull(),
 	description: text().notNull(),
 	amount: numeric({ precision: 10, scale:  2 }).notNull(),
-	isTaxable: boolean("is_taxable").default(true).notNull(),
-	taxRate: numeric("tax_rate", { precision: 5, scale:  2 }).default('0').notNull(),
 	order: integer().default(1).notNull(),
 	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
 	updatedAt: date("updated_at").notNull(),
@@ -1565,23 +1563,6 @@ export const scheduledReports = pgTable("scheduled_reports", {
 		}).onUpdate("cascade").onDelete("set null"),
 ]);
 
-export const taxDocuments = pgTable("tax_documents", {
-	id: serial().primaryKey().notNull(),
-	employeeId: integer("employee_id").notNull(),
-	documentType: text("document_type").notNull(),
-	year: integer().notNull(),
-	amount: numeric({ precision: 10, scale:  2 }).notNull(),
-	filePath: text("file_path"),
-	status: text().default('pending').notNull(),
-	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
-	updatedAt: date("updated_at").notNull(),
-}, (table) => [
-	foreignKey({
-			columns: [table.employeeId],
-			foreignColumns: [employees.id],
-			name: "tax_documents_employee_id_fkey"
-		}).onUpdate("cascade").onDelete("restrict"),
-]);
 
 export const sessions = pgTable("sessions", {
 	id: text().primaryKey().notNull(),
@@ -1890,25 +1871,6 @@ export const designations = pgTable("designations", {
 		}).onUpdate("cascade").onDelete("set null"),
 ]);
 
-export const taxDocumentPayrolls = pgTable("tax_document_payrolls", {
-	id: serial().primaryKey().notNull(),
-	taxDocumentId: integer("tax_document_id").notNull(),
-	payrollId: integer("payroll_id").notNull(),
-	amount: numeric({ precision: 10, scale:  2 }).notNull(),
-	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
-	updatedAt: date("updated_at").notNull(),
-}, (table) => [
-	foreignKey({
-			columns: [table.taxDocumentId],
-			foreignColumns: [taxDocuments.id],
-			name: "tax_document_payrolls_tax_document_id_fkey"
-		}).onUpdate("cascade").onDelete("restrict"),
-	foreignKey({
-			columns: [table.payrollId],
-			foreignColumns: [payrolls.id],
-			name: "tax_document_payrolls_payroll_id_fkey"
-		}).onUpdate("cascade").onDelete("restrict"),
-]);
 
 export const modelHasRoles = pgTable("model_has_roles", {
 	roleId: integer("role_id").notNull(),

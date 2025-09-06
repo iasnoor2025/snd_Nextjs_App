@@ -74,8 +74,6 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
         type: payrollItems.type,
         description: payrollItems.description,
         amount: payrollItems.amount,
-        isTaxable: payrollItems.isTaxable,
-        taxRate: payrollItems.taxRate,
         order: payrollItems.order,
       })
       .from(payrollItems)

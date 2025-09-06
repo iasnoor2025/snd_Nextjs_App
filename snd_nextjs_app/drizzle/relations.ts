@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { users, customers, employees, advancePayments, employeeDocuments, documentVersions, documentApprovals, employeeAssignments, projects, rentals, employeePerformanceReviews, employeeResignations, employeeSalaries, employeeTraining, trainings, employeeLeaves, employeeSkill, skills, equipment, equipmentDocuments, equipmentMaintenance, equipmentMaintenanceItems, equipmentRentalHistory, designations, departments, organizationalUnits, loans, payrolls, payrollRuns, payrollItems, projectManpower, projectFuel, projectMaterials, projectExpenses, projectMilestones, projectEquipment, projectSubcontractors, projectTasks, projectTemplates, rentalItems, reportTemplates, projectRisks, locations, salaryIncrements, scheduledReports, taxDocuments, safetyIncidents, timesheets, timesheetApprovals, weeklyTimesheets, timeOffRequests, timeEntries, advancePaymentHistories, taxDocumentPayrolls, roles, modelHasRoles, permissions, roleHasPermissions, modelHasPermissions } from "./schema";
+import { users, customers, employees, advancePayments, employeeDocuments, documentVersions, documentApprovals, employeeAssignments, projects, rentals, employeePerformanceReviews, employeeResignations, employeeSalaries, employeeTraining, trainings, employeeLeaves, employeeSkill, skills, equipment, equipmentDocuments, equipmentMaintenance, equipmentMaintenanceItems, equipmentRentalHistory, designations, departments, organizationalUnits, loans, payrolls, payrollRuns, payrollItems, projectManpower, projectFuel, projectMaterials, projectExpenses, projectMilestones, projectEquipment, projectSubcontractors, projectTasks, projectTemplates, rentalItems, reportTemplates, projectRisks, locations, salaryIncrements, scheduledReports, safetyIncidents, timesheets, timesheetApprovals, weeklyTimesheets, timeOffRequests, timeEntries, advancePaymentHistories, roles, modelHasRoles, permissions, roleHasPermissions, modelHasPermissions } from "./schema";
 
 export const customersRelations = relations(customers, ({one, many}) => ({
 	user: one(users, {
@@ -127,7 +127,6 @@ export const employeesRelations = relations(employees, ({one, many}) => ({
 		relationName: "projects_supervisorId_employees_id"
 	}),
 	salaryIncrements: many(salaryIncrements),
-	taxDocuments: many(taxDocuments),
 	safetyIncidents_reportedBy: many(safetyIncidents, {
 		relationName: "safetyIncidents_reportedBy_employees_id"
 	}),
@@ -442,7 +441,6 @@ export const payrollsRelations = relations(payrolls, ({one, many}) => ({
 		references: [payrollRuns.id]
 	}),
 	payrollItems: many(payrollItems),
-	taxDocumentPayrolls: many(taxDocumentPayrolls),
 }));
 
 export const payrollRunsRelations = relations(payrollRuns, ({many}) => ({
@@ -663,13 +661,6 @@ export const scheduledReportsRelations = relations(scheduledReports, ({one}) => 
 	}),
 }));
 
-export const taxDocumentsRelations = relations(taxDocuments, ({one, many}) => ({
-	employee: one(employees, {
-		fields: [taxDocuments.employeeId],
-		references: [employees.id]
-	}),
-	taxDocumentPayrolls: many(taxDocumentPayrolls),
-}));
 
 export const safetyIncidentsRelations = relations(safetyIncidents, ({one}) => ({
 	employee_reportedBy: one(employees, {
@@ -752,16 +743,6 @@ export const advancePaymentHistoriesRelations = relations(advancePaymentHistorie
 	}),
 }));
 
-export const taxDocumentPayrollsRelations = relations(taxDocumentPayrolls, ({one}) => ({
-	taxDocument: one(taxDocuments, {
-		fields: [taxDocumentPayrolls.taxDocumentId],
-		references: [taxDocuments.id]
-	}),
-	payroll: one(payrolls, {
-		fields: [taxDocumentPayrolls.payrollId],
-		references: [payrolls.id]
-	}),
-}));
 
 export const modelHasRolesRelations = relations(modelHasRoles, ({one}) => ({
 	role: one(roles, {

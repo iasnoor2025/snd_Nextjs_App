@@ -58,7 +58,6 @@ import {
   Plus,
   RefreshCw,
   Search,
-  Settings,
   Shield,
   Trash2,
   XCircle,
@@ -74,8 +73,6 @@ interface PayrollItem {
   type: string;
   description: string;
   amount: number;
-  is_taxable: boolean;
-  tax_rate: number;
   order: number;
 }
 
@@ -507,12 +504,6 @@ export default function PayrollManagementPage() {
             </PermissionContent>
 
 
-            <Link href="/modules/payroll-management/settings">
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-2" />
-                {t('payroll.settings')}
-              </Button>
-            </Link>
             <Link href="/modules/payroll-management/create">
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
@@ -962,12 +953,6 @@ export default function PayrollManagementPage() {
                   </Button>
                 </PermissionContent>
 
-                <PermissionContent action="manage" subject="Payroll">
-                  <Button variant="outline">
-                    <Shield className="h-4 w-4 mr-2" />
-                    {t('payroll.payrollSettings')}
-                  </Button>
-                </PermissionContent>
 
                 <PermissionContent action="export" subject="Payroll">
                   <Button variant="outline">

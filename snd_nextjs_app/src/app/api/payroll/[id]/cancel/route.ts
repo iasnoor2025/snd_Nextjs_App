@@ -45,8 +45,6 @@ const mockPayrolls = [
         type: 'earnings',
         description: 'Basic Salary',
         amount: 5000,
-        is_taxable: true,
-        tax_rate: 15,
         order: 1,
       },
       {
@@ -55,8 +53,6 @@ const mockPayrolls = [
         type: 'overtime',
         description: 'Overtime (10 hours)',
         amount: 250,
-        is_taxable: true,
-        tax_rate: 15,
         order: 2,
       },
       {
@@ -65,8 +61,6 @@ const mockPayrolls = [
         type: 'bonus',
         description: 'Performance Bonus',
         amount: 500,
-        is_taxable: true,
-        tax_rate: 15,
         order: 3,
       },
       {
@@ -75,8 +69,6 @@ const mockPayrolls = [
         type: 'deduction',
         description: 'Tax Deduction',
         amount: 862.5,
-        is_taxable: false,
-        tax_rate: 0,
         order: 4,
       },
       {
@@ -85,8 +77,6 @@ const mockPayrolls = [
         type: 'deduction',
         description: 'Health Insurance',
         amount: 150,
-        is_taxable: false,
-        tax_rate: 0,
         order: 5,
       },
       {
@@ -95,8 +85,6 @@ const mockPayrolls = [
         type: 'deduction',
         description: 'Retirement Contribution',
         amount: 187.5,
-        is_taxable: false,
-        tax_rate: 0,
         order: 6,
       },
     ],
@@ -144,8 +132,6 @@ const mockPayrolls = [
         type: 'earnings',
         description: 'Basic Salary',
         amount: 4500,
-        is_taxable: true,
-        tax_rate: 15,
         order: 1,
       },
       {
@@ -154,8 +140,6 @@ const mockPayrolls = [
         type: 'bonus',
         description: 'Performance Bonus',
         amount: 300,
-        is_taxable: true,
-        tax_rate: 15,
         order: 2,
       },
       {
@@ -164,8 +148,6 @@ const mockPayrolls = [
         type: 'deduction',
         description: 'Tax Deduction',
         amount: 720,
-        is_taxable: false,
-        tax_rate: 0,
         order: 3,
       },
       {
@@ -174,8 +156,6 @@ const mockPayrolls = [
         type: 'deduction',
         description: 'Health Insurance',
         amount: 135,
-        is_taxable: false,
-        tax_rate: 0,
         order: 4,
       },
       {
@@ -184,8 +164,6 @@ const mockPayrolls = [
         type: 'deduction',
         description: 'Retirement Contribution',
         amount: 45,
-        is_taxable: false,
-        tax_rate: 0,
         order: 5,
       },
     ],
