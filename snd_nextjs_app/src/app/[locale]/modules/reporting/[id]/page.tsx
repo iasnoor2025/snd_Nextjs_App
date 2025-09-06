@@ -58,7 +58,7 @@ export default function ViewReportPage() {
     const fetchReport = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/modules/reporting/api/reports/${params.id}`);
+        const response = await fetch(`/api/reports/${params.id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch report');
         }
@@ -66,7 +66,7 @@ export default function ViewReportPage() {
         setReport(data);
       } catch (error) {
         
-        toast.error(t('failed_to_fetch_report'));
+        toast.error(t('reporting.failed_to_fetch_report'));
       } finally {
         setLoading(false);
       }
@@ -75,13 +75,13 @@ export default function ViewReportPage() {
     if (params.id) {
       fetchReport();
     }
-  }, [params.id, t]);
+  }, [params.id]);
 
   const handleGenerate = async () => {
     try {
       setGenerating(true);
 
-      const response = await fetch('/modules/reporting/api/reports/generate', {
+      const response = await fetch('/api/reports/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -102,22 +102,22 @@ export default function ViewReportPage() {
 
       const result = await response.json();
       setReportData(result);
-      toast.success(t('report_generated_successfully'));
+      toast.success(t('reporting.report_generated_successfully'));
     } catch (error) {
       
-      toast.error(t('failed_to_generate_report'));
+      toast.error(t('reporting.failed_to_generate_report'));
     } finally {
       setGenerating(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm(t('confirm_delete_report'))) return;
+    if (!confirm(t('reporting.confirm_delete_report'))) return;
 
     try {
-      toast.loading(t('deleting_report'));
+      toast.loading(t('reporting.deleting_report'));
 
-      const response = await fetch(`/modules/reporting/api/reports/${params.id}`, {
+      const response = await fetch(`/api/reports/${params.id}`, {
         method: 'DELETE',
       });
 
@@ -125,22 +125,22 @@ export default function ViewReportPage() {
         throw new Error('Failed to delete report');
       }
 
-      toast.success(t('report_deleted_successfully'));
+      toast.success(t('reporting.report_deleted_successfully'));
       router.push('/modules/reporting');
     } catch (error) {
       
-      toast.error(t('failed_to_delete_report'));
+      toast.error(t('reporting.failed_to_delete_report'));
     }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return <Badge className="bg-green-100 text-green-800">{t('active')}</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t('reporting.active')}</Badge>;
       case 'draft':
-        return <Badge className="bg-gray-100 text-gray-800">{t('draft')}</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t('reporting.draft')}</Badge>;
       case 'archived':
-        return <Badge className="bg-red-100 text-red-800">{t('archived')}</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t('reporting.archived')}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
     }

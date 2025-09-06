@@ -48,14 +48,14 @@ export default function CreateReportPage() {
     e.preventDefault();
 
     if (!formData.name || !formData.type) {
-      toast.error(t('please_fill_required_fields'));
+      toast.error(t('reporting.please_fill_required_fields'));
       return;
     }
 
     try {
       setLoading(true);
 
-      const response = await fetch('/modules/reporting/api/reports', {
+      const response = await fetch('/api/reports', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -67,11 +67,11 @@ export default function CreateReportPage() {
         throw new Error('Failed to create report');
       }
 
-      toast.success(t('report_created_successfully'));
+      toast.success(t('reporting.report_created_successfully'));
       router.push('/modules/reporting');
     } catch (error) {
       
-      toast.error(t('failed_to_create_report'));
+      toast.error(t('reporting.failed_to_create_report'));
     } finally {
       setLoading(false);
     }
@@ -92,93 +92,93 @@ export default function CreateReportPage() {
             <Link href="/modules/reporting">
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                {t('back_to_reports')}
+                {t('reporting.back_to_reports')}
               </Button>
             </Link>
-            <h1 className="text-2xl font-bold">{t('create_report')}</h1>
+            <h1 className="text-2xl font-bold">{t('reporting.create_report')}</h1>
           </div>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>{t('create_new_report')}</CardTitle>
-            <CardDescription>{t('create_new_report_description')}</CardDescription>
+            <CardTitle>{t('reporting.create_new_report')}</CardTitle>
+            <CardDescription>{t('reporting.create_new_report_description')}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="name">{t('report_name')} *</Label>
+                  <Label htmlFor="name">{t('reporting.report_name')} *</Label>
                   <Input
                     id="name"
                     value={formData.name}
                     onChange={e => handleInputChange('name', e.target.value)}
-                    placeholder={t('enter_report_name')}
+                    placeholder={t('reporting.enter_report_name')}
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="type">{t('report_type')} *</Label>
+                  <Label htmlFor="type">{t('reporting.report_type')} *</Label>
                   <Select
                     value={formData.type}
                     onValueChange={value => handleInputChange('type', value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={t('select_report_type')} />
+                      <SelectValue placeholder={t('reporting.select_report_type')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="employee_summary">{t('employee_summary')}</SelectItem>
-                      <SelectItem value="payroll_summary">{t('payroll_summary')}</SelectItem>
+                      <SelectItem value="employee_summary">{t('reporting.employee_summary')}</SelectItem>
+                      <SelectItem value="payroll_summary">{t('reporting.payroll_summary')}</SelectItem>
                       <SelectItem value="equipment_utilization">
-                        {t('equipment_utilization')}
+                        {t('reporting.equipment_utilization')}
                       </SelectItem>
-                      <SelectItem value="project_progress">{t('project_progress')}</SelectItem>
-                      <SelectItem value="rental_summary">{t('rental_summary')}</SelectItem>
-                      <SelectItem value="timesheet_summary">{t('timesheet_summary')}</SelectItem>
+                      <SelectItem value="project_progress">{t('reporting.project_progress')}</SelectItem>
+                      <SelectItem value="rental_summary">{t('reporting.rental_summary')}</SelectItem>
+                      <SelectItem value="timesheet_summary">{t('reporting.timesheet_summary')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="schedule">{t('schedule')}</Label>
+                  <Label htmlFor="schedule">{t('reporting.schedule')}</Label>
                   <Select
                     value={formData.schedule}
                     onValueChange={value => handleInputChange('schedule', value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={t('select_schedule')} />
+                      <SelectValue placeholder={t('reporting.select_schedule')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="daily">{t('daily')}</SelectItem>
-                      <SelectItem value="weekly">{t('weekly')}</SelectItem>
-                      <SelectItem value="monthly">{t('monthly')}</SelectItem>
-                      <SelectItem value="quarterly">{t('quarterly')}</SelectItem>
-                      <SelectItem value="yearly">{t('yearly')}</SelectItem>
+                      <SelectItem value="daily">{t('reporting.daily')}</SelectItem>
+                      <SelectItem value="weekly">{t('reporting.weekly')}</SelectItem>
+                      <SelectItem value="monthly">{t('reporting.monthly')}</SelectItem>
+                      <SelectItem value="quarterly">{t('reporting.quarterly')}</SelectItem>
+                      <SelectItem value="yearly">{t('reporting.yearly')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="status">{t('status')}</Label>
+                  <Label htmlFor="status">{t('reporting.status')}</Label>
                   <Select value="active" disabled>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="active">{t('active')}</SelectItem>
+                      <SelectItem value="active">{t('reporting.active')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">{t('description')}</Label>
+                <Label htmlFor="description">{t('reporting.description')}</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={e => handleInputChange('description', e.target.value)}
-                  placeholder={t('enter_report_description')}
+                  placeholder={t('reporting.enter_report_description')}
                   rows={4}
                 />
               </div>
@@ -192,7 +192,7 @@ export default function CreateReportPage() {
                 <PermissionContent action="create" subject="Report">
                   <Button type="submit" disabled={loading}>
                     <Save className="h-4 w-4 mr-2" />
-                    {loading ? t('creating') : t('create_report')}
+                    {loading ? t('reporting.creating') : t('reporting.create_report')}
                   </Button>
                 </PermissionContent>
               </div>

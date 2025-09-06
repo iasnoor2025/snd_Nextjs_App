@@ -95,6 +95,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Also bypass locale-prefixed API routes (e.g., /en/modules/reporting/api/reports)
+  // These should be treated as API routes, not locale routes
+  if (pathname.includes('/api/')) {
+    return NextResponse.next();
+  }
+
   // Handle locale routing first (only for non-public routes)
   const pathnameIsMissingLocale = i18n.locales.every(
     (locale: string) => !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`
@@ -237,8 +243,5 @@ export const config = {
      * - public folder
      */
     '/((?!api|_next/static|_next/image|favicon.ico|public/).*)',
-    // Also match specific paths that might be missed
-    '/modules/:path*',
-    '/:path*',
   ],
 };
