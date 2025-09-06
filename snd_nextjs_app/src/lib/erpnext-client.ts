@@ -266,9 +266,6 @@ export class ERPNextClient {
       accessRestrictionReason: erpEmployee.access_restriction_reason || null,
       // Current location
       currentLocation: erpEmployee.current_location || null,
-      // Advance salary fields
-      advanceSalaryEligible: erpEmployee.advance_salary_eligible !== false,
-      advanceSalaryApprovedThisMonth: erpEmployee.advance_salary_approved_this_month || false,
     };
   }
 

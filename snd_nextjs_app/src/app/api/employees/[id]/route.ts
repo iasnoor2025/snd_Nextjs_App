@@ -438,8 +438,6 @@ const updateEmployeeHandler = async (
       'operator_license_number',
       'tuv_certification_number',
       'spsp_license_number',
-      'advance_salary_eligible',
-      'advance_salary_approved_this_month',
     ];
     for (const key of passthroughFields) {
       if (Object.prototype.hasOwnProperty.call(updateDataRaw, key)) {
@@ -470,10 +468,6 @@ const updateEmployeeHandler = async (
               ? 'tuvCertificationNumber'
             : key === 'spsp_license_number'
               ? 'spspLicenseNumber'
-            : key === 'advance_salary_eligible'
-              ? 'advanceSalaryEligible'
-            : key === 'advance_salary_approved_this_month'
-              ? 'advanceSalaryApprovedThisMonth'
             : key;
         drizzleData[drizzleKey] = updateDataRaw[key];
       }

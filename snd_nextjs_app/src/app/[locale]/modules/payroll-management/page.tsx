@@ -61,7 +61,6 @@ import {
   Settings,
   Shield,
   Trash2,
-  TrendingUp,
   XCircle,
   Zap,
 } from 'lucide-react';

@@ -1037,10 +1037,6 @@ export const employees = pgTable(
     emergencyContactPhone: text('emergency_contact_phone'),
     emergencyContactRelationship: text('emergency_contact_relationship'),
     notes: text(),
-    advanceSalaryEligible: boolean('advance_salary_eligible').default(true).notNull(),
-    advanceSalaryApprovedThisMonth: boolean('advance_salary_approved_this_month')
-      .default(false)
-      .notNull(),
     iqamaNumber: text('iqama_number'),
     iqamaExpiry: date('iqama_expiry'),
     iqamaCost: numeric('iqama_cost', { precision: 10, scale: 2 }),

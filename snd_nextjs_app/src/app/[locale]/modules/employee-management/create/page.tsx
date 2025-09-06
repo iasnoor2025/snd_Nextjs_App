@@ -108,8 +108,6 @@ interface EmployeeFormData {
   // Notes
   notes?: string;
 
-  // Advance Settings
-  advance_salary_eligible: boolean;
 
   // Documents
   iqama_number?: string;
@@ -201,7 +199,6 @@ export default function CreateEmployeePage() {
     emergency_contact_phone: '',
     emergency_contact_relationship: '',
     notes: '',
-    advance_salary_eligible: true,
     iqama_number: '',
     iqama_expiry: '',
     iqama_cost: 0,
@@ -1750,18 +1747,6 @@ export default function CreateEmployeePage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="advance_salary_eligible"
-                        checked={formData.advance_salary_eligible}
-                        onCheckedChange={checked =>
-                          handleInputChange('advance_salary_eligible', checked)
-                        }
-                      />
-                      <Label htmlFor="advance_salary_eligible">
-                        {t('employee:fields.advanceSalaryEligible')}
-                      </Label>
-                    </div>
 
                     <div className="flex items-center space-x-2">
                       <Switch
