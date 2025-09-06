@@ -47,6 +47,8 @@
     "deleteError": "فشل في حذف الموقع",
     "confirmDelete": "هل أنت متأكد من حذف هذا الموقع؟"
   },
+  "noLocationsFound": "لم يتم العثور على مواقع",
+  "noLocationsDescription": "لا توجد مواقع تطابق المرشحات الحالية. جرب تعديل معايير البحث.",
   "placeholders": {
     "enterLocationName": "أدخل اسم الموقع",
     "enterCity": "أدخل المدينة",

@@ -261,8 +261,8 @@ export async function seedSaudiLocationsComprehensive() {
         city: location.city,
         state: location.state,
         country: location.country,
-        latitude: location.latitude,
-        longitude: location.longitude,
+        latitude: parseFloat(location.latitude),
+        longitude: parseFloat(location.longitude),
         isActive: true,
         createdAt: new Date().toISOString().split('T')[0],
         updatedAt: new Date().toISOString().split('T')[0]

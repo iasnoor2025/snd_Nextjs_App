@@ -59,7 +59,9 @@ export const GET = withPermission(PermissionConfigs.location.read)(async (reques
         page,
         limit,
         total: totalCount,
-        pages: Math.ceil(totalCount / limit)
+        totalPages: Math.ceil(totalCount / limit),
+        hasNext: page < Math.ceil(totalCount / limit),
+        hasPrev: page > 1
       }
     });
   } catch (error) {

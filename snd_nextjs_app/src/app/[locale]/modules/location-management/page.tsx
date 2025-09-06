@@ -24,21 +24,18 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useI18n } from '@/hooks/use-i18n';
-import { PermissionContent, RoleContent } from '@/lib/rbac/rbac-components';
+import { PermissionContent } from '@/lib/rbac/rbac-components';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronUp,
-  Download,
   Edit,
   Eye,
-  MapPin,
   Plus,
   Search,
   Trash2,
-  Upload,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -49,7 +46,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -75,10 +71,9 @@ interface Location {
 
 export default function LocationManagementPage() {
   const { t } = useI18n();
-  const { isRTL } = useI18n();
-  const { user, hasPermission, getAllowedActions } = useRBAC();
+  const { getAllowedActions } = useRBAC();
   const [locations, setLocations] = useState<Location[]>([]);
-  const [filteredLocations, setFilteredLocations] = useState<Location[]>([]);
+  const [, setFilteredLocations] = useState<Location[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [cityFilter, setCityFilter] = useState('all');
@@ -88,6 +83,7 @@ export default function LocationManagementPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5); // Reduced for testing pagination
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -109,7 +105,7 @@ export default function LocationManagementPage() {
   });
 
   // Get allowed actions for location management
-  const allowedActions = getAllowedActions('Location');
+  getAllowedActions('Location');
 
   useEffect(() => {
     fetchLocations();
@@ -143,24 +139,24 @@ export default function LocationManagementPage() {
           setFilteredLocations(result.data);
           // Update pagination info if available
           if (result.pagination) {
-            setCurrentPage(result.pagination.page);
-            setItemsPerPage(result.pagination.limit);
             setTotalPages(result.pagination.totalPages);
+            setTotalCount(result.pagination.total);
           }
         } else {
           setLocations([]);
           setFilteredLocations([]);
-          toast.error(t('messages.fetchError'));
+          toast.error(t('location.messages.fetchError'));
         }
       } else {
         setLocations([]);
         setFilteredLocations([]);
-        toast.error(t('messages.fetchError'));
+        toast.error(t('location.messages.fetchError'));
       }
     } catch (error) {
+      console.error('Error fetching locations:', error);
       setLocations([]);
       setFilteredLocations([]);
-      toast.error(t('messages.fetchError'));
+      toast.error(t('location.messages.fetchError'));
     } finally {
       setIsLoading(false);
     }
@@ -219,18 +215,19 @@ export default function LocationManagementPage() {
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          toast.success(t('messages.locationCreated'));
+          toast.success(t('location.messages.locationCreated'));
           setIsAddModalOpen(false);
           resetForm();
           fetchLocations();
         } else {
-          toast.error(result.error || t('messages.createError'));
+          toast.error(result.error || t('location.messages.createError'));
         }
       } else {
-        toast.error(t('messages.createError'));
+        toast.error(t('location.messages.createError'));
       }
     } catch (error) {
-      toast.error(t('messages.createError'));
+      console.error('Error creating location:', error);
+      toast.error(t('location.messages.createError'));
     }
   };
 
@@ -253,23 +250,24 @@ export default function LocationManagementPage() {
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          toast.success(t('messages.locationUpdated'));
+          toast.success(t('location.messages.locationUpdated'));
           setIsEditModalOpen(false);
           resetForm();
           fetchLocations();
         } else {
-          toast.error(result.error || t('messages.updateError'));
+          toast.error(result.error || t('location.messages.updateError'));
         }
       } else {
-        toast.error(t('messages.updateError'));
+        toast.error(t('location.messages.updateError'));
       }
     } catch (error) {
-      toast.error(t('messages.updateError'));
+      console.error('Error updating location:', error);
+      toast.error(t('location.messages.updateError'));
     }
   };
 
   const handleDeleteLocation = async (location: Location) => {
-    if (!confirm(t('messages.confirmDelete'))) return;
+    if (!confirm(t('location.messages.confirmDelete'))) return;
 
     setIsDeleting(true);
     try {
@@ -280,16 +278,17 @@ export default function LocationManagementPage() {
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          toast.success(t('messages.locationDeleted'));
+          toast.success(t('location.messages.locationDeleted'));
           fetchLocations();
         } else {
-          toast.error(result.error || t('messages.deleteError'));
+          toast.error(result.error || t('location.messages.deleteError'));
         }
       } else {
-        toast.error(t('messages.deleteError'));
+        toast.error(t('location.messages.deleteError'));
       }
     } catch (error) {
-      toast.error(t('messages.deleteError'));
+      console.error('Error deleting location:', error);
+      toast.error(t('location.messages.deleteError'));
     } finally {
       setIsDeleting(false);
     }
@@ -352,13 +351,13 @@ export default function LocationManagementPage() {
       <div className="container mx-auto p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
-            <p className="text-gray-600 mt-2">{t('description')}</p>
+            <h1 className="text-3xl font-bold text-gray-900">{t('location.title')}</h1>
+            <p className="text-gray-600 mt-2">{t('location.description')}</p>
           </div>
           <PermissionContent action="create" subject="Location">
             <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
-              {t('addLocation')}
+              {t('location.addLocation')}
             </Button>
           </PermissionContent>
         </div>
@@ -366,11 +365,11 @@ export default function LocationManagementPage() {
         {/* Filters */}
         <Card className="mb-6">
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder={t('searchLocations')}
+                  placeholder={t('location.searchLocations')}
                   value={searchTerm}
                   onChange={e => handleSearch(e.target.value)}
                   className="pl-10"
@@ -378,40 +377,25 @@ export default function LocationManagementPage() {
               </div>
               <Select value={statusFilter} onValueChange={handleStatusFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Status" />
+                  <SelectValue placeholder={t('location.status')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('allStatus')}</SelectItem>
-                  <SelectItem value="active">{t('active')}</SelectItem>
-                  <SelectItem value="inactive">{t('inactive')}</SelectItem>
+                  <SelectItem value="all">{t('location.allStatus')}</SelectItem>
+                  <SelectItem value="active">{t('location.active')}</SelectItem>
+                  <SelectItem value="inactive">{t('location.inactive')}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={cityFilter} onValueChange={handleCityFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="City" />
+                  <SelectValue placeholder={t('location.city')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('allCities')}</SelectItem>
+                  <SelectItem value="all">{t('location.allCities')}</SelectItem>
                   {uniqueCities.map(city => (
                     <SelectItem key={city} value={city}>
                       {city}
                     </SelectItem>
                   ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={itemsPerPage.toString()}
-                onValueChange={value => setItemsPerPage(parseInt(value))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="5">5 {t('perPage')}</SelectItem>
-                  <SelectItem value="10">10 {t('perPage')}</SelectItem>
-                  <SelectItem value="25">25 {t('perPage')}</SelectItem>
-                  <SelectItem value="50">50 {t('perPage')}</SelectItem>
-                  <SelectItem value="100">100 {t('perPage')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -422,32 +406,38 @@ export default function LocationManagementPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              {t('locations')} ({locations.length})
+              {t('location.locations')} ({totalCount})
             </CardTitle>
-            <CardDescription>{t('manageAllLocations')}</CardDescription>
+            <CardDescription>{t('location.manageAllLocations')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="cursor-pointer" onClick={() => handleSort('name')}>
-                      <div className="flex items-center gap-2">Name {getSortIcon('name')}</div>
-                    </TableHead>
-                    <TableHead className="cursor-pointer" onClick={() => handleSort('city')}>
-                      <div className="flex items-center gap-2">City {getSortIcon('city')}</div>
-                    </TableHead>
-                    <TableHead className="cursor-pointer" onClick={() => handleSort('state')}>
-                      <div className="flex items-center gap-2">State {getSortIcon('state')}</div>
-                    </TableHead>
-                    <TableHead>{t('address')}</TableHead>
-                    <TableHead>{t('coordinates')}</TableHead>
-                    <TableHead>{t('status')}</TableHead>
-                    <TableHead>{t('actions')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {displayLocations.map(location => (
+              {locations.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-gray-500 text-lg mb-2">{t('location.noLocationsFound')}</div>
+                  <div className="text-gray-400">{t('location.noLocationsDescription')}</div>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="cursor-pointer" onClick={() => handleSort('name')}>
+                        <div className="flex items-center gap-2">{t('location.name')} {getSortIcon('name')}</div>
+                      </TableHead>
+                      <TableHead className="cursor-pointer" onClick={() => handleSort('city')}>
+                        <div className="flex items-center gap-2">{t('location.city')} {getSortIcon('city')}</div>
+                      </TableHead>
+                      <TableHead className="cursor-pointer" onClick={() => handleSort('state')}>
+                        <div className="flex items-center gap-2">{t('location.state')} {getSortIcon('state')}</div>
+                      </TableHead>
+                      <TableHead>{t('location.address')}</TableHead>
+                      <TableHead>{t('location.coordinates')}</TableHead>
+                      <TableHead>{t('location.status')}</TableHead>
+                      <TableHead>{t('location.actions')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {displayLocations.map(location => (
                     <TableRow key={location.id}>
                       <TableCell className="font-medium">
                         <Link
@@ -484,7 +474,7 @@ export default function LocationManagementPage() {
                       </TableCell>
                       <TableCell>
                         <Badge variant={location.is_active ? 'default' : 'secondary'}>
-                          {location.is_active ? t('active') : t('inactive')}
+                          {location.is_active ? t('location.active') : t('location.inactive')}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -521,19 +511,41 @@ export default function LocationManagementPage() {
                       </TableCell>
                     </TableRow>
                   ))}
-                </TableBody>
-              </Table>
+                  </TableBody>
+                </Table>
+              )}
             </div>
 
             {/* Pagination */}
-            {totalPages > 1 && (
+            {totalCount > 0 && (
               <div className="flex items-center justify-between mt-4">
-                <div className="text-sm text-gray-700">
-                  {t('pagination.showing')} {(currentPage - 1) * itemsPerPage + 1}{' '}
-                  {t('pagination.to')} {Math.min(currentPage * itemsPerPage, locations.length)}{' '}
-                  {t('pagination.of')} {locations.length} {t('pagination.results')}
+                <div className="flex items-center gap-4">
+                  <div className="text-sm text-gray-700">
+                    {t('common.pagination.showing')} {(currentPage - 1) * itemsPerPage + 1}{' '}
+                    {t('common.pagination.to')} {Math.min(currentPage * itemsPerPage, totalCount)}{' '}
+                    {t('common.pagination.of')} {totalCount} {t('common.pagination.results')}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">{t('location.perPage')}:</span>
+                    <Select
+                      value={itemsPerPage.toString()}
+                      onValueChange={value => setItemsPerPage(parseInt(value))}
+                    >
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">5</SelectItem>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
@@ -541,7 +553,7 @@ export default function LocationManagementPage() {
                     disabled={currentPage === 1}
                   >
                     <ChevronLeft className="h-4 w-4 mr-1" />
-                    {t('previous')}
+                    {t('common.pagination.previous')}
                   </Button>
 
                   <div className="flex items-center gap-1">
@@ -607,10 +619,11 @@ export default function LocationManagementPage() {
                     onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages}
                   >
-                    {t('next')}
+                    {t('common.pagination.next')}
                     <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
-                </div>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
@@ -620,94 +633,94 @@ export default function LocationManagementPage() {
         <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>{t('addLocation')}</DialogTitle>
-              <DialogDescription>{t('createNewLocation')}</DialogDescription>
+              <DialogTitle>{t('location.addLocation')}</DialogTitle>
+              <DialogDescription>{t('location.createNewLocation')}</DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="name">{t('locationName')} *</Label>
+                <Label htmlFor="name">{t('location.locationName')} *</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder={t('placeholders.enterLocationName')}
+                  placeholder={t('location.placeholders.enterLocationName')}
                 />
               </div>
               <div>
-                <Label htmlFor="city">{t('city')}</Label>
+                <Label htmlFor="city">{t('location.city')}</Label>
                 <Input
                   id="city"
                   value={formData.city}
                   onChange={e => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                  placeholder={t('placeholders.enterCity')}
+                  placeholder={t('location.placeholders.enterCity')}
                 />
               </div>
               <div>
-                <Label htmlFor="state">{t('state')}</Label>
+                <Label htmlFor="state">{t('location.state')}</Label>
                 <Input
                   id="state"
                   value={formData.state}
                   onChange={e => setFormData(prev => ({ ...prev, state: e.target.value }))}
-                  placeholder={t('placeholders.enterState')}
+                  placeholder={t('location.placeholders.enterState')}
                 />
               </div>
               <div>
-                <Label htmlFor="zip_code">{t('zipCode')}</Label>
+                <Label htmlFor="zip_code">{t('location.zipCode')}</Label>
                 <Input
                   id="zip_code"
                   value={formData.zip_code}
                   onChange={e => setFormData(prev => ({ ...prev, zip_code: e.target.value }))}
-                  placeholder={t('placeholders.enterZipCode')}
+                  placeholder={t('location.placeholders.enterZipCode')}
                 />
               </div>
               <div>
-                <Label htmlFor="country">{t('country')}</Label>
+                <Label htmlFor="country">{t('location.country')}</Label>
                 <Input
                   id="country"
                   value={formData.country}
                   onChange={e => setFormData(prev => ({ ...prev, country: e.target.value }))}
-                  placeholder={t('placeholders.enterCountry')}
+                  placeholder={t('location.placeholders.enterCountry')}
                 />
               </div>
               <div>
-                <Label htmlFor="latitude">{t('latitude')}</Label>
+                <Label htmlFor="latitude">{t('location.latitude')}</Label>
                 <Input
                   id="latitude"
                   type="number"
                   step="any"
                   value={formData.latitude}
                   onChange={e => setFormData(prev => ({ ...prev, latitude: e.target.value }))}
-                  placeholder={t('placeholders.enterLatitude')}
+                  placeholder={t('location.placeholders.enterLatitude')}
                 />
               </div>
               <div>
-                <Label htmlFor="longitude">{t('longitude')}</Label>
+                <Label htmlFor="longitude">{t('location.longitude')}</Label>
                 <Input
                   id="longitude"
                   type="number"
                   step="any"
                   value={formData.longitude}
                   onChange={e => setFormData(prev => ({ ...prev, longitude: e.target.value }))}
-                  placeholder={t('placeholders.enterLongitude')}
+                  placeholder={t('location.placeholders.enterLongitude')}
                 />
               </div>
               <div className="md:col-span-2">
-                <Label htmlFor="address">{t('fullAddress')}</Label>
+                <Label htmlFor="address">{t('location.fullAddress')}</Label>
                 <Textarea
                   id="address"
                   value={formData.address}
                   onChange={e => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                  placeholder={t('placeholders.enterFullAddress')}
+                  placeholder={t('location.placeholders.enterFullAddress')}
                   rows={3}
                 />
               </div>
               <div className="md:col-span-2">
-                <Label htmlFor="description">{t('description')}</Label>
+                <Label htmlFor="description">{t('location.description')}</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder={t('placeholders.enterLocationDescription')}
+                  placeholder={t('location.placeholders.enterLocationDescription')}
                   rows={3}
                 />
               </div>
@@ -719,14 +732,14 @@ export default function LocationManagementPage() {
                     setFormData(prev => ({ ...prev, is_active: checked }))
                   }
                 />
-                <Label htmlFor="is_active">{t('activeLocation')}</Label>
+                <Label htmlFor="is_active">{t('location.activeLocation')}</Label>
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
-                {t('cancel')}
+                {t('location.cancel')}
               </Button>
-              <Button onClick={handleAddLocation}>{t('addLocation')}</Button>
+              <Button onClick={handleAddLocation}>{t('location.addLocation')}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -735,8 +748,8 @@ export default function LocationManagementPage() {
         <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>{t('editLocation')}</DialogTitle>
-              <DialogDescription>{t('updateLocationDetails')}</DialogDescription>
+              <DialogTitle>{t('location.editLocation')}</DialogTitle>
+              <DialogDescription>{t('location.updateLocationDetails')}</DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -745,7 +758,7 @@ export default function LocationManagementPage() {
                   id="edit-name"
                   value={formData.name}
                   onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder={t('placeholders.enterLocationName')}
+                  placeholder={t('location.placeholders.enterLocationName')}
                 />
               </div>
               <div>
@@ -754,7 +767,7 @@ export default function LocationManagementPage() {
                   id="edit-city"
                   value={formData.city}
                   onChange={e => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                  placeholder={t('placeholders.enterCity')}
+                  placeholder={t('location.placeholders.enterCity')}
                 />
               </div>
               <div>
@@ -763,7 +776,7 @@ export default function LocationManagementPage() {
                   id="edit-state"
                   value={formData.state}
                   onChange={e => setFormData(prev => ({ ...prev, state: e.target.value }))}
-                  placeholder={t('placeholders.enterState')}
+                  placeholder={t('location.placeholders.enterState')}
                 />
               </div>
               <div>
@@ -772,7 +785,7 @@ export default function LocationManagementPage() {
                   id="edit-zip_code"
                   value={formData.zip_code}
                   onChange={e => setFormData(prev => ({ ...prev, zip_code: e.target.value }))}
-                  placeholder={t('placeholders.enterZipCode')}
+                  placeholder={t('location.placeholders.enterZipCode')}
                 />
               </div>
               <div>
@@ -781,7 +794,7 @@ export default function LocationManagementPage() {
                   id="edit-country"
                   value={formData.country}
                   onChange={e => setFormData(prev => ({ ...prev, country: e.target.value }))}
-                  placeholder={t('placeholders.enterCountry')}
+                  placeholder={t('location.placeholders.enterCountry')}
                 />
               </div>
               <div>
@@ -792,7 +805,7 @@ export default function LocationManagementPage() {
                   step="any"
                   value={formData.latitude}
                   onChange={e => setFormData(prev => ({ ...prev, latitude: e.target.value }))}
-                  placeholder={t('placeholders.enterLatitude')}
+                  placeholder={t('location.placeholders.enterLatitude')}
                 />
               </div>
               <div>
@@ -803,7 +816,7 @@ export default function LocationManagementPage() {
                   step="any"
                   value={formData.longitude}
                   onChange={e => setFormData(prev => ({ ...prev, longitude: e.target.value }))}
-                  placeholder={t('placeholders.enterLongitude')}
+                  placeholder={t('location.placeholders.enterLongitude')}
                 />
               </div>
               <div className="md:col-span-2">
@@ -812,7 +825,7 @@ export default function LocationManagementPage() {
                   id="edit-address"
                   value={formData.address}
                   onChange={e => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                  placeholder={t('placeholders.enterFullAddress')}
+                  placeholder={t('location.placeholders.enterFullAddress')}
                   rows={3}
                 />
               </div>
@@ -822,7 +835,7 @@ export default function LocationManagementPage() {
                   id="edit-description"
                   value={formData.description}
                   onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder={t('placeholders.enterLocationDescription')}
+                  placeholder={t('location.placeholders.enterLocationDescription')}
                   rows={3}
                 />
               </div>
@@ -839,9 +852,9 @@ export default function LocationManagementPage() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
-                {t('cancel')}
+                {t('location.cancel')}
               </Button>
-              <Button onClick={handleUpdateLocation}>{t('editLocation')}</Button>
+              <Button onClick={handleUpdateLocation}>{t('location.editLocation')}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -850,62 +863,62 @@ export default function LocationManagementPage() {
         <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>{t('locationDetails')}</DialogTitle>
-              <DialogDescription>{t('completeLocationInfo')}</DialogDescription>
+              <DialogTitle>{t('location.locationDetails')}</DialogTitle>
+              <DialogDescription>{t('location.completeLocationInfo')}</DialogDescription>
             </DialogHeader>
             {selectedLocation && (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium">{t('name')}</Label>
+                    <Label className="text-sm font-medium">{t('location.name')}</Label>
                     <p className="text-sm text-gray-600">{selectedLocation.name}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">{t('status')}</Label>
+                    <Label className="text-sm font-medium">{t('location.status')}</Label>
                     <Badge variant={selectedLocation.is_active ? 'default' : 'secondary'}>
-                      {selectedLocation.is_active ? t('active') : t('inactive')}
+                      {selectedLocation.is_active ? t('location.active') : t('location.inactive')}
                     </Badge>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">{t('city')}</Label>
+                    <Label className="text-sm font-medium">{t('location.city')}</Label>
                     <p className="text-sm text-gray-600">{selectedLocation.city || 'N/A'}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">{t('state')}</Label>
+                    <Label className="text-sm font-medium">{t('location.state')}</Label>
                     <p className="text-sm text-gray-600">{selectedLocation.state || 'N/A'}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">{t('country')}</Label>
+                    <Label className="text-sm font-medium">{t('location.country')}</Label>
                     <p className="text-sm text-gray-600">{selectedLocation.country || 'N/A'}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">{t('zipCode')}</Label>
+                    <Label className="text-sm font-medium">{t('location.zipCode')}</Label>
                     <p className="text-sm text-gray-600">{selectedLocation.zip_code || 'N/A'}</p>
                   </div>
                   <div className="col-span-2">
-                    <Label className="text-sm font-medium">{t('address')}</Label>
+                    <Label className="text-sm font-medium">{t('location.address')}</Label>
                     <p className="text-sm text-gray-600">{selectedLocation.address || 'N/A'}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">{t('latitude')}</Label>
+                    <Label className="text-sm font-medium">{t('location.latitude')}</Label>
                     <p className="text-sm text-gray-600">{selectedLocation.latitude || 'N/A'}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">{t('longitude')}</Label>
+                    <Label className="text-sm font-medium">{t('location.longitude')}</Label>
                     <p className="text-sm text-gray-600">{selectedLocation.longitude || 'N/A'}</p>
                   </div>
                   <div className="col-span-2">
-                    <Label className="text-sm font-medium">{t('description')}</Label>
+                    <Label className="text-sm font-medium">{t('location.description')}</Label>
                     <p className="text-sm text-gray-600">{selectedLocation.description || 'N/A'}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">{t('created')}</Label>
+                    <Label className="text-sm font-medium">{t('location.created')}</Label>
                     <p className="text-sm text-gray-600">
                       {new Date(selectedLocation.created_at).toLocaleDateString()}
                     </p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">{t('lastUpdated')}</Label>
+                    <Label className="text-sm font-medium">{t('location.lastUpdated')}</Label>
                     <p className="text-sm text-gray-600">
                       {new Date(selectedLocation.updated_at).toLocaleDateString()}
                     </p>
@@ -915,7 +928,7 @@ export default function LocationManagementPage() {
             )}
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsViewModalOpen(false)}>
-                {t('close')}
+                {t('location.close')}
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -26,7 +26,7 @@
   "active": "Active",
   "inactive": "Inactive",
   "allCities": "All Cities",
-  "perPage": "per page",
+  "perPage": "Per Page",
   "locations": "Locations",
   "manageAllLocations": "Manage all company locations and their details",
   "name": "Name",
@@ -47,6 +47,8 @@
     "deleteError": "Failed to delete location",
     "confirmDelete": "Are you sure you want to delete this location?"
   },
+  "noLocationsFound": "No locations found",
+  "noLocationsDescription": "No locations match your current filters. Try adjusting your search criteria.",
   "placeholders": {
     "enterLocationName": "Enter location name",
     "enterCity": "Enter city",
