@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { useRBAC } from '@/lib/rbac/rbac-context';
+import { useTranslations } from '@/hooks/use-translations';
 import {
   Download,
   Eye,
@@ -85,6 +86,7 @@ type SortOrder = 'asc' | 'desc';
 
 export default function DocumentManagementPage() {
   const { user, hasPermission, getAllowedActions } = useRBAC();
+  const { t } = useTranslations();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');

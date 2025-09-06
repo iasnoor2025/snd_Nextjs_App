@@ -19,7 +19,12 @@ export const dashboardSectionPermissions: DashboardSectionPermission[] = [
     action: 'read',
     subject: 'Employee',
     description: 'View and manage manual employee assignments',
-    requiredRole: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR']
+    additionalPermissions: [
+      {
+        action: 'read',
+        subject: 'Assignment'
+      }
+    ]
   },
   // ... more sections
 ];
@@ -50,7 +55,7 @@ The system automatically checks:
 
 | Section | Required Permission | Required Roles | Description |
 |---------|-------------------|----------------|-------------|
-| `manualAssignments` | `read` Employee | SUPER_ADMIN, ADMIN, MANAGER, SUPERVISOR | Employee assignment management |
+| `manualAssignments` | `read` Employee **AND** `read` Assignment | SUPER_ADMIN, ADMIN, MANAGER, SUPERVISOR | Employee assignment management (requires both permissions) |
 | `iqama` | `read` Employee | SUPER_ADMIN, ADMIN, MANAGER, SUPERVISOR, OPERATOR | Employee Iqama information |
 | `equipment` | `read` Equipment | SUPER_ADMIN, ADMIN, MANAGER, SUPERVISOR, OPERATOR | Equipment status and maintenance |
 | `financial` | `read` Payroll | SUPER_ADMIN, ADMIN, MANAGER, SUPERVISOR | Financial overview and payroll |

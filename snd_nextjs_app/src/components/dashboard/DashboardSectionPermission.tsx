@@ -3,6 +3,7 @@
 import React from 'react';
 import { PermissionContent } from '@/lib/rbac/rbac-components';
 import { getPermissionForSection } from '@/lib/rbac/dashboard-permissions';
+import { useRBAC } from '@/lib/rbac/rbac-context';
 
 interface DashboardSectionPermissionProps {
   children: React.ReactNode;
@@ -36,10 +37,26 @@ export function DashboardSectionPermission({
 // Convenience components for each section
 export function ManualAssignmentsPermission({ children, fallback }: { children: React.ReactNode; fallback?: React.ReactNode }) {
   return (
-    <DashboardSectionPermission section="manualAssignments" fallback={fallback}>
+    <ManualAssignmentsPermissionWrapper fallback={fallback}>
       {children}
-    </DashboardSectionPermission>
+    </ManualAssignmentsPermissionWrapper>
   );
+}
+
+// Custom wrapper for Manual Assignments that requires both read.Employee AND read.Assignment
+function ManualAssignmentsPermissionWrapper({ children, fallback }: { children: React.ReactNode; fallback?: React.ReactNode }) {
+  const { hasPermission } = useRBAC();
+  
+  // Check both permissions
+  const hasEmployeePermission = hasPermission('read', 'Employee');
+  const hasAssignmentPermission = hasPermission('read', 'Assignment');
+  
+  // Only show if user has BOTH permissions
+  if (!hasEmployeePermission || !hasAssignmentPermission) {
+    return fallback ? <>{fallback}</> : null;
+  }
+  
+  return <>{children}</>;
 }
 
 export function IqamaPermission({ children, fallback }: { children: React.ReactNode; fallback?: React.ReactNode }) {

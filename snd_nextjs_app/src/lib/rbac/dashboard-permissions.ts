@@ -9,6 +9,11 @@ export interface DashboardSectionPermission {
   action: Action;
   subject: Subject;
   description: string;
+  // Optional: Support multiple permissions for a section
+  additionalPermissions?: Array<{
+    action: Action;
+    subject: Subject;
+  }>;
 }
 
 export const dashboardSectionPermissions: DashboardSectionPermission[] = [
@@ -16,7 +21,13 @@ export const dashboardSectionPermissions: DashboardSectionPermission[] = [
     section: 'manualAssignments',
     action: 'read',
     subject: 'Employee',
-    description: 'View and manage manual employee assignments'
+    description: 'View and manage manual employee assignments',
+    additionalPermissions: [
+      {
+        action: 'read',
+        subject: 'Assignment'
+      }
+    ]
   },
   {
     section: 'iqama',
@@ -103,8 +114,23 @@ export async function hasSectionPermission(
     // Use client-side permission checking
     const { checkUserPermissionClient } = await import('./client-permission-service');
     
-    const result = await checkUserPermissionClient(userId, permission.action, permission.subject);
-    return result.hasPermission;
+    // Check primary permission
+    const primaryResult = await checkUserPermissionClient(userId, permission.action, permission.subject);
+    if (!primaryResult.hasPermission) {
+      return false;
+    }
+    
+    // Check additional permissions if they exist
+    if (permission.additionalPermissions && permission.additionalPermissions.length > 0) {
+      for (const additionalPerm of permission.additionalPermissions) {
+        const additionalResult = await checkUserPermissionClient(userId, additionalPerm.action, additionalPerm.subject);
+        if (!additionalResult.hasPermission) {
+          return false;
+        }
+      }
+    }
+    
+    return true;
   } catch (error) {
     console.error(`Error checking section permission for ${section}:`, error);
     return false; // No fallback - if API fails, deny access
