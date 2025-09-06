@@ -88,5 +88,9 @@
   "selectedPayrolls": "selected payroll(s)",
   "deleteSelected": "Delete Selected",
   "clearSelection": "Clear Selection",
-  "loadingPayrolls": "Loading payrolls..."
+  "loadingPayrolls": "Loading payrolls...",
+  "pending": "Pending",
+  "approved": "Approved",
+  "paid": "Paid",
+  "cancelled": "Cancelled"
 }
