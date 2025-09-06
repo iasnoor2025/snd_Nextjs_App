@@ -21,5 +21,6 @@
     "userManagement": "إدارة المستخدمين",
   "getHelp": "الحصول على المساعدة",
   "search": "البحث",
-  "appTitle": "إدارة التأجير SND"
+  "appTitle": "إدارة التأجير SND",
+  "databaseBackup": "نسخ احتياطي لقاعدة البيانات"
 }

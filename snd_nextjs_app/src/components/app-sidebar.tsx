@@ -6,6 +6,7 @@ import {
   BarChart3,
   Building,
   Calendar,
+  Database,
   FileSpreadsheet,
   FileText,
   HelpCircle,
@@ -144,6 +145,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: t('sidebar.userManagement'),
       url: `/${locale}/modules/user-management`,
       icon: Users,
+    },
+    {
+      title: t('sidebar.databaseBackup'),
+      url: `/${locale}/admin/backup`,
+      icon: Database,
+      requiredRole: 'SUPER_ADMIN'
     },
   ];
 

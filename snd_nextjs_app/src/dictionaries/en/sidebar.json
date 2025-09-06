@@ -21,5 +21,6 @@
     "userManagement": "User Management",
   "getHelp": "Get Help",
   "search": "Search",
-  "appTitle": "SND Rental"
+  "appTitle": "SND Rental",
+  "databaseBackup": "Database Backup"
 }

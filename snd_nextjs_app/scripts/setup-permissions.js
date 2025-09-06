@@ -187,6 +187,8 @@ const allPermissions = [
   'emergency.access', 'audit.system',
   'compliance.override', 'gdpr.access',
   'backup.system', 'recovery.system',
+  'create.backup', 'read.backup', 'update.backup', 'delete.backup', 'manage.backup',
+  'download.backup', 'restore.backup', 'schedule.backup',
 ];
 
 // Define roles
