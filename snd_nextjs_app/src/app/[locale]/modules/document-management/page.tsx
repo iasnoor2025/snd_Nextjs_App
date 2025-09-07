@@ -253,35 +253,29 @@ export default function DocumentManagementPage() {
       documentType: doc.documentType
     })));
     
-    // Use the helper function for PDF detection
-    const pdfDocs = selectedDocs.filter(doc => {
-      const isPDF = isPDFDocument(doc);
-      console.log(`Document ${doc.fileName}: mimeType="${doc.mimeType}", documentType="${doc.documentType}", isPDF=${isPDF}`);
-      return isPDF;
-    });
+    // Allow combining any documents (PDFs, images, etc.)
+    console.log(`Found ${selectedDocs.length} documents selected for combination`);
 
-    console.log(`Found ${pdfDocs.length} PDF documents out of ${selectedDocs.length} selected`);
-
-    if (pdfDocs.length === 0) {
-      toast.error('Please select PDF documents to combine');
+    if (selectedDocs.length === 0) {
+      toast.error('Please select documents to combine');
       return;
     }
 
-    if (pdfDocs.length === 1) {
-      toast.error('Please select multiple PDF documents to combine');
+    if (selectedDocs.length === 1) {
+      toast.error('Please select multiple documents to combine');
       return;
     }
 
     setCombining(true);
     try {
       // Call the API to combine PDFs
-      const response = await fetch('/api/documents/combine-pdf-supabase', {
+      const response = await fetch('/api/documents/combine-pdf', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          documentIds: pdfDocs.map(doc => doc.id),
+          documentIds: selectedDocs.map(doc => doc.id),
           type: 'all'
         }),
       });
@@ -303,7 +297,7 @@ export default function DocumentManagementPage() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      toast.success(`Successfully combined ${pdfDocs.length} PDF documents`);
+      toast.success(`Successfully combined ${selectedDocs.length} documents`);
       setSelectedDocuments(new Set()); // Clear selection after successful combination
     } catch (error) {
       console.error('Error combining PDFs:', error);
@@ -435,22 +429,22 @@ export default function DocumentManagementPage() {
                 {(() => {
                   const selectedDocs = documents.filter(doc => selectedDocuments.has(doc.id));
                   const pdfDocs = selectedDocs.filter(doc => isPDFDocument(doc));
-                  const canCombine = pdfDocs.length >= 2;
+                  const canCombine = selectedDocs.length >= 2;
                   
                   return (
                     <>
                       <span className="text-xs text-muted-foreground">
-                        ({pdfDocs.length} PDF{pdfDocs.length !== 1 ? 's' : ''})
+                        ({pdfDocs.length} PDF{pdfDocs.length !== 1 ? 's' : ''}, {selectedDocs.length} total)
                       </span>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={handleCombinePDFs}
                         disabled={combining || !canCombine}
-                        title={!canCombine ? 'Select at least 2 PDF documents to combine' : ''}
+                        title={!canCombine ? 'Select at least 2 documents to combine' : ''}
                       >
                         <FileDown className="h-4 w-4 mr-2" />
-                        {combining ? 'Combining...' : 'Combine PDFs'}
+                        {combining ? 'Combining...' : 'Combine Documents'}
                       </Button>
                     </>
                   );
