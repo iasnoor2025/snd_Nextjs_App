@@ -3,9 +3,13 @@ import { equipmentDocuments, equipment } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { eq, and } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
-import { SupabaseStorageService } from '@/lib/supabase/storage-service';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { cacheService } from '@/lib/redis/cache-service';
 import { ensureHttps } from '@/lib/utils/url-utils';
+import { config as dotenvConfig } from 'dotenv';
+
+// Load environment variables
+dotenvConfig({ path: '.env.local' });
 
 const handler = async (
   request: NextRequest,
@@ -192,27 +196,9 @@ const uploadDocumentsHandler = async (
               )
             );
 
-          // Delete old files from Supabase storage
-          for (const existingDoc of existingDocuments) {
-            if (existingDoc.filePath) {
-              try {
-                // Extract the filename from the filePath
-                const fileName = existingDoc.filePath.split('/').pop();
-                if (fileName) {
-                  // Use door number-based path for deletion to match the new upload structure
-                  console.log(`Deleting file from Supabase: equipment-${doorNumber}/${fileName}`);
-                  const deleteResult = await SupabaseStorageService.deleteFile('equipment-documents', `equipment-${doorNumber}/${fileName}`);
-                  if (deleteResult.success) {
-                    console.log(`Successfully deleted file: ${fileName}`);
-                  } else {
-                    console.error(`Failed to delete file ${fileName}:`, deleteResult.error);
-                  }
-                }
-              } catch (deleteError) {
-                console.error(`Error deleting file ${existingDoc.filePath}:`, deleteError);
-              }
-            }
-          }
+          // Note: MinIO files will be overwritten automatically when uploading with the same key
+          // No need to manually delete old files from MinIO storage
+          console.log(`MinIO will automatically overwrite existing files with the same key`);
 
           console.log(`Deleted ${existingDocuments.length} existing ${rawDocumentType} document(s) for equipment ${equipmentId}`);
         }
@@ -222,7 +208,7 @@ const uploadDocumentsHandler = async (
       }
     }
 
-    // Generate path for Supabase storage
+    // Generate path for MinIO storage
     const toTitleCase = (s: string) =>
       s.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
     const baseLabel =
@@ -230,7 +216,7 @@ const uploadDocumentsHandler = async (
     const equipmentName = equipmentItem.name || `Equipment-${equipmentId}`;
     
     // Generate descriptive filename using the user-provided document name
-    // This ensures the file is saved in Supabase with the user's chosen name
+    // This ensures the file is saved in MinIO with the user's chosen name
     let descriptiveFilename: string;
     if (documentName.trim()) {
       // Use the user-provided document name as the filename
@@ -263,35 +249,48 @@ const uploadDocumentsHandler = async (
       }
     } else {
       // Fallback to descriptive filename based on document type
-      descriptiveFilename = SupabaseStorageService.generateDescriptiveFilename(
-        rawDocumentType || 'document',
-        equipmentName,
-        file.name
-      );
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const fileExtension = file.name.split('.').pop();
+      descriptiveFilename = `${rawDocumentType || 'document'}-${timestamp}.${fileExtension}`;
     }
     
-    // Create folder path based on equipment door number for better organization
-    // This creates a folder structure like: equipment-documents/123/ or equipment-documents/456/
-    const path = `equipment-${doorNumber}`;
+    // Create folder path based on equipment ID for better organization
+    // This creates a folder structure like: equipment-documents/equipment-14/ or equipment-documents/equipment-180/
+    const path = `equipment-${equipmentId}`;
+    const fullPath = `${path}/${descriptiveFilename}`;
 
-    // Ensure the equipment folder exists (will be created automatically on first upload)
-    const folderCheck = await SupabaseStorageService.createEquipmentFolder(doorNumber, 'equipment-documents');
-    console.log(`Folder check for equipment ${doorNumber}:`, folderCheck.message);
+    console.log(`Uploading file: ${file.name} as ${descriptiveFilename} to path: ${fullPath}`);
+    console.log(`File details: name=${file.name}, type=${file.type}, size=${file.size}`);
 
-    // Upload file to Supabase storage
-    const uploadResult = await SupabaseStorageService.uploadFile(
-      file,
-      'equipment-documents',
-      path,
-      descriptiveFilename
-    );
+    // Initialize MinIO S3 client
+    const s3Client = new S3Client({
+      endpoint: process.env.S3_ENDPOINT,
+      region: process.env.AWS_REGION || 'us-east-1',
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+      },
+      forcePathStyle: true,
+    });
 
-    if (!uploadResult.success) {
-      return NextResponse.json(
-        { error: `Upload failed: ${uploadResult.message}` },
-        { status: 500 }
-      );
-    }
+    // Convert file to buffer
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+
+    // Upload file to MinIO
+    const command = new PutObjectCommand({
+      Bucket: 'equipment-documents',
+      Key: fullPath,
+      Body: fileBuffer,
+      ContentType: file.type,
+    });
+
+    await s3Client.send(command);
+
+    // Generate MinIO public URL
+    const minioUrl = `${process.env.S3_ENDPOINT}/equipment-documents/${fullPath}`;
+
+    console.log('File uploaded successfully to MinIO, saving to database...');
+    console.log('MinIO URL:', minioUrl);
 
     // Save document record to database
     const documentResult = await db
@@ -299,7 +298,7 @@ const uploadDocumentsHandler = async (
       .values({
         equipmentId: equipmentId,
         documentType: rawDocumentType,
-        filePath: uploadResult.url || '',
+        filePath: minioUrl,
         fileName: descriptiveFilename,
         fileSize: file.size,
         mimeType: file.type,
@@ -323,8 +322,8 @@ const uploadDocumentsHandler = async (
     const responseData = {
       success: true,
       message: shouldOverwrite 
-        ? `Document uploaded successfully. Previous ${rawDocumentType} document(s) have been replaced.`
-        : 'Document uploaded successfully',
+        ? `Document uploaded successfully to MinIO. Previous ${rawDocumentType} document(s) have been replaced.`
+        : 'Document uploaded successfully to MinIO',
       data: {
         id: document.id,
         name: baseLabel,

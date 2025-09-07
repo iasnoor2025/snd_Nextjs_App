@@ -277,11 +277,11 @@ export default function DocumentManager(props: DocumentManagerProps) {
     try {
       console.log('Attempting to download document:', doc);
       
-      // If the URL is a Supabase URL (starts with http), handle it directly
+      // If the URL is a MinIO URL (starts with http), handle it directly
       if (doc.url.startsWith('http')) {
-        console.log('Downloading from Supabase URL:', doc.url);
+        console.log('Downloading from MinIO URL:', doc.url);
         
-        // For Supabase URLs, we need to fetch the file and create a blob download
+        // For MinIO URLs, we need to fetch the file and create a blob download
         const response = await fetch(doc.url);
         if (!response.ok) {
           throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);

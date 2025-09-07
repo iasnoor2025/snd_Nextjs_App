@@ -21,6 +21,19 @@ export const POST = withRole(['SUPER_ADMIN'])(
         return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
       }
 
+      // Check if user has SUPER_ADMIN role
+      const userRole = (session.user.role as string) || 'USER';
+      if (userRole !== 'SUPER_ADMIN') {
+        return NextResponse.json(
+          { 
+            error: 'Insufficient permissions. SUPER_ADMIN role required for backup restore.',
+            userRole: userRole,
+            requiredRole: 'SUPER_ADMIN'
+          }, 
+          { status: 403 }
+        );
+      }
+
       const backupId = params.id;
       const body = await request.json();
       const { confirmRestore, createBackupBeforeRestore } = restoreSchema.parse(body);
@@ -139,35 +152,49 @@ export const POST = withRole(['SUPER_ADMIN'])(
 
         // Recreate schema from backup
         if (backup.schema && backup.schema.tables) {
+          console.log(`Recreating ${backup.schema.tables.length} tables...`);
           for (const table of backup.schema.tables) {
-            // Create table structure
-            const createTableQuery = `CREATE TABLE ${table.table} (
-              ${table.columns.map((col: any) => {
-                let columnDef = `${col.column_name} ${col.data_type}`;
-                if (col.character_maximum_length) {
-                  columnDef += `(${col.character_maximum_length})`;
-                }
-                if (col.numeric_precision) {
-                  columnDef += `(${col.numeric_precision}${col.numeric_scale ? ',' + col.numeric_scale : ''})`;
-                }
-                if (col.is_nullable === 'NO') {
-                  columnDef += ' NOT NULL';
-                }
-                if (col.column_default) {
-                  columnDef += ` DEFAULT ${col.column_default}`;
-                }
-                return columnDef;
-              }).join(', ')}
-            )`;
+            try {
+              console.log(`Creating table: ${table.table}`);
+              // Create table structure
+              const createTableQuery = `CREATE TABLE ${table.table} (
+                ${table.columns.map((col: any) => {
+                  let columnDef = `${col.column_name} ${col.data_type}`;
+                  if (col.character_maximum_length) {
+                    columnDef += `(${col.character_maximum_length})`;
+                  }
+                  if (col.numeric_precision) {
+                    columnDef += `(${col.numeric_precision}${col.numeric_scale ? ',' + col.numeric_scale : ''})`;
+                  }
+                  if (col.is_nullable === 'NO') {
+                    columnDef += ' NOT NULL';
+                  }
+                  if (col.column_default) {
+                    columnDef += ` DEFAULT ${col.column_default}`;
+                  }
+                  return columnDef;
+                }).join(', ')}
+              )`;
 
-            await db.execute(sql.raw(createTableQuery));
+              await db.execute(sql.raw(createTableQuery));
+            } catch (tableError) {
+              console.error(`Failed to create table ${table.table}:`, tableError);
+              throw tableError;
+            }
 
-            // Add constraints
+            // Add constraints (skip CHECK constraints and invalid constraints)
             for (const constraint of table.constraints) {
-              if (constraint.constraint_type === 'PRIMARY KEY') {
-                await db.execute(sql.raw(`ALTER TABLE ${table.table} ADD CONSTRAINT ${constraint.constraint_name} PRIMARY KEY (${constraint.column_name})`));
-              } else if (constraint.constraint_type === 'FOREIGN KEY') {
-                await db.execute(sql.raw(`ALTER TABLE ${table.table} ADD CONSTRAINT ${constraint.constraint_name} FOREIGN KEY (${constraint.column_name}) REFERENCES ${constraint.foreign_table_name}(${constraint.foreign_column_name})`));
+              try {
+                if (constraint.constraint_type === 'PRIMARY KEY' && constraint.column_name) {
+                  await db.execute(sql.raw(`ALTER TABLE ${table.table} ADD CONSTRAINT ${constraint.constraint_name} PRIMARY KEY (${constraint.column_name})`));
+                } else if (constraint.constraint_type === 'FOREIGN KEY' && constraint.column_name && constraint.foreign_table_name && constraint.foreign_column_name) {
+                  await db.execute(sql.raw(`ALTER TABLE ${table.table} ADD CONSTRAINT ${constraint.constraint_name} FOREIGN KEY (${constraint.column_name}) REFERENCES ${constraint.foreign_table_name}(${constraint.foreign_column_name})`));
+                } else if (constraint.constraint_type === 'UNIQUE' && constraint.column_name) {
+                  await db.execute(sql.raw(`ALTER TABLE ${table.table} ADD CONSTRAINT ${constraint.constraint_name} UNIQUE (${constraint.column_name})`));
+                }
+                // Skip CHECK constraints and other constraints without proper column names
+              } catch (constraintError) {
+                console.warn(`Skipping constraint ${constraint.constraint_name} for table ${table.table}:`, constraintError);
               }
             }
           }
@@ -175,20 +202,27 @@ export const POST = withRole(['SUPER_ADMIN'])(
 
         // Restore data
         if (backup.data && backup.data.tables) {
+          console.log(`Restoring data for ${Object.keys(backup.data.tables).length} tables...`);
           for (const [tableName, records] of Object.entries(backup.data.tables)) {
             if (Array.isArray(records) && records.length > 0) {
-              const columns = Object.keys(records[0]);
-              const values = records.map(record => 
-                `(${columns.map(col => {
-                  const value = record[col];
-                  if (value === null) return 'NULL';
-                  if (typeof value === 'string') return `'${value.replace(/'/g, "''")}'`;
-                  return value;
-                }).join(', ')})`
-              );
+              try {
+                console.log(`Restoring ${records.length} records to table: ${tableName}`);
+                const columns = Object.keys(records[0]);
+                const values = records.map(record => 
+                  `(${columns.map(col => {
+                    const value = record[col];
+                    if (value === null) return 'NULL';
+                    if (typeof value === 'string') return `'${value.replace(/'/g, "''")}'`;
+                    return value;
+                  }).join(', ')})`
+                );
 
-              const insertQuery = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES ${values.join(', ')}`;
-              await db.execute(sql.raw(insertQuery));
+                const insertQuery = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES ${values.join(', ')}`;
+                await db.execute(sql.raw(insertQuery));
+              } catch (dataError) {
+                console.error(`Failed to restore data for table ${tableName}:`, dataError);
+                throw dataError;
+              }
             }
           }
         }

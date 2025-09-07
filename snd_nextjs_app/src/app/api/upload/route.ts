@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { SupabaseStorageService } from '@/lib/supabase/storage-service';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { config as dotenvConfig } from 'dotenv';
+
+// Load environment variables
+dotenvConfig({ path: '.env.local' });
 
 export async function POST(request: NextRequest) {
   try {
@@ -49,6 +53,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Initialize MinIO S3 client
+    const s3Client = new S3Client({
+      endpoint: process.env.S3_ENDPOINT,
+      region: process.env.AWS_REGION || 'us-east-1',
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+      },
+      forcePathStyle: true,
+    });
+
     // Determine bucket based on type or use provided bucket
     let targetBucket = 'general';
     if (bucket) {
@@ -59,35 +74,38 @@ export async function POST(request: NextRequest) {
       targetBucket = 'equipment-documents';
     }
 
-    // Upload file using Supabase storage service
-    const descriptiveFilename = SupabaseStorageService.generateDescriptiveFilename(
-      type || 'file',
-      'upload',
-      file.name
-    );
-    const result = await SupabaseStorageService.uploadFile(file, targetBucket, type, descriptiveFilename);
+    // Generate descriptive filename
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const fileExtension = file.name.split('.').pop();
+    const descriptiveFilename = `${type || 'file'}-${timestamp}.${fileExtension}`;
 
-    if (result.success) {
-      return NextResponse.json({
-        success: true,
-        url: result.url,
-        filename: result.filename,
-        originalName: result.originalName,
-        size: result.size,
-        type: result.type,
-        bucket: targetBucket,
-        message: result.message,
-      });
-    } else {
-      return NextResponse.json(
-        {
-          success: false,
-          message: result.message,
-          error: result.error,
-        },
-        { status: 400 }
-      );
-    }
+    // Convert file to buffer
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+
+    // Upload file to MinIO
+    const command = new PutObjectCommand({
+      Bucket: targetBucket,
+      Key: descriptiveFilename,
+      Body: fileBuffer,
+      ContentType: file.type,
+    });
+
+    await s3Client.send(command);
+
+    // Generate MinIO public URL
+    const minioUrl = `${process.env.S3_ENDPOINT}/${targetBucket}/${descriptiveFilename}`;
+
+    return NextResponse.json({
+      success: true,
+      url: minioUrl,
+      filename: descriptiveFilename,
+      originalName: file.name,
+      size: file.size,
+      type: file.type,
+      bucket: targetBucket,
+      message: 'File uploaded successfully to MinIO',
+    });
+
   } catch (error) {
     console.error('Upload error:', error);
     return NextResponse.json(

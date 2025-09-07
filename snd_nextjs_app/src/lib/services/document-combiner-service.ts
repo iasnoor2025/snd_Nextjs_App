@@ -6,7 +6,7 @@ export interface DocumentToCombine {
   type: 'employee' | 'equipment';
   fileName: string;
   filePath: string;
-  url: string; // Add URL field for Supabase
+  url: string; // Add URL field for MinIO
   mimeType: string;
   employeeName?: string;
   employeeFileNumber?: string;
@@ -71,7 +71,7 @@ export class DocumentCombinerService {
     });
 
     try {
-      // Fetch file from Supabase URL
+      // Fetch file from MinIO URL
       const response = await fetch(document.url);
       if (!response.ok) {
         throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);

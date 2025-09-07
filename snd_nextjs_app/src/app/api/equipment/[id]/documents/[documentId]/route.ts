@@ -5,10 +5,14 @@ import { NextResponse } from 'next/server';
 import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
-import { SupabaseStorageService } from '@/lib/supabase/storage-service';
+import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { cacheService } from '@/lib/redis/cache-service';
 import { withPermission } from '@/lib/rbac/api-middleware';
 import { PermissionConfigs } from '@/lib/rbac/api-middleware';
+import { config as dotenvConfig } from 'dotenv';
+
+// Load environment variables
+dotenvConfig({ path: '.env.local' });
 
 // DELETE /api/equipment/[id]/documents/[documentId]
 export const DELETE = withPermission(PermissionConfigs['equipment-document'].delete)(
@@ -66,26 +70,17 @@ export const DELETE = withPermission(PermissionConfigs['equipment-document'].del
       return NextResponse.json({ success: false, error: 'Document data not found' }, { status: 404 });
     }
 
-    // Delete file from Supabase storage if it exists
+    // Delete file from MinIO storage if it exists
     if (documentData.filePath) {
       try {
-        // Extract the file path from the Supabase URL
-        // URL format: https://domain.com/storage/v1/object/public/bucket-name/path/to/file
+        // Extract the file path from the MinIO URL
+        // URL format: http://minio.snd-ksa.online/bucket-name/path/to/file
         let filePath = '';
         
         if (documentData.filePath.startsWith('http')) {
-          const urlParts = documentData.filePath.split('/storage/v1/object/public/');
+          const urlParts = documentData.filePath.split('/equipment-documents/');
           if (urlParts.length > 1) {
-            const bucketAndPath = urlParts[1];
-            if (bucketAndPath) {
-              const pathParts = bucketAndPath.split('/');
-              if (pathParts.length > 1) {
-                // Remove the bucket name from the path
-                const bucketName = pathParts[0];
-                const filePathParts = pathParts.slice(1);
-                filePath = filePathParts.join('/');
-              }
-            }
+            filePath = urlParts[1];
           }
         }
         
@@ -94,22 +89,33 @@ export const DELETE = withPermission(PermissionConfigs['equipment-document'].del
           filePath = `equipment-${equipmentId}/${documentData.fileName}`;
         }
 
-        console.log('Deleting file from Supabase:', {
+        console.log('Deleting file from MinIO:', {
           bucket: 'equipment-documents',
           path: filePath,
           document: documentData
         });
 
-        // Delete from Supabase storage
-        const deleteResult = await SupabaseStorageService.deleteFile('equipment-documents', filePath);
-        if (deleteResult.success) {
-          console.log('Successfully deleted file from Supabase storage');
-        } else {
-          console.warn('Failed to delete file from Supabase storage:', deleteResult.error);
-          // Continue with database deletion even if file deletion fails
-        }
+        // Initialize MinIO S3 client
+        const s3Client = new S3Client({
+          endpoint: process.env.S3_ENDPOINT,
+          region: process.env.AWS_REGION || 'us-east-1',
+          credentials: {
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+          },
+          forcePathStyle: true,
+        });
+
+        // Delete from MinIO storage
+        const deleteCommand = new DeleteObjectCommand({
+          Bucket: 'equipment-documents',
+          Key: filePath,
+        });
+
+        await s3Client.send(deleteCommand);
+        console.log('Successfully deleted file from MinIO storage');
       } catch (error) {
-        console.error('Error deleting file from Supabase storage:', error);
+        console.error('Error deleting file from MinIO storage:', error);
         // Continue with database deletion even if file deletion fails
       }
     }
@@ -136,7 +142,7 @@ export const DELETE = withPermission(PermissionConfigs['equipment-document'].del
     return NextResponse.json({
       success: true,
       data: {
-        message: 'Document deleted successfully',
+        message: 'Document deleted successfully from MinIO and database',
       },
     });
   } catch (error) {

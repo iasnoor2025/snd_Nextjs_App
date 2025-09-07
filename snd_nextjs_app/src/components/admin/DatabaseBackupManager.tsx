@@ -158,7 +158,13 @@ export function DatabaseBackupManager({ className }: BackupManagerProps) {
         setSelectedBackup(null);
         setConfirmRestore(false);
       } else {
-        toast.error(data.message || 'Failed to restore backup');
+        if (response.status === 403) {
+          toast.error(`Access denied: ${data.error}. Your role: ${data.userRole}, Required: ${data.requiredRole}`);
+        } else if (response.status === 401) {
+          toast.error('Authentication required. Please log in again.');
+        } else {
+          toast.error(data.message || 'Failed to restore backup');
+        }
       }
     } catch (error) {
       toast.error('Failed to restore backup');
