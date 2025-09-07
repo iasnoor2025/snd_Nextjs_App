@@ -111,7 +111,10 @@
     "pending": "Pending",
     "active": "Active",
     "completed": "Completed",
-    "cancelled": "Cancelled"
+    "cancelled": "Cancelled",
+    "expiring": "Expiring Soon",
+    "expired": "Expired",
+    "missing": "Missing"
   },
   "actions": {
     "addEquipment": "Add Equipment",
@@ -273,12 +276,6 @@
     "expiringSoon": "Expiring Soon",
     "missing": "Missing",
     "available": "Available",
-    "status": {
-      "available": "Available",
-      "expiring": "Expiring Soon",
-      "expired": "Expired",
-      "missing": "Missing"
-    },
     "assigned": "Assigned",
     "clear": "Clear",
     "requiringAttention": "Equipment Requiring Attention",

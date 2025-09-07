@@ -152,11 +152,15 @@
     "lost": "مفقود",
     "stolen": "مسروق",
     "available": "متاح",
+    "assigned": "معين",
     "rented": "مؤجر",
     "out_of_service": "خارج الخدمة",
     "completed": "مكتمل",
     "cancelled": "ملغي",
-    "pending": "قيد الانتظار"
+    "pending": "قيد الانتظار",
+    "expiring": "ينتهي قريباً",
+    "expired": "منتهي",
+    "missing": "مفقود"
   },
   "condition": {
     "excellent": "ممتاز",
@@ -379,12 +383,6 @@
     "allTypes": "جميع الأنواع",
     "withDriver": "مع سائق",
     "noDriver": "بدون سائق",
-    "status": {
-      "available": "متاح",
-      "expiring": "ينتهي قريباً",
-      "expired": "منتهي",
-      "missing": "مفقود"
-    },
     "assigned": "معين",
     "tableHeaders": {
       "equipmentName": "اسم المعدات",
