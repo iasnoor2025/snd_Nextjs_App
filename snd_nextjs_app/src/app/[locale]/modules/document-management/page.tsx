@@ -127,18 +127,18 @@ export default function DocumentManagementPage() {
           sortOrder: sortDirection,
         });
 
-        const response = await fetch(`/api/documents/supabase?${params}`);
+        const response = await fetch(`/api/documents/all?${params}`);
         if (response.ok) {
           const data = await response.json();
           if (data.success) {
             // Transform documents to include proper viewing URLs
             const transformedDocuments = data.data.documents.map((doc: Document) => {
-              // Use the actual Supabase URL directly instead of creating download API endpoints
+              // Use the actual MinIO URL directly instead of creating download API endpoints
               const directUrl = doc.url || doc.filePath;
               
               return {
                 ...doc,
-                // Use direct Supabase URL for both viewing and downloading
+                // Use direct MinIO URL for both viewing and downloading
                 url: directUrl,
                 viewUrl: directUrl
               };
