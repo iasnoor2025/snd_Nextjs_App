@@ -18,6 +18,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { useTranslations } from '@/hooks/use-translations';
@@ -60,6 +68,7 @@ interface Document {
   equipmentName?: string;
   equipmentModel?: string;
   equipmentSerial?: string;
+  equipmentDoorNumber?: string;
   url: string;
   viewUrl?: string;
   searchableText: string;
@@ -223,14 +232,27 @@ export default function DocumentManagementPage() {
     setSelectedDocuments(newSelected);
   };
 
-  const handleDownload = (doc: Document) => {
-    const link = document.createElement('a');
-    link.href = doc.url;
-    link.download = doc.fileName;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownload = async (doc: Document) => {
+    try {
+      // For direct MinIO URLs, we can download directly
+      if (doc.url && doc.url.startsWith('http')) {
+        const link = document.createElement('a');
+        link.href = doc.url;
+        link.download = doc.fileName;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success(`Downloading ${doc.fileName}`);
+      } else {
+        // Fallback for other URL types
+        window.open(doc.url, '_blank');
+        toast.success(`Opening ${doc.fileName}`);
+      }
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error(`Failed to download ${doc.fileName}`);
+    }
   };
 
   const handlePreview = (doc: Document) => {
@@ -243,25 +265,21 @@ export default function DocumentManagementPage() {
       return;
     }
 
-    const selectedDocs = documents.filter(doc => selectedDocuments.has(doc.id));
+    // Get all selected document IDs
+    const selectedIds = Array.from(selectedDocuments);
     
-    // Debug: Log the selected documents and their MIME types
-    console.log('Selected documents for combination:', selectedDocs);
-    console.log('MIME types of selected documents:', selectedDocs.map(doc => ({
-      fileName: doc.fileName,
-      mimeType: doc.mimeType,
-      documentType: doc.documentType
-    })));
+    // Debug: Log the selected document IDs
+    console.log('Selected document IDs for combination:', selectedIds);
     
     // Allow combining any documents (PDFs, images, etc.)
-    console.log(`Found ${selectedDocs.length} documents selected for combination`);
+    console.log(`Found ${selectedIds.length} documents selected for combination`);
 
-    if (selectedDocs.length === 0) {
+    if (selectedIds.length === 0) {
       toast.error('Please select documents to combine');
       return;
     }
 
-    if (selectedDocs.length === 1) {
+    if (selectedIds.length === 1) {
       toast.error('Please select multiple documents to combine');
       return;
     }
@@ -275,7 +293,7 @@ export default function DocumentManagementPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          documentIds: selectedDocs.map(doc => doc.id),
+          documentIds: selectedIds,
           type: 'all'
         }),
       });
@@ -297,7 +315,7 @@ export default function DocumentManagementPage() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      toast.success(`Successfully combined ${selectedDocs.length} documents`);
+      toast.success(`Successfully combined ${selectedIds.length} documents`);
       setSelectedDocuments(new Set()); // Clear selection after successful combination
     } catch (error) {
       console.error('Error combining PDFs:', error);
@@ -402,7 +420,7 @@ export default function DocumentManagementPage() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search documents..."
+                    placeholder="Search by file number, door number, name, or document type..."
                     value={searchTerm}
                     onChange={(e) => handleSearch(e.target.value)}
                     className="pl-10"
@@ -427,14 +445,13 @@ export default function DocumentManagementPage() {
                   {selectedDocuments.size} document(s) selected
                 </span>
                 {(() => {
-                  const selectedDocs = documents.filter(doc => selectedDocuments.has(doc.id));
-                  const pdfDocs = selectedDocs.filter(doc => isPDFDocument(doc));
-                  const canCombine = selectedDocs.length >= 2;
+                  const selectedIds = Array.from(selectedDocuments);
+                  const canCombine = selectedIds.length >= 2;
                   
                   return (
                     <>
                       <span className="text-xs text-muted-foreground">
-                        ({pdfDocs.length} PDF{pdfDocs.length !== 1 ? 's' : ''}, {selectedDocs.length} total)
+                        ({selectedIds.length} document{selectedIds.length !== 1 ? 's' : ''} selected)
                       </span>
                       <Button
                         variant="outline"
@@ -552,7 +569,10 @@ export default function DocumentManagementPage() {
                            {document.fileName}
                          </p>
                          <p className="text-xs text-muted-foreground truncate">
-                           {document.type === 'employee' ? document.employeeName : document.equipmentName}
+                           {document.type === 'employee' 
+                             ? `${document.employeeName} (File #${document.employeeFileNumber})`
+                             : `${document.equipmentName}${document.equipmentDoorNumber ? ` (Door #${document.equipmentDoorNumber})` : ''}`
+                           }
                          </p>
                        </div>
                      </div>
@@ -620,54 +640,126 @@ export default function DocumentManagementPage() {
           </CardContent>
         </Card>
 
-        {/* Document Preview Modal */}
-        {previewDocument && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-4xl max-h-[90vh] overflow-auto">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">{previewDocument.fileName}</h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setPreviewDocument(null)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="font-medium">Type:</span> {previewDocument.documentType}
-                  </div>
-                  <div>
-                    <span className="font-medium">Size:</span> {previewDocument.fileSizeFormatted || formatFileSize(previewDocument.fileSize)}
-                  </div>
-                  <div>
-                    <span className="font-medium">Created:</span> {format(new Date(previewDocument.createdAt), 'PPP')}
-                  </div>
-                  <div>
-                    <span className="font-medium">Category:</span> {previewDocument.type === 'employee' ? 'Employee' : 'Equipment'}
-                  </div>
+        {/* Document Preview Dialog */}
+        <Dialog open={!!previewDocument} onOpenChange={() => setPreviewDocument(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {previewDocument && getFileIcon(previewDocument.mimeType)}
+                {previewDocument?.fileName}
+              </DialogTitle>
+              <DialogDescription>
+                {previewDocument?.type === 'employee' 
+                  ? `Employee Document - ${previewDocument.employeeName} (File #${previewDocument.employeeFileNumber})`
+                  : `Equipment Document - ${previewDocument?.equipmentName}${previewDocument?.equipmentDoorNumber ? ` (Door #${previewDocument.equipmentDoorNumber})` : ''}`
+                }
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 overflow-auto max-h-[60vh]">
+              {/* Document Metadata */}
+              <div className="grid grid-cols-2 gap-4 text-sm bg-muted/50 p-4 rounded-lg">
+                <div>
+                  <span className="font-medium">Type:</span> {previewDocument?.documentType}
                 </div>
-                {previewDocument.description && (
-                  <div>
-                    <span className="font-medium">Description:</span> {previewDocument.description}
-                  </div>
-                )}
-                <div className="flex gap-2">
-                  <Button onClick={() => handleDownload(previewDocument)}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
-                  </Button>
-                  <Button variant="outline" onClick={() => window.open(previewDocument.viewUrl, '_blank')}>
-                    <Eye className="h-4 w-4 mr-2" />
-                    View
-                  </Button>
+                <div>
+                  <span className="font-medium">Size:</span> {previewDocument?.fileSizeFormatted || formatFileSize(previewDocument?.fileSize || 0)}
+                </div>
+                <div>
+                  <span className="font-medium">Created:</span> {previewDocument?.createdAt ? format(new Date(previewDocument.createdAt), 'PPP') : 'Unknown'}
+                </div>
+                <div>
+                  <span className="font-medium">MIME Type:</span> {previewDocument?.mimeType}
+                </div>
+              </div>
+              
+              {previewDocument?.description && (
+                <div className="bg-muted/50 p-4 rounded-lg">
+                  <span className="font-medium">Description:</span>
+                  <p className="mt-1 text-sm text-muted-foreground">{previewDocument.description}</p>
+                </div>
+              )}
+              
+              {/* Document Preview */}
+              <div className="border rounded-lg overflow-hidden">
+                <div className="bg-muted p-2 text-sm font-medium">
+                  Document Preview
+                </div>
+                <div className="p-4 bg-white min-h-[400px] flex items-center justify-center">
+                  {previewDocument?.url ? (
+                    <div className="w-full h-full">
+                      {previewDocument.mimeType?.startsWith('image/') ? (
+                        <img 
+                          src={previewDocument.url} 
+                          alt={previewDocument.fileName}
+                          className="max-w-full max-h-[400px] object-contain mx-auto"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                      ) : previewDocument.mimeType === 'application/pdf' ? (
+                        <iframe 
+                          src={previewDocument.url} 
+                          className="w-full h-[400px] border-0"
+                          title={previewDocument.fileName}
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                      ) : (
+                        <div className="text-center text-muted-foreground">
+                          <FileText className="h-16 w-16 mx-auto mb-4" />
+                          <p className="text-lg font-medium">Preview not available</p>
+                          <p className="text-sm">This file type cannot be previewed in the browser</p>
+                          <p className="text-xs mt-2">MIME Type: {previewDocument.mimeType}</p>
+                        </div>
+                      )}
+                      {/* Fallback for failed previews */}
+                      <div className="hidden text-center text-muted-foreground">
+                        <FileText className="h-16 w-16 mx-auto mb-4" />
+                        <p className="text-lg font-medium">Preview failed to load</p>
+                        <p className="text-sm">The document could not be displayed</p>
+                        <Button 
+                          variant="outline" 
+                          className="mt-4"
+                          onClick={() => window.open(previewDocument.url, '_blank')}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Open in New Tab
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted-foreground">
+                      <FileText className="h-16 w-16 mx-auto mb-4" />
+                      <p className="text-lg font-medium">No preview available</p>
+                      <p className="text-sm">Document URL not found</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-          </div>
-        )}
+            
+            <DialogFooter className="flex gap-2">
+              <Button variant="outline" onClick={() => setPreviewDocument(null)}>
+                Close
+              </Button>
+              <Button onClick={() => previewDocument && handleDownload(previewDocument)}>
+                <Download className="h-4 w-4 mr-2" />
+                Download
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => previewDocument && window.open(previewDocument.url, '_blank')}
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Open in New Tab
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </ProtectedRoute>
   );

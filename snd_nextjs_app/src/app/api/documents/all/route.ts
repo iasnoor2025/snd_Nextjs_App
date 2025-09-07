@@ -96,6 +96,7 @@ export async function GET(_request: NextRequest) {
           equipmentName: equipment.name,
           equipmentModel: equipment.modelNumber,
           equipmentSerial: equipment.serialNumber,
+          equipmentDoorNumber: equipment.doorNumber,
         })
         .from(media)
         .leftJoin(equipment, eq(equipment.id, media.modelId))
@@ -107,6 +108,7 @@ export async function GET(_request: NextRequest) {
                   ilike(equipment.name, `%${search}%`),
                   ilike(equipment.modelNumber, `%${search}%`),
                   ilike(equipment.serialNumber, `%${search}%`),
+                  ilike(equipment.doorNumber, `%${search}%`),
                   ilike(media.fileName, `%${search}%`)
                 )
               )
@@ -133,9 +135,10 @@ export async function GET(_request: NextRequest) {
         equipmentName: doc.equipmentName,
         equipmentModel: doc.equipmentModel,
         equipmentSerial: doc.equipmentSerial,
+        equipmentDoorNumber: doc.equipmentDoorNumber,
         url: (doc.filePath || '').replace(/^http:/, 'https:'), // Force HTTPS to prevent Mixed Content errors
         searchableText:
-          `${doc.equipmentName || ''} ${doc.equipmentModel || ''} ${doc.equipmentSerial || ''} ${doc.fileName}`.toLowerCase(),
+          `${doc.equipmentName || ''} ${doc.equipmentModel || ''} ${doc.equipmentSerial || ''} ${doc.equipmentDoorNumber || ''} ${doc.fileName}`.toLowerCase(),
       }));
     }
 
@@ -200,7 +203,8 @@ export async function GET(_request: NextRequest) {
             or(
               ilike(equipment.name, `%${search}%`),
               ilike(equipment.modelNumber, `%${search}%`),
-              ilike(equipment.serialNumber, `%${search}%`)
+              ilike(equipment.serialNumber, `%${search}%`),
+              ilike(equipment.doorNumber, `%${search}%`)
             )
           );
         
