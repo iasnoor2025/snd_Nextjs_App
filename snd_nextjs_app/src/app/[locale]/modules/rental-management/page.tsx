@@ -264,7 +264,7 @@ export default function RentalManagementPage() {
   // Fetch customers
   const fetchCustomers = async () => {
     try {
-      const response = await fetch('/api/customers');
+      const response = await fetch('/api/customers?limit=1000'); // Get all customers
       if (response.ok) {
         const data = await response.json();
         // The API returns an object with customers array, not a direct array
@@ -792,7 +792,7 @@ export default function RentalManagementPage() {
                     required
                     searchFields={['label', 'email', 'phone']}
                     loading={loading}
-                    error={formErrors.customerId || undefined}
+                    error={formErrors.customerId}
                   />
                 </div>
               </div>

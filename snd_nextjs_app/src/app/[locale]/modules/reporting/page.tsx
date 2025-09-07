@@ -39,6 +39,7 @@ import {
 import { useState } from 'react';
 import { useI18n } from '@/hooks/use-i18n';
 import { toast } from 'sonner';
+import React from 'react';
 
 interface ReportData {
   success: boolean;
@@ -46,6 +47,25 @@ interface ReportData {
   generated_at: string;
   report_type: string;
   parameters: any;
+  // Additional properties for different report types
+  leave_analysis?: any[];
+  overview?: any;
+  project_stats?: any;
+  timesheet_stats?: any;
+  equipment_stats?: any;
+  employee_stats?: any;
+  leave_stats?: any;
+  training_stats?: any;
+  incident_stats?: any;
+  project_performance?: any;
+  employee_performance?: any;
+  equipment_performance?: any;
+  rental_stats?: any;
+  company_rentals?: any[];
+  customer_stats?: any;
+  customer_details?: any[];
+  summary_stats?: any;
+  customer_groups?: any[];
 }
 
 interface MetricCard {
@@ -63,6 +83,9 @@ export default function ReportingDashboardPage() {
   const [loading, setLoading] = useState(false);
   const [dateRange, setDateRange] = useState('30'); // days
   const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [customerFilter, setCustomerFilter] = useState('all');
+  const [customersWithRentals, setCustomersWithRentals] = useState<any[]>([]);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
 
   const reportTypes = [
     { id: 'overview', name: t('reporting.overview_report'), icon: Building },
@@ -76,7 +99,40 @@ export default function ReportingDashboardPage() {
     { id: 'performance_analytics', name: t('reporting.performance_analytics'), icon: TrendingUp },
     { id: 'rental_analytics', name: t('reporting.rental_analytics'), icon: Car },
     { id: 'customer_analytics', name: t('reporting.customer_analytics'), icon: Building },
+    { id: 'customer_equipment', name: 'Customer Equipment Report', icon: Car },
   ];
+
+  // Fetch customers with rentals when component mounts or when customer equipment report is selected
+  const fetchCustomersWithRentals = async () => {
+    if (selectedReport !== 'customer_equipment') return;
+    
+    try {
+      setLoadingCustomers(true);
+      const response = await fetch('/api/customers/with-rentals');
+      if (response.ok) {
+        const data = await response.json();
+        setCustomersWithRentals(data.data || []);
+      } else {
+        console.error('Failed to fetch customers with rentals');
+        setCustomersWithRentals([]);
+      }
+    } catch (error) {
+      console.error('Error fetching customers with rentals:', error);
+      setCustomersWithRentals([]);
+    } finally {
+      setLoadingCustomers(false);
+    }
+  };
+
+  // Fetch customers when customer equipment report is selected
+  React.useEffect(() => {
+    if (selectedReport === 'customer_equipment') {
+      fetchCustomersWithRentals();
+    } else {
+      // Reset customer filter when switching to other report types
+      setCustomerFilter('all');
+    }
+  }, [selectedReport]);
 
   const generateReport = async () => {
       try {
@@ -88,12 +144,17 @@ export default function ReportingDashboardPage() {
         startDate: new Date(Date.now() - parseInt(dateRange) * 24 * 60 * 60 * 1000).toISOString(),
         endDate: new Date().toISOString(),
         ...(departmentFilter !== 'all' && { departmentId: departmentFilter }),
+        ...(customerFilter !== 'all' && { customerId: customerFilter }),
       });
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-      const response = await fetch(`/api/reports/comprehensive?${params}`, {
+      const apiEndpoint = selectedReport === 'customer_equipment' 
+        ? `/api/reports/customer-equipment?${params}`
+        : `/api/reports/comprehensive?${params}`;
+      
+      const response = await fetch(apiEndpoint, {
         signal: controller.signal
       });
 
@@ -109,6 +170,10 @@ export default function ReportingDashboardPage() {
       
       // Extract the actual report data from the API response
       const data = responseData.data || responseData;
+      console.log('Customer equipment data structure:', data);
+      console.log('Customer groups:', data.customer_groups);
+      console.log('Customer groups length:', data.customer_groups?.length);
+      console.log('Summary stats:', data.summary_stats);
       setReportData(data);
       
       // Dismiss loading toast and show success
@@ -268,6 +333,18 @@ export default function ReportingDashboardPage() {
             { title: 'Customers with Rentals', value: data.customer_stats?.customers_with_rentals || 0, icon: Car, color: 'purple' },
             { title: 'Customers with Projects', value: data.customer_stats?.customers_with_projects || 0, icon: Target, color: 'orange' },
             { title: 'Customer Retention Rate', value: `${data.customer_stats?.total_customers > 0 ? Math.round((data.customer_stats.active_customers / data.customer_stats.total_customers) * 100) : 0}%`, icon: TrendingUp, color: 'emerald' }
+          );
+        }
+        break;
+      case 'customer_equipment':
+        if (data.summary_stats) {
+          cards.push(
+            { title: 'Total Customers', value: data.summary_stats.total_customers || 0, icon: Building, color: 'blue' },
+            { title: 'Customers with Rentals', value: data.summary_stats.customers_with_rentals || 0, icon: Building, color: 'green' },
+            { title: 'Total Equipment', value: data.summary_stats.total_equipment || 0, icon: Car, color: 'purple' },
+            { title: 'Equipment with Operators', value: data.summary_stats.equipment_with_operators || 0, icon: Users, color: 'emerald' },
+            { title: 'Equipment without Operators', value: data.summary_stats.equipment_without_operators || 0, icon: Car, color: 'orange' },
+            { title: 'Total Operators', value: data.summary_stats.total_operators || 0, icon: Users, color: 'cyan' }
           );
         }
         break;
@@ -919,6 +996,151 @@ export default function ReportingDashboardPage() {
     );
   }
         break;
+      case 'customer_equipment':
+        console.log('Rendering customer equipment table, data:', data);
+        console.log('Customer groups:', data.customer_groups);
+        console.log('Customer groups length:', data.customer_groups?.length);
+        
+        if (data.customer_groups && data.customer_groups.length > 0) {
+          console.log('Rendering table with', data.customer_groups.length, 'customer groups');
+          return (
+            <div className="space-y-6">
+              {/* Customer Equipment Summary */}
+              <div>
+                <h4 className="text-lg font-semibold mb-4">Customer Equipment Summary</h4>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Customer Name</TableHead>
+                      <TableHead>Contact Person</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Total Equipment</TableHead>
+                      <TableHead>Equipment with Operators</TableHead>
+                      <TableHead>Equipment without Operators</TableHead>
+                      <TableHead>Total Operators</TableHead>
+                      <TableHead>Active Rentals</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {data.customer_groups.map((customer: any, index: number) => (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium">{customer.customer_info.name || 'Unknown Customer'}</TableCell>
+                        <TableCell>{customer.customer_info.contact_person || 'N/A'}</TableCell>
+                        <TableCell>{customer.customer_info.phone || 'N/A'}</TableCell>
+                        <TableCell>{customer.equipment_summary.total_equipment || 0}</TableCell>
+                        <TableCell>
+                          <Badge className="bg-green-100 text-green-800">
+                            {customer.equipment_summary.equipment_with_operators || 0}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className="bg-orange-100 text-orange-800">
+                            {customer.equipment_summary.equipment_without_operators || 0}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{customer.equipment_summary.total_operators || 0}</TableCell>
+                        <TableCell>
+                          <Badge className="bg-blue-100 text-blue-800">
+                            {customer.rentals.filter((r: any) => r.status === 'active').length}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Detailed Equipment List */}
+              <div>
+                <h4 className="text-lg font-semibold mb-4">Detailed Equipment List</h4>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Rental Number</TableHead>
+                      <TableHead>Equipment Name</TableHead>
+                      <TableHead>Equipment Type</TableHead>
+                      <TableHead>Equipment Model</TableHead>
+                      <TableHead>Operator Name</TableHead>
+                      <TableHead>Operator Phone</TableHead>
+                      <TableHead>Assignment Status</TableHead>
+                      <TableHead>Rental Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {data.customer_groups.map((customer: any) =>
+                      customer.rentals.map((rental: any) =>
+                        rental.equipment.map((equipment: any, eqIndex: number) => (
+                          <TableRow key={`${customer.customer_info.id}-${rental.id}-${equipment.id}-${eqIndex}`}>
+                            <TableCell className="font-medium">{customer.customer_info.name}</TableCell>
+                            <TableCell>{rental.rental_number}</TableCell>
+                            <TableCell>{equipment.name || 'Unknown Equipment'}</TableCell>
+                            <TableCell>{equipment.type || 'N/A'}</TableCell>
+                            <TableCell>{equipment.model || 'N/A'}</TableCell>
+                            <TableCell>
+                              {equipment.operator ? (
+                                <div>
+                                  <div className="font-medium">{equipment.operator.name}</div>
+                                  <div className="text-sm text-gray-500">{equipment.operator.email}</div>
+                                </div>
+                              ) : (
+                                <Badge className="bg-gray-100 text-gray-800">Unassigned</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>{equipment.operator?.phone || 'N/A'}</TableCell>
+                            <TableCell>
+                              {equipment.operator ? (
+                                <Badge className={
+                                  equipment.operator.assignment_status === 'active' ? "bg-green-100 text-green-800" :
+                                  equipment.operator.assignment_status === 'completed' ? "bg-blue-100 text-blue-800" :
+                                  "bg-gray-100 text-gray-800"
+                                }>
+                                  {equipment.operator.assignment_status || 'Unknown'}
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-gray-100 text-gray-800">No Operator</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={
+                                rental.status === 'active' ? "bg-green-100 text-green-800" :
+                                rental.status === 'completed' ? "bg-blue-100 text-blue-800" :
+                                "bg-gray-100 text-gray-800"
+                              }>
+                                {rental.status || 'Unknown'}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          );
+        }
+        break;
+      case 'customer_equipment':
+        // Show message when no customer groups data
+        if (!data.customer_groups || data.customer_groups.length === 0) {
+          console.log('No customer groups found, showing fallback message');
+          return (
+            <div className="text-center py-8">
+              <p className="text-gray-500">No customer equipment data found.</p>
+              <p className="text-sm text-gray-400 mt-2">
+                Make sure there are customers with rentals and equipment assigned.
+              </p>
+              <div className="mt-4 p-4 bg-gray-100 rounded">
+                <p className="text-sm text-gray-600">Debug Info:</p>
+                <p className="text-xs text-gray-500">Data keys: {Object.keys(data).join(', ')}</p>
+                <p className="text-xs text-gray-500">Customer groups: {data.customer_groups ? 'exists' : 'null'}</p>
+                <p className="text-xs text-gray-500">Summary stats: {data.summary_stats ? 'exists' : 'null'}</p>
+              </div>
+            </div>
+          );
+        }
+        break;
     }
     return null;
   };
@@ -967,7 +1189,7 @@ export default function ReportingDashboardPage() {
             <CardDescription>{t('reporting.configure_parameters')}</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <Label htmlFor="report-type">{t('reporting.select_report_type')}</Label>
                 <Select value={selectedReport} onValueChange={setSelectedReport}>
@@ -1015,6 +1237,38 @@ export default function ReportingDashboardPage() {
               </SelectContent>
             </Select>
           </div>
+              <div>
+                <Label htmlFor="customer">{selectedReport === 'customer_equipment' ? 'Select Customer' : 'Customer Filter'}</Label>
+                <Select 
+                  value={customerFilter} 
+                  onValueChange={setCustomerFilter}
+                  disabled={selectedReport !== 'customer_equipment' || loadingCustomers}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={loadingCustomers ? 'Loading customers...' : 'Select customer'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Customers</SelectItem>
+                    {customersWithRentals.length > 0 ? (
+                      customersWithRentals.map((customer) => (
+                        <SelectItem key={customer.id} value={customer.id.toString()}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{customer.name}</span>
+                            <span className="text-sm text-gray-500">
+                              {customer.total_rentals} rental{customer.total_rentals !== 1 ? 's' : ''} 
+                              {customer.active_rentals > 0 && ` (${customer.active_rentals} active)`}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="no-customers" disabled>
+                        No customers with rentals found
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
         </div>
           </CardContent>
         </Card>
@@ -1217,7 +1471,34 @@ export default function ReportingDashboardPage() {
                       }))}
                     type="bar"
                   />
-                          )}
+                )}
+
+                {selectedReport === 'customer_equipment' && reportData.summary_stats && (
+                  <ReportChart
+                    title="Equipment Distribution"
+                    description="Equipment with and without operators"
+                    data={[
+                      { label: 'Equipment with Operators', value: reportData.summary_stats.equipment_with_operators || 0 },
+                      { label: 'Equipment without Operators', value: reportData.summary_stats.equipment_without_operators || 0 }
+                    ]}
+                    type="pie"
+                  />
+                )}
+
+                {selectedReport === 'customer_equipment' && reportData.customer_groups && reportData.customer_groups.length > 0 && (
+                  <ReportChart
+                    title="Equipment per Customer"
+                    description="Total equipment count per customer"
+                    data={reportData.customer_groups
+                      .filter((customer: any) => customer.equipment_summary.total_equipment > 0)
+                      .slice(0, 10)
+                      .map((customer: any) => ({
+                        label: customer.customer_info.name || 'Unknown Customer',
+                        value: customer.equipment_summary.total_equipment || 0
+                      }))}
+                    type="bar"
+                  />
+                )}
                         </div>
 
               {/* Data Tables */}

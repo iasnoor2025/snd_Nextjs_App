@@ -127,10 +127,10 @@ export default function CreateQuotationPage() {
         setLoading(true);
 
         // Fetch customers
-        const customersResponse = await fetch('/api/customers');
+        const customersResponse = await fetch('/api/customers?limit=1000'); // Get all customers
         if (customersResponse.ok) {
           const customersData = await customersResponse.json();
-          setCustomers(customersData.data || []);
+          setCustomers(customersData.customers || []); // Fix: use customers instead of data
         }
 
         // Fetch equipment

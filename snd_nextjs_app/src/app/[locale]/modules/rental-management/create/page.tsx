@@ -140,10 +140,10 @@ export default function CreateRentalPage() {
   // Fetch customers
   const fetchCustomers = async () => {
     try {
-      const response = await fetch('/api/customers');
+      const response = await fetch('/api/customers?limit=1000'); // Get all customers
       if (response.ok) {
         const data = await response.json();
-        setCustomers(data);
+        setCustomers(data.customers || []); // Fix: use data.customers instead of data directly
       }
     } catch (err) {
       
