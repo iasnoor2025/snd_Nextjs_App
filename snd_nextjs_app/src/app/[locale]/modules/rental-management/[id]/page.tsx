@@ -67,6 +67,7 @@ import {
 } from '@/components/rental';
 import { useRentalItemConfirmation } from '@/hooks/use-rental-item-confirmation';
 import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
+import { EquipmentDropdown } from '@/components/ui/equipment-dropdown';
 
 interface RentalItem {
   id: string;
@@ -1955,8 +1956,7 @@ export default function RentalDetailPage() {
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="equipment">{t('rental.equipment')}</Label>
-              <Select
+              <EquipmentDropdown
                 value={itemFormData.equipmentId}
                 onValueChange={value => {
                   const selectedEquipment = equipment.find(eq => eq.id.toString() === value);
@@ -1968,36 +1968,18 @@ export default function RentalDetailPage() {
                     unitPrice: selectedEquipment?.daily_rate || 0,
                   }));
                 }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t('rental.selectEquipment')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {equipment.map(eq => (
-                    <SelectItem key={eq.id} value={eq.id.toString()}>
-                      {eq.name} - ${eq.daily_rate}/day
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder={t('rental.selectEquipment')}
+                label={t('rental.equipment')}
+                required
+              />
             </div>
             <div>
-              <Label htmlFor="operator">{t('rental.operator')}</Label>
-              <Select
+              <EmployeeDropdown
                 value={itemFormData.operatorId}
                 onValueChange={value => setItemFormData(prev => ({ ...prev, operatorId: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t('rental.selectOperator')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {employees.map(emp => (
-                    <SelectItem key={emp.id} value={emp.id.toString()}>
-                      {emp.first_name} {emp.last_name} - {emp.employee_id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder={t('rental.selectOperator')}
+                label={t('rental.operator')}
+              />
             </div>
             <div>
               <Label htmlFor="unitPrice">{t('rental.unitPrice')}</Label>
@@ -2132,22 +2114,12 @@ export default function RentalDetailPage() {
               </Select>
             </div>
             <div>
-              <Label htmlFor="editOperator">Operator</Label>
-              <Select
+              <EmployeeDropdown
                 value={itemFormData.operatorId}
                 onValueChange={value => setItemFormData(prev => ({ ...prev, operatorId: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select operator (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  {employees.map(emp => (
-                    <SelectItem key={emp.id} value={emp.id.toString()}>
-                      {emp.first_name} {emp.last_name} - {emp.employee_id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Select operator (optional)"
+                label="Operator"
+              />
             </div>
             <div>
               <Label htmlFor="editUnitPrice">Unit Price</Label>

@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
+import { EquipmentDropdown } from '@/components/ui/equipment-dropdown';
 import { format } from 'date-fns';
 import {
   ArrowLeft,
@@ -583,22 +584,13 @@ export default function CreateRentalPage() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                       <div>
-                        <Label>Equipment</Label>
-                        <Select
+                        <EquipmentDropdown
                           value={item.equipmentId}
                           onValueChange={value => updateRentalItem(index, 'equipmentId', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select equipment" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {equipment.map(eq => (
-                              <SelectItem key={eq.id} value={eq.id}>
-                                {eq.name} - {eq.model}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          placeholder="Select equipment"
+                          label="Equipment"
+                          required
+                        />
                       </div>
                       <div>
                         <Label>Unit Price</Label>
@@ -660,6 +652,14 @@ export default function CreateRentalPage() {
                           value={item.notes || ''}
                           onChange={e => updateRentalItem(index, 'notes', e.target.value)}
                           placeholder="Optional notes for this item..."
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <EmployeeDropdown
+                          value={item.operatorId}
+                          onValueChange={value => updateRentalItem(index, 'operatorId', value)}
+                          placeholder="Select operator (optional)"
+                          label="Operator"
                         />
                       </div>
                     </div>
