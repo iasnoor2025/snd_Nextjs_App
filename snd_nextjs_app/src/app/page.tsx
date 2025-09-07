@@ -216,7 +216,7 @@ export default function DashboardPage() {
   // Fetch Iqama data
   const fetchIqamaData = async () => {
     try {
-      const response = await fetch('/api/dashboard/iqama?limit=250');
+      const response = await fetch('/api/dashboard/iqama?limit=10000');
       if (response.ok) {
         const data = await response.json();
         setIqamaData(data.iqamaData || []);
@@ -345,7 +345,7 @@ export default function DashboardPage() {
   const fetchIqamaDataLegacy = async () => {
     try {
       setUpdatingIqama(true);
-      const response = await fetch('/api/employees/iqama');
+      const response = await fetch('/api/employees/iqama?limit=10000');
       if (!response.ok) {
         throw new Error(t('dashboard.failedToFetchIqamaData'));
       }

@@ -9,6 +9,8 @@ import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { and, desc, eq, gte, inArray, lte } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { EquipmentStatusService } from '@/lib/services/equipment-status-service';
+import { invalidateCacheByTag } from '@/lib/redis';
+import { CACHE_TAGS } from '@/lib/redis';
 
 function parseNumber(value: any): number | undefined {
   if (value === undefined || value === null || value === '') return undefined;
@@ -208,6 +210,9 @@ export const POST = withPermission(PermissionConfigs.maintenance.create)(
         console.error('Error updating equipment status immediately:', statusError);
         // Don't fail the maintenance creation if status update fails
       }
+
+      // Invalidate equipment cache to reflect status changes
+      await invalidateCacheByTag(CACHE_TAGS.EQUIPMENT);
 
       return NextResponse.json({ success: true, data: created });
     } catch (error) {

@@ -14,6 +14,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { withPermission } from '@/lib/rbac/api-middleware';
 import { PermissionConfigs } from '@/lib/rbac/api-middleware';
+import { invalidateCacheByTag } from '@/lib/redis';
+import { CACHE_TAGS } from '@/lib/redis';
 
 export const PUT = withPermission(PermissionConfigs.equipment.update)(
   async (
@@ -211,6 +213,9 @@ export const PUT = withPermission(PermissionConfigs.equipment.update)(
       .where(eq(equipmentRentalHistory.id, assignmentId))
       .limit(1);
 
+    // Invalidate equipment cache to reflect status changes
+    await invalidateCacheByTag(CACHE_TAGS.EQUIPMENT);
+
     return NextResponse.json({
       success: true,
       data: updatedAssignment[0],
@@ -220,7 +225,7 @@ export const PUT = withPermission(PermissionConfigs.equipment.update)(
         (employeeAssignment ? ' and employee assignment synced automatically' : ''),
     });
   } catch (error) {
-    
+    console.error('Error updating equipment assignment:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to update equipment assignment' },
       { status: 500 }
@@ -228,9 +233,12 @@ export const PUT = withPermission(PermissionConfigs.equipment.update)(
   }
 });
 
-export async function DELETE({ params }: { params: Promise<{ assignmentId: string }> }) {
+
+export const DELETE = withPermission(PermissionConfigs.equipment.delete)(
+  async (request: NextRequest, { params }: { params: Promise<{ assignmentId: string }> }) => {
   try {
-    const { assignmentId: assignmentIdParam } = await params;
+    const resolvedParams = await params;
+    const { assignmentId: assignmentIdParam } = resolvedParams;
     const assignmentId = parseInt(assignmentIdParam);
 
     if (isNaN(assignmentId)) {
@@ -248,65 +256,24 @@ export async function DELETE({ params }: { params: Promise<{ assignmentId: strin
       return NextResponse.json({ success: false, error: 'Assignment not found' }, { status: 404 });
     }
 
-    // If this is a manual assignment with an employee, also delete the corresponding employee assignment
-    let deletedEmployeeAssignment: any = null;
-    const assignmentToDelete = existingAssignment[0];
-    if (!assignmentToDelete) {
-      return NextResponse.json(
-        { success: false, error: 'Assignment data not found' },
-        { status: 404 }
-      );
-    }
-
-    if (assignmentToDelete.assignmentType === 'manual' && assignmentToDelete.employeeId) {
-      try {
-        // Find and delete the corresponding employee assignment
-        const employeeAssignment = await db
-          .select()
-          .from(employeeAssignments)
-          .where(
-            and(
-              eq(employeeAssignments.employeeId, assignmentToDelete.employeeId),
-              eq(employeeAssignments.type, 'manual'),
-              like(employeeAssignments.name, '%Equipment Assignment -%')
-            )
-          )
-          .limit(1);
-
-        if (employeeAssignment.length) {
-          const employeeAssignmentToDelete = employeeAssignment[0];
-          if (employeeAssignmentToDelete) {
-            await db
-              .delete(employeeAssignments)
-              .where(eq(employeeAssignments.id, employeeAssignmentToDelete.id));
-            deletedEmployeeAssignment = employeeAssignmentToDelete;
-            
-          }
-        }
-      } catch (assignmentError) {
-        
-        // Don't fail the equipment assignment deletion if employee assignment deletion fails
-      }
-    }
-
     // Delete the equipment assignment
     await db.delete(equipmentRentalHistory).where(eq(equipmentRentalHistory.id, assignmentId));
 
+    // Invalidate equipment cache to reflect status changes
+    await invalidateCacheByTag(CACHE_TAGS.EQUIPMENT);
+
     return NextResponse.json({
       success: true,
-      message:
-        'Equipment assignment deleted successfully' +
-        (deletedEmployeeAssignment ? ' and employee assignment deleted automatically' : ''),
+      message: 'Equipment assignment deleted successfully',
       data: {
-        deletedEquipmentAssignment: assignmentToDelete,
-        deletedEmployeeAssignment,
+        deletedEquipmentAssignment: existingAssignment[0],
       },
     });
   } catch (error) {
-    
+    console.error('Error deleting equipment assignment:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to delete equipment assignment' },
       { status: 500 }
     );
   }
-}
+});

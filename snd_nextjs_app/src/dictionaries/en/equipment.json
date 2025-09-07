@@ -129,7 +129,8 @@
     "cancel": "Cancel",
     "retry": "Retry",
     "refresh": "Refresh",
-    "addManualAssignment": "Add Manual Assignment"
+    "addManualAssignment": "Add Manual Assignment",
+    "delete": "Delete"
   },
   "messages": {
     "equipmentCreated": "Equipment created successfully",

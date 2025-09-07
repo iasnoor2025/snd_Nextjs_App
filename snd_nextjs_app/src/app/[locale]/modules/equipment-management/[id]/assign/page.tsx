@@ -11,6 +11,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   Table,
   TableBody,
   TableCell,
@@ -114,13 +122,34 @@ export default function EquipmentAssignmentPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAssignmentDialog, setShowAssignmentDialog] = useState(false);
-  const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [assignmentToDelete, setAssignmentToDelete] = useState<Assignment | null>(null);
 
   const equipmentId = params.id as string;
 
   // Get allowed actions for equipment management
   const _allowedActions = getAllowedActions('Equipment');
+
+  const handleDeleteClick = (assignment: Assignment) => {
+    setAssignmentToDelete(assignment);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!assignmentToDelete) return;
+    
+    try {
+      await ApiService.deleteEquipmentAssignment(assignmentToDelete.id);
+      toast.success(t('equipment.messages.assignmentDeletedSuccess'));
+      setDeleteDialogOpen(false);
+      setAssignmentToDelete(null);
+      // Refresh the page to show updated data
+      window.location.reload();
+    } catch (error) {
+      console.error('Error deleting assignment:', error);
+      toast.error(t('equipment.messages.deleteAssignmentError'));
+    }
+  };
 
   useEffect(() => {
     if (equipmentId) {
@@ -143,7 +172,8 @@ export default function EquipmentAssignmentPage() {
       if (historyResponse.success) {
         setAssignments(historyResponse.data);
       }
-    } catch (_error) {
+    } catch (error) {
+      console.error('Error fetching equipment:', error);
       toast.error(t('equipment.messages.loadingError'));
     } finally {
       setLoading(false);
@@ -157,7 +187,8 @@ export default function EquipmentAssignmentPage() {
       if (historyResponse.success) {
         setAssignments(historyResponse.data);
       }
-    } catch (_error) {
+    } catch (error) {
+      console.error('Error fetching assignments:', error);
       toast.error(t('equipment.messages.loadAssignmentHistoryError'));
     } finally {
       setLoading(false);
@@ -478,9 +509,7 @@ export default function EquipmentAssignmentPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => {
-                                  /* TODO: Implement delete */
-                                }}
+                                onClick={() => handleDeleteClick(assignment)}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -495,6 +524,38 @@ export default function EquipmentAssignmentPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('equipment.messages.confirmDeleteAssignment')}</DialogTitle>
+              <DialogDescription>
+                {assignmentToDelete && (
+                  <>
+                    {t('equipment.messages.confirmDeleteAssignment')}
+                    <br />
+                    <strong>
+                      {assignmentToDelete.assignment_type}: {
+                        assignmentToDelete.project?.name || 
+                        assignmentToDelete.rental?.rental_number || 
+                        'Unknown'
+                      }
+                    </strong>
+                  </>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+                {t('equipment.actions.cancel')}
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteConfirm}>
+                {t('equipment.actions.delete')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </ProtectedRoute>
   );

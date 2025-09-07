@@ -3,6 +3,8 @@ import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { db } from '@/lib/db';
 import { equipmentMaintenance, equipment, employees, equipmentMaintenanceItems } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
+import { invalidateCacheByTag } from '@/lib/redis';
+import { CACHE_TAGS } from '@/lib/redis';
 
 export const GET = withPermission(PermissionConfigs.maintenance.read)(
   async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
@@ -207,6 +209,9 @@ export const PUT = withPermission(PermissionConfigs.maintenance.update)(
         return { ...baseRows[0], items: itemsRows };
       });
 
+      // Invalidate equipment cache to reflect status changes
+      await invalidateCacheByTag(CACHE_TAGS.EQUIPMENT);
+
       return NextResponse.json({ success: true, data: updated });
     } catch (error) {
       console.error('Error updating maintenance:', error);
@@ -265,6 +270,9 @@ export const DELETE = withPermission(PermissionConfigs.maintenance.delete)(
       });
       
       console.log(`Successfully deleted maintenance record with ID: ${maintenanceId}`);
+      // Invalidate equipment cache to reflect status changes
+      await invalidateCacheByTag(CACHE_TAGS.EQUIPMENT);
+
       return NextResponse.json({ success: true, message: 'Maintenance record deleted successfully' });
     } catch (error) {
       console.error('Error deleting maintenance:', error);

@@ -3,6 +3,7 @@ import {
   employees,
   equipmentRentalHistory,
   equipment as equipmentTable,
+  equipmentMaintenance,
   projects,
   rentals,
 } from '@/lib/drizzle/schema';
@@ -27,7 +28,6 @@ const getEquipmentHandler = async (_request: NextRequest) => {
               id: equipmentTable.id,
               name: equipmentTable.name,
               model_number: equipmentTable.modelNumber,
-              status: equipmentTable.status,
               category_id: equipmentTable.categoryId,
               manufacturer: equipmentTable.manufacturer,
               daily_rate: equipmentTable.dailyRate,
@@ -70,6 +70,22 @@ const getEquipmentHandler = async (_request: NextRequest) => {
               .leftJoin(rentals, eq(equipmentRentalHistory.rentalId, rentals.id))
               .where(eq(equipmentRentalHistory.status, 'active'));
 
+            // Get all active maintenance records
+            const maintenanceRecords = await db
+              .select({
+                equipment_id: equipmentMaintenance.equipmentId,
+                maintenance_id: equipmentMaintenance.id,
+                maintenance_status: equipmentMaintenance.status,
+                maintenance_title: equipmentMaintenance.title,
+                maintenance_type: equipmentMaintenance.type,
+                scheduled_date: equipmentMaintenance.scheduledDate,
+                due_date: equipmentMaintenance.dueDate,
+                started_at: equipmentMaintenance.startedAt,
+                completed_at: equipmentMaintenance.completedAt,
+              })
+              .from(equipmentMaintenance)
+              .where(eq(equipmentMaintenance.status, 'open'));
+
             // Group assignments by equipment
             const assignmentsByEquipment = currentAssignments.reduce((acc, assignment) => {
               const equipmentId = assignment.equipment_id;
@@ -80,14 +96,38 @@ const getEquipmentHandler = async (_request: NextRequest) => {
               return acc;
             }, {} as Record<number, any[]>);
 
-            // Merge equipment data with assignments
+            // Group maintenance records by equipment
+            const maintenanceByEquipment = maintenanceRecords.reduce((acc, maintenance) => {
+              const equipmentId = maintenance.equipment_id;
+              if (!acc[equipmentId]) {
+                acc[equipmentId] = [];
+              }
+              acc[equipmentId].push(maintenance);
+              return acc;
+            }, {} as Record<number, any[]>);
+
+            // Merge equipment data with assignments and maintenance
             const equipmentWithAssignments = equipment.map((item) => {
               const assignments = assignmentsByEquipment[item.id] || [];
+              const maintenance = maintenanceByEquipment[item.id] || [];
+              
+              // Calculate dynamic status based on assignments and maintenance
+              let status = 'available';
+              if (maintenance.length > 0) {
+                status = 'maintenance';
+              } else if (assignments.length > 0) {
+                status = 'assigned';
+              }
+              
               return {
                 ...item,
                 assignments,
+                maintenance,
                 is_assigned: assignments.length > 0,
+                is_under_maintenance: maintenance.length > 0,
                 current_assignment: assignments[0] || null,
+                current_maintenance: maintenance[0] || null,
+                status,
               };
             });
 
@@ -103,8 +143,12 @@ const getEquipmentHandler = async (_request: NextRequest) => {
             const equipmentWithAssignments = equipment.map((item) => ({
               ...item,
               assignments: [],
+              maintenance: [],
               is_assigned: false,
+              is_under_maintenance: false,
               current_assignment: null,
+              current_maintenance: null,
+              status: 'available',
             }));
 
             return NextResponse.json({
@@ -129,7 +173,6 @@ const getEquipmentHandler = async (_request: NextRequest) => {
           id: equipmentTable.id,
           name: equipmentTable.name,
           model_number: equipmentTable.modelNumber,
-          status: equipmentTable.status,
           category_id: equipmentTable.categoryId,
           manufacturer: equipmentTable.manufacturer,
           daily_rate: equipmentTable.dailyRate,
@@ -151,8 +194,12 @@ const getEquipmentHandler = async (_request: NextRequest) => {
         data: equipment.map(item => ({
           ...item,
           assignments: [],
+          maintenance: [],
           is_assigned: false,
+          is_under_maintenance: false,
           current_assignment: null,
+          current_maintenance: null,
+          status: 'available',
         })),
         total: equipment.length,
       });

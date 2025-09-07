@@ -81,7 +81,8 @@
     "deleteDocument": "حذف المستند",
     "uploadFile": "رفع ملف",
     "downloadFile": "تحميل ملف",
-    "addManualAssignment": "إضافة مهمة يدوية"
+    "addManualAssignment": "إضافة مهمة يدوية",
+    "delete": "حذف"
   },
   "fields": {
     "basicInfo": "المعلومات الأساسية",
