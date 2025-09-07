@@ -749,6 +749,7 @@ export default function RentalDetailPage() {
   const [equipment, setEquipment] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
   const [supervisorDetails, setSupervisorDetails] = useState<any>(null);
+  const [equipmentNames, setEquipmentNames] = useState<{[key: string]: string}>({});
 
   // Helper function to convert Decimal to number
   const formatAmount = (amount: any): string => {
@@ -876,6 +877,11 @@ export default function RentalDetailPage() {
       }
 
       setRental(data);
+      
+      // Fetch equipment names for rental items that have fallback names
+      if (data.rentalItems && data.rentalItems.length > 0) {
+        fetchEquipmentNames(data.rentalItems);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       toast.error('Failed to fetch rental details');
@@ -898,17 +904,63 @@ export default function RentalDetailPage() {
     }
   };
 
+  // Fetch equipment names for rental items
+  const fetchEquipmentNames = async (rentalItems: any[]) => {
+    const equipmentIds = rentalItems
+      .filter(item => item.equipmentId && item.equipmentName?.startsWith('Equipment '))
+      .map(item => item.equipmentId);
+    
+    if (equipmentIds.length === 0) return;
+    
+    try {
+      // Use the existing equipment data if available, otherwise fetch all equipment
+      let equipmentData = equipment;
+      if (equipmentData.length === 0) {
+        const response = await fetch('/api/equipment?limit=1000');
+        if (response.ok) {
+          const data = await response.json();
+          equipmentData = data.data || data.equipment || data || [];
+        }
+      }
+      
+      const nameMap: {[key: string]: string} = {};
+      equipmentData.forEach((eq: any) => {
+        if (equipmentIds.includes(eq.id)) {
+          nameMap[eq.id.toString()] = eq.name;
+        }
+      });
+      
+      setEquipmentNames(prev => ({ ...prev, ...nameMap }));
+    } catch (error) {
+      console.error('Failed to fetch equipment names:', error);
+    }
+  };
+
   // Fetch employees
   const fetchEmployees = async () => {
     try {
-      const response = await fetch('/api/employees');
+      // Request all employees to ensure we get the one with ID 1
+      const response = await fetch('/api/employees?all=true');
       if (!response.ok) {
         throw new Error('Failed to fetch employees');
       }
       const data = await response.json();
-      setEmployees(data.data || data.employees || []);
-    } catch (err) {
+      const employeesData = data.data || data.employees || [];
+      setEmployees(employeesData);
       
+      // Debug logging for employees
+      console.log('Employees loaded:', {
+        count: employeesData.length,
+        sampleEmployees: employeesData.slice(0, 3).map(emp => ({
+          id: emp.id,
+          type: typeof emp.id,
+          name: `${emp.first_name} ${emp.last_name}`,
+          fileNumber: emp.file_number
+        })),
+        employeeWithId1: employeesData.find(emp => emp.id === 1 || emp.id === '1')
+      });
+    } catch (err) {
+      console.error('Error fetching employees:', err);
     }
   };
 
@@ -1112,7 +1164,7 @@ export default function RentalDetailPage() {
     if (!rental) return;
 
     // Validate required fields
-    if (!itemFormData.equipmentName || !itemFormData.unitPrice) {
+    if (!itemFormData.equipmentId || !itemFormData.unitPrice) {
       toast.error('Please fill in all required fields: Equipment and Unit Price');
       return;
     }
@@ -1126,6 +1178,8 @@ export default function RentalDetailPage() {
         totalPrice,
         rentalId: rental.id,
       };
+
+      console.log('Sending rental item data:', requestData);
 
       const response = await fetch(`/api/rentals/${rental.id}/items`, {
         method: 'POST',
@@ -1183,7 +1237,7 @@ export default function RentalDetailPage() {
     if (!rental) return;
 
     // Validate required fields
-    if (!itemFormData.equipmentName || !itemFormData.unitPrice) {
+    if (!itemFormData.equipmentId || !itemFormData.unitPrice) {
       toast.error('Please fill in all required fields: Equipment and Unit Price');
       return;
     }
@@ -1589,14 +1643,70 @@ export default function RentalDetailPage() {
                     </TableHeader>
                     <TableBody>
                       {rental.rentalItems?.map(item => {
+                        // Debug logging for rental item data
+                        console.log('Rental item data:', {
+                          itemId: item.id,
+                          equipmentName: item.equipmentName,
+                          operatorId: item.operatorId,
+                          operatorIdType: typeof item.operatorId,
+                          hasOperatorId: item.operatorId !== null && item.operatorId !== undefined
+                        });
+                        
                         // Find operator name from employees list
                         const operatorId = item.operatorId;
-                        const operator = employees.find(
-                          emp => emp.id.toString() === operatorId?.toString()
-                        );
-                        const operatorName = operator
-                          ? `${operator.first_name} ${operator.last_name}`
-                          : 'N/A';
+                        let operatorName = 'N/A';
+                        
+                        if (operatorId) {
+                          // Try to find the operator by ID
+                          const operator = employees.find(emp => {
+                            // Handle different data types and formats
+                            const empId = emp.id;
+                            const opId = operatorId;
+                            
+                            // Direct comparison
+                            if (empId === opId) return true;
+                            
+                            // String comparison
+                            if (String(empId) === String(opId)) return true;
+                            
+                            // Number comparison
+                            if (Number(empId) === Number(opId)) return true;
+                            
+                            return false;
+                          });
+                          
+                          if (operator) {
+                            operatorName = `${operator.first_name} ${operator.last_name}`;
+                          } else {
+                            // If not found in employees list, try to fetch directly
+                            console.log('Operator not found in employees list, operatorId:', operatorId);
+                            // For now, show the operatorId as fallback
+                            operatorName = `Employee ${operatorId}`;
+                          }
+                          
+                          // Enhanced debug logging
+                          console.log('Operator lookup result:', {
+                            operatorId,
+                            operatorIdType: typeof operatorId,
+                            operatorFound: !!operator,
+                            operatorName,
+                            employeesCount: employees.length,
+                            sampleEmployeeIds: employees.slice(0, 5).map(emp => ({
+                              id: emp.id,
+                              type: typeof emp.id,
+                              name: `${emp.first_name} ${emp.last_name}`
+                            })),
+                            comparisonAttempts: employees.slice(0, 3).map(emp => ({
+                              empId: emp.id,
+                              opId: operatorId,
+                              directMatch: emp.id === operatorId,
+                              stringMatch: String(emp.id) === String(operatorId),
+                              numberMatch: Number(emp.id) === Number(operatorId)
+                            }))
+                          });
+                        } else {
+                          console.log('No operatorId found for item:', item.id);
+                        }
 
                         // Calculate duration if we have start and end dates
                         let durationText = 'N/A';
@@ -1622,7 +1732,11 @@ export default function RentalDetailPage() {
 
                         return (
                           <TableRow key={item.id}>
-                            <TableCell className="font-medium">{item.equipmentName}</TableCell>
+                            <TableCell className="font-medium">
+                              {item.equipmentName?.startsWith('Equipment ') && item.equipmentId 
+                                ? (equipmentNames[item.equipmentId.toString()] || item.equipmentName)
+                                : item.equipmentName}
+                            </TableCell>
                                                          <TableCell className="font-mono">SAR {formatAmount(item.unitPrice)}</TableCell>
                             <TableCell>
                               <Badge variant="outline" className="capitalize">
@@ -1965,7 +2079,7 @@ export default function RentalDetailPage() {
                     ...prev,
                     equipmentId: value,
                     equipmentName: selectedEquipment?.name || '',
-                    unitPrice: selectedEquipment?.daily_rate || 0,
+                    unitPrice: selectedEquipment?.dailyRate || selectedEquipment?.daily_rate || 0,
                   }));
                 }}
                 placeholder={t('rental.selectEquipment')}
@@ -2097,7 +2211,7 @@ export default function RentalDetailPage() {
                     ...prev,
                     equipmentId: value,
                     equipmentName: selectedEquipment?.name || '',
-                    unitPrice: selectedEquipment?.daily_rate || 0,
+                    unitPrice: selectedEquipment?.dailyRate || selectedEquipment?.daily_rate || 0,
                   }));
                 }}
               >

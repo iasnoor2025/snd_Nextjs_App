@@ -20,6 +20,7 @@ export interface Equipment {
   doorNumber?: string;
   status?: string;
   dailyRate?: number;
+  daily_rate?: number;
   weeklyRate?: number;
   monthlyRate?: number;
   category?: string;
@@ -243,9 +244,9 @@ export function EquipmentDropdown({
                           Door: {item.doorNumber}
                         </span>
                       )}
-                      {item.dailyRate && (
+                      {(item.dailyRate || item.daily_rate) && (
                         <span className="text-xs text-purple-600">
-                          Daily Rate: SAR {item.dailyRate}
+                          Daily Rate: SAR {item.dailyRate || item.daily_rate}
                         </span>
                       )}
                     </div>

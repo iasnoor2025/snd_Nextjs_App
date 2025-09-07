@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 
     console.log('Generating customer equipment report...', { customerId, startDate, endDate });
 
-    // Build a much simpler query - get basic rental and equipment data first
+    // Build a simpler query - get customers with rentals and equipment
     let customerEquipmentQuery = db
       .select({
         customer_id: customers.id,
@@ -59,9 +59,8 @@ export async function GET(request: NextRequest) {
       })
       .from(customers)
       .innerJoin(rentals, eq(customers.id, rentals.customerId))
-      .leftJoin(rentalItems, eq(rentals.id, rentalItems.rentalId))
-      .leftJoin(employees, eq(rentalItems.operatorId, employees.id))
-      .where(isNotNull(rentalItems.equipmentId)); // Only rentals with equipment
+      .innerJoin(rentalItems, eq(rentals.id, rentalItems.rentalId)) // Changed to innerJoin to ensure we have equipment
+      .leftJoin(employees, eq(rentalItems.operatorId, employees.id));
 
     // Apply customer filter if provided
     if (customerId) {
@@ -104,15 +103,18 @@ export async function GET(request: NextRequest) {
     console.log('Raw customer equipment data:', customerEquipmentData);
     console.log('Raw data length:', customerEquipmentData.length);
 
-    // Create simple customer groups from raw data
-    const customerGroupsMap = new Map();
-    
-    customerEquipmentData.forEach((item: any) => {
+    // Create simple customer groups from raw data using reduce (simpler approach)
+    const customerGroups = customerEquipmentData.reduce((acc: any, item: any) => {
       console.log('Processing item:', item);
+      console.log('Item customer_id:', item.customer_id);
+      console.log('Item rental_id:', item.rental_id);
+      console.log('Item equipment_id:', item.equipment_id);
+      console.log('Item operator_id:', item.operator_id);
+      
       const customerId = item.customer_id;
       
-      if (!customerGroupsMap.has(customerId)) {
-        customerGroupsMap.set(customerId, {
+      if (!acc[customerId]) {
+        acc[customerId] = {
           customer_info: {
             id: item.customer_id,
             name: item.customer_name,
@@ -122,21 +124,20 @@ export async function GET(request: NextRequest) {
             email: item.email,
             city: item.city
           },
-          rentals: new Map(),
+          rentals: [],
           equipment_summary: {
             total_equipment: 0,
             total_operators: 0,
             equipment_with_operators: 0,
             equipment_without_operators: 0
           }
-        });
+        };
       }
       
-      const customerGroup = customerGroupsMap.get(customerId);
-      
       // Add rental if not exists
-      if (!customerGroup.rentals.has(item.rental_id)) {
-        customerGroup.rentals.set(item.rental_id, {
+      const existingRental = acc[customerId].rentals.find((r: any) => r.id === item.rental_id);
+      if (!existingRental && item.rental_id) {
+        acc[customerId].rentals.push({
           id: item.rental_id,
           rental_number: item.rental_number,
           status: item.rental_status,
@@ -148,49 +149,49 @@ export async function GET(request: NextRequest) {
       }
       
       // Add equipment to rental
-      const rental = customerGroup.rentals.get(item.rental_id);
-      if (rental && item.equipment_id) {
-        rental.equipment.push({
-          id: item.equipment_id,
-          name: item.equipment_name,
-          type: 'N/A', // Simplified for now
-          model: 'N/A', // Simplified for now
-          serial: 'N/A', // Simplified for now
-          operator: item.operator_id ? {
-            id: item.operator_id,
-            name: item.operator_name,
-            phone: item.operator_phone,
-            email: item.operator_email,
-            assignment_status: 'active',
-            assignment_start_date: null,
-            assignment_end_date: null
-          } : null
-        });
-        
-        // Update summary
-        customerGroup.equipment_summary.total_equipment++;
-        if (item.operator_id) {
-          customerGroup.equipment_summary.total_operators++;
-          customerGroup.equipment_summary.equipment_with_operators++;
-        } else {
-          customerGroup.equipment_summary.equipment_without_operators++;
+      if (item.rental_id && item.equipment_id) {
+        const rental = acc[customerId].rentals.find((r: any) => r.id === item.rental_id);
+        if (rental) {
+          console.log('Adding equipment to rental:', item.equipment_id);
+          rental.equipment.push({
+            id: item.equipment_id,
+            name: item.equipment_name,
+            type: 'N/A', // Simplified for now
+            model: 'N/A', // Simplified for now
+            serial: 'N/A', // Simplified for now
+            operator: item.operator_id ? {
+              id: item.operator_id,
+              name: item.operator_name,
+              phone: item.operator_phone,
+              email: item.operator_email,
+              assignment_status: 'active',
+              assignment_start_date: null,
+              assignment_end_date: null
+            } : null
+          });
+          
+          // Update summary
+          acc[customerId].equipment_summary.total_equipment++;
+          if (item.operator_id) {
+            acc[customerId].equipment_summary.total_operators++;
+            acc[customerId].equipment_summary.equipment_with_operators++;
+          } else {
+            acc[customerId].equipment_summary.equipment_without_operators++;
+          }
+          console.log('Updated equipment summary:', acc[customerId].equipment_summary);
         }
       }
-    });
+      
+      return acc;
+    }, {});
     
-    // Convert Map to Array format
-    const customerGroups = Array.from(customerGroupsMap.values()).map(group => ({
-      ...group,
-      rentals: Array.from(group.rentals.values())
-    }));
-    
-    console.log('Customer groups after processing:', customerGroups);
-    console.log('Customer groups count:', customerGroups.length);
+    const finalCustomerGroups = Object.values(customerGroups);
+    console.log('Customer groups after processing:', finalCustomerGroups);
+    console.log('Customer groups count:', finalCustomerGroups.length);
 
     // Summary is already calculated inline above
 
-    // If no customer groups were created, create a simple structure from raw data
-    let finalCustomerGroups = Object.values(customerGroups);
+    // Use the customer groups we just created
     if (finalCustomerGroups.length === 0 && customerEquipmentData.length > 0) {
       console.log('No customer groups created, creating simple structure from raw data');
       const simpleGroups = customerEquipmentData.reduce((acc: any, item: any) => {

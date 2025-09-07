@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { employeeAssignments, employees } from '@/lib/drizzle/schema';
+import { employeeAssignments, employees, equipment } from '@/lib/drizzle/schema';
 import { RentalService } from '@/lib/services/rental-service';
 import { and, eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     // Validate required fields
     const missingFields: string[] = [];
-    if (!body.equipmentName) missingFields.push('equipmentName');
+    if (!body.equipmentId && !body.equipmentName) missingFields.push('equipmentId or equipmentName');
     if (!body.unitPrice) missingFields.push('unitPrice');
 
     if (missingFields.length > 0) {
@@ -30,6 +30,27 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         },
         { status: 400 }
       );
+    }
+
+    // If equipmentName is not provided but equipmentId is, fetch equipment name from database
+    let equipmentName = body.equipmentName;
+    if (!equipmentName && body.equipmentId) {
+      try {
+        const equipmentRecord = await db
+          .select({ name: equipment.name })
+          .from(equipment)
+          .where(eq(equipment.id, parseInt(body.equipmentId)))
+          .limit(1);
+        
+        if (equipmentRecord.length > 0) {
+          equipmentName = equipmentRecord[0].name;
+        } else {
+          equipmentName = `Equipment ${body.equipmentId}`;
+        }
+      } catch (error) {
+        console.error('Failed to fetch equipment name:', error);
+        equipmentName = `Equipment ${body.equipmentId}`;
+      }
     }
 
     // Calculate total price based on rate type and duration
@@ -61,7 +82,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const rentalItem = await RentalService.addRentalItem({
       rentalId: parseInt(rentalId),
       equipmentId: body.equipmentId ? parseInt(body.equipmentId) : null,
-      equipmentName: body.equipmentName,
+      equipmentName: equipmentName,
       unitPrice: parseFloat(body.unitPrice),
       totalPrice: totalPrice,
       rateType: body.rateType || 'daily',
@@ -80,9 +101,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           startDate: new Date().toISOString().split('T')[0],
           endDate: null,
           status: 'active',
-          notes: `Assigned to rental item: ${body.equipmentName}`,
+          notes: `Assigned to rental item: ${equipmentName}`,
           location: 'Rental Site',
-          name: `Rental Assignment - ${body.equipmentName}`,
+          name: `Rental Assignment - ${equipmentName}`,
           type: 'rental',
           createdAt: new Date().toISOString().split('T')[0],
           updatedAt: new Date().toISOString().split('T')[0]
@@ -180,7 +201,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     // Validate required fields
     const missingFields: string[] = [];
-    if (!body.equipmentName) missingFields.push('equipmentName');
+    if (!body.equipmentId && !body.equipmentName) missingFields.push('equipmentId or equipmentName');
     if (!body.unitPrice) missingFields.push('unitPrice');
     if (!body.itemId) missingFields.push('itemId');
 
@@ -192,6 +213,27 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         },
         { status: 400 }
       );
+    }
+
+    // If equipmentName is not provided but equipmentId is, fetch equipment name from database
+    let equipmentName = body.equipmentName;
+    if (!equipmentName && body.equipmentId) {
+      try {
+        const equipmentRecord = await db
+          .select({ name: equipment.name })
+          .from(equipment)
+          .where(eq(equipment.id, parseInt(body.equipmentId)))
+          .limit(1);
+        
+        if (equipmentRecord.length > 0) {
+          equipmentName = equipmentRecord[0].name;
+        } else {
+          equipmentName = `Equipment ${body.equipmentId}`;
+        }
+      } catch (error) {
+        console.error('Failed to fetch equipment name:', error);
+        equipmentName = `Equipment ${body.equipmentId}`;
+      }
     }
 
     // Calculate total price based on rate type and duration
@@ -222,7 +264,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     // Update rental item
     const updatedItem = await RentalService.updateRentalItem(parseInt(body.itemId), {
       equipmentId: body.equipmentId ? parseInt(body.equipmentId) : null,
-      equipmentName: body.equipmentName,
+      equipmentName: equipmentName,
       unitPrice: parseFloat(body.unitPrice),
       totalPrice: totalPrice,
       rateType: body.rateType || 'daily',
@@ -273,9 +315,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             startDate: new Date().toISOString().split('T')[0],
             endDate: null,
             status: 'active',
-            notes: `Assigned to rental item: ${body.equipmentName} (Updated)`,
+            notes: `Assigned to rental item: ${equipmentName} (Updated)`,
             location: 'Rental Site',
-            name: `Rental Assignment - ${body.equipmentName}`,
+            name: `Rental Assignment - ${equipmentName}`,
             type: 'rental',
             createdAt: new Date().toISOString().split('T')[0],
             updatedAt: new Date().toISOString().split('T')[0]
