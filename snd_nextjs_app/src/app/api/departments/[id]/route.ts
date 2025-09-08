@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { PermissionConfigs, withPermission } from '@/lib/rbac/api-middleware';
 
-export const GET = withPermission(
+export const GET = withPermission(PermissionConfigs.department.read)(
   async (_request: NextRequest, { params }: { params: { id: string } }) => {
     try {
       const { id } = params;
@@ -61,11 +61,10 @@ export const GET = withPermission(
         { status: 500 }
       );
     }
-  },
-  PermissionConfigs.department.read
+  }
 );
 
-export const PUT = withPermission(
+export const PUT = withPermission(PermissionConfigs.department.update)(
   async (request: NextRequest, { params }: { params: { id: string } }) => {
     try {
       const { id } = params;
@@ -187,11 +186,10 @@ export const PUT = withPermission(
         { status: 500 }
       );
     }
-  },
-  PermissionConfigs.department.update
+  }
 );
 
-export const DELETE = withPermission(
+export const DELETE = withPermission(PermissionConfigs.department.delete)(
   async (_request: NextRequest, { params }: { params: { id: string } }) => {
     try {
       const { id } = params;
@@ -252,6 +250,5 @@ export const DELETE = withPermission(
         { status: 500 }
       );
     }
-  },
-  PermissionConfigs.department.delete
+  }
 );
