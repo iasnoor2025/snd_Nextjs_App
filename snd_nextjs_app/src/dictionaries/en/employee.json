@@ -100,7 +100,8 @@
     "refresh": "Refresh",
     "updateDrivingLicense": "Update Driving License",
     "updating": "Updating...",
-    "clear": "Clear"
+    "clear": "Clear",
+    "saving": "Saving..."
   },
 
   "sync": {
@@ -187,6 +188,8 @@
     "selectDepartment": "Select Department",
     "selectDesignation": "Select Designation",
     "noDepartment": "No Department",
+    "searchDepartment": "Search departments...",
+    "searchDesignation": "Search designations...",
     "overtimeFixedRateDescription": "Fixed amount per overtime hour (overrides multiplier)",
     "overtimeRateMultiplierDescription": "Multiplies the hourly rate (e.g., 1.5x for time and a half) - Auto-calculated",
     "chooseOvertimeMethod": "Choose one overtime calculation method:",
@@ -255,7 +258,11 @@
     "departmentAddError": "Failed to add department",
     "designationNameRequired": "Designation name is required",
     "designationUpdatedSuccess": "Designation updated successfully",
-    "designationUpdateError": "Failed to update designation"
+    "designationUpdateError": "Failed to update designation",
+    "noDepartmentsFound": "No departments found",
+    "noDesignationsFound": "No designations found",
+    "departmentDeleteError": "Failed to delete department",
+    "designationDeleteError": "Failed to delete designation"
   },
 
   "confirmDelete": {

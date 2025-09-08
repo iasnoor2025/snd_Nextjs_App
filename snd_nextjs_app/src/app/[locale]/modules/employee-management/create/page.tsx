@@ -24,6 +24,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { NationalityDropdown } from '@/components/shared/NationalityDropdown';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import {
   ArrowLeft,
   CreditCard,
@@ -263,12 +264,12 @@ export default function CreateEmployeePage() {
           <Card>
             <CardContent className="p-6">
               <div className="text-center">
-                <h2 className="text-2xl font-bold text-red-600 mb-4">{t('common:accessDenied')}</h2>
-                <p className="text-gray-600 mb-4">{t('employee:messages.noCreatePermission')}</p>
+                <h2 className="text-2xl font-bold text-red-600 mb-4">{t('common.messages.accessDenied')}</h2>
+                <p className="text-gray-600 mb-4">{t('employee.messages.noCreatePermission')}</p>
                 <Link href="/modules/employee-management">
                   <Button variant="outline">
                     <ArrowLeft className="w-4 h-4 mr-2" />
-                    {t('common:backToList')}
+                    {t('employee.actions.backToList')}
                   </Button>
                 </Link>
               </div>
@@ -512,16 +513,16 @@ export default function CreateEmployeePage() {
             ...prev,
             [field]: result.url,
           }));
-          toast.success(t('employee:messages.fileUploadSuccess'));
+          toast.success(t('employee.messages.fileUploadSuccess'));
         } else {
-          toast.error(result.message || t('employee:messages.fileUploadError'));
+          toast.error(result.message || t('employee.messages.fileUploadError'));
         }
       } else {
-        toast.error(t('employee:messages.fileUploadError'));
+        toast.error(t('employee.messages.fileUploadError'));
       }
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error(t('employee:messages.fileUploadError'));
+      toast.error(t('employee.messages.fileUploadError'));
     }
   };
 
@@ -561,18 +562,18 @@ export default function CreateEmployeePage() {
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          toast.success(t('employee:messages.createSuccess'));
+          toast.success(t('employee.messages.createSuccess'));
           router.push('/modules/employee-management');
         } else {
-          toast.error(result.message || t('employee:messages.createError'));
+          toast.error(result.message || t('employee.messages.createError'));
         }
       } else {
         const errorData = await response.json();
-        toast.error(errorData.message || t('employee:messages.createError'));
+        toast.error(errorData.message || t('employee.messages.createError'));
       }
     } catch (error) {
       
-      toast.error(t('employee:messages.createError'));
+      toast.error(t('employee.messages.createError'));
     } finally {
       setIsLoading(false);
     }
@@ -585,11 +586,11 @@ export default function CreateEmployeePage() {
           <Link href="/modules/employee-management">
             <Button variant="outline" className="mb-4">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              {t('common:backToList')}
+              {t('employee.actions.backToList')}
             </Button>
           </Link>
-          <h1 className="text-3xl font-bold">{t('employee:create.title')}</h1>
-          <p className="text-gray-600 mt-2">{t('employee:create.description')}</p>
+          <h1 className="text-3xl font-bold">{t('employee.create.title')}</h1>
+          <p className="text-gray-600 mt-2">{t('employee.create.description')}</p>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -597,27 +598,27 @@ export default function CreateEmployeePage() {
             <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="basic" className="flex items-center gap-2">
                 <User className="w-4 h-4" />
-                {t('employee:create.tabs.basic')}
+                {t('employee.create.tabs.basic')}
               </TabsTrigger>
               <TabsTrigger value="employment" className="flex items-center gap-2">
                 <Shield className="w-4 h-4" />
-                {t('employee:create.tabs.employment')}
+                {t('employee.create.tabs.employment')}
               </TabsTrigger>
               <TabsTrigger value="salary" className="flex items-center gap-2">
                 <CreditCard className="w-4 h-4" />
-                {t('employee:create.tabs.salary')}
+                {t('employee.create.tabs.salary')}
               </TabsTrigger>
               <TabsTrigger value="documents" className="flex items-center gap-2">
                 <FileText className="w-4 h-4" />
-                {t('employee:create.tabs.documents')}
+                {t('employee.create.tabs.documents')}
               </TabsTrigger>
               <TabsTrigger value="address" className="flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
-                {t('employee:create.tabs.address')}
+                {t('employee.create.tabs.address')}
               </TabsTrigger>
               <TabsTrigger value="settings" className="flex items-center gap-2">
                 <Shield className="w-4 h-4" />
-                {t('employee:create.tabs.settings')}
+                {t('employee.create.tabs.settings')}
               </TabsTrigger>
             </TabsList>
 
@@ -625,13 +626,13 @@ export default function CreateEmployeePage() {
             <TabsContent value="basic" className="mt-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>{t('employee:create.basic.title')}</CardTitle>
-                  <CardDescription>{t('employee:create.basic.description')}</CardDescription>
+                  <CardTitle>{t('employee.create.basic.title')}</CardTitle>
+                  <CardDescription>{t('employee.create.basic.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="fileNumber">{t('employee:fields.fileNumber')} *</Label>
+                      <Label htmlFor="fileNumber">{t('employee.fields.fileNumber')} *</Label>
                       <Input
                         id="fileNumber"
                         value={formData.fileNumber}
@@ -640,18 +641,18 @@ export default function CreateEmployeePage() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="nationality">{t('employee:fields.nationality')}</Label>
+                      <Label htmlFor="nationality">{t('employee.fields.nationality')}</Label>
                       <NationalityDropdown
                         value={formData.nationality || ''}
                         onValueChange={(value) => handleInputChange('nationality', value)}
-                        placeholder={t('employee:fields.nationality')}
+                        placeholder={t('employee.fields.nationality')}
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <Label htmlFor="first_name">{t('employee:fields.firstName')} *</Label>
+                      <Label htmlFor="first_name">{t('employee.fields.firstName')} *</Label>
                       <Input
                         id="first_name"
                         value={formData.first_name}
@@ -660,7 +661,7 @@ export default function CreateEmployeePage() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="middle_name">{t('employee:fields.middleName')}</Label>
+                      <Label htmlFor="middle_name">{t('employee.fields.middleName')}</Label>
                       <Input
                         id="middle_name"
                         value={formData.middle_name}
@@ -668,7 +669,7 @@ export default function CreateEmployeePage() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="last_name">{t('employee:fields.lastName')} *</Label>
+                      <Label htmlFor="last_name">{t('employee.fields.lastName')} *</Label>
                       <Input
                         id="last_name"
                         value={formData.last_name}
@@ -680,7 +681,7 @@ export default function CreateEmployeePage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="email">{t('employee:fields.email')}</Label>
+                      <Label htmlFor="email">{t('employee.fields.email')}</Label>
                       <Input
                         id="email"
                         type="email"
@@ -689,7 +690,7 @@ export default function CreateEmployeePage() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="phone">{t('employee:fields.phone')}</Label>
+                      <Label htmlFor="phone">{t('employee.fields.phone')}</Label>
                       <Input
                         id="phone"
                         value={formData.phone}
@@ -700,7 +701,7 @@ export default function CreateEmployeePage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <Label htmlFor="date_of_birth">{t('employee:fields.dateOfBirth')}</Label>
+                      <Label htmlFor="date_of_birth">{t('employee.fields.dateOfBirth')}</Label>
                       <Input
                         id="date_of_birth"
                         type="date"
@@ -709,7 +710,7 @@ export default function CreateEmployeePage() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="hire_date">{t('employee:fields.hireDate')}</Label>
+                      <Label htmlFor="hire_date">{t('employee.fields.hireDate')}</Label>
                       <Input
                         id="hire_date"
                         type="date"
@@ -726,31 +727,29 @@ export default function CreateEmployeePage() {
             <TabsContent value="employment" className="mt-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>{t('employee:create.employment.title')}</CardTitle>
-                  <CardDescription>{t('employee:create.employment.description')}</CardDescription>
+                  <CardTitle>{t('employee.create.employment.title')}</CardTitle>
+                  <CardDescription>{t('employee.create.employment.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="department_id">{t('employee:fields.department')}</Label>
+                      <Label htmlFor="department_id">{t('employee.fields.department')}</Label>
                       <div className="flex gap-2">
-                        <Select
+                        <SearchableSelect
                           value={formData.department_id?.toString() || ''}
                           onValueChange={value =>
-                            handleInputChange('department_id', parseInt(value))
+                            handleInputChange('department_id', value ? parseInt(value) : null)
                           }
-                        >
-                          <SelectTrigger className="flex-1">
-                            <SelectValue placeholder={t('employee:fields.selectDepartment')} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {departments.map(dept => (
-                              <SelectItem key={`dept-${dept.id}`} value={dept.id.toString()}>
-                                {dept.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          options={departments.map(dept => ({
+                            value: dept.id.toString(),
+                            label: dept.name,
+                            ...dept
+                          }))}
+                          placeholder={t('employee.fields.selectDepartment')}
+                          searchPlaceholder={t('employee.fields.searchDepartment')}
+                          emptyMessage={t('employee.messages.noDepartmentsFound')}
+                          className="flex-1"
+                        />
                         <Button
                           type="button"
                           variant="outline"
@@ -772,11 +771,11 @@ export default function CreateEmployeePage() {
                               setEditingDepartment(selectedDept);
                               setShowEditDepartment(true);
                             } else {
-                              toast.error(t('employee:messages.selectDepartmentToEdit'));
+                              toast.error(t('employee.messages.selectDepartmentToEdit'));
                             }
                           }}
                           className="px-3"
-                          disabled={!formData.department_id}
+                          disabled={!formData.department_id || formData.department_id === null}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -790,13 +789,13 @@ export default function CreateEmployeePage() {
                             );
                             if (selectedDept) {
                               const confirmed = await confirm({
-                                title: t('employee:confirmDelete.department.title'),
-                                description: t('employee:confirmDelete.department.description', {
+                                title: t('employee.confirmDelete.department.title'),
+                                description: t('employee.confirmDelete.department.description', {
                                   name: selectedDept.name,
                                 }),
                                 variant: 'destructive',
-                                confirmText: t('common:delete'),
-                                cancelText: t('common:cancel'),
+                                confirmText: t('employee.actions.delete'),
+                                cancelText: t('employee.actions.cancel'),
                               });
 
                               if (confirmed) {
@@ -809,52 +808,50 @@ export default function CreateEmployeePage() {
                                   );
                                   const result = await response.json();
                                   if (result.success) {
-                                    toast.success(t('employee:messages.deleteSuccess'));
+                                    toast.success(t('employee.messages.deleteSuccess'));
                                     setDepartments(prev =>
                                       prev.filter(d => d.id !== selectedDept.id)
                                     );
                                     setFormData(prev => ({ ...prev, department_id: null }));
                                   } else {
                                     toast.error(
-                                      result.message || t('employee:messages.deleteError')
+                                      result.message || t('employee.messages.departmentDeleteError')
                                     );
                                   }
                                 } catch (error) {
                                   
-                                  toast.error(t('employee:messages.deleteError'));
+                                  toast.error(t('employee.messages.departmentDeleteError'));
                                 }
                               }
                             } else {
-                              toast.error(t('employee:messages.selectDepartmentToDelete'));
+                              toast.error(t('employee.messages.selectDepartmentToDelete'));
                             }
                           }}
                           className="px-3"
-                          disabled={!formData.department_id}
+                          disabled={!formData.department_id || formData.department_id === null}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
                     <div>
-                      <Label htmlFor="designation_id">{t('employee:fields.designation')}</Label>
+                      <Label htmlFor="designation_id">{t('employee.fields.designation')}</Label>
                       <div className="flex gap-2">
-                        <Select
+                        <SearchableSelect
                           value={formData.designation_id?.toString() || ''}
                           onValueChange={value =>
-                            handleInputChange('designation_id', parseInt(value))
+                            handleInputChange('designation_id', value ? parseInt(value) : null)
                           }
-                        >
-                          <SelectTrigger className="flex-1">
-                            <SelectValue placeholder={t('employee:fields.selectDesignation')} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {designations.map(desig => (
-                              <SelectItem key={`desig-${desig.id}`} value={desig.id.toString()}>
-                                {desig.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          options={designations.map(desig => ({
+                            value: desig.id.toString(),
+                            label: desig.name,
+                            ...desig
+                          }))}
+                          placeholder={t('employee.fields.selectDesignation')}
+                          searchPlaceholder={t('employee.fields.searchDesignation')}
+                          emptyMessage={t('employee.messages.noDesignationsFound')}
+                          className="flex-1"
+                        />
                         <Button
                           type="button"
                           variant="outline"
@@ -876,11 +873,11 @@ export default function CreateEmployeePage() {
                               setEditingDesignation(selectedDesig);
                               setShowEditDesignation(true);
                             } else {
-                              toast.error(t('employee:messages.selectDesignationToEdit'));
+                              toast.error(t('employee.messages.selectDesignationToEdit'));
                             }
                           }}
                           className="px-3"
-                          disabled={!formData.designation_id}
+                          disabled={!formData.designation_id || formData.designation_id === null}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -894,13 +891,13 @@ export default function CreateEmployeePage() {
                             );
                             if (selectedDesig) {
                               const confirmed = await confirm({
-                                title: t('employee:confirmDelete.designation.title'),
-                                description: t('employee:confirmDelete.designation.description', {
+                                title: t('employee.confirmDelete.designation.title'),
+                                description: t('employee.confirmDelete.designation.description', {
                                   name: selectedDesig.name,
                                 }),
                                 variant: 'destructive',
-                                confirmText: t('common:delete'),
-                                cancelText: t('common:cancel'),
+                                confirmText: t('employee.actions.delete'),
+                                cancelText: t('employee.actions.cancel'),
                               });
 
                               if (confirmed) {
@@ -913,27 +910,27 @@ export default function CreateEmployeePage() {
                                   );
                                   const result = await response.json();
                                   if (result.success) {
-                                    toast.success(t('employee:messages.deleteSuccess'));
+                                    toast.success(t('employee.messages.deleteSuccess'));
                                     setDesignations(prev =>
                                       prev.filter(d => d.id !== selectedDesig.id)
                                     );
                                     setFormData(prev => ({ ...prev, designation_id: null }));
                                   } else {
                                     toast.error(
-                                      result.message || t('employee:messages.deleteError')
+                                      result.message || t('employee.messages.designationDeleteError')
                                     );
                                   }
                                 } catch (error) {
                                   
-                                  toast.error(t('employee:messages.deleteError'));
+                                  toast.error(t('employee.messages.designationDeleteError'));
                                 }
                               }
                             } else {
-                              toast.error(t('employee:messages.selectDesignationToDelete'));
+                              toast.error(t('employee.messages.selectDesignationToDelete'));
                             }
                           }}
                           className="px-3"
-                          disabled={!formData.designation_id}
+                          disabled={!formData.designation_id || formData.designation_id === null}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -943,7 +940,7 @@ export default function CreateEmployeePage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="supervisor">{t('employee:fields.supervisor')}</Label>
+                      <Label htmlFor="supervisor">{t('employee.fields.supervisor')}</Label>
                       <Input
                         id="supervisor"
                         value={formData.supervisor}
@@ -951,7 +948,7 @@ export default function CreateEmployeePage() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="status">{t('employee:fields.status')}</Label>
+                      <Label htmlFor="status">{t('employee.fields.status')}</Label>
                       <Select
                         value={formData.status}
                         onValueChange={value => handleInputChange('status', value)}
@@ -960,10 +957,10 @@ export default function CreateEmployeePage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="active">{t('employee:status.active')}</SelectItem>
-                          <SelectItem value="inactive">{t('employee:status.inactive')}</SelectItem>
+                          <SelectItem value="active">{t('employee.status.active')}</SelectItem>
+                          <SelectItem value="inactive">{t('employee.status.inactive')}</SelectItem>
                           <SelectItem value="terminated">
-                            {t('employee:status.terminated')}
+                            {t('employee.status.terminated')}
                           </SelectItem>
                         </SelectContent>
                       </Select>
@@ -973,7 +970,7 @@ export default function CreateEmployeePage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="contract_hours_per_day">
-                        {t('employee:fields.contractHoursPerDay')}
+                        {t('employee.fields.contractHoursPerDay')}
                       </Label>
                       <Input
                         id="contract_hours_per_day"
@@ -986,7 +983,7 @@ export default function CreateEmployeePage() {
                     </div>
                     <div>
                       <Label htmlFor="contract_days_per_month">
-                        {t('employee:fields.contractDaysPerMonth')} (Auto-set)
+                        {t('employee.fields.contractDaysPerMonth')}
                       </Label>
                       <Input
                         id="contract_days_per_month"
@@ -1012,13 +1009,13 @@ export default function CreateEmployeePage() {
             <TabsContent value="salary" className="mt-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>{t('employee:create.salary.title')}</CardTitle>
-                  <CardDescription>{t('employee:create.salary.description')}</CardDescription>
+                  <CardTitle>{t('employee.create.salary.title')}</CardTitle>
+                  <CardDescription>{t('employee.create.salary.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="basic_salary">{t('employee:fields.basicSalary')} *</Label>
+                      <Label htmlFor="basic_salary">{t('employee.fields.basicSalary')} *</Label>
                       <Input
                         id="basic_salary"
                         type="number"
@@ -1031,7 +1028,7 @@ export default function CreateEmployeePage() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="hourly_rate">{t('employee:fields.hourlyRate')}</Label>
+                      <Label htmlFor="hourly_rate">{t('employee.fields.hourlyRate')}</Label>
                       <Input
                         id="hourly_rate"
                         type="number"
@@ -1044,7 +1041,7 @@ export default function CreateEmployeePage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <Label htmlFor="food_allowance">{t('employee:fields.foodAllowance')}</Label>
+                      <Label htmlFor="food_allowance">{t('employee.fields.foodAllowance')}</Label>
                       <Input
                         id="food_allowance"
                         type="number"
@@ -1057,7 +1054,7 @@ export default function CreateEmployeePage() {
                     </div>
                     <div>
                       <Label htmlFor="housing_allowance">
-                        {t('employee:fields.housingAllowance')}
+                        {t('employee.fields.housingAllowance')}
                       </Label>
                       <Input
                         id="housing_allowance"
@@ -1071,7 +1068,7 @@ export default function CreateEmployeePage() {
                     </div>
                     <div>
                       <Label htmlFor="transport_allowance">
-                        {t('employee:fields.transportAllowance')}
+                        {t('employee.fields.transportAllowance')}
                       </Label>
                       <Input
                         id="transport_allowance"
@@ -1088,7 +1085,7 @@ export default function CreateEmployeePage() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <Label htmlFor="absent_deduction_rate">
-                        {t('employee:fields.absentDeductionRate')}
+                        {t('employee.fields.absentDeductionRate')}
                       </Label>
                       <Input
                         id="absent_deduction_rate"
@@ -1102,7 +1099,7 @@ export default function CreateEmployeePage() {
                     </div>
                     <div>
                       <Label htmlFor="overtime_rate_multiplier">
-                        {t('employee:fields.overtimeRateMultiplier')}
+                        {t('employee.fields.overtimeRateMultiplier')}
                       </Label>
                       <Input
                         id="overtime_rate_multiplier"
@@ -1116,7 +1113,7 @@ export default function CreateEmployeePage() {
                     </div>
                     <div>
                       <Label htmlFor="overtime_fixed_rate">
-                        {t('employee:fields.overtimeFixedRate')}
+                        {t('employee.fields.overtimeFixedRate')}
                       </Label>
                       <Input
                         id="overtime_fixed_rate"
@@ -1132,7 +1129,7 @@ export default function CreateEmployeePage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <Label htmlFor="bank_name">{t('employee:fields.bankName')}</Label>
+                      <Label htmlFor="bank_name">{t('employee.fields.bankName')}</Label>
                       <Input
                         id="bank_name"
                         value={formData.bank_name}
@@ -1141,7 +1138,7 @@ export default function CreateEmployeePage() {
                     </div>
                     <div>
                       <Label htmlFor="bank_account_number">
-                        {t('employee:fields.bankAccountNumber')}
+                        {t('employee.fields.bankAccountNumber')}
                       </Label>
                       <Input
                         id="bank_account_number"
@@ -1150,7 +1147,7 @@ export default function CreateEmployeePage() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="bank_iban">{t('employee:fields.bankIban')}</Label>
+                      <Label htmlFor="bank_iban">{t('employee.fields.bankIban')}</Label>
                       <Input
                         id="bank_iban"
                         value={formData.bank_iban}
@@ -1166,8 +1163,8 @@ export default function CreateEmployeePage() {
             <TabsContent value="documents" className="mt-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>{t('employee:create.documents.title')}</CardTitle>
-                  <CardDescription>{t('employee:create.documents.description')}</CardDescription>
+                  <CardTitle>{t('employee.create.documents.title')}</CardTitle>
+                  <CardDescription>{t('employee.create.documents.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Iqama Information */}
@@ -1179,7 +1176,7 @@ export default function CreateEmployeePage() {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Label htmlFor="iqama_number">
-                                {t('employee:fields.iqamaNumber')}
+                                {t('employee.fields.iqamaNumber')}
                                 <span className="text-xs text-blue-600 ml-1">(ℹ)</span>
                               </Label>
                             </TooltipTrigger>
@@ -1196,7 +1193,7 @@ export default function CreateEmployeePage() {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="iqama_expiry">{t('employee:fields.iqamaExpiry')}</Label>
+                        <Label htmlFor="iqama_expiry">{t('employee.fields.iqamaExpiry')}</Label>
                         <Input
                           id="iqama_expiry"
                           type="date"
@@ -1214,7 +1211,7 @@ export default function CreateEmployeePage() {
                         )}
                       </div>
                       <div>
-                        <Label htmlFor="iqama_cost">{t('employee:fields.iqamaCost')}</Label>
+                        <Label htmlFor="iqama_cost">{t('employee.fields.iqamaCost')}</Label>
                         <Input
                           id="iqama_cost"
                           type="number"
@@ -1227,7 +1224,7 @@ export default function CreateEmployeePage() {
                       </div>
                     </div>
                     <div className="mt-4">
-                      <Label htmlFor="iqama_file">{t('employee:fields.iqamaFile')}</Label>
+                      <Label htmlFor="iqama_file">{t('employee.fields.iqamaFile')}</Label>
                       <Input
                         id="iqama_file"
                         type="file"
@@ -1246,7 +1243,7 @@ export default function CreateEmployeePage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="passport_number">
-                          {t('employee:fields.passportNumber')}
+                          {t('employee.fields.passportNumber')}
                         </Label>
                         <Input
                           id="passport_number"
@@ -1256,7 +1253,7 @@ export default function CreateEmployeePage() {
                       </div>
                       <div>
                         <Label htmlFor="passport_expiry">
-                          {t('employee:fields.passportExpiry')}
+                          {t('employee.fields.passportExpiry')}
                         </Label>
                         <Input
                           id="passport_expiry"
@@ -1276,7 +1273,7 @@ export default function CreateEmployeePage() {
                       </div>
                     </div>
                     <div className="mt-4">
-                      <Label htmlFor="passport_file">{t('employee:fields.passportFile')}</Label>
+                      <Label htmlFor="passport_file">{t('employee.fields.passportFile')}</Label>
                       <Input
                         id="passport_file"
                         type="file"
@@ -1295,7 +1292,7 @@ export default function CreateEmployeePage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <Label htmlFor="driving_license_number">
-                          {t('employee:fields.drivingLicenseNumber')}
+                          {t('employee.fields.drivingLicenseNumber')}
                           {formData.iqama_number && formData.iqama_number.trim() !== '' && (
                             <span className="text-xs text-blue-600 ml-1">(Auto-set from Iqama)</span>
                           )}
@@ -1312,7 +1309,7 @@ export default function CreateEmployeePage() {
                       </div>
                       <div>
                         <Label htmlFor="driving_license_expiry">
-                          {t('employee:fields.drivingLicenseExpiry')}
+                          {t('employee.fields.drivingLicenseExpiry')}
                         </Label>
                         <Input
                           id="driving_license_expiry"
@@ -1334,7 +1331,7 @@ export default function CreateEmployeePage() {
                       </div>
                       <div>
                         <Label htmlFor="driving_license_cost">
-                          {t('employee:fields.drivingLicenseCost')}
+                          {t('employee.fields.drivingLicenseCost')}
                         </Label>
                         <Input
                           id="driving_license_cost"
@@ -1349,7 +1346,7 @@ export default function CreateEmployeePage() {
                     </div>
                     <div className="mt-4">
                       <Label htmlFor="driving_license_file">
-                        {t('employee:fields.drivingLicenseFile')}
+                        {t('employee.fields.drivingLicenseFile')}
                       </Label>
                       <Input
                         id="driving_license_file"
@@ -1371,7 +1368,7 @@ export default function CreateEmployeePage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <Label htmlFor="operator_license_number">
-                          {t('employee:fields.operatorLicenseNumber')}
+                          {t('employee.fields.operatorLicenseNumber')}
                         </Label>
                         <Input
                           id="operator_license_number"
@@ -1383,7 +1380,7 @@ export default function CreateEmployeePage() {
                       </div>
                       <div>
                         <Label htmlFor="operator_license_expiry">
-                          {t('employee:fields.operatorLicenseExpiry')}
+                          {t('employee.fields.operatorLicenseExpiry')}
                         </Label>
                         <Input
                           id="operator_license_expiry"
@@ -1405,7 +1402,7 @@ export default function CreateEmployeePage() {
                       </div>
                       <div>
                         <Label htmlFor="operator_license_cost">
-                          {t('employee:fields.operatorLicenseCost')}
+                          {t('employee.fields.operatorLicenseCost')}
                         </Label>
                         <Input
                           id="operator_license_cost"
@@ -1420,7 +1417,7 @@ export default function CreateEmployeePage() {
                     </div>
                     <div className="mt-4">
                       <Label htmlFor="operator_license_file">
-                        {t('employee:fields.operatorLicenseFile')}
+                        {t('employee.fields.operatorLicenseFile')}
                       </Label>
                       <Input
                         id="operator_license_file"
@@ -1442,7 +1439,7 @@ export default function CreateEmployeePage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <Label htmlFor="tuv_certification_number">
-                          {t('employee:fields.tuvCertificationNumber')}
+                          {t('employee.fields.tuvCertificationNumber')}
                         </Label>
                         <Input
                           id="tuv_certification_number"
@@ -1454,7 +1451,7 @@ export default function CreateEmployeePage() {
                       </div>
                       <div>
                         <Label htmlFor="tuv_certification_expiry">
-                          {t('employee:fields.tuvCertificationExpiry')}
+                          {t('employee.fields.tuvCertificationExpiry')}
                         </Label>
                         <Input
                           id="tuv_certification_expiry"
@@ -1476,7 +1473,7 @@ export default function CreateEmployeePage() {
                       </div>
                       <div>
                         <Label htmlFor="tuv_certification_cost">
-                          {t('employee:fields.tuvCertificationCost')}
+                          {t('employee.fields.tuvCertificationCost')}
                         </Label>
                         <Input
                           id="tuv_certification_cost"
@@ -1499,7 +1496,7 @@ export default function CreateEmployeePage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <Label htmlFor="spsp_license_number">
-                          {t('employee:fields.spspLicenseNumber')}
+                          {t('employee.fields.spspLicenseNumber')}
                         </Label>
                         <Input
                           id="spsp_license_number"
@@ -1511,7 +1508,7 @@ export default function CreateEmployeePage() {
                       </div>
                       <div>
                         <Label htmlFor="spsp_license_expiry">
-                          {t('employee:fields.spspLicenseExpiry')}
+                          {t('employee.fields.spspLicenseExpiry')}
                         </Label>
                         <Input
                           id="spsp_license_expiry"
@@ -1533,7 +1530,7 @@ export default function CreateEmployeePage() {
                       </div>
                       <div>
                         <Label htmlFor="spsp_license_cost">
-                          {t('employee:fields.spspLicenseCost')}
+                          {t('employee.fields.spspLicenseCost')}
                         </Label>
                         <Input
                           id="spsp_license_cost"
@@ -1551,7 +1548,7 @@ export default function CreateEmployeePage() {
                   {/* Show Uploaded Files */}
                   {Object.keys(uploadedFiles).length > 0 && (
                     <div className="mt-6 p-4 border rounded-lg bg-green-50">
-                      <h4 className="font-medium mb-3 text-green-800">{t('employee:fileUpload.uploadedDocuments')}</h4>
+                      <h4 className="font-medium mb-3 text-green-800">{t('employee.fileUpload.uploadedDocuments')}</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {Object.entries(uploadedFiles).map(([field, url]) => {
                           const isImage = url.match(/\.(jpg|jpeg|png|gif|webp)$/i);
@@ -1601,7 +1598,7 @@ export default function CreateEmployeePage() {
                                     {field.replace('_', ' ')}
                                   </div>
                                   <div className="text-sm text-gray-500">
-                                    {isImage ? t('employee:fileUpload.imageFile') : isPDF ? t('employee:fileUpload.pdfDocument') : t('employee:fileUpload.document')}
+                                    {isImage ? t('employee.fileUpload.imageFile') : isPDF ? t('employee.fileUpload.pdfDocument') : t('employee.fileUpload.document')}
                                   </div>
                                   <div className="flex gap-2 mt-2">
                                     <a 
@@ -1610,7 +1607,7 @@ export default function CreateEmployeePage() {
                                       rel="noopener noreferrer"
                                       className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200"
                                     >
-                                      {t('employee:fileUpload.view')}
+                                      {t('employee.fileUpload.view')}
                                     </a>
                                     <button
                                       onClick={() => {
@@ -1622,7 +1619,7 @@ export default function CreateEmployeePage() {
                                       }}
                                       className="text-xs bg-red-100 text-red-700 px-2 rounded hover:bg-red-200"
                                     >
-                                      {t('employee:fileUpload.remove')}
+                                      {t('employee.fileUpload.remove')}
                                     </button>
                                   </div>
                                 </div>
@@ -1641,12 +1638,12 @@ export default function CreateEmployeePage() {
             <TabsContent value="address" className="mt-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>{t('employee:create.address.title')}</CardTitle>
-                  <CardDescription>{t('employee:create.address.description')}</CardDescription>
+                  <CardTitle>{t('employee.create.address.title')}</CardTitle>
+                  <CardDescription>{t('employee.create.address.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div>
-                    <Label htmlFor="address">{t('employee:fields.address')}</Label>
+                    <Label htmlFor="address">{t('employee.fields.address')}</Label>
                     <Textarea
                       id="address"
                       value={formData.address}
@@ -1657,7 +1654,7 @@ export default function CreateEmployeePage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="city">{t('employee:fields.city')}</Label>
+                      <Label htmlFor="city">{t('employee.fields.city')}</Label>
                       <Input
                         id="city"
                         value={formData.city}
@@ -1665,7 +1662,7 @@ export default function CreateEmployeePage() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="state">{t('employee:fields.state')}</Label>
+                      <Label htmlFor="state">{t('employee.fields.state')}</Label>
                       <Input
                         id="state"
                         value={formData.state}
@@ -1676,7 +1673,7 @@ export default function CreateEmployeePage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="postal_code">{t('employee:fields.postalCode')}</Label>
+                      <Label htmlFor="postal_code">{t('employee.fields.postalCode')}</Label>
                       <Input
                         id="postal_code"
                         value={formData.postal_code}
@@ -1684,7 +1681,7 @@ export default function CreateEmployeePage() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="country">{t('employee:fields.country')}</Label>
+                      <Label htmlFor="country">{t('employee.fields.country')}</Label>
                       <Input
                         id="country"
                         value={formData.country}
@@ -1694,11 +1691,11 @@ export default function CreateEmployeePage() {
                   </div>
 
                   <div className="border rounded-lg p-4">
-                    <h3 className="font-semibold mb-4">{t('employee:create.emergencyContact')}</h3>
+                    <h3 className="font-semibold mb-4">{t('employee.create.emergencyContact')}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <Label htmlFor="emergency_contact_name">
-                          {t('employee:fields.emergencyContactName')}
+                          {t('employee.fields.emergencyContactName')}
                         </Label>
                         <Input
                           id="emergency_contact_name"
@@ -1710,7 +1707,7 @@ export default function CreateEmployeePage() {
                       </div>
                       <div>
                         <Label htmlFor="emergency_contact_phone">
-                          {t('employee:fields.emergencyContactPhone')}
+                          {t('employee.fields.emergencyContactPhone')}
                         </Label>
                         <Input
                           id="emergency_contact_phone"
@@ -1722,7 +1719,7 @@ export default function CreateEmployeePage() {
                       </div>
                       <div>
                         <Label htmlFor="emergency_contact_relationship">
-                          {t('employee:fields.emergencyContactRelationship')}
+                          {t('employee.fields.emergencyContactRelationship')}
                         </Label>
                         <Input
                           id="emergency_contact_relationship"
@@ -1742,8 +1739,8 @@ export default function CreateEmployeePage() {
             <TabsContent value="settings" className="mt-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>{t('employee:create.settings.title')}</CardTitle>
-                  <CardDescription>{t('employee:create.settings.description')}</CardDescription>
+                  <CardTitle>{t('employee.create.settings.title')}</CardTitle>
+                  <CardDescription>{t('employee.create.settings.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-4">
@@ -1754,14 +1751,14 @@ export default function CreateEmployeePage() {
                         checked={formData.is_operator}
                         onCheckedChange={checked => handleInputChange('is_operator', checked)}
                       />
-                      <Label htmlFor="is_operator">{t('employee:fields.isOperator')}</Label>
+                      <Label htmlFor="is_operator">{t('employee.fields.isOperator')}</Label>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="access_start_date">
-                        {t('employee:fields.accessStartDate')}
+                        {t('employee.fields.accessStartDate')}
                       </Label>
                       <Input
                         id="access_start_date"
@@ -1771,7 +1768,7 @@ export default function CreateEmployeePage() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="access_end_date">{t('employee:fields.accessEndDate')}</Label>
+                      <Label htmlFor="access_end_date">{t('employee.fields.accessEndDate')}</Label>
                       <Input
                         id="access_end_date"
                         type="date"
@@ -1783,7 +1780,7 @@ export default function CreateEmployeePage() {
 
                   <div>
                     <Label htmlFor="access_restriction_reason">
-                      {t('employee:fields.accessRestrictionReason')}
+                      {t('employee.fields.accessRestrictionReason')}
                     </Label>
                     <Textarea
                       id="access_restriction_reason"
@@ -1794,7 +1791,7 @@ export default function CreateEmployeePage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="notes">{t('employee:fields.notes')}</Label>
+                    <Label htmlFor="notes">{t('employee.fields.notes')}</Label>
                     <Textarea
                       id="notes"
                       value={formData.notes}
@@ -1810,19 +1807,19 @@ export default function CreateEmployeePage() {
           <div className="mt-6 flex justify-end space-x-4">
             <Link href="/modules/employee-management">
               <Button variant="outline" type="button">
-                {t('common:cancel')}
+                {t('employee.actions.cancel')}
               </Button>
             </Link>
             <Button type="submit" disabled={isLoading}>
               {isLoading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  {t('common:saving')}
+                  {t('employee.actions.saving')}
                 </>
               ) : (
                 <>
                   <Save className="w-4 h-4 mr-2" />
-                  {t('common:save')}
+                  {t('employee.actions.save')}
                 </>
               )}
             </Button>
@@ -1833,24 +1830,24 @@ export default function CreateEmployeePage() {
         {showAddDepartment && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold mb-4">{t('employee:modals.addDepartment.title')}</h3>
+              <h3 className="text-lg font-semibold mb-4">{t('employee.modals.addDepartment.title')}</h3>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="dept_name">{t('employee:modals.addDepartment.name')} *</Label>
+                  <Label htmlFor="dept_name">{t('employee.modals.addDepartment.name')} *</Label>
                   <Input
                     id="dept_name"
                     value={newDepartment.name}
                     onChange={e => setNewDepartment(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder={t('employee:modals.addDepartment.namePlaceholder')}
+                    placeholder={t('employee.modals.addDepartment.namePlaceholder')}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="dept_code">{t('employee:modals.addDepartment.code')}</Label>
+                  <Label htmlFor="dept_code">{t('employee.modals.addDepartment.code')}</Label>
                   <Input
                     id="dept_code"
                     value={newDepartment.code}
                     onChange={e => setNewDepartment(prev => ({ ...prev, code: e.target.value }))}
-                    placeholder={t('employee:modals.addDepartment.codePlaceholder')}
+                    placeholder={t('employee.modals.addDepartment.codePlaceholder')}
                   />
                 </div>
                 <div className="flex gap-2 justify-end">
@@ -1862,10 +1859,10 @@ export default function CreateEmployeePage() {
                       setNewDepartment({ name: '', code: '' });
                     }}
                   >
-                    {t('common:cancel')}
+                    {t('employee.actions.cancel')}
                   </Button>
                   <Button type="button" onClick={handleAddDepartment} disabled={addingDepartment}>
-                    {addingDepartment ? t('employee:modals.addDepartment.adding') : t('employee:modals.addDepartment.add')}
+                    {addingDepartment ? t('employee.modals.addDepartment.adding') : t('employee.modals.addDepartment.add')}
                   </Button>
                 </div>
               </div>
@@ -1877,26 +1874,26 @@ export default function CreateEmployeePage() {
         {showAddDesignation && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold mb-4">{t('employee:modals.addDesignation.title')}</h3>
+              <h3 className="text-lg font-semibold mb-4">{t('employee.modals.addDesignation.title')}</h3>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="desig_name">{t('employee:modals.addDesignation.name')} *</Label>
+                  <Label htmlFor="desig_name">{t('employee.modals.addDesignation.name')} *</Label>
                   <Input
                     id="desig_name"
                     value={newDesignation.name}
                     onChange={e => setNewDesignation(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder={t('employee:modals.addDesignation.namePlaceholder')}
+                    placeholder={t('employee.modals.addDesignation.namePlaceholder')}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="desig_description">{t('employee:modals.addDesignation.description')}</Label>
+                  <Label htmlFor="desig_description">{t('employee.modals.addDesignation.description')}</Label>
                   <Textarea
                     id="desig_description"
                     value={newDesignation.description}
                     onChange={e =>
                       setNewDesignation(prev => ({ ...prev, description: e.target.value }))
                     }
-                    placeholder={t('employee:modals.addDesignation.descriptionPlaceholder')}
+                    placeholder={t('employee.modals.addDesignation.descriptionPlaceholder')}
                     rows={3}
                   />
                 </div>
@@ -1909,10 +1906,10 @@ export default function CreateEmployeePage() {
                       setNewDesignation({ name: '', description: '' });
                     }}
                   >
-                    {t('common:cancel')}
+                    {t('employee.actions.cancel')}
                   </Button>
                   <Button type="button" onClick={handleAddDesignation} disabled={addingDesignation}>
-                    {addingDesignation ? t('employee:modals.addDesignation.adding') : t('employee:modals.addDesignation.add')}
+                    {addingDesignation ? t('employee.modals.addDesignation.adding') : t('employee.modals.addDesignation.add')}
                   </Button>
                 </div>
               </div>
@@ -1924,10 +1921,10 @@ export default function CreateEmployeePage() {
         {showEditDepartment && editingDepartment && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold mb-4">{t('employee:modals.editDepartment.title')}</h3>
+              <h3 className="text-lg font-semibold mb-4">{t('employee.modals.editDepartment.title')}</h3>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="edit_dept_name">{t('employee:modals.editDepartment.name')} *</Label>
+                  <Label htmlFor="edit_dept_name">{t('employee.modals.editDepartment.name')} *</Label>
                   <Input
                     id="edit_dept_name"
                     value={editingDepartment.name}
@@ -1936,11 +1933,11 @@ export default function CreateEmployeePage() {
                         prev ? { ...prev, name: e.target.value } : null
                       )
                     }
-                    placeholder={t('employee:modals.editDepartment.namePlaceholder')}
+                    placeholder={t('employee.modals.editDepartment.namePlaceholder')}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_dept_code">{t('employee:modals.editDepartment.code')}</Label>
+                  <Label htmlFor="edit_dept_code">{t('employee.modals.editDepartment.code')}</Label>
                   <Input
                     id="edit_dept_code"
                     value={editingDepartment.code || ''}
@@ -1949,7 +1946,7 @@ export default function CreateEmployeePage() {
                         prev ? { ...prev, code: e.target.value } : null
                       )
                     }
-                    placeholder={t('employee:modals.editDepartment.codePlaceholder')}
+                    placeholder={t('employee.modals.editDepartment.codePlaceholder')}
                   />
                 </div>
                 <div className="flex gap-2 justify-end">
@@ -1961,14 +1958,14 @@ export default function CreateEmployeePage() {
                       setEditingDepartment(null);
                     }}
                   >
-                    {t('common:cancel')}
+                    {t('employee.actions.cancel')}
                   </Button>
                   <Button
                     type="button"
                     onClick={handleEditDepartment}
                     disabled={updatingDepartment}
                   >
-                    {updatingDepartment ? t('employee:modals.editDepartment.updating') : t('employee:modals.editDepartment.update')}
+                    {updatingDepartment ? t('employee.modals.editDepartment.updating') : t('employee.modals.editDepartment.update')}
                   </Button>
                 </div>
               </div>
@@ -1980,10 +1977,10 @@ export default function CreateEmployeePage() {
         {showEditDesignation && editingDesignation && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold mb-4">{t('employee:modals.editDesignation.title')}</h3>
+              <h3 className="text-lg font-semibold mb-4">{t('employee.modals.editDesignation.title')}</h3>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="edit_desig_name">{t('employee:modals.editDesignation.name')} *</Label>
+                  <Label htmlFor="edit_desig_name">{t('employee.modals.editDesignation.name')} *</Label>
                   <Input
                     id="edit_desig_name"
                     value={editingDesignation.name}
@@ -1992,11 +1989,11 @@ export default function CreateEmployeePage() {
                         prev ? { ...prev, name: e.target.value } : null
                       )
                     }
-                    placeholder={t('employee:modals.editDesignation.namePlaceholder')}
+                    placeholder={t('employee.modals.editDesignation.namePlaceholder')}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_designation_description">{t('employee:modals.editDesignation.description')}</Label>
+                  <Label htmlFor="edit_designation_description">{t('employee.modals.editDesignation.description')}</Label>
                   <Textarea
                     id="edit_designation_description"
                     value={editingDesignation.description || ''}
@@ -2005,7 +2002,7 @@ export default function CreateEmployeePage() {
                         prev ? { ...prev, description: e.target.value } : null
                       )
                     }
-                    placeholder={t('employee:modals.editDesignation.descriptionPlaceholder')}
+                    placeholder={t('employee.modals.editDesignation.descriptionPlaceholder')}
                     rows={3}
                   />
                 </div>
@@ -2018,14 +2015,14 @@ export default function CreateEmployeePage() {
                       setEditingDesignation(null);
                     }}
                   >
-                    {t('common:cancel')}
+                    {t('employee.actions.cancel')}
                   </Button>
                   <Button
                     type="button"
                     onClick={handleEditDesignation}
                     disabled={updatingDesignation}
                   >
-                    {updatingDesignation ? t('employee:modals.editDesignation.updating') : t('employee:modals.editDesignation.update')}
+                    {updatingDesignation ? t('employee.modals.editDesignation.updating') : t('employee.modals.editDesignation.update')}
                   </Button>
                 </div>
               </div>

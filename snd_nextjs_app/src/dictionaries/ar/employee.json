@@ -126,6 +126,7 @@
     "refresh": "تحديث",
     "updateDrivingLicense": "تحديث رخصة القيادة",
     "updating": "جاري التحديث...",
+    "saving": "جاري الحفظ...",
     "export": "تصدير",
     "import": "استيراد",
     "addDepartment": "إضافة قسم",
@@ -170,8 +171,11 @@
     "lastName": "اسم العائلة",
     "iqamaNumber": "رقم الإقامة",
     "iqamaExpiry": "تاريخ انتهاء الإقامة",
+    "iqamaCost": "تكلفة الإقامة",
+    "iqamaFile": "ملف الإقامة",
     "passportNumber": "رقم جواز السفر",
     "passportExpiry": "تاريخ انتهاء جواز السفر",
+    "passportFile": "ملف جواز السفر",
     "department": "القسم",
     "designation": "المسمى الوظيفي",
     "hireDate": "تاريخ التوظيف",
@@ -183,12 +187,18 @@
     "designationName": "اسم المسمى الوظيفي",
     "description": "الوصف",
     "basicSalary": "الراتب الأساسي",
+    "foodAllowance": "بدل الطعام",
+    "housingAllowance": "بدل السكن",
+    "transportAllowance": "بدل النقل",
+    "absentDeductionRate": "معدل خصم الغياب",
     "currentLocation": "الموقع الحالي",
     "contractDaysPerMonth": "أيام العقد شهرياً (تلقائي)",
     "contractHoursPerDay": "ساعات العقد يومياً",
     "selectDepartment": "اختر القسم",
     "selectDesignation": "اختر المسمى الوظيفي",
     "noDepartment": "لا يوجد قسم",
+    "searchDepartment": "البحث في الأقسام...",
+    "searchDesignation": "البحث في المسميات الوظيفية...",
     "hourlyRate": "المعدل بالساعة",
     "overtimeFixedRate": "المعدل الثابت للعمل الإضافي",
     "overtimeFixedRateDescription": "مبلغ ثابت لكل ساعة عمل إضافي (يتجاوز المضاعف)",
@@ -226,7 +236,10 @@
     "bankName": "اسم البنك",
     "bankAccountNumber": "رقم الحساب البنكي",
     "bankIban": "IBAN البنك",
-    "iban": "IBAN"
+    "iban": "IBAN",
+    "emergencyContactName": "اسم جهة اتصال الطوارئ",
+    "emergencyContactPhone": "هاتف جهة اتصال الطوارئ",
+    "emergencyContactRelationship": "علاقة جهة اتصال الطوارئ"
   },
   "iqama": {
     "expired": "منتهي الصلاحية"
@@ -502,7 +515,11 @@
     "departmentAddError": "فشل في إضافة القسم",
     "designationNameRequired": "اسم المسمى الوظيفي مطلوب",
     "designationUpdatedSuccess": "تم تحديث المسمى الوظيفي بنجاح",
-    "designationUpdateError": "فشل في تحديث المسمى الوظيفي"
+    "designationUpdateError": "فشل في تحديث المسمى الوظيفي",
+    "noDepartmentsFound": "لم يتم العثور على أقسام",
+    "noDesignationsFound": "لم يتم العثور على مسميات وظيفية",
+    "departmentDeleteError": "فشل في حذف القسم",
+    "designationDeleteError": "فشل في حذف المسمى الوظيفي"
   },
 
   "validation": {

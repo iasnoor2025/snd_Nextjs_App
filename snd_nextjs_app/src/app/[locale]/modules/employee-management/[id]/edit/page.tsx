@@ -18,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { NationalityDropdown } from '@/components/shared/NationalityDropdown';
 import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { ArrowLeft, Calendar, Edit, IdCard, MapPin, Phone, Plus, Save, User } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -729,24 +730,24 @@ export default function EditEmployeePage() {
               <div className="space-y-2">
                 <Label htmlFor="department_id">{t('employee.fields.department')}</Label>
                 <div className="flex gap-2">
-                  <Select
-                    value={formData.department_id || 'none'}
+                  <SearchableSelect
+                    value={formData.department_id || ''}
                     onValueChange={value =>
-                      handleInputChange('department_id', value === 'none' ? '' : value)
+                      handleInputChange('department_id', value || '')
                     }
-                  >
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder={t('employee.fields.selectDepartment')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">{t('employee.fields.noDepartment')}</SelectItem>
-                      {departments.map(department => (
-                        <SelectItem key={`dept-${department.id}`} value={department.id.toString()}>
-                          {department.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    options={[
+                      { value: '', label: t('employee.fields.noDepartment') },
+                      ...departments.map(dept => ({
+                        value: dept.id.toString(),
+                        label: dept.name,
+                        ...dept
+                      }))
+                    ]}
+                    placeholder={t('employee.fields.selectDepartment')}
+                    searchPlaceholder={t('employee.fields.searchDepartment')}
+                    emptyMessage={t('employee.messages.noDepartmentsFound')}
+                    className="flex-1"
+                  />
                   <Button
                     type="button"
                     variant="outline"
@@ -781,27 +782,24 @@ export default function EditEmployeePage() {
               <div className="space-y-2">
                 <Label htmlFor="designation_id">{t('employee.fields.designation')}</Label>
                 <div className="flex gap-2">
-                  <Select
-                    value={formData.designation_id || 'none'}
+                  <SearchableSelect
+                    value={formData.designation_id || ''}
                     onValueChange={value =>
-                      handleInputChange('designation_id', value === 'none' ? '' : value)
+                      handleInputChange('designation_id', value || '')
                     }
-                  >
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder={t('employee.fields.selectDesignation')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">{t('employee.fields.noDesignation')}</SelectItem>
-                      {designations.map(designation => (
-                        <SelectItem
-                          key={`desig-${designation.id}`}
-                          value={designation.id.toString()}
-                        >
-                          {designation.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    options={[
+                      { value: '', label: t('employee.fields.noDesignation') },
+                      ...designations.map(desig => ({
+                        value: desig.id.toString(),
+                        label: desig.name,
+                        ...desig
+                      }))
+                    ]}
+                    placeholder={t('employee.fields.selectDesignation')}
+                    searchPlaceholder={t('employee.fields.searchDesignation')}
+                    emptyMessage={t('employee.messages.noDesignationsFound')}
+                    className="flex-1"
+                  />
                   <Button
                     type="button"
                     variant="outline"
