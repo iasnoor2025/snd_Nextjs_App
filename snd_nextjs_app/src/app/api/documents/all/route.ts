@@ -1,9 +1,35 @@
 import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
-import { employeeDocuments, employees, equipment, media } from '@/lib/drizzle/schema';
-import { and, desc, eq, ilike, or, sql, inArray } from 'drizzle-orm';
+import { employeeDocuments, employees, equipment, equipmentDocuments } from '@/lib/drizzle/schema';
+import { desc, eq, ilike, or, sql, inArray } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
+
+interface Document {
+  id: string | number;
+  type: 'employee' | 'equipment';
+  documentType: string;
+  filePath: string;
+  fileName: string;
+  originalFileName?: string;
+  fileSize: number;
+  mimeType: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+  employeeId?: number;
+  employeeName?: string;
+  employeeFileNumber?: string;
+  equipmentId?: number;
+  equipmentName?: string;
+  equipmentModel?: string;
+  equipmentSerial?: string;
+  equipmentDoorNumber?: string;
+  url: string;
+  viewUrl?: string;
+  searchableText: string;
+  fileSizeFormatted?: string;
+}
 
 export async function GET(_request: NextRequest) {
   try {
@@ -19,8 +45,8 @@ export async function GET(_request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const offset = (page - 1) * limit;
 
-    let employeeDocs: any[] = [];
-    let equipmentDocs: any[] = [];
+    let employeeDocs: Document[] = [];
+    let equipmentDocs: Document[] = [];
 
     // Fetch employee documents
     if (type === 'all' || type === 'employee') {
@@ -62,18 +88,18 @@ export async function GET(_request: NextRequest) {
 
       employeeDocs = employeeResults.map(doc => ({
         id: doc.id,
-        type: 'employee',
+        type: 'employee' as const,
         documentType: doc.documentType,
         filePath: doc.filePath,
         fileName: doc.fileName,
-        fileSize: doc.fileSize,
-        mimeType: doc.mimeType,
-        description: doc.description,
+        fileSize: doc.fileSize || 0,
+        mimeType: doc.mimeType || 'application/octet-stream',
+        description: doc.description || '',
         createdAt: doc.createdAt,
         updatedAt: doc.updatedAt,
         employeeId: doc.employeeId,
         employeeName: `${doc.employeeFirstName || ''} ${doc.employeeLastName || ''}`.trim(),
-        employeeFileNumber: doc.employeeFileNumber,
+        employeeFileNumber: doc.employeeFileNumber || '',
         url: (doc.filePath || '').replace(/^http:/, 'https:'), // Force HTTPS to prevent Mixed Content errors
         searchableText:
           `${doc.employeeFirstName || ''} ${doc.employeeLastName || ''} ${doc.employeeFileNumber || ''} ${doc.fileName} ${doc.documentType}`.toLowerCase(),
@@ -85,60 +111,60 @@ export async function GET(_request: NextRequest) {
       
       const equipmentQuery = db
         .select({
-          id: media.id,
-          fileName: media.fileName,
-          filePath: media.filePath,
-          fileSize: media.fileSize,
-          mimeType: media.mimeType,
-          createdAt: media.createdAt,
-          updatedAt: media.updatedAt,
-          modelId: media.modelId,
+          id: equipmentDocuments.id,
+          documentType: equipmentDocuments.documentType,
+          fileName: equipmentDocuments.fileName,
+          filePath: equipmentDocuments.filePath,
+          fileSize: equipmentDocuments.fileSize,
+          mimeType: equipmentDocuments.mimeType,
+          description: equipmentDocuments.description,
+          createdAt: equipmentDocuments.createdAt,
+          updatedAt: equipmentDocuments.updatedAt,
+          equipmentId: equipmentDocuments.equipmentId,
           equipmentName: equipment.name,
           equipmentModel: equipment.modelNumber,
           equipmentSerial: equipment.serialNumber,
           equipmentDoorNumber: equipment.doorNumber,
         })
-        .from(media)
-        .leftJoin(equipment, eq(equipment.id, media.modelId))
+        .from(equipmentDocuments)
+        .leftJoin(equipment, eq(equipment.id, equipmentDocuments.equipmentId))
         .where(
           search
-            ? and(
-                eq(media.modelType, 'Equipment'),
-                or(
-                  ilike(equipment.name, `%${search}%`),
-                  ilike(equipment.modelNumber, `%${search}%`),
-                  ilike(equipment.serialNumber, `%${search}%`),
-                  ilike(equipment.doorNumber, `%${search}%`),
-                  ilike(media.fileName, `%${search}%`)
-                )
+            ? or(
+                ilike(equipment.name, `%${search}%`),
+                ilike(equipment.modelNumber, `%${search}%`),
+                ilike(equipment.serialNumber, `%${search}%`),
+                ilike(equipment.doorNumber, `%${search}%`),
+                ilike(equipmentDocuments.fileName, `%${search}%`),
+                ilike(equipmentDocuments.documentType, `%${search}%`)
               )
-            : eq(media.modelType, 'Equipment')
+            : undefined
         );
 
       const equipmentResults = await equipmentQuery
-        .orderBy(desc(media.createdAt))
+        .orderBy(desc(equipmentDocuments.createdAt))
         .limit(limit)
         .offset(offset);
 
       equipmentDocs = equipmentResults.map(doc => ({
         id: doc.id,
-        type: 'equipment',
-        documentType: 'equipment_document',
+        type: 'equipment' as const,
+        documentType: doc.documentType,
         filePath: doc.filePath,
         fileName: doc.fileName,
-        fileSize: doc.fileSize,
-        mimeType: doc.mimeType,
-        description: '',
+        fileSize: doc.fileSize || 0,
+        mimeType: doc.mimeType || 'application/octet-stream',
+        description: doc.description || '',
         createdAt: doc.createdAt,
         updatedAt: doc.updatedAt,
-        equipmentId: doc.modelId,
-        equipmentName: doc.equipmentName,
-        equipmentModel: doc.equipmentModel,
-        equipmentSerial: doc.equipmentSerial,
-        equipmentDoorNumber: doc.equipmentDoorNumber,
+        equipmentId: doc.equipmentId,
+        equipmentName: doc.equipmentName || '',
+        equipmentModel: doc.equipmentModel || '',
+        equipmentSerial: doc.equipmentSerial || '',
+        equipmentDoorNumber: doc.equipmentDoorNumber || '',
         url: (doc.filePath || '').replace(/^http:/, 'https:'), // Force HTTPS to prevent Mixed Content errors
         searchableText:
-          `${doc.equipmentName || ''} ${doc.equipmentModel || ''} ${doc.equipmentSerial || ''} ${doc.equipmentDoorNumber || ''} ${doc.fileName}`.toLowerCase(),
+          `${doc.equipmentName || ''} ${doc.equipmentModel || ''} ${doc.equipmentSerial || ''} ${doc.equipmentDoorNumber || ''} ${doc.fileName} ${doc.documentType}`.toLowerCase(),
       }));
     }
 
@@ -213,22 +239,19 @@ export async function GET(_request: NextRequest) {
         // Then count documents that match either the equipment IDs or the document fields
         equipmentCountQuery = db
           .select({ count: sql<number>`count(*)` })
-          .from(media)
+          .from(equipmentDocuments)
           .where(
-            and(
-              eq(media.modelType, 'Equipment'),
-              or(
-                equipmentIds.length > 0 ? inArray(media.modelId, equipmentIds) : undefined,
-                ilike(media.fileName, `%${search}%`)
-              )
+            or(
+              equipmentIds.length > 0 ? inArray(equipmentDocuments.equipmentId, equipmentIds) : undefined,
+              ilike(equipmentDocuments.fileName, `%${search}%`),
+              ilike(equipmentDocuments.documentType, `%${search}%`)
             )
           );
       } else {
         // If not searching, just count all equipment documents directly
         equipmentCountQuery = db
           .select({ count: sql<number>`count(*)` })
-          .from(media)
-          .where(eq(media.modelType, 'Equipment'));
+          .from(equipmentDocuments);
       }
 
       const equipmentCountResult = await equipmentCountQuery;
