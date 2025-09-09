@@ -445,7 +445,7 @@ export default function EmployeeManagementPage() {
 
       const matchesStatus = statusFilter === 'all' || employee.status === statusFilter;
       const matchesDepartment =
-        departmentFilter === 'all' || employee.department === departmentFilter;
+        departmentFilter === 'all' || employee.department?.name === departmentFilter;
       const matchesAssignment =
         assignmentFilter === 'all' ||
         (assignmentFilter === 'assigned' &&
@@ -916,7 +916,7 @@ export default function EmployeeManagementPage() {
                               )}
                             </div>
                                                          <div className="text-sm text-muted-foreground">
-                               {employee.designation || t('employee.na')}
+                               {employee.designation?.name || t('employee.na')}
                              </div>
                           </div>
                         </TableCell>

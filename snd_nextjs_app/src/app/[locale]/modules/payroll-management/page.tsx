@@ -694,7 +694,7 @@ export default function PayrollManagementPage() {
                               </div>
                               <div className="text-sm text-muted-foreground">
                                 {payroll.employee
-                                  ? `${payroll.employee.department || t('payroll.na')} • ${payroll.employee.designation || t('payroll.na')}`
+                                  ? `${payroll.employee.department?.name || t('payroll.na')} • ${payroll.employee.designation?.name || t('payroll.na')}`
                                   : t('payroll.noDetails')}
                               </div>
                             </div>

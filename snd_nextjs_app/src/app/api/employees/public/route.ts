@@ -55,8 +55,8 @@ export async function GET(_request: NextRequest) {
       file_number: employee.file_number,
       email: employee.email,
       phone: employee.phone,
-      department: employee.dept_name || null,
-      designation: employee.desig_name || null,
+      department: employee.dept_name ? { name: employee.dept_name } : null,
+      designation: employee.desig_name ? { name: employee.desig_name } : null,
       status: employee.status,
     }));
 

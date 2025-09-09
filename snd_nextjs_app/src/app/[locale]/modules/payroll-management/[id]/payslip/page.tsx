@@ -833,7 +833,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
       contentY += 4;
       
       pdf.text(`Designation:`, col1LabelX, contentY);
-      pdf.text(`${employee?.designation || '-'}`, col1ValueX, contentY, { align: 'right' });
+      pdf.text(`${employee?.designation?.name || employee?.designation || '-'}`, col1ValueX, contentY, { align: 'right' });
 
       // Column 2: Pay Period Details - Green Theme
       const col2X = margin + columnWidth + 10;
@@ -1618,7 +1618,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                   <div className="flex justify-between items-center py-1 border-b border-gray-100">
                     <span className="text-xs text-gray-600 font-medium">Designation</span>
                     <span className="text-xs font-semibold text-gray-900">
-                      {employee?.designation || '-'}
+                      {employee?.designation?.name || employee?.designation || '-'}
                     </span>
                   </div>
 

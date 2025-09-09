@@ -100,7 +100,7 @@ export class CustomPDFGenerator {
     this.ctx.font = '14px Arial, sans-serif';
     this.ctx.fillText(`File Number: ${data.employee.file_number}`, 60, this.currentY + 50);
     this.ctx.fillText(`Employee Name: ${data.employee.name}`, 60, this.currentY + 70);
-    this.ctx.fillText(`Designation: ${data.employee.designation || 'N/A'}`, 60, this.currentY + 90);
+    this.ctx.fillText(`Designation: ${data.employee.designation?.name || 'N/A'}`, 60, this.currentY + 90);
 
     
     // Work Details Box

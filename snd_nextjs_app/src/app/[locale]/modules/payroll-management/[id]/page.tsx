@@ -320,7 +320,7 @@ export default function PayrollDetailsPage() {
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Department</p>
-                      <p className="font-semibold">{payroll.employee?.department || 'N/A'}</p>
+                      <p className="font-semibold">{payroll.employee?.department?.name || payroll.employee?.department || 'N/A'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -329,7 +329,7 @@ export default function PayrollDetailsPage() {
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Position</p>
-                      <p className="font-semibold">{payroll.employee?.designation || 'N/A'}</p>
+                      <p className="font-semibold">{payroll.employee?.designation?.name || payroll.employee?.designation || 'N/A'}</p>
                     </div>
                   </div>
                 </div>
@@ -364,11 +364,11 @@ export default function PayrollDetailsPage() {
                       <div className="space-y-4">
                         <div>
                           <Label className="text-sm font-medium text-gray-500">Department</Label>
-                          <p className="text-lg">{payroll.employee?.department || 'N/A'}</p>
+                          <p className="text-lg">{payroll.employee?.department?.name || payroll.employee?.department || 'N/A'}</p>
                         </div>
                         <div>
                           <Label className="text-sm font-medium text-gray-500">Position</Label>
-                          <p className="text-lg">{payroll.employee?.designation || 'N/A'}</p>
+                          <p className="text-lg">{payroll.employee?.designation?.name || payroll.employee?.designation || 'N/A'}</p>
                         </div>
                       </div>
                     </div>

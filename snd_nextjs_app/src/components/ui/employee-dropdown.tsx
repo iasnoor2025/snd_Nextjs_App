@@ -291,7 +291,7 @@ export function EmployeeDropdown({
                       )}
                       {employee.designation && (
                         <span className="text-xs text-gray-500">
-                          {employee.designation}
+                          {employee.designation?.name || employee.designation}
                         </span>
                       )}
                     </div>

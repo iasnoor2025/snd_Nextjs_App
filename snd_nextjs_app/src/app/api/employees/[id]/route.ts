@@ -231,12 +231,10 @@ const getEmployeeHandler = async (
       email: updatedEmployee.email,
       phone: updatedEmployee.phone,
       employee_id: updatedEmployee.id,
-      department: updatedEmployee.dept_name || null,
-      department_details: updatedEmployee.dept_name
+      department: updatedEmployee.dept_name
         ? { id: updatedEmployee.department_id, name: updatedEmployee.dept_name }
         : null,
-      designation: updatedEmployee.desig_name || null,
-      designation_details: updatedEmployee.desig_name
+      designation: updatedEmployee.desig_name
         ? { id: updatedEmployee.designation_id, name: updatedEmployee.desig_name }
         : null,
       status: updatedEmployee.status,
