@@ -48,7 +48,7 @@ import {
 } from '@/lib/translation-utils';
 import { useDeleteConfirmations } from '@/lib/utils/confirmation-utils';
 import { cn } from '@/lib/utils';
-import { ExpiryStatusDisplay, getExpiryStatus, getExpiryStatusText, formatDate } from '@/lib/utils/expiry-utils';
+import { getExpiryStatus, getExpiryStatusText } from '@/lib/utils/expiry-utils';
 
 // Force dynamic rendering to prevent SSR issues
 export const dynamic = 'force-dynamic';
@@ -158,13 +158,13 @@ export default function EmployeeManagementPage() {
 
     // Show first few employees with assignments
     
-    employeesWithAssignments.slice(0, 3).forEach(emp => {
+    employeesWithAssignments.slice(0, 3).forEach(_emp => {
       
     });
 
     // Show first few employees without assignments
     
-    employeesWithoutAssignments.slice(0, 3).forEach(emp => {
+    employeesWithoutAssignments.slice(0, 3).forEach(_emp => {
       
     });
   };
@@ -172,7 +172,7 @@ export default function EmployeeManagementPage() {
   // Make debug function available globally
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      (window as any).debugAssignments = debugAssignments;
+      (window as unknown as Record<string, unknown>).debugAssignments = debugAssignments;
     }
   }, []);
 
@@ -255,7 +255,7 @@ export default function EmployeeManagementPage() {
         // For admin/manager users, fetch statistics from API
         const response = await fetch('/api/employees/statistics');
         if (response.ok) {
-          const result = (await response.json()) as { success: boolean; data?: any };
+          const result = (await response.json()) as { success: boolean; data?: typeof statistics };
           if (result.success && result.data) {
             setStatistics(result.data);
           }
@@ -272,7 +272,7 @@ export default function EmployeeManagementPage() {
           });
         }
       }
-    } catch (error) {
+    } catch {
       
       // Fallback: use employees array length for total count
       setStatistics({
@@ -300,7 +300,7 @@ export default function EmployeeManagementPage() {
               } else {
           toast.error(t('employee.messages.syncError'));
         }
-      } catch (_error) {
+      } catch {
         toast.error(t('employee.messages.syncError'));
     } finally {
       setIsSyncing(false);
@@ -325,7 +325,7 @@ export default function EmployeeManagementPage() {
           const error = await response.json();
           toast.error(error.message || 'Failed to delete employee');
         }
-      } catch (_error) {
+      } catch {
         toast.error('Failed to delete employee');
       } finally {
         setIsDeleting(false);
@@ -385,7 +385,7 @@ export default function EmployeeManagementPage() {
       } else {
         toast.error('Failed to export employees');
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to export employees');
     }
   };
@@ -463,8 +463,8 @@ export default function EmployeeManagementPage() {
     });
 
     filtered.sort((a, b) => {
-      const aValue: any = a[sortField as keyof Employee];
-      const bValue: any = b[sortField as keyof Employee];
+      const aValue: unknown = a[sortField as keyof Employee];
+      const bValue: unknown = b[sortField as keyof Employee];
 
       // Handle null/undefined values
       if (aValue == null && bValue == null) return 0;
@@ -652,9 +652,9 @@ export default function EmployeeManagementPage() {
             <CardTitle>{t('employee.title')}</CardTitle>
             <CardDescription>
               {t('employee.pagination.showing', {
-                start: startIndex + 1,
-                end: Math.min(endIndex, totalItems),
-                total: totalItems,
+                start: String(startIndex + 1),
+                end: String(Math.min(endIndex, totalItems)),
+                total: String(totalItems),
               })}
             </CardDescription>
           </CardHeader>
@@ -1067,14 +1067,14 @@ export default function EmployeeManagementPage() {
                 >
                                      {totalPages > 1
                      ? t('employee.pagination.showing', {
-                         start: startIndex + 1,
-                         end: Math.min(endIndex, totalItems),
-                         total: totalItems,
+                         start: String(startIndex + 1),
+                         end: String(Math.min(endIndex, totalItems)),
+                         total: String(totalItems),
                        })
                      : t('employee.pagination.showing', {
-                         start: totalItems,
-                         end: totalItems,
-                         total: totalItems,
+                         start: String(totalItems),
+                         end: String(totalItems),
+                         total: String(totalItems),
                        })}
                 </div>
                 <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>

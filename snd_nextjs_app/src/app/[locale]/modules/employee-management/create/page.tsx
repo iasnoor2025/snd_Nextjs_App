@@ -232,7 +232,7 @@ export default function CreateEmployeePage() {
           setDepartments(data.data);
         }
       }
-    } catch (error) {
+    } catch {
       
     }
   };
@@ -246,7 +246,7 @@ export default function CreateEmployeePage() {
           setDesignations(data.data);
         }
       }
-    } catch (error) {
+    } catch {
       
     }
   };
@@ -320,11 +320,11 @@ export default function CreateEmployeePage() {
             const refreshData = await refreshResponse.json();
             setDepartments(refreshData.data || []);
           }
-        } catch (refreshError) {
+        } catch {
           
         }
       }
-    } catch (error) {
+    } catch {
       
       toast.error('Failed to add department. Please try again.');
 
@@ -335,7 +335,7 @@ export default function CreateEmployeePage() {
           const refreshData = await refreshResponse.json();
           setDepartments(refreshData.data || []);
         }
-      } catch (refreshError) {
+      } catch {
         
       }
     } finally {
@@ -375,7 +375,7 @@ export default function CreateEmployeePage() {
       } else {
         toast.error(result.message || 'Failed to add designation');
       }
-    } catch (error) {
+    } catch {
       
       toast.error('Failed to add designation');
     } finally {
@@ -416,7 +416,7 @@ export default function CreateEmployeePage() {
       } else {
         toast.error(result.message || 'Failed to update department');
       }
-    } catch (error) {
+    } catch {
       
       toast.error('Failed to update department');
     } finally {
@@ -457,7 +457,7 @@ export default function CreateEmployeePage() {
       } else {
         toast.error(result.message || 'Failed to update designation');
       }
-    } catch (error) {
+    } catch {
       
       toast.error('Failed to update designation');
     } finally {
@@ -465,7 +465,7 @@ export default function CreateEmployeePage() {
     }
   };
 
-  const handleInputChange = (field: keyof EmployeeFormData, value: any) => {
+  const handleInputChange = (field: keyof EmployeeFormData, value: unknown) => {
     setFormData(prev => {
       const newData = {
         ...prev,
@@ -474,7 +474,7 @@ export default function CreateEmployeePage() {
 
       // Auto-set driving license number to iqama number when iqama is entered
       if (field === 'iqama_number') {
-        if (value && value.trim() !== '') {
+        if (value && typeof value === 'string' && value.trim() !== '') {
           newData.driving_license_number = value;
         } else {
           // Clear driving license number when iqama is cleared
@@ -535,9 +535,9 @@ export default function CreateEmployeePage() {
         const base64 = reader.result as string;
         // Remove data:image/jpeg;base64, prefix
         const base64Data = base64.split(',')[1];
-        resolve(base64Data);
+        resolve(base64Data || '');
       };
-      reader.onerror = error => reject(error);
+      reader.onerror = () => reject(new Error('Failed to read file'));
     });
   };
 
@@ -571,7 +571,7 @@ export default function CreateEmployeePage() {
         const errorData = await response.json();
         toast.error(errorData.message || t('employee.messages.createError'));
       }
-    } catch (error) {
+    } catch {
       
       toast.error(t('employee.messages.createError'));
     } finally {
@@ -818,7 +818,7 @@ export default function CreateEmployeePage() {
                                       result.message || t('employee.messages.departmentDeleteError')
                                     );
                                   }
-                                } catch (error) {
+                                } catch {
                                   
                                   toast.error(t('employee.messages.departmentDeleteError'));
                                 }
@@ -920,7 +920,7 @@ export default function CreateEmployeePage() {
                                       result.message || t('employee.messages.designationDeleteError')
                                     );
                                   }
-                                } catch (error) {
+                                } catch {
                                   
                                   toast.error(t('employee.messages.designationDeleteError'));
                                 }
