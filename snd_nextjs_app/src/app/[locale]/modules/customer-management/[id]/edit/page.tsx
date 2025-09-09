@@ -149,16 +149,16 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
               remarks: data.customer.remarks || '',
             });
           } else {
-            toast.error(t('messages.loadingError'));
+            toast.error(t('customer.messages.loadingError'));
             router.push('/modules/customer-management');
           }
         } else {
-          toast.error(t('messages.customerNotFound'));
+          toast.error(t('customer.messages.customerNotFound'));
           router.push('/modules/customer-management');
         }
       } catch (error) {
         
-        toast.error(t('messages.loadingError'));
+        toast.error(t('customer.messages.loadingError'));
         router.push('/modules/customer-management');
       } finally {
         setLoading(false);
@@ -196,18 +196,18 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          toast.success(t('messages.saveSuccess'));
+          toast.success(t('customer.messages.saveSuccess'));
           router.push(`/modules/customer-management/${id}`);
         } else {
-          toast.error(result.message || t('messages.saveError'));
+          toast.error(result.message || t('customer.messages.saveError'));
         }
       } else {
         const error = await response.json();
-        toast.error(error.message || t('messages.saveError'));
+        toast.error(error.message || t('customer.messages.saveError'));
       }
     } catch (error) {
       
-      toast.error(t('messages.saveError'));
+      toast.error(t('customer.messages.saveError'));
     } finally {
       setSaving(false);
     }
@@ -228,7 +228,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <p className="text-muted-foreground">{t('messages.customerNotFound')}</p>
+          <p className="text-muted-foreground">{t('customer.messages.customerNotFound')}</p>
         </div>
       </div>
     );
@@ -244,18 +244,18 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
           onClick={() => router.push(`/modules/customer-management/${id}`)}
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          {t('actions.back')}
+          {t('customer.actions.back')}
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">{t('actions.editCustomer')}</h1>
-          <p className="text-muted-foreground">{t('fields.basicInfo')}</p>
+          <h1 className="text-2xl font-bold">{t('customer.actions.editCustomer')}</h1>
+          <p className="text-muted-foreground">{t('customer.fields.basicInfo')}</p>
         </div>
       </div>
 
       {/* Edit Form */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('fields.basicInfo')}</CardTitle>
+          <CardTitle>{t('customer.fields.basicInfo')}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -263,7 +263,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
               {/* Basic Information */}
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="name">{t('fields.name')} *</Label>
+                  <Label htmlFor="name">{t('customer.fields.name')} *</Label>
                   <Input
                     id="name"
                     value={formData.name}
@@ -273,7 +273,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                 </div>
 
                 <div>
-                  <Label htmlFor="email">{t('fields.email')}</Label>
+                  <Label htmlFor="email">{t('customer.fields.email')}</Label>
                   <Input
                     id="email"
                     type="email"
@@ -283,7 +283,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                 </div>
 
                 <div>
-                  <Label htmlFor="phone">{t('fields.phone')}</Label>
+                  <Label htmlFor="phone">{t('customer.fields.phone')}</Label>
                   <Input
                     id="phone"
                     value={formData.phone}
@@ -292,7 +292,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                 </div>
 
                 <div>
-                  <Label htmlFor="companyName">{t('fields.companyName')}</Label>
+                  <Label htmlFor="companyName">{t('customer.fields.companyName')}</Label>
                   <Input
                     id="companyName"
                     value={formData.companyName}
@@ -301,7 +301,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                 </div>
 
                 <div>
-                  <Label htmlFor="contactPerson">{t('fields.contactPerson')}</Label>
+                  <Label htmlFor="contactPerson">{t('customer.fields.contactPerson')}</Label>
                   <Input
                     id="contactPerson"
                     value={formData.contactPerson}
@@ -310,7 +310,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                 </div>
 
                 <div>
-                  <Label htmlFor="website">{t('fields.website')}</Label>
+                  <Label htmlFor="website">{t('customer.fields.website')}</Label>
                   <Input
                     id="website"
                     type="url"
@@ -324,7 +324,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
               {/* Address Information */}
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="address">{t('fields.address')}</Label>
+                  <Label htmlFor="address">{t('customer.fields.address')}</Label>
                   <Textarea
                     id="address"
                     value={formData.address}
@@ -335,7 +335,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="city">{t('fields.city')}</Label>
+                    <Label htmlFor="city">{t('customer.fields.city')}</Label>
                     <Input
                       id="city"
                       value={formData.city}
@@ -344,7 +344,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                   </div>
 
                   <div>
-                    <Label htmlFor="state">{t('fields.state')}</Label>
+                    <Label htmlFor="state">{t('customer.fields.state')}</Label>
                     <Input
                       id="state"
                       value={formData.state}
@@ -355,7 +355,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="postalCode">{t('fields.postalCode')}</Label>
+                    <Label htmlFor="postalCode">{t('customer.fields.postalCode')}</Label>
                     <Input
                       id="postalCode"
                       value={formData.postalCode}
@@ -364,7 +364,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                   </div>
 
                   <div>
-                    <Label htmlFor="country">{t('fields.country')}</Label>
+                    <Label htmlFor="country">{t('customer.fields.country')}</Label>
                     <Input
                       id="country"
                       value={formData.country}
@@ -377,10 +377,10 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
 
             {/* ERPNext Business Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">{t('sections.businessInfo')}</h3>
+              <h3 className="text-lg font-medium">{t('customer.sections.businessInfo')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="taxNumber">{t('fields.taxNumber')}</Label>
+                  <Label htmlFor="taxNumber">{t('customer.fields.taxNumber')}</Label>
                   <Input
                     id="taxNumber"
                     value={formData.taxNumber}
@@ -390,7 +390,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                 </div>
 
                 <div>
-                  <Label htmlFor="vatNumber">{t('fields.vatNumber')}</Label>
+                  <Label htmlFor="vatNumber">{t('customer.fields.vatNumber')}</Label>
                   <Input
                     id="vatNumber"
                     value={formData.vatNumber}
@@ -400,7 +400,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                 </div>
 
                 <div>
-                  <Label htmlFor="customerType">{t('fields.customerType')}</Label>
+                  <Label htmlFor="customerType">{t('customer.fields.customerType')}</Label>
                   <Input
                     id="customerType"
                     value={formData.customerType}
@@ -410,7 +410,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                 </div>
 
                 <div>
-                  <Label htmlFor="customerGroup">{t('fields.customerGroup')}</Label>
+                  <Label htmlFor="customerGroup">{t('customer.fields.customerGroup')}</Label>
                   <Input
                     id="customerGroup"
                     value={formData.customerGroup}
@@ -420,7 +420,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                 </div>
 
                 <div>
-                  <Label htmlFor="territory">{t('fields.territory')}</Label>
+                  <Label htmlFor="territory">{t('customer.fields.territory')}</Label>
                   <Input
                     id="territory"
                     value={formData.territory}
@@ -430,7 +430,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                 </div>
 
                 <div>
-                  <Label htmlFor="salesPerson">{t('fields.salesPerson')}</Label>
+                  <Label htmlFor="salesPerson">{t('customer.fields.salesPerson')}</Label>
                   <Input
                     id="salesPerson"
                     value={formData.salesPerson}
@@ -443,10 +443,10 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
 
             {/* ERPNext Financial Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">{t('sections.financialInfo')}</h3>
+              <h3 className="text-lg font-medium">{t('customer.sections.financialInfo')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="creditLimit">{t('fields.creditLimit')}</Label>
+                  <Label htmlFor="creditLimit">{t('customer.fields.creditLimit')}</Label>
                   <Input
                     id="creditLimit"
                     type="number"
@@ -458,7 +458,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                 </div>
 
                 <div>
-                  <Label htmlFor="paymentTerms">{t('fields.paymentTerms')}</Label>
+                  <Label htmlFor="paymentTerms">{t('customer.fields.paymentTerms')}</Label>
                   <Input
                     id="paymentTerms"
                     value={formData.paymentTerms}
@@ -468,13 +468,13 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                 </div>
 
                 <div>
-                  <Label htmlFor="currency">{t('fields.currency')}</Label>
+                  <Label htmlFor="currency">{t('customer.fields.currency')}</Label>
                   <Select
                     value={formData.currency}
                     onValueChange={value => handleInputChange('currency', value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={t('fields.selectCurrency')} />
+                      <SelectValue placeholder={t('customer.fields.selectCurrency')} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="SAR">SAR (Saudi Riyal)</SelectItem>
@@ -485,7 +485,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                 </div>
 
                 <div>
-                  <Label htmlFor="defaultPriceList">{t('fields.defaultPriceList')}</Label>
+                  <Label htmlFor="defaultPriceList">{t('customer.fields.defaultPriceList')}</Label>
                   <Input
                     id="defaultPriceList"
                     value={formData.defaultPriceList}
@@ -495,13 +495,13 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                 </div>
 
                 <div>
-                  <Label htmlFor="language">{t('fields.language')}</Label>
+                  <Label htmlFor="language">{t('customer.fields.language')}</Label>
                   <Select
                     value={formData.language}
                     onValueChange={value => handleInputChange('language', value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={t('fields.selectLanguage')} />
+                      <SelectValue placeholder={t('customer.fields.selectLanguage')} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="en">English</SelectItem>
@@ -516,18 +516,18 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="status">{t('fields.status')}</Label>
+                  <Label htmlFor="status">{t('customer.fields.status')}</Label>
                   <Select
                     value={formData.status}
                     onValueChange={value => handleInputChange('status', value)}
                   >
                                          <SelectTrigger>
-                       <SelectValue placeholder={t('fields.selectStatus')} />
+                       <SelectValue placeholder={t('customer.fields.selectStatus')} />
                      </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="active">{t('status.active')}</SelectItem>
-                      <SelectItem value="inactive">{t('status.inactive')}</SelectItem>
-                      <SelectItem value="pending">{t('status.pending')}</SelectItem>
+                      <SelectItem value="active">{t('customer.status.active')}</SelectItem>
+                      <SelectItem value="inactive">{t('customer.status.inactive')}</SelectItem>
+                      <SelectItem value="pending">{t('customer.status.pending')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -540,29 +540,29 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                     onChange={e => handleInputChange('isActive', e.target.checked)}
                     className="rounded border-gray-300"
                   />
-                  <Label htmlFor="isActive">{t('fields.isActive')}</Label>
+                  <Label htmlFor="isActive">{t('customer.fields.isActive')}</Label>
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="notes">{t('fields.notes')}</Label>
+                <Label htmlFor="notes">{t('customer.fields.notes')}</Label>
                 <Textarea
                   id="notes"
                   value={formData.notes}
                   onChange={e => handleInputChange('notes', e.target.value)}
                   rows={4}
-                  placeholder={t('fields.notesPlaceholder')}
+                  placeholder={t('customer.fields.notesPlaceholder')}
                 />
               </div>
 
               <div>
-                <Label htmlFor="remarks">{t('fields.remarks')}</Label>
+                <Label htmlFor="remarks">{t('customer.fields.remarks')}</Label>
                 <Textarea
                   id="remarks"
                   value={formData.remarks}
                   onChange={e => handleInputChange('remarks', e.target.value)}
                   rows={3}
-                  placeholder={t('fields.remarksPlaceholder')}
+                  placeholder={t('customer.fields.remarksPlaceholder')}
                 />
               </div>
             </div>
@@ -575,18 +575,18 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                 onClick={() => router.push(`/modules/customer-management/${id}`)}
                 disabled={saving}
               >
-                {t('actions.cancel')}
+                {t('customer.actions.cancel')}
               </Button>
               <Button type="submit" disabled={saving}>
                 {saving ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    {t('messages.saving')}
+                    {t('customer.messages.saving')}
                   </>
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    {t('actions.save')}
+                    {t('customer.actions.save')}
                   </>
                 )}
               </Button>

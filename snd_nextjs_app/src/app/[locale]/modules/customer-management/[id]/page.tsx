@@ -151,8 +151,8 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
         setInvoices([]);
       } catch (error) {
         
-        setError(error instanceof Error ? error.message : t('messages.loadingError'));
-        toast.error(t('messages.loadingError'));
+        setError(error instanceof Error ? error.message : t('customer.messages.loadingError'));
+        toast.error(t('customer.messages.loadingError'));
       } finally {
         setLoading(false);
       }
@@ -167,29 +167,29 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
     switch (status?.toLowerCase()) {
       case 'active':
       case 'completed':
-        return <Badge className="bg-green-100 text-green-800">{t(`status.${status}`)}</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t(`customer.status.${status}`)}</Badge>;
       case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-800">{t(`status.${status}`)}</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800">{t(`customer.status.${status}`)}</Badge>;
       case 'cancelled':
       case 'overdue':
-        return <Badge className="bg-red-100 text-red-800">{t(`status.${status}`)}</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t(`customer.status.${status}`)}</Badge>;
       default:
-        return <Badge className="bg-gray-100 text-gray-800">{t(`status.${status}`) || t('status.unknown')}</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t(`customer.status.${status}`) || t('customer.status.unknown')}</Badge>;
     }
   };
 
   const getPaymentStatusBadge = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'paid':
-        return <Badge className="bg-green-100 text-green-800">{t(`status.${status}`)}</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t(`customer.status.${status}`)}</Badge>;
       case 'partially paid':
-        return <Badge className="bg-yellow-100 text-yellow-800">{t(`status.${status}`)}</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800">{t(`customer.status.${status}`)}</Badge>;
       case 'overdue':
-        return <Badge className="bg-red-100 text-red-800">{t(`status.${status}`)}</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t(`customer.status.${status}`)}</Badge>;
       case 'pending':
-        return <Badge className="bg-blue-100 text-blue-800">{t(`status.${status}`)}</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800">{t(`customer.status.${status}`)}</Badge>;
       default:
-        return <Badge className="bg-gray-100 text-gray-800">{t(`status.${status}`) || t('status.unknown')}</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t(`customer.status.${status}`) || t('customer.status.unknown')}</Badge>;
     }
   };
 
@@ -202,7 +202,7 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
   };
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return t('common.notAvailable');
+    if (!dateString) return t('customer.common.notAvailable');
     return new Date(dateString).toLocaleDateString(isRTL ? 'ar-SA' : 'en-US', {
       year: 'numeric',
       month: 'short',
@@ -231,7 +231,7 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                     <p className="text-muted-foreground">{t('messages.loadingCustomer')}</p>
+                     <p className="text-muted-foreground">{t('customer.messages.loadingCustomer')}</p>
         </div>
       </div>
     );
@@ -241,9 +241,9 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-                     <p className="text-muted-foreground">{error || t('messages.customerNotFound')}</p>
+                     <p className="text-muted-foreground">{error || t('customer.messages.customerNotFound')}</p>
           <Button variant="outline" className="mt-4" onClick={() => window.history.back()}>
-            {t('actions.back')}
+            {t('customer.actions.back')}
           </Button>
         </div>
       </div>
@@ -258,13 +258,13 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
           <Link href="/modules/customer-management">
             <Button variant="outline" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-{t('actions.backToCustomers')}
+{t('customer.actions.backToCustomers')}
             </Button>
           </Link>
           <div>
             <h1 className="text-3xl font-bold">{customer.name}</h1>
             <p className="text-muted-foreground">
-{t('fields.customerId')}: {customer.id} • {customer.status}
+{t('customer.fields.customerId')}: {customer.id} • {customer.status}
             </p>
           </div>
         </div>
@@ -272,7 +272,7 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
           <Link href={`/modules/customer-management/${customerId}/edit`}>
             <Button>
               <Edit className="h-4 w-4 mr-2" />
-{t('actions.editCustomer')}
+{t('customer.actions.editCustomer')}
             </Button>
           </Link>
         </div>
@@ -282,50 +282,50 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
          <Card>
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-             <CardTitle className="text-sm font-medium">{t('stats.totalRentals')}</CardTitle>
+             <CardTitle className="text-sm font-medium">{t('customer.stats.totalRentals')}</CardTitle>
              <Package className="h-4 w-4 text-muted-foreground" />
            </CardHeader>
            <CardContent>
              <div className="text-2xl font-bold">{rentals.length}</div>
              <p className="text-xs text-muted-foreground">
-               {formatCurrency(calculateTotalRentals())} {t('stats.totalValue')}
+               {formatCurrency(calculateTotalRentals())} {t('customer.stats.totalValue')}
              </p>
            </CardContent>
          </Card>
 
          <Card>
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-             <CardTitle className="text-sm font-medium">{t('stats.totalInvoices')}</CardTitle>
+             <CardTitle className="text-sm font-medium">{t('customer.stats.totalInvoices')}</CardTitle>
              <FileText className="h-4 w-4 text-muted-foreground" />
            </CardHeader>
            <CardContent>
              <div className="text-2xl font-bold">{invoices.length}</div>
              <p className="text-xs text-muted-foreground">
-               {formatCurrency(calculateTotalInvoices())} {t('stats.totalInvoiced')}
+               {formatCurrency(calculateTotalInvoices())} {t('customer.stats.totalInvoiced')}
              </p>
            </CardContent>
          </Card>
 
          <Card>
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-             <CardTitle className="text-sm font-medium">{t('stats.outstanding')}</CardTitle>
+             <CardTitle className="text-sm font-medium">{t('customer.stats.outstanding')}</CardTitle>
              <DollarSign className="h-4 w-4 text-muted-foreground" />
            </CardHeader>
            <CardContent>
              <div className="text-2xl font-bold">{formatCurrency(calculateOutstandingAmount())}</div>
-             <p className="text-xs text-muted-foreground">{t('stats.amountDue')}</p>
+             <p className="text-xs text-muted-foreground">{t('customer.stats.amountDue')}</p>
            </CardContent>
          </Card>
 
          <Card>
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-             <CardTitle className="text-sm font-medium">{t('fields.status')}</CardTitle>
+             <CardTitle className="text-sm font-medium">{t('customer.fields.status')}</CardTitle>
              <User className="h-4 w-4 text-muted-foreground" />
            </CardHeader>
            <CardContent>
              <div className="text-2xl font-bold">{getStatusBadge(customer.status)}</div>
              <p className="text-xs text-muted-foreground">
-               {customer.isActive ? t('status.active') : t('status.inactive')}
+               {customer.isActive ? t('customer.status.active') : t('customer.status.inactive')}
              </p>
            </CardContent>
          </Card>
@@ -335,47 +335,47 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
          <Card>
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-             <CardTitle className="text-sm font-medium">{t('stats.creditLimit')}</CardTitle>
+             <CardTitle className="text-sm font-medium">{t('customer.stats.creditLimit')}</CardTitle>
              <DollarSign className="h-4 w-4 text-muted-foreground" />
            </CardHeader>
            <CardContent>
              <div className="text-2xl font-bold">{formatCurrency(customer.creditLimit)}</div>
              <p className="text-xs text-muted-foreground">
-               {t('stats.remaining')}: {formatCurrency(customer.creditLimitRemaining)}
+               {t('customer.stats.remaining')}: {formatCurrency(customer.creditLimitRemaining)}
              </p>
            </CardContent>
          </Card>
 
          <Card>
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-             <CardTitle className="text-sm font-medium">{t('stats.currentDue')}</CardTitle>
+             <CardTitle className="text-sm font-medium">{t('customer.stats.currentDue')}</CardTitle>
              <DollarSign className="h-4 w-4 text-muted-foreground" />
            </CardHeader>
            <CardContent>
              <div className="text-2xl font-bold">{formatCurrency(customer.currentDue)}</div>
-             <p className="text-xs text-muted-foreground">{t('stats.overdue')}</p>
+             <p className="text-xs text-muted-foreground">{t('customer.stats.overdue')}</p>
            </CardContent>
          </Card>
 
          <Card>
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-             <CardTitle className="text-sm font-medium">{t('stats.totalValue')}</CardTitle>
+             <CardTitle className="text-sm font-medium">{t('customer.stats.totalValue')}</CardTitle>
              <DollarSign className="h-4 w-4 text-muted-foreground" />
            </CardHeader>
            <CardContent>
              <div className="text-2xl font-bold">{formatCurrency(customer.totalValue)}</div>
-             <p className="text-xs text-muted-foreground">{t('stats.lifetime')}</p>
+             <p className="text-xs text-muted-foreground">{t('customer.stats.lifetime')}</p>
            </CardContent>
          </Card>
 
          <Card>
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-             <CardTitle className="text-sm font-medium">{t('stats.currency')}</CardTitle>
+             <CardTitle className="text-sm font-medium">{t('customer.stats.currency')}</CardTitle>
              <DollarSign className="h-4 w-4 text-muted-foreground" />
            </CardHeader>
            <CardContent>
              <div className="text-2xl font-bold">{customer.currency || 'SAR'}</div>
-             <p className="text-xs text-muted-foreground">{t('stats.defaultCurrency')}</p>
+             <p className="text-xs text-muted-foreground">{t('customer.stats.defaultCurrency')}</p>
            </CardContent>
          </Card>
        </div>
@@ -386,38 +386,38 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
         <div className="lg:col-span-2 space-y-6">
           <Tabs defaultValue="rentals" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="rentals">{t('tabs.rentals')} ({rentals.length})</TabsTrigger>
-              <TabsTrigger value="invoices">{t('tabs.invoices')} ({invoices.length})</TabsTrigger>
+              <TabsTrigger value="rentals">{t('customer.tabs.rentals')} ({rentals.length})</TabsTrigger>
+              <TabsTrigger value="invoices">{t('customer.tabs.invoices')} ({invoices.length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="rentals" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>{t('tabs.rentalHistory')}</CardTitle>
+                  <CardTitle>{t('customer.tabs.rentalHistory')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {rentals.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
-{t('messages.noRentalsFound')}
+{t('customer.messages.noRentalsFound')}
                     </div>
                   ) : (
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>{t('table.headers.rentalNumber')}</TableHead>
-                          <TableHead>{t('table.headers.equipment')}</TableHead>
-                          <TableHead>{t('table.headers.startDate')}</TableHead>
-                          <TableHead>{t('table.headers.endDate')}</TableHead>
-                          <TableHead>{t('table.headers.amount')}</TableHead>
-                          <TableHead>{t('table.headers.status')}</TableHead>
-                          <TableHead>{t('table.headers.payment')}</TableHead>
+                          <TableHead>{t('customer.table.headers.rentalNumber')}</TableHead>
+                          <TableHead>{t('customer.table.headers.equipment')}</TableHead>
+                          <TableHead>{t('customer.table.headers.startDate')}</TableHead>
+                          <TableHead>{t('customer.table.headers.endDate')}</TableHead>
+                          <TableHead>{t('customer.table.headers.amount')}</TableHead>
+                          <TableHead>{t('customer.table.headers.status')}</TableHead>
+                          <TableHead>{t('customer.table.headers.payment')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {rentals.map(rental => (
                           <TableRow key={rental.id}>
                             <TableCell className="font-mono">{rental.rentalNumber}</TableCell>
-                                                         <TableCell>{rental.equipmentName || t('common.notAvailable')}</TableCell>
+                                                         <TableCell>{rental.equipmentName || t('customer.common.notAvailable')}</TableCell>
                             <TableCell>{formatDate(rental.startDate)}</TableCell>
                             <TableCell>
                               {formatDate(rental.actualEndDate || rental.expectedEndDate)}
@@ -437,22 +437,22 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
             <TabsContent value="invoices" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>{t('tabs.invoiceHistory')}</CardTitle>
+                  <CardTitle>{t('customer.tabs.invoiceHistory')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {invoices.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
-{t('messages.noInvoicesFound')}
+{t('customer.messages.noInvoicesFound')}
                     </div>
                   ) : (
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>{t('table.headers.invoiceNumber')}</TableHead>
-                          <TableHead>{t('table.headers.amount')}</TableHead>
-                          <TableHead>{t('table.headers.dueDate')}</TableHead>
-                          <TableHead>{t('table.headers.status')}</TableHead>
-                          <TableHead>{t('table.headers.created')}</TableHead>
+                          <TableHead>{t('customer.table.headers.invoiceNumber')}</TableHead>
+                          <TableHead>{t('customer.table.headers.amount')}</TableHead>
+                          <TableHead>{t('customer.table.headers.dueDate')}</TableHead>
+                          <TableHead>{t('customer.table.headers.status')}</TableHead>
+                          <TableHead>{t('customer.table.headers.created')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -482,49 +482,49 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
              <CardHeader>
                <CardTitle className="flex items-center space-x-2">
                  <Building className="h-5 w-5" />
-                 <span>{t('sections.companyInfo')}</span>
+                 <span>{t('customer.sections.companyInfo')}</span>
                </CardTitle>
              </CardHeader>
              <CardContent className="space-y-4">
                <div>
-                 <label className="text-sm font-medium text-gray-500">{t('fields.companyName')}</label>
-                 <p className="text-lg font-semibold">{customer.companyName || t('common.notAvailable')}</p>
+                 <label className="text-sm font-medium text-gray-500">{t('customer.fields.companyName')}</label>
+                 <p className="text-lg font-semibold">{customer.companyName || t('customer.common.notAvailable')}</p>
                </div>
                <div>
-                 <label className="text-sm font-medium text-gray-500">{t('fields.contactPerson')}</label>
-                 <p className="text-lg">{customer.contactPerson || t('common.notAvailable')}</p>
+                 <label className="text-sm font-medium text-gray-500">{t('customer.fields.contactPerson')}</label>
+                 <p className="text-lg">{customer.contactPerson || t('customer.common.notAvailable')}</p>
                </div>
                <div>
-                 <label className="text-sm font-medium text-gray-500">{t('fields.taxNumber')}</label>
-                 <p className="text-sm font-mono">{customer.taxNumber || t('common.notAvailable')}</p>
+                 <label className="text-sm font-medium text-gray-500">{t('customer.fields.taxNumber')}</label>
+                 <p className="text-sm font-mono">{customer.taxNumber || t('customer.common.notAvailable')}</p>
                </div>
                <div>
-                 <label className="text-sm font-medium text-gray-500">{t('fields.vatNumber')}</label>
-                 <p className="text-sm font-mono">{customer.vatNumber || t('common.notAvailable')}</p>
+                 <label className="text-sm font-medium text-gray-500">{t('customer.fields.vatNumber')}</label>
+                 <p className="text-sm font-mono">{customer.vatNumber || t('customer.common.notAvailable')}</p>
                </div>
                <div>
-                 <label className="text-sm font-medium text-gray-500">{t('fields.creditLimit')}</label>
+                 <label className="text-sm font-medium text-gray-500">{t('customer.fields.creditLimit')}</label>
                  <p className="text-lg font-semibold">{formatCurrency(customer.creditLimit)}</p>
                </div>
                <div>
-                 <label className="text-sm font-medium text-gray-500">{t('fields.paymentTerms')}</label>
-                 <p className="text-lg">{customer.paymentTerms || t('common.notAvailable')}</p>
+                 <label className="text-sm font-medium text-gray-500">{t('customer.fields.paymentTerms')}</label>
+                 <p className="text-lg">{customer.paymentTerms || t('customer.common.notAvailable')}</p>
                </div>
                <div>
-                 <label className="text-sm font-medium text-gray-500">{t('fields.customerType')}</label>
-                 <p className="text-lg">{customer.customerType || t('common.notAvailable')}</p>
+                 <label className="text-sm font-medium text-gray-500">{t('customer.fields.customerType')}</label>
+                 <p className="text-lg">{customer.customerType || t('customer.common.notAvailable')}</p>
                </div>
                <div>
-                 <label className="text-sm font-medium text-gray-500">{t('fields.customerGroup')}</label>
-                 <p className="text-lg">{customer.customerGroup || t('common.notAvailable')}</p>
+                 <label className="text-sm font-medium text-gray-500">{t('customer.fields.customerGroup')}</label>
+                 <p className="text-lg">{customer.customerGroup || t('customer.common.notAvailable')}</p>
                </div>
                <div>
-                 <label className="text-sm font-medium text-gray-500">{t('fields.territory')}</label>
-                 <p className="text-lg">{customer.territory || t('common.notAvailable')}</p>
+                 <label className="text-sm font-medium text-gray-500">{t('customer.fields.territory')}</label>
+                 <p className="text-lg">{customer.territory || t('customer.common.notAvailable')}</p>
                </div>
                <div>
-                 <label className="text-sm font-medium text-gray-500">{t('fields.salesPerson')}</label>
-                 <p className="text-lg">{customer.salesPerson || t('common.notAvailable')}</p>
+                 <label className="text-sm font-medium text-gray-500">{t('customer.fields.salesPerson')}</label>
+                 <p className="text-lg">{customer.salesPerson || t('customer.common.notAvailable')}</p>
                </div>
              </CardContent>
            </Card>
@@ -533,30 +533,30 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
              <CardHeader>
                <CardTitle className="flex items-center space-x-2">
                  <Mail className="h-5 w-5" />
-                 <span>{t('sections.contactInfo')}</span>
+                 <span>{t('customer.sections.contactInfo')}</span>
                </CardTitle>
              </CardHeader>
              <CardContent className="space-y-4">
                <div>
-                 <label className="text-sm font-medium text-gray-500">{t('fields.email')}</label>
-                 <p className="text-lg">{customer.email || t('common.notAvailable')}</p>
+                 <label className="text-sm font-medium text-gray-500">{t('customer.fields.email')}</label>
+                 <p className="text-lg">{customer.email || t('customer.common.notAvailable')}</p>
                </div>
                <div>
-                 <label className="text-sm font-medium text-gray-500">{t('fields.phone')}</label>
-                 <p className="text-lg">{customer.phone || t('common.notAvailable')}</p>
+                 <label className="text-sm font-medium text-gray-500">{t('customer.fields.phone')}</label>
+                 <p className="text-lg">{customer.phone || t('customer.common.notAvailable')}</p>
                </div>
                <div>
-                 <label className="text-sm font-medium text-gray-500">{t('fields.website')}</label>
-                 <p className="text-lg">{customer.website || t('common.notAvailable')}</p>
+                 <label className="text-sm font-medium text-gray-500">{t('customer.fields.website')}</label>
+                 <p className="text-lg">{customer.website || t('customer.common.notAvailable')}</p>
                </div>
                <div>
-                 <label className="text-sm font-medium text-gray-500">{t('fields.address')}</label>
-                 <p className="text-sm">{customer.address || t('common.notAvailable')}</p>
+                 <label className="text-sm font-medium text-gray-500">{t('customer.fields.address')}</label>
+                 <p className="text-sm">{customer.address || t('customer.common.notAvailable')}</p>
                  <p className="text-sm text-gray-500">
-                   {customer.city || t('common.notAvailable')}, {customer.state || t('common.notAvailable')} {customer.country || t('common.notAvailable')}
+                   {customer.city || t('customer.common.notAvailable')}, {customer.state || t('customer.common.notAvailable')} {customer.country || t('customer.common.notAvailable')}
                  </p>
                  <p className="text-sm text-gray-500">
-                   {t('fields.postalCode')}: {customer.postalCode || t('common.notAvailable')}
+                   {t('customer.fields.postalCode')}: {customer.postalCode || t('customer.common.notAvailable')}
                  </p>
                </div>
              </CardContent>
@@ -566,49 +566,49 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
              <CardHeader>
                <CardTitle className="flex items-center space-x-2">
                  <DollarSign className="h-5 w-5" />
-                 <span>{t('sections.financialInfo')}</span>
+                 <span>{t('customer.sections.financialInfo')}</span>
                </CardTitle>
              </CardHeader>
              <CardContent className="space-y-4">
                <div>
-                 <label className="text-sm font-medium text-gray-500">{t('fields.currency')}</label>
+                 <label className="text-sm font-medium text-gray-500">{t('customer.fields.currency')}</label>
                  <p className="text-lg font-semibold">{customer.currency || 'SAR'}</p>
                </div>
                <div>
-                 <label className="text-sm font-medium text-gray-500">{t('fields.defaultPriceList')}</label>
-                 <p className="text-lg">{customer.defaultPriceList || t('common.notAvailable')}</p>
+                 <label className="text-sm font-medium text-gray-500">{t('customer.fields.defaultPriceList')}</label>
+                 <p className="text-lg">{customer.defaultPriceList || t('customer.common.notAvailable')}</p>
                </div>
                <div>
-                 <label className="text-sm font-medium text-gray-500">{t('fields.language')}</label>
-                 <p className="text-lg">{customer.language || t('common.notAvailable')}</p>
+                 <label className="text-sm font-medium text-gray-500">{t('customer.fields.language')}</label>
+                 <p className="text-lg">{customer.language || t('customer.common.notAvailable')}</p>
                </div>
                <div>
-                 <label className="text-sm font-medium text-gray-500">{t('fields.notes')}</label>
-                 <p className="text-sm">{customer.notes || t('common.notAvailable')}</p>
+                 <label className="text-sm font-medium text-gray-500">{t('customer.fields.notes')}</label>
+                 <p className="text-sm">{customer.notes || t('customer.common.notAvailable')}</p>
                </div>
                <div>
-                 <label className="text-sm font-medium text-gray-500">{t('fields.remarks')}</label>
-                 <p className="text-sm">{customer.remarks || t('common.notAvailable')}</p>
+                 <label className="text-sm font-medium text-gray-500">{t('customer.fields.remarks')}</label>
+                 <p className="text-sm">{customer.remarks || t('customer.common.notAvailable')}</p>
                </div>
              </CardContent>
            </Card>
 
            <Card>
              <CardHeader>
-               <CardTitle>{t('sections.quickActions')}</CardTitle>
+               <CardTitle>{t('customer.sections.quickActions')}</CardTitle>
              </CardHeader>
              <CardContent className="space-y-2">
                <Button variant="outline" className="w-full justify-start">
                  <Package className="h-4 w-4 mr-2" />
-                 {t('actions.createRental')}
+                 {t('customer.actions.createRental')}
                </Button>
                <Button variant="outline" className="w-full justify-start">
                  <DollarSign className="h-4 w-4 mr-2" />
-                 {t('actions.createInvoice')}
+                 {t('customer.actions.createInvoice')}
                </Button>
                <Button variant="outline" className="w-full justify-start">
                  <FileText className="h-4 w-4 mr-2" />
-                 {t('actions.generateReport')}
+                 {t('customer.actions.generateReport')}
                </Button>
              </CardContent>
            </Card>

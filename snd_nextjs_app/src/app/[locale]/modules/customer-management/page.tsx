@@ -220,7 +220,7 @@ export default function CustomerManagementPage() {
             {hasPermission('create', 'Customer') && (
               <Button className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
-                {t('customer.add_customer')}
+                {t('customer.actions.add_customer')}
               </Button>
             )}
             {hasPermission('sync', 'Customer') && (
@@ -235,7 +235,7 @@ export default function CustomerManagementPage() {
                 ) : (
                   <RefreshCw className="h-4 w-4" />
                 )}
-                {syncing ? t('common.syncing') : t('customer.sync_from_erpnext')}
+                {syncing ? t('customer.sync.inProgress') : t('customer.actions.sync_from_erpnext')}
               </Button>
             )}
           </div>
@@ -251,20 +251,20 @@ export default function CustomerManagementPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{t('search.title')}</CardTitle>
+            <CardTitle>{t('customer.search.title')}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSearch} className="flex gap-4">
               <div className="flex-1">
                 <Input
-                  placeholder={t('search.placeholder')}
+                  placeholder={t('customer.search.placeholder')}
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
                 />
               </div>
               <Button type="submit" variant="outline">
                 <Search className="mr-2 h-4 w-4" />
-                {t('actions.search')}
+                {t('customer.actions.search')}
               </Button>
             </form>
           </CardContent>
@@ -272,18 +272,18 @@ export default function CustomerManagementPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{t('search.resultCount', { count: filteredCustomers.length })}</CardTitle>
+            <CardTitle>{t('customer.search.resultCount', { count: filteredCustomers.length })}</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('table.headers.name')}</TableHead>
-                  <TableHead>{t('table.headers.email')}</TableHead>
-                  <TableHead>{t('table.headers.phone')}</TableHead>
-                  <TableHead>{t('table.headers.status')}</TableHead>
-                  <TableHead>{t('table.headers.created')}</TableHead>
-                  <TableHead>{t('table.headers.actions')}</TableHead>
+                  <TableHead>{t('customer.table.headers.name')}</TableHead>
+                  <TableHead>{t('customer.table.headers.email')}</TableHead>
+                  <TableHead>{t('customer.table.headers.phone')}</TableHead>
+                  <TableHead>{t('customer.table.headers.status')}</TableHead>
+                  <TableHead>{t('customer.table.headers.created')}</TableHead>
+                  <TableHead>{t('customer.table.headers.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -331,7 +331,7 @@ export default function CustomerManagementPage() {
 
             {filteredCustomers.length === 0 && (
               <div className="text-center py-8">
-                <p className="text-muted-foreground">{t('search.noResults')}</p>
+                <p className="text-muted-foreground">{t('customer.search.noResults')}</p>
               </div>
             )}
           </CardContent>
@@ -344,17 +344,17 @@ export default function CustomerManagementPage() {
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
             >
-              {t('pagination.previous')}
+              {t('customer.pagination.previous')}
             </Button>
             <span className="flex items-center px-4">
-              {t('pagination.page', { current: currentPage, total: totalPages })}
+              {t('customer.pagination.page', { current: currentPage, total: totalPages })}
             </span>
             <Button
               variant="outline"
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
             >
-              {t('pagination.next')}
+              {t('customer.pagination.next')}
             </Button>
           </div>
         )}
