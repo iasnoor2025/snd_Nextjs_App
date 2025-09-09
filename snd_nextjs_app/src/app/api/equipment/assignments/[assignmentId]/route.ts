@@ -14,7 +14,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { withPermission } from '@/lib/rbac/api-middleware';
 import { PermissionConfigs } from '@/lib/rbac/api-middleware';
-import { invalidateCacheByTag } from '@/lib/redis';
+import { cacheService } from '@/lib/redis';
 import { CACHE_TAGS } from '@/lib/redis';
 
 export const PUT = withPermission(PermissionConfigs.equipment.update)(
@@ -214,7 +214,7 @@ export const PUT = withPermission(PermissionConfigs.equipment.update)(
       .limit(1);
 
     // Invalidate equipment cache to reflect status changes
-    await invalidateCacheByTag(CACHE_TAGS.EQUIPMENT);
+    await cacheService.invalidateCacheByTag(CACHE_TAGS.EQUIPMENT);
 
     return NextResponse.json({
       success: true,
@@ -260,7 +260,7 @@ export const DELETE = withPermission(PermissionConfigs.equipment.delete)(
     await db.delete(equipmentRentalHistory).where(eq(equipmentRentalHistory.id, assignmentId));
 
     // Invalidate equipment cache to reflect status changes
-    await invalidateCacheByTag(CACHE_TAGS.EQUIPMENT);
+    await cacheService.invalidateCacheByTag(CACHE_TAGS.EQUIPMENT);
 
     return NextResponse.json({
       success: true,

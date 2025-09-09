@@ -249,12 +249,9 @@ export async function checkApiPermission(
   config: PermissionConfig
 ): Promise<{ authorized: boolean; user?: User; error?: string }> {
   try {
-    console.log('🔐 API Permission Check - Starting...');
-    console.log('🔐 Config:', config);
     
     // Get server session
     const session = await getServerSession(authConfig);
-    console.log('🔐 Session:', session);
     
     if (!session?.user) {
       console.error('API permission check failed: No session or user');
@@ -273,18 +270,13 @@ export async function checkApiPermission(
       isActive: session.user.isActive !== false,
     };
     
-    console.log('🔐 User object created:', user);
-    console.log('🔐 Checking permission:', `${config.action}.${config.subject}`);
 
     // Check primary permission
     let hasAccess = await hasPermission(user, config.action, config.subject);
-    console.log('🔐 Primary permission result:', hasAccess);
     
     // If primary permission fails, try fallback
     if (!hasAccess && config.fallbackAction && config.fallbackSubject) {
-      console.log('🔐 Trying fallback permission:', `${config.fallbackAction}.${config.fallbackSubject}`);
       hasAccess = await hasPermission(user, config.fallbackAction, config.fallbackSubject);
-      console.log('🔐 Fallback permission result:', hasAccess);
     }
 
     if (!hasAccess) {
@@ -296,7 +288,6 @@ export async function checkApiPermission(
       };
     }
 
-    console.log('🔐 Permission check SUCCESS - User authorized');
     return {
       authorized: true,
       user

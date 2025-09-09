@@ -948,17 +948,6 @@ export default function RentalDetailPage() {
       const employeesData = data.data || data.employees || [];
       setEmployees(employeesData);
       
-      // Debug logging for employees
-      console.log('Employees loaded:', {
-        count: employeesData.length,
-        sampleEmployees: employeesData.slice(0, 3).map(emp => ({
-          id: emp.id,
-          type: typeof emp.id,
-          name: `${emp.first_name} ${emp.last_name}`,
-          fileNumber: emp.file_number
-        })),
-        employeeWithId1: employeesData.find(emp => emp.id === 1 || emp.id === '1')
-      });
     } catch (err) {
       console.error('Error fetching employees:', err);
     }
@@ -1179,7 +1168,6 @@ export default function RentalDetailPage() {
         rentalId: rental.id,
       };
 
-      console.log('Sending rental item data:', requestData);
 
       const response = await fetch(`/api/rentals/${rental.id}/items`, {
         method: 'POST',
@@ -1679,7 +1667,6 @@ export default function RentalDetailPage() {
                             operatorName = `${operator.first_name} ${operator.last_name}`;
                           } else {
                             // If not found in employees list, try to fetch directly
-                            console.log('Operator not found in employees list, operatorId:', operatorId);
                             // For now, show the operatorId as fallback
                             operatorName = `Employee ${operatorId}`;
                           }
@@ -1705,7 +1692,6 @@ export default function RentalDetailPage() {
                             }))
                           });
                         } else {
-                          console.log('No operatorId found for item:', item.id);
                         }
 
                         // Calculate duration if we have start and end dates
@@ -2036,7 +2022,6 @@ export default function RentalDetailPage() {
               <EmployeeDropdown
                 value={formData.supervisor}
                 onValueChange={(value) => {
-                  console.log('Supervisor selected in edit:', value);
                   setFormData(prev => ({ ...prev, supervisor: value }));
                 }}
                 placeholder={t('rental.fields.selectSupervisor')}

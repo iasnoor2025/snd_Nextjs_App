@@ -27,7 +27,6 @@ export const GET = withPermission(PermissionConfigs.dashboard.read)(async (_requ
     // Fetch Recent Activity data
     const activityData = await DashboardService.getRecentActivity(limit);
     
-    console.log('Dashboard Activity API - Activity data fetched successfully');
 
     return NextResponse.json({ recentActivity: activityData });
   } catch (error) {

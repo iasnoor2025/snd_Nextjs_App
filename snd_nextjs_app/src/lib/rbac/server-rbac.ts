@@ -359,41 +359,32 @@ export function createUserFromSession(session: { user: { id?: string; email?: st
  */
 export async function hasPermission(user: User, action: Action, subject: Subject): Promise<boolean> {
   try {
-    console.log('🔐 hasPermission called with:', { user, action, subject });
     
     // Load user roles from database
     const userRoles = await loadUserRolesFromDB(user.id);
-    console.log('🔐 User roles loaded:', userRoles);
     
     if (userRoles.length === 0) {
-      console.log('🔐 No user roles found, returning false');
       return false;
     }
 
     // Load permissions for user's roles
     const userPermissions = await loadRolePermissionsFromDB(userRoles);
-    console.log('🔐 User permissions loaded:', userPermissions);
     
     if (userPermissions.length === 0) {
-      console.log('🔐 No user permissions found, returning false');
       return false;
     }
 
     // Check for wildcard permissions
     if (userPermissions.includes('*') || userPermissions.includes('manage.all')) {
-      console.log('🔐 Wildcard permission found, returning true');
       return true;
     }
 
     // Check for specific permission using mapping
     const permissionName = `${action}.${subject}`;
     const mappedPermissions = PERMISSION_MAPPING[permissionName] || [permissionName];
-    console.log('🔐 Checking for permission:', permissionName);
-    console.log('🔐 Mapped permissions:', mappedPermissions);
     
     // Check if user has any of the mapped permissions
     const hasPermission = mappedPermissions.some(permission => userPermissions.includes(permission));
-    console.log('🔐 Permission check result:', hasPermission);
     
     return hasPermission;
   } catch (error) {
@@ -408,43 +399,35 @@ export async function hasPermission(user: User, action: Action, subject: Subject
  * Now supports new roles through configuration
  */
 function hasPermissionFallback(user: User, action: Action, subject: Subject): boolean {
-  console.log('🔐 Fallback permission check for:', { user, action, subject });
   
   // SUPER_ADMIN has access to everything
   if (user.role === 'SUPER_ADMIN') {
-    console.log('🔐 Fallback: SUPER_ADMIN access granted');
     return true;
   }
 
   // ADMIN role permissions
   if (user.role === 'ADMIN') {
-    console.log('🔐 Fallback: Checking ADMIN permissions');
     
     // Admin can read all subjects
     if (action === 'read') {
-      console.log('🔐 Fallback: ADMIN read access granted for all subjects');
       return true;
     }
     
     // Admin can manage employees, users, and basic operations
     if (subject === 'Employee' || subject === 'User' || subject === 'Dashboard') {
-      console.log('🔐 Fallback: ADMIN access granted for', subject);
       return true;
     }
   }
 
   // MANAGER role permissions
   if (user.role === 'MANAGER') {
-    console.log('🔐 Fallback: Checking MANAGER permissions');
     
     // Manager can read most subjects
     if (action === 'read') {
-      console.log('🔐 Fallback: MANAGER read access granted for most subjects');
       return true;
     }
   }
 
-  console.log('🔐 Fallback: No permissions found, access denied');
   return false;
 }
 
@@ -605,7 +588,6 @@ export function addRoutePermission(
   roles: UserRole[]
 ): void {
   dynamicRoutePermissions.set(route, { action, subject, roles });
-  console.log(`✅ Added route permission: ${route} for roles: ${roles.join(', ')}`);
 }
 
 /**
@@ -613,7 +595,6 @@ export function addRoutePermission(
  */
 export function removeRoutePermission(route: string): void {
   dynamicRoutePermissions.delete(route);
-  console.log(`🗑️ Removed route permission: ${route}`);
 }
 
 /**
@@ -724,7 +705,6 @@ export function autoGrantRouteAccess(roleName: string): void {
     grantedRoutes.push('/dashboard');
   }
 
-  console.log(`✅ Auto-granted route access for role ${roleName}:`, grantedRoutes);
 }
 
 /**
@@ -737,7 +717,6 @@ export function addNewRoleWithRouteAccess(roleName: string, priority: number, pe
   // Automatically grant route access based on permissions
   autoGrantRouteAccess(roleName);
   
-  console.log(`✅ Added new role ${roleName} with automatic route access`);
 }
 
 /**
@@ -751,7 +730,6 @@ export function addNewRole(roleName: string, priority: number, permissions: stri
   // Add to fallback permissions
   DYNAMIC_FALLBACK_PERMISSIONS[roleName] = permissions;
   
-  console.log(`✅ Added new role: ${roleName} with priority ${priority} and ${permissions.length} permissions`);
 }
 
 /**
@@ -761,7 +739,6 @@ export function removeRole(roleName: string): void {
   delete DYNAMIC_ROLE_HIERARCHY[roleName];
   delete DYNAMIC_FALLBACK_PERMISSIONS[roleName];
   
-  console.log(`🗑️ Removed role: ${roleName}`);
 }
 
 /**
@@ -770,7 +747,6 @@ export function removeRole(roleName: string): void {
 export function updateRolePermissions(roleName: string, permissions: string[]): void {
   if (DYNAMIC_FALLBACK_PERMISSIONS[roleName]) {
     DYNAMIC_FALLBACK_PERMISSIONS[roleName] = permissions;
-    console.log(`✅ Updated permissions for role: ${roleName}`);
   } else {
     console.warn(`⚠️ Role ${roleName} not found, cannot update permissions`);
   }

@@ -170,6 +170,13 @@ export class CacheService {
   }
 
   /**
+   * Invalidate cache by tag (alias for clearByTags)
+   */
+  async invalidateCacheByTag(tag: string): Promise<void> {
+    await this.clearByTags([tag]);
+  }
+
+  /**
    * Clear all cache
    */
   async clearAll(): Promise<void> {

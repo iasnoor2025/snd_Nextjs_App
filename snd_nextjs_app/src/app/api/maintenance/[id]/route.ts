@@ -3,7 +3,7 @@ import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { db } from '@/lib/db';
 import { equipmentMaintenance, equipment, employees, equipmentMaintenanceItems } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { invalidateCacheByTag } from '@/lib/redis';
+import { cacheService } from '@/lib/redis';
 import { CACHE_TAGS } from '@/lib/redis';
 
 export const GET = withPermission(PermissionConfigs.maintenance.read)(
@@ -210,7 +210,7 @@ export const PUT = withPermission(PermissionConfigs.maintenance.update)(
       });
 
       // Invalidate equipment cache to reflect status changes
-      await invalidateCacheByTag(CACHE_TAGS.EQUIPMENT);
+      await cacheService.invalidateCacheByTag(CACHE_TAGS.EQUIPMENT);
 
       return NextResponse.json({ success: true, data: updated });
     } catch (error) {
@@ -271,7 +271,7 @@ export const DELETE = withPermission(PermissionConfigs.maintenance.delete)(
       
       console.log(`Successfully deleted maintenance record with ID: ${maintenanceId}`);
       // Invalidate equipment cache to reflect status changes
-      await invalidateCacheByTag(CACHE_TAGS.EQUIPMENT);
+      await cacheService.invalidateCacheByTag(CACHE_TAGS.EQUIPMENT);
 
       return NextResponse.json({ success: true, message: 'Maintenance record deleted successfully' });
     } catch (error) {

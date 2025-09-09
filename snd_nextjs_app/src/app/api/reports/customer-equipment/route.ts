@@ -32,7 +32,6 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
-    console.log('Generating customer equipment report...', { customerId, startDate, endDate });
 
     // Build a simpler query - get customers with rentals and equipment
     let customerEquipmentQuery = db
@@ -77,7 +76,6 @@ export async function GET(request: NextRequest) {
 
     const customerEquipmentData = await customerEquipmentQuery;
 
-    console.log('Customer equipment data:', customerEquipmentData);
 
     // Get summary statistics
     const summaryStats = await db
@@ -98,18 +96,9 @@ export async function GET(request: NextRequest) {
       .leftJoin(equipmentCategories, eq(equipment.categoryId, equipmentCategories.id))
       .leftJoin(employees, eq(rentalItems.operatorId, employees.id));
 
-    console.log('Summary stats:', summaryStats);
-
-    console.log('Raw customer equipment data:', customerEquipmentData);
-    console.log('Raw data length:', customerEquipmentData.length);
 
     // Create simple customer groups from raw data using reduce (simpler approach)
     const customerGroups = customerEquipmentData.reduce((acc: any, item: any) => {
-      console.log('Processing item:', item);
-      console.log('Item customer_id:', item.customer_id);
-      console.log('Item rental_id:', item.rental_id);
-      console.log('Item equipment_id:', item.equipment_id);
-      console.log('Item operator_id:', item.operator_id);
       
       const customerId = item.customer_id;
       
@@ -152,7 +141,6 @@ export async function GET(request: NextRequest) {
       if (item.rental_id && item.equipment_id) {
         const rental = acc[customerId].rentals.find((r: any) => r.id === item.rental_id);
         if (rental) {
-          console.log('Adding equipment to rental:', item.equipment_id);
           rental.equipment.push({
             id: item.equipment_id,
             name: item.equipment_name,
@@ -178,7 +166,6 @@ export async function GET(request: NextRequest) {
           } else {
             acc[customerId].equipment_summary.equipment_without_operators++;
           }
-          console.log('Updated equipment summary:', acc[customerId].equipment_summary);
         }
       }
       
@@ -186,14 +173,11 @@ export async function GET(request: NextRequest) {
     }, {});
     
     const finalCustomerGroups = Object.values(customerGroups);
-    console.log('Customer groups after processing:', finalCustomerGroups);
-    console.log('Customer groups count:', finalCustomerGroups.length);
 
     // Summary is already calculated inline above
 
     // Use the customer groups we just created
     if (finalCustomerGroups.length === 0 && customerEquipmentData.length > 0) {
-      console.log('No customer groups created, creating simple structure from raw data');
       const simpleGroups = customerEquipmentData.reduce((acc: any, item: any) => {
         const customerId = item.customer_id;
         if (!acc[customerId]) {
@@ -273,7 +257,6 @@ export async function GET(request: NextRequest) {
         return acc;
       }, {});
       finalCustomerGroups = Object.values(simpleGroups);
-      console.log('Simple customer groups created:', finalCustomerGroups);
     }
 
     const reportData = {
@@ -292,9 +275,6 @@ export async function GET(request: NextRequest) {
       parameters: { customerId, startDate, endDate }
     };
 
-    console.log('Customer equipment report generated:', reportData);
-    console.log('Customer groups count:', reportData.customer_groups.length);
-    console.log('First customer group:', reportData.customer_groups[0]);
 
     return NextResponse.json({
       success: true,

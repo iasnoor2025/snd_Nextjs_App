@@ -165,14 +165,9 @@ export default function ReportingDashboardPage() {
         }
 
         const responseData = await response.json();
-      console.log('Report data received:', responseData);
       
       // Extract the actual report data from the API response
       const data = responseData.data || responseData;
-      console.log('Customer equipment data structure:', data);
-      console.log('Customer groups:', data.customer_groups);
-      console.log('Customer groups length:', data.customer_groups?.length);
-      console.log('Summary stats:', data.summary_stats);
       setReportData(data);
       
       // Dismiss loading toast and show success
@@ -385,18 +380,8 @@ export default function ReportingDashboardPage() {
         break;
 
       case 'customer_equipment':
-        console.log('=== CUSTOMER EQUIPMENT TABLE DEBUG ===');
-        console.log('Full data object:', data);
-        console.log('Data type:', typeof data);
-        console.log('Data keys:', Object.keys(data));
-        console.log('Customer groups:', data.customer_groups);
-        console.log('Customer groups type:', typeof data.customer_groups);
-        console.log('Customer groups length:', data.customer_groups?.length);
-        console.log('Is customer_groups array?', Array.isArray(data.customer_groups));
         
         if (data.customer_groups && Array.isArray(data.customer_groups) && data.customer_groups.length > 0) {
-          console.log('✅ Rendering table with', data.customer_groups.length, 'customer groups');
-          console.log('First customer group:', data.customer_groups[0]);
           console.log('First customer rentals:', data.customer_groups[0]?.rentals);
           console.log('First customer rentals length:', data.customer_groups[0]?.rentals?.length);
           

@@ -9,7 +9,7 @@ import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { and, desc, eq, gte, inArray, lte } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { EquipmentStatusService } from '@/lib/services/equipment-status-service';
-import { invalidateCacheByTag } from '@/lib/redis';
+import { cacheService } from '@/lib/redis';
 import { CACHE_TAGS } from '@/lib/redis';
 
 function parseNumber(value: any): number | undefined {
@@ -212,7 +212,7 @@ export const POST = withPermission(PermissionConfigs.maintenance.create)(
       }
 
       // Invalidate equipment cache to reflect status changes
-      await invalidateCacheByTag(CACHE_TAGS.EQUIPMENT);
+      await cacheService.invalidateCacheByTag(CACHE_TAGS.EQUIPMENT);
 
       return NextResponse.json({ success: true, data: created });
     } catch (error) {

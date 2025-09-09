@@ -58,8 +58,6 @@ export function EquipmentSection({
   const [pageSize, setPageSize] = useState(5);
 
   // Debug logging
-  console.log('EquipmentSection - Received equipmentData:', equipmentData);
-  console.log('EquipmentSection - equipmentData length:', equipmentData?.length);
 
   // Ensure equipmentData is always an array with robust type checking
   const safeEquipmentData = Array.isArray(equipmentData) ? equipmentData : [];
@@ -105,9 +103,6 @@ export function EquipmentSection({
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedData = filteredData.slice(startIndex, startIndex + pageSize);
 
-  console.log('EquipmentSection - safeEquipmentData length:', safeEquipmentData.length);
-  console.log('EquipmentSection - filteredData length:', filteredData.length);
-  console.log('EquipmentSection - paginatedData length:', paginatedData.length);
 
   return (
     <Card>

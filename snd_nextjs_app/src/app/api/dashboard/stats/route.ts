@@ -15,7 +15,6 @@ export const GET = withPermission(PermissionConfigs.dashboard.read)(async (_requ
     // Fetch only dashboard stats
     const stats = await DashboardService.getDashboardStats();
     
-    console.log('Dashboard Stats API - Stats fetched successfully');
 
     return NextResponse.json({ stats });
   } catch (error) {

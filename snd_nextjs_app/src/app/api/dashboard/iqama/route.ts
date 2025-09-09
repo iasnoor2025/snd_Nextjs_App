@@ -27,7 +27,6 @@ export const GET = withPermission(PermissionConfigs.dashboard.read)(async (_requ
     // Fetch Iqama data
     const iqamaData = await DashboardService.getIqamaData(limit);
     
-    console.log('Dashboard Iqama API - Iqama data fetched successfully');
 
     return NextResponse.json({ iqamaData });
   } catch (error) {

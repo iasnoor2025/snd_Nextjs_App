@@ -4,6 +4,46 @@ import { eq, inArray } from 'drizzle-orm';
 
 export type Action = 'create' | 'read' | 'update' | 'delete' | 'manage' | 'approve' | 'reject' | 'export' | 'import' | 'sync' | 'reset';
 export type Subject = string;
+
+// Export as enums for runtime validation
+export const Action = {
+  CREATE: 'create',
+  READ: 'read',
+  UPDATE: 'update',
+  DELETE: 'delete',
+  MANAGE: 'manage',
+  APPROVE: 'approve',
+  REJECT: 'reject',
+  EXPORT: 'export',
+  IMPORT: 'import',
+  SYNC: 'sync',
+  RESET: 'reset'
+} as const;
+
+export const Subject = {
+  USER: 'User',
+  EMPLOYEE: 'Employee',
+  CUSTOMER: 'Customer',
+  EQUIPMENT: 'Equipment',
+  RENTAL: 'Rental',
+  QUOTATION: 'Quotation',
+  PAYROLL: 'Payroll',
+  TIMESHEET: 'Timesheet',
+  PROJECT: 'Project',
+  LEAVE: 'Leave',
+  DEPARTMENT: 'Department',
+  DESIGNATION: 'Designation',
+  REPORT: 'Report',
+  SETTINGS: 'Settings',
+  COMPANY: 'Company',
+  SAFETY: 'Safety',
+  EMPLOYEE_DOCUMENT: 'employee-document',
+  SALARY_INCREMENT: 'SalaryIncrement',
+  ADVANCE: 'Advance',
+  ASSIGNMENT: 'Assignment',
+  LOCATION: 'Location',
+  MAINTENANCE: 'Maintenance'
+} as const;
 export type UserRole = string;
 
 export interface User {

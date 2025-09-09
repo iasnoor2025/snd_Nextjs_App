@@ -27,7 +27,6 @@ export const GET = withPermission(PermissionConfigs.dashboard.read)(async (_requ
     // Fetch Timesheet data
     const timesheetData = await DashboardService.getTodayTimesheets(limit);
     
-    console.log('Dashboard Timesheets API - Timesheet data fetched successfully');
 
     return NextResponse.json({ timesheetData });
   } catch (error) {

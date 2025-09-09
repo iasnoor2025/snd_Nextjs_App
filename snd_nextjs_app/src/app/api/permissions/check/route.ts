@@ -15,14 +15,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate action and subject
-    if (!Object.values(Action).includes(action as Action)) {
+    const validActions = Object.values(Action);
+    if (!validActions.includes(action as Action)) {
       return NextResponse.json(
         { error: 'Invalid action' },
         { status: 400 }
       );
     }
 
-    if (!Object.values(Subject).includes(subject as Subject)) {
+    const validSubjects = Object.values(Subject);
+    if (!validSubjects.includes(subject as Subject)) {
       return NextResponse.json(
         { error: 'Invalid subject' },
         { status: 400 }

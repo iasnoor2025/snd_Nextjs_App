@@ -195,7 +195,6 @@ export class DashboardService {
           .select({ status: projects.status })
           .from(projects)
           .groupBy(projects.status);
-        console.log('Available project statuses:', allProjectStatuses.map(p => p.status));
 
         // Count projects with various "active" statuses
         const result = await db
@@ -205,7 +204,6 @@ export class DashboardService {
             sql`${projects.status} IN ('active', 'in_progress', 'ongoing', 'running')`
           );
         activeProjectsResult = result[0] || { count: 0 };
-        console.log('Active projects count:', activeProjectsResult.count);
       } catch (error) {
         console.error('Error fetching active projects:', error);
       }
@@ -222,7 +220,6 @@ export class DashboardService {
           .select({ status: rentals.status })
           .from(rentals)
           .groupBy(rentals.status);
-        console.log('Available rental statuses:', allRentalStatuses.map(r => r.status));
 
         // Count rentals with various "active" statuses
         const result = await db
@@ -232,7 +229,6 @@ export class DashboardService {
             sql`${rentals.status} IN ('active', 'in_progress', 'ongoing', 'running', 'rented')`
           );
         activeRentalsResult = result[0] || { count: 0 };
-        console.log('Active rentals count:', activeRentalsResult.count);
       } catch (error) {
         console.error('Error fetching active rentals:', error);
       }
@@ -462,7 +458,6 @@ export class DashboardService {
         })
         .from(projects)
         .limit(10);
-      console.log('Sample projects:', allProjects);
 
       // Debug rentals
       const allRentals = await db
@@ -473,7 +468,6 @@ export class DashboardService {
         })
         .from(rentals)
         .limit(10);
-      console.log('Sample rentals:', allRentals);
     } catch (error) {
       console.error('Error debugging project and rental data:', error);
     }
@@ -540,12 +534,10 @@ export class DashboardService {
 
   static async getEquipmentData(limit: number = 50): Promise<EquipmentData[]> {
     try {
-      console.log('getEquipmentData - Starting to fetch equipment data with limit:', limit);
       const today = new Date();
       const thirtyDaysFromNow = new Date();
       thirtyDaysFromNow.setDate(today.getDate() + 30);
 
-      console.log('getEquipmentData - About to execute database query');
       
       const equipmentData = await db
         .select({
@@ -567,9 +559,6 @@ export class DashboardService {
         .from(equipment)
         .limit(limit);
 
-      console.log('getEquipmentData - Raw database result:', equipmentData);
-      console.log('getEquipmentData - Raw data count:', equipmentData.length);
-      console.log('getEquipmentData - First record sample:', equipmentData[0]);
 
 
       const result = equipmentData.map(doc => {
@@ -860,7 +849,6 @@ export class DashboardService {
     try {
       // First, let's check if we have any projects at all
       const totalProjects = await db.select({ count: count() }).from(projects);
-      console.log('Total projects in database:', totalProjects[0]?.count || 0);
 
       // Get all projects (not just active ones) to see what we have
       const allProjects = await db
@@ -877,11 +865,9 @@ export class DashboardService {
         .leftJoin(customers, eq(projects.customerId, customers.id))
         .limit(limit);
 
-      console.log('Sample projects from database:', allProjects);
 
       // If no projects exist, return empty array
       if (allProjects.length === 0) {
-        console.log('No projects found in database');
         return [];
       }
 
@@ -1094,13 +1080,6 @@ export class DashboardService {
         }));
 
       // Debug: Log the activities being returned
-      console.log('Dashboard Service - Recent Activities:', {
-        totalActivities: allActivities.length,
-        timesheetApprovals: recentTimesheetApprovals.length,
-        sortedActivities: sortedActivities.length,
-        sampleActivity: sortedActivities[0],
-        timestampSample: sortedActivities[0]?.timestamp
-      });
 
       return sortedActivities;
     } catch (error) {

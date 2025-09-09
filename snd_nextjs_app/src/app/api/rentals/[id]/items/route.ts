@@ -121,7 +121,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
               })
               .where(eq(employees.id, parseInt(body.operatorId)));
             
-            console.log(`Auto-assigned supervisor ${rentalExists.supervisor} to employee ${body.operatorId} for rental ${rentalExists.rentalNumber}`);
           } catch (supervisorError) {
             console.error('Failed to auto-assign supervisor to employee:', supervisorError);
             // Don't fail the main assignment if supervisor assignment fails
@@ -335,7 +334,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
                 })
                 .where(eq(employees.id, newOperatorId));
               
-              console.log(`Auto-assigned supervisor ${rentalExists.supervisor} to employee ${newOperatorId} for rental ${rentalExists.rentalNumber}`);
             } catch (supervisorError) {
               console.error('Failed to auto-assign supervisor to employee:', supervisorError);
               // Don't fail the main assignment if supervisor assignment fails
