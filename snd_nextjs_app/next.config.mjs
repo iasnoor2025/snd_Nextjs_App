@@ -4,7 +4,7 @@ const nextConfig = {
     ignoreDuringBuilds: true, // Keep disabled for now
   },
   typescript: {
-    ignoreBuildErrors: true, // Keep disabled until we fix remaining issues
+    ignoreBuildErrors: false, // Enable TypeScript validation
   },
   // Performance optimizations
   experimental: {

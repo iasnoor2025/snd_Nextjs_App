@@ -32,7 +32,7 @@ export function getLocaleFromRequest(request: NextRequest): SupportedLocale {
       .split(',')
       .map(lang => {
         const [code, q = '1'] = lang.trim().split(';q=');
-        return { code: code.toLowerCase(), priority: parseFloat(q) };
+        return { code: code?.toLowerCase() || 'en', priority: parseFloat(q) };
       })
       .sort((a, b) => b.priority - a.priority);
 

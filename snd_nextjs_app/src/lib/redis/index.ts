@@ -2,7 +2,7 @@ import { createClient } from 'redis';
 import { redisConfig, isRedisEnabled } from '../config/redis';
 
 declare global {
-  let __redisClient: ReturnType<typeof createClient> | undefined;
+  var __redisClient: ReturnType<typeof createClient> | undefined;
 }
 
 class RedisService {

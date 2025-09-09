@@ -65,7 +65,10 @@ export async function upsertGoogleUser(email: string, name: string | null): Prom
     throw new Error('EMPLOYEE role not found in database');
   }
   
-  const employeeRoleId = employeeRole[0].id;
+  const employeeRoleId = employeeRole[0]?.id;
+  if (!employeeRoleId) {
+    throw new Error('EMPLOYEE role not found in database');
+  }
   const userName = name ?? email.split('@')[0];
   
   // Insert user with EMPLOYEE role
