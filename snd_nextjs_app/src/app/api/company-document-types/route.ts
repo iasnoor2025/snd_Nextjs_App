@@ -6,11 +6,15 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const GET = withPermission(async (request: NextRequest) => {
   try {
+    console.log('Fetching company document types...');
+    
     const documentTypes = await db
       .select()
       .from(companyDocumentTypes)
       .where(eq(companyDocumentTypes.isActive, true))
       .orderBy(asc(companyDocumentTypes.sortOrder), asc(companyDocumentTypes.label));
+
+    console.log('Found document types:', documentTypes.length);
 
     return NextResponse.json({
       success: true,
@@ -18,6 +22,7 @@ export const GET = withPermission(async (request: NextRequest) => {
       message: 'Document types retrieved successfully',
     });
   } catch (error) {
+    console.error('Error fetching document types:', error);
     return NextResponse.json(
       {
         success: false,

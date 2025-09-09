@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,7 +14,6 @@ import {
   Trash2, 
   Save, 
   X, 
-  AlertTriangle, 
   Shield,
   Loader2,
   FileText,
@@ -113,17 +112,60 @@ export default function DynamicDocumentTypeManager() {
   const fetchDocumentTypes = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/company-document-types');
-      const result = await response.json();
+      // Try the main API first
+      let response;
+      try {
+        response = await fetch('/api/company-document-types');
+      } catch (fetchError) {
+        console.error('Fetch error:', fetchError);
+        // Fallback to test endpoint
+        response = await fetch('/api/test-company-document-types');
+      }
+      
+      // Check if response is ok
+      if (!response.ok) {
+        // If it's a 500 error, try the test endpoint
+        if (response.status === 500) {
+          console.log('Main API returned 500, trying test endpoint...');
+          response = await fetch('/api/test-company-document-types');
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+        } else {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+      }
+      
+      // Check if response has content
+      const text = await response.text();
+      if (!text) {
+        throw new Error('Empty response from server');
+      }
+      
+      // Try to parse JSON
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch (parseError) {
+        console.error('Invalid JSON response:', text, parseError);
+        throw new Error('Invalid JSON response from server');
+      }
       
       if (result.success) {
-        setDocumentTypes(result.data);
+        setDocumentTypes(result.data || []);
+        if (!result.data || result.data.length === 0) {
+          console.log('No document types found in database');
+        }
       } else {
         toast.error(result.message || 'Failed to fetch document types');
       }
     } catch (error) {
       console.error('Error fetching document types:', error);
-      toast.error('Failed to fetch document types');
+      toast.error('Failed to fetch document types: ' + (error as Error).message);
+      
+      // Set empty array as fallback
+      setDocumentTypes([]);
     } finally {
       setLoading(false);
     }
@@ -151,7 +193,7 @@ export default function DynamicDocumentTypeManager() {
         const base64 = reader.result as string;
         // Remove data:image/jpeg;base64, prefix
         const base64Data = base64.split(',')[1];
-        resolve(base64Data);
+        resolve(base64Data || '');
       };
       reader.onerror = error => reject(error);
     });
@@ -639,7 +681,7 @@ export default function DynamicDocumentTypeManager() {
                  <div>
                    <Label htmlFor="documentType">Document Type *</Label>
                    <Select
-                     value={selectedDocumentType?.id?.toString() || ''}
+                     value=""
                      onValueChange={(value) => {
                        const docType = documentTypes.find(dt => dt.id.toString() === value);
                        setSelectedDocumentType(docType || null);

@@ -79,44 +79,7 @@ export function useTranslations() {
 
   const t = (key: string, params?: Record<string, string>) => {
     if (!dictionary || isLoading) {
-      // Return fallback values for common keys
-      const fallbackValues: Record<string, string> = {
-        'common.actions.refreshSession': 'Refresh Session',
-        'common.actions.settings': 'Settings',
-        'common.actions.profile': 'Profile',
-        'common.actions.logout': 'Log out',
-        'common.app.name': 'SND App',
-        'common.loading': 'Loading...',
-        'equipment.istimara.allTypes': 'All Types',
-        'equipment.istimara.allDrivers': 'All Drivers',
-        'equipment.istimara.withDriver': 'With Driver',
-        'equipment.istimara.unassigned': 'Unassigned',
-        'equipment.istimara.clear': 'Clear',
-        'employee.advances.currentBalance': 'Current Balance',
-        'employee.advances.active': 'Active',
-        'employee.advances.noBalance': 'No Balance',
-        'employee.advances.monthlyDeduction': 'Monthly Deduction',
-        'employee.advances.configurable': 'Configurable',
-        'employee.advances.currentMonthlyDeduction': 'Current Monthly Deduction',
-        'employee.advances.companyWillDecide': 'Company will decide monthly deduction',
-        'employee.advances.setMonthlyDeduction': 'Set monthly deduction amount',
-        'employee.advances.estimatedRepayment': 'Estimated Repayment',
-        'employee.advances.projected': 'Projected',
-        'employee.advances.months': 'months',
-        'employee.advances.basedOnCurrentBalance': 'Based on current balance and monthly deduction',
-        'employee.advances.setMonthlyDeductionToSeeEstimate': 'Set monthly deduction to see estimate',
-        'employee.advances.repaymentHistory': 'Repayment History',
-        'employee.advances.amount': 'Amount',
-        'employee.advances.date': 'Date',
-        'employee.advances.notes': 'Notes',
-        'employee.advances.actions': 'Actions',
-        'employee.advances.noRepaymentHistory': 'No repayment history found.',
-        'employee.advances.loadingPaymentHistory': 'Loading payment history...',
-        'employee.advances.deleteRepayment': 'Delete Repayment',
-        'employee.advances.deleteRepaymentConfirm': 'Are you sure you want to delete this repayment? This action cannot be undone.',
-      };
-      
-      return fallbackValues[key] || key;
+      return key; // Return the key as-is when loading
     }
 
     // Handle namespace.key format (e.g., "common.save", "dashboard.title")
@@ -126,44 +89,7 @@ export function useTranslations() {
       
       const namespaceDict = dictionary[namespace as keyof typeof dictionary];
       if (!namespaceDict) {
-        // Return fallback values for common keys
-        const fallbackValues: Record<string, string> = {
-          'common.actions.refreshSession': 'Refresh Session',
-          'common.actions.settings': 'Settings',
-          'common.actions.profile': 'Profile',
-          'common.actions.logout': 'Log out',
-          'common.app.name': 'SND App',
-          'common.loading': 'Loading...',
-          'equipment.istimara.allTypes': 'All Types',
-          'equipment.istimara.allDrivers': 'All Drivers',
-          'equipment.istimara.withDriver': 'With Driver',
-          'equipment.istimara.unassigned': 'Unassigned',
-          'equipment.istimara.clear': 'Clear',
-          'employee.advances.currentBalance': 'Current Balance',
-          'employee.advances.active': 'Active',
-          'employee.advances.noBalance': 'No Balance',
-          'employee.advances.monthlyDeduction': 'Monthly Deduction',
-          'employee.advances.configurable': 'Configurable',
-          'employee.advances.currentMonthlyDeduction': 'Current Monthly Deduction',
-          'employee.advances.companyWillDecide': 'Company will decide monthly deduction',
-          'employee.advances.setMonthlyDeduction': 'Set monthly deduction amount',
-          'employee.advances.estimatedRepayment': 'Estimated Repayment',
-          'employee.advances.projected': 'Projected',
-          'employee.advances.months': 'months',
-          'employee.advances.basedOnCurrentBalance': 'Based on current balance and monthly deduction',
-          'employee.advances.setMonthlyDeductionToSeeEstimate': 'Set monthly deduction to see estimate',
-          'employee.advances.repaymentHistory': 'Repayment History',
-          'employee.advances.amount': 'Amount',
-          'employee.advances.date': 'Date',
-          'employee.advances.notes': 'Notes',
-          'employee.advances.actions': 'Actions',
-          'employee.advances.noRepaymentHistory': 'No repayment history found.',
-          'employee.advances.loadingPaymentHistory': 'Loading payment history...',
-          'employee.advances.deleteRepayment': 'Delete Repayment',
-          'employee.advances.deleteRepaymentConfirm': 'Are you sure you want to delete this repayment? This action cannot be undone.',
-        };
-        
-        return fallbackValues[key] || key;
+        return key; // Return the key as-is if namespace not found
       }
       
       // Navigate to nested key
@@ -172,66 +98,15 @@ export function useTranslations() {
       for (const k of fullKey.split('.')) {
         currentValue = (currentValue as Record<string, unknown>)?.[k];
         if (currentValue === undefined) {
-          // Return fallback values for common keys
-          const fallbackValues: Record<string, string> = {
-            'common.actions.refreshSession': 'Refresh Session',
-            'common.actions.settings': 'Settings',
-            'common.actions.profile': 'Profile',
-            'common.actions.logout': 'Log out',
-            'common.app.name': 'SND App',
-            'common.loading': 'Loading...',
-            'equipment.istimara.allTypes': 'All Types',
-            'equipment.istimara.allDrivers': 'All Drivers',
-            'equipment.istimara.withDriver': 'With Driver',
-            'equipment.istimara.unassigned': 'Unassigned',
-            'equipment.istimara.clear': 'Clear',
-          };
-          
-          return fallbackValues[key] || key;
+          return key; // Return the key as-is if key not found
         }
       }
+      
       const value = currentValue;
 
       // Ensure we return a string, not an object
       if (typeof value !== 'string') {
-        // Return fallback values for common keys
-        const fallbackValues: Record<string, string> = {
-          'common.actions.refreshSession': 'Refresh Session',
-          'common.actions.settings': 'Settings',
-          'common.actions.profile': 'Profile',
-          'common.actions.logout': 'Log out',
-          'common.app.name': 'SND App',
-          'common.loading': 'Loading...',
-          'equipment.istimara.allTypes': 'All Types',
-          'equipment.istimara.allDrivers': 'All Drivers',
-          'equipment.istimara.withDriver': 'With Driver',
-          'equipment.istimara.unassigned': 'Unassigned',
-          'equipment.istimara.clear': 'Clear',
-          'employee.advances.currentBalance': 'Current Balance',
-          'employee.advances.active': 'Active',
-          'employee.advances.noBalance': 'No Balance',
-          'employee.advances.monthlyDeduction': 'Monthly Deduction',
-          'employee.advances.configurable': 'Configurable',
-          'employee.advances.currentMonthlyDeduction': 'Current Monthly Deduction',
-          'employee.advances.companyWillDecide': 'Company will decide monthly deduction',
-          'employee.advances.setMonthlyDeduction': 'Set monthly deduction amount',
-          'employee.advances.estimatedRepayment': 'Estimated Repayment',
-          'employee.advances.projected': 'Projected',
-          'employee.advances.months': 'months',
-          'employee.advances.basedOnCurrentBalance': 'Based on current balance and monthly deduction',
-          'employee.advances.setMonthlyDeductionToSeeEstimate': 'Set monthly deduction to see estimate',
-          'employee.advances.repaymentHistory': 'Repayment History',
-          'employee.advances.amount': 'Amount',
-          'employee.advances.date': 'Date',
-          'employee.advances.notes': 'Notes',
-          'employee.advances.actions': 'Actions',
-          'employee.advances.noRepaymentHistory': 'No repayment history found.',
-          'employee.advances.loadingPaymentHistory': 'Loading payment history...',
-          'employee.advances.deleteRepayment': 'Delete Repayment',
-          'employee.advances.deleteRepaymentConfirm': 'Are you sure you want to delete this repayment? This action cannot be undone.',
-        };
-        
-        return fallbackValues[key] || key;
+        return key; // Return the key as-is if value is not a string
       }
       
       // Now we know value is a string
@@ -244,7 +119,7 @@ export function useTranslations() {
         });
       }
 
-      return stringValue || key;
+      return stringValue;
     }
 
     // Fallback to common namespace if no namespace specified
@@ -254,22 +129,7 @@ export function useTranslations() {
       
       // Ensure we return a string, not an object
       if (typeof value !== 'string') {
-        // Return fallback values for common keys
-        const fallbackValues: Record<string, string> = {
-          'common.actions.refreshSession': 'Refresh Session',
-          'common.actions.settings': 'Settings',
-          'common.actions.profile': 'Profile',
-          'common.actions.logout': 'Log out',
-          'common.app.name': 'SND App',
-          'common.loading': 'Loading...',
-          'equipment.istimara.allTypes': 'All Types',
-          'equipment.istimara.allDrivers': 'All Drivers',
-          'equipment.istimara.withDriver': 'With Driver',
-          'equipment.istimara.unassigned': 'Unassigned',
-          'equipment.istimara.clear': 'Clear',
-        };
-        
-        return fallbackValues[key] || key;
+        return key; // Return the key as-is if value is not a string
       }
       
       // Now we know value is a string
@@ -285,54 +145,7 @@ export function useTranslations() {
       return stringValue;
     }
 
-    // Return fallback values for common keys
-    const fallbackValues: Record<string, string> = {
-      'common.actions.refreshSession': 'Refresh Session',
-      'common.actions.settings': 'Settings',
-      'common.actions.profile': 'Profile',
-      'common.actions.logout': 'Log out',
-      'common.app.name': 'SND App',
-      'common.loading': 'Loading...',
-      'equipment.istimara.allTypes': 'All Types',
-      'equipment.istimara.allDrivers': 'All Drivers',
-      'equipment.istimara.allStatuses': 'All Statuses',
-      'equipment.istimara.noExpiryDate': 'No expiry date',
-      'equipment.istimara.status.available': 'Available',
-      'equipment.istimara.status.expiring': 'Expiring Soon',
-      'equipment.istimara.status.expired': 'Expired',
-      'equipment.istimara.status.missing': 'Missing',
-      'equipment.istimara.assigned': 'Assigned',
-      'equipment.istimara.withDriver': 'With Driver',
-      'equipment.istimara.unassigned': 'Unassigned',
-      'equipment.istimara.clear': 'Clear',
-      'equipment.pagination.show': 'Show',
-      'employee.advances.currentBalance': 'Current Balance',
-      'employee.advances.active': 'Active',
-      'employee.advances.noBalance': 'No Balance',
-      'employee.advances.monthlyDeduction': 'Monthly Deduction',
-      'employee.advances.configurable': 'Configurable',
-      'employee.advances.currentMonthlyDeduction': 'Current Monthly Deduction',
-      'employee.advances.companyWillDecide': 'Company will decide monthly deduction',
-      'employee.advances.setMonthlyDeduction': 'Set monthly deduction amount',
-      'employee.advances.estimatedRepayment': 'Estimated Repayment',
-      'employee.advances.projected': 'Projected',
-      'employee.advances.months': 'months',
-      'employee.advances.basedOnCurrentBalance': 'Based on current balance and monthly deduction',
-      'employee.advances.setMonthlyDeductionToSeeEstimate': 'Set monthly deduction to see estimate',
-      'employee.advances.repaymentHistory': 'Repayment History',
-      'employee.advances.amount': 'Amount',
-      'employee.advances.date': 'Date',
-      'employee.advances.notes': 'Notes',
-      'employee.advances.actions': 'Actions',
-      'employee.advances.noRepaymentHistory': 'No repayment history found.',
-      'employee.advances.loadingPaymentHistory': 'Loading payment history...',
-      'employee.advances.deleteRepayment': 'Delete Repayment',
-      'employee.advances.deleteRepaymentConfirm': 'Are you sure you want to delete this repayment? This action cannot be undone.',
-      'employee.advances.noAdvanceRecordsFound': 'No advance records found',
-      'employee.advances.loadingAdvances': 'Loading advances...',
-    };
-    
-    return fallbackValues[key] || key;
+    return key; // Return the key as-is if not found
   };
 
   const changeLanguage = async (newLocale: string) => {

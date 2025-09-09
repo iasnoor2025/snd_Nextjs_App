@@ -13,8 +13,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useI18n } from '@/hooks/use-i18n';
 
 export default function CreateCompanyPage() {
+  const { t } = useI18n();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -118,17 +120,17 @@ export default function CreateCompanyPage() {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      toast.error('Company name is required');
+      toast.error(t('company.validation.nameRequired'));
       return;
     }
 
     if (!formData.commercial_registration.trim()) {
-      toast.error('Commercial registration number is required by Saudi law');
+      toast.error(t('company.validation.commercialRegistrationRequired'));
       return;
     }
 
     if (!formData.tax_registration.trim()) {
-      toast.error('Tax registration number is required by Saudi law');
+      toast.error(t('company.validation.taxRegistrationRequired'));
       return;
     }
 
@@ -145,14 +147,14 @@ export default function CreateCompanyPage() {
       const result = await response.json();
 
       if (result.success) {
-        toast.success('Company created successfully');
+        toast.success(t('company.messages.saveSuccess'));
         router.push('/modules/company-management');
       } else {
-        toast.error(result.message || 'Failed to create company');
+        toast.error(result.message || t('company.messages.saveError'));
       }
     } catch (error) {
       
-      toast.error('Failed to create company');
+      toast.error(t('company.messages.saveError'));
     } finally {
       setSaving(false);
     }
@@ -172,56 +174,56 @@ export default function CreateCompanyPage() {
           <Link href="/modules/company-management">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              {t('company.actions.back')}
             </Button>
           </Link>
           <Building2 className="h-6 w-6" />
-          <h1 className="text-2xl font-bold">Create New Company</h1>
+          <h1 className="text-2xl font-bold">{t('company.actions.create')}</h1>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Company Information</CardTitle>
+          <CardTitle>{t('company.fields.basicInfo')}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Basic Company Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="name">Company Name *</Label>
+                <Label htmlFor="name">{t('company.fields.name')} *</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={e => handleInputChange('name', e.target.value)}
-                  placeholder="Enter company name"
+                  placeholder={t('company.placeholders.enterCompanyName')}
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t('company.fields.email')}</Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
                   onChange={e => handleInputChange('email', e.target.value)}
-                  placeholder="Enter email address"
+                  placeholder={t('company.placeholders.enterEmail')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
+                <Label htmlFor="phone">{t('company.fields.phone')}</Label>
                 <Input
                   id="phone"
                   value={formData.phone}
                   onChange={e => handleInputChange('phone', e.target.value)}
-                  placeholder="Enter phone number"
+                  placeholder={t('company.placeholders.enterPhone')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="website">Website</Label>
+                <Label htmlFor="website">{t('company.fields.website')}</Label>
                 <Input
                   id="website"
                   value={formData.website}
@@ -231,7 +233,7 @@ export default function CreateCompanyPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="company_type">Company Type</Label>
+                <Label htmlFor="company_type">{t('company.fields.companyType')}</Label>
                 <Input
                   id="company_type"
                   value={formData.company_type}
@@ -241,7 +243,7 @@ export default function CreateCompanyPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="industry">Industry</Label>
+                <Label htmlFor="industry">{t('company.fields.industry')}</Label>
                 <Input
                   id="industry"
                   value={formData.industry}
@@ -251,24 +253,24 @@ export default function CreateCompanyPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="employee_count">Employee Count</Label>
+                <Label htmlFor="employee_count">{t('company.fields.employeeCount')}</Label>
                 <Input
                   id="employee_count"
                   type="number"
                   value={formData.employee_count}
                   onChange={e => handleInputChange('employee_count', e.target.value)}
-                  placeholder="Number of employees"
+                  placeholder={t('company.placeholders.numberOfEmployees')}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
+              <Label htmlFor="address">{t('company.fields.address')}</Label>
               <Textarea
                 id="address"
                 value={formData.address}
                 onChange={e => handleInputChange('address', e.target.value)}
-                placeholder="Enter company address"
+                placeholder={t('company.placeholders.enterAddress')}
                 rows={3}
               />
             </div>
@@ -276,33 +278,33 @@ export default function CreateCompanyPage() {
             {/* Contact Person Information */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="contact_person">Contact Person</Label>
+                <Label htmlFor="contact_person">{t('company.fields.contactPerson')}</Label>
                 <Input
                   id="contact_person"
                   value={formData.contact_person}
                   onChange={e => handleInputChange('contact_person', e.target.value)}
-                  placeholder="Primary contact name"
+                  placeholder={t('company.placeholders.primaryContactName')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="contact_person_phone">Contact Phone</Label>
+                <Label htmlFor="contact_person_phone">{t('company.fields.contactPersonPhone')}</Label>
                 <Input
                   id="contact_person_phone"
                   value={formData.contact_person_phone}
                   onChange={e => handleInputChange('contact_person_phone', e.target.value)}
-                  placeholder="Contact phone number"
+                  placeholder={t('company.placeholders.contactPhoneNumber')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="contact_person_email">Contact Email</Label>
+                <Label htmlFor="contact_person_email">{t('company.fields.contactPersonEmail')}</Label>
                 <Input
                   id="contact_person_email"
                   type="email"
                   value={formData.contact_person_email}
                   onChange={e => handleInputChange('contact_person_email', e.target.value)}
-                  placeholder="Contact email address"
+                  placeholder={t('company.placeholders.contactEmailAddress')}
                 />
               </div>
             </div>
@@ -310,23 +312,23 @@ export default function CreateCompanyPage() {
             {/* Saudi Law Required Documents */}
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-red-600 border-b border-red-200 pb-2">
-                Saudi Law Required Documents
+                {t('company.documents.title')}
               </h3>
               
               {/* Commercial Registration */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="commercial_registration">Commercial Registration Number *</Label>
+                  <Label htmlFor="commercial_registration">{t('company.documents.commercialRegistration')} *</Label>
                   <Input
                     id="commercial_registration"
                     value={formData.commercial_registration}
                     onChange={e => handleInputChange('commercial_registration', e.target.value)}
-                    placeholder="Commercial registration number"
+                    placeholder={t('company.placeholders.commercialRegistrationNumber')}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="commercial_registration_expiry">Expiry Date</Label>
+                  <Label htmlFor="commercial_registration_expiry">{t('company.documents.commercialRegistrationExpiry')}</Label>
                   <Input
                     id="commercial_registration_expiry"
                     type="date"
@@ -339,17 +341,17 @@ export default function CreateCompanyPage() {
               {/* Tax Registration */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="tax_registration">Tax Registration Number *</Label>
+                  <Label htmlFor="tax_registration">{t('company.documents.taxRegistration')} *</Label>
                   <Input
                     id="tax_registration"
                     value={formData.tax_registration}
                     onChange={e => handleInputChange('tax_registration', e.target.value)}
-                    placeholder="Tax registration number"
+                    placeholder={t('company.placeholders.taxRegistrationNumber')}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="tax_registration_expiry">Expiry Date</Label>
+                  <Label htmlFor="tax_registration_expiry">{t('company.documents.taxRegistrationExpiry')}</Label>
                   <Input
                     id="tax_registration_expiry"
                     type="date"
@@ -1199,11 +1201,11 @@ export default function CreateCompanyPage() {
             <div className="flex gap-4">
               <Button type="submit" disabled={saving}>
                 <Save className="h-4 w-4 mr-2" />
-                {saving ? 'Creating...' : 'Create Company'}
+                {saving ? t('company.messages.saving') : t('company.actions.create')}
               </Button>
               <Link href="/modules/company-management">
                 <Button type="button" variant="outline">
-                  Cancel
+                  {t('company.actions.cancel')}
                 </Button>
               </Link>
             </div>

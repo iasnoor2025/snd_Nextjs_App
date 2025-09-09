@@ -136,11 +136,11 @@ export default function CompanyManagementPage() {
         if (result.success) {
           setCompanies(result);
         } else {
-          toast.error(result.message || 'Failed to fetch companies');
+          toast.error(result.message || t('company.messages.loadingError'));
         }
       } catch (error) {
         console.error('Error fetching companies:', error);
-        toast.error('Failed to fetch companies');
+        toast.error(t('company.messages.loadingError'));
       } finally {
         setLoading(false);
       }
@@ -150,7 +150,7 @@ export default function CompanyManagementPage() {
   }, [search, filterStatus, filterIndustry, sortBy, sortOrder, perPage, currentPage]);
 
   const handleDelete = async (id: number) => {
-    if (confirm('Are you sure you want to delete this company?')) {
+    if (confirm(t('company.messages.deleteConfirm'))) {
       try {
         const response = await fetch(`/api/companies/${id}`, {
           method: 'DELETE',
@@ -158,15 +158,15 @@ export default function CompanyManagementPage() {
         const result = await response.json();
 
         if (result.success) {
-          toast.success('Company deleted successfully');
+          toast.success(t('company.messages.deleteSuccess'));
           // Refresh data
           setCurrentPage(1);
         } else {
-          toast.error(result.message || 'Failed to delete company');
+          toast.error(result.message || t('company.messages.deleteError'));
         }
       } catch (error) {
         console.error('Error deleting company:', error);
-        toast.error('Failed to delete company');
+        toast.error(t('company.messages.deleteError'));
       }
     }
   };
@@ -224,8 +224,8 @@ export default function CompanyManagementPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Loading companies...</div>
+        <div className="flex items-center justify-center h-64">
+        <div className="text-lg">{t('company.messages.loading')}</div>
       </div>
     );
   }
@@ -238,15 +238,15 @@ export default function CompanyManagementPage() {
           <div className="flex items-center space-x-2">
             <Building2 className="h-8 w-8 text-primary" />
             <div>
-              <h1 className="text-3xl font-bold">{t('title')}</h1>
-              <p className="text-muted-foreground">Manage company information and Saudi law compliance</p>
+              <h1 className="text-3xl font-bold">{t('company.title')}</h1>
+              <p className="text-muted-foreground">{t('company.description')}</p>
             </div>
           </div>
           <PermissionContent action="create" subject="Company">
             <Link href="/modules/company-management/create">
               <Button size="lg">
                 <Plus className="h-5 w-5 mr-2" />
-                {t('createCompany')}
+                {t('company.actions.addCompany')}
               </Button>
             </Link>
           </PermissionContent>
@@ -256,7 +256,7 @@ export default function CompanyManagementPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Companies</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('company.stats.totalCompanies')}</CardTitle>
               <Building2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -266,7 +266,7 @@ export default function CompanyManagementPage() {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Compliant</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('company.stats.compliant')}</CardTitle>
               <CheckCircle className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
@@ -278,7 +278,7 @@ export default function CompanyManagementPage() {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Non-Compliant</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('company.stats.nonCompliant')}</CardTitle>
               <AlertTriangle className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
@@ -290,7 +290,7 @@ export default function CompanyManagementPage() {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('company.stats.totalEmployees')}</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -306,45 +306,45 @@ export default function CompanyManagementPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Filter className="h-5 w-5" />
-              Filters & Search
+              {t('company.search.title')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="search">Search Companies</Label>
+                <Label htmlFor="search">{t('company.search.label')}</Label>
                 <Input
                   id="search"
-                  placeholder="Search by name, email, or address..."
+                  placeholder={t('company.search.placeholder')}
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="status">Compliance Status</Label>
+                <Label htmlFor="status">{t('company.filters.complianceStatus')}</Label>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
                   <SelectTrigger>
-                    <SelectValue placeholder="All Statuses" />
+                    <SelectValue placeholder={t('company.filters.allStatuses')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="compliant">Compliant</SelectItem>
-                    <SelectItem value="non-compliant">Non-Compliant</SelectItem>
-                    <SelectItem value="expired">Expired</SelectItem>
-                    <SelectItem value="expiring">Expiring Soon</SelectItem>
+                    <SelectItem value="all">{t('company.filters.allStatuses')}</SelectItem>
+                    <SelectItem value="compliant">{t('company.status.compliant')}</SelectItem>
+                    <SelectItem value="non-compliant">{t('company.status.nonCompliant')}</SelectItem>
+                    <SelectItem value="expired">{t('company.status.expired')}</SelectItem>
+                    <SelectItem value="expiring">{t('company.status.expiringSoon')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="industry">Industry</Label>
+                <Label htmlFor="industry">{t('company.fields.industry')}</Label>
                 <Select value={filterIndustry} onValueChange={setFilterIndustry}>
                   <SelectTrigger>
-                    <SelectValue placeholder="All Industries" />
+                    <SelectValue placeholder={t('company.filters.allIndustries')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Industries</SelectItem>
+                    <SelectItem value="all">{t('company.filters.allIndustries')}</SelectItem>
                     <SelectItem value="Construction">Construction</SelectItem>
                     <SelectItem value="Manufacturing">Manufacturing</SelectItem>
                     <SelectItem value="Technology">Technology</SelectItem>
@@ -358,16 +358,16 @@ export default function CompanyManagementPage() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="sort">Sort By</Label>
+                <Label htmlFor="sort">{t('company.filters.sortBy')}</Label>
                 <Select value={sortBy} onValueChange={setSortBy}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Sort by..." />
+                    <SelectValue placeholder={t('company.filters.sortPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="name">Company Name</SelectItem>
-                    <SelectItem value="created_at">Created Date</SelectItem>
-                    <SelectItem value="employee_count">Employee Count</SelectItem>
-                    <SelectItem value="industry">Industry</SelectItem>
+                    <SelectItem value="name">{t('company.fields.name')}</SelectItem>
+                    <SelectItem value="created_at">{t('company.fields.createdAt')}</SelectItem>
+                    <SelectItem value="employee_count">{t('company.fields.employeeCount')}</SelectItem>
+                    <SelectItem value="industry">{t('company.fields.industry')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -378,20 +378,20 @@ export default function CompanyManagementPage() {
         {/* Companies Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Companies</CardTitle>
+            <CardTitle>{t('company.table.title')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="min-w-[200px]">Company</TableHead>
-                    <TableHead className="min-w-[120px]">Contact</TableHead>
-                    <TableHead className="min-w-[100px]">Industry</TableHead>
-                    <TableHead className="min-w-[100px]">Employees</TableHead>
-                    <TableHead className="min-w-[120px]">Compliance</TableHead>
-                    <TableHead className="min-w-[100px]">Created</TableHead>
-                    <TableHead className="text-right min-w-[120px]">Actions</TableHead>
+                    <TableHead className="min-w-[200px]">{t('company.table.headers.company')}</TableHead>
+                    <TableHead className="min-w-[120px]">{t('company.table.headers.contact')}</TableHead>
+                    <TableHead className="min-w-[100px]">{t('company.table.headers.industry')}</TableHead>
+                    <TableHead className="min-w-[100px]">{t('company.table.headers.employees')}</TableHead>
+                    <TableHead className="min-w-[120px]">{t('company.table.headers.compliance')}</TableHead>
+                    <TableHead className="min-w-[100px]">{t('company.table.headers.created')}</TableHead>
+                    <TableHead className="text-right min-w-[120px]">{t('company.table.headers.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -520,9 +520,11 @@ export default function CompanyManagementPage() {
             {companies && companies.pagination.total > 0 && (
               <div className="flex items-center justify-between mt-6">
                 <div className="text-sm text-muted-foreground">
-                  Showing {((companies.pagination.page - 1) * companies.pagination.limit) + 1} to{' '}
-                  {Math.min(companies.pagination.page * companies.pagination.limit, companies.pagination.total)} of{' '}
-                  {companies.pagination.total} companies
+                  {t('company.pagination.showing', {
+                    start: ((companies.pagination.page - 1) * companies.pagination.limit) + 1,
+                    end: Math.min(companies.pagination.page * companies.pagination.limit, companies.pagination.total),
+                    total: companies.pagination.total
+                  })}
                 </div>
                 
                 <div className="flex items-center gap-2">
@@ -533,7 +535,7 @@ export default function CompanyManagementPage() {
                     disabled={companies.pagination.page === 1}
                   >
                     <ChevronLeft className="h-4 w-4 mr-1" />
-                    Previous
+                    {t('company.pagination.previous')}
                   </Button>
 
                   <div className="flex items-center gap-1">
@@ -556,7 +558,7 @@ export default function CompanyManagementPage() {
                     onClick={() => setCurrentPage(Math.min(companies.pagination.totalPages, companies.pagination.page + 1))}
                     disabled={companies.pagination.page === companies.pagination.totalPages}
                   >
-                    Next
+                    {t('company.pagination.next')}
                     <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
                 </div>
@@ -571,7 +573,7 @@ export default function CompanyManagementPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5 text-primary" />
-                Administrative Actions
+                {t('company.admin.actions')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -580,7 +582,7 @@ export default function CompanyManagementPage() {
                   <Link href="/modules/company-management/document-types">
                     <Button variant="outline">
                       <Shield className="h-4 w-4 mr-2" />
-                      Manage Document Types
+                      {t('company.admin.manageDocumentTypes')}
                     </Button>
                   </Link>
                 </PermissionContent>
@@ -588,21 +590,21 @@ export default function CompanyManagementPage() {
                 <PermissionContent action="manage" subject="Company">
                   <Button variant="outline">
                     <Download className="h-4 w-4 mr-2" />
-                    Export Companies
+                    {t('company.admin.exportCompanies')}
                   </Button>
                 </PermissionContent>
                 
                 <PermissionContent action="manage" subject="Company">
                   <Button variant="outline">
                     <Upload className="h-4 w-4 mr-2" />
-                    Import Companies
+                    {t('company.admin.importCompanies')}
                   </Button>
                 </PermissionContent>
                 
                 <PermissionContent action="manage" subject="Company">
                   <Button variant="outline">
                     <Shield className="h-4 w-4 mr-2" />
-                    Compliance Report
+                    {t('company.admin.complianceReport')}
                   </Button>
                 </PermissionContent>
               </div>

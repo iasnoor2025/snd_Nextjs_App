@@ -21,6 +21,7 @@ import {
   User,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useI18n } from '@/hooks/use-i18n';
 import CompanyDocumentManager from '@/components/company/CompanyDocumentManager';
 
 interface Company {
@@ -62,6 +63,7 @@ interface Company {
 }
 
 export default function CompanyDetailPage() {
+  const { t } = useI18n();
   const params = useParams();
   const router = useRouter();
   const [company, setCompany] = useState<Company | null>(null);
@@ -77,12 +79,12 @@ export default function CompanyDetailPage() {
         if (result.success) {
           setCompany(result.data);
         } else {
-          toast.error(result.message || 'Failed to fetch company');
+          toast.error(result.message || t('company.messages.loadingError'));
           router.push('/modules/company-management');
         }
       } catch (error) {
         
-        toast.error('Failed to fetch company');
+        toast.error(t('company.messages.loadingError'));
         router.push('/modules/company-management');
       } finally {
         setLoading(false);
@@ -97,7 +99,7 @@ export default function CompanyDetailPage() {
   const handleDelete = async () => {
     if (!company) return;
 
-    if (confirm('Are you sure you want to delete this company?')) {
+    if (confirm(t('company.messages.deleteConfirm'))) {
       try {
         const response = await fetch(`/api/companies/${company.id}`, {
           method: 'DELETE',
@@ -105,14 +107,14 @@ export default function CompanyDetailPage() {
         const result = await response.json();
 
         if (result.success) {
-          toast.success('Company deleted successfully');
+          toast.success(t('company.messages.deleteSuccess'));
           router.push('/modules/company-management');
         } else {
-          toast.error(result.message || 'Failed to delete company');
+          toast.error(result.message || t('company.messages.deleteError'));
         }
       } catch (error) {
         
-        toast.error('Failed to delete company');
+        toast.error(t('company.messages.deleteError'));
       }
     }
   };
@@ -120,7 +122,7 @@ export default function CompanyDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Loading company...</div>
+        <div className="text-lg">{t('company.messages.loading')}</div>
       </div>
     );
   }
@@ -128,7 +130,7 @@ export default function CompanyDetailPage() {
   if (!company) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Company not found</div>
+        <div className="text-lg">{t('company.messages.companyNotFound')}</div>
       </div>
     );
   }
@@ -140,7 +142,7 @@ export default function CompanyDetailPage() {
           <Link href="/modules/company-management">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              {t('company.actions.back')}
             </Button>
           </Link>
           <Building2 className="h-6 w-6" />
@@ -150,18 +152,18 @@ export default function CompanyDetailPage() {
           <Link href="/modules/company-management/document-types">
             <Button variant="outline">
               <Shield className="h-4 w-4 mr-2" />
-              Manage Document Types
+              {t('company.admin.manageDocumentTypes')}
             </Button>
           </Link>
           <Link href={`/modules/company-management/${company.id}/edit`}>
             <Button>
               <Edit className="h-4 w-4 mr-2" />
-              Edit
+              {t('company.actions.edit')}
             </Button>
           </Link>
           <Button variant="destructive" onClick={handleDelete}>
             <Trash2 className="h-4 w-4 mr-2" />
-            Delete
+            {t('company.actions.delete')}
           </Button>
         </div>
       </div>
@@ -171,12 +173,12 @@ export default function CompanyDetailPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
-              Company Information
+              {t('company.fields.basicInfo')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-500">Company Name</label>
+              <label className="text-sm font-medium text-gray-500">{t('company.fields.name')}</label>
               <p className="text-lg font-semibold">{company.name}</p>
             </div>
 
@@ -184,7 +186,7 @@ export default function CompanyDetailPage() {
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-gray-500" />
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Email</label>
+                  <label className="text-sm font-medium text-gray-500">{t('company.fields.email')}</label>
                   <p className="text-sm">{company.email}</p>
                 </div>
               </div>
@@ -194,7 +196,7 @@ export default function CompanyDetailPage() {
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-gray-500" />
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Phone</label>
+                  <label className="text-sm font-medium text-gray-500">{t('company.fields.phone')}</label>
                   <p className="text-sm">{company.phone}</p>
                 </div>
               </div>
@@ -204,7 +206,7 @@ export default function CompanyDetailPage() {
               <div className="flex items-start gap-2">
                 <MapPin className="h-4 w-4 text-gray-500 mt-1" />
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Address</label>
+                  <label className="text-sm font-medium text-gray-500">{t('company.fields.address')}</label>
                   <p className="text-sm">{company.address}</p>
                 </div>
               </div>
@@ -214,7 +216,7 @@ export default function CompanyDetailPage() {
               <div className="flex items-center gap-2">
                 <Globe className="h-4 w-4 text-gray-500" />
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Website</label>
+                  <label className="text-sm font-medium text-gray-500">{t('company.fields.website')}</label>
                   <p className="text-sm text-blue-600 hover:underline cursor-pointer">
                     <a href={company.website} target="_blank" rel="noopener noreferrer">
                       {company.website}
@@ -226,21 +228,21 @@ export default function CompanyDetailPage() {
 
             {company.company_type && (
               <div>
-                <label className="text-sm font-medium text-gray-500">Company Type</label>
+                <label className="text-sm font-medium text-gray-500">{t('company.fields.companyType')}</label>
                 <p className="text-sm">{company.company_type}</p>
               </div>
             )}
 
             {company.industry && (
               <div>
-                <label className="text-sm font-medium text-gray-500">Industry</label>
+                <label className="text-sm font-medium text-gray-500">{t('company.fields.industry')}</label>
                 <p className="text-sm">{company.industry}</p>
               </div>
             )}
 
             {company.employee_count && (
               <div>
-                <label className="text-sm font-medium text-gray-500">Employee Count</label>
+                <label className="text-sm font-medium text-gray-500">{t('company.fields.employeeCount')}</label>
                 <p className="text-sm">{company.employee_count}</p>
               </div>
             )}
@@ -252,13 +254,13 @@ export default function CompanyDetailPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              Contact Person
+              {t('company.fields.contactPerson')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {company.contact_person && (
               <div>
-                <label className="text-sm font-medium text-gray-500">Contact Person</label>
+                <label className="text-sm font-medium text-gray-500">{t('company.fields.contactPerson')}</label>
                 <p className="text-sm font-semibold">{company.contact_person}</p>
               </div>
             )}
@@ -267,7 +269,7 @@ export default function CompanyDetailPage() {
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-gray-500" />
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Contact Phone</label>
+                  <label className="text-sm font-medium text-gray-500">{t('company.fields.contactPersonPhone')}</label>
                   <p className="text-sm">{company.contact_person_phone}</p>
                 </div>
               </div>
@@ -277,14 +279,14 @@ export default function CompanyDetailPage() {
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-gray-500" />
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Contact Email</label>
+                  <label className="text-sm font-medium text-gray-500">{t('company.fields.contactPersonEmail')}</label>
                   <p className="text-sm">{company.contact_person_email}</p>
                 </div>
               </div>
             )}
 
             {!company.contact_person && !company.contact_person_phone && !company.contact_person_email && (
-              <p className="text-sm text-gray-500">No contact person information available</p>
+              <p className="text-sm text-gray-500">{t('company.messages.noContactInfo')}</p>
             )}
           </CardContent>
         </Card>
@@ -294,7 +296,7 @@ export default function CompanyDetailPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-red-600">
               <Shield className="h-5 w-5" />
-              Saudi Law Required Documents
+              {t('company.documents.title')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -302,7 +304,7 @@ export default function CompanyDetailPage() {
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-gray-500" />
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Commercial Registration</label>
+                  <label className="text-sm font-medium text-gray-500">{t('company.documents.commercialRegistration')}</label>
                   <p className="text-sm font-semibold">{company.commercial_registration}</p>
                   {company.commercial_registration_expiry && (
                     <p className="text-xs text-gray-500">
@@ -317,7 +319,7 @@ export default function CompanyDetailPage() {
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-gray-500" />
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Tax Registration</label>
+                  <label className="text-sm font-medium text-gray-500">{t('company.documents.taxRegistration')}</label>
                   <p className="text-sm font-semibold">{company.tax_registration}</p>
                   {company.tax_registration_expiry && (
                     <p className="text-xs text-gray-500">
@@ -332,7 +334,7 @@ export default function CompanyDetailPage() {
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-gray-500" />
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Municipality License</label>
+                  <label className="text-sm font-medium text-gray-500">{t('company.documents.municipalityLicense')}</label>
                   <p className="text-sm font-semibold">{company.municipality_license}</p>
                   {company.municipality_license_expiry && (
                     <p className="text-xs text-gray-500">
@@ -347,7 +349,7 @@ export default function CompanyDetailPage() {
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-gray-500" />
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Chamber of Commerce</label>
+                  <label className="text-sm font-medium text-gray-500">{t('company.documents.chamberOfCommerce')}</label>
                   <p className="text-sm font-semibold">{company.chamber_of_commerce}</p>
                   {company.chamber_of_commerce_expiry && (
                     <p className="text-xs text-gray-500">
@@ -362,7 +364,7 @@ export default function CompanyDetailPage() {
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-gray-500" />
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Labor Office License</label>
+                  <label className="text-sm font-medium text-gray-500">{t('company.documents.laborOfficeLicense')}</label>
                   <p className="text-sm font-semibold">{company.labor_office_license}</p>
                   {company.labor_office_license_expiry && (
                     <p className="text-xs text-gray-500">
@@ -377,7 +379,7 @@ export default function CompanyDetailPage() {
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-gray-500" />
                 <div>
-                  <label className="text-sm font-medium text-gray-500">GOSI Registration</label>
+                  <label className="text-sm font-medium text-gray-500">{t('company.documents.gosiRegistration')}</label>
                   <p className="text-sm font-semibold">{company.gosi_registration}</p>
                   {company.gosi_registration_expiry && (
                     <p className="text-xs text-gray-500">
@@ -392,7 +394,7 @@ export default function CompanyDetailPage() {
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-gray-500" />
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Saudi Standards License</label>
+                  <label className="text-sm font-medium text-gray-500">{t('company.documents.saudiStandardsLicense')}</label>
                   <p className="text-sm font-semibold">{company.saudi_standards_license}</p>
                   {company.saudi_standards_license_expiry && (
                     <p className="text-xs text-gray-500">
@@ -407,7 +409,7 @@ export default function CompanyDetailPage() {
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-gray-500" />
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Environmental License</label>
+                  <label className="text-sm font-medium text-gray-500">{t('company.documents.environmentalLicense')}</label>
                   <p className="text-sm font-semibold">{company.environmental_license}</p>
                   {company.environmental_license_expiry && (
                     <p className="text-xs text-gray-500">
@@ -422,7 +424,7 @@ export default function CompanyDetailPage() {
              !company.municipality_license && !company.chamber_of_commerce && 
              !company.labor_office_license && !company.gosi_registration && 
              !company.saudi_standards_license && !company.environmental_license && (
-              <p className="text-sm text-gray-500">No Saudi law required documents available</p>
+              <p className="text-sm text-gray-500">{t('company.messages.noDocumentsAvailable')}</p>
             )}
           </CardContent>
         </Card>
@@ -430,14 +432,14 @@ export default function CompanyDetailPage() {
         {/* Legacy Documents & Files */}
         <Card>
           <CardHeader>
-            <CardTitle>Documents & Files</CardTitle>
+            <CardTitle>{t('company.documents.files')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {company.logo && (
               <div className="flex items-center gap-2">
                 <Image className="h-4 w-4 text-gray-500" />
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Logo</label>
+                  <label className="text-sm font-medium text-gray-500">{t('company.documents.logo')}</label>
                   <p className="text-sm text-blue-600 hover:underline cursor-pointer">View Logo</p>
                 </div>
               </div>
@@ -447,7 +449,7 @@ export default function CompanyDetailPage() {
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-gray-500" />
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Legal Document</label>
+                  <label className="text-sm font-medium text-gray-500">{t('company.documents.legalDocument')}</label>
                   <p className="text-sm text-blue-600 hover:underline cursor-pointer">
                     View Document
                   </p>
@@ -456,7 +458,7 @@ export default function CompanyDetailPage() {
             )}
 
             {!company.logo && !company.legal_document && (
-              <p className="text-sm text-gray-500">No documents uploaded</p>
+              <p className="text-sm text-gray-500">{t('company.messages.noDocumentsUploaded')}</p>
             )}
           </CardContent>
         </Card>
@@ -469,19 +471,19 @@ export default function CompanyDetailPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Timestamps</CardTitle>
+            <CardTitle>{t('company.timestamps.title')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {company.created_at && (
               <div>
-                <label className="text-sm font-medium text-gray-500">Created</label>
+                <label className="text-sm font-medium text-gray-500">{t('company.fields.createdAt')}</label>
                 <p className="text-sm">{new Date(company.created_at).toLocaleString()}</p>
               </div>
             )}
 
             {company.updated_at && (
               <div>
-                <label className="text-sm font-medium text-gray-500">Last Updated</label>
+                <label className="text-sm font-medium text-gray-500">{t('company.fields.updatedAt')}</label>
                 <p className="text-sm">{new Date(company.updated_at).toLocaleString()}</p>
               </div>
             )}

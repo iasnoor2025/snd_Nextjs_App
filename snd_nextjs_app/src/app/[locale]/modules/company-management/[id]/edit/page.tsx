@@ -10,8 +10,10 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useI18n } from '@/hooks/use-i18n';
 
 export default function EditCompanyPage() {
+  const { t } = useI18n();
   const params = useParams();
   const router = useRouter();
   const { id } = params;
@@ -93,12 +95,12 @@ export default function EditCompanyPage() {
             employee_count: company.employee_count?.toString() || '',
           });
         } else {
-          toast.error(result.message || 'Failed to fetch company');
+          toast.error(result.message || t('company.messages.loadingError'));
           router.push('/modules/company-management');
         }
       } catch (error) {
         
-        toast.error('Failed to fetch company');
+        toast.error(t('company.messages.loadingError'));
         router.push('/modules/company-management');
       } finally {
         setLoading(false);
@@ -112,7 +114,7 @@ export default function EditCompanyPage() {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      toast.error('Company name is required');
+      toast.error(t('company.validation.nameRequired'));
       return;
     }
 
@@ -131,14 +133,14 @@ export default function EditCompanyPage() {
       const result = await response.json();
 
       if (result.success) {
-        toast.success('Company updated successfully');
+        toast.success(t('company.messages.saveSuccess'));
         router.push(`/modules/company-management/${id}`);
       } else {
-        toast.error(result.message || 'Failed to update company');
+        toast.error(result.message || t('company.messages.saveError'));
       }
     } catch (error) {
       
-      toast.error('Failed to update company');
+      toast.error(t('company.messages.saveError'));
     } finally {
       setSaving(false);
     }
@@ -154,7 +156,7 @@ export default function EditCompanyPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Loading company...</div>
+        <div className="text-lg">{t('company.messages.loading')}</div>
       </div>
     );
   }
@@ -166,12 +168,12 @@ export default function EditCompanyPage() {
         <Link href={`/modules/company-management/${id}`}>
           <Button variant="outline" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Company
+            {t('company.actions.back')}
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold">Edit Company</h1>
-          <p className="text-muted-foreground">Update company information</p>
+          <h1 className="text-2xl font-bold">{t('company.actions.edit')}</h1>
+          <p className="text-muted-foreground">{t('company.messages.updateInfo')}</p>
         </div>
       </div>
 
@@ -180,7 +182,7 @@ export default function EditCompanyPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
-            Company Information
+            {t('company.fields.basicInfo')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -189,7 +191,7 @@ export default function EditCompanyPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="name">Company Name *</Label>
+                  <Label htmlFor="name">{t('company.fields.name')} *</Label>
                   <Input
                     id="name"
                     value={formData.name}
@@ -199,7 +201,7 @@ export default function EditCompanyPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">{t('company.fields.email')}</Label>
                   <Input
                     id="email"
                     type="email"
@@ -209,7 +211,7 @@ export default function EditCompanyPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="website">Website</Label>
+                  <Label htmlFor="website">{t('company.fields.website')}</Label>
                   <Input
                     id="website"
                     value={formData.website}
@@ -219,7 +221,7 @@ export default function EditCompanyPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="company_type">Company Type</Label>
+                  <Label htmlFor="company_type">{t('company.fields.companyType')}</Label>
                   <Input
                     id="company_type"
                     value={formData.company_type}
@@ -231,7 +233,7 @@ export default function EditCompanyPage() {
 
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="phone">Phone</Label>
+                  <Label htmlFor="phone">{t('company.fields.phone')}</Label>
                   <Input
                     id="phone"
                     value={formData.phone}
@@ -240,7 +242,7 @@ export default function EditCompanyPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="address">Address</Label>
+                  <Label htmlFor="address">{t('company.fields.address')}</Label>
                   <Textarea
                     id="address"
                     value={formData.address}
@@ -250,7 +252,7 @@ export default function EditCompanyPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="industry">Industry</Label>
+                  <Label htmlFor="industry">{t('company.fields.industry')}</Label>
                   <Input
                     id="industry"
                     value={formData.industry}
@@ -260,7 +262,7 @@ export default function EditCompanyPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="employee_count">Employee Count</Label>
+                  <Label htmlFor="employee_count">{t('company.fields.employeeCount')}</Label>
                   <Input
                     id="employee_count"
                     type="number"
@@ -275,7 +277,7 @@ export default function EditCompanyPage() {
             {/* Contact Person Information */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <Label htmlFor="contact_person">Contact Person</Label>
+                <Label htmlFor="contact_person">{t('company.fields.contactPerson')}</Label>
                 <Input
                   id="contact_person"
                   value={formData.contact_person}
@@ -285,7 +287,7 @@ export default function EditCompanyPage() {
               </div>
 
               <div>
-                <Label htmlFor="contact_person_phone">Contact Phone</Label>
+                <Label htmlFor="contact_person_phone">{t('company.fields.contactPersonPhone')}</Label>
                 <Input
                   id="contact_person_phone"
                   value={formData.contact_person_phone}
@@ -295,7 +297,7 @@ export default function EditCompanyPage() {
               </div>
 
               <div>
-                <Label htmlFor="contact_person_email">Contact Email</Label>
+                <Label htmlFor="contact_person_email">{t('company.fields.contactPersonEmail')}</Label>
                 <Input
                   id="contact_person_email"
                   type="email"
@@ -309,13 +311,13 @@ export default function EditCompanyPage() {
             {/* Saudi Law Required Documents */}
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-red-600 border-b border-red-200 pb-2">
-                Saudi Law Required Documents
+                {t('company.documents.title')}
               </h3>
               
               {/* Commercial Registration */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="commercial_registration">Commercial Registration Number *</Label>
+                  <Label htmlFor="commercial_registration">{t('company.documents.commercialRegistration')} *</Label>
                   <Input
                     id="commercial_registration"
                     value={formData.commercial_registration}
@@ -325,7 +327,7 @@ export default function EditCompanyPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="commercial_registration_expiry">Expiry Date</Label>
+                  <Label htmlFor="commercial_registration_expiry">{t('company.documents.commercialRegistrationExpiry')}</Label>
                   <Input
                     id="commercial_registration_expiry"
                     type="date"
@@ -338,7 +340,7 @@ export default function EditCompanyPage() {
               {/* Tax Registration */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="tax_registration">Tax Registration Number *</Label>
+                  <Label htmlFor="tax_registration">{t('company.documents.taxRegistration')} *</Label>
                   <Input
                     id="tax_registration"
                     value={formData.tax_registration}
@@ -348,7 +350,7 @@ export default function EditCompanyPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="tax_registration_expiry">Expiry Date</Label>
+                  <Label htmlFor="tax_registration_expiry">{t('company.documents.taxRegistrationExpiry')}</Label>
                   <Input
                     id="tax_registration_expiry"
                     type="date"
@@ -361,7 +363,7 @@ export default function EditCompanyPage() {
               {/* Municipality License */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="municipality_license">Municipality License Number</Label>
+                  <Label htmlFor="municipality_license">{t('company.documents.municipalityLicense')}</Label>
                   <Input
                     id="municipality_license"
                     value={formData.municipality_license}
@@ -370,7 +372,7 @@ export default function EditCompanyPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="municipality_license_expiry">Expiry Date</Label>
+                  <Label htmlFor="municipality_license_expiry">{t('company.documents.municipalityLicenseExpiry')}</Label>
                   <Input
                     id="municipality_license_expiry"
                     type="date"
@@ -383,7 +385,7 @@ export default function EditCompanyPage() {
               {/* Chamber of Commerce */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="chamber_of_commerce">Chamber of Commerce Registration</Label>
+                  <Label htmlFor="chamber_of_commerce">{t('company.documents.chamberOfCommerce')}</Label>
                   <Input
                     id="chamber_of_commerce"
                     value={formData.chamber_of_commerce}
@@ -392,7 +394,7 @@ export default function EditCompanyPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="chamber_of_commerce_expiry">Expiry Date</Label>
+                  <Label htmlFor="chamber_of_commerce_expiry">{t('company.documents.chamberOfCommerceExpiry')}</Label>
                   <Input
                     id="chamber_of_commerce_expiry"
                     type="date"
@@ -405,7 +407,7 @@ export default function EditCompanyPage() {
               {/* Labor Office License */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="labor_office_license">Labor Office License</Label>
+                  <Label htmlFor="labor_office_license">{t('company.documents.laborOfficeLicense')}</Label>
                   <Input
                     id="labor_office_license"
                     value={formData.labor_office_license}
@@ -414,7 +416,7 @@ export default function EditCompanyPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="labor_office_license_expiry">Expiry Date</Label>
+                  <Label htmlFor="labor_office_license_expiry">{t('company.documents.laborOfficeLicenseExpiry')}</Label>
                   <Input
                     id="labor_office_license_expiry"
                     type="date"
@@ -427,7 +429,7 @@ export default function EditCompanyPage() {
               {/* GOSI Registration */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="gosi_registration">GOSI Registration Number</Label>
+                  <Label htmlFor="gosi_registration">{t('company.documents.gosiRegistration')}</Label>
                   <Input
                     id="gosi_registration"
                     value={formData.gosi_registration}
@@ -436,7 +438,7 @@ export default function EditCompanyPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="gosi_registration_expiry">Expiry Date</Label>
+                  <Label htmlFor="gosi_registration_expiry">{t('company.documents.gosiRegistrationExpiry')}</Label>
                   <Input
                     id="gosi_registration_expiry"
                     type="date"
@@ -449,7 +451,7 @@ export default function EditCompanyPage() {
               {/* Saudi Standards License */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="saudi_standards_license">Saudi Standards License</Label>
+                  <Label htmlFor="saudi_standards_license">{t('company.documents.saudiStandardsLicense')}</Label>
                   <Input
                     id="saudi_standards_license"
                     value={formData.saudi_standards_license}
@@ -458,7 +460,7 @@ export default function EditCompanyPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="saudi_standards_license_expiry">Expiry Date</Label>
+                  <Label htmlFor="saudi_standards_license_expiry">{t('company.documents.saudiStandardsLicenseExpiry')}</Label>
                   <Input
                     id="saudi_standards_license_expiry"
                     type="date"
@@ -471,7 +473,7 @@ export default function EditCompanyPage() {
               {/* Environmental License */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="environmental_license">Environmental License</Label>
+                  <Label htmlFor="environmental_license">{t('company.documents.environmentalLicense')}</Label>
                   <Input
                     id="environmental_license"
                     value={formData.environmental_license}
@@ -480,7 +482,7 @@ export default function EditCompanyPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="environmental_license_expiry">Expiry Date</Label>
+                  <Label htmlFor="environmental_license_expiry">{t('company.documents.environmentalLicenseExpiry')}</Label>
                   <Input
                     id="environmental_license_expiry"
                     type="date"
@@ -495,19 +497,19 @@ export default function EditCompanyPage() {
             <div className="flex justify-end gap-4 pt-6 border-t">
               <Link href={`/modules/company-management/${id}`}>
                 <Button type="button" variant="outline" disabled={saving}>
-                  Cancel
+                  {t('company.actions.cancel')}
                 </Button>
               </Link>
               <Button type="submit" disabled={saving}>
                 {saving ? (
                   <>
                     <Save className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
+                    {t('company.messages.saving')}
                   </>
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    Save Changes
+                    {t('company.actions.save')}
                   </>
                 )}
               </Button>
