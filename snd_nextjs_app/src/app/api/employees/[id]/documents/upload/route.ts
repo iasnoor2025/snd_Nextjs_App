@@ -49,6 +49,16 @@ const uploadDocumentsHandler = async (
     rawDocumentType = (formData.get('document_type') as string) || 'general';
     const documentName = (formData.get('document_name') as string) || '';
     const description = formData.get('description') as string;
+    
+    console.log(`📋 Upload request details:`, {
+      employeeId,
+      rawDocumentType,
+      documentName,
+      description,
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type
+    });
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -56,14 +66,24 @@ const uploadDocumentsHandler = async (
 
     // Helper function to check if a document type should overwrite existing ones
     // These document types are unique per employee and should replace old versions
+    // General documents should NOT overwrite - allow multiple general documents
     const shouldOverwriteDocument = (documentType: string): boolean => {
+      // First check if it's a general document type - these should NEVER overwrite
+      const generalDocumentTypes = ['general', 'other', 'misc', 'miscellaneous'];
+      if (generalDocumentTypes.includes(documentType.toLowerCase())) {
+        console.log(`Document type '${documentType}' is general - will NOT overwrite`);
+        return false;
+      }
+      
+      // Then check if it's a specific document type that should overwrite
       const specificDocumentTypes = [
         'passport', 'iqama', 'driving_license', 'operator_license', 
         'spsp_license', 'tuv_certification', 'contract', 'medical',
         'visa', 'work_permit', 'training_certificate', 'safety_certificate',
         'insurance_card', 'bank_details', 'emergency_contact'
       ];
-      const result = specificDocumentTypes.includes(documentType);
+      
+      const result = specificDocumentTypes.includes(documentType.toLowerCase());
       console.log(`Document type '${documentType}' should overwrite: ${result}`);
       return result;
     };
@@ -121,6 +141,8 @@ const uploadDocumentsHandler = async (
 
         // Delete existing documents from database
         if (existingDocuments.length > 0) {
+          console.log(`🗑️ Deleting existing documents:`, existingDocuments.map(d => ({ id: d.id, fileName: d.fileName })));
+          
           await db
             .delete(employeeDocuments)
             .where(
@@ -134,7 +156,7 @@ const uploadDocumentsHandler = async (
           // No need to manually delete old files from MinIO storage
           console.log(`MinIO will automatically overwrite existing files with the same key`);
 
-          console.log(`Successfully deleted ${existingDocuments.length} existing ${rawDocumentType} document(s) for employee ${employeeId}`);
+          console.log(`✅ Successfully deleted ${existingDocuments.length} existing ${rawDocumentType} document(s) for employee ${employeeId}`);
         }
       } catch (error) {
         console.error('Error deleting existing documents:', error);
@@ -152,43 +174,66 @@ const uploadDocumentsHandler = async (
     const baseLabel =
       documentName.trim() || toTitleCase((rawDocumentType || 'Document').replace(/_/g, ' '));
     
-    // Generate descriptive filename using the user-provided document name with document type
-    // This ensures the file is saved in MinIO with the user's chosen name and document type
+    // Generate descriptive filename using the user-provided document name
+    // Check if the document name already contains the document type to avoid duplication
     let descriptiveFilename: string;
     if (documentName.trim()) {
-      // Use the user-provided document name as the filename with document type prefix
       const extension = file.name.split('.').pop();
-      const cleanDocumentName = documentName.trim()
-        .replace(/\.(pdf|jpg|jpeg|png|doc|docx)$/i, '') // Remove common file extensions
-        .replace(/[^a-zA-Z0-9\-_]/g, '-') // Replace special chars with hyphens (keep hyphens and underscores)
-        .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
       
-      // Format document type for filename (replace underscores with hyphens, capitalize)
+      // Format document type for comparison (remove emojis and normalize)
       const formattedDocumentType = rawDocumentType
         .replace(/_/g, '-')
         .replace(/\b\w/g, l => l.toUpperCase());
       
-      descriptiveFilename = `${formattedDocumentType}-${cleanDocumentName}.${extension}`;
+      // Clean the document name (remove emojis, special chars, etc.)
+      const cleanDocumentName = documentName.trim()
+        .replace(/[^\w\s-]/g, '') // Remove emojis and special chars except spaces and hyphens
+        .replace(/\s+/g, '-') // Replace spaces with hyphens
+        .replace(/\.(pdf|jpg|jpeg|png|doc|docx)$/i, '') // Remove common file extensions
+        .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+      
+      // Check if the document name already contains the document type
+      const documentNameLower = cleanDocumentName.toLowerCase();
+      const documentTypeLower = formattedDocumentType.toLowerCase();
+      
+      if (documentNameLower.includes(documentTypeLower)) {
+        // Document name already contains the type, use it as is
+        descriptiveFilename = `${cleanDocumentName}.${extension}`;
+      } else {
+        // Document name doesn't contain the type, add it as prefix
+        descriptiveFilename = `${formattedDocumentType}-${cleanDocumentName}.${extension}`;
+      }
       
       // Check if a document with the same name already exists
-      const existingDocWithSameName = await db
-        .select()
-        .from(employeeDocuments)
-        .where(
-          and(
-            eq(employeeDocuments.employeeId, employeeId),
-            eq(employeeDocuments.fileName, descriptiveFilename)
+      // Skip this check for general documents to allow multiple uploads
+      if (shouldOverwrite) {
+        const existingDocWithSameName = await db
+          .select()
+          .from(employeeDocuments)
+          .where(
+            and(
+              eq(employeeDocuments.employeeId, employeeId),
+              eq(employeeDocuments.fileName, descriptiveFilename)
+            )
           )
-        )
-        .limit(1);
-      
-      if (existingDocWithSameName.length > 0) {
-        return NextResponse.json(
-          { 
-            error: `A document with the name "${documentName.trim()}" already exists. Please choose a different name or delete the existing document first.` 
-          },
-          { status: 409 }
-        );
+          .limit(1);
+        
+        if (existingDocWithSameName.length > 0) {
+          return NextResponse.json(
+            { 
+              error: `A document with the name "${documentName.trim()}" already exists. Please choose a different name or delete the existing document first.` 
+            },
+            { status: 409 }
+          );
+        }
+      } else {
+        console.log(`Skipping duplicate filename check for general document type: ${rawDocumentType}`);
+        // Add timestamp to general documents to make them unique
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[1].substring(0, 8);
+        const baseFilename = descriptiveFilename.replace(/\.[^/.]+$/, ''); // Remove extension
+        const fileExtension = descriptiveFilename.split('.').pop() || 'pdf';
+        descriptiveFilename = `${baseFilename}-${timestamp}.${fileExtension}`;
+        console.log(`Updated general document filename to: ${descriptiveFilename}`);
       }
     } else {
       // Fallback to descriptive filename based on document type
@@ -210,7 +255,7 @@ const uploadDocumentsHandler = async (
 
     // Initialize MinIO S3 client
     const s3Client = new S3Client({
-      endpoint: process.env.S3_ENDPOINT,
+      endpoint: process.env.S3_ENDPOINT!,
       region: process.env.AWS_REGION || 'us-east-1',
       credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
@@ -260,7 +305,7 @@ const uploadDocumentsHandler = async (
         filePath: minioUrl,
         fileName: descriptiveFilename,
         fileSize: file.size,
-        mimeType: file.type || 'application/octet-stream',
+        mimeType: (file.type || 'application/octet-stream') as string,
         description: description || null,
         createdAt: new Date().toISOString().split('T')[0], // Convert to date format
         updatedAt: new Date().toISOString().split('T')[0], // Convert to date format
@@ -278,8 +323,19 @@ const uploadDocumentsHandler = async (
 
     // Invalidate cache for this employee's documents
     const cacheKey = `employee:${employeeId}:documents`;
-    await cacheService.delete(cacheKey, 'documents');
-    console.log(`Invalidated cache for employee ${employeeId} documents`);
+    try {
+      await cacheService.delete(cacheKey, 'documents');
+      console.log(`Invalidated cache for employee ${employeeId} documents`);
+      
+      // Also invalidate any related caches
+      await cacheService.delete(`employee:${employeeId}:*`, 'documents');
+      console.log(`Invalidated all caches for employee ${employeeId}`);
+      
+      // Additional cache invalidation for better reliability
+      console.log(`Completed cache invalidation for employee ${employeeId}`);
+    } catch (error) {
+      console.error('Cache invalidation error:', error);
+    }
 
     const responseData = {
       success: true,

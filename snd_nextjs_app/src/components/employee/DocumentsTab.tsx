@@ -133,7 +133,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
     setError(null);
     try {
       
-      const response = await fetch(`/api/employees/${employeeId}/documents`, {
+      const response = await fetch(`/api/employees/${employeeId}/documents?t=${Date.now()}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -223,7 +223,15 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
         toast.success(t('employee.documents.uploadSuccess'));
         setShowUploadDialog(false);
         setUploadForm({ document_name: '', document_type: '', file: null, description: '' });
-        fetchDocuments(); // Refresh the list
+        // Add a small delay to ensure database operations are complete
+        setTimeout(() => {
+          fetchDocuments(); // Refresh the list
+        }, 500);
+        
+        // Also refresh after a longer delay to ensure cache is cleared
+        setTimeout(() => {
+          fetchDocuments(); // Second refresh to ensure cache is cleared
+        }, 2000);
       } else {
         const errorData = await response.json();
         toast.error(errorData.error || t('employee.documents.uploadFailed'));

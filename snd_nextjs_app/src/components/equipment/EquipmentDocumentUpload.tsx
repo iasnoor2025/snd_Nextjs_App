@@ -107,7 +107,7 @@ export default function EquipmentDocumentUpload({
       console.log('🔄 loadDocuments called for equipment:', equipmentId);
       setIsLoading(true);
       // Fetch documents from the equipment documents API
-      const response = await fetch(`/api/equipment/${equipmentId}/documents`, {
+      const response = await fetch(`/api/equipment/${equipmentId}/documents?t=${Date.now()}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -292,9 +292,19 @@ export default function EquipmentDocumentUpload({
         setUploadForm({ document_name: '', document_type: '', description: '' });
         setUploadProgress({});
         // Refresh the documents list after all uploads are complete
-        await loadDocuments();
-        setRefreshTrigger(prev => prev + 1);
-        console.log('🔄 Documents refresh completed');
+        // Add a small delay to ensure database operations are complete
+        setTimeout(async () => {
+          await loadDocuments();
+          setRefreshTrigger(prev => prev + 1);
+          console.log('🔄 Documents refresh completed');
+        }, 500);
+        
+        // Also refresh after a longer delay to ensure cache is cleared
+        setTimeout(async () => {
+          await loadDocuments();
+          setRefreshTrigger(prev => prev + 1);
+          console.log('🔄 Second documents refresh completed');
+        }, 2000);
       }
     } catch (error) {
       console.error('Upload error:', error);
