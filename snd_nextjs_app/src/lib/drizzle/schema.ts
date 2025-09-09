@@ -788,7 +788,8 @@ export const employeeDocuments = pgTable(
     createdAt: date('created_at')
       .default(sql`CURRENT_DATE`)
       .notNull(),
-    updatedAt: date('updated_at').notNull(),
+    updatedAt: date('updated_at')
+      .notNull(),
   },
   table => [
     foreignKey({
@@ -1729,7 +1730,8 @@ export const equipmentDocuments = pgTable(
     createdAt: date('created_at')
       .default(sql`CURRENT_DATE`)
       .notNull(),
-    updatedAt: date('updated_at').notNull(),
+    updatedAt: date('updated_at')
+      .notNull(),
   },
   table => [
     foreignKey({

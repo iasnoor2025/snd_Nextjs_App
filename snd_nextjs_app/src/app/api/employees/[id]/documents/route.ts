@@ -1,7 +1,7 @@
 import { db } from '@/lib/drizzle';
 import { employeeDocuments } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { cacheService } from '@/lib/redis/cache-service';
 import { ensureHttps } from '@/lib/utils/url-utils';
@@ -47,7 +47,8 @@ const getDocumentsHandler = async (_request: any, { params }: { params: Promise<
         updatedAt: employeeDocuments.updatedAt,
       })
       .from(employeeDocuments)
-      .where(eq(employeeDocuments.employeeId, employeeId));
+      .where(eq(employeeDocuments.employeeId, employeeId))
+      .orderBy(desc(employeeDocuments.createdAt));
 
     // Format response to match what DocumentManager expects
     const formattedDocuments = documentsRows.map(doc => {

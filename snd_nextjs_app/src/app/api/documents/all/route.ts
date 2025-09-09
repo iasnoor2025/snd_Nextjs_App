@@ -69,22 +69,22 @@ export async function GET(_request: NextRequest) {
         .from(employeeDocuments)
         .leftJoin(employees, eq(employees.id, employeeDocuments.employeeId));
 
-      if (search) {
-        employeeQuery.where(
-          or(
-            ilike(employees.firstName, `%${search}%`),
-            ilike(employees.lastName, `%${search}%`),
-            ilike(employees.fileNumber, `%${search}%`),
-            ilike(employeeDocuments.fileName, `%${search}%`),
-            ilike(employeeDocuments.documentType, `%${search}%`)
-          )
-        );
-      }
+      employeeQuery.where(
+        search
+          ? or(
+              ilike(employees.firstName, `%${search}%`),
+              ilike(employees.lastName, `%${search}%`),
+              ilike(employees.fileNumber, `%${search}%`),
+              ilike(employeeDocuments.fileName, `%${search}%`),
+              ilike(employeeDocuments.documentType, `%${search}%`)
+            )
+          : sql`1=1` // Always true condition when no search
+      );
 
       const employeeResults = await employeeQuery
-        .orderBy(desc(employeeDocuments.createdAt))
-        .limit(limit)
-        .offset(offset);
+        .orderBy(desc(employeeDocuments.createdAt)) // Now using proper timestamp ordering
+        .limit(type === 'employee' ? limit : 1000) // Get more results if combining with other types
+        .offset(type === 'employee' ? offset : 0);
 
       employeeDocs = employeeResults.map(doc => ({
         id: doc.id,
@@ -95,8 +95,8 @@ export async function GET(_request: NextRequest) {
         fileSize: doc.fileSize || 0,
         mimeType: doc.mimeType || 'application/octet-stream',
         description: doc.description || '',
-        createdAt: doc.createdAt,
-        updatedAt: doc.updatedAt,
+        createdAt: doc.createdAt.toISOString(),
+        updatedAt: doc.updatedAt.toISOString(),
         employeeId: doc.employeeId,
         employeeName: `${doc.employeeFirstName || ''} ${doc.employeeLastName || ''}`.trim(),
         employeeFileNumber: doc.employeeFileNumber || '',
@@ -138,13 +138,13 @@ export async function GET(_request: NextRequest) {
                 ilike(equipmentDocuments.fileName, `%${search}%`),
                 ilike(equipmentDocuments.documentType, `%${search}%`)
               )
-            : undefined
+            : sql`1=1` // Always true condition when no search
         );
 
       const equipmentResults = await equipmentQuery
-        .orderBy(desc(equipmentDocuments.createdAt))
-        .limit(limit)
-        .offset(offset);
+        .orderBy(desc(equipmentDocuments.createdAt)) // Now using proper timestamp ordering
+        .limit(type === 'equipment' ? limit : 1000) // Get more results if combining with other types
+        .offset(type === 'equipment' ? offset : 0);
 
       equipmentDocs = equipmentResults.map(doc => ({
         id: doc.id,
@@ -155,8 +155,8 @@ export async function GET(_request: NextRequest) {
         fileSize: doc.fileSize || 0,
         mimeType: doc.mimeType || 'application/octet-stream',
         description: doc.description || '',
-        createdAt: doc.createdAt,
-        updatedAt: doc.updatedAt,
+        createdAt: doc.createdAt.toISOString(),
+        updatedAt: doc.updatedAt.toISOString(),
         equipmentId: doc.equipmentId,
         equipmentName: doc.equipmentName || '',
         equipmentModel: doc.equipmentModel || '',
@@ -169,9 +169,20 @@ export async function GET(_request: NextRequest) {
     }
 
     // Combine and sort all documents
-    const allDocuments = [...employeeDocs, ...equipmentDocs].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    let allDocuments = [...employeeDocs, ...equipmentDocs].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() // Sort by creation date descending
     );
+
+    // If only one type is requested, apply pagination to the combined results
+    if (type === 'employee' || type === 'equipment') {
+      // Pagination is already applied in the individual queries above
+      // No additional pagination needed
+    } else {
+      // For 'all' type, we need to apply pagination to the combined results
+      const startIndex = offset;
+      const endIndex = startIndex + limit;
+      allDocuments = allDocuments.slice(startIndex, endIndex);
+    }
 
     // Get total counts for pagination
     let totalEmployeeDocs = 0;
@@ -258,7 +269,9 @@ export async function GET(_request: NextRequest) {
       totalEquipmentDocs = equipmentCountResult[0]?.count || 0;
     }
 
-    const totalDocs = totalEmployeeDocs + totalEquipmentDocs;
+    const totalDocs = type === 'employee' ? totalEmployeeDocs : 
+                     type === 'equipment' ? totalEquipmentDocs : 
+                     totalEmployeeDocs + totalEquipmentDocs;
 
     // Format response to match what DocumentManager expects
     const formattedDocuments = allDocuments.map(doc => {
@@ -292,6 +305,7 @@ export async function GET(_request: NextRequest) {
         employee_file_number: doc.employeeId, // Assuming employeeId is available in the doc object
       };
     });
+
 
     return NextResponse.json({
       success: true,

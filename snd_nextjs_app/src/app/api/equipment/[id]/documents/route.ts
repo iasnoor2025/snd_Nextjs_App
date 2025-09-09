@@ -1,7 +1,7 @@
 import { db } from '@/lib/drizzle';
 import { equipmentDocuments, equipment } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { cacheService } from '@/lib/redis/cache-service';
@@ -61,7 +61,7 @@ const getDocumentsHandler = async (
       .select()
       .from(equipmentDocuments)
       .where(eq(equipmentDocuments.equipmentId, equipmentId))
-      .orderBy(equipmentDocuments.createdAt);
+      .orderBy(desc(equipmentDocuments.createdAt));
 
     // Transform documents for response
     const transformedDocuments = documents.map(doc => ({
@@ -120,7 +120,7 @@ const uploadDocumentsHandler = async (
     }
 
     const equipmentItem = equipmentResult[0];
-    const doorNumber = equipmentItem.doorNumber || String(equipmentId);
+    const _doorNumber = equipmentItem.doorNumber || String(equipmentId);
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -213,19 +213,25 @@ const uploadDocumentsHandler = async (
       s.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
     const baseLabel =
       documentName.trim() || toTitleCase((rawDocumentType || 'Document').replace(/_/g, ' '));
-    const equipmentName = equipmentItem.name || `Equipment-${equipmentId}`;
+    const _equipmentName = equipmentItem.name || `Equipment-${equipmentId}`;
     
-    // Generate descriptive filename using the user-provided document name
-    // This ensures the file is saved in MinIO with the user's chosen name
+    // Generate descriptive filename using the user-provided document name with document type
+    // This ensures the file is saved in MinIO with the user's chosen name and document type
     let descriptiveFilename: string;
     if (documentName.trim()) {
-      // Use the user-provided document name as the filename
+      // Use the user-provided document name as the filename with document type prefix
       const extension = file.name.split('.').pop();
       const cleanDocumentName = documentName.trim()
         .replace(/\.(pdf|jpg|jpeg|png|doc|docx)$/i, '') // Remove common file extensions
         .replace(/[^a-zA-Z0-9\-_]/g, '-') // Replace special chars with hyphens (keep hyphens and underscores)
         .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
-      descriptiveFilename = `${cleanDocumentName}.${extension}`;
+      
+      // Format document type for filename (replace underscores with hyphens, capitalize)
+      const formattedDocumentType = rawDocumentType
+        .replace(/_/g, '-')
+        .replace(/\b\w/g, l => l.toUpperCase());
+      
+      descriptiveFilename = `${formattedDocumentType}-${cleanDocumentName}.${extension}`;
       
       // Check if a document with the same name already exists
       const existingDocWithSameName = await db
@@ -251,7 +257,10 @@ const uploadDocumentsHandler = async (
       // Fallback to descriptive filename based on document type
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const fileExtension = file.name.split('.').pop();
-      descriptiveFilename = `${rawDocumentType || 'document'}-${timestamp}.${fileExtension}`;
+      const formattedDocumentType = rawDocumentType
+        .replace(/_/g, '-')
+        .replace(/\b\w/g, l => l.toUpperCase());
+      descriptiveFilename = `${formattedDocumentType}-${timestamp}.${fileExtension}`;
     }
     
     // Create folder path based on equipment ID for better organization
@@ -264,7 +273,7 @@ const uploadDocumentsHandler = async (
 
     // Initialize MinIO S3 client
     const s3Client = new S3Client({
-      endpoint: process.env.S3_ENDPOINT,
+      endpoint: process.env.S3_ENDPOINT!,
       region: process.env.AWS_REGION || 'us-east-1',
       credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
@@ -301,10 +310,10 @@ const uploadDocumentsHandler = async (
         filePath: minioUrl,
         fileName: descriptiveFilename,
         fileSize: file.size,
-        mimeType: file.type,
+        mimeType: file.type || 'application/octet-stream',
         description: description || null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString().split('T')[0], // Convert to date format
+        updatedAt: new Date().toISOString().split('T')[0], // Convert to date format
       })
       .returning();
 

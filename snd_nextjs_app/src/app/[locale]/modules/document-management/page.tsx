@@ -139,6 +139,7 @@ export default function DocumentManagementPage() {
         const response = await fetch(`/api/documents/all?${params}`);
         if (response.ok) {
           const data = await response.json();
+          
           if (data.success) {
             // Transform documents to include proper viewing URLs
             const transformedDocuments = data.data.documents.map((doc: Document) => {

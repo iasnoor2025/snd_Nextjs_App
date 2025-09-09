@@ -70,6 +70,7 @@ export default function EquipmentDocumentUpload({
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   // Upload form state
   const [uploadForm, setUploadForm] = useState({
@@ -103,6 +104,7 @@ export default function EquipmentDocumentUpload({
 
   const loadDocuments = useCallback(async () => {
     try {
+      console.log('🔄 loadDocuments called for equipment:', equipmentId);
       setIsLoading(true);
       // Fetch documents from the equipment documents API
       const response = await fetch(`/api/equipment/${equipmentId}/documents`, {
@@ -114,6 +116,7 @@ export default function EquipmentDocumentUpload({
 
       if (response.ok) {
         const result = await response.json();
+        console.log('📄 Documents API response:', result);
         if (result.success && result.documents) {
                      // Convert API response to DocumentItem format
            const docs = result.documents.map((doc: Record<string, unknown>) => ({
@@ -126,6 +129,7 @@ export default function EquipmentDocumentUpload({
             created_at: doc.createdAt || doc.created_at
           })) as DocumentItem[];
           
+          console.log('📋 Processed documents:', docs);
           setDocuments(docs);
           return docs;
         }
@@ -169,6 +173,7 @@ export default function EquipmentDocumentUpload({
           if (result.success) {
             // Refresh the documents list
             await loadDocuments();
+            setRefreshTrigger(prev => prev + 1);
             onDocumentsUpdated?.();
             return { success: true, data: result };
           } else {
@@ -205,6 +210,7 @@ export default function EquipmentDocumentUpload({
           if (result.success) {
             // Refresh the documents list
             await loadDocuments();
+            setRefreshTrigger(prev => prev + 1);
             onDocumentsUpdated?.();
             toast.success('Document deleted successfully');
           } else {
@@ -279,11 +285,16 @@ export default function EquipmentDocumentUpload({
       }
       
       if (!hasErrors) {
+        console.log('✅ All uploads successful, refreshing documents...');
         toast.success(t('equipment.documents.uploadSuccess'));
         setShowUploadDialog(false);
         setPendingFiles([]);
         setUploadForm({ document_name: '', document_type: '', description: '' });
         setUploadProgress({});
+        // Refresh the documents list after all uploads are complete
+        await loadDocuments();
+        setRefreshTrigger(prev => prev + 1);
+        console.log('🔄 Documents refresh completed');
       }
     } catch (error) {
       console.error('Upload error:', error);
@@ -396,6 +407,7 @@ export default function EquipmentDocumentUpload({
         </div>
       ) : (
         <DocumentManager
+          key={`equipment-${equipmentId}-${refreshTrigger}`}
           title={t('equipment.documents.title')}
           description={t('equipment.documents.description')}
           loadDocuments={loadDocuments}
