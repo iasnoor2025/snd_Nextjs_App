@@ -59,8 +59,8 @@ export async function DELETE(_request: NextRequest) {
     // Check user role from request headers or session
     const userRole = _request.headers.get('x-user-role') || 'USER'; // Default to USER if not provided
 
-    // Only admin can delete non-draft timesheets
-    if (nonDraftTimesheets.length > 0 && userRole !== 'ADMIN') {
+    // Only admin or super admin can delete non-draft timesheets
+    if (nonDraftTimesheets.length > 0 && userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
       return NextResponse.json(
         {
           error: 'Only draft timesheets can be deleted by non-admin users',

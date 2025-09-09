@@ -146,7 +146,7 @@ export default function MonthlyTimesheetPage() {
       setMonthlyData(data);
     } catch (error) {
       
-      toast.error(t('failed_to_fetch_monthly_data'));
+      toast.error(t('timesheet.failed_to_fetch_monthly_data'));
     } finally {
       setLoading(false);
     }
@@ -226,14 +226,14 @@ export default function MonthlyTimesheetPage() {
       const responseData = await response.json().catch(() => ({}));
 
       toast.success(
-        isNewTimesheet ? t('timesheet_created_successfully') : t('timesheet_updated_successfully')
+        isNewTimesheet ? t('timesheet.timesheet_created_successfully') : t('timesheet.timesheet_updated_successfully')
       );
       setEditDialog(false);
       setEditingTimesheet(null);
       fetchMonthlyData();
     } catch (error) {
       
-      toast.error(error instanceof Error ? error.message : t('failed_to_save_timesheet'));
+      toast.error(error instanceof Error ? error.message : t('timesheet.failed_to_save_timesheet'));
     }
   };
 
@@ -284,7 +284,7 @@ export default function MonthlyTimesheetPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">{t('loading_monthly_data')}</p>
+          <p className="text-muted-foreground">{t('timesheet.loading_monthly_data')}</p>
         </div>
       </div>
     );
@@ -299,24 +299,24 @@ export default function MonthlyTimesheetPage() {
             <Link href="/modules/timesheet-management">
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                {t('back')}
+                {t('timesheet.back')}
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">{t('monthly_timesheet_view')}</h1>
-              <p className="text-muted-foreground">{t('view_and_edit_monthly_timesheets')}</p>
+              <h1 className="text-2xl font-bold tracking-tight">{t('timesheet.monthly_timesheet_view')}</h1>
+              <p className="text-muted-foreground">{t('timesheet.view_and_edit_monthly_timesheets')}</p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
             <PermissionContent action="export" subject="Timesheet">
               <Button variant="outline" size="sm">
                 <Download className="h-4 w-4 mr-2" />
-                {t('export_monthly_report')}
+                {t('timesheet.export_monthly_report')}
               </Button>
             </PermissionContent>
             <Button variant="outline" size="sm" onClick={fetchMonthlyData}>
               <RefreshCw className="h-4 w-4 mr-2" />
-              {t('refresh')}
+              {t('timesheet.refresh')}
             </Button>
           </div>
         </div>
@@ -345,7 +345,7 @@ export default function MonthlyTimesheetPage() {
                 <EmployeeDropdown
                   value={selectedEmployee}
                   onValueChange={value => setSelectedEmployee(value)}
-                  placeholder={t('filter_by_employee')}
+                  placeholder={t('timesheet.filter_by_employee')}
                   showSearch={true}
                 />
               </div>
@@ -365,7 +365,7 @@ export default function MonthlyTimesheetPage() {
                   <Clock className="h-4 w-4 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">{t('regular_hours')}</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('timesheet.regular_hours')}</p>
                   <p className="text-2xl font-bold text-blue-600">
                     {convertToArabicNumerals(
                       Number(monthlyData?.summary?.regularHours || 0).toFixed(1),
@@ -382,7 +382,7 @@ export default function MonthlyTimesheetPage() {
                   <Clock className="h-4 w-4 text-orange-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">{t('overtime_hours')}</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('timesheet.overtime_hours')}</p>
                   <p className="text-2xl font-bold text-orange-600">
                     {convertToArabicNumerals(
                       Number(monthlyData?.summary?.overtimeHours || 0).toFixed(1),
@@ -399,7 +399,7 @@ export default function MonthlyTimesheetPage() {
                   <Clock className="h-4 w-4 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">{t('total_hours')}</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('timesheet.total_hours')}</p>
                   <p className="text-2xl font-bold text-green-600">
                     {convertToArabicNumerals(
                       Number(monthlyData?.summary?.totalHours || 0).toFixed(1),
@@ -416,7 +416,7 @@ export default function MonthlyTimesheetPage() {
                   <CalendarDays className="h-4 w-4 text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">{t('days_worked')}</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('timesheet.days_worked')}</p>
                   <p className="text-2xl font-bold text-purple-600">
                     {convertToArabicNumerals(
                       Number(monthlyData?.summary?.totalDays || 0).toString(),
@@ -435,11 +435,11 @@ export default function MonthlyTimesheetPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Calendar className="h-5 w-5 text-green-600" />
-                <CardTitle>{t('monthly_calendar')}</CardTitle>
+                <CardTitle>{t('timesheet.monthly_calendar')}</CardTitle>
               </div>
               <CardDescription className="flex items-center space-x-1">
                 <Edit className="h-4 w-4" />
-                {t('click_on_timesheet_to_edit_overtime')}
+                {t('timesheet.click_on_timesheet_to_edit_overtime')}
               </CardDescription>
             </div>
           </CardHeader>
@@ -514,7 +514,7 @@ export default function MonthlyTimesheetPage() {
                                   : 'bg-blue-50 border border-blue-200'
                               }`}
                               onClick={() => handleEditOvertime(timesheet)}
-                              title={t('click_to_edit_overtime')}
+                              title={t('timesheet.click_to_edit_overtime')}
                             >
                               <div className="font-medium truncate">
                                 {timesheet.employee.firstName} {timesheet.employee.lastName}
@@ -570,7 +570,7 @@ export default function MonthlyTimesheetPage() {
                           };
                           handleEditOvertime(newTimesheet);
                         }}
-                        title={t('click_to_add_timesheet')}
+                        title={t('timesheet.click_to_add_timesheet')}
                       >
                         {isFriday ? 'F' : 'A'}
                       </div>
@@ -588,9 +588,9 @@ export default function MonthlyTimesheetPage() {
             <DialogHeader>
               <DialogTitle className="flex items-center space-x-2">
                 <Edit className="h-4 w-4" />
-                {t('edit_timesheet')}
+                {t('timesheet.edit_timesheet')}
               </DialogTitle>
-              <DialogDescription>{t('edit_timesheet_hours_and_overtime')}</DialogDescription>
+              <DialogDescription>{t('timesheet.edit_timesheet_hours_and_overtime')}</DialogDescription>
             </DialogHeader>
             {editingTimesheet && (
               <div className="space-y-4">
@@ -615,7 +615,7 @@ export default function MonthlyTimesheetPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="hoursWorked">{t('regular_hours')}</Label>
+                    <Label htmlFor="hoursWorked">{t('timesheet.regular_hours')}</Label>
                     <Input
                       id="hoursWorked"
                       type="number"
@@ -631,7 +631,7 @@ export default function MonthlyTimesheetPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="overtimeHours">{t('overtime_hours')}</Label>
+                    <Label htmlFor="overtimeHours">{t('timesheet.overtime_hours')}</Label>
                     <Input
                       id="overtimeHours"
                       type="number"
@@ -658,11 +658,11 @@ export default function MonthlyTimesheetPage() {
             )}
             <DialogFooter>
               <Button variant="outline" onClick={() => setEditDialog(false)}>
-                {t('cancel')}
+                {t('timesheet.cancel')}
               </Button>
               <Button onClick={handleSaveEdit}>
                 <Save className="h-4 w-4 mr-2" />
-                {t('save_changes')}
+                {t('timesheet.save_changes')}
               </Button>
             </DialogFooter>
           </DialogContent>
