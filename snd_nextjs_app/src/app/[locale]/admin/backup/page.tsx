@@ -10,7 +10,7 @@ export default function DatabaseBackupPage() {
   const { } = useI18n();
 
   return (
-    <ProtectedRoute requiredRole="SUPER_ADMIN">
+    <ProtectedRoute requiredPermission={{ action: 'manage', subject: 'all' }}>
       <div className="container mx-auto py-6 space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">

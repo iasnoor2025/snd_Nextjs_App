@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withRole } from '@/lib/rbac/api-middleware';
+import { withPermission } from '@/lib/rbac/api-middleware';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
 import { readFile } from 'fs/promises';
@@ -13,7 +13,7 @@ const restoreSchema = z.object({
   createBackupBeforeRestore: z.boolean().default(true)
 });
 
-export const POST = withRole(['SUPER_ADMIN'])(
+export const POST = withPermission({ action: 'manage', subject: 'all' })(
   async (request: NextRequest, { params }: { params: { id: string } }) => {
     try {
       const session = await getServerSession(authConfig);

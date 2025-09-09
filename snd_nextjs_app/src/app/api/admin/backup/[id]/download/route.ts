@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withRole } from '@/lib/rbac/api-middleware';
+import { withPermission } from '@/lib/rbac/api-middleware';
 import { readFile, stat } from 'fs/promises';
 import { join } from 'path';
 
-export const GET = withRole(['SUPER_ADMIN'])(
+export const GET = withPermission({ action: 'manage', subject: 'all' })(
   async (request: NextRequest, { params }: { params: { id: string } }) => {
     try {
       const backupId = params.id;

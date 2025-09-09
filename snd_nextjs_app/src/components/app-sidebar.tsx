@@ -17,6 +17,7 @@ import {
   Users,
   Wrench,
   Car,
+  type LucideIcon,
 } from 'lucide-react';
 import * as React from 'react';
 // import { NotificationBell } from "@/components/notification-bell"
@@ -150,7 +151,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: t('sidebar.databaseBackup'),
       url: `/${locale}/admin/backup`,
       icon: Database,
-      requiredRole: 'SUPER_ADMIN'
+      requiredPermission: { action: 'manage', subject: 'all' }
     },
   ];
 
@@ -169,15 +170,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   //   },
   // ];
 
-  const allDocumentItems: Array<{
-    name: string;
+  // Define menu item type
+  type MenuItem = {
+    title: string;
     url: string;
-    icon: any;
-  }> = [
+    icon?: LucideIcon;
+    requiredRole?: string;
+    requiredPermission?: { action: string; subject: string };
+  };
+
+  const allDocumentItems: MenuItem[] = [
   ];
 
   // Filter menu items based on user permissions
-  const filterMenuItems = (items: any[]) => {
+  const filterMenuItems = (items: MenuItem[]) => {
     if (!user) return [];
 
     // Debug logging for permission checking
@@ -190,6 +196,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const routeItems = items.filter(item => {
       // Skip essential items (already handled above)
       if (item.url === '#' || !item.url) return false;
+      
+      // Check for specific permission requirements first
+      if (item.requiredPermission) {
+        const hasRequiredPermission = hasPermission(item.requiredPermission.action, item.requiredPermission.subject);
+        return hasRequiredPermission;
+      }
       
       // Hide employee dashboard for non-EMPLOYEE users
       if (item.url === `/${locale}/employee-dashboard`) {

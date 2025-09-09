@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withRole } from '@/lib/rbac/api-middleware';
+import { withPermission } from '@/lib/rbac/api-middleware';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
@@ -183,7 +183,7 @@ export const POST = withRole(['SUPER_ADMIN'])(
   }
 );
 
-export const GET = withRole(['SUPER_ADMIN'])(
+export const GET = withPermission({ action: 'manage', subject: 'all' })(
   async (request: NextRequest) => {
     try {
       const { searchParams } = new URL(request.url);

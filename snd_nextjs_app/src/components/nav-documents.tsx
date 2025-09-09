@@ -65,9 +65,11 @@ export function NavDocuments({
   items,
 }: {
   items: {
-    name: string;
+    title: string;
     url: string;
     icon?: LucideIcon;
+    requiredRole?: string;
+    requiredPermission?: { action: string; subject: string };
   }[];
 }) {
   const pathname = usePathname();
@@ -92,15 +94,15 @@ export function NavDocuments({
             }
             
             return (
-              <SidebarMenuItem key={item.name}>
+              <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton
                   asChild
-                  tooltip={item.name}
+                  tooltip={item.title}
                   className={isActive ? 'bg-primary text-primary-foreground' : ''}
                 >
                   <Link href={item.url}>
                     {item.icon && <item.icon />}
-                    <span>{item.name}</span>
+                    <span>{item.title}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

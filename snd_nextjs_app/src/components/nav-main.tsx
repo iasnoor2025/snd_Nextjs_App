@@ -19,6 +19,8 @@ export function NavMain({
     title: string;
     url: string;
     icon?: LucideIcon;
+    requiredRole?: string;
+    requiredPermission?: { action: string; subject: string };
   }[];
 }) {
   const pathname = usePathname();

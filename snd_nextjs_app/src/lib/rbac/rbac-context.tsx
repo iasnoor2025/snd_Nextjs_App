@@ -77,20 +77,26 @@ function setUserPermissionsInCache(userId: string, permissions: string[]): void 
 // Function to load user permissions from API and cache them
 async function loadUserPermissions(userId: string): Promise<string[]> {
   try {
+    console.log(`🔄 Loading permissions for user ${userId}...`);
     const response = await fetch('/api/user-permissions');
     
     if (response.ok) {
       const data = await response.json();
+      console.log(`📥 API response for user ${userId}:`, data);
       
       if (data.success && data.permissions) {
         setUserPermissionsInCache(userId, data.permissions);
+        console.log(`✅ Cached ${data.permissions.length} permissions for user ${userId}:`, data.permissions);
         return data.permissions;
       }
+    } else {
+      console.error(`❌ API error for user ${userId}:`, response.status, response.statusText);
     }
   } catch (error) {
     console.error('Error loading user permissions:', error);
   }
   
+  console.log(`⚠️ No permissions loaded for user ${userId}`);
   return [];
 }
 
@@ -107,10 +113,16 @@ function hasPermissionClient(user: User, action: Action, subject: Subject): bool
   // For all other roles, check against cached permissions
   // The permissions are loaded when the user logs in and cached in the context
   const userPermissions = getUserPermissionsFromCache(user.id);
-  // Using cached permissions
+  console.log(`🔐 Permission check for user ${user.id} (${user.role}):`, {
+    action,
+    subject,
+    cachedPermissions: userPermissions,
+    hasCachedPermissions: !!userPermissions
+  });
   
   if (!userPermissions) {
     // No cached permissions found
+    console.log(`❌ No cached permissions found for user ${user.id}`);
     return false;
   }
   
