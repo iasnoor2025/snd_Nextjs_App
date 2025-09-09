@@ -10,12 +10,13 @@ const nextConfig = {
   experimental: {
     optimizeCss: true,
     scrollRestoration: true,
-    // Ensure aliases also apply when using Turbopack in dev
-    turbo: {
-      resolveAlias: {
-        "@tanstack/query-core/build/modern": "@tanstack/query-core/build/legacy",
-        "@tanstack/react-query/build/modern": "@tanstack/react-query/build/legacy",
-      },
+  },
+
+  // Turbopack configuration (moved from experimental.turbo)
+  turbopack: {
+    resolveAlias: {
+      "@tanstack/query-core/build/modern": "@tanstack/query-core/build/legacy",
+      "@tanstack/react-query/build/modern": "@tanstack/react-query/build/legacy",
     },
   },
 
