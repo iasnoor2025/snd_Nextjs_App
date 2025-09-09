@@ -325,17 +325,17 @@ export default function EquipmentDocumentUpload({
             <DialogTitle>Document Details</DialogTitle>
             <DialogDescription>
               Provide a name and select document type before uploading {pendingFiles.length > 1 ? `${pendingFiles.length} files` : 'this file'}.
-              {pendingFiles.length > 0 && (
-                <div className="mt-2 text-xs text-muted-foreground">
-                  Total size: {formatFileSize(pendingFiles.reduce((total, file) => total + file.size, 0))}
-                  {pendingFiles.some(f => f.type.startsWith('image/')) && (
-                    <span className="block text-green-600">
-                      📸 Images will be automatically compressed for faster upload
-                    </span>
-                  )}
-                </div>
-              )}
             </DialogDescription>
+            {pendingFiles.length > 0 && (
+              <div className="mt-2 text-xs text-muted-foreground">
+                Total size: {formatFileSize(pendingFiles.reduce((total, file) => total + file.size, 0))}
+                {pendingFiles.some(f => f.type.startsWith('image/')) && (
+                  <span className="block text-green-600">
+                    📸 Images will be automatically compressed for faster upload
+                  </span>
+                )}
+              </div>
+            )}
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
