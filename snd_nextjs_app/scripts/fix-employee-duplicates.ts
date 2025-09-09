@@ -104,7 +104,7 @@ async function removeDuplicates() {
     let removedCount = 0;
     
     for (const dup of duplicateFileNumbers) {
-      const ids = dup.ids as string[];
+      const ids = dup.ids as unknown as string[];
       const keepId = ids[0]; // Keep the most recent (first in DESC order)
       const removeIds = ids.slice(1);
       
@@ -134,7 +134,7 @@ async function removeDuplicates() {
       .having(sql`count(*) > 1`);
 
     for (const dup of duplicateErpnextIds) {
-      const ids = dup.ids as string[];
+      const ids = dup.ids as unknown as string[];
       const keepId = ids[0]; // Keep the most recent
       const removeIds = ids.slice(1);
       
@@ -171,7 +171,7 @@ async function removeDuplicates() {
       .having(sql`count(*) > 1`);
 
     for (const dup of duplicateNames) {
-      const ids = dup.ids as string[];
+      const ids = dup.ids as unknown as string[];
       const keepId = ids[0]; // Keep the one with file_number or most recent
       const removeIds = ids.slice(1);
       

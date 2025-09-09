@@ -4,10 +4,10 @@ import { useI18n } from '@/hooks/use-i18n';
  * Format a number according to the current locale
  */
 export function useNumberFormat() {
-  const { currentLanguage } = useI18n();
+  const { locale } = useI18n();
 
   return (value: number, options?: Intl.NumberFormatOptions) => {
-    return new Intl.NumberFormat(currentLanguage, options).format(value);
+    return new Intl.NumberFormat(locale, options).format(value);
   };
 }
 
@@ -15,7 +15,7 @@ export function useNumberFormat() {
  * Format a date according to the current locale
  */
 export function useDateFormat() {
-  const { currentLanguage } = useI18n();
+  const { locale } = useI18n();
 
   return (date: Date | string, options?: Intl.DateTimeFormatOptions) => {
     const dateObj = typeof date === 'string' ? new Date(date) : date;
@@ -27,7 +27,7 @@ export function useDateFormat() {
  * Format currency according to the current locale
  */
 export function useCurrencyFormat() {
-  const { currentLanguage } = useI18n();
+  const { locale } = useI18n();
 
   return (amount: number, currency = 'USD', options?: Intl.NumberFormatOptions) => {
     return new Intl.NumberFormat(currentLanguage, {
@@ -259,7 +259,7 @@ export const convertToArabicNumerals = (
     text.replace(/[0-9]/g, d => {
       const num = parseInt(d);
       return num >= 0 && num <= 9 ? '٠١٢٣٤٥٦٧٨٩'[num] : d;
-    }) || text
+    })
   );
 };
 
@@ -410,17 +410,18 @@ export const getTranslatedName = (
     if (!translatedNames[translationKey]) {
       translatedNames[translationKey] = 'translating';
       translateNameToArabic(name, isRTL).then(translated => {
-        setTranslatedNames(prev => ({ 
-          ...prev, 
-          [name]: translated,
-          [translationKey]: undefined // Clear the flag
-        }));
+        setTranslatedNames(prev => {
+          const newState = { ...prev, [name]: translated };
+          delete newState[translationKey]; // Clear the flag
+          return newState;
+        });
       }).catch(() => {
         // Clear the flag on error too
-        setTranslatedNames(prev => ({ 
-          ...prev, 
-          [translationKey]: undefined 
-        }));
+        setTranslatedNames(prev => {
+          const newState = { ...prev };
+          delete newState[translationKey]; // Clear the flag
+          return newState;
+        });
       });
     }
   }

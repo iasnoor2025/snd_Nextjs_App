@@ -25,8 +25,12 @@ export class EquipmentStatusService {
         throw new Error('Equipment not found');
       }
 
-      const currentStatus = currentEquipment[0].status;
-      const equipmentName = currentEquipment[0].name;
+      const currentStatus = currentEquipment[0]?.status;
+      const equipmentName = currentEquipment[0]?.name;
+      
+      if (!currentStatus || !equipmentName) {
+        throw new Error('Equipment data is incomplete');
+      }
 
       // Check for active maintenance records
       const activeMaintenance = await db

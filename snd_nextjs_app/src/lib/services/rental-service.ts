@@ -418,22 +418,26 @@ export class RentalService {
         actualEndDate: rentalData.actualEndDate?.toISOString().split('T')[0],
         status: rentalData.status || 'pending',
         paymentStatus: rentalData.paymentStatus || 'pending',
-        subtotal: rentalData.subtotal || 0,
-        taxAmount: rentalData.taxAmount || 0,
-        totalAmount: rentalData.totalAmount || 0,
-        discount: rentalData.discount || 0,
-        tax: rentalData.tax || 0,
-        finalAmount: rentalData.finalAmount || 0,
+        subtotal: (rentalData.subtotal || 0).toString(),
+        taxAmount: (rentalData.taxAmount || 0).toString(),
+        totalAmount: (rentalData.totalAmount || 0).toString(),
+        discount: (rentalData.discount || 0).toString(),
+        tax: (rentalData.tax || 0).toString(),
+        finalAmount: (rentalData.finalAmount || 0).toString(),
         supervisor: rentalData.supervisor || null,
         notes: rentalData.notes || '',
         updatedAt: new Date().toISOString().split('T')[0],
-      } as any)
+      })
       .returning();
+
+    if (!rental) {
+      throw new Error('Failed to create rental');
+    }
 
     // Create rental items if provided
     if (itemsToCreate && itemsToCreate.length > 0) {
       await Promise.all(
-        itemsToCreate.map((item: any) =>
+        itemsToCreate.map((item: any) => 
           db.insert(rentalItems).values({
             rentalId: rental.id,
             equipmentId: item.equipmentId ? parseInt(item.equipmentId) : null,
@@ -603,7 +607,7 @@ export class RentalService {
         status: data.status || 'active',
         notes: data.notes || '',
         updatedAt: new Date().toISOString().split('T')[0],
-      } as any)
+      })
       .returning();
 
     // Recalculate rental totals after adding item
@@ -873,11 +877,11 @@ export class RentalService {
       
       // Update rental with calculated totals
       await db.update(rentals).set({
-        subtotal,
-        taxAmount,
-        totalAmount,
-        tax: taxRate,
-        finalAmount: totalAmount,
+        subtotal: subtotal.toString(),
+        taxAmount: taxAmount.toString(),
+        totalAmount: totalAmount.toString(),
+        tax: taxRate.toString(),
+        finalAmount: totalAmount.toString(),
         updatedAt: new Date().toISOString().split('T')[0],
       }).where(eq(rentals.id, rentalId));
       
@@ -921,12 +925,12 @@ export class RentalService {
         await db
           .update(equipmentRentalHistory)
           .set({
-            dailyRate: unitPrice,
-            totalAmount: totalPrice,
+            dailyRate: unitPrice.toString(),
+            totalAmount: totalPrice.toString(),
             endDate: endDate?.toISOString() || null,
             updatedAt: new Date().toISOString(),
           })
-          .where(eq(equipmentRentalHistory.id, existingAssignment[0].id));
+          .where(eq(equipmentRentalHistory.id, existingAssignment[0]?.id || 0));
       }
     } catch (error) {
       console.error('Error creating/updating equipment assignment:', error);

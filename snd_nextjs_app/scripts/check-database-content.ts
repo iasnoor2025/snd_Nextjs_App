@@ -18,7 +18,7 @@ async function checkDatabaseContent() {
       SELECT COUNT(*) as count FROM employee_documents
     `);
     
-    console.log(`📄 Total records: ${totalRecords[0]?.count || 0}`);
+    console.log(`📄 Total records: ${(totalRecords as any)[0]?.count || 0}`);
 
     // Check sample records
     console.log('\n📄 Sample records:');
@@ -29,8 +29,9 @@ async function checkDatabaseContent() {
       LIMIT 10
     `);
 
-    if (sampleRecords && sampleRecords.length > 0) {
-      sampleRecords.forEach((record, index) => {
+    const records = sampleRecords as unknown as any[];
+    if (records && records.length > 0) {
+      records.forEach((record, index) => {
         console.log(`  ${index + 1}. ID ${record.id}: ${record.file_path}`);
         console.log(`     Employee: ${record.employee_id}, File: ${record.file_name}`);
       });
@@ -53,8 +54,9 @@ async function checkDatabaseContent() {
       GROUP BY url_type
     `);
 
-    if (urlPatterns && urlPatterns.length > 0) {
-      urlPatterns.forEach((pattern) => {
+    const patterns = urlPatterns as unknown as any[];
+    if (patterns && patterns.length > 0) {
+      patterns.forEach((pattern) => {
         console.log(`  ${pattern.url_type}: ${pattern.count} records`);
       });
     }

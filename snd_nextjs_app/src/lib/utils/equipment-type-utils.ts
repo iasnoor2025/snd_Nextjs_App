@@ -50,7 +50,7 @@ export function groupEquipmentByCategory(equipment: Array<{ name: string; catego
   equipment.forEach(item => {
     // Handle both camelCase and snake_case field names
     const categoryId = item.categoryId || item.category_id;
-    const categoryName = getEquipmentCategoryName(categoryId, categories);
+    const categoryName = getEquipmentCategoryName(categoryId || null, categories);
     categoryCounts[categoryName] = (categoryCounts[categoryName] || 0) + 1;
   });
   
@@ -72,7 +72,7 @@ export function filterEquipmentByCategory(
   return equipment.filter(item => {
     // Handle both camelCase and snake_case field names
     const categoryId = item.categoryId || item.category_id;
-    const itemCategory = getEquipmentCategoryName(categoryId, categories);
+    const itemCategory = getEquipmentCategoryName(categoryId || null, categories);
     return itemCategory === categoryName;
   });
 }

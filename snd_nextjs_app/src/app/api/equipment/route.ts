@@ -240,6 +240,10 @@ const createEquipmentHandler = async (request: NextRequest) => {
       monthlyRate,
       istimara,
       istimara_expiry_date,
+      insurance,
+      insurance_expiry_date,
+      tuvCard,
+      tuv_card_expiry_date,
     } = body;
 
     // Auto-extract door number from equipment name if not provided
@@ -267,6 +271,14 @@ const createEquipmentHandler = async (request: NextRequest) => {
         istimara: istimara ?? null,
         istimaraExpiryDate: istimara_expiry_date
           ? new Date(istimara_expiry_date).toISOString()
+          : null,
+        insurance: insurance ?? null,
+        insuranceExpiryDate: insurance_expiry_date
+          ? new Date(insurance_expiry_date).toISOString()
+          : null,
+        tuvCard: tuvCard ?? null,
+        tuvCardExpiryDate: tuv_card_expiry_date
+          ? new Date(tuv_card_expiry_date).toISOString()
           : null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -317,6 +329,10 @@ const updateEquipmentHandler = async (request: NextRequest) => {
       monthlyRate,
       istimara,
       istimara_expiry_date,
+      insurance,
+      insurance_expiry_date,
+      tuv_card,
+      tuv_card_expiry_date,
     } = body;
 
     // Auto-extract door number from equipment name if not provided
@@ -344,6 +360,14 @@ const updateEquipmentHandler = async (request: NextRequest) => {
         istimara: istimara ?? null,
         istimaraExpiryDate: istimara_expiry_date
           ? new Date(istimara_expiry_date).toISOString()
+          : null,
+        insurance: insurance ?? null,
+        insuranceExpiryDate: insurance_expiry_date
+          ? new Date(insurance_expiry_date).toISOString()
+          : null,
+        tuvCard: tuv_card ?? null,
+        tuvCardExpiryDate: tuv_card_expiry_date
+          ? new Date(tuv_card_expiry_date).toISOString()
           : null,
         updatedAt: new Date().toISOString(),
       })

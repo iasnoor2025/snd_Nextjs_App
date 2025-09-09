@@ -48,6 +48,10 @@ interface EquipmentFormData {
   erpnextId: string;
   istimara: string;
   istimara_expiry_date: string;
+  insurance: string;
+  insurance_expiry_date: string;
+  tuvCard: string;
+  tuv_card_expiry_date: string;
 }
 
 interface EquipmentCategory {
@@ -87,6 +91,10 @@ export default function AddEquipmentModal({
     erpnextId: '',
     istimara: '',
     istimara_expiry_date: '',
+    insurance: '',
+    insurance_expiry_date: '',
+    tuvCard: '',
+    tuv_card_expiry_date: '',
   });
 
   // Fetch categories when modal opens
@@ -449,6 +457,60 @@ export default function AddEquipmentModal({
                   type="date"
                   value={formData.istimara_expiry_date}
                   onChange={e => handleInputChange('istimara_expiry_date', e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Insurance Information */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">{t('fields.insuranceInfo')}</h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="insurance">{t('fields.insuranceNumber')}</Label>
+                <Input
+                  id="insurance"
+                  value={formData.insurance}
+                  onChange={e => handleInputChange('insurance', e.target.value)}
+                  placeholder={t('fields.insuranceNumberPlaceholder')}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="insurance_expiry_date">{t('fields.insuranceExpiryDate')}</Label>
+                <Input
+                  id="insurance_expiry_date"
+                  type="date"
+                  value={formData.insurance_expiry_date}
+                  onChange={e => handleInputChange('insurance_expiry_date', e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* TUV Card Information */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">{t('fields.tuvCardInfo')}</h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="tuvCard">{t('fields.tuvCardNumber')}</Label>
+                <Input
+                  id="tuvCard"
+                  value={formData.tuvCard}
+                  onChange={e => handleInputChange('tuvCard', e.target.value)}
+                  placeholder={t('fields.tuvCardNumberPlaceholder')}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="tuv_card_expiry_date">{t('fields.tuvCardExpiryDate')}</Label>
+                <Input
+                  id="tuv_card_expiry_date"
+                  type="date"
+                  value={formData.tuv_card_expiry_date}
+                  onChange={e => handleInputChange('tuv_card_expiry_date', e.target.value)}
                 />
               </div>
             </div>

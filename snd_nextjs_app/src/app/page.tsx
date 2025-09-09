@@ -835,7 +835,7 @@ export default function DashboardPage() {
           {sectionVisibility.timesheets && (
             <TimesheetsPermission>
               <TimesheetsSection
-                timesheetData={timesheetData as any}
+                timesheetData={timesheetData}
                 currentTime={currentTime}
                 session={session}
                 onApproveTimesheet={handleApproveTimesheet}
@@ -856,8 +856,8 @@ export default function DashboardPage() {
           {sectionVisibility.iqama && (
             <IqamaPermission>
               <IqamaSection
-                iqamaData={iqamaData as any}
-                onUpdateIqama={handleOpenIqamaModal as any}
+                iqamaData={iqamaData}
+                onUpdateIqama={handleOpenIqamaModal}
                 onHideSection={() => {
                   toggleSection('iqama');
                 }}

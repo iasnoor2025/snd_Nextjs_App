@@ -90,10 +90,10 @@ export const GET = withPermission(PermissionConfigs.maintenance.read)(async (req
           updated_at: maintenanceItemsTable.updatedAt,
         })
         .from(maintenanceItemsTable)
-        .where(inArray(maintenanceItemsTable.maintenanceId, maintenanceIds as any));
+        .where(inArray(maintenanceItemsTable.maintenanceId, maintenanceIds));
 
       itemsByMaintenanceId = itemRows.reduce((acc: Record<number, any[]>, item) => {
-        const key = item.maintenance_id as unknown as number;
+        const key = Number(item.maintenance_id);
         if (!acc[key]) acc[key] = [];
         acc[key].push(item);
         return acc;
@@ -170,10 +170,10 @@ export const POST = withPermission(PermissionConfigs.maintenance.create)(
               maintenanceId,
               name: String(item.name || 'Item'),
               description: item.description ? String(item.description) : null,
-              quantity: String(quantity) as any,
+              quantity: quantity.toString(),
               unit: item.unit ? String(item.unit) : null,
-              unitCost: String(unitCost) as any,
-              totalCost: String(totalCost) as any,
+              unitCost: unitCost.toString(),
+              totalCost: totalCost.toString(),
               updatedAt: nowIso,
             });
           }
@@ -181,7 +181,7 @@ export const POST = withPermission(PermissionConfigs.maintenance.create)(
 
         const updatedMaintenance = await tx
           .update(equipmentMaintenanceTable)
-          .set({ cost: String(totalCostNum) as any, updatedAt: nowIso })
+          .set({ cost: totalCostNum.toString(), updatedAt: nowIso })
           .where(eq(equipmentMaintenanceTable.id, maintenanceId))
           .returning({
             id: equipmentMaintenanceTable.id,

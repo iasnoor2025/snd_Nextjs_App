@@ -137,13 +137,16 @@ export default function EmployeeDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { t } = useI18n();
-  const { user, hasPermission, getAllowedActions } = useRBAC();
+  const { hasPermission, getAllowedActions } = useRBAC();
   const [dashboardData, setDashboardData] = useState<EmployeeDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [documentDialogOpen, setDocumentDialogOpen] = useState(false);
 
   // Get allowed actions for employee dashboard
   const allowedActions = getAllowedActions('Employee');
+  
+  // Suppress unused variable warning
+  void allowedActions;
 
   // Check if user has permission to view their own dashboard
   // This will check for wildcard permissions (*, manage.all) as well as specific permissions
@@ -251,7 +254,7 @@ export default function EmployeeDashboard() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {dashboardData?.employee?.id && (
                     <ActionDialogs
-                      employeeId={dashboardData.employee.id}
+                      employeeId={dashboardData.employee.id.toString()}
                       documentDialogOpen={documentDialogOpen}
                       setDocumentDialogOpen={setDocumentDialogOpen}
                       onDocumentUploaded={fetchEmployeeDashboardData}
@@ -336,7 +339,7 @@ export default function EmployeeDashboard() {
           {/* Timesheet Calendar - Third Section */}
           {dashboardData?.employee?.id && (
             <div className="mb-8">
-              <TimesheetCalendar employeeId={dashboardData.employee.id} />
+              <TimesheetCalendar employeeId={dashboardData.employee.id.toString()} />
             </div>
           )}
 
@@ -570,7 +573,7 @@ export default function EmployeeDashboard() {
                       <div className="flex justify-between items-center py-2 border-b border-gray-50">
                         <span className="text-sm text-gray-600">{t('dashboard.nationality')}</span>
                         <span className="text-sm font-medium text-gray-900">
-                          {dashboardData?.employee?.nationality || 'N/A'}
+                          {(dashboardData?.employee as any)?.nationality || 'N/A'}
                         </span>
                       </div>
                       <div className="flex justify-between items-center py-2 border-b border-gray-50">

@@ -247,7 +247,7 @@ export class DashboardService {
       // Get today's timesheets
       let todayTimesheetsResult = { count: 0 };
       try {
-        const todayStr = today.toISOString().split('T')[0];
+        const todayStr: string = today.toISOString().split('T')[0];
         if (todayStr) {
           const result = await db
             .select({ count: count() })
@@ -625,7 +625,7 @@ export class DashboardService {
   static async getTodayTimesheets(limit: number = 50): Promise<TimesheetData[]> {
     try {
       const today = new Date();
-      const todayStr = today.toISOString().split('T')[0];
+      const todayStr: string = today.toISOString().split('T')[0];
 
       const timesheetData = await db
         .select({
@@ -768,7 +768,7 @@ export class DashboardService {
   static async getEmployeesCurrentlyOnLeave(): Promise<LeaveRequest[]> {
     try {
       const today = new Date();
-      const todayStr = today.toISOString().split('T')[0];
+      const todayStr: string = today.toISOString().split('T')[0];
 
       const leaveData = await db
         .select({

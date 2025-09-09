@@ -23,35 +23,35 @@ export function extractDoorNumberFromName(equipmentName: string): string | null 
   const dashPattern = /^(\d+)-/;
   const dashMatch = normalizedName.match(dashPattern);
   if (dashMatch) {
-    return dashMatch[1];
+    return dashMatch[1] || null;
   }
 
   // Pattern 2: Text followed by number (e.g., "LOADER 1886 AAA", "LOADER 1886-AAA")
   const spacePattern = /\s(\d+)(?:\s|$|-)/;
   const spaceMatch = normalizedName.match(spacePattern);
   if (spaceMatch) {
-    return spaceMatch[1];
+    return spaceMatch[1] || null;
   }
 
   // Pattern 3: Number in the middle with dashes (e.g., "CRANE-1500-LIFT")
   const middlePattern = /-(\d+)-/;
   const middleMatch = normalizedName.match(middlePattern);
   if (middleMatch) {
-    return middleMatch[1];
+    return middleMatch[1] || null;
   }
 
   // Pattern 4: Number at the end (e.g., "BULLDOZER 999")
   const endPattern = /\s(\d+)$/;
   const endMatch = normalizedName.match(endPattern);
   if (endMatch) {
-    return endMatch[1];
+    return endMatch[1] || null;
   }
 
   // Pattern 5: Number at the beginning (e.g., "1886 LOADER")
   const startPattern = /^(\d+)\s/;
   const startMatch = normalizedName.match(startPattern);
   if (startMatch) {
-    return startMatch[1];
+    return startMatch[1] || null;
   }
 
   return null;

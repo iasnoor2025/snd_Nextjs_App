@@ -13,18 +13,18 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ApiService from '@/lib/api-service';
 import { useDeleteConfirmations } from '@/lib/utils/confirmation-utils';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import {
   AlertCircle,
   ArrowLeft,
-  Calendar,
-  Database,
   DollarSign,
   Edit,
+  FileText,
   Hash,
+  History,
   Loader2,
   Package,
   Trash2,
@@ -47,6 +47,10 @@ interface Equipment {
   erpnext_id?: string;
   istimara?: string;
   istimara_expiry_date?: string;
+  insurance?: string;
+  insurance_expiry_date?: string;
+  tuv_card?: string;
+  tuv_card_expiry_date?: string;
   serial_number?: string;
   chassis_number?: string;
   description?: string;
@@ -239,86 +243,88 @@ export default function EquipmentShowPage() {
           </div>
         </div>
 
-        {/* Equipment Details */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Tabbed Interface */}
+        <Tabs defaultValue="details" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="details" className="flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              Equipment Details
+            </TabsTrigger>
+            <TabsTrigger value="assignment" className="flex items-center gap-2">
+              <History className="h-4 w-4" />
+              Assignment
+            </TabsTrigger>
+            <TabsTrigger value="documents" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Documents
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Equipment Details Tab */}
+          <TabsContent value="details" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Basic Information */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center space-x-2 text-lg">
                 <Package className="h-5 w-5" />
                 <span>{t('equipment.fields.basicInfo')}</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.name')}</Label>
-                  <p className="text-lg font-medium">{equipment.name}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.status')}</Label>
-                  <div className="mt-1">{getStatusBadge(equipment.status)}</div>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.categoryId')}</Label>
-                  <div className="flex items-center gap-2">
-                    {category ? (
-                      <>
-                        <span className="text-lg">{category.icon}</span>
-                        <span className="text-sm font-medium">{category.name}</span>
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: category.color }}
-                        />
-                      </>
-                    ) : (
-                      <span className="text-sm text-muted-foreground">{t('equipment.messages.noCategory')}</span>
-                    )}
+            <CardContent className="space-y-3">
+              {/* Primary Info */}
+              <div className="grid grid-cols-1 gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold text-foreground">{equipment.name}</h3>
+                    <div className="flex items-center gap-3 mt-1">
+                      {getStatusBadge(equipment.status)}
+                      {category && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <span className="text-base">{category.icon}</span>
+                          <span>{category.name}</span>
+                          <div
+                            className="w-2 h-2 rounded-full"
+                            style={{ backgroundColor: category.color }}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <Separator />
-
-              <div className="grid grid-cols-2 gap-4">
+              {/* Technical Details */}
+              <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.equipment_management.door_number')}</Label>
-                  <p className="text-sm">{equipment.door_number || t('equipment.messages.notSpecified')}</p>
+                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('equipment.fields.modelNumber')}</Label>
+                  <p className="font-medium">{equipment.model_number || t('equipment.messages.notSpecified')}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.serialNumber')}</Label>
-                  <p className="text-sm font-mono">{equipment.serial_number || t('equipment.messages.notSpecified')}</p>
+                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('equipment.fields.manufacturer')}</Label>
+                  <p className="font-medium">{equipment.manufacturer || t('equipment.messages.notSpecified')}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.chassisNumber')}</Label>
-                  <p className="text-sm font-mono">{equipment.chassis_number || t('equipment.messages.notSpecified')}</p>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.modelNumber')}</Label>
-                  <p className="text-sm">{equipment.model_number || t('equipment.messages.notSpecified')}</p>
+                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('equipment.equipment_management.door_number')}</Label>
+                  <p className="font-mono text-sm">{equipment.door_number || t('equipment.messages.notSpecified')}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.manufacturer')}</Label>
-                  <p className="text-sm">{equipment.manufacturer || t('equipment.messages.notSpecified')}</p>
+                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('equipment.fields.serialNumber')}</Label>
+                  <p className="font-mono text-sm">{equipment.serial_number || t('equipment.messages.notSpecified')}</p>
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('equipment.fields.chassisNumber')}</Label>
+                  <p className="font-mono text-sm">{equipment.chassis_number || t('equipment.messages.notSpecified')}</p>
                 </div>
               </div>
 
-              <Separator />
-
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.description')}</Label>
-                <p className="text-sm">{equipment.description || t('equipment.messages.noDescriptionAvailable')}</p>
-              </div>
+              {/* Description */}
+              {equipment.description && (
+                <div className="pt-2 border-t">
+                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('equipment.fields.description')}</Label>
+                  <p className="text-sm text-muted-foreground mt-1">{equipment.description}</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -354,31 +360,6 @@ export default function EquipmentShowPage() {
             </CardContent>
           </Card>
 
-          {/* System Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Database className="h-5 w-5" />
-                <span>{t('equipment.messages.systemInfo')}</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.messages.equipmentId')}</Label>
-                  <p className="text-sm font-mono">{equipment.id}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.erpnextId')}</Label>
-                  <p className="text-sm font-mono">{equipment.erpnext_id || t('equipment.messages.notSynced')}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.categoryId')}</Label>
-                  <p className="text-sm">{equipment.category_id || t('equipment.messages.notAssigned')}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Istimara Information */}
           <Card>
@@ -406,42 +387,71 @@ export default function EquipmentShowPage() {
             </CardContent>
           </Card>
 
-          {/* Timestamps */}
+          {/* Insurance Information */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Calendar className="h-5 w-5" />
-                <span>{t('equipment.fields.timestamps')}</span>
+                <Hash className="h-5 w-5" />
+                <span>{t('equipment.fields.insuranceInfo')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.createdAt')}</Label>
-                  <p className="text-sm">
-                    {equipment.created_at
-                      ? new Date(equipment.created_at).toLocaleString()
-                      : t('equipment.messages.notAvailable')}
-                  </p>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.insuranceNumber')}</Label>
+                  <p className="text-sm font-mono">{equipment.insurance || t('equipment.messages.notSpecified')}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.lastUpdated')}</Label>
-                  <p className="text-sm">
-                    {equipment.updated_at
-                      ? new Date(equipment.updated_at).toLocaleString()
-                      : t('equipment.messages.notAvailable')}
-                  </p>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.insuranceExpiryDate')}</Label>
+                  <ExpiryDateDisplay
+                    date={equipment.insurance_expiry_date}
+                    showIcon={true}
+                    showPrefix={true}
+                  />
                 </div>
               </div>
             </CardContent>
           </Card>
-        </div>
 
-        {/* Assignment History */}
-        <EquipmentAssignmentHistory equipmentId={equipment.id} />
+          {/* TUV Card Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Hash className="h-5 w-5" />
+                <span>{t('equipment.fields.tuvCardInfo')}</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.tuvCardNumber')}</Label>
+                  <p className="text-sm font-mono">{equipment.tuv_card || t('equipment.messages.notSpecified')}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.tuvCardExpiryDate')}</Label>
+                  <ExpiryDateDisplay
+                    date={equipment.tuv_card_expiry_date}
+                    showIcon={true}
+                    showPrefix={true}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Documents */}
-        <EquipmentDocumentUpload equipmentId={equipment.id} />
+            </div>
+          </TabsContent>
+
+          {/* Assignment Tab */}
+          <TabsContent value="assignment">
+            <EquipmentAssignmentHistory equipmentId={equipment.id} />
+          </TabsContent>
+
+          {/* Documents Tab */}
+          <TabsContent value="documents">
+            <EquipmentDocumentUpload equipmentId={equipment.id} />
+          </TabsContent>
+        </Tabs>
       </div>
     </ProtectedRoute>
   );

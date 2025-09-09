@@ -137,10 +137,10 @@ export const PUT = withPermission(PermissionConfigs.maintenance.update)(
               maintenanceId: maintenanceId,
               name: String(item.name || 'Item'),
               description: item.description ? String(item.description) : null,
-              quantity: String(quantity) as any,
+              quantity: quantity.toString(),
               unit: item.unit ? String(item.unit) : null,
-              unitCost: String(unitCost) as any,
-              totalCost: String(totalCost) as any,
+              unitCost: unitCost.toString(),
+              totalCost: totalCost.toString(),
               updatedAt: nowIso,
             });
           }
@@ -148,7 +148,7 @@ export const PUT = withPermission(PermissionConfigs.maintenance.update)(
 
         await tx
           .update(equipmentMaintenance)
-          .set({ cost: String(totalCostNum) as any, updatedAt: nowIso })
+          .set({ cost: totalCostNum.toString(), updatedAt: nowIso })
           .where(eq(equipmentMaintenance.id, maintenanceId));
 
         if (status) {

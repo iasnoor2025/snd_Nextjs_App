@@ -43,6 +43,10 @@ interface Equipment {
   chassis_number?: string;
   description?: string;
   door_number?: string;
+  insurance?: string;
+  insurance_expiry_date?: string;
+  tuv_card?: string;
+  tuv_card_expiry_date?: string;
 }
 
 interface EquipmentCategory {
@@ -80,6 +84,10 @@ export default function EquipmentEditPage() {
     door_number: '',
     istimara: '',
     istimara_expiry_date: '',
+    insurance: '',
+    insurance_expiry_date: '',
+    tuv_card: '',
+    tuv_card_expiry_date: '',
   });
 
   const equipmentId = params.id as string;
@@ -121,6 +129,10 @@ export default function EquipmentEditPage() {
           door_number: response.data.door_number || '',
           istimara: response.data.istimara || '',
           istimara_expiry_date: response.data.istimara_expiry_date || '',
+          insurance: response.data.insurance || '',
+          insurance_expiry_date: response.data.insurance_expiry_date || '',
+          tuv_card: response.data.tuv_card || '',
+          tuv_card_expiry_date: response.data.tuv_card_expiry_date || '',
         });
       } else {
         toast.error(t('equipment.messages.loadingError'));
@@ -445,6 +457,66 @@ export default function EquipmentEditPage() {
                       type="date"
                       value={formData.istimara_expiry_date}
                       onChange={e => handleInputChange('istimara_expiry_date', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Insurance Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('equipment.fields.insuranceInfo')}</CardTitle>
+                <CardDescription>{t('equipment.messages.insuranceDescription')}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="insurance">{t('equipment.fields.insuranceNumber')}</Label>
+                    <Input
+                      id="insurance"
+                      value={formData.insurance}
+                      onChange={e => handleInputChange('insurance', e.target.value)}
+                      placeholder={t('equipment.fields.insuranceNumberPlaceholder')}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="insurance_expiry_date">{t('equipment.fields.insuranceExpiryDate')}</Label>
+                    <Input
+                      id="insurance_expiry_date"
+                      type="date"
+                      value={formData.insurance_expiry_date}
+                      onChange={e => handleInputChange('insurance_expiry_date', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* TUV Card Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('equipment.fields.tuvCardInfo')}</CardTitle>
+                <CardDescription>{t('equipment.messages.tuvCardDescription')}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="tuv_card">{t('equipment.fields.tuvCardNumber')}</Label>
+                    <Input
+                      id="tuv_card"
+                      value={formData.tuv_card}
+                      onChange={e => handleInputChange('tuv_card', e.target.value)}
+                      placeholder={t('equipment.fields.tuvCardNumberPlaceholder')}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tuv_card_expiry_date">{t('equipment.fields.tuvCardExpiryDate')}</Label>
+                    <Input
+                      id="tuv_card_expiry_date"
+                      type="date"
+                      value={formData.tuv_card_expiry_date}
+                      onChange={e => handleInputChange('tuv_card_expiry_date', e.target.value)}
                     />
                   </div>
                 </div>

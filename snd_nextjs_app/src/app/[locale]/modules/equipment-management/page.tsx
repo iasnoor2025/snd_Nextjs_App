@@ -85,6 +85,10 @@ interface Equipment {
   erpnext_id?: string;
   istimara?: string;
   istimara_expiry_date?: string;
+  insurance?: string;
+  insurance_expiry_date?: string;
+  tuv_card?: string;
+  tuv_card_expiry_date?: string;
   serial_number?: string;
   chassis_number?: string;
   description?: string;
@@ -145,7 +149,7 @@ export default function EquipmentManagementPage() {
   const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
   const [showEditCategoryModal, setShowEditCategoryModal] = useState(false);
   const [showCategoryManagementModal, setShowCategoryManagementModal] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<EquipmentCategory | null>(null);
+  const [selectedCategory] = useState<EquipmentCategory | null>(null);
   const [newCategory, setNewCategory] = useState({
     name: '',
     description: '',

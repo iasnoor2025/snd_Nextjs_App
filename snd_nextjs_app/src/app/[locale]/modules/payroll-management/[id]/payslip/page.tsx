@@ -1330,6 +1330,11 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
   const _finalAmount = Number(payroll.final_amount) || 0;
   const _totalWorkedHours = Number(payroll.total_worked_hours) || 0;
   const _overtimeHours = Number(payroll.overtime_hours) || 0;
+  
+  // Suppress unused variable warnings
+  void _finalAmount;
+  void _totalWorkedHours;
+  void _overtimeHours;
 
   // Check if attendance data is available
   if (!attendanceData || !Array.isArray(attendanceData)) {

@@ -66,13 +66,13 @@ export class DatabaseService {
         const totalRow = await db
           .select({ count: sql<number>`count(*)` })
           .from(customers)
-          .where(whereExpr as any);
-        const totalCount = Number((totalRow as any)[0]?.count ?? 0);
+          .where(whereExpr);
+        const totalCount = Number(totalRow[0]?.count ?? 0);
 
         const rows = await db
           .select()
           .from(customers)
-          .where(whereExpr as any)
+          .where(whereExpr)
           .orderBy(sortOrder === 'asc' ? asc(orderCol) : desc(orderCol))
           .limit(limit)
           .offset(skip);
@@ -206,20 +206,20 @@ export class DatabaseService {
       db
         .select({ count: sql<number>`count(*)` })
         .from(customers)
-        .where(eq(customers.isActive, true as any)),
+        .where(eq(customers.isActive, true)),
       db
         .select({ count: sql<number>`count(*)` })
         .from(customers)
-        .where(sql`erpnext_id is not null` as any),
+        .where(sql`erpnext_id is not null`),
       db
         .select({ count: sql<number>`count(*)` })
         .from(customers)
-        .where(sql`erpnext_id is null` as any),
+        .where(sql`erpnext_id is null`),
     ]);
-    const totalCustomers = Number((totalRow as any)[0]?.count ?? 0);
-    const activeCustomers = Number((activeRow as any)[0]?.count ?? 0);
-    const erpnextSyncedCustomers = Number((syncedRow as any)[0]?.count ?? 0);
-    const localOnlyCustomers = Number((localOnlyRow as any)[0]?.count ?? 0);
+    const totalCustomers = Number(totalRow[0]?.count ?? 0);
+    const activeCustomers = Number(activeRow[0]?.count ?? 0);
+    const erpnextSyncedCustomers = Number(syncedRow[0]?.count ?? 0);
+    const localOnlyCustomers = Number(localOnlyRow[0]?.count ?? 0);
 
     return { totalCustomers, activeCustomers, erpnextSyncedCustomers, localOnlyCustomers };
   }

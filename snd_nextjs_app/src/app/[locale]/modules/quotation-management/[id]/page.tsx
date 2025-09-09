@@ -128,7 +128,7 @@ interface ApiResponse {
 function QuotationDetailClient({ quotationId }: { quotationId: string }) {
   const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchQuotationData = async () => {

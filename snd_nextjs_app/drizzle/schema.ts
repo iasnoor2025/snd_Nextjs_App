@@ -729,6 +729,10 @@ export const equipment = pgTable("equipment", {
 	deletedAt: date("deleted_at"),
 	istimara: text(),
 	istimaraExpiryDate: date("istimara_expiry_date"),
+	insurance: text(),
+	insuranceExpiryDate: date("insurance_expiry_date"),
+	tuvCard: text("tuv_card"),
+	tuvCardExpiryDate: date("tuv_card_expiry_date"),
 }, (table) => [
 	uniqueIndex("equipment_door_number_key").using("btree", table.doorNumber.asc().nullsLast().op("text_ops")),
 	uniqueIndex("equipment_erpnext_id_key").using("btree", table.erpnextId.asc().nullsLast().op("text_ops")),

@@ -189,7 +189,7 @@ export const PUT = withPermission(PermissionConfigs.equipment.update)(
             email: customers.email,
             phone: customers.phone,
           },
-        } as any,
+        },
         project: {
           id: projects.id,
           name: projects.name,

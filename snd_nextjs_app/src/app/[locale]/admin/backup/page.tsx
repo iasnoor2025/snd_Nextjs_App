@@ -7,7 +7,7 @@ import { Database, Shield, AlertTriangle } from 'lucide-react';
 import { useI18n } from '@/hooks/use-i18n';
 
 export default function DatabaseBackupPage() {
-  const { t } = useI18n();
+  const { } = useI18n();
 
   return (
     <ProtectedRoute requiredRole="SUPER_ADMIN">
