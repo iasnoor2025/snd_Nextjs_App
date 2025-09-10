@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
         
         console.log('Date range:', startDate.toISOString(), 'to', endDate.toISOString());
         console.log('Looking for month:', month, 'Year:', year, 'Month:', monthNum);
+        console.log('Deployment fix: Using UTC dates for accurate month filtering');
         
         // Use date comparison with proper PostgreSQL date format
         const monthCondition = and(
