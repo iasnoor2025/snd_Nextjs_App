@@ -8,6 +8,7 @@ import { ProtectedRoute } from '@/components/protected-route';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -143,6 +144,11 @@ export default function EquipmentManagementPage() {
 
   // Modal state
   const [showAddEquipmentModal, setShowAddEquipmentModal] = useState(false);
+  
+  // Delete confirmation state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [equipmentToDelete, setEquipmentToDelete] = useState<Equipment | null>(null);
+  const [deleting, setDeleting] = useState(false);
   
   // Category management state
   const [categories, setCategories] = useState<EquipmentCategory[]>([]);
@@ -336,6 +342,30 @@ export default function EquipmentManagementPage() {
     } catch (error) {
       console.error('Error deleting category:', error);
       toast.error('Failed to delete category. Please try again.');
+    }
+  };
+
+  const handleDeleteClick = (equipment: Equipment) => {
+    setEquipmentToDelete(equipment);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!equipmentToDelete) return;
+    
+    setDeleting(true);
+    try {
+      await ApiService.deleteEquipment(equipmentToDelete.id);
+      toast.success(t('equipment.messages.deleteSuccess'));
+      setDeleteDialogOpen(false);
+      setEquipmentToDelete(null);
+      // Refresh the equipment list
+      fetchEquipment();
+    } catch (error) {
+      console.error('Error deleting equipment:', error);
+      toast.error(t('equipment.messages.deleteError'));
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -916,7 +946,12 @@ export default function EquipmentManagementPage() {
                                   </Button>
                                 )}
                                 {hasPermission('delete', 'Equipment') && (
-                                  <Button variant="ghost" size="sm">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={() => handleDeleteClick(item)}
+                                    title={t('equipment.actions.deleteEquipment')}
+                                  >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 )}
@@ -1277,6 +1312,44 @@ export default function EquipmentManagementPage() {
             </div>
           </div>
         )}
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('equipment.actions.deleteEquipment')}</DialogTitle>
+              <DialogDescription>
+                {t('equipment.messages.confirmDelete')}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setDeleteDialogOpen(false)}
+                disabled={deleting}
+              >
+                {t('common.actions.cancel')}
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteConfirm}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {t('common.actions.saving')}
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {t('common.actions.delete')}
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </ProtectedRoute>
   );

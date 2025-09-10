@@ -148,3 +148,48 @@ export const PUT = withPermission(PermissionConfigs.equipment.update)(
     );
   }
 });
+
+export const DELETE = withPermission(PermissionConfigs.equipment.delete)(
+  async (
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+  ) => {
+    try {
+      const { id: idParam } = await params;
+      const id = parseInt(idParam);
+
+      if (isNaN(id)) {
+        return NextResponse.json({ success: false, error: 'Invalid equipment ID' }, { status: 400 });
+      }
+
+      // Check if equipment exists before deleting
+      const [existingEquipment] = await db
+        .select({ id: equipment.id })
+        .from(equipment)
+        .where(eq(equipment.id, id))
+        .limit(1);
+
+      if (!existingEquipment) {
+        return NextResponse.json({ success: false, error: 'Equipment not found' }, { status: 404 });
+      }
+
+      // Delete the equipment
+      await db.delete(equipment).where(eq(equipment.id, id));
+
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Equipment deleted successfully' 
+      });
+    } catch (error) {
+      console.error('Error deleting equipment:', error);
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Failed to delete equipment',
+          details: error instanceof Error ? error.message : 'Unknown error',
+        },
+        { status: 500 }
+      );
+    }
+  }
+);
