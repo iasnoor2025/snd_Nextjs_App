@@ -1,6 +1,6 @@
 import { db } from '@/lib/drizzle';
 import { employees, timesheets as timesheetsTable, designations } from '@/lib/drizzle/schema';
-import { and, desc, eq, gte, lte, SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, lte, SQL, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -15,22 +15,17 @@ export async function GET(request: NextRequest) {
     // Build filters
     const filters: SQL[] = [];
 
-    // Month filter - FIXED VERSION
+    // Month filter - Using EXTRACT like payslip system
     if (month) {
       const [year, monthNum] = month.split('-');
       if (year && monthNum) {
-        // Use proper date range with UTC to avoid timezone issues
-        const startDate = new Date(Date.UTC(parseInt(year), parseInt(monthNum) - 1, 1));
-        const endDate = new Date(Date.UTC(parseInt(year), parseInt(monthNum), 0, 23, 59, 59, 999));
-        
-        console.log('Date range:', startDate.toISOString(), 'to', endDate.toISOString());
         console.log('Looking for month:', month, 'Year:', year, 'Month:', monthNum);
-        console.log('Deployment fix: Using UTC dates for accurate month filtering');
+        console.log('Using EXTRACT SQL like payslip system');
         
-        // Use date comparison with proper PostgreSQL date format
+        // Use EXTRACT SQL functions like payslip system to avoid timezone issues
         const monthCondition = and(
-          gte(timesheetsTable.date, startDate.toISOString().split('T')[0]), // YYYY-MM-DD format
-          lte(timesheetsTable.date, endDate.toISOString().split('T')[0])   // YYYY-MM-DD format
+          sql`EXTRACT(YEAR FROM ${timesheetsTable.date}) = ${parseInt(year)}`,
+          sql`EXTRACT(MONTH FROM ${timesheetsTable.date}) = ${parseInt(monthNum)}`
         );
         if (monthCondition) {
           filters.push(monthCondition);
@@ -78,7 +73,7 @@ export async function GET(request: NextRequest) {
       .leftJoin(employees, eq(timesheetsTable.employeeId, employees.id))
       .leftJoin(designations, eq(employees.designationId, designations.id))
       .where(conditions)
-      .orderBy(desc(timesheetsTable.date))
+      .orderBy(asc(timesheetsTable.date))
       .limit(limit);
 
     console.log('Found timesheets:', timesheetsData.length);
