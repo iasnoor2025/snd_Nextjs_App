@@ -19,9 +19,9 @@ export async function GET(request: NextRequest) {
     if (month) {
       const [year, monthNum] = month.split('-');
       if (year && monthNum) {
-        // Use proper date range instead of EXTRACT to avoid timezone issues
-        const startDate = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
-        const endDate = new Date(parseInt(year), parseInt(monthNum) + 1, 0, 23, 59, 59, 999);
+        // Use proper date range with UTC to avoid timezone issues
+        const startDate = new Date(Date.UTC(parseInt(year), parseInt(monthNum) - 1, 1));
+        const endDate = new Date(Date.UTC(parseInt(year), parseInt(monthNum), 0, 23, 59, 59, 999));
         
         console.log('Date range:', startDate.toISOString(), 'to', endDate.toISOString());
         console.log('Looking for month:', month, 'Year:', year, 'Month:', monthNum);
