@@ -1,6 +1,6 @@
 import { db } from '@/lib/drizzle';
-import { employees, timesheets as timesheetsTable } from '@/lib/drizzle/schema';
-import { and, desc, eq, gte, lte } from 'drizzle-orm';
+import { employees, timesheets as timesheetsTable, designations } from '@/lib/drizzle/schema';
+import { and, desc, eq, gte, lte, SQL } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     console.log('Google Sheets API called with:', { month, employeeFileNumber, limit });
 
     // Build filters
-    const filters: any[] = [];
+    const filters: SQL[] = [];
 
     // Month filter - FIXED VERSION
     if (month) {
@@ -25,12 +25,13 @@ export async function GET(request: NextRequest) {
         
         console.log('Date range:', startDate.toISOString(), 'to', endDate.toISOString());
         
-        filters.push(
-          and(
-            gte(timesheetsTable.date, startDate.toISOString()),
-            lte(timesheetsTable.date, endDate.toISOString())
-          )
+        const monthCondition = and(
+          gte(timesheetsTable.date, startDate.toISOString()),
+          lte(timesheetsTable.date, endDate.toISOString())
         );
+        if (monthCondition) {
+          filters.push(monthCondition);
+        }
       }
     }
 
@@ -64,10 +65,15 @@ export async function GET(request: NextRequest) {
           firstName: employees.firstName,
           lastName: employees.lastName,
           fileNumber: employees.fileNumber,
+          nationality: employees.nationality,
+          designationId: employees.designationId,
+          designationName: designations.name,
+          basicSalary: employees.basicSalary,
         },
       })
       .from(timesheetsTable)
       .leftJoin(employees, eq(timesheetsTable.employeeId, employees.id))
+      .leftJoin(designations, eq(employees.designationId, designations.id))
       .where(conditions)
       .orderBy(desc(timesheetsTable.date))
       .limit(limit);
@@ -95,6 +101,10 @@ export async function GET(request: NextRequest) {
         firstName: ts.employee.firstName || '',
         lastName: ts.employee.lastName || '',
         fileNumber: ts.employee.fileNumber || '',
+        nationality: ts.employee.nationality || '',
+        designation: ts.employee.designationName || '',
+        basicSalary: ts.employee.basicSalary || '',
+        advanceMoney: '0', // We'll calculate this separately if needed
       } : null,
     }));
 
