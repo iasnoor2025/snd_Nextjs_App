@@ -43,6 +43,10 @@ export async function GET(
         erpnext_id: equipment.erpnextId,
         istimara: equipment.istimara,
         istimara_expiry_date: equipment.istimaraExpiryDate,
+        insurance: equipment.insurance,
+        insurance_expiry_date: equipment.insuranceExpiryDate,
+        tuv_card: equipment.tuvCard,
+        tuv_card_expiry_date: equipment.tuvCardExpiryDate,
         category_id: equipment.categoryId,
       })
       .from(equipment)

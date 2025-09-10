@@ -15,6 +15,7 @@ import {
   employeeSkill,
   employeeTraining,
   equipment,
+  equipmentCategories,
   equipmentMaintenance,
   equipmentMaintenanceItems,
   equipmentRentalHistory,

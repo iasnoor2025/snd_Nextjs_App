@@ -375,10 +375,17 @@ export default function EquipmentManagementPage() {
   };
 
   const filteredEquipment = equipment.filter(item => {
+    const searchLower = searchTerm.toLowerCase();
     const matchesSearch =
-      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (item.model_number && item.model_number.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.manufacturer && item.manufacturer.toLowerCase().includes(searchTerm.toLowerCase()));
+      item.name.toLowerCase().includes(searchLower) ||
+      (item.model_number && item.model_number.toLowerCase().includes(searchLower)) ||
+      (item.manufacturer && item.manufacturer.toLowerCase().includes(searchLower)) ||
+      (item.door_number && item.door_number.toLowerCase().includes(searchLower)) ||
+      (item.istimara && item.istimara.toLowerCase().includes(searchLower)) ||
+      (item.serial_number && item.serial_number.toLowerCase().includes(searchLower)) ||
+      (item.chassis_number && item.chassis_number.toLowerCase().includes(searchLower)) ||
+      (item.insurance && item.insurance.toLowerCase().includes(searchLower)) ||
+      (item.tuv_card && item.tuv_card.toLowerCase().includes(searchLower));
     const matchesStatus = filterStatus === 'all' || item.status === filterStatus;
     const matchesAssignment =
       filterAssignment === 'all' ||
@@ -586,7 +593,7 @@ export default function EquipmentManagementPage() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
-                    placeholder={t('equipment.equipment_management.search_placeholder')}
+                    placeholder="Search by name, door number, istimara, serial number, chassis number, insurance, or TUV card..."
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
                     className="pl-10"

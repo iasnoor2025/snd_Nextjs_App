@@ -22,7 +22,6 @@ export const usersRelations = relations(users, ({many}) => ({
 		relationName: "payrolls_paidBy_users_id"
 	}),
 	projectTemplates: many(projectTemplates),
-	reportTemplates: many(reportTemplates),
 	rentals_createdBy: many(rentals, {
 		relationName: "rentals_createdBy_users_id"
 	}),
@@ -32,6 +31,7 @@ export const usersRelations = relations(users, ({many}) => ({
 	rentals_approvedBy: many(rentals, {
 		relationName: "rentals_approvedBy_users_id"
 	}),
+	reportTemplates: many(reportTemplates),
 	salaryIncrements_requestedBy: many(salaryIncrements, {
 		relationName: "salaryIncrements_requestedBy_users_id"
 	}),
@@ -62,11 +62,12 @@ export const employeesRelations = relations(employees, ({one, many}) => ({
 	employeeResignations: many(employeeResignations),
 	employeeSalaries: many(employeeSalaries),
 	employeeTrainings: many(employeeTraining),
-	employeeDocuments: many(employeeDocuments),
 	employeeLeaves: many(employeeLeaves),
+	employeeDocuments: many(employeeDocuments),
 	employeeSkills: many(employeeSkill),
 	equipmentMaintenances: many(equipmentMaintenance),
 	equipmentRentalHistories: many(equipmentRentalHistory),
+	equipment: many(equipment),
 	designation: one(designations, {
 		fields: [employees.designationId],
 		references: [designations.id]
@@ -84,7 +85,6 @@ export const employeesRelations = relations(employees, ({one, many}) => ({
 		references: [organizationalUnits.id],
 		relationName: "employees_unitId_organizationalUnits_id"
 	}),
-	equipment: many(equipment),
 	loans: many(loans),
 	organizationalUnits: many(organizationalUnits, {
 		relationName: "organizationalUnits_managerId_employees_id"
@@ -203,8 +203,8 @@ export const projectsRelations = relations(projects, ({one, many}) => ({
 	projectEquipments: many(projectEquipment),
 	projectSubcontractors: many(projectSubcontractors),
 	projectTasks: many(projectTasks),
-	projectRisks: many(projectRisks),
 	rentals: many(rentals),
+	projectRisks: many(projectRisks),
 	customer: one(customers, {
 		fields: [projects.customerId],
 		references: [customers.id]
@@ -661,7 +661,6 @@ export const scheduledReportsRelations = relations(scheduledReports, ({one}) => 
 	}),
 }));
 
-
 export const safetyIncidentsRelations = relations(safetyIncidents, ({one}) => ({
 	employee_reportedBy: one(employees, {
 		fields: [safetyIncidents.reportedBy],
@@ -742,7 +741,6 @@ export const advancePaymentHistoriesRelations = relations(advancePaymentHistorie
 		references: [employees.id]
 	}),
 }));
-
 
 export const modelHasRolesRelations = relations(modelHasRoles, ({one}) => ({
 	role: one(roles, {

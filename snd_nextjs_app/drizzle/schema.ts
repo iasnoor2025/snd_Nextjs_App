@@ -395,25 +395,6 @@ export const employeeTraining = pgTable("employee_training", {
 		}).onUpdate("cascade").onDelete("restrict"),
 ]);
 
-export const employeeDocuments = pgTable("employee_documents", {
-	id: serial().primaryKey().notNull(),
-	employeeId: integer("employee_id").notNull(),
-	documentType: text("document_type").notNull(),
-	filePath: text("file_path").notNull(),
-	fileName: text("file_name").notNull(),
-	fileSize: integer("file_size"),
-	mimeType: text("mime_type"),
-	description: text(),
-	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
-	updatedAt: date("updated_at").notNull(),
-}, (table) => [
-	foreignKey({
-			columns: [table.employeeId],
-			foreignColumns: [employees.id],
-			name: "employee_documents_employee_id_fkey"
-		}).onUpdate("cascade").onDelete("restrict"),
-]);
-
 export const employeeLeaves = pgTable("employee_leaves", {
 	id: serial().primaryKey().notNull(),
 	employeeId: integer("employee_id").notNull(),
@@ -430,11 +411,33 @@ export const employeeLeaves = pgTable("employee_leaves", {
 	rejectedAt: date("rejected_at"),
 	rejectedBy: integer("rejected_by"),
 	rejectionReason: text("rejection_reason"),
+	returnDate: date("return_date"),
+	returnedBy: integer("returned_by"),
+	returnReason: text("return_reason"),
 }, (table) => [
 	foreignKey({
 			columns: [table.employeeId],
 			foreignColumns: [employees.id],
 			name: "employee_leaves_employee_id_fkey"
+		}).onUpdate("cascade").onDelete("restrict"),
+]);
+
+export const employeeDocuments = pgTable("employee_documents", {
+	id: serial().primaryKey().notNull(),
+	employeeId: integer("employee_id").notNull(),
+	documentType: text("document_type").notNull(),
+	filePath: text("file_path").notNull(),
+	fileName: text("file_name").notNull(),
+	fileSize: integer("file_size"),
+	mimeType: text("mime_type"),
+	description: text(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => [
+	foreignKey({
+			columns: [table.employeeId],
+			foreignColumns: [employees.id],
+			name: "employee_documents_employee_id_fkey"
 		}).onUpdate("cascade").onDelete("restrict"),
 ]);
 
@@ -470,8 +473,8 @@ export const equipmentDocuments = pgTable("equipment_documents", {
 	fileSize: integer("file_size"),
 	mimeType: text("mime_type"),
 	description: text(),
-	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
-	updatedAt: date("updated_at").notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (table) => [
 	foreignKey({
 			columns: [table.equipmentId],
@@ -566,6 +569,80 @@ export const equipmentRentalHistory = pgTable("equipment_rental_history", {
 			columns: [table.employeeId],
 			foreignColumns: [employees.id],
 			name: "equipment_rental_history_employee_id_fkey"
+		}).onUpdate("cascade").onDelete("set null"),
+]);
+
+export const equipment = pgTable("equipment", {
+	id: serial().primaryKey().notNull(),
+	name: text().notNull(),
+	description: text(),
+	categoryId: integer("category_id"),
+	manufacturer: text(),
+	modelNumber: text("model_number"),
+	serialNumber: text("serial_number"),
+	purchaseDate: date("purchase_date"),
+	purchasePrice: numeric("purchase_price", { precision: 12, scale:  2 }),
+	warrantyExpiryDate: date("warranty_expiry_date"),
+	status: text().default('available').notNull(),
+	locationId: integer("location_id"),
+	assignedTo: integer("assigned_to"),
+	lastMaintenanceDate: date("last_maintenance_date"),
+	nextMaintenanceDate: date("next_maintenance_date"),
+	notes: text(),
+	unit: text(),
+	defaultUnitCost: numeric("default_unit_cost", { precision: 12, scale:  2 }),
+	isActive: boolean("is_active").default(true).notNull(),
+	dailyRate: numeric("daily_rate", { precision: 12, scale:  2 }),
+	weeklyRate: numeric("weekly_rate", { precision: 12, scale:  2 }),
+	monthlyRate: numeric("monthly_rate", { precision: 12, scale:  2 }),
+	erpnextId: text("erpnext_id"),
+	doorNumber: text("door_number"),
+	currentOperatingHours: numeric("current_operating_hours", { precision: 10, scale:  2 }),
+	currentMileage: numeric("current_mileage", { precision: 10, scale:  2 }),
+	currentCycleCount: integer("current_cycle_count"),
+	initialOperatingHours: numeric("initial_operating_hours", { precision: 10, scale:  2 }),
+	initialMileage: numeric("initial_mileage", { precision: 10, scale:  2 }),
+	initialCycleCount: integer("initial_cycle_count"),
+	lastMetricUpdate: date("last_metric_update"),
+	avgDailyUsageHours: numeric("avg_daily_usage_hours", { precision: 10, scale:  2 }),
+	avgDailyUsageMiles: numeric("avg_daily_usage_miles", { precision: 10, scale:  2 }),
+	avgOperatingCostPerHour: numeric("avg_operating_cost_per_hour", { precision: 10, scale:  2 }),
+	avgOperatingCostPerMile: numeric("avg_operating_cost_per_mile", { precision: 10, scale:  2 }),
+	lifetimeMaintenanceCost: numeric("lifetime_maintenance_cost", { precision: 15, scale:  2 }),
+	efficiencyRating: numeric("efficiency_rating", { precision: 5, scale:  2 }),
+	nextPerformanceReview: date("next_performance_review"),
+	currentUtilizationRate: numeric("current_utilization_rate", { precision: 5, scale:  2 }),
+	avgDailyUtilization: numeric("avg_daily_utilization", { precision: 5, scale:  2 }),
+	avgWeeklyUtilization: numeric("avg_weekly_utilization", { precision: 5, scale:  2 }),
+	avgMonthlyUtilization: numeric("avg_monthly_utilization", { precision: 5, scale:  2 }),
+	idlePeriodsCount: integer("idle_periods_count"),
+	totalIdleDays: integer("total_idle_days"),
+	lastUtilizationUpdate: date("last_utilization_update"),
+	optimalUtilizationTarget: numeric("optimal_utilization_target", { precision: 5, scale:  2 }),
+	utilizationCostImpact: numeric("utilization_cost_impact", { precision: 10, scale:  2 }),
+	purchaseCost: numeric("purchase_cost", { precision: 12, scale:  2 }),
+	depreciatedValue: numeric("depreciated_value", { precision: 12, scale:  2 }),
+	depreciationRate: numeric("depreciation_rate", { precision: 8, scale:  4 }),
+	lastDepreciationUpdate: date("last_depreciation_update"),
+	expectedReplacementDate: date("expected_replacement_date"),
+	isFullyDepreciated: boolean("is_fully_depreciated").default(false).notNull(),
+	replacementCostEstimate: numeric("replacement_cost_estimate", { precision: 12, scale:  2 }),
+	valueAppreciation: numeric("value_appreciation", { precision: 12, scale:  2 }),
+	assetCondition: text("asset_condition"),
+	supplierId: integer("supplier_id"),
+	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
+	updatedAt: date("updated_at").notNull(),
+	deletedAt: date("deleted_at"),
+	istimara: text(),
+	istimaraExpiryDate: date("istimara_expiry_date"),
+	chassisNumber: text("chassis_number"),
+}, (table) => [
+	uniqueIndex("equipment_door_number_key").using("btree", table.doorNumber.asc().nullsLast().op("text_ops")),
+	uniqueIndex("equipment_erpnext_id_key").using("btree", table.erpnextId.asc().nullsLast().op("text_ops")),
+	foreignKey({
+			columns: [table.assignedTo],
+			foreignColumns: [employees.id],
+			name: "equipment_assigned_to_fkey"
 		}).onUpdate("cascade").onDelete("set null"),
 ]);
 
@@ -664,96 +741,6 @@ export const employees = pgTable("employees", {
 			foreignColumns: [organizationalUnits.id],
 			name: "employees_unit_id_fkey"
 		}).onUpdate("cascade").onDelete("set null"),
-]);
-
-export const equipment = pgTable("equipment", {
-	id: serial().primaryKey().notNull(),
-	name: text().notNull(),
-	description: text(),
-	categoryId: integer("category_id"),
-	manufacturer: text(),
-	modelNumber: text("model_number"),
-	serialNumber: text("serial_number"),
-	purchaseDate: date("purchase_date"),
-	purchasePrice: numeric("purchase_price", { precision: 12, scale:  2 }),
-	warrantyExpiryDate: date("warranty_expiry_date"),
-	status: text().default('available').notNull(),
-	locationId: integer("location_id"),
-	assignedTo: integer("assigned_to"),
-	lastMaintenanceDate: date("last_maintenance_date"),
-	nextMaintenanceDate: date("next_maintenance_date"),
-	notes: text(),
-	unit: text(),
-	defaultUnitCost: numeric("default_unit_cost", { precision: 12, scale:  2 }),
-	isActive: boolean("is_active").default(true).notNull(),
-	dailyRate: numeric("daily_rate", { precision: 12, scale:  2 }),
-	weeklyRate: numeric("weekly_rate", { precision: 12, scale:  2 }),
-	monthlyRate: numeric("monthly_rate", { precision: 12, scale:  2 }),
-	erpnextId: text("erpnext_id"),
-	doorNumber: text("door_number"),
-	currentOperatingHours: numeric("current_operating_hours", { precision: 10, scale:  2 }),
-	currentMileage: numeric("current_mileage", { precision: 10, scale:  2 }),
-	currentCycleCount: integer("current_cycle_count"),
-	initialOperatingHours: numeric("initial_operating_hours", { precision: 10, scale:  2 }),
-	initialMileage: numeric("initial_mileage", { precision: 10, scale:  2 }),
-	initialCycleCount: integer("initial_cycle_count"),
-	lastMetricUpdate: date("last_metric_update"),
-	avgDailyUsageHours: numeric("avg_daily_usage_hours", { precision: 10, scale:  2 }),
-	avgDailyUsageMiles: numeric("avg_daily_usage_miles", { precision: 10, scale:  2 }),
-	avgOperatingCostPerHour: numeric("avg_operating_cost_per_hour", { precision: 10, scale:  2 }),
-	avgOperatingCostPerMile: numeric("avg_operating_cost_per_mile", { precision: 10, scale:  2 }),
-	lifetimeMaintenanceCost: numeric("lifetime_maintenance_cost", { precision: 15, scale:  2 }),
-	efficiencyRating: numeric("efficiency_rating", { precision: 5, scale:  2 }),
-	nextPerformanceReview: date("next_performance_review"),
-	currentUtilizationRate: numeric("current_utilization_rate", { precision: 5, scale:  2 }),
-	avgDailyUtilization: numeric("avg_daily_utilization", { precision: 5, scale:  2 }),
-	avgWeeklyUtilization: numeric("avg_weekly_utilization", { precision: 5, scale:  2 }),
-	avgMonthlyUtilization: numeric("avg_monthly_utilization", { precision: 5, scale:  2 }),
-	idlePeriodsCount: integer("idle_periods_count"),
-	totalIdleDays: integer("total_idle_days"),
-	lastUtilizationUpdate: date("last_utilization_update"),
-	optimalUtilizationTarget: numeric("optimal_utilization_target", { precision: 5, scale:  2 }),
-	utilizationCostImpact: numeric("utilization_cost_impact", { precision: 10, scale:  2 }),
-	purchaseCost: numeric("purchase_cost", { precision: 12, scale:  2 }),
-	depreciatedValue: numeric("depreciated_value", { precision: 12, scale:  2 }),
-	depreciationRate: numeric("depreciation_rate", { precision: 8, scale:  4 }),
-	lastDepreciationUpdate: date("last_depreciation_update"),
-	expectedReplacementDate: date("expected_replacement_date"),
-	isFullyDepreciated: boolean("is_fully_depreciated").default(false).notNull(),
-	replacementCostEstimate: numeric("replacement_cost_estimate", { precision: 12, scale:  2 }),
-	valueAppreciation: numeric("value_appreciation", { precision: 12, scale:  2 }),
-	assetCondition: text("asset_condition"),
-	supplierId: integer("supplier_id"),
-	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
-	updatedAt: date("updated_at").notNull(),
-	deletedAt: date("deleted_at"),
-	istimara: text(),
-	istimaraExpiryDate: date("istimara_expiry_date"),
-	insurance: text(),
-	insuranceExpiryDate: date("insurance_expiry_date"),
-	tuvCard: text("tuv_card"),
-	tuvCardExpiryDate: date("tuv_card_expiry_date"),
-}, (table) => [
-	uniqueIndex("equipment_door_number_key").using("btree", table.doorNumber.asc().nullsLast().op("text_ops")),
-	uniqueIndex("equipment_erpnext_id_key").using("btree", table.erpnextId.asc().nullsLast().op("text_ops")),
-	foreignKey({
-			columns: [table.assignedTo],
-			foreignColumns: [employees.id],
-			name: "equipment_assigned_to_fkey"
-		}).onUpdate("cascade").onDelete("set null"),
-]);
-
-export const equipmentCategories = pgTable("equipment_categories", {
-	id: serial().primaryKey().notNull(),
-	name: text().notNull(),
-	description: text(),
-	icon: text(),
-	color: text(),
-	isActive: boolean("is_active").default(true).notNull(),
-	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
-	updatedAt: date("updated_at").notNull(),
-}, (table) => [
-	uniqueIndex("equipment_categories_name_key").using("btree", table.name.asc().nullsLast().op("text_ops")),
 ]);
 
 export const failedJobs = pgTable("failed_jobs", {
@@ -1314,6 +1301,85 @@ export const rentalItems = pgTable("rental_items", {
 		}).onUpdate("cascade").onDelete("set null"),
 ]);
 
+export const rentals = pgTable("rentals", {
+	id: serial().primaryKey().notNull(),
+	customerId: integer("customer_id"),
+	rentalNumber: text("rental_number").notNull(),
+	projectId: integer("project_id"),
+	startDate: date("start_date").notNull(),
+	expectedEndDate: date("expected_end_date"),
+	actualEndDate: date("actual_end_date"),
+	status: text().default('pending').notNull(),
+	subtotal: numeric({ precision: 12, scale:  2 }).default('0').notNull(),
+	taxAmount: numeric("tax_amount", { precision: 12, scale:  2 }).default('0').notNull(),
+	totalAmount: numeric("total_amount", { precision: 12, scale:  2 }).default('0').notNull(),
+	discount: numeric({ precision: 12, scale:  2 }).default('0').notNull(),
+	tax: numeric({ precision: 12, scale:  2 }).default('0').notNull(),
+	finalAmount: numeric("final_amount", { precision: 12, scale:  2 }).default('0').notNull(),
+	paymentStatus: text("payment_status").default('pending').notNull(),
+	notes: text(),
+	createdBy: integer("created_by"),
+	equipmentName: text("equipment_name"),
+	description: text(),
+	quotationId: integer("quotation_id"),
+	mobilizationDate: date("mobilization_date"),
+	invoiceDate: date("invoice_date"),
+	depositAmount: numeric("deposit_amount", { precision: 10, scale:  2 }).default('0').notNull(),
+	paymentTermsDays: integer("payment_terms_days").default(30).notNull(),
+	paymentDueDate: date("payment_due_date"),
+	hasTimesheet: boolean("has_timesheet").default(false).notNull(),
+	hasOperators: boolean("has_operators").default(false).notNull(),
+	completedBy: integer("completed_by"),
+	completedAt: date("completed_at"),
+	approvedBy: integer("approved_by"),
+	approvedAt: date("approved_at"),
+	depositPaid: boolean("deposit_paid").default(false).notNull(),
+	depositPaidDate: date("deposit_paid_date"),
+	depositRefunded: boolean("deposit_refunded").default(false).notNull(),
+	depositRefundDate: date("deposit_refund_date"),
+	invoiceId: text("invoice_id"),
+	locationId: integer("location_id"),
+	supervisor: text(),
+	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
+	updatedAt: date("updated_at").notNull(),
+	deletedAt: date("deleted_at"),
+	deliveryTerms: text("delivery_terms"),
+	shipmentTerms: text("shipment_terms"),
+	rentalTerms: text("rental_terms"),
+	paymentTerms: text("payment_terms"),
+	additionalTerms: text("additional_terms"),
+	mdTerms: text("md_terms"),
+	termsLastUpdated: timestamp("terms_last_updated", { precision: 3, mode: 'string' }),
+	termsUpdateNotes: text("terms_update_notes"),
+}, (table) => [
+	uniqueIndex("rentals_rental_number_key").using("btree", table.rentalNumber.asc().nullsLast().op("text_ops")),
+	foreignKey({
+			columns: [table.customerId],
+			foreignColumns: [customers.id],
+			name: "rentals_customer_id_fkey"
+		}).onUpdate("cascade").onDelete("set null"),
+	foreignKey({
+			columns: [table.projectId],
+			foreignColumns: [projects.id],
+			name: "rentals_project_id_fkey"
+		}).onUpdate("cascade").onDelete("set null"),
+	foreignKey({
+			columns: [table.createdBy],
+			foreignColumns: [users.id],
+			name: "rentals_created_by_fkey"
+		}).onUpdate("cascade").onDelete("set null"),
+	foreignKey({
+			columns: [table.completedBy],
+			foreignColumns: [users.id],
+			name: "rentals_completed_by_fkey"
+		}).onUpdate("cascade").onDelete("set null"),
+	foreignKey({
+			columns: [table.approvedBy],
+			foreignColumns: [users.id],
+			name: "rentals_approved_by_fkey"
+		}).onUpdate("cascade").onDelete("set null"),
+]);
+
 export const reportTemplates = pgTable("report_templates", {
 	id: serial().primaryKey().notNull(),
 	name: text().notNull(),
@@ -1357,85 +1423,6 @@ export const projectRisks = pgTable("project_risks", {
 			columns: [table.assignedToId],
 			foreignColumns: [employees.id],
 			name: "project_risks_assigned_to_id_fkey"
-		}).onUpdate("cascade").onDelete("set null"),
-]);
-
-export const rentals = pgTable("rentals", {
-	id: serial().primaryKey().notNull(),
-	customerId: integer("customer_id"),
-	rentalNumber: text("rental_number").notNull(),
-	projectId: integer("project_id"),
-	startDate: date("start_date").notNull(),
-	expectedEndDate: date("expected_end_date"),
-	actualEndDate: date("actual_end_date"),
-	status: text().default('pending').notNull(),
-	subtotal: numeric({ precision: 12, scale:  2 }).default('0').notNull(),
-	taxAmount: numeric("tax_amount", { precision: 12, scale:  2 }).default('0').notNull(),
-	totalAmount: numeric("total_amount", { precision: 12, scale:  2 }).default('0').notNull(),
-	discount: numeric({ precision: 12, scale:  2 }).default('0').notNull(),
-	tax: numeric({ precision: 12, scale:  2 }).default('0').notNull(),
-	finalAmount: numeric("final_amount", { precision: 12, scale:  2 }).default('0').notNull(),
-	paymentStatus: text("payment_status").default('pending').notNull(),
-	notes: text(),
-	createdBy: integer("created_by"),
-	equipmentName: text("equipment_name"),
-	description: text(),
-	quotationId: integer("quotation_id"),
-	mobilizationDate: date("mobilization_date"),
-	invoiceDate: date("invoice_date"),
-	depositAmount: numeric("deposit_amount", { precision: 10, scale:  2 }).default('0').notNull(),
-	paymentTermsDays: integer("payment_terms_days").default(30).notNull(),
-	paymentDueDate: date("payment_due_date"),
-	hasTimesheet: boolean("has_timesheet").default(false).notNull(),
-	hasOperators: boolean("has_operators").default(false).notNull(),
-	completedBy: integer("completed_by"),
-	completedAt: date("completed_at"),
-	approvedBy: integer("approved_by"),
-	approvedAt: date("approved_at"),
-	depositPaid: boolean("deposit_paid").default(false).notNull(),
-	depositPaidDate: date("deposit_paid_date"),
-	depositRefunded: boolean("deposit_refunded").default(false).notNull(),
-	depositRefundDate: date("deposit_refund_date"),
-	invoiceId: text("invoice_id"),
-	locationId: integer("location_id"),
-	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
-	updatedAt: date("updated_at").notNull(),
-	deletedAt: date("deleted_at"),
-	deliveryTerms: text("delivery_terms"),
-	shipmentTerms: text("shipment_terms"),
-	rentalTerms: text("rental_terms"),
-	paymentTerms: text("payment_terms"),
-	additionalTerms: text("additional_terms"),
-	mdTerms: text("md_terms"),
-	termsLastUpdated: timestamp("terms_last_updated", { precision: 3, mode: 'string' }),
-	termsUpdateNotes: text("terms_update_notes"),
-	supervisor: text(),
-}, (table) => [
-	uniqueIndex("rentals_rental_number_key").using("btree", table.rentalNumber.asc().nullsLast().op("text_ops")),
-	foreignKey({
-			columns: [table.customerId],
-			foreignColumns: [customers.id],
-			name: "rentals_customer_id_fkey"
-		}).onUpdate("cascade").onDelete("set null"),
-	foreignKey({
-			columns: [table.projectId],
-			foreignColumns: [projects.id],
-			name: "rentals_project_id_fkey"
-		}).onUpdate("cascade").onDelete("set null"),
-	foreignKey({
-			columns: [table.createdBy],
-			foreignColumns: [users.id],
-			name: "rentals_created_by_fkey"
-		}).onUpdate("cascade").onDelete("set null"),
-	foreignKey({
-			columns: [table.completedBy],
-			foreignColumns: [users.id],
-			name: "rentals_completed_by_fkey"
-		}).onUpdate("cascade").onDelete("set null"),
-	foreignKey({
-			columns: [table.approvedBy],
-			foreignColumns: [users.id],
-			name: "rentals_approved_by_fkey"
 		}).onUpdate("cascade").onDelete("set null"),
 ]);
 
@@ -1566,7 +1553,6 @@ export const scheduledReports = pgTable("scheduled_reports", {
 			name: "scheduled_reports_created_by_fkey"
 		}).onUpdate("cascade").onDelete("set null"),
 ]);
-
 
 export const sessions = pgTable("sessions", {
 	id: text().primaryKey().notNull(),
@@ -1875,6 +1861,18 @@ export const designations = pgTable("designations", {
 		}).onUpdate("cascade").onDelete("set null"),
 ]);
 
+export const equipmentCategories = pgTable("equipment_categories", {
+	id: serial().primaryKey().notNull(),
+	name: text().notNull(),
+	description: text(),
+	icon: text(),
+	color: text(),
+	isActive: boolean("is_active").default(true).notNull(),
+	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
+	updatedAt: date("updated_at").notNull(),
+}, (table) => [
+	uniqueIndex("equipment_categories_name_key").using("btree", table.name.asc().nullsLast().op("text_ops")),
+]);
 
 export const modelHasRoles = pgTable("model_has_roles", {
 	roleId: integer("role_id").notNull(),

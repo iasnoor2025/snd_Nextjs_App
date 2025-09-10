@@ -1674,6 +1674,10 @@ export const equipment = pgTable(
     deletedAt: date('deleted_at'),
     istimara: text(),
     istimaraExpiryDate: date('istimara_expiry_date'),
+    insurance: text(),
+    insuranceExpiryDate: date('insurance_expiry_date'),
+    tuvCard: text('tuv_card'),
+    tuvCardExpiryDate: date('tuv_card_expiry_date'),
   },
   table => [
     uniqueIndex('equipment_door_number_key').using(

@@ -189,6 +189,10 @@ export default function EquipmentEditPage() {
         monthlyRate: formData.monthly_rate ? parseFloat(formData.monthly_rate) : null,
         istimara: formData.istimara,
         istimara_expiry_date: formData.istimara_expiry_date,
+        insurance: formData.insurance,
+        insurance_expiry_date: formData.insurance_expiry_date,
+        tuv_card: formData.tuv_card,
+        tuv_card_expiry_date: formData.tuv_card_expiry_date,
       };
 
       console.log('Sending update data:', updateData);
