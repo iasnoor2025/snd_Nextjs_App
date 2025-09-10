@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withPermission } from '@/lib/rbac/api-middleware';
+import { withPermission, withRole } from '@/lib/rbac/api-middleware';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
