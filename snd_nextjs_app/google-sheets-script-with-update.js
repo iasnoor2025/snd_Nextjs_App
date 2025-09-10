@@ -168,17 +168,21 @@ function updateTimesheetInDatabase(employeeFileNumber, dateStr, overtimeHours, h
       muteHttpExceptions: true
     });
 
+    console.log('Response code:', response.getResponseCode());
+    console.log('Response content:', response.getContentText());
+
     if (response.getResponseCode() === 200) {
       const result = JSON.parse(response.getContentText());
       console.log('Database updated successfully:', result);
-      return true;
+      return { success: true, message: 'Updated successfully!' };
     } else {
-      console.error('Database update failed:', response.getContentText());
-      return false;
+      const errorData = JSON.parse(response.getContentText());
+      console.error('Database update failed:', errorData);
+      return { success: false, message: errorData.error || 'Update failed' };
     }
   } catch (error) {
     console.error('Error updating database:', error);
-    return false;
+    return { success: false, message: 'Connection error: ' + error.toString() };
   }
 }
 
@@ -221,14 +225,14 @@ function onEdit(e) {
             const overtimeHours = sheet.getRange(row, 3).getValue();
             
             // Update database
-            const success = updateTimesheetInDatabase(employeeFileNumber, dateStr, overtimeHours, hoursWorked);
+            const result = updateTimesheetInDatabase(employeeFileNumber, dateStr, overtimeHours, hoursWorked);
             
-            if (success) {
+            if (result.success) {
               // Show success message
               SpreadsheetApp.getUi().alert('✅ Database updated successfully!');
             } else {
-              // Show error message
-              SpreadsheetApp.getUi().alert('❌ Failed to update database. Please try again.');
+              // Show detailed error message
+              SpreadsheetApp.getUi().alert('❌ Failed to update database.\n\nError: ' + result.message + '\n\nPlease check the logs for more details.');
             }
           }
         }
