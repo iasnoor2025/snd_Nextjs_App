@@ -24,10 +24,12 @@ export async function GET(request: NextRequest) {
         const endDate = new Date(parseInt(year), parseInt(monthNum) + 1, 0, 23, 59, 59, 999);
         
         console.log('Date range:', startDate.toISOString(), 'to', endDate.toISOString());
+        console.log('Looking for month:', month, 'Year:', year, 'Month:', monthNum);
         
+        // Use date comparison with proper PostgreSQL date format
         const monthCondition = and(
-          gte(timesheetsTable.date, startDate.toISOString()),
-          lte(timesheetsTable.date, endDate.toISOString())
+          gte(timesheetsTable.date, startDate.toISOString().split('T')[0]), // YYYY-MM-DD format
+          lte(timesheetsTable.date, endDate.toISOString().split('T')[0])   // YYYY-MM-DD format
         );
         if (monthCondition) {
           filters.push(monthCondition);
@@ -79,6 +81,14 @@ export async function GET(request: NextRequest) {
       .limit(limit);
 
     console.log('Found timesheets:', timesheetsData.length);
+    
+    // Debug: Show first few dates to see what we're getting
+    if (timesheetsData.length > 0) {
+      console.log('Sample dates from database:');
+      timesheetsData.slice(0, 5).forEach((ts, index) => {
+        console.log(`${index + 1}. Date: ${ts.date}, Type: ${typeof ts.date}`);
+      });
+    }
 
     // Transform data for Google Sheets
     const transformedData = timesheetsData.map(ts => ({
