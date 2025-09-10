@@ -1,5 +1,5 @@
 import { db } from '@/lib/drizzle';
-import { timesheets as timesheetsTable } from '@/lib/drizzle/schema';
+import { timesheets as timesheetsTable, employees } from '@/lib/drizzle/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -20,6 +20,16 @@ export async function POST(request: NextRequest) {
       hoursWorked 
     });
 
+    // Parse the date for better debugging
+    const parsedDate = new Date(date);
+    console.log('Parsed date:', {
+      original: date,
+      parsed: parsedDate,
+      year: parsedDate.getFullYear(),
+      month: parsedDate.getMonth() + 1,
+      day: parsedDate.getDate()
+    });
+
     // Validate required fields
     if (!employeeFileNumber || !date) {
       return NextResponse.json({ 
@@ -27,7 +37,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Find the timesheet record to update
+    // Find the timesheet record to update by joining with employees table
     const existingTimesheet = await db
       .select({
         id: timesheetsTable.id,
@@ -35,10 +45,13 @@ export async function POST(request: NextRequest) {
         date: timesheetsTable.date,
         hoursWorked: timesheetsTable.hoursWorked,
         overtimeHours: timesheetsTable.overtimeHours,
+        employeeFileNumber: employees.fileNumber,
       })
       .from(timesheetsTable)
+      .leftJoin(employees, eq(timesheetsTable.employeeId, employees.id))
       .where(
         and(
+          eq(employees.fileNumber, employeeFileNumber),
           sql`EXTRACT(YEAR FROM ${timesheetsTable.date}) = ${new Date(date).getFullYear()}`,
           sql`EXTRACT(MONTH FROM ${timesheetsTable.date}) = ${new Date(date).getMonth() + 1}`,
           sql`EXTRACT(DAY FROM ${timesheetsTable.date}) = ${new Date(date).getDate()}`
@@ -46,9 +59,23 @@ export async function POST(request: NextRequest) {
       )
       .limit(1);
 
+    console.log('Found timesheets:', existingTimesheet.length);
+    if (existingTimesheet.length > 0) {
+      console.log('Found timesheet:', existingTimesheet[0]);
+    }
+
     if (existingTimesheet.length === 0) {
       return NextResponse.json({ 
-        error: 'Timesheet record not found for the specified date' 
+        error: 'Timesheet record not found for the specified date and employee',
+        details: {
+          employeeFileNumber,
+          date,
+          searchCriteria: {
+            year: new Date(date).getFullYear(),
+            month: new Date(date).getMonth() + 1,
+            day: new Date(date).getDate()
+          }
+        }
       }, { status: 404 });
     }
 
