@@ -12,7 +12,8 @@
     "payslipOpen": "Error opening payslip",
     "payslipDownload": "Failed to download payslip",
     "recalculateOvertime": "Failed to recalculate overtime",
-    "notFound": "Payroll not found"
+    "notFound": "Payroll not found",
+    "cannotDeletePaid": "Cannot delete paid payrolls"
   },
   "success": {
     "approve": "Payroll approved successfully",
@@ -29,7 +30,7 @@
     "delete": "Are you sure you want to delete this payroll?",
     "bulkDelete": "Are you sure you want to delete {{count}} payroll(s)?"
   },
-  "status": {
+  "statusValues": {
     "pending": "Pending",
     "approved": "Approved",
     "paid": "Paid",
@@ -87,9 +88,5 @@
   "selectedPayrolls": "selected payroll(s)",
   "deleteSelected": "Delete Selected",
   "clearSelection": "Clear Selection",
-  "loadingPayrolls": "Loading payrolls...",
-  "pending": "Pending",
-  "approved": "Approved",
-  "paid": "Paid",
-  "cancelled": "Cancelled"
+  "loadingPayrolls": "Loading payrolls..."
 }

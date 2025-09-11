@@ -562,6 +562,21 @@
     "title": "Timesheet Records",
     "description": "View and manage employee timesheet records"
   },
+  "paidSalary": {
+    "title": "Paid Salary Information",
+    "status": "Status",
+    "paidOn": "Paid on",
+    "baseSalary": "Base Salary",
+    "overtime": "Overtime",
+    "bonus": "Bonus",
+    "deductions": "Deductions",
+    "advanceDeduction": "Advance Deduction",
+    "finalAmount": "Final Amount",
+    "paymentMethod": "Payment Method",
+    "paymentReference": "Payment Reference",
+    "noData": "No paid salary information available for this month",
+    "error": "Error loading salary information"
+  },
 
   "leave": {
     "title": "Leave History",

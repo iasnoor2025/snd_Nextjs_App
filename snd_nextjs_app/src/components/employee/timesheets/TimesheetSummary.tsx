@@ -19,6 +19,7 @@ import {
 import { Loader2 } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import PaidSalaryInfo from './PaidSalaryInfo';
 
 interface TimesheetRecord {
   date: string;
@@ -227,6 +228,13 @@ export default function TimesheetSummary({
         </div>
       ) : (
         <>
+          {/* Paid Salary Information */}
+          <PaidSalaryInfo 
+            employeeId={selectedEmployeeId} 
+            month={selectedMonth.getMonth() + 1} 
+            year={selectedMonth.getFullYear()} 
+          />
+          
           <Card>
             <CardHeader>
               <CardTitle>{t('timesheet:monthlyRecords')}</CardTitle>

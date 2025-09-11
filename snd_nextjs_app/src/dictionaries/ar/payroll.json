@@ -12,7 +12,8 @@
     "payslipOpen": "خطأ في فتح مسير الراتب",
     "payslipDownload": "خطأ في تحميل مسير الراتب",
     "recalculateOvertime": "خطأ في إعادة حساب العمل الإضافي",
-    "notFound": "لم يتم العثور على الراتب"
+    "notFound": "لم يتم العثور على الراتب",
+    "cannotDeletePaid": "لا يمكن حذف الرواتب المدفوعة"
   },
   "success": {
     "approve": "تمت الموافقة على الراتب بنجاح",
@@ -79,5 +80,12 @@
   "selectedPayrolls": "رواتب محددة",
   "deleteSelected": "حذف المحدد",
   "clearSelection": "مسح التحديد",
-  "loadingPayrolls": "جاري تحميل الرواتب..."
+  "loadingPayrolls": "جاري تحميل الرواتب...",
+  "statusValues": {
+    "pending": "معلق",
+    "approved": "معتمد",
+    "paid": "مدفوع",
+    "cancelled": "ملغي",
+    "processed": "معالج"
+  }
 }

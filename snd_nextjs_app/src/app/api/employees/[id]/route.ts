@@ -389,15 +389,18 @@ const updateEmployeeHandler = async (
     for (const key of numberFieldsFloat) {
       if (Object.prototype.hasOwnProperty.call(updateDataRaw, key)) {
         const v = updateDataRaw[key];
-        drizzleData[
-          key === 'hourly_rate'
-            ? 'hourlyRate'
-            : key === 'basic_salary'
-              ? 'basicSalary'
-              : key === 'overtime_rate_multiplier'
-                ? 'overtimeRateMultiplier'
-                : 'overtimeFixedRate'
-        ] = v === '' || v === null || v === undefined ? null : v;
+        if (key === 'overtime_fixed_rate') {
+          // overtime_fixed_rate has a NOT NULL constraint with default '6'
+          drizzleData['overtimeFixedRate'] = v === '' || v === null || v === undefined ? '6' : v;
+        } else if (key === 'basic_salary') {
+          // basic_salary has a NOT NULL constraint with default '0'
+          drizzleData['basicSalary'] = v === '' || v === null || v === undefined ? '0' : v;
+        } else if (key === 'overtime_rate_multiplier') {
+          // overtime_rate_multiplier has a NOT NULL constraint with default '1.5'
+          drizzleData['overtimeRateMultiplier'] = v === '' || v === null || v === undefined ? '1.5' : v;
+        } else {
+          drizzleData['hourlyRate'] = v === '' || v === null || v === undefined ? null : v;
+        }
       }
     }
 
@@ -405,9 +408,13 @@ const updateEmployeeHandler = async (
     for (const key of numberFieldsInt) {
       if (Object.prototype.hasOwnProperty.call(updateDataRaw, key)) {
         const v = updateDataRaw[key];
-        drizzleData[
-          key === 'contract_days_per_month' ? 'contractDaysPerMonth' : 'contractHoursPerDay'
-        ] = v === '' || v === null || v === undefined ? null : parseInt(v);
+        if (key === 'contract_days_per_month') {
+          // contract_days_per_month has a NOT NULL constraint with default 30
+          drizzleData['contractDaysPerMonth'] = v === '' || v === null || v === undefined ? 30 : parseInt(v);
+        } else if (key === 'contract_hours_per_day') {
+          // contract_hours_per_day has a NOT NULL constraint with default 8
+          drizzleData['contractHoursPerDay'] = v === '' || v === null || v === undefined ? 8 : parseInt(v);
+        }
       }
     }
 
@@ -467,7 +474,20 @@ const updateEmployeeHandler = async (
             : key === 'spsp_license_number'
               ? 'spspLicenseNumber'
             : key;
-        drizzleData[drizzleKey] = updateDataRaw[key];
+        
+        // Handle empty strings for text fields - convert to null
+        const value = updateDataRaw[key];
+        if (key === 'supervisor' || key === 'notes' || key === 'iqama_number' || 
+            key === 'passport_number' || key === 'driving_license_number' || 
+            key === 'operator_license_number' || key === 'tuv_certification_number' || 
+            key === 'spsp_license_number') {
+          drizzleData[drizzleKey] = value === '' || value === null || value === undefined ? null : value;
+        } else if (key === 'status') {
+          // status has a NOT NULL constraint with default 'active'
+          drizzleData[drizzleKey] = value === '' || value === null || value === undefined ? 'active' : value;
+        } else {
+          drizzleData[drizzleKey] = value;
+        }
       }
     }
 
@@ -488,6 +508,17 @@ const updateEmployeeHandler = async (
 
     // Debug logging
     console.log('Drizzle update data:', drizzleData);
+
+    // Validate required fields before update
+    if (drizzleData.firstName && typeof drizzleData.firstName !== 'string') {
+      return NextResponse.json({ error: 'Invalid first name format' }, { status: 400 });
+    }
+    if (drizzleData.lastName && typeof drizzleData.lastName !== 'string') {
+      return NextResponse.json({ error: 'Invalid last name format' }, { status: 400 });
+    }
+    if (drizzleData.email && typeof drizzleData.email !== 'string') {
+      return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
+    }
 
     // Update employee in database using Drizzle
     const updatedEmployeeRows = await db

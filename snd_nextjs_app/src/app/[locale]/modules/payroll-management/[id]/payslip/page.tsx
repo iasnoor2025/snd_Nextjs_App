@@ -1977,9 +1977,9 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                           <div className="flex justify-between items-center">
                             <span>Overtime Rate:</span>
                             <span>
-                              {employee?.overtime_fixed_rate && employee.overtime_fixed_rate > 0
+                              {employee?.overtime_rate_multiplier === 0 && employee?.overtime_fixed_rate && employee.overtime_fixed_rate > 0
                                 ? `${formatCurrency(Number(employee.overtime_fixed_rate))}/hr (Fixed)`
-                                : `${employee?.overtime_rate_multiplier || 1.5}x (Basic/30/8)`}
+                                : `${employee?.overtime_rate_multiplier || 1.5}x (Basic/${new Date(payroll?.year || new Date().getFullYear(), payroll?.month || new Date().getMonth() + 1, 0).getDate()}/${employee?.contract_hours_per_day || 8})`}
                             </span>
                           </div>
                         </div>

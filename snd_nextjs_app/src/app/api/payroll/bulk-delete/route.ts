@@ -2,9 +2,20 @@ import { db } from '@/lib/drizzle';
 import { payrollItems, payrolls } from '@/lib/drizzle/schema';
 import { and, eq, inArray } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authConfig } from '@/lib/auth-config';
 
 export async function POST(_request: NextRequest) {
   try {
+    // Check user session and permissions
+    const session = await getServerSession(authConfig);
+    if (!session?.user) {
+      return NextResponse.json(
+        { success: false, message: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const body = await _request.json();
     const { ids } = body;
 
@@ -25,13 +36,17 @@ export async function POST(_request: NextRequest) {
       );
     }
 
+    // Check if user is super admin
+    const isSuperAdmin = session.user.role === 'SUPER_ADMIN';
+
     // Check if any of the payrolls are already paid
     const paidPayrolls = await db
       .select({ id: payrolls.id, status: payrolls.status })
       .from(payrolls)
       .where(and(inArray(payrolls.id, validIds), eq(payrolls.status, 'paid')));
 
-    if (paidPayrolls.length > 0) {
+    // Only prevent deletion of paid payrolls if user is not super admin
+    if (paidPayrolls.length > 0 && !isSuperAdmin) {
       const paidIds = paidPayrolls.map(p => p.id);
       return NextResponse.json(
         {

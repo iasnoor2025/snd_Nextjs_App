@@ -76,17 +76,15 @@ export async function POST() {
           console.log(`Hourly rate calculated: ${hourlyRate}`);
 
           // Use employee's overtime settings
-          if (
-            payroll.employee.overtimeFixedRate &&
-            Number(payroll.employee.overtimeFixedRate) > 0
-          ) {
+          // Check if multiplier is 0 (indicating fixed rate is being used)
+          const overtimeMultiplier = Number(payroll.employee.overtimeRateMultiplier) || 1.5;
+          if (overtimeMultiplier === 0 && payroll.employee.overtimeFixedRate && Number(payroll.employee.overtimeFixedRate) > 0) {
             // Use fixed overtime rate
             overtimeAmount =
               Number(payroll.overtimeHours) * Number(payroll.employee.overtimeFixedRate);
             console.log(`Using fixed overtime rate: ${payroll.employee.overtimeFixedRate} SAR/hr`);
           } else {
             // Use overtime multiplier with calculated hourly rate
-            const overtimeMultiplier = Number(payroll.employee.overtimeRateMultiplier) || 1.5;
             overtimeAmount = Number(payroll.overtimeHours) * (hourlyRate * overtimeMultiplier);
             console.log(`Using overtime multiplier: ${overtimeMultiplier}x basic rate`);
           }
@@ -117,14 +115,15 @@ export async function POST() {
 
         if (existingOvertimeItemData[0]) {
           // Update existing overtime item
+          const overtimeMultiplierForDescription = Number(payroll.employee.overtimeRateMultiplier) || 1.5;
           await db
             .update(payrollItems)
             .set({
               amount: overtimeAmount.toString(),
               description:
-                payroll.employee.overtimeFixedRate && Number(payroll.employee.overtimeFixedRate) > 0
+                overtimeMultiplierForDescription === 0 && payroll.employee.overtimeFixedRate && Number(payroll.employee.overtimeFixedRate) > 0
                   ? `Overtime Pay (Fixed Rate: ${payroll.employee.overtimeFixedRate} SAR/hr)`
-                  : `Overtime Pay (${Number(payroll.employee.overtimeRateMultiplier) || 1.5}x Rate)`,
+                  : `Overtime Pay (${overtimeMultiplierForDescription}x Rate)`,
               updatedAt: new Date().toISOString(),
             })
             .where(eq(payrollItems.id, existingOvertimeItemData[0].id));

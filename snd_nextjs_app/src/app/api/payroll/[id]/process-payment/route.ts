@@ -3,9 +3,13 @@ import { employees, payrolls } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { id: payrollId } = await params;
+    if (!params || !params.id) {
+      return NextResponse.json({ success: false, message: 'Invalid parameters' }, { status: 400 });
+    }
+    
+    const { id: payrollId } = params;
     const id = parseInt(payrollId);
     const body = await request.json();
     const { payment_method, reference } = body;
@@ -62,13 +66,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       .update(payrolls)
       .set({
         status: 'paid',
-        paidBy: 1, // Mock user ID - in real app, get from session
-        paidAt: new Date().toISOString(),
+        paidAt: new Date().toISOString().split('T')[0], // Convert to date format (YYYY-MM-DD)
         paymentMethod: payment_method,
         paymentReference: reference || null,
         paymentStatus: 'completed',
-        paymentProcessedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        paymentProcessedAt: new Date().toISOString().split('T')[0], // Convert to date format (YYYY-MM-DD)
+        updatedAt: new Date().toISOString().split('T')[0], // Convert to date format (YYYY-MM-DD)
       })
       .where(eq(payrolls.id, id))
       .returning();

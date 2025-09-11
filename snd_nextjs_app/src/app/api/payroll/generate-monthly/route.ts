@@ -200,10 +200,11 @@ export async function POST(_request: NextRequest) {
           const contractHours = Number(employee.contractHoursPerDay) || 8;
           const hourlyRate = basicSalary / (totalDaysInMonth * contractHours);
 
-          if (employee.overtimeFixedRate && Number(employee.overtimeFixedRate) > 0) {
+          // Check if multiplier is 0 (indicating fixed rate is being used)
+          const overtimeMultiplier = Number(employee.overtimeRateMultiplier) || 1.5;
+          if (overtimeMultiplier === 0 && employee.overtimeFixedRate && Number(employee.overtimeFixedRate) > 0) {
             overtimeAmount = totalOvertimeHours * Number(employee.overtimeFixedRate);
           } else {
-            const overtimeMultiplier = Number(employee.overtimeRateMultiplier) || 1.5;
             overtimeAmount = totalOvertimeHours * (hourlyRate * overtimeMultiplier);
           }
         }
@@ -261,11 +262,11 @@ export async function POST(_request: NextRequest) {
 
         if (totalOvertimeHours > 0) {
           let overtimeDescription = 'Overtime Pay';
-          if (employee.overtimeFixedRate && Number(employee.overtimeFixedRate) > 0) {
+          const overtimeMultiplierForDescription = Number(employee.overtimeRateMultiplier) || 1.5;
+          if (overtimeMultiplierForDescription === 0 && employee.overtimeFixedRate && Number(employee.overtimeFixedRate) > 0) {
             overtimeDescription = `Overtime Pay (Fixed Rate: ${employee.overtimeFixedRate} SAR/hr)`;
           } else {
-            const overtimeMultiplier = Number(employee.overtimeRateMultiplier) || 1.5;
-            overtimeDescription = `Overtime Pay (${overtimeMultiplier}x Rate)`;
+            overtimeDescription = `Overtime Pay (${overtimeMultiplierForDescription}x Rate)`;
           }
 
           payrollItemsData.push({

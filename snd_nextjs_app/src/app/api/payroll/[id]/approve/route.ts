@@ -3,9 +3,16 @@ import { employees, payrolls } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
-export async function POST({ params }: { params: Promise<{ id: string }> }) {
+export async function POST(request: Request) {
   try {
-    const { id: payrollId } = await params;
+    // Extract ID from the URL path since params are not working
+    const url = new URL(request.url);
+    const pathParts = url.pathname.split('/');
+    const payrollId = pathParts[pathParts.length - 2]; // Get the ID from the path
+    
+    if (!payrollId) {
+      return NextResponse.json({ success: false, message: 'Invalid payroll ID' }, { status: 400 });
+    }
     const id = parseInt(payrollId);
 
     if (isNaN(id)) {
@@ -58,9 +65,7 @@ export async function POST({ params }: { params: Promise<{ id: string }> }) {
       .update(payrolls)
       .set({
         status: 'approved',
-        approvedBy: 1, // Mock user ID - in real app, get from session
-        approvedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        approvedAt: new Date().toISOString().split('T')[0], // Convert to date format (YYYY-MM-DD)
       })
       .where(eq(payrolls.id, id))
       .returning();

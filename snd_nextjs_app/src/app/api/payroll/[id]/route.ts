@@ -3,6 +3,8 @@ import { departments, designations, employees, payrollItems, payrolls, advancePa
 import { eq, and, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { createTranslatorFromRequest } from '@/lib/server-i18n';
+import { getServerSession } from 'next-auth';
+import { authConfig } from '@/lib/auth-config';
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   const { t } = createTranslatorFromRequest(request);
@@ -290,21 +292,38 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   const { t } = createTranslatorFromRequest(request);
   
   try {
+    // Check user session and permissions
+    const session = await getServerSession(authConfig);
+    if (!session?.user) {
+      return NextResponse.json({ success: false, message: t('common.error.unauthorized') }, { status: 401 });
+    }
+
     const id = parseInt(params.id);
 
     if (isNaN(id)) {
       return NextResponse.json({ success: false, message: t('common.error.invalidId') }, { status: 400 });
     }
 
-    // Check if payroll exists
+    // Check if payroll exists and get its status
     const existingPayroll = await db
-      .select({ id: payrolls.id })
+      .select({ id: payrolls.id, status: payrolls.status })
       .from(payrolls)
       .where(eq(payrolls.id, id))
       .limit(1);
 
     if (existingPayroll.length === 0) {
       return NextResponse.json({ success: false, message: t('payroll.error.notFound') }, { status: 404 });
+    }
+
+    // Check if user is super admin
+    const isSuperAdmin = session.user.role === 'SUPER_ADMIN';
+
+    // Only prevent deletion of paid payrolls if user is not super admin
+    if (existingPayroll[0].status === 'paid' && !isSuperAdmin) {
+      return NextResponse.json(
+        { success: false, message: t('payroll.error.cannotDeletePaid') },
+        { status: 400 }
+      );
     }
 
     // Delete payroll items first

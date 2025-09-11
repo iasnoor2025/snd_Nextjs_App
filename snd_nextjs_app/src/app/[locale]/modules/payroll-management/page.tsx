@@ -736,15 +736,15 @@ export default function PayrollManagementPage() {
                               }
                             >
                               {payroll.status === 'pending'
-                                ? t('payroll.status.pending')
+                                ? t('payroll.statusValues.pending')
                                 : payroll.status === 'approved'
-                                  ? t('payroll.status.approved')
+                                  ? t('payroll.statusValues.approved')
                                   : payroll.status === 'paid'
-                                    ? t('payroll.status.paid')
+                                    ? t('payroll.statusValues.paid')
                                     : payroll.status === 'cancelled'
-                                      ? t('payroll.status.cancelled')
+                                      ? t('payroll.statusValues.cancelled')
                                       : payroll.status === 'processed'
-                                        ? t('payroll.status.processed')
+                                        ? t('payroll.statusValues.processed')
                                         : payroll.status || t('common.na')}
                             </Badge>
                           </TableCell>

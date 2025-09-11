@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
+    const resolvedParams = await params;
+    
+    if (!resolvedParams || !resolvedParams.id) {
+      return NextResponse.json({ success: false, message: 'Invalid parameters' }, { status: 400 });
+    }
+    
+    const { id } = resolvedParams;
     const body = await request.json();
 
     // In a real implementation, this would call the Laravel API

@@ -170,9 +170,13 @@ const mockPayrolls = [
   },
 ];
 
-export async function POST({ params }: { params: Promise<{ id: string }> }) {
+export async function POST({ params }: { params: { id: string } }) {
   try {
-    const { id: payrollId } = await params;
+    if (!params || !params.id) {
+      return NextResponse.json({ success: false, message: 'Invalid parameters' }, { status: 400 });
+    }
+    
+    const { id: payrollId } = params;
     const id = parseInt(payrollId);
     const payrollIndex = mockPayrolls.findIndex(p => p.id === id);
 
