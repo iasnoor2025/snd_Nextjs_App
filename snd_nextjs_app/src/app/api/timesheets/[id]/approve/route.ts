@@ -70,111 +70,103 @@ async function checkStageApprovalPermission(userId: string, stage: ApprovalStage
 }
 
 // POST /api/timesheets/[id]/approve - Approve a single timesheet
-export const POST = withPermission(
-  async (_request: NextRequest, { params }: { params: { id: string } }) => {
-    try {
+export const POST = async (_request: NextRequest, { params }: { params: { id: string } }) => {
+  try {
+    const timesheetId = parseInt(await params.id);
+    if (isNaN(timesheetId)) {
+      return NextResponse.json({ error: 'Invalid timesheet ID' }, { status: 400 });
+    }
 
-      const timesheetId = parseInt(await params.id);
-      if (isNaN(timesheetId)) {
-        return NextResponse.json({ error: 'Invalid timesheet ID' }, { status: 400 });
-      }
+    // Authentication check
+    const session = await getServerSession(authConfig);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
 
-      // Get the timesheet
-      const timesheet = await db
-        .select()
-        .from(timesheets)
-        .where(eq(timesheets.id, timesheetId))
-        .limit(1);
+    const userId = session.user.id;
 
-      if (timesheet.length === 0) {
-        return NextResponse.json({ error: 'Timesheet not found' }, { status: 404 });
-      }
+    // Get the timesheet
+    const timesheet = await db
+      .select()
+      .from(timesheets)
+      .where(eq(timesheets.id, timesheetId))
+      .limit(1);
 
-      const timesheetData = timesheet[0];
-      if (!timesheetData) {
-        return NextResponse.json({ error: 'Timesheet data not found' }, { status: 404 });
-      }
+    if (timesheet.length === 0) {
+      return NextResponse.json({ error: 'Timesheet not found' }, { status: 404 });
+    }
 
-      // Get session to check user permissions
-      const session = await getServerSession(authConfig);
-      if (!session?.user?.id) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
+    const timesheetData = timesheet[0];
+    if (!timesheetData) {
+      return NextResponse.json({ error: 'Timesheet data not found' }, { status: 404 });
+    }
 
-      const userId = session.user.id;
+    // Database-driven permission check
+    const { checkUserPermission } = await import('@/lib/rbac/permission-service');
+    const permissionResult = await checkUserPermission(userId, 'approve', 'Timesheet');
+    
+    if (!permissionResult.hasPermission) {
+      return NextResponse.json({ 
+        error: permissionResult.reason || 'Insufficient permissions' 
+      }, { status: 403 });
+    }
 
-      // Automatically determine the next approval stage based on current status
-      const nextStage = getNextApprovalStage(timesheetData.status);
+    // Automatically determine the next approval stage based on current status
+    const nextStage = getNextApprovalStage(timesheetData.status);
 
-      if (!nextStage) {
-        
-        return NextResponse.json(
-          {
-            error: `Timesheet cannot be approved further. Current status: ${timesheetData.status}`,
-          },
-          { status: 400 }
-        );
-      }
-
-      // Check if user can approve at this stage
-      const canApprove = await checkStageApprovalPermission(userId, nextStage);
-      if (!canApprove.allowed) {
-        
-        return NextResponse.json(
-          {
-            error: canApprove.reason || 'Permission denied',
-          },
-          { status: 403 }
-        );
-      }
-
-      // Approve the timesheet to the next stage
-      try {
-        const newStatus = getApprovalStatusForStage(nextStage);
-        const updatedTimesheet = await db
-          .update(timesheets)
-          .set({
-            status: newStatus,
-            approvedBy: parseInt(userId),
-            approvedAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          })
-          .where(eq(timesheets.id, timesheetId))
-          .returning();
-
-        const updatedTimesheetData = updatedTimesheet[0];
-        if (!updatedTimesheetData) {
-          return NextResponse.json({ error: 'Failed to update timesheet' }, { status: 500 });
-        }
-
-        return NextResponse.json({
-          success: true,
-          message: `Timesheet approved to ${nextStage} stage`,
-          data: {
-            id: updatedTimesheetData.id,
-            status: updatedTimesheetData.status,
-            approvedBy: updatedTimesheetData.approvedBy,
-            approvedAt: updatedTimesheetData.approvedAt,
-          },
-        });
-      } catch (error) {
-        
-        return NextResponse.json(
-          {
-            error: `Failed to approve timesheet to ${nextStage} stage: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          },
-          { status: 500 }
-        );
-      }
-    } catch (error) {
-      
+    if (!nextStage) {
       return NextResponse.json(
         {
-          error: 'Internal server error',
+          error: `Timesheet cannot be approved further. Current status: ${timesheetData.status}`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Approve the timesheet to the next stage
+    try {
+      const newStatus = getApprovalStatusForStage(nextStage);
+      
+      const updatedTimesheet = await db
+        .update(timesheets)
+        .set({
+          status: newStatus,
+          approvedBy: parseInt(userId),
+          approvedAt: new Date().toISOString().split('T')[0], // Convert to date format (YYYY-MM-DD)
+          updatedAt: new Date().toISOString().split('T')[0], // Convert to date format (YYYY-MM-DD)
+        })
+        .where(eq(timesheets.id, timesheetId))
+        .returning();
+
+      const updatedTimesheetData = updatedTimesheet[0];
+      if (!updatedTimesheetData) {
+        return NextResponse.json({ error: 'Failed to update timesheet' }, { status: 500 });
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `Timesheet approved to ${nextStage} stage`,
+        data: {
+          id: updatedTimesheetData.id,
+          status: updatedTimesheetData.status,
+          approvedBy: updatedTimesheetData.approvedBy,
+          approvedAt: updatedTimesheetData.approvedAt,
+        },
+      });
+    } catch (error) {
+      return NextResponse.json(
+        {
+          error: `Failed to approve timesheet to ${nextStage} stage: ${error instanceof Error ? error.message : 'Unknown error'}`,
         },
         { status: 500 }
       );
     }
-  },
-  { action: 'approve', subject: 'Timesheet' }
-);
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: 'Internal server error',
+      },
+      { status: 500 }
+    );
+  }
+};

@@ -1567,6 +1567,8 @@ export const roles = pgTable("roles", {
 	id: serial().primaryKey().notNull(),
 	name: text().notNull(),
 	guardName: text("guard_name").default('web').notNull(),
+	priority: integer().default(999).notNull(),
+	isActive: boolean("is_active").default(true).notNull(),
 	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
 	updatedAt: date("updated_at").notNull(),
 }, (table) => [

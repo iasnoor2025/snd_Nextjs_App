@@ -249,12 +249,10 @@ export async function checkApiPermission(
   config: PermissionConfig
 ): Promise<{ authorized: boolean; user?: User; error?: string }> {
   try {
-    
     // Get server session
     const session = await getServerSession(authConfig);
     
     if (!session?.user) {
-      console.error('API permission check failed: No session or user');
       return {
         authorized: false,
         error: 'Authentication required'
@@ -269,18 +267,14 @@ export async function checkApiPermission(
       role: (session.user.role as string) || 'USER',
       isActive: session.user.isActive !== false,
     };
-    
 
-    // Check primary permission
-    let hasAccess = await hasPermission(user, config.action, config.subject);
-    
-    // If primary permission fails, try fallback
-    if (!hasAccess && config.fallbackAction && config.fallbackSubject) {
-      hasAccess = await hasPermission(user, config.fallbackAction, config.fallbackSubject);
+    // Simple permission check for SUPER_ADMIN
+    let hasAccess = false;
+    if (user.role === 'SUPER_ADMIN') {
+      hasAccess = true;
     }
 
     if (!hasAccess) {
-      console.error(`API permission check failed: User ${user.id} lacks ${config.action}.${config.subject} permission`);
       return {
         authorized: false,
         user,
@@ -294,7 +288,6 @@ export async function checkApiPermission(
     };
 
   } catch (error) {
-    console.error('API permission check error:', error);
     return {
       authorized: false,
       error: 'Permission check failed'
@@ -312,19 +305,20 @@ export function withPermission(config: PermissionConfig) {
         const permissionResult = await checkApiPermission(request, config);
         
         if (!permissionResult.authorized) {
+          // Return 401 for authentication issues, 403 for permission issues
+          const status = permissionResult.error?.includes('Authentication required') ? 401 : 403;
           return NextResponse.json(
             { 
               error: permissionResult.error || 'Access denied',
-              code: 'INSUFFICIENT_PERMISSIONS'
+              code: status === 401 ? 'AUTHENTICATION_REQUIRED' : 'INSUFFICIENT_PERMISSIONS'
             },
-            { status: 403 }
+            { status }
           );
         }
 
         // Call the original handler with the request and additional args
         return handler(request, ...args);
       } catch (error) {
-        console.error('Permission middleware error:', error);
         return NextResponse.json(
           { 
             error: 'Permission check failed',
@@ -364,29 +358,52 @@ export async function requirePermission(
 }
 
 /**
- * Check if user has any of the required roles
+ * Get role hierarchy from database
  */
-export function hasRequiredRole(userRole: string, requiredRoles: string[]): boolean {
-  const roleHierarchy: Record<string, number> = {
-    'SUPER_ADMIN': 1,
-    'ADMIN': 2,
-    'MANAGER': 3,
-    'SUPERVISOR': 4,
-    'OPERATOR': 5,
-    'EMPLOYEE': 6,
-    'USER': 7,
-  };
+async function getRoleHierarchyFromDB(): Promise<Record<string, number>> {
+  try {
+    const { db } = await import('@/lib/db');
+    const { roles } = await import('@/lib/drizzle/schema');
+    
+    const roleData = await db
+      .select({
+        name: roles.name,
+        priority: roles.priority,
+      })
+      .from(roles)
+      .where(eq(roles.isActive, true))
+      .orderBy(roles.priority);
+    
+    const hierarchy: Record<string, number> = {};
+    roleData.forEach(role => {
+      hierarchy[role.name] = role.priority || 999; // Default to low priority if not set
+    });
+    
+    return hierarchy;
+  } catch (error) {
+    console.error('Error loading role hierarchy from database:', error);
+    // Fallback to minimal hierarchy
+    return {
+      'SUPER_ADMIN': 1,
+    };
+  }
+}
 
-  const userRoleLevel = roleHierarchy[userRole] || 10; 
+/**
+ * Check if user has any of the required roles (database-driven)
+ */
+export async function hasRequiredRole(userRole: string, requiredRoles: string[]): Promise<boolean> {
+  const roleHierarchy = await getRoleHierarchyFromDB();
+  const userRoleLevel = roleHierarchy[userRole] || 999; // Default to low priority
 
   return requiredRoles.some(requiredRole => {
-    const requiredRoleLevel = roleHierarchy[requiredRole] || 10;
+    const requiredRoleLevel = roleHierarchy[requiredRole] || 999;
     return userRoleLevel <= requiredRoleLevel; // Lower number = higher priority
   });
 }
 
 /**
- * Role-based access control for API routes
+ * Role-based access control for API routes (database-driven)
  */
 export function withRole(requiredRoles: string[]) {
   return function(handler: ApiHandler) {
@@ -403,7 +420,7 @@ export function withRole(requiredRoles: string[]) {
 
         const userRole = (session.user.role as string) || 'USER';
         
-        if (!hasRequiredRole(userRole, requiredRoles)) {
+        if (!(await hasRequiredRole(userRole, requiredRoles))) {
           return NextResponse.json(
             { 
               error: 'Insufficient role permissions',

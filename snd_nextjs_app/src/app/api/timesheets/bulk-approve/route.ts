@@ -182,8 +182,9 @@ export const POST = async (request: NextRequest) => {
               .set({
                 status: newStatus,
                 notes: notes || undefined,
-                updatedAt: new Date(),
+                updatedAt: new Date().toISOString().split('T')[0], // Convert to date format (YYYY-MM-DD)
                 approvedBy: parseInt(userId),
+                approvedAt: new Date().toISOString().split('T')[0], // Convert to date format (YYYY-MM-DD)
               })
               .where(eq(timesheets.id, timesheet.id))
               .returning();
