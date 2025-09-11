@@ -300,13 +300,11 @@ export default function EditEmployeePage() {
           overtime_rate_multiplier:
             formData.overtime_fixed_rate && formData.overtime_fixed_rate.trim() !== ''
               ? 0
-              : formData.overtime_rate_multiplier && formData.overtime_rate_multiplier.trim() !== ''
-                ? parseFloat(formData.overtime_rate_multiplier)
-                : 1.5,
+              : 1.5,
           overtime_fixed_rate:
             formData.overtime_fixed_rate && formData.overtime_fixed_rate.trim() !== ''
               ? parseFloat(formData.overtime_fixed_rate)
-              : null,
+              : 0,
           contract_days_per_month: formData.contract_days_per_month
             ? parseInt(formData.contract_days_per_month)
             : 26,
@@ -945,7 +943,7 @@ export default function EditEmployeePage() {
                     value={
                       parseFloat(formData.overtime_fixed_rate) > 0
                         ? '0'
-                        : formData.overtime_rate_multiplier
+                        : '1.5'
                     }
                     placeholder={t('employee.fields.overtimeRateMultiplier')}
                     readOnly
@@ -965,9 +963,11 @@ export default function EditEmployeePage() {
                     min="0"
                     value={formData.overtime_fixed_rate}
                     onChange={e => {
-                      handleInputChange('overtime_fixed_rate', e.target.value);
-                      // Set multiplier to 0 when fixed rate is used
-                      if (e.target.value && e.target.value.trim() !== '') {
+                      const value = e.target.value;
+                      handleInputChange('overtime_fixed_rate', value);
+                      // When fixed rate is set, multiplier should be 0
+                      // When fixed rate is cleared, multiplier should be 1.5
+                      if (value && value.trim() !== '' && parseFloat(value) > 0) {
                         handleInputChange('overtime_rate_multiplier', '0');
                       } else {
                         handleInputChange('overtime_rate_multiplier', '1.5');

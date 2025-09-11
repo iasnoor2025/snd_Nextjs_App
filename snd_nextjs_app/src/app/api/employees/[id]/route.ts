@@ -390,13 +390,13 @@ const updateEmployeeHandler = async (
       if (Object.prototype.hasOwnProperty.call(updateDataRaw, key)) {
         const v = updateDataRaw[key];
         if (key === 'overtime_fixed_rate') {
-          // overtime_fixed_rate has a NOT NULL constraint with default '6'
-          drizzleData['overtimeFixedRate'] = v === '' || v === null || v === undefined ? '6' : v;
+          // overtime_fixed_rate - allow 0 values
+          drizzleData['overtimeFixedRate'] = v === '' || v === null || v === undefined ? '0' : v;
         } else if (key === 'basic_salary') {
           // basic_salary has a NOT NULL constraint with default '0'
           drizzleData['basicSalary'] = v === '' || v === null || v === undefined ? '0' : v;
         } else if (key === 'overtime_rate_multiplier') {
-          // overtime_rate_multiplier has a NOT NULL constraint with default '1.5'
+          // overtime_rate_multiplier - allow 0 values
           drizzleData['overtimeRateMultiplier'] = v === '' || v === null || v === undefined ? '1.5' : v;
         } else {
           drizzleData['hourlyRate'] = v === '' || v === null || v === undefined ? null : v;

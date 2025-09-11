@@ -549,6 +549,15 @@ export default function CreateEmployeePage() {
       const employeeData = {
         ...formData,
         ...uploadedFiles,
+        // Handle overtime rate logic
+        overtime_rate_multiplier:
+          formData.overtime_fixed_rate && formData.overtime_fixed_rate > 0
+            ? 0
+            : 1.5,
+        overtime_fixed_rate:
+          formData.overtime_fixed_rate && formData.overtime_fixed_rate > 0
+            ? parseFloat(formData.overtime_fixed_rate.toString())
+            : 0,
       };
 
       const response = await fetch('/api/employees', {
@@ -1105,11 +1114,13 @@ export default function CreateEmployeePage() {
                         id="overtime_rate_multiplier"
                         type="number"
                         step="0.1"
-                        value={formData.overtime_rate_multiplier}
-                        onChange={e =>
-                          handleInputChange('overtime_rate_multiplier', parseFloat(e.target.value))
-                        }
+                        value="1.5"
+                        readOnly
+                        className="bg-gray-50"
                       />
+                      <div className="text-xs text-muted-foreground">
+                        {t('employee.fields.overtimeRateMultiplierDescription')}
+                      </div>
                     </div>
                     <div>
                       <Label htmlFor="overtime_fixed_rate">
@@ -1120,10 +1131,21 @@ export default function CreateEmployeePage() {
                         type="number"
                         step="0.01"
                         value={formData.overtime_fixed_rate}
-                        onChange={e =>
-                          handleInputChange('overtime_fixed_rate', parseFloat(e.target.value))
-                        }
+                        onChange={e => {
+                          const value = parseFloat(e.target.value);
+                          handleInputChange('overtime_fixed_rate', value);
+                          // When fixed rate is set, multiplier should be 0
+                          // When fixed rate is cleared, multiplier should be 1.5
+                          if (value > 0) {
+                            handleInputChange('overtime_rate_multiplier', 0);
+                          } else {
+                            handleInputChange('overtime_rate_multiplier', 1.5);
+                          }
+                        }}
                       />
+                      <div className="text-xs text-muted-foreground">
+                        {t('employee.fields.overtimeFixedRateDescription')}
+                      </div>
                     </div>
                   </div>
 
