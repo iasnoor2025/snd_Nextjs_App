@@ -233,8 +233,15 @@ export async function POST(_request: NextRequest) {
 
         const bonusAmount = 0; // Manual setting only
         const deductionAmount = absentDeduction + shortHoursDeduction; // Include both absent and short hours deduction
+        
+        // Calculate total allowances
+        const totalAllowances = 
+          (Number(employee.foodAllowance) || 0) +
+          (Number(employee.housingAllowance) || 0) +
+          (Number(employee.transportAllowance) || 0);
+        
         const finalAmount =
-          Number(employee.basicSalary) + overtimeAmount + bonusAmount - deductionAmount;
+          Number(employee.basicSalary) + totalAllowances + overtimeAmount + bonusAmount - deductionAmount;
 
         // Create payroll
         const insertedPayrolls = await db

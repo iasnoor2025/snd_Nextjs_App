@@ -749,15 +749,30 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
       const logoX = margin + 8;
       const logoY = yPosition + 2;
       
-      // Add a simple text-based logo instead of image
-      pdf.setFillColor(15, 118, 110); // Dark teal background
-      pdf.rect(logoX, logoY, logoSize, logoSize, 'F');
-      
-      // Add "SND" text in the logo area
-      pdf.setTextColor(255, 255, 255); // White text
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(12);
-      pdf.text('SND', logoX + logoSize/2, logoY + logoSize/2 + 2, { align: 'center' });
+      // Add the SND logo image
+      try {
+        // Load image synchronously using fetch
+        const response = await fetch('/snd-logo.png');
+        if (!response.ok) {
+          throw new Error('Failed to load logo');
+        }
+        
+        const arrayBuffer = await response.arrayBuffer();
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+        const dataUrl = `data:image/png;base64,${base64}`;
+        
+        pdf.addImage(dataUrl, 'PNG', logoX, logoY, logoSize, logoSize);
+        
+      } catch (error) {
+        console.error('Error loading logo:', error);
+        // Fallback to text logo
+        pdf.setFillColor(15, 118, 110);
+        pdf.rect(logoX, logoY, logoSize, logoSize, 'F');
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(12);
+        pdf.text('SND', logoX + logoSize/2, logoY + logoSize/2 + 2, { align: 'center' });
+      }
       
       // Company name and subtitle on LEFT SIDE (like your payslip)
       pdf.setFont('helvetica', 'bold');
@@ -1595,21 +1610,10 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <div className="bg-white p-2 rounded-lg shadow-md">
-                  <img
-                    src="/snd-logo.png"
-                    alt="SND Logo"
-                    className="w-12 h-12 object-contain"
-                    onError={imgError => {
-                      
-                      imgError.currentTarget.style.display = 'none';
-                      // Add fallback text
-                      const fallback = document.createElement('div');
-                      fallback.className =
-                        'w-12 h-12 flex items-center justify-center text-xs font-bold text-gray-600 bg-gray-100 rounded';
-                      fallback.textContent = 'SND';
-                      imgError.currentTarget.parentNode?.appendChild(fallback);
-                    }}
-                  />
+                  <div className="w-12 h-12 flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-700 text-white font-bold text-xs rounded shadow-md relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-blue-600 opacity-90"></div>
+                    <span className="relative z-10 font-bold tracking-wider text-white drop-shadow-sm">SND</span>
+                  </div>
                 </div>
                 <div>
                   <h1 className="text-xl font-bold">Samhan Naser Al-Dosri Est.</h1>
