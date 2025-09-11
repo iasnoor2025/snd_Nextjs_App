@@ -223,8 +223,27 @@ export async function POST() {
 
           console.log(`Absent deduction calculation: (${basicSalary} / ${daysInMonth}) * ${absentDays} = ${absentDeduction}`);
 
+          // Calculate short hours deduction
+          // Get employee's contract hours per day
+          const contractHoursPerDay = Number(employee.contractHoursPerDay) || 8;
+          
+          // Calculate hourly rate for deductions
+          const hourlyRate = basicSalary / (totalDaysInMonth * contractHoursPerDay);
+          
+          // Calculate days worked from timesheets (only count days with regular hours)
+          const daysWorked = monthTimesheets.filter(ts => Number(ts.hoursWorked) > 0).length;
+          
+          // Calculate short hours deduction
+          let shortHoursDeduction = 0;
+          if (totalHours < (daysWorked * contractHoursPerDay)) {
+            const expectedHours = daysWorked * contractHoursPerDay;
+            const shortHours = expectedHours - totalHours;
+            shortHoursDeduction = shortHours * hourlyRate;
+            console.log(`Short hours deduction: ${shortHours} hours × ${hourlyRate} = ${shortHoursDeduction}`);
+          }
+
           const bonusAmount = 0; // Manual setting only
-          const deductionAmount = absentDeduction; // Include absent deduction
+          const deductionAmount = absentDeduction + shortHoursDeduction; // Include both absent and short hours deduction
           const finalAmount =
             Number(employee.basicSalary) + overtimeAmount + bonusAmount - deductionAmount;
 

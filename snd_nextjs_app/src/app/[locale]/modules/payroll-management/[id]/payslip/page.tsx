@@ -1145,6 +1145,15 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
       pdf.setTextColor(120, 53, 15); // Reset to dark orange text
       leftY += 5; // Increased row spacing
 
+      // Short Hours Deduction
+      if (shortHoursDeduction > 0) {
+        pdf.text(`Short Hours Deduction:`, leftLabelX, leftY);
+        pdf.setTextColor(239, 68, 68); // Red color for short hours deduction
+        pdf.text(`-${formatCurrencyForPDF(shortHoursDeduction)}`, leftValueX, leftY, { align: 'right' });
+        pdf.setTextColor(120, 53, 15); // Reset to dark orange text
+        leftY += 5; // Increased row spacing
+      }
+
       // Right side: Salary Breakdown - Teal Theme
       const rightColumnX = pageWidth / 2 + 10;
       const rightColumnWidth = (pageWidth - 2 * margin - 20) / 2;
@@ -1209,6 +1218,15 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
       pdf.text(`-${formatCurrencyForPDF(absentDeduction)}`, valueX, rightY, { align: 'right' });
       pdf.setTextColor(15, 118, 110); // Reset to dark teal text
       rightY += 5; // Increased row spacing
+      
+      // Short Hours Deduction
+      if (shortHoursDeduction > 0) {
+        pdf.text(`Short Hours Deduction:`, labelX, rightY);
+        pdf.setTextColor(239, 68, 68); // Red color for short hours deduction
+        pdf.text(`-${formatCurrencyForPDF(shortHoursDeduction)}`, valueX, rightY, { align: 'right' });
+        pdf.setTextColor(15, 118, 110); // Reset to dark teal text
+        rightY += 5; // Increased row spacing
+      }
       
       pdf.text(`Advance Deduction:`, labelX, rightY);
       if (advanceDeduction > 0) {
@@ -1357,15 +1375,20 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
     return total + (Number(day.hours) || 0) + (Number(day.overtime) || 0);
   }, 0);
 
+  // Calculate regular hours from attendance data - Convert Decimal to numbers
+  const regularHoursFromAttendance = attendanceData.reduce((total, day) => {
+    return total + (Number(day.hours) || 0);
+  }, 0);
+
   // Calculate overtime hours from attendance data - Convert Decimal to numbers
   const overtimeHoursFromAttendance = attendanceData.reduce((total, day) => {
     return total + (Number(day.overtime) || 0);
   }, 0);
 
-  // Calculate days worked from attendance data (including Fridays with hours) - Convert Decimal to numbers
+  // Calculate days worked from attendance data (only count days with regular hours) - Convert Decimal to numbers
   const daysWorkedFromAttendance = attendanceData.reduce((count, day) => {
-    // Count as worked if there are hours or overtime, regardless of day
-    return count + (Number(day.hours) > 0 || Number(day.overtime) > 0 ? 1 : 0);
+    // Count as worked only if there are regular hours > 0 (not just overtime)
+    return count + (Number(day.hours) > 0 ? 1 : 0);
   }, 0);
 
   // Format dates
@@ -1485,7 +1508,16 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
   // Use total days in month (31) instead of working days
   const absentDeduction = absentDays > 0 ? (basicSalary / daysInMonth) * absentDays : 0;
 
-  // Debug absent calculation
+  // Calculate short hours deduction
+  const contractHoursPerDay = Number(employee?.contract_hours_per_day) || 8;
+  const hourlyRate = basicSalary / (daysInMonth * contractHoursPerDay);
+  
+  let shortHoursDeduction = 0;
+  if (regularHoursFromAttendance < (daysWorkedFromAttendance * contractHoursPerDay)) {
+    const expectedHours = daysWorkedFromAttendance * contractHoursPerDay;
+    const shortHours = expectedHours - regularHoursFromAttendance;
+    shortHoursDeduction = shortHours * hourlyRate;
+  }
 
   const netSalary =
     basicSalary +
@@ -1493,6 +1525,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
     overtimeAmount +
     bonusAmount -
     absentDeduction -
+    shortHoursDeduction -
     advanceDeduction;
     
   // Unused variables from payroll data - keeping for future reference
@@ -1914,6 +1947,14 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                         -{formatCurrency(absentDeduction)}
                       </span>
                     </div>
+                    {shortHoursDeduction > 0 && (
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-xs text-gray-600 font-medium">Short Hours Deduction</span>
+                        <span className="text-xs font-semibold text-red-700">
+                          -{formatCurrency(shortHoursDeduction)}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -2007,6 +2048,16 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                           -{formatCurrency(absentDeduction)}
                         </span>
                       </div>
+                      {shortHoursDeduction > 0 && (
+                        <div className="flex justify-between items-center py-1">
+                          <span className="text-xs text-gray-600 font-medium">
+                            Short Hours Deduction
+                          </span>
+                          <span className="text-xs font-semibold text-red-700">
+                            -{formatCurrency(shortHoursDeduction)}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex justify-between items-center py-1">
                         <span className="text-xs text-gray-600 font-medium">Advance Deduction</span>
                         <span className="text-xs font-semibold text-red-700">
