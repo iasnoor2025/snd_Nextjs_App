@@ -19,11 +19,13 @@ export async function GET() {
             id: rolesTable.id,
             name: rolesTable.name,
             guard_name: rolesTable.guardName,
+            priority: rolesTable.priority,
+            is_active: rolesTable.isActive,
             created_at: rolesTable.createdAt,
             updated_at: rolesTable.updatedAt,
           })
           .from(rolesTable)
-          .orderBy(desc(rolesTable.createdAt));
+          .orderBy(rolesTable.priority);
 
         // Count users per role from both mechanisms while avoiding double counting:
         // 1. Direct role assignment via users.roleId
@@ -47,7 +49,9 @@ export async function GET() {
         const rolesWithUserCount = roles.map(role => ({
           id: role.id,
           name: role.name,
-          guard_name: role.guard_name,
+          guardName: role.guard_name,
+          priority: role.priority,
+          isActive: role.is_active,
           createdAt: role.created_at,
           updatedAt: role.updated_at,
           userCount: roleIdToCount.get(role.id as number) || 0,
@@ -126,7 +130,7 @@ export async function POST(_request: NextRequest) {
 export async function PUT(_request: NextRequest) {
   try {
     const body = await _request.json();
-    const { id, name, guard_name } = body;
+    const { id, name, guard_name, priority } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'Role ID is required' }, { status: 400 });
@@ -161,15 +165,18 @@ export async function PUT(_request: NextRequest) {
       .set({
         name: name ?? undefined,
         guardName: guard_name ?? undefined,
+        priority: priority !== undefined ? priority : undefined,
         updatedAt: new Date().toISOString(),
       })
       .where(eq(rolesTable.id, id))
       .returning({
         id: rolesTable.id,
         name: rolesTable.name,
-        guard_name: rolesTable.guardName,
-        created_at: rolesTable.createdAt,
-        updated_at: rolesTable.updatedAt,
+        guardName: rolesTable.guardName,
+        priority: rolesTable.priority,
+        isActive: rolesTable.isActive,
+        createdAt: rolesTable.createdAt,
+        updatedAt: rolesTable.updatedAt,
       });
     const role = updated[0];
 
@@ -183,9 +190,11 @@ export async function PUT(_request: NextRequest) {
     const roleWithUserCount = {
       id: role!.id,
       name: role!.name,
-      guard_name: role!.guard_name,
-      createdAt: role!.created_at,
-      updatedAt: role!.updated_at,
+      guardName: role!.guardName,
+      priority: role!.priority,
+      isActive: role!.isActive,
+      createdAt: role!.createdAt,
+      updatedAt: role!.updatedAt,
       userCount,
     };
 

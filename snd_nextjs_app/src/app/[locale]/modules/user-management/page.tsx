@@ -124,6 +124,13 @@ export default function UserManagementPage() {
     guardName: 'web',
   });
 
+  // Priority management states
+  const [isEditPriorityDialogOpen, setIsEditPriorityDialogOpen] = useState(false);
+  const [selectedRoleForPriority, setSelectedRoleForPriority] = useState<Role | null>(null);
+  const [priorityFormData, setPriorityFormData] = useState({
+    priority: 1,
+  });
+
   // Permissions state
   const [loadingPermissions, setLoadingPermissions] = useState(false);
   const [selectedRolePermissions, setSelectedRolePermissions] = useState<Permission[]>([]);
@@ -720,6 +727,43 @@ export default function UserManagementPage() {
     setIsEditRoleDialogOpen(true);
   };
 
+  // Priority management functions
+  const openEditPriorityDialog = (role: Role) => {
+    setSelectedRoleForPriority(role);
+    setPriorityFormData({
+      priority: role.priority || 1,
+    });
+    setIsEditPriorityDialogOpen(true);
+  };
+
+  const updateRolePriority = async () => {
+    if (!selectedRoleForPriority) return;
+
+    try {
+      const response = await fetch(`/api/roles/${selectedRoleForPriority.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          priority: priorityFormData.priority,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update role priority');
+      }
+
+      toast.success('Role priority updated successfully');
+      setIsEditPriorityDialogOpen(false);
+      setSelectedRoleForPriority(null);
+      fetchRoles(); // Refresh roles
+    } catch (error) {
+      console.error('Error updating role priority:', error);
+      toast.error('Failed to update role priority');
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -836,6 +880,10 @@ export default function UserManagementPage() {
             <TabsTrigger value="roles" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
               {t('user.roles')} ({safeRoles.length})
+            </TabsTrigger>
+            <TabsTrigger value="hierarchy" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Hierarchy
             </TabsTrigger>
             <TabsTrigger value="permissions" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
@@ -1029,6 +1077,7 @@ export default function UserManagementPage() {
                     <TableRow>
                       <TableHead>{t('user.name')}</TableHead>
                       <TableHead>{t('user.guardName')}</TableHead>
+                      <TableHead>Priority</TableHead>
                       <TableHead>{t('user.permissions')}</TableHead>
                       <TableHead>{t('user.users')}</TableHead>
                       <TableHead>{t('user.createdAt')}</TableHead>
@@ -1041,6 +1090,14 @@ export default function UserManagementPage() {
                         <TableRow key={role.id}>
                           <TableCell className="font-medium">{role.name}</TableCell>
                           <TableCell>{role.guardName}</TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={role.priority === 999 ? 'destructive' : role.priority && role.priority <= 3 ? 'default' : 'secondary'}
+                              className="font-mono"
+                            >
+                              {role.priority || 'N/A'}
+                            </Badge>
+                          </TableCell>
                           <TableCell>
                             <div className="max-w-xs">
                               {rolePermissions[role.id] ? (
@@ -1084,6 +1141,7 @@ export default function UserManagementPage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => openPermissionDialog(role)}
+                                title="Manage Permissions"
                               >
                                 <Shield className="h-4 w-4" />
                               </Button>
@@ -1092,8 +1150,19 @@ export default function UserManagementPage() {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => openEditRoleDialog(role)}
+                                  title="Edit Role"
                                 >
                                   <Edit className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {role.name !== 'USER' && allowedActions.includes('update') && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openEditPriorityDialog(role)}
+                                  title="Edit Priority"
+                                >
+                                  <Settings className="h-4 w-4" />
                                 </Button>
                               )}
                               {allowedActions.includes('delete') && (
@@ -1118,6 +1187,100 @@ export default function UserManagementPage() {
                     )}
                   </TableBody>
                 </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Role Hierarchy Tab */}
+          <TabsContent value="hierarchy" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Role Hierarchy
+                </CardTitle>
+                <CardDescription>
+                  Visual representation of role priorities and hierarchy
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Role Priority Visualization */}
+                  <div className="grid gap-3">
+                    {safeRoles
+                      .filter(role => role.priority !== 999) // Exclude USER role
+                      .sort((a, b) => (a.priority || 999) - (b.priority || 999))
+                      .map((role, index) => (
+                        <div key={role.id} className="flex items-center gap-4 p-3 border rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <Badge 
+                              variant={role.priority && role.priority <= 3 ? 'default' : 'secondary'}
+                              className="font-mono w-12 justify-center"
+                            >
+                              {role.priority || 'N/A'}
+                            </Badge>
+                            <div className="text-sm font-medium">{role.name}</div>
+                          </div>
+                          <div className="flex-1">
+                            <div className="h-2 bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-primary transition-all duration-300"
+                                style={{ 
+                                  width: `${Math.max(10, 100 - ((role.priority || 999) - 1) * 5)}%` 
+                                }}
+                              />
+                            </div>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {role.userCount || 0} users
+                          </div>
+                        </div>
+                      ))}
+                    
+                    {/* USER Role - Special handling */}
+                    {safeRoles.find(role => role.priority === 999) && (
+                      <div className="flex items-center gap-4 p-3 border rounded-lg border-destructive/20 bg-destructive/5">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="destructive" className="font-mono w-12 justify-center">
+                            999
+                          </Badge>
+                          <div className="text-sm font-medium">USER</div>
+                        </div>
+                        <div className="flex-1">
+                          <div className="h-2 bg-muted rounded-full overflow-hidden">
+                            <div className="h-full bg-destructive w-1" />
+                          </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {safeRoles.find(role => role.priority === 999)?.userCount || 0} users
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Hierarchy Legend */}
+                  <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+                    <h4 className="font-medium mb-2">Priority System</h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <div className="font-medium text-green-600">High Priority (1-3)</div>
+                        <div className="text-muted-foreground">Administrative roles with full access</div>
+                      </div>
+                      <div>
+                        <div className="font-medium text-orange-600">Medium Priority (4-10)</div>
+                        <div className="text-muted-foreground">Management and specialist roles</div>
+                      </div>
+                      <div>
+                        <div className="font-medium text-blue-600">Low Priority (11+)</div>
+                        <div className="text-muted-foreground">Operational and basic roles</div>
+                      </div>
+                      <div>
+                        <div className="font-medium text-red-600">USER (999)</div>
+                        <div className="text-muted-foreground">Read-only access, lowest priority</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -1392,6 +1555,52 @@ export default function UserManagementPage() {
                 {t('cancel')}
               </Button>
               <Button onClick={updateRole}>{t('update')}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Priority Dialog */}
+        <Dialog open={isEditPriorityDialogOpen} onOpenChange={setIsEditPriorityDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Role Priority</DialogTitle>
+              <DialogDescription>
+                Change the priority for {selectedRoleForPriority?.name} role
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="priority">Priority</Label>
+                <Input
+                  id="priority"
+                  type="number"
+                  min="1"
+                  max="998"
+                  value={priorityFormData.priority}
+                  onChange={e => setPriorityFormData(prev => ({ 
+                    ...prev, 
+                    priority: parseInt(e.target.value) || 1 
+                  }))}
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  Lower numbers = higher priority. USER role is always 999.
+                </p>
+              </div>
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <h4 className="font-medium mb-2">Priority Guidelines:</h4>
+                <div className="text-sm space-y-1">
+                  <div><strong>1-3:</strong> Administrative roles (SUPER_ADMIN, ADMIN, MANAGER)</div>
+                  <div><strong>4-10:</strong> Management and specialist roles</div>
+                  <div><strong>11+:</strong> Operational and basic roles</div>
+                  <div><strong>999:</strong> USER role (read-only access)</div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditPriorityDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={updateRolePriority}>Update Priority</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
