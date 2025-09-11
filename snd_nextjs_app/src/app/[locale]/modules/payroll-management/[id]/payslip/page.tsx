@@ -749,17 +749,15 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
       const logoX = margin + 8;
       const logoY = yPosition + 2;
       
-      // Add the actual SND logo image from your payslip
-      // You need to add the logo image file to your project
-      try {
-        // Using the real SND logo from your project
-        pdf.addImage('/snd-logo.png', 'PNG', logoX, logoY, logoSize, logoSize);
-      } catch (loadErr) {
-        // Fallback if image loading fails
-        console.error('Error loading logo image:', loadErr);
-        pdf.setFillColor(255, 255, 255);
-        pdf.rect(logoX, logoY, logoSize, logoSize, 'F');
-      }
+      // Add a simple text-based logo instead of image
+      pdf.setFillColor(15, 118, 110); // Dark teal background
+      pdf.rect(logoX, logoY, logoSize, logoSize, 'F');
+      
+      // Add "SND" text in the logo area
+      pdf.setTextColor(255, 255, 255); // White text
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(12);
+      pdf.text('SND', logoX + logoSize/2, logoY + logoSize/2 + 2, { align: 'center' });
       
       // Company name and subtitle on LEFT SIDE (like your payslip)
       pdf.setFont('helvetica', 'bold');
