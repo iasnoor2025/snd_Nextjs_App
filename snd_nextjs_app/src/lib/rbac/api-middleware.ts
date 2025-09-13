@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
-import { hasPermission, User } from './server-rbac';
+import { checkUserPermission } from './permission-service';
+import { eq } from 'drizzle-orm';
 
 export type Action = 'create' | 'read' | 'update' | 'delete' | 'manage' | 'approve' | 'reject' | 'export' | 'import' | 'sync' | 'reset';
 export type Subject = string;
@@ -242,52 +243,53 @@ export const PermissionConfigs = {
 
 /**
  * Middleware function to check permissions for API routes
- * This uses database-driven permission checks instead of hardcoded ones
+ * This uses database-driven permission checks based on permissions, not roles
  */
 export async function checkApiPermission(
   _request: NextRequest,
   config: PermissionConfig
-): Promise<{ authorized: boolean; user?: User; error?: string }> {
+): Promise<{ authorized: boolean; user?: { id: string; email: string; name: string; role: string; isActive: boolean }; error?: string }> {
   try {
     // Get server session
     const session = await getServerSession(authConfig);
     
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return {
         authorized: false,
         error: 'Authentication required'
       };
     }
 
-    // Create user object for permission checking
-    const user: User = {
-      id: session.user.id || '',
-      email: session.user.email || '',
-      name: session.user.name || '',
-      role: (session.user.role as string) || 'USER',
-      isActive: session.user.isActive !== false,
-    };
+    // Use the permission-based checking system that checks direct user permissions first
+    const permissionCheck = await checkUserPermission(session.user.id, config.action, config.subject);
 
-    // Simple permission check for SUPER_ADMIN
-    let hasAccess = false;
-    if (user.role === 'SUPER_ADMIN') {
-      hasAccess = true;
-    }
-
-    if (!hasAccess) {
+    if (!permissionCheck.hasPermission) {
       return {
         authorized: false,
-        user,
-        error: `Insufficient permissions: ${config.action}.${config.subject}`
+        user: {
+          id: session.user.id,
+          email: session.user.email || '',
+          name: session.user.name || '',
+          role: session.user.role || 'USER',
+          isActive: session.user.isActive !== false,
+        },
+        error: `Insufficient permissions: ${config.action}.${config.subject}. ${permissionCheck.reason || ''}`
       };
     }
 
     return {
       authorized: true,
-      user
+      user: {
+        id: session.user.id,
+        email: session.user.email || '',
+        name: session.user.name || '',
+        role: session.user.role || 'USER',
+        isActive: session.user.isActive !== false,
+      }
     };
 
   } catch (error) {
+    console.error('Permission check error:', error);
     return {
       authorized: false,
       error: 'Permission check failed'
@@ -319,6 +321,7 @@ export function withPermission(config: PermissionConfig) {
         // Call the original handler with the request and additional args
         return handler(request, ...args);
       } catch (error) {
+        console.error('Permission wrapper error:', error);
         return NextResponse.json(
           { 
             error: 'Permission check failed',
@@ -347,7 +350,7 @@ export async function requirePermission(
   request: NextRequest,
   action: Action,
   subject: Subject
-): Promise<User> {
+): Promise<{ id: string; email: string; name: string; role: string; isActive: boolean }> {
   const permissionResult = await checkApiPermission(request, { action, subject });
   
   if (!permissionResult.authorized) {
@@ -404,6 +407,11 @@ export async function hasRequiredRole(userRole: string, requiredRoles: string[])
 
 /**
  * Role-based access control for API routes (database-driven)
+ * 
+ * ⚠️ WARNING: This function uses role hierarchy which conflicts with permission-based RBAC.
+ * Use withPermission() instead for truly permission-based access control.
+ * 
+ * @deprecated Consider using withPermission() for permission-based RBAC
  */
 export function withRole(requiredRoles: string[]) {
   return function(handler: ApiHandler) {
@@ -488,23 +496,13 @@ export function withEmployeeListPermission(handler: ApiHandler) {
         );
       }
 
-      // Check if user has permission to access employee data
-      const hasEmployeePermission = await hasPermission(
-        { 
-          id: session.user.id || '0', 
-          email: session.user.email || '', 
-          name: session.user.name || '', 
-          role: session.user.role || 'USER', 
-          isActive: true 
-        },
-        'read',
-        'Employee'
-      );
+      // Check if user has permission to access employee data using permission-based system
+      const permissionCheck = await checkUserPermission(session.user.id || '0', 'read', 'Employee');
 
-      if (!hasEmployeePermission) {
+      if (!permissionCheck.hasPermission) {
         return NextResponse.json(
           { 
-            error: 'Insufficient permissions to access employee data',
+            error: `Insufficient permissions to access employee data. ${permissionCheck.reason || ''}`,
             code: 'INSUFFICIENT_PERMISSIONS'
           },
           { status: 403 }

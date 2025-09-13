@@ -8,7 +8,7 @@ import {
   users,
 } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { Action, Subject, User } from './server-rbac';
+import { Action, Subject } from './server-rbac';
 
 export interface PermissionCheck {
   hasPermission: boolean;
@@ -39,17 +39,25 @@ export async function checkUserPermission(
   try {
     // Fetch user role and permissions via Drizzle
     console.log(`🔍 Fetching user data for ID: ${userId}`);
+    
+    // Debug: Check if userId can be parsed as integer
+    const parsedUserId = parseInt(userId);
+    console.log(`🔢 Parsed user ID: ${parsedUserId} (original: ${userId}, type: ${typeof userId})`);
+    
+    if (isNaN(parsedUserId)) {
+      console.log(`❌ Invalid user ID: ${userId} cannot be parsed as integer`);
+      return { hasPermission: false, reason: 'Invalid user ID format' };
+    }
+    
+    // First, try to get user with direct roleId (from users table)
     const userRows = await db
       .select({
         id: users.id,
         isActive: users.isActive,
-        roleId: roles.id,
-        roleName: roles.name,
+        directRoleId: users.roleId,
       })
       .from(users)
-      .leftJoin(modelHasRoles, eq(modelHasRoles.userId, users.id))
-      .leftJoin(roles, eq(roles.id, modelHasRoles.roleId))
-      .where(eq(users.id, parseInt(userId)));
+      .where(eq(users.id, parsedUserId));
 
     console.log(`📊 User rows found:`, userRows);
 
@@ -64,15 +72,47 @@ export async function checkUserPermission(
       return { hasPermission: false, reason: 'User account is inactive' };
     }
 
-    const roleName = user.roleName || 'USER';
-    const roleId = user.roleId;
+    // Get role information - try direct roleId first, then modelHasRoles
+    let roleId: number | null = user.directRoleId;
+    let roleName = 'USER';
+
+    if (roleId) {
+      // Get role name from direct roleId
+      const roleRows = await db
+        .select({ name: roles.name })
+        .from(roles)
+        .where(eq(roles.id, roleId))
+        .limit(1);
+      
+      if (roleRows.length > 0 && roleRows[0]) {
+        roleName = roleRows[0].name || 'USER';
+      }
+    } else {
+      // Fallback to modelHasRoles if no direct roleId
+      const modelRoleRows = await db
+        .select({
+          roleId: roles.id,
+          roleName: roles.name,
+        })
+        .from(modelHasRoles)
+        .leftJoin(roles, eq(roles.id, modelHasRoles.roleId))
+        .where(eq(modelHasRoles.userId, parsedUserId))
+        .limit(1);
+      
+      if (modelRoleRows.length > 0 && modelRoleRows[0]) {
+        roleId = modelRoleRows[0].roleId;
+        roleName = modelRoleRows[0].roleName || 'USER';
+      }
+    }
+
+    console.log(`📊 Final role info:`, { roleId, roleName });
 
     // Direct user permissions
     const directPermRows = await db
       .select({ name: permissionsTable.name })
       .from(modelHasPermissions)
       .leftJoin(permissionsTable, eq(permissionsTable.id, modelHasPermissions.permissionId))
-      .where(eq(modelHasPermissions.userId, parseInt(userId)));
+      .where(eq(modelHasPermissions.userId, parsedUserId));
     const directPermissions = directPermRows.map(r => r.name!).filter(Boolean);
 
     // Get user's role
@@ -104,6 +144,12 @@ export async function checkUserPermission(
 
     // Check role permissions
     console.log(`🔍 Fetching role permissions for role ID: ${roleId}`);
+    
+    if (!roleId) {
+      console.log(`❌ No role ID found for user ${userId}`);
+      return { hasPermission: false, reason: 'User has no assigned role' };
+    }
+    
     const rolePermRows = await db
       .select({ name: permissionsTable.name })
       .from(roleHasPermissions)
@@ -171,6 +217,12 @@ export async function checkUserPermission(
  */
 export async function getUserPermissions(userId: string): Promise<UserPermissions | null> {
   try {
+    // Parse user ID
+    const parsedUserId = parseInt(userId);
+    if (isNaN(parsedUserId)) {
+      return null;
+    }
+    
     const userRows = await db
       .select({
         id: users.id,
@@ -180,7 +232,7 @@ export async function getUserPermissions(userId: string): Promise<UserPermission
       .from(users)
       .leftJoin(modelHasRoles, eq(modelHasRoles.userId, users.id))
       .leftJoin(roles, eq(roles.id, modelHasRoles.roleId))
-      .where(eq(users.id, parseInt(userId)));
+      .where(eq(users.id, parsedUserId));
     if (userRows.length === 0 || !userRows[0]) return null;
 
     // User rows already validated above
@@ -191,7 +243,7 @@ export async function getUserPermissions(userId: string): Promise<UserPermission
       .select({ name: permissionsTable.name })
       .from(modelHasPermissions)
       .leftJoin(permissionsTable, eq(permissionsTable.id, modelHasPermissions.permissionId))
-      .where(eq(modelHasPermissions.userId, parseInt(userId)));
+      .where(eq(modelHasPermissions.userId, parsedUserId));
     const directPermissions = directPermRows2.map(r => r.name!).filter(Boolean);
     const rolePermRows2 = await db
       .select({ name: permissionsTable.name })
@@ -209,7 +261,7 @@ export async function getUserPermissions(userId: string): Promise<UserPermission
       inheritedPermissions,
     };
   } catch (error) {
-    
+    console.error('Error getting user permissions:', error);
     return null;
   }
 }
@@ -232,7 +284,7 @@ export async function assignPermissionsToRole(
 
     return { success: true, message: 'Permissions assigned successfully' };
   } catch (error) {
-    
+    console.error('Error assigning permissions:', error);
     return { success: false, message: 'Error assigning permissions' };
   }
 }
@@ -245,17 +297,23 @@ export async function assignPermissionsToUser(
   permissionIds: number[]
 ): Promise<{ success: boolean; message: string }> {
   try {
+    // Parse user ID
+    const parsedUserId = parseInt(userId);
+    if (isNaN(parsedUserId)) {
+      return { success: false, message: 'Invalid user ID format' };
+    }
+    
     // Assign direct permissions via Drizzle
-    await db.delete(modelHasPermissions).where(eq(modelHasPermissions.userId, parseInt(userId)));
+    await db.delete(modelHasPermissions).where(eq(modelHasPermissions.userId, parsedUserId));
     if (permissionIds.length > 0) {
       await db
         .insert(modelHasPermissions)
-        .values(permissionIds.map(pid => ({ userId: parseInt(userId), permissionId: pid })));
+        .values(permissionIds.map(pid => ({ userId: parsedUserId, permissionId: pid })));
     }
 
     return { success: true, message: 'Permissions assigned successfully' };
   } catch (error) {
-    
+    console.error('Error assigning permissions:', error);
     return { success: false, message: 'Error assigning permissions' };
   }
 }
@@ -266,7 +324,7 @@ export async function assignPermissionsToUser(
 export async function createPermission(
   name: string,
   guardName: string = 'web'
-): Promise<{ success: boolean; message: string; permission?: any }> {
+): Promise<{ success: boolean; message: string; permission?: { name: string; id: number; createdAt: string; updatedAt: string; guardName: string } | undefined }> {
   try {
     // Check if permission already exists
     const existing = await db
@@ -287,7 +345,7 @@ export async function createPermission(
 
     return { success: true, message: 'Permission created successfully', permission };
   } catch (error) {
-    
+    console.error('Error creating permission:', error);
     return { success: false, message: 'Error creating permission' };
   }
 }
@@ -301,7 +359,7 @@ export async function getPermissions(filters?: {
   page?: number;
   limit?: number;
 }): Promise<{
-  permissions: any[];
+  permissions: Array<{ id: number; name: string; guardName: string; createdAt: string; updatedAt: string }>;
   pagination: {
     page: number;
     limit: number;

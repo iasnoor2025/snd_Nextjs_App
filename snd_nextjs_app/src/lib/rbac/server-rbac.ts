@@ -400,10 +400,9 @@ export async function hasPermission(user: User, action: Action, subject: Subject
  */
 function hasPermissionFallback(user: User, action: Action, subject: Subject): boolean {
   
-  // SUPER_ADMIN has access to everything
-  if (user.role === 'SUPER_ADMIN') {
-    return true;
-  }
+  // Permission-based fallback: Check for wildcard permissions
+  // SUPER_ADMIN should have wildcard permissions (* or manage.all) assigned
+  // instead of hardcoded role-based access
 
   // ADMIN role permissions
   if (user.role === 'ADMIN') {

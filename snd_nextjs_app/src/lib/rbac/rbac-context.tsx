@@ -100,18 +100,12 @@ async function loadUserPermissions(userId: string): Promise<string[]> {
   return [];
 }
 
-// Client-side permission checking (dynamic system)
+// Client-side permission checking (permission-based system)
 function hasPermissionClient(user: User, action: Action, subject: Subject): boolean {
   // Permission check in progress
   
-  // SUPER_ADMIN has all permissions
-  if (user.role === 'SUPER_ADMIN') {
-    // SUPER_ADMIN granted
-    return true;
-  }
-  
-  // For all other roles, check against cached permissions
-  // The permissions are loaded when the user logs in and cached in the context
+  // For ALL roles (including SUPER_ADMIN), check against cached permissions
+  // This ensures truly permission-based RBAC instead of role-based
   const userPermissions = getUserPermissionsFromCache(user.id);
   console.log(`🔐 Permission check for user ${user.id} (${user.role}):`, {
     action,

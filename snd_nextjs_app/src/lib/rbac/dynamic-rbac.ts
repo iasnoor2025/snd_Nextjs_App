@@ -80,10 +80,8 @@ export const hasPermission = async (user: User, action: Action, subject: Subject
   if (!user || !user.isActive) return false;
   
   try {
-    // Special case for SUPER_ADMIN
-    if (user.role === 'SUPER_ADMIN') {
-      return true; // SUPER_ADMIN has access to everything
-    }
+    // Permission-based checking: SUPER_ADMIN should have wildcard permissions
+    // assigned instead of hardcoded role-based access
     
     // Get user's role permissions
     const permissions = await getRolePermissions(user.role);
