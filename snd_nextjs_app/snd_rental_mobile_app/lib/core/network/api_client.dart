@@ -35,6 +35,13 @@ class ApiClient {
           final sessionCookie = await _secureStorage.read(key: AppConstants.sessionCookieKey);
           if (sessionCookie != null) {
             options.headers['Cookie'] = sessionCookie;
+            if (kDebugMode) {
+              print('🍪 Added session cookie to request: ${options.uri}');
+            }
+          } else {
+            if (kDebugMode) {
+              print('🍪 No session cookie found for request: ${options.uri}');
+            }
           }
           
           // Log request
@@ -93,9 +100,9 @@ class ApiClient {
 
   Future<bool> _refreshSession() async {
     try {
-      // For NextAuth.js, we need to call the session endpoint to refresh
+      // For NextAuth.js, we need to call the mobile session endpoint to refresh
       final response = await Dio().get(
-        '${AppConstants.baseUrl}/auth/session',
+        '${AppConstants.baseUrl}/auth/mobile-session',
         options: Options(
           headers: {
             'Cookie': await _secureStorage.read(key: AppConstants.sessionCookieKey) ?? '',

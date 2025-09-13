@@ -2,16 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../services/auth_service.dart';
 import '../employees/employee_list_page.dart';
+import '../employees/add_employee_page.dart';
 import '../projects/project_list_page.dart';
 import '../equipment/equipment_list_page.dart';
 import '../rentals/rental_list_page.dart';
 import '../customers/customer_list_page.dart';
 import '../../widgets/dashboard_card.dart';
+import '../../widgets/ui/futuristic_bottom_nav.dart';
 import '../../providers/employee_provider.dart';
 import '../../providers/project_provider.dart';
 import '../../providers/equipment_provider.dart';
 import '../../providers/rental_provider.dart';
-import '../../providers/customer_provider.dart';
+import '../../providers/payroll_provider.dart';
+import '../../providers/leave_provider.dart';
+import '../../providers/quotation_provider.dart';
+import '../../providers/safety_incident_provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -37,44 +42,13 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _pages[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
+      bottomNavigationBar: FuturisticBottomNavWithIndicator(
         currentIndex: _currentIndex,
         onTap: (index) {
           setState(() {
             _currentIndex = index;
           });
         },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Employees',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.work),
-            label: 'Projects',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.build),
-            label: 'Equipment',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long),
-            label: 'Rentals',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.business),
-            label: 'Customers',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
       ),
     );
   }
@@ -97,10 +71,14 @@ class _DashboardTabState extends State<DashboardTab> {
   }
 
   void _loadDashboardData() {
-    context.read<EmployeeProvider>().loadEmployees();
+    context.read<EmployeeProvider>().loadAllEmployees();
     context.read<ProjectProvider>().loadProjects();
     context.read<EquipmentProvider>().loadEquipment();
     context.read<RentalProvider>().loadRentals();
+    context.read<PayrollProvider>().loadPayrolls(refresh: true);
+    context.read<LeaveProvider>().loadLeaves(refresh: true);
+    context.read<QuotationProvider>().loadQuotations(refresh: true);
+    context.read<SafetyIncidentProvider>().loadIncidents(refresh: true);
   }
 
   @override
@@ -178,60 +156,124 @@ class _DashboardTabState extends State<DashboardTab> {
               const SizedBox(height: 16),
               
               // Statistics Grid
-              Consumer2<EmployeeProvider, ProjectProvider>(
-                builder: (context, employeeProvider, projectProvider, child) {
-                  return Consumer2<EquipmentProvider, RentalProvider>(
-                    builder: (context, equipmentProvider, rentalProvider, child) {
-                      final employeeStats = employeeProvider.getEmployeeStats();
-                      final projectStats = projectProvider.getProjectStats();
-                      final equipmentStats = equipmentProvider.getEquipmentStats();
-                      final rentalStats = rentalProvider.getRentalStats();
-                      
-                      return GridView.count(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                        childAspectRatio: 1.5,
-                        children: [
-                          DashboardCard(
-                            title: 'Total Employees',
-                            value: employeeStats['total'].toString(),
-                            icon: Icons.people,
-                            color: Colors.green,
-                            onTap: () {
-                              // Navigate to employees tab
+              Consumer<EmployeeProvider>(
+                builder: (context, employeeProvider, child) {
+                  return Consumer<ProjectProvider>(
+                    builder: (context, projectProvider, child) {
+                      return Consumer<EquipmentProvider>(
+                        builder: (context, equipmentProvider, child) {
+                          return Consumer<RentalProvider>(
+                            builder: (context, rentalProvider, child) {
+                              return Consumer<PayrollProvider>(
+                                builder: (context, payrollProvider, child) {
+                                  return Consumer<LeaveProvider>(
+                                    builder: (context, leaveProvider, child) {
+                                      return Consumer<QuotationProvider>(
+                                        builder: (context, quotationProvider, child) {
+                                          return Consumer<SafetyIncidentProvider>(
+                                            builder: (context, safetyProvider, child) {
+                                              final employeeStats = employeeProvider.getEmployeeStats();
+                                              final projectStats = projectProvider.getProjectStats();
+                                              final equipmentStats = equipmentProvider.getEquipmentStats();
+                                              final rentalStats = rentalProvider.getRentalStats();
+                                              final payrollStats = payrollProvider.getPayrollStats();
+                                              final leaveStats = leaveProvider.getLeaveStats();
+                                              final quotationStats = quotationProvider.getQuotationStats();
+                                              final safetyStats = safetyProvider.getIncidentStats();
+                                              
+                                              return GridView.count(
+                                                shrinkWrap: true,
+                                                physics: const NeverScrollableScrollPhysics(),
+                                                crossAxisCount: 2,
+                                                crossAxisSpacing: 16,
+                                                mainAxisSpacing: 16,
+                                                childAspectRatio: 1.2,
+                                                children: [
+                                                  DashboardCard(
+                                                    title: 'Total Employees',
+                                                    value: employeeStats['total'].toString(),
+                                                    icon: Icons.people,
+                                                    color: Colors.green,
+                                                    onTap: () {
+                                                      // Navigate to employees tab
+                                                    },
+                                                  ),
+                                                  DashboardCard(
+                                                    title: 'Active Projects',
+                                                    value: projectStats['active'].toString(),
+                                                    icon: Icons.work,
+                                                    color: Colors.blue,
+                                                    onTap: () {
+                                                      // Navigate to projects tab
+                                                    },
+                                                  ),
+                                                  DashboardCard(
+                                                    title: 'Available Equipment',
+                                                    value: equipmentStats['available'].toString(),
+                                                    icon: Icons.build,
+                                                    color: Colors.orange,
+                                                    onTap: () {
+                                                      // Navigate to equipment tab
+                                                    },
+                                                  ),
+                                                  DashboardCard(
+                                                    title: 'Active Rentals',
+                                                    value: rentalStats['active'].toString(),
+                                                    icon: Icons.receipt_long,
+                                                    color: Colors.purple,
+                                                    onTap: () {
+                                                      // Navigate to rentals tab
+                                                    },
+                                                  ),
+                                                  DashboardCard(
+                                                    title: 'Pending Payrolls',
+                                                    value: payrollStats['pending'].toString(),
+                                                    icon: Icons.payment,
+                                                    color: Colors.indigo,
+                                                    onTap: () {
+                                                      // Navigate to payroll tab
+                                                    },
+                                                  ),
+                                                  DashboardCard(
+                                                    title: 'Leave Requests',
+                                                    value: leaveStats['pending'].toString(),
+                                                    icon: Icons.event_available,
+                                                    color: Colors.teal,
+                                                    onTap: () {
+                                                      // Navigate to leave tab
+                                                    },
+                                                  ),
+                                                  DashboardCard(
+                                                    title: 'Active Quotations',
+                                                    value: quotationStats['sent'].toString(),
+                                                    icon: Icons.description,
+                                                    color: Colors.cyan,
+                                                    onTap: () {
+                                                      // Navigate to quotations tab
+                                                    },
+                                                  ),
+                                                  DashboardCard(
+                                                    title: 'Open Incidents',
+                                                    value: safetyStats['open'].toString(),
+                                                    icon: Icons.security,
+                                                    color: Colors.red,
+                                                    onTap: () {
+                                                      // Navigate to safety tab
+                                                    },
+                                                  ),
+                                                ],
+                                              );
+                                            },
+                                          );
+                                        },
+                                      );
+                                    },
+                                  );
+                                },
+                              );
                             },
-                          ),
-                          DashboardCard(
-                            title: 'Active Projects',
-                            value: projectStats['active'].toString(),
-                            icon: Icons.work,
-                            color: Colors.blue,
-                            onTap: () {
-                              // Navigate to projects tab
-                            },
-                          ),
-                          DashboardCard(
-                            title: 'Available Equipment',
-                            value: equipmentStats['available'].toString(),
-                            icon: Icons.build,
-                            color: Colors.orange,
-                            onTap: () {
-                              // Navigate to equipment tab
-                            },
-                          ),
-                          DashboardCard(
-                            title: 'Active Rentals',
-                            value: rentalStats['active'].toString(),
-                            icon: Icons.receipt_long,
-                            color: Colors.purple,
-                            onTap: () {
-                              // Navigate to rentals tab
-                            },
-                          ),
-                        ],
+                          );
+                        },
                       );
                     },
                   );
@@ -255,7 +297,11 @@ class _DashboardTabState extends State<DashboardTab> {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        // TODO: Navigate to add employee
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const AddEmployeePage(),
+                          ),
+                        );
                       },
                       icon: const Icon(Icons.person_add),
                       label: const Text('Add Employee'),
@@ -312,6 +358,78 @@ class _DashboardTabState extends State<DashboardTab> {
                       label: const Text('Add Rental'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.purple,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 12),
+              
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        // TODO: Navigate to add leave request
+                      },
+                      icon: const Icon(Icons.event_available),
+                      label: const Text('Request Leave'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.teal,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        // TODO: Navigate to add quotation
+                      },
+                      icon: const Icon(Icons.description),
+                      label: const Text('Create Quotation'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.cyan,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 12),
+              
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        // TODO: Navigate to report incident
+                      },
+                      icon: const Icon(Icons.security),
+                      label: const Text('Report Incident'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        // TODO: Navigate to generate payroll
+                      },
+                      icon: const Icon(Icons.payment),
+                      label: const Text('Generate Payroll'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.indigo,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),

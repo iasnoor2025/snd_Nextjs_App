@@ -23,9 +23,12 @@ class TimesheetProvider extends ChangeNotifier {
 
   // Getters
   List<TimesheetModel> get timesheets => _filteredTimesheets;
+  List<TimesheetModel> get filteredTimesheets => _filteredTimesheets;
   TimesheetModel? get selectedTimesheet => _selectedTimesheet;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  String? get errorMessage => _error;
+  bool get hasError => _error != null;
   String get searchQuery => _searchQuery;
   String? get statusFilter => _statusFilter;
   String? get employeeFilter => _employeeFilter;
@@ -35,7 +38,11 @@ class TimesheetProvider extends ChangeNotifier {
   bool get hasMoreData => _hasMoreData;
 
   // Load timesheets
-  Future<void> loadTimesheets({bool refresh = false}) async {
+  Future<void> loadTimesheets({
+    bool refresh = false,
+    String? employeeId,
+    String? projectId,
+  }) async {
     if (refresh) {
       _currentPage = 1;
       _hasMoreData = true;
@@ -54,8 +61,8 @@ class TimesheetProvider extends ChangeNotifier {
         limit: 20,
         search: _searchQuery.isNotEmpty ? _searchQuery : null,
         status: _statusFilter,
-        employeeId: _employeeFilter,
-        projectId: _projectFilter,
+        employeeId: employeeId ?? _employeeFilter,
+        projectId: projectId ?? _projectFilter,
         startDate: _startDateFilter,
         endDate: _endDateFilter,
       );
@@ -462,4 +469,5 @@ class TimesheetProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
   }
+
 }

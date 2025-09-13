@@ -1,8 +1,3 @@
-import 'package:json_annotation/json_annotation.dart';
-
-part 'project_model.g.dart';
-
-@JsonSerializable()
 class ProjectModel {
   final String id;
   final String name;
@@ -66,8 +61,79 @@ class ProjectModel {
     required this.updatedAt,
   });
 
-  factory ProjectModel.fromJson(Map<String, dynamic> json) => _$ProjectModelFromJson(json);
-  Map<String, dynamic> toJson() => _$ProjectModelToJson(this);
+  factory ProjectModel.fromJson(Map<String, dynamic> json) {
+    try {
+      return ProjectModel(
+        id: json['id']?.toString() ?? '',
+        name: json['name']?.toString() ?? 'Unknown Project',
+        description: json['description']?.toString(),
+        clientName: json['client_name']?.toString(),
+        clientContact: json['client_contact']?.toString(),
+        clientEmail: json['client_email']?.toString(),
+        clientPhone: json['client_phone']?.toString(),
+        address: json['address']?.toString(),
+        city: json['city'] as String?,
+        state: json['state'] as String?,
+        postalCode: json['postal_code'] as String?,
+        country: json['country'] as String?,
+        status: json['status'] as String?,
+        priority: json['priority'] as String?,
+        startDate: json['start_date'] != null ? DateTime.parse(json['start_date'].toString()) : null,
+        endDate: json['end_date'] != null ? DateTime.parse(json['end_date'].toString()) : null,
+        actualStartDate: json['actual_start_date'] != null ? DateTime.parse(json['actual_start_date'].toString()) : null,
+        actualEndDate: json['actual_end_date'] != null ? DateTime.parse(json['actual_end_date'].toString()) : null,
+        budget: json['budget'] != null ? (json['budget'] as num).toDouble() : null,
+        actualCost: json['actual_cost'] != null ? (json['actual_cost'] as num).toDouble() : null,
+        currency: json['currency'] as String?,
+        projectManagerId: json['project_manager_id'] as String?,
+        projectManagerName: json['project_manager_name'] as String?,
+        teamMemberIds: json['team_member_ids'] != null ? List<String>.from(json['team_member_ids']) : null,
+        teamMemberNames: json['team_member_names'] != null ? List<String>.from(json['team_member_names']) : null,
+        equipmentIds: json['equipment_ids'] != null ? List<String>.from(json['equipment_ids']) : null,
+        notes: json['notes'] as String?,
+        createdAt: DateTime.parse(json['created_at'].toString()),
+        updatedAt: DateTime.parse(json['updated_at'].toString()),
+      );
+    } catch (e) {
+      print('Error parsing project JSON: $e');
+      print('JSON data: $json');
+      rethrow;
+    }
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'client_name': clientName,
+      'client_contact': clientContact,
+      'client_email': clientEmail,
+      'client_phone': clientPhone,
+      'address': address,
+      'city': city,
+      'state': state,
+      'postal_code': postalCode,
+      'country': country,
+      'status': status,
+      'priority': priority,
+      'start_date': startDate?.toIso8601String(),
+      'end_date': endDate?.toIso8601String(),
+      'actual_start_date': actualStartDate?.toIso8601String(),
+      'actual_end_date': actualEndDate?.toIso8601String(),
+      'budget': budget,
+      'actual_cost': actualCost,
+      'currency': currency,
+      'project_manager_id': projectManagerId,
+      'project_manager_name': projectManagerName,
+      'team_member_ids': teamMemberIds,
+      'team_member_names': teamMemberNames,
+      'equipment_ids': equipmentIds,
+      'notes': notes,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+    };
+  }
 
   bool get isActive => status == 'active';
   bool get isCompleted => status == 'completed';

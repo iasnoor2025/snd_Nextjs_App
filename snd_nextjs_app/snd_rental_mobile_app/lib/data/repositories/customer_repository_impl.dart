@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import '../models/customer_model.dart';
 import '../../core/network/api_client.dart';
 import '../../core/errors/api_exception.dart';

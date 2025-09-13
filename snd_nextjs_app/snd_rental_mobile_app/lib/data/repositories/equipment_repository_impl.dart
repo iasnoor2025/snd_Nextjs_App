@@ -59,13 +59,31 @@ class EquipmentRepositoryImpl implements EquipmentRepository {
   @override
   Future<EquipmentModel?> getEquipmentById(String id) async {
     try {
+      print('🔍 Fetching equipment by ID: $id');
       final response = await _apiClient.get('/equipment/$id');
+      print('📡 API Response status: ${response.statusCode}');
+      print('📋 API Response data: ${response.data}');
       
       if (response.statusCode == 200) {
-        return EquipmentModel.fromJson(response.data);
+        // The API returns data wrapped in a 'data' field
+        final data = response.data['data'];
+        print('📦 Equipment data: $data');
+        if (data != null) {
+          final equipment = EquipmentModel.fromJson(data);
+          print('✅ Equipment parsed successfully: ${equipment.name}');
+          return equipment;
+        } else {
+          print('❌ Equipment data not found in response');
+          throw ApiException(
+            message: 'Equipment data not found in response',
+            type: ApiExceptionType.serverError,
+          );
+        }
       } else if (response.statusCode == 404) {
+        print('❌ Equipment not found (404)');
         return null;
       } else {
+        print('❌ API Error: ${response.statusCode}');
         throw ApiException(
           message: 'Failed to fetch equipment',
           statusCode: response.statusCode,
@@ -75,6 +93,7 @@ class EquipmentRepositoryImpl implements EquipmentRepository {
     } on ApiException {
       rethrow;
     } catch (e) {
+      print('❌ Unexpected error: $e');
       throw ApiException(
         message: 'Unexpected error: ${e.toString()}',
         type: ApiExceptionType.unknown,

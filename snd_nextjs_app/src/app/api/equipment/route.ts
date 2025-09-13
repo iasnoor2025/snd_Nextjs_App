@@ -44,6 +44,7 @@ const getEquipmentHandler = async (_request: NextRequest) => {
               chassis_number: equipmentTable.chassisNumber,
               description: equipmentTable.description,
               door_number: equipmentTable.doorNumber,
+              assigned_to: equipmentTable.assignedTo,
             })
             .from(equipmentTable)
             .orderBy(asc(equipmentTable.name));

@@ -1,8 +1,3 @@
-import 'package:json_annotation/json_annotation.dart';
-
-part 'rental_model.g.dart';
-
-@JsonSerializable()
 class RentalModel {
   final String id;
   final String rentalNumber;
@@ -70,8 +65,83 @@ class RentalModel {
     required this.updatedAt,
   });
 
-  factory RentalModel.fromJson(Map<String, dynamic> json) => _$RentalModelFromJson(json);
-  Map<String, dynamic> toJson() => _$RentalModelToJson(this);
+  factory RentalModel.fromJson(Map<String, dynamic> json) {
+    try {
+      return RentalModel(
+        id: json['id']?.toString() ?? '',
+        rentalNumber: json['rental_number']?.toString() ?? '',
+        customerId: json['customer_id']?.toString() ?? '',
+        customerName: json['customer_name']?.toString() ?? 'Unknown Customer',
+        customerEmail: json['customer_email']?.toString() ?? '',
+        customerPhone: json['customer_phone']?.toString() ?? '',
+        projectId: json['project_id']?.toString(),
+        projectName: json['project_name'] as String?,
+        address: json['address'] as String?,
+        city: json['city'] as String?,
+        state: json['state'] as String?,
+        postalCode: json['postal_code'] as String?,
+        country: json['country'] as String?,
+        status: json['status']?.toString() ?? 'pending',
+        priority: json['priority']?.toString(),
+        startDate: json['start_date'] != null ? DateTime.parse(json['start_date'].toString()) : null,
+        endDate: json['end_date'] != null ? DateTime.parse(json['end_date'].toString()) : null,
+        actualStartDate: json['actual_start_date'] != null ? DateTime.parse(json['actual_start_date'].toString()) : null,
+        actualEndDate: json['actual_end_date'] != null ? DateTime.parse(json['actual_end_date'].toString()) : null,
+        totalAmount: json['total_amount'] != null ? (json['total_amount'] as num).toDouble() : null,
+        paidAmount: json['paid_amount'] != null ? (json['paid_amount'] as num).toDouble() : null,
+        balanceAmount: json['balance_amount'] != null ? (json['balance_amount'] as num).toDouble() : null,
+        currency: json['currency'] as String?,
+        paymentStatus: json['payment_status'] as String?,
+        paymentMethod: json['payment_method'] as String?,
+        notes: json['notes'] as String?,
+        terms: json['terms'] as String?,
+        createdById: json['created_by_id'] as String?,
+        createdByName: json['created_by_name'] as String?,
+        createdAt: DateTime.parse(json['created_at'].toString()),
+        updatedAt: DateTime.parse(json['updated_at'].toString()),
+      );
+    } catch (e) {
+      print('Error parsing rental JSON: $e');
+      print('JSON data: $json');
+      rethrow;
+    }
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'rental_number': rentalNumber,
+      'customer_id': customerId,
+      'customer_name': customerName,
+      'customer_email': customerEmail,
+      'customer_phone': customerPhone,
+      'project_id': projectId,
+      'project_name': projectName,
+      'address': address,
+      'city': city,
+      'state': state,
+      'postal_code': postalCode,
+      'country': country,
+      'status': status,
+      'priority': priority,
+      'start_date': startDate?.toIso8601String(),
+      'end_date': endDate?.toIso8601String(),
+      'actual_start_date': actualStartDate?.toIso8601String(),
+      'actual_end_date': actualEndDate?.toIso8601String(),
+      'total_amount': totalAmount,
+      'paid_amount': paidAmount,
+      'balance_amount': balanceAmount,
+      'currency': currency,
+      'payment_status': paymentStatus,
+      'payment_method': paymentMethod,
+      'notes': notes,
+      'terms': terms,
+      'created_by_id': createdById,
+      'created_by_name': createdByName,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+    };
+  }
 
   bool get isPending => status == 'pending';
   bool get isActive => status == 'active';

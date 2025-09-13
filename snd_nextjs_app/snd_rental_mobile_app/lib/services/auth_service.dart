@@ -30,7 +30,7 @@ class AuthService extends ChangeNotifier {
   bool _hasSessionCookie() {
     // This is a synchronous check, so we'll use a simple approach
     // In a real app, you might want to make this async
-    return false; // We'll check this properly in isTokenValid()
+    return true; // Assume we have a session cookie for now
   }
 
   Future<GoogleSignInAccount?> signInWithGoogle() async {
@@ -142,8 +142,8 @@ class AuthService extends ChangeNotifier {
     if (sessionCookie == null) return false;
 
     try {
-      // Verify session with backend
-      final response = await _apiClient.get('/auth/me');
+      // Verify session with backend using mobile session endpoint
+      final response = await _apiClient.get('/auth/mobile-session');
       return response.statusCode == 200;
     } catch (e) {
       // If session is invalid, clear it

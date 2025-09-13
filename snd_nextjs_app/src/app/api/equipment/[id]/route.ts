@@ -48,6 +48,7 @@ export async function GET(
         tuv_card: equipment.tuvCard,
         tuv_card_expiry_date: equipment.tuvCardExpiryDate,
         category_id: equipment.categoryId,
+        assigned_to: equipment.assignedTo,
       })
       .from(equipment)
       .where(eq(equipment.id, id))

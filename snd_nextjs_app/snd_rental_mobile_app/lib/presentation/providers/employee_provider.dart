@@ -20,9 +20,12 @@ class EmployeeProvider extends ChangeNotifier {
 
   // Getters
   List<EmployeeModel> get employees => _filteredEmployees;
+  List<EmployeeModel> get filteredEmployees => _filteredEmployees;
   EmployeeModel? get selectedEmployee => _selectedEmployee;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  String? get errorMessage => _error;
+  bool get hasError => _error != null;
   String get searchQuery => _searchQuery;
   String? get statusFilter => _statusFilter;
   String? get departmentFilter => _departmentFilter;
@@ -43,13 +46,19 @@ class EmployeeProvider extends ChangeNotifier {
     _clearError();
 
     try {
+      print('🔄 Loading employees - Page: $_currentPage, Limit: 100');
       final newEmployees = await _employeeRepository.getEmployees(
         page: _currentPage,
-        limit: 20,
+        limit: 100, // Increased limit to load more employees per page
         search: _searchQuery.isNotEmpty ? _searchQuery : null,
         status: _statusFilter,
         department: _departmentFilter,
       );
+
+      print('✅ Loaded ${newEmployees.length} employees');
+      if (newEmployees.isNotEmpty) {
+        print('👤 First employee: ${newEmployees[0].displayName}');
+      }
 
       if (refresh) {
         _employees = newEmployees;
@@ -57,13 +66,15 @@ class EmployeeProvider extends ChangeNotifier {
         _employees.addAll(newEmployees);
       }
 
-      _hasMoreData = newEmployees.length == 20;
+      _hasMoreData = newEmployees.length == 100;
       _currentPage++;
 
       _applyFilters();
     } on ApiException catch (e) {
+      print('❌ API Exception: ${e.message}');
       _setError(e.message);
     } catch (e) {
+      print('❌ General Exception: ${e.toString()}');
       _setError('Failed to load employees: ${e.toString()}');
     } finally {
       _setLoading(false);
@@ -73,6 +84,44 @@ class EmployeeProvider extends ChangeNotifier {
   // Load more employees (pagination)
   Future<void> loadMoreEmployees() async {
     await loadEmployees();
+  }
+
+  // Load all employees at once
+  Future<void> loadAllEmployees() async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      print('🔄 Loading ALL employees - Limit: 5000');
+      // Load with a very high limit to get all employees
+      final allEmployees = await _employeeRepository.getEmployees(
+        page: 1,
+        limit: 5000, // Very high limit to get all 350+ employees
+        search: _searchQuery.isNotEmpty ? _searchQuery : null,
+        status: _statusFilter,
+        department: _departmentFilter,
+      );
+
+      print('✅ Loaded ${allEmployees.length} employees total');
+      if (allEmployees.isNotEmpty) {
+        print('👤 First employee: ${allEmployees[0].displayName}');
+        print('👤 Last employee: ${allEmployees.last.displayName}');
+      }
+
+      _employees = allEmployees;
+      _hasMoreData = false; // No more data to load
+      _currentPage = 1;
+
+      _applyFilters();
+    } on ApiException catch (e) {
+      print('❌ API Exception in loadAllEmployees: ${e.message}');
+      _setError(e.message);
+    } catch (e) {
+      print('❌ General Exception in loadAllEmployees: ${e.toString()}');
+      _setError('Failed to load employees: ${e.toString()}');
+    } finally {
+      _setLoading(false);
+    }
   }
 
   // Refresh employees
@@ -191,8 +240,9 @@ class EmployeeProvider extends ChangeNotifier {
     _hasMoreData = true;
     _applyFilters();
     
-    // Load fresh data with search query
-    loadEmployees(refresh: true);
+    // Since we're using loadAllEmployees, just apply filters to existing data
+    // The search will work on the already loaded employees
+    print('🔍 Searching for: "$query" in ${_employees.length} employees');
   }
 
   // Filter employees by status
@@ -202,8 +252,8 @@ class EmployeeProvider extends ChangeNotifier {
     _hasMoreData = true;
     _applyFilters();
     
-    // Load fresh data with status filter
-    loadEmployees(refresh: true);
+    // Since we're using loadAllEmployees, just apply filters to existing data
+    print('🔍 Filtering by status: "$status"');
   }
 
   // Filter employees by department
@@ -213,8 +263,8 @@ class EmployeeProvider extends ChangeNotifier {
     _hasMoreData = true;
     _applyFilters();
     
-    // Load fresh data with department filter
-    loadEmployees(refresh: true);
+    // Since we're using loadAllEmployees, just apply filters to existing data
+    print('🔍 Filtering by department: "$department"');
   }
 
   // Clear all filters
@@ -226,8 +276,22 @@ class EmployeeProvider extends ChangeNotifier {
     _hasMoreData = true;
     _applyFilters();
     
-    // Load fresh data without filters
-    loadEmployees(refresh: true);
+    // Since we're using loadAllEmployees, just apply filters to existing data
+    print('🔍 Clearing all filters');
+  }
+
+  // Set status filter
+  void setStatusFilter(String? status) {
+    _statusFilter = status;
+    _applyFilters();
+    notifyListeners();
+  }
+
+  // Set department filter
+  void setDepartmentFilter(String? department) {
+    _departmentFilter = department;
+    _applyFilters();
+    notifyListeners();
   }
 
   // Apply filters to employees list
@@ -238,9 +302,19 @@ class EmployeeProvider extends ChangeNotifier {
     if (_searchQuery.isNotEmpty) {
       _filteredEmployees = _filteredEmployees.where((employee) {
         final fullName = employee.fullName.toLowerCase();
-        final email = employee.email.toLowerCase();
+        final email = employee.email?.toLowerCase() ?? '';
+        final employeeId = employee.employeeId?.toString() ?? '';
+        final fileNumber = employee.fileNumber?.toString() ?? '';
+        final department = employee.department?.toLowerCase() ?? '';
+        final designation = employee.designation?.toLowerCase() ?? '';
         final query = _searchQuery.toLowerCase();
-        return fullName.contains(query) || email.contains(query);
+        
+        return fullName.contains(query) || 
+               email.contains(query) ||
+               employeeId.contains(query) ||
+               fileNumber.contains(query) ||
+               department.contains(query) ||
+               designation.contains(query);
       }).toList();
     }
 

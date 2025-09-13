@@ -1,8 +1,3 @@
-import 'package:json_annotation/json_annotation.dart';
-
-part 'timesheet_model.g.dart';
-
-@JsonSerializable()
 class TimesheetModel {
   final String id;
   final String employeeId;
@@ -40,10 +35,53 @@ class TimesheetModel {
     required this.updatedAt,
   });
 
-  factory TimesheetModel.fromJson(Map<String, dynamic> json) =>
-      _$TimesheetModelFromJson(json);
+  factory TimesheetModel.fromJson(Map<String, dynamic> json) {
+    try {
+      return TimesheetModel(
+        id: json['id']?.toString() ?? '',
+        employeeId: json['employee_id']?.toString() ?? '',
+        employeeName: json['employee_name']?.toString() ?? 'Unknown Employee',
+        projectId: json['project_id']?.toString(),
+        projectName: json['project_name'] as String?,
+        date: DateTime.parse(json['date'].toString()),
+        hoursWorked: (json['hours_worked'] as num).toDouble(),
+        overtimeHours: json['overtime_hours'] != null ? (json['overtime_hours'] as num).toDouble() : null,
+        description: json['description']?.toString(),
+        status: json['status']?.toString() ?? 'pending',
+        approvedById: json['approved_by_id']?.toString(),
+        approvedByName: json['approved_by_name']?.toString(),
+        approvedAt: json['approved_at'] != null ? DateTime.parse(json['approved_at'].toString()) : null,
+        rejectionReason: json['rejection_reason']?.toString(),
+        createdAt: DateTime.parse(json['created_at'].toString()),
+        updatedAt: DateTime.parse(json['updated_at'].toString()),
+      );
+    } catch (e) {
+      print('Error parsing timesheet JSON: $e');
+      print('JSON data: $json');
+      rethrow;
+    }
+  }
 
-  Map<String, dynamic> toJson() => _$TimesheetModelToJson(this);
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'employee_id': employeeId,
+      'employee_name': employeeName,
+      'project_id': projectId,
+      'project_name': projectName,
+      'date': date.toIso8601String(),
+      'hours_worked': hoursWorked,
+      'overtime_hours': overtimeHours,
+      'description': description,
+      'status': status,
+      'approved_by_id': approvedById,
+      'approved_by_name': approvedByName,
+      'approved_at': approvedAt?.toIso8601String(),
+      'rejection_reason': rejectionReason,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+    };
+  }
 
   TimesheetModel copyWith({
     String? id,

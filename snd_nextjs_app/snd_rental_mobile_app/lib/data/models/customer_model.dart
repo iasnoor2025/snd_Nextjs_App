@@ -37,22 +37,22 @@ class CustomerModel {
 
   factory CustomerModel.fromJson(Map<String, dynamic> json) {
     return CustomerModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      email: json['email'] as String,
-      phone: json['phone'] as String?,
-      address: json['address'] as String?,
-      city: json['city'] as String?,
-      state: json['state'] as String?,
-      country: json['country'] as String?,
-      postalCode: json['postalCode'] as String?,
-      company: json['company'] as String?,
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? 'Unknown Customer',
+      email: json['email']?.toString() ?? '',
+      phone: json['phone']?.toString(),
+      address: json['address']?.toString(),
+      city: json['city']?.toString(),
+      state: json['state']?.toString(),
+      country: json['country']?.toString(),
+      postalCode: json['postalCode']?.toString(),
+      company: json['company']?.toString(),
       contactPerson: json['contactPerson'] as String?,
       creditLimit: json['creditLimit'] != null ? (json['creditLimit'] as num).toDouble() : null,
-      status: json['status'] as String,
-      notes: json['notes'] as String?,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      status: json['status']?.toString() ?? 'active',
+      notes: json['notes']?.toString(),
+      createdAt: DateTime.parse(json['createdAt'].toString()),
+      updatedAt: DateTime.parse(json['updatedAt'].toString()),
     );
   }
 

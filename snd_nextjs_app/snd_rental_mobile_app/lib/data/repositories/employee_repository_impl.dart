@@ -33,7 +33,15 @@ class EmployeeRepositoryImpl implements EmployeeRepository {
       final response = await _apiClient.get('/employees', queryParameters: queryParams);
       
       if (response.statusCode == 200) {
+        print('📡 API Response structure: ${response.data.runtimeType}');
+        print('📡 API Response keys: ${response.data is Map ? (response.data as Map).keys.toList() : 'Not a Map'}');
+        
         final List<dynamic> data = response.data['data'] ?? response.data;
+        print('📡 Data length: ${data.length}');
+        if (data.isNotEmpty) {
+          print('📡 First employee data: ${data[0]}');
+        }
+        
         return data.map((json) => EmployeeModel.fromJson(json)).toList();
       } else {
         throw ApiException(

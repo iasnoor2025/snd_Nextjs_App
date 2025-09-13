@@ -1,170 +1,209 @@
-import 'package:json_annotation/json_annotation.dart';
-
-part 'employee_model.g.dart';
-
-@JsonSerializable()
 class EmployeeModel {
-  final String id;
+  final int id;
   final String firstName;
-  final String lastName;
   final String? middleName;
-  final String email;
+  final String lastName;
+  final int employeeId;
+  final int fileNumber;
+  final String? email;
   final String? phone;
-  final String? mobile;
-  final String? address;
-  final String? city;
-  final String? state;
-  final String? postalCode;
-  final String? country;
-  final String? nationality;
-  final String? passportNumber;
-  final String? iqamaNumber;
-  final String? drivingLicenseNumber;
-  final DateTime? dateOfBirth;
-  final String? gender;
-  final String? maritalStatus;
-  final String? bloodType;
-  final String? emergencyContactName;
-  final String? emergencyContactPhone;
-  final String? emergencyContactRelationship;
-  final String? profileImageUrl;
-  final String? position;
+  final String status;
+  final String fullName;
   final String? department;
-  final String? employmentType;
-  final DateTime? hireDate;
-  final DateTime? terminationDate;
-  final String? status;
-  final String? notes;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final String? designation;
+  final String? hireDate;
+  final String? iqamaNumber;
+  final String? iqamaExpiry;
+  final String? nationality;
+  final int? basicSalary;
+  final double? hourlyRate;
+  final int? overtimeRateMultiplier;
+  final int? overtimeFixedRate;
+  final int? supervisor;
+  final String? currentLocation;
+  final String? currentAssignment;
+  final dynamic user;
 
   const EmployeeModel({
     required this.id,
     required this.firstName,
-    required this.lastName,
     this.middleName,
-    required this.email,
+    required this.lastName,
+    required this.employeeId,
+    required this.fileNumber,
+    this.email,
     this.phone,
-    this.mobile,
-    this.address,
-    this.city,
-    this.state,
-    this.postalCode,
-    this.country,
-    this.nationality,
-    this.passportNumber,
-    this.iqamaNumber,
-    this.drivingLicenseNumber,
-    this.dateOfBirth,
-    this.gender,
-    this.maritalStatus,
-    this.bloodType,
-    this.emergencyContactName,
-    this.emergencyContactPhone,
-    this.emergencyContactRelationship,
-    this.profileImageUrl,
-    this.position,
+    required this.status,
+    required this.fullName,
     this.department,
-    this.employmentType,
+    this.designation,
     this.hireDate,
-    this.terminationDate,
-    this.status,
-    this.notes,
-    required this.createdAt,
-    required this.updatedAt,
+    this.iqamaNumber,
+    this.iqamaExpiry,
+    this.nationality,
+    this.basicSalary,
+    this.hourlyRate,
+    this.overtimeRateMultiplier,
+    this.overtimeFixedRate,
+    this.supervisor,
+    this.currentLocation,
+    this.currentAssignment,
+    this.user,
   });
 
-  factory EmployeeModel.fromJson(Map<String, dynamic> json) => _$EmployeeModelFromJson(json);
-  Map<String, dynamic> toJson() => _$EmployeeModelToJson(this);
+  factory EmployeeModel.fromJson(Map<String, dynamic> json) {
+    try {
+      print('🔍 Parsing employee JSON: ${json.keys.toList()}');
+      
+      return EmployeeModel(
+        id: _parseInt(json['id']),
+        firstName: _parseString(json['first_name']) ?? '',
+        middleName: _parseString(json['middle_name']),
+        lastName: _parseString(json['last_name']) ?? '',
+        employeeId: _parseInt(json['employee_id']),
+        fileNumber: _parseInt(json['file_number']),
+        email: _parseString(json['email']),
+        phone: _parseString(json['phone']),
+        status: _parseString(json['status']) ?? 'unknown',
+        fullName: _parseString(json['full_name']) ?? '',
+        department: _parseString(json['department']),
+        designation: _parseString(json['designation']),
+        hireDate: _parseString(json['hire_date']),
+        iqamaNumber: _parseString(json['iqama_number']),
+        iqamaExpiry: _parseString(json['iqama_expiry']),
+        nationality: _parseString(json['nationality']),
+        basicSalary: _parseInt(json['basic_salary']),
+        hourlyRate: _parseDouble(json['hourly_rate']),
+        overtimeRateMultiplier: _parseInt(json['overtime_rate_multiplier']),
+        overtimeFixedRate: _parseInt(json['overtime_fixed_rate']),
+        supervisor: _parseInt(json['supervisor']),
+        currentLocation: _parseString(json['current_location']),
+        currentAssignment: _parseString(json['current_assignment']),
+        user: json['user'] is Map<String, dynamic> ? json['user'] as Map<String, dynamic> : null,
+      );
+    } catch (e) {
+      print('❌ Error parsing employee JSON: $e');
+      print('📄 JSON data: $json');
+      rethrow;
+    }
+  }
 
-  String get fullName => '$firstName ${middleName ?? ''} $lastName'.trim();
-  
+  static int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value) ?? 0;
+    if (value is double) return value.toInt();
+    return 0;
+  }
+
+  static double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+
+  static String? _parseString(dynamic value) {
+    if (value == null) return null;
+    if (value is String) return value;
+    if (value is Map) {
+      print('⚠️ Found Map instead of String: $value');
+      return value.toString();
+    }
+    if (value is List) {
+      print('⚠️ Found List instead of String: $value');
+      return value.toString();
+    }
+    return value.toString();
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'first_name': firstName,
+      'middle_name': middleName,
+      'last_name': lastName,
+      'employee_id': employeeId,
+      'file_number': fileNumber,
+      'email': email,
+      'phone': phone,
+      'status': status,
+      'full_name': fullName,
+      'department': department,
+      'designation': designation,
+      'hire_date': hireDate,
+      'iqama_number': iqamaNumber,
+      'iqama_expiry': iqamaExpiry,
+      'nationality': nationality,
+      'basic_salary': basicSalary,
+      'hourly_rate': hourlyRate,
+      'overtime_rate_multiplier': overtimeRateMultiplier,
+      'overtime_fixed_rate': overtimeFixedRate,
+      'supervisor': supervisor,
+      'current_location': currentLocation,
+      'current_assignment': currentAssignment,
+      'user': user,
+    };
+  }
+
   String get displayName => '$firstName $lastName';
   
   bool get isActive => status == 'active';
   
   bool get isTerminated => status == 'terminated';
-  
-  int? get age {
-    if (dateOfBirth == null) return null;
-    final now = DateTime.now();
-    int age = now.year - dateOfBirth!.year;
-    if (now.month < dateOfBirth!.month || 
-        (now.month == dateOfBirth!.month && now.day < dateOfBirth!.day)) {
-      age--;
-    }
-    return age;
-  }
 
   EmployeeModel copyWith({
-    String? id,
+    int? id,
     String? firstName,
-    String? lastName,
     String? middleName,
+    String? lastName,
+    int? employeeId,
+    int? fileNumber,
     String? email,
     String? phone,
-    String? mobile,
-    String? address,
-    String? city,
-    String? state,
-    String? postalCode,
-    String? country,
-    String? nationality,
-    String? passportNumber,
-    String? iqamaNumber,
-    String? drivingLicenseNumber,
-    DateTime? dateOfBirth,
-    String? gender,
-    String? maritalStatus,
-    String? bloodType,
-    String? emergencyContactName,
-    String? emergencyContactPhone,
-    String? emergencyContactRelationship,
-    String? profileImageUrl,
-    String? position,
-    String? department,
-    String? employmentType,
-    DateTime? hireDate,
-    DateTime? terminationDate,
     String? status,
-    String? notes,
-    DateTime? createdAt,
-    DateTime? updatedAt,
+    String? fullName,
+    String? department,
+    String? designation,
+    String? hireDate,
+    String? iqamaNumber,
+    String? iqamaExpiry,
+    String? nationality,
+    int? basicSalary,
+    double? hourlyRate,
+    int? overtimeRateMultiplier,
+    int? overtimeFixedRate,
+    int? supervisor,
+    String? currentLocation,
+    String? currentAssignment,
+    dynamic user,
   }) {
     return EmployeeModel(
       id: id ?? this.id,
       firstName: firstName ?? this.firstName,
-      lastName: lastName ?? this.lastName,
       middleName: middleName ?? this.middleName,
+      lastName: lastName ?? this.lastName,
+      employeeId: employeeId ?? this.employeeId,
+      fileNumber: fileNumber ?? this.fileNumber,
       email: email ?? this.email,
       phone: phone ?? this.phone,
-      mobile: mobile ?? this.mobile,
-      address: address ?? this.address,
-      city: city ?? this.city,
-      state: state ?? this.state,
-      postalCode: postalCode ?? this.postalCode,
-      country: country ?? this.country,
-      nationality: nationality ?? this.nationality,
-      passportNumber: passportNumber ?? this.passportNumber,
-      iqamaNumber: iqamaNumber ?? this.iqamaNumber,
-      drivingLicenseNumber: drivingLicenseNumber ?? this.drivingLicenseNumber,
-      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
-      gender: gender ?? this.gender,
-      maritalStatus: maritalStatus ?? this.maritalStatus,
-      bloodType: bloodType ?? this.bloodType,
-      emergencyContactName: emergencyContactName ?? this.emergencyContactName,
-      emergencyContactPhone: emergencyContactPhone ?? this.emergencyContactPhone,
-      emergencyContactRelationship: emergencyContactRelationship ?? this.emergencyContactRelationship,
-      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
-      position: position ?? this.position,
-      department: department ?? this.department,
-      employmentType: employmentType ?? this.employmentType,
-      hireDate: hireDate ?? this.hireDate,
-      terminationDate: terminationDate ?? this.terminationDate,
       status: status ?? this.status,
-      notes: notes ?? this.notes,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
+      fullName: fullName ?? this.fullName,
+      department: department ?? this.department,
+      designation: designation ?? this.designation,
+      hireDate: hireDate ?? this.hireDate,
+      iqamaNumber: iqamaNumber ?? this.iqamaNumber,
+      iqamaExpiry: iqamaExpiry ?? this.iqamaExpiry,
+      nationality: nationality ?? this.nationality,
+      basicSalary: basicSalary ?? this.basicSalary,
+      hourlyRate: hourlyRate ?? this.hourlyRate,
+      overtimeRateMultiplier: overtimeRateMultiplier ?? this.overtimeRateMultiplier,
+      overtimeFixedRate: overtimeFixedRate ?? this.overtimeFixedRate,
+      supervisor: supervisor ?? this.supervisor,
+      currentLocation: currentLocation ?? this.currentLocation,
+      currentAssignment: currentAssignment ?? this.currentAssignment,
+      user: user ?? this.user,
     );
   }
 }

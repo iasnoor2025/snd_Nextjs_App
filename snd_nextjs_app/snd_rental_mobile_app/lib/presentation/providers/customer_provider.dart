@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../../data/models/customer_model.dart';
 import '../../data/repositories/customer_repository_impl.dart';
-import '../../core/errors/api_exception.dart';
 
 class CustomerProvider extends ChangeNotifier {
   final CustomerRepositoryImpl _repository = CustomerRepositoryImpl();

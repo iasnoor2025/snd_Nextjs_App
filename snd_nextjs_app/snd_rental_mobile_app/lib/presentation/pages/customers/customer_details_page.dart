@@ -92,7 +92,7 @@ class _CustomerDetailsPageState extends State<CustomerDetailsPage> {
                           children: [
                             CircleAvatar(
                               radius: 40,
-                              backgroundColor: _getStatusColor(customer.status).withOpacity(0.2),
+                              backgroundColor: _getStatusColor(customer.status).withValues(alpha:0.2),
                               child: Text(
                                 customer.name.isNotEmpty ? customer.name[0].toUpperCase() : 'C',
                                 style: TextStyle(
@@ -126,9 +126,9 @@ class _CustomerDetailsPageState extends State<CustomerDetailsPage> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                     decoration: BoxDecoration(
-                                      color: _getStatusColor(customer.status).withOpacity(0.1),
+                                      color: _getStatusColor(customer.status).withValues(alpha:0.1),
                                       borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(color: _getStatusColor(customer.status).withOpacity(0.3)),
+                                      border: Border.all(color: _getStatusColor(customer.status).withValues(alpha:0.3)),
                                     ),
                                     child: Text(
                                       customer.status.toUpperCase(),

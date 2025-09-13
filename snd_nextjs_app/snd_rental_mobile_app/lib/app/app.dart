@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 // import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import '../core/network/api_client.dart';
+import '../core/theme/app_theme.dart';
 import '../services/auth_service.dart';
 import '../services/login_bridge_service.dart';
 import '../presentation/providers/employee_provider.dart';
@@ -10,6 +11,14 @@ import '../presentation/providers/equipment_provider.dart';
 import '../presentation/providers/rental_provider.dart';
 import '../presentation/providers/timesheet_provider.dart';
 import '../presentation/providers/customer_provider.dart';
+import '../presentation/providers/document_provider.dart';
+import '../presentation/providers/payroll_provider.dart';
+import '../presentation/providers/leave_provider.dart';
+import '../presentation/providers/quotation_provider.dart';
+import '../presentation/providers/safety_incident_provider.dart';
+import '../presentation/providers/company_provider.dart';
+import '../presentation/providers/user_provider.dart';
+import '../presentation/providers/report_provider.dart';
 import '../presentation/pages/splash_page.dart';
 import '../presentation/pages/auth/login_page.dart';
 import '../presentation/pages/home/home_page.dart';
@@ -31,37 +40,19 @@ class SndRentalApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => RentalProvider()),
         ChangeNotifierProvider(create: (_) => TimesheetProvider()),
         ChangeNotifierProvider(create: (_) => CustomerProvider()),
-        // Add other providers here
+        ChangeNotifierProvider(create: (_) => DocumentProvider()),
+        ChangeNotifierProvider(create: (_) => PayrollProvider()),
+        ChangeNotifierProvider(create: (_) => LeaveProvider()),
+        ChangeNotifierProvider(create: (_) => QuotationProvider()),
+        ChangeNotifierProvider(create: (_) => SafetyIncidentProvider()),
+        ChangeNotifierProvider(create: (_) => CompanyProvider()),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => ReportProvider()),
       ],
       child: MaterialApp(
         title: 'SND Rental Management',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.blue,
-            brightness: Brightness.light,
-          ),
-          appBarTheme: const AppBarTheme(
-            centerTitle: true,
-            elevation: 0,
-          ),
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-          inputDecorationTheme: InputDecorationTheme(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          ),
-        ),
+        theme: AppTheme.lightTheme,
         home: const AppInitializer(),
         routes: {
           '/login': (context) => const LoginPage(),
@@ -102,7 +93,9 @@ class _AppInitializerState extends State<AppInitializer> {
       
       // Check authentication status
       final authService = context.read<AuthService>();
-      await authService.isTokenValid();
+      // Temporarily skip authentication check for debugging
+      // await authService.isTokenValid();
+      print('🔐 Skipping authentication check for debugging');
       
       setState(() {
         _isInitialized = true;
@@ -147,11 +140,14 @@ class _AppInitializerState extends State<AppInitializer> {
 
     return Consumer<AuthService>(
       builder: (context, authService, child) {
-        if (authService.isLoggedIn) {
-          return const HomePage();
-        } else {
-          return const LoginPage();
-        }
+        // Temporarily always show home page for debugging
+        print('🔐 Auth check: ${authService.isLoggedIn}');
+        return const HomePage();
+        // if (authService.isLoggedIn) {
+        //   return const HomePage();
+        // } else {
+        //   return const LoginPage();
+        // }
       },
     );
   }

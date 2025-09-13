@@ -5,6 +5,7 @@ import '../../widgets/equipment_card.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart' as custom;
 import '../../widgets/qr_scanner_widget.dart';
+import 'equipment_details_page.dart';
 
 class EquipmentListPage extends StatefulWidget {
   const EquipmentListPage({super.key});
@@ -226,9 +227,13 @@ class _EquipmentListPageState extends State<EquipmentListPage> {
                       return EquipmentCard(
                         equipment: equipment,
                         onTap: () {
-                          // TODO: Navigate to equipment details
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Equipment details: ${equipment.displayName}')),
+                          print('🔍 Navigating to equipment details for ID: ${equipment.id}');
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => EquipmentDetailsPage(
+                                equipmentId: equipment.id,
+                              ),
+                            ),
                           );
                         },
                       );
