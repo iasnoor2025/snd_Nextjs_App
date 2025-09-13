@@ -286,7 +286,7 @@ class EquipmentProvider extends ChangeNotifier {
     if (_searchQuery.isNotEmpty) {
       _filteredEquipment = _filteredEquipment.where((equipment) {
         final name = equipment.name.toLowerCase();
-        final model = (equipment.model ?? '').toLowerCase();
+        final model = (equipment.modelNumber ?? '').toLowerCase();
         final serialNumber = (equipment.serialNumber ?? '').toLowerCase();
         final query = _searchQuery.toLowerCase();
         return name.contains(query) || 
@@ -305,16 +305,16 @@ class EquipmentProvider extends ChangeNotifier {
     // Apply category filter
     if (_categoryFilter != null) {
       _filteredEquipment = _filteredEquipment.where((equipment) {
-        return equipment.category == _categoryFilter;
+        return equipment.categoryId == _categoryFilter;
       }).toList();
     }
 
-    // Apply location filter
-    if (_locationFilter != null) {
-      _filteredEquipment = _filteredEquipment.where((equipment) {
-        return equipment.location == _locationFilter;
-      }).toList();
-    }
+    // Apply location filter - removed as location is not in API response
+    // if (_locationFilter != null) {
+    //   _filteredEquipment = _filteredEquipment.where((equipment) {
+    //     return equipment.location == _locationFilter;
+    //   }).toList();
+    // }
 
     notifyListeners();
   }
@@ -339,7 +339,7 @@ class EquipmentProvider extends ChangeNotifier {
   // Get categories list
   List<String> getCategories() {
     return _equipment
-        .map((e) => e.category)
+        .map((e) => e.categoryId)
         .where((category) => category != null && category.isNotEmpty)
         .cast<String>()
         .toSet()
@@ -347,15 +347,9 @@ class EquipmentProvider extends ChangeNotifier {
       ..sort();
   }
 
-  // Get locations list
+  // Get locations list - removed as location is not in API response
   List<String> getLocations() {
-    return _equipment
-        .map((e) => e.location)
-        .where((location) => location != null && location.isNotEmpty)
-        .cast<String>()
-        .toSet()
-        .toList()
-      ..sort();
+    return []; // Return empty list since location is not available
   }
 
   // Get maintenance due equipment

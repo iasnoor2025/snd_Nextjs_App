@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../providers/equipment_provider.dart';
+import '../../providers/equipment_document_provider.dart';
 import '../../../data/models/equipment_model.dart';
+import '../../../data/models/equipment_document_model.dart';
 import '../../widgets/ui/card.dart' as ui;
 import '../../../core/theme/app_theme.dart';
 
@@ -25,7 +28,7 @@ class _EquipmentDetailsPageState extends State<EquipmentDetailsPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _loadEquipmentDetails();
   }
 
@@ -80,6 +83,7 @@ class _EquipmentDetailsPageState extends State<EquipmentDetailsPage>
             Tab(icon: Icon(Icons.assignment), text: 'Assignments'),
             Tab(icon: Icon(Icons.build), text: 'Maintenance'),
             Tab(icon: Icon(Icons.history), text: 'History'),
+            Tab(icon: Icon(Icons.description), text: 'Documents'),
           ],
         ),
       ),
@@ -137,6 +141,7 @@ class _EquipmentDetailsPageState extends State<EquipmentDetailsPage>
               _buildAssignmentsTab(equipment),
               _buildMaintenanceTab(equipment),
               _buildHistoryTab(equipment),
+              _buildDocumentsTab(equipment),
             ],
           );
         },
@@ -803,6 +808,507 @@ class _EquipmentDetailsPageState extends State<EquipmentDetailsPage>
           backgroundColor: Colors.red,
         ),
       );
+    }
+  }
+
+  Widget _buildDocumentsTab(EquipmentModel equipment) {
+    return Consumer<EquipmentDocumentProvider>(
+      builder: (context, documentProvider, child) {
+        return RefreshIndicator(
+          onRefresh: () async {
+            try {
+              await documentProvider.loadDocuments(int.parse(widget.equipmentId));
+            } catch (e) {
+              print('🔍 Refresh failed: $e');
+            }
+          },
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header with upload button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Equipment Documents',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () => _showUploadDialog(equipment),
+                      icon: const Icon(Icons.upload),
+                      label: const Text('Upload'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Documents list
+                if (documentProvider.isLoading)
+                  const Center(child: CircularProgressIndicator())
+                else if (documentProvider.error != null)
+                  ui.UICard(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 64,
+                            color: Colors.red[300],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Error loading documents',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.red[700],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            documentProvider.error!,
+                            style: TextStyle(color: Colors.red[600]),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () async {
+                              try {
+                                await documentProvider.loadDocuments(int.parse(widget.equipmentId));
+                              } catch (e) {
+                                print('🔍 Retry failed: $e');
+                              }
+                            },
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else if (documentProvider.documents.isEmpty)
+                  ui.UICard(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.description_outlined,
+                            size: 64,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No Documents Found',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Upload documents for this equipment to get started.',
+                            style: TextStyle(color: Colors.grey[500]),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: () => _showUploadDialog(equipment),
+                            icon: const Icon(Icons.upload),
+                            label: const Text('Upload First Document'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  Column(
+                    children: documentProvider.documents.map((document) {
+                      return _buildDocumentCard(document);
+                    }).toList(),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDocumentCard(EquipmentDocumentModel document) {
+    return ui.UICard(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                // Document icon
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: _getDocumentTypeColor(document.documentType),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    _getDocumentTypeIcon(document.documentType),
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Document info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        document.displayName,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${document.displayType} • ${document.displaySize}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      if (document.description?.isNotEmpty == true) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          document.displayDescription,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[500],
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                // Actions
+                PopupMenuButton<String>(
+                  onSelected: (value) => _handleDocumentAction(value, document),
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'view',
+                      child: Row(
+                        children: [
+                          Icon(Icons.visibility),
+                          SizedBox(width: 8),
+                          Text('View'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'download',
+                      child: Row(
+                        children: [
+                          Icon(Icons.download),
+                          SizedBox(width: 8),
+                          Text('Download'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Delete', style: TextStyle(color: Colors.red)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Document type badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: _getDocumentTypeColor(document.documentType).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                document.documentType.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: _getDocumentTypeColor(document.documentType),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showUploadDialog(EquipmentModel equipment) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Upload Document'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Upload a document for ${equipment.name}'),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () => _pickAndUploadFile(equipment),
+              icon: const Icon(Icons.file_upload),
+              label: const Text('Select File'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickAndUploadFile(EquipmentModel equipment) async {
+    try {
+      Navigator.of(context).pop(); // Close dialog
+      
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        final file = result.files.first;
+        if (file.path != null) {
+          await _showDocumentTypeDialog(equipment, file.path!, file.name);
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error picking file: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _showDocumentTypeDialog(EquipmentModel equipment, String filePath, String fileName) async {
+    final documentTypeController = TextEditingController();
+    final descriptionController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Document Details'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('File: $fileName'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: documentTypeController,
+              decoration: const InputDecoration(
+                labelText: 'Document Type',
+                hintText: 'e.g., manual, warranty, certificate',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Description (Optional)',
+                hintText: 'Brief description of the document',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 2,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (documentTypeController.text.isNotEmpty) {
+                Navigator.of(context).pop();
+                await _uploadDocument(
+                  equipment,
+                  filePath,
+                  fileName,
+                  documentTypeController.text,
+                  descriptionController.text.isNotEmpty ? descriptionController.text : null,
+                );
+              }
+            },
+            child: const Text('Upload'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _uploadDocument(
+    EquipmentModel equipment,
+    String filePath,
+    String fileName,
+    String documentType,
+    String? description,
+  ) async {
+    final documentProvider = context.read<EquipmentDocumentProvider>();
+    
+    final success = await documentProvider.uploadDocument(
+      equipmentId: int.parse(equipment.id),
+      filePath: filePath,
+      fileName: fileName,
+      documentType: documentType,
+      description: description,
+    );
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Document uploaded successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to upload document: ${documentProvider.error}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _handleDocumentAction(String action, EquipmentDocumentModel document) {
+    switch (action) {
+      case 'view':
+        // TODO: Open document viewer
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Document viewer coming soon')),
+        );
+        break;
+      case 'download':
+        // TODO: Download document
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Download feature coming soon')),
+        );
+        break;
+      case 'delete':
+        _showDeleteConfirmDialog(document);
+        break;
+    }
+  }
+
+  void _showDeleteConfirmDialog(EquipmentDocumentModel document) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Document'),
+        content: Text('Are you sure you want to delete "${document.displayName}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _deleteDocument(document);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteDocument(EquipmentDocumentModel document) async {
+    final documentProvider = context.read<EquipmentDocumentProvider>();
+    
+    final success = await documentProvider.deleteDocument(document.id);
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Document deleted successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to delete document: ${documentProvider.error}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  IconData _getDocumentTypeIcon(String documentType) {
+    switch (documentType.toLowerCase()) {
+      case 'manual':
+        return Icons.menu_book;
+      case 'warranty':
+        return Icons.verified;
+      case 'certificate':
+      case 'certification':
+        return Icons.card_membership;
+      case 'insurance':
+        return Icons.security;
+      case 'invoice':
+        return Icons.receipt;
+      case 'image':
+      case 'photo':
+        return Icons.image;
+      default:
+        return Icons.description;
+    }
+  }
+
+  Color _getDocumentTypeColor(String documentType) {
+    switch (documentType.toLowerCase()) {
+      case 'manual':
+        return Colors.blue;
+      case 'warranty':
+        return Colors.green;
+      case 'certificate':
+      case 'certification':
+        return Colors.purple;
+      case 'insurance':
+        return Colors.orange;
+      case 'invoice':
+        return Colors.teal;
+      case 'image':
+      case 'photo':
+        return Colors.pink;
+      default:
+        return Colors.grey;
     }
   }
 }

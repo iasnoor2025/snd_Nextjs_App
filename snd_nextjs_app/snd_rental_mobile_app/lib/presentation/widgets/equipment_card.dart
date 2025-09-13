@@ -34,26 +34,11 @@ class EquipmentCard extends StatelessWidget {
                       color: Colors.grey[200],
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: equipment.imageUrl != null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              equipment.imageUrl!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Icon(
-                                  Icons.build,
-                                  size: 30,
-                                  color: Colors.grey[400],
-                                );
-                              },
-                            ),
-                          )
-                        : Icon(
-                            Icons.build,
-                            size: 30,
-                            color: Colors.grey[400],
-                          ),
+                    child: Icon(
+                      Icons.build,
+                      size: 30,
+                      color: Colors.grey[400],
+                    ),
                   ),
                   
                   const SizedBox(width: 12),
@@ -80,10 +65,10 @@ class EquipmentCard extends StatelessWidget {
                             ),
                           ),
                         ],
-                        if (equipment.category != null) ...[
+                        if (equipment.categoryId != null) ...[
                           const SizedBox(height: 2),
                           Text(
-                            equipment.category!,
+                            'Category: ${equipment.categoryId!}',
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey[600],
@@ -118,49 +103,49 @@ class EquipmentCard extends StatelessWidget {
               // Equipment Details
               Row(
                 children: [
-                  // Location
-                  if (equipment.location != null) ...[
-                    Icon(
-                      Icons.location_on,
-                      size: 16,
-                      color: Colors.grey[600],
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        equipment.location!,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                  ],
+                  // Location - removed as not in API response
+                  // if (equipment.location != null) ...[
+                  //   Icon(
+                  //     Icons.location_on,
+                  //     size: 16,
+                  //     color: Colors.grey[600],
+                  //   ),
+                  //   const SizedBox(width: 4),
+                  //   Expanded(
+                  //     child: Text(
+                  //       equipment.location!,
+                  //       style: TextStyle(
+                  //         fontSize: 12,
+                  //         color: Colors.grey[600],
+                  //       ),
+                  //       overflow: TextOverflow.ellipsis,
+                  //     ),
+                  //   ),
+                  //   const SizedBox(width: 16),
+                  // ],
                   
-                  // Condition
-                  if (equipment.condition != null) ...[
-                    Icon(
-                      _getConditionIcon(equipment.condition!),
-                      size: 16,
-                      color: _getConditionColor(equipment.condition!),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _getConditionText(equipment.condition!),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: _getConditionColor(equipment.condition!),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                  // Condition - removed as not in API response
+                  // if (equipment.condition != null) ...[
+                  //   Icon(
+                  //     _getConditionIcon(equipment.condition!),
+                  //     size: 16,
+                  //     color: _getConditionColor(equipment.condition!),
+                  //   ),
+                  //   const SizedBox(width: 4),
+                  //   Text(
+                  //     _getConditionText(equipment.condition!),
+                  //     style: TextStyle(
+                  //       fontSize: 12,
+                  //       color: _getConditionColor(equipment.condition!),
+                  //       fontWeight: FontWeight.w500,
+                  //     ),
+                  //   ),
+                  // ],
                 ],
               ),
               
               // Assignment Info
-              if (equipment.assignedProjectName != null || equipment.assignedEmployeeName != null) ...[
+              if (equipment.isAssigned) ...[
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -172,9 +157,7 @@ class EquipmentCard extends StatelessWidget {
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        equipment.assignedProjectName != null
-                            ? 'Project: ${equipment.assignedProjectName}'
-                            : 'Employee: ${equipment.assignedEmployeeName}',
+                        'Assigned to Employee: ${equipment.assignedTo}',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[600],
@@ -186,67 +169,67 @@ class EquipmentCard extends StatelessWidget {
                 ),
               ],
               
-              // Maintenance Info
-              if (equipment.isMaintenanceDue) ...[
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.orange[100],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.warning,
-                        size: 16,
-                        color: Colors.orange[700],
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Maintenance Due',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.orange[700],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              // Maintenance Info - removed as not in API response
+              // if (equipment.isMaintenanceDue) ...[
+              //   const SizedBox(height: 8),
+              //   Container(
+              //     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              //     decoration: BoxDecoration(
+              //       color: Colors.orange[100],
+              //       borderRadius: BorderRadius.circular(8),
+              //     ),
+              //     child: Row(
+              //       mainAxisSize: MainAxisSize.min,
+              //       children: [
+              //         Icon(
+              //           Icons.warning,
+              //           size: 16,
+              //           color: Colors.orange[700],
+              //         ),
+              //         const SizedBox(width: 4),
+              //         Text(
+              //           'Maintenance Due',
+              //           style: TextStyle(
+              //             fontSize: 12,
+              //             color: Colors.orange[700],
+              //             fontWeight: FontWeight.w500,
+              //           ),
+              //         ),
+              //       ],
+              //     ),
+              //   ),
+              // ],
               
-              // Warranty Info
-              if (equipment.isUnderWarranty) ...[
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.green[100],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.verified,
-                        size: 16,
-                        color: Colors.green[700],
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Under Warranty',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.green[700],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              // Warranty Info - removed as not in API response
+              // if (equipment.isUnderWarranty) ...[
+              //   const SizedBox(height: 8),
+              //   Container(
+              //     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              //     decoration: BoxDecoration(
+              //       color: Colors.green[100],
+              //       borderRadius: BorderRadius.circular(8),
+              //     ),
+              //     child: Row(
+              //       mainAxisSize: MainAxisSize.min,
+              //       children: [
+              //         Icon(
+              //           Icons.verified,
+              //           size: 16,
+              //           color: Colors.green[700],
+              //         ),
+              //         const SizedBox(width: 4),
+              //         Text(
+              //           'Under Warranty',
+              //           style: TextStyle(
+              //             fontSize: 12,
+              //             color: Colors.green[700],
+              //             fontWeight: FontWeight.w500,
+              //           ),
+              //         ),
+              //       ],
+              //     ),
+              //   ),
+              // ],
             ],
           ),
         ),

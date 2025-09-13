@@ -8,6 +8,8 @@ import '../services/login_bridge_service.dart';
 import '../presentation/providers/employee_provider.dart';
 import '../presentation/providers/project_provider.dart';
 import '../presentation/providers/equipment_provider.dart';
+import '../presentation/providers/equipment_document_provider.dart';
+import '../data/repositories/equipment_document_repository_impl.dart';
 import '../presentation/providers/rental_provider.dart';
 import '../presentation/providers/timesheet_provider.dart';
 import '../presentation/providers/customer_provider.dart';
@@ -37,6 +39,7 @@ class SndRentalApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => EmployeeProvider()),
         ChangeNotifierProvider(create: (_) => ProjectProvider()),
         ChangeNotifierProvider(create: (_) => EquipmentProvider()),
+        ChangeNotifierProvider(create: (_) => EquipmentDocumentProvider(EquipmentDocumentRepositoryImpl(ApiClient()))),
         ChangeNotifierProvider(create: (_) => RentalProvider()),
         ChangeNotifierProvider(create: (_) => TimesheetProvider()),
         ChangeNotifierProvider(create: (_) => CustomerProvider()),
