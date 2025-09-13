@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { authConfig } from '@/lib/auth-config';
 import { findUserByEmailWithRoles } from '@/lib/repositories/user-repo';
 import bcrypt from 'bcryptjs';
 import { encode } from 'next-auth/jwt';
@@ -79,6 +78,9 @@ export async function POST(request: NextRequest) {
         name: user.name,
         role: role,
         isActive: user.isActive,
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60), // 30 days
+        jti: `mobile-${user.id}-${Date.now()}`,
       },
       secret: process.env.NEXTAUTH_SECRET || 'fallback-secret-key-for-development',
     });
