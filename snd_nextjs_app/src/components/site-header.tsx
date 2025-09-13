@@ -80,7 +80,7 @@ export function SiteHeader() {
                 variant="ghost"
                 size="sm"
                 onClick={refreshSession}
-                title={t('common.actions.refreshSession') || 'Refresh Session'}
+                title={t('common.actions.refreshSession')}
               >
                 <RefreshCw className="h-4 w-4" />
               </Button>
@@ -122,24 +122,24 @@ export function SiteHeader() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={refreshSession}>
                     <RefreshCw className={`${isRTL ? 'ml-2' : 'mr-2'} h-4 w-4`} />
-                    <span>{t('common.actions.refreshSession') || 'Refresh Session'}</span>
+                    <span>{t('common.actions.refreshSession')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem>
                     <Settings className={`${isRTL ? 'ml-2' : 'mr-2'} h-4 w-4`} />
-                    <span>{t('common.actions.settings') || 'Settings'}</span>
+                    <span>{t('common.actions.settings')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <a href="/profile" className="flex items-center">
                       <User className={`${isRTL ? 'ml-2' : 'mr-2'} h-4 w-4`} />
-                      <span>{t('common.actions.profile') || 'Profile'}</span>
+                      <span>{t('common.actions.profile')}</span>
                     </a>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/login' })}>
                     <LogOut className={`${isRTL ? 'ml-2' : 'mr-2'} h-4 w-4`} />
-                    <span>{t('common.actions.logout') || 'Log out'}</span>
+                    <span>{t('common.actions.logout')}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

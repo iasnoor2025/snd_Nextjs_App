@@ -1060,7 +1060,7 @@ export default function UserManagementPage() {
                       <RefreshCw
                         className={`h-4 w-4 mr-2 ${loadingPermissions ? 'animate-spin' : ''}`}
                       />
-                      {t('refreshPermissions') || 'Refresh'}
+                      {t('refreshPermissions')}
                     </Button>
                     {allowedActions.includes('create') && (
                       <Button onClick={() => setIsCreateRoleDialogOpen(true)}>

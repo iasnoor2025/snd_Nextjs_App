@@ -68,13 +68,13 @@ export function NavUser() {
         <DropdownMenuItem asChild>
           <Link href="/profile" className="flex items-center">
             <User className={`${isRTL ? 'ml-2' : 'mr-2'} h-4 w-4`} />
-            <span>{t('common.actions.profile') || 'Profile'}</span>
+            <span>{t('common.actions.profile')}</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleSignOut}>
           <LogOut className={`${isRTL ? 'ml-2' : 'mr-2'} h-4 w-4`} />
-          <span>{t('common.actions.logout') || 'Log out'}</span>
+          <span>{t('common.actions.logout')}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -58,14 +58,22 @@ export function useTranslations() {
         const { getDictionary } = await import('@/lib/get-dictionary');
         const dict = await getDictionary(locale as 'en' | 'ar');
         
-        setDictionary(dict);
+        if (dict && Object.keys(dict).length > 0) {
+          setDictionary(dict);
+        } else {
+          throw new Error('Dictionary is empty or invalid');
+        }
       } catch (error) {
         console.error('Failed to load dictionary:', error);
         // Fallback to English if loading fails
         try {
           const { getDictionary } = await import('@/lib/get-dictionary');
           const dict = await getDictionary('en');
-          setDictionary(dict);
+          if (dict && Object.keys(dict).length > 0) {
+            setDictionary(dict);
+          } else {
+            console.error('Fallback dictionary is also empty');
+          }
         } catch (fallbackError) {
           console.error('Failed to load fallback dictionary:', fallbackError);
         }
@@ -79,7 +87,48 @@ export function useTranslations() {
 
   const t = (key: string, params?: Record<string, string>) => {
     if (!dictionary || isLoading) {
-      return key; // Return the key as-is when loading
+      // Return a fallback translation instead of the key
+      const fallbackTranslations: Record<string, string> = {
+        'common.actions.refreshSession': 'Refresh Session',
+        'common.actions.settings': 'Settings',
+        'common.actions.profile': 'Profile',
+        'common.actions.logout': 'Log out',
+        'common.actions.create': 'Create',
+        'common.actions.edit': 'Edit',
+        'common.actions.delete': 'Delete',
+        'common.actions.save': 'Save',
+        'common.actions.cancel': 'Cancel',
+        'common.actions.loading': 'Loading...',
+        'common.actions.saving': 'Saving...',
+        'common.actions.search': 'Search',
+        'common.actions.filter': 'Filter',
+        'common.actions.export': 'Export',
+        'common.actions.import': 'Import',
+        'common.actions.refresh': 'Refresh',
+        'common.actions.quickCreate': 'Quick Create',
+        'common.actions.inbox': 'Inbox',
+        'common.actions.signIn': 'Sign In',
+        'user.refreshPermissions': 'Refresh Permissions',
+        'user.createRole': 'Create Role',
+        'user.editRole': 'Edit Role',
+        'user.deleteRole': 'Delete Role',
+        'user.createUser': 'Create User',
+        'user.editUser': 'Edit User',
+        'user.deleteUser': 'Delete User',
+        'common.status.active': 'Active',
+        'common.status.inactive': 'Inactive',
+        'common.status.pending': 'Pending',
+        'common.status.approved': 'Approved',
+        'common.status.rejected': 'Rejected',
+        'common.status.completed': 'Completed',
+        'common.status.cancelled': 'Cancelled',
+        'common.status.available': 'Available',
+        'common.status.in_use': 'In Use',
+        'common.status.maintenance': 'Maintenance',
+        'common.status.out_of_service': 'Out of Service',
+      };
+      
+      return fallbackTranslations[key] || key;
     }
 
     // Handle namespace.key format (e.g., "common.save", "dashboard.title")

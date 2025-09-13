@@ -122,7 +122,7 @@ class _PayrollListPageState extends State<PayrollListPage> {
                   child: ListTile(
                     leading: CircleAvatar(
                       backgroundColor: _getStatusColor(payroll.status),
-                      child: Icon(
+                      child: const Icon(
                         Icons.payment,
                         color: Colors.white,
                       ),
