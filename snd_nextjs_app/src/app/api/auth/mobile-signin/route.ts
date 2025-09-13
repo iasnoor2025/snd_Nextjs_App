@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authConfig } from '@/lib/auth-config';
 import { findUserByEmailWithRoles } from '@/lib/repositories/user-repo';
 import bcrypt from 'bcryptjs';
-import { SignJWT } from 'jose';
+import { encode } from 'next-auth/jwt';
 
 export async function POST(request: NextRequest) {
   try {
@@ -71,19 +71,17 @@ export async function POST(request: NextRequest) {
       role = highestRole;
     }
 
-    // Create JWT token (similar to NextAuth.js)
-    const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET || 'fallback-secret-key-for-development');
-    const token = await new SignJWT({
-      sub: user.id.toString(),
-      email: user.email,
-      name: user.name,
-      role: role,
-      isActive: user.isActive,
-    })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setIssuedAt()
-      .setExpirationTime('30d')
-      .sign(secret);
+    // Create NextAuth.js compatible JWT token using NextAuth's encode function
+    const token = await encode({
+      token: {
+        sub: user.id.toString(),
+        email: user.email,
+        name: user.name,
+        role: role,
+        isActive: user.isActive,
+      },
+      secret: process.env.NEXTAUTH_SECRET || 'fallback-secret-key-for-development',
+    });
 
     // Create response with session cookie
     const response = NextResponse.json({

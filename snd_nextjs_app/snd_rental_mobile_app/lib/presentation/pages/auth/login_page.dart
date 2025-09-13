@@ -211,13 +211,27 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final dio = Dio();
-      final response = await dio.get('${AppConstants.baseUrl}/employees?page=1&limit=1');
+      
+      // First test session endpoint
+      final sessionResponse = await dio.get('${AppConstants.baseUrl}/auth/mobile-session');
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('API Connection Test: ${response.statusCode}'),
-            backgroundColor: response.statusCode == 200 ? Colors.green : Colors.orange,
+            content: Text('Session Test: ${sessionResponse.statusCode}'),
+            backgroundColor: sessionResponse.statusCode == 200 ? Colors.green : Colors.orange,
+          ),
+        );
+      }
+      
+      // Then test employees endpoint
+      final employeesResponse = await dio.get('${AppConstants.baseUrl}/employees?page=1&limit=1');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Employees API Test: ${employeesResponse.statusCode}'),
+            backgroundColor: employeesResponse.statusCode == 200 ? Colors.green : Colors.orange,
           ),
         );
       }
