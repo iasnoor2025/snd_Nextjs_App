@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { users as usersTable, roles as rolesTable, modelHasRoles as modelHasRolesTable } from '@/lib/drizzle/schema';
+import { users as usersTable, roles as rolesTable, modelHasRoles as modelHasRolesTable, employees as employeesTable, departments, designations } from '@/lib/drizzle/schema';
 import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
 import { authConfig } from '@/lib/auth-config';
@@ -64,6 +64,61 @@ export async function GET() {
       }
     }
 
+    // Try to fetch employee data for this user
+    let employeeData = null;
+    try {
+      const employeeRows = await db
+        .select({
+          id: employeesTable.id,
+          file_number: employeesTable.fileNumber,
+          first_name: employeesTable.firstName,
+          middle_name: employeesTable.middleName,
+          last_name: employeesTable.lastName,
+          email: employeesTable.email,
+          phone: employeesTable.phone,
+          department_id: employeesTable.departmentId,
+          designation_id: employeesTable.designationId,
+          status: employeesTable.status,
+          hire_date: employeesTable.hireDate,
+          basic_salary: employeesTable.basicSalary,
+          nationality: employeesTable.nationality,
+          hourly_rate: employeesTable.hourlyRate,
+          current_location: employeesTable.currentLocation,
+          dept_name: departments.name,
+          desig_name: designations.name,
+        })
+        .from(employeesTable)
+        .leftJoin(departments, eq(departments.id, employeesTable.departmentId))
+        .leftJoin(designations, eq(designations.id, employeesTable.designationId))
+        .where(eq(employeesTable.userId, user.id))
+        .limit(1);
+
+      if (employeeRows.length > 0) {
+        const emp = employeeRows[0];
+        employeeData = {
+          id: emp.id,
+          file_number: emp.file_number,
+          first_name: emp.first_name,
+          middle_name: emp.middle_name,
+          last_name: emp.last_name,
+          full_name: `${emp.first_name} ${emp.middle_name ? emp.middle_name + ' ' : ''}${emp.last_name}`,
+          email: emp.email,
+          phone: emp.phone,
+          department: emp.dept_name ? { id: emp.department_id, name: emp.dept_name } : null,
+          designation: emp.desig_name ? { id: emp.designation_id, name: emp.desig_name } : null,
+          status: emp.status,
+          hire_date: emp.hire_date ? emp.hire_date.slice(0, 10) : null,
+          basic_salary: emp.basic_salary,
+          nationality: emp.nationality,
+          hourly_rate: emp.hourly_rate,
+          current_location: emp.current_location,
+        };
+      }
+    } catch (error) {
+      console.error('Error fetching employee data:', error);
+      // Continue without employee data
+    }
+
     return NextResponse.json({
       success: true,
       user: {
@@ -71,6 +126,7 @@ export async function GET() {
         email: user.email,
         name: user.name,
         role: role,
+        employee: employeeData,
       },
     });
   } catch (error) {

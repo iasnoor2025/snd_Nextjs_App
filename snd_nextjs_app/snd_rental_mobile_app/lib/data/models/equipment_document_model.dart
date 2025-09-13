@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class EquipmentDocumentModel {
@@ -41,8 +40,6 @@ class EquipmentDocumentModel {
         updatedAt: _parseDateTime(json['updatedAt']),
       );
     } catch (e) {
-      print('Error parsing EquipmentDocumentModel: $e');
-      print('JSON data: $json');
       rethrow;
     }
   }
@@ -54,7 +51,6 @@ class EquipmentDocumentModel {
       try {
         return DateTime.parse(value);
       } catch (e) {
-        print('Error parsing date string: $value');
         return DateTime.now();
       }
     }

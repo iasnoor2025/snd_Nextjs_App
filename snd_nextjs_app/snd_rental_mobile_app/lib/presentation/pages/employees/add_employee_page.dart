@@ -126,7 +126,7 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
                   children: [
                     Text(
                       'Personal Information',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: AppTheme.fontSizeLg,
                         fontWeight: AppTheme.fontWeightBold,
                         color: AppTheme.foreground,
@@ -194,7 +194,7 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
                   children: [
                     Text(
                       'Employment Information',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: AppTheme.fontSizeLg,
                         fontWeight: AppTheme.fontWeightBold,
                         color: AppTheme.foreground,
@@ -257,7 +257,7 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
                   children: [
                     Text(
                       'Compensation',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: AppTheme.fontSizeLg,
                         fontWeight: AppTheme.fontWeightBold,
                         color: AppTheme.foreground,
@@ -292,7 +292,7 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
                   children: [
                     Text(
                       'Immigration Information',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: AppTheme.fontSizeLg,
                         fontWeight: AppTheme.fontWeightBold,
                         color: AppTheme.foreground,

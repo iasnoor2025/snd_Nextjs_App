@@ -189,7 +189,7 @@ class _EmployeeCardState extends State<EmployeeCard>
                               width: 1,
                             ),
                           ),
-                          child: Icon(
+                          child: const Icon(
                             Icons.arrow_forward_ios,
                             size: 14,
                             color: AppTheme.primary,

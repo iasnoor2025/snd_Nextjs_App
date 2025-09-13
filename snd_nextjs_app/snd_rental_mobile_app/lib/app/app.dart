@@ -20,6 +20,7 @@ import '../presentation/providers/quotation_provider.dart';
 import '../presentation/providers/safety_incident_provider.dart';
 import '../presentation/providers/company_provider.dart';
 import '../presentation/providers/user_provider.dart';
+import '../presentation/providers/user_profile_provider.dart';
 import '../presentation/providers/report_provider.dart';
 import '../presentation/pages/splash_page.dart';
 import '../presentation/pages/auth/login_page.dart';
@@ -50,6 +51,7 @@ class SndRentalApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SafetyIncidentProvider()),
         ChangeNotifierProvider(create: (_) => CompanyProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => UserProfileProvider()),
         ChangeNotifierProvider(create: (_) => ReportProvider()),
       ],
       child: MaterialApp(
@@ -95,10 +97,9 @@ class _AppInitializerState extends State<AppInitializer> {
       await LoginBridgeService().initialize();
       
       // Check authentication status
-      final authService = context.read<AuthService>();
+      // final authService = context.read<AuthService>();
       // Temporarily skip authentication check for debugging
       // await authService.isTokenValid();
-      print('🔐 Skipping authentication check for debugging');
       
       setState(() {
         _isInitialized = true;
@@ -144,7 +145,6 @@ class _AppInitializerState extends State<AppInitializer> {
     return Consumer<AuthService>(
       builder: (context, authService, child) {
         // Temporarily always show home page for debugging
-        print('🔐 Auth check: ${authService.isLoggedIn}');
         return const HomePage();
         // if (authService.isLoggedIn) {
         //   return const HomePage();

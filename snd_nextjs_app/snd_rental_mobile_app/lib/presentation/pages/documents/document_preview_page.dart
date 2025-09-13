@@ -88,7 +88,7 @@ class _DocumentPreviewPageState extends State<DocumentPreviewPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.error_outline,
               size: 64,
               color: AppTheme.destructive,
@@ -96,7 +96,7 @@ class _DocumentPreviewPageState extends State<DocumentPreviewPage> {
             const SizedBox(height: 16),
             Text(
               'Error loading document',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: AppTheme.destructive,
@@ -105,7 +105,7 @@ class _DocumentPreviewPageState extends State<DocumentPreviewPage> {
             const SizedBox(height: 8),
             Text(
               _error!,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
                 color: AppTheme.mutedForeground,
               ),
@@ -157,7 +157,7 @@ class _DocumentPreviewPageState extends State<DocumentPreviewPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.picture_as_pdf,
                     size: 80,
                     color: AppTheme.destructive,
@@ -228,7 +228,7 @@ class _DocumentPreviewPageState extends State<DocumentPreviewPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.image,
                         size: 80,
                         color: AppTheme.mutedForeground,

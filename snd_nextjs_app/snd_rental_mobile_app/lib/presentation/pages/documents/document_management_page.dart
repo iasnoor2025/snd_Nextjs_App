@@ -224,7 +224,7 @@ class _DocumentManagementPageState extends State<DocumentManagementPage>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.folder_open,
                         size: 64,
                         color: AppTheme.mutedForeground,
@@ -232,7 +232,7 @@ class _DocumentManagementPageState extends State<DocumentManagementPage>
                       const SizedBox(height: 16),
                       Text(
                         'No documents found',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                           color: AppTheme.mutedForeground,
@@ -241,7 +241,7 @@ class _DocumentManagementPageState extends State<DocumentManagementPage>
                       const SizedBox(height: 8),
                       Text(
                         'Upload documents for this employee',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 14,
                           color: AppTheme.mutedForeground,
                         ),
@@ -299,7 +299,7 @@ class _DocumentManagementPageState extends State<DocumentManagementPage>
                       const SizedBox(height: 4),
                       Text(
                         document.fileSizeFormatted,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 12,
                           color: AppTheme.mutedForeground,
                         ),
@@ -307,7 +307,7 @@ class _DocumentManagementPageState extends State<DocumentManagementPage>
                       const SizedBox(height: 4),
                       Text(
                         _formatUploadDate(document.uploadedAt),
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 11,
                           color: AppTheme.mutedForeground,
                         ),

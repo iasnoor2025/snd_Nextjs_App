@@ -1,232 +1,236 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../../core/theme/app_theme.dart';
 
-class Input extends StatefulWidget {
+enum InputVariant {
+  default_,
+  error,
+  success,
+}
+
+class Input extends StatelessWidget {
   final String? label;
   final String? hint;
-  final String? error;
+  final String? errorText;
   final String? helperText;
+  final InputVariant variant;
+  final bool isRequired;
+  final bool isDisabled;
+  final bool isReadOnly;
   final TextEditingController? controller;
-  final String? initialValue;
-  final bool obscureText;
-  final bool enabled;
-  final bool readOnly;
   final TextInputType? keyboardType;
-  final TextInputAction? textInputAction;
   final int? maxLines;
   final int? maxLength;
   final Widget? prefixIcon;
   final Widget? suffixIcon;
-  final List<TextInputFormatter>? inputFormatters;
-  final String? Function(String?)? validator;
-  final void Function(String)? onChanged;
-  final void Function(String)? onSubmitted;
-  final void Function()? onTap;
+  final VoidCallback? onTap;
+  final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
+  final FormFieldValidator<String>? validator;
   final FocusNode? focusNode;
-  final bool autofocus;
+  final EdgeInsets? padding;
 
   const Input({
     super.key,
     this.label,
     this.hint,
-    this.error,
+    this.errorText,
     this.helperText,
+    this.variant = InputVariant.default_,
+    this.isRequired = false,
+    this.isDisabled = false,
+    this.isReadOnly = false,
     this.controller,
-    this.initialValue,
-    this.obscureText = false,
-    this.enabled = true,
-    this.readOnly = false,
     this.keyboardType,
-    this.textInputAction,
     this.maxLines = 1,
     this.maxLength,
     this.prefixIcon,
     this.suffixIcon,
-    this.inputFormatters,
-    this.validator,
+    this.onTap,
     this.onChanged,
     this.onSubmitted,
-    this.onTap,
+    this.validator,
     this.focusNode,
-    this.autofocus = false,
+    this.padding,
   });
-
-  const Input.email({
-    super.key,
-    this.label,
-    this.hint,
-    this.error,
-    this.helperText,
-    this.controller,
-    this.initialValue,
-    this.enabled = true,
-    this.readOnly = false,
-    this.textInputAction,
-    this.maxLength,
-    this.prefixIcon,
-    this.suffixIcon,
-    this.inputFormatters,
-    this.validator,
-    this.onChanged,
-    this.onSubmitted,
-    this.onTap,
-    this.focusNode,
-    this.autofocus = false,
-  }) : obscureText = false,
-       keyboardType = TextInputType.emailAddress,
-       maxLines = 1;
 
   const Input.password({
     super.key,
     this.label,
     this.hint,
-    this.error,
+    this.errorText,
     this.helperText,
+    this.variant = InputVariant.default_,
+    this.isRequired = false,
+    this.isDisabled = false,
+    this.isReadOnly = false,
     this.controller,
-    this.initialValue,
-    this.enabled = true,
-    this.readOnly = false,
-    this.textInputAction,
+    this.maxLength,
+    this.prefixIcon,
+    this.onTap,
+    this.onChanged,
+    this.onSubmitted,
+    this.validator,
+    this.focusNode,
+    this.padding,
+  }) : keyboardType = TextInputType.visiblePassword,
+       suffixIcon = null,
+       maxLines = 1;
+
+  const Input.email({
+    super.key,
+    this.label,
+    this.hint,
+    this.errorText,
+    this.helperText,
+    this.variant = InputVariant.default_,
+    this.isRequired = false,
+    this.isDisabled = false,
+    this.isReadOnly = false,
+    this.controller,
     this.maxLength,
     this.prefixIcon,
     this.suffixIcon,
-    this.inputFormatters,
-    this.validator,
+    this.onTap,
     this.onChanged,
     this.onSubmitted,
-    this.onTap,
+    this.validator,
     this.focusNode,
-    this.autofocus = false,
-  }) : obscureText = true,
-       keyboardType = TextInputType.visiblePassword,
+    this.padding,
+  }) : keyboardType = TextInputType.emailAddress,
        maxLines = 1;
 
   const Input.multiline({
     super.key,
     this.label,
     this.hint,
-    this.error,
+    this.errorText,
     this.helperText,
+    this.variant = InputVariant.default_,
+    this.isRequired = false,
+    this.isDisabled = false,
+    this.isReadOnly = false,
     this.controller,
-    this.initialValue,
-    this.enabled = true,
-    this.readOnly = false,
-    this.textInputAction,
     this.maxLength,
     this.prefixIcon,
     this.suffixIcon,
-    this.inputFormatters,
-    this.validator,
+    this.onTap,
     this.onChanged,
     this.onSubmitted,
-    this.onTap,
+    this.validator,
     this.focusNode,
-    this.autofocus = false,
-  }) : obscureText = false,
-       keyboardType = TextInputType.multiline,
+    this.padding,
+  }) : keyboardType = TextInputType.multiline,
        maxLines = 3;
-
-  @override
-  State<Input> createState() => _InputState();
-}
-
-class _InputState extends State<Input> {
-  late bool _obscureText;
-  late TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _obscureText = widget.obscureText;
-    _controller = widget.controller ?? TextEditingController(text: widget.initialValue);
-  }
-
-  @override
-  void dispose() {
-    if (widget.controller == null) {
-      _controller.dispose();
-    }
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (widget.label != null) ...[
-          Text(
-            widget.label!,
-            style: const TextStyle(
-              fontSize: AppTheme.fontSizeSm,
-              fontWeight: AppTheme.fontWeightMedium,
-              color: AppTheme.foreground,
-            ),
+        if (label != null) ...[
+          Row(
+            children: [
+              Text(
+                label!,
+                style: const TextStyle(
+                  fontSize: AppTheme.fontSizeSm,
+                  fontWeight: AppTheme.fontWeightMedium,
+                  color: AppTheme.foreground,
+                ),
+              ),
+              if (isRequired) ...[
+                const SizedBox(width: AppTheme.spacingXs),
+                const Text(
+                  '*',
+                  style: TextStyle(
+                    color: AppTheme.destructive,
+                    fontSize: AppTheme.fontSizeSm,
+                  ),
+                ),
+              ],
+            ],
           ),
           const SizedBox(height: AppTheme.spacingXs),
         ],
         TextFormField(
-          controller: _controller,
-          obscureText: _obscureText,
-          enabled: widget.enabled,
-          readOnly: widget.readOnly,
-          keyboardType: widget.keyboardType,
-          textInputAction: widget.textInputAction,
-          maxLines: widget.maxLines,
-          maxLength: widget.maxLength,
-          inputFormatters: widget.inputFormatters,
-          validator: widget.validator,
-          onChanged: widget.onChanged,
-          onFieldSubmitted: widget.onSubmitted,
-          onTap: widget.onTap,
-          focusNode: widget.focusNode,
-          autofocus: widget.autofocus,
+          controller: controller,
+          keyboardType: keyboardType,
+          maxLines: maxLines,
+          maxLength: maxLength,
+          focusNode: focusNode,
+          readOnly: isReadOnly,
+          enabled: !isDisabled,
+          onTap: onTap,
+          onChanged: onChanged,
+          onFieldSubmitted: onSubmitted,
+          validator: validator,
           style: TextStyle(
-            fontSize: AppTheme.fontSizeBase,
-            color: widget.enabled ? AppTheme.foreground : AppTheme.mutedForeground,
+            fontSize: AppTheme.fontSizeSm,
+            color: isDisabled ? AppTheme.mutedForeground : AppTheme.foreground,
           ),
           decoration: InputDecoration(
-            hintText: widget.hint,
+            hintText: hint,
             hintStyle: const TextStyle(
-              color: AppTheme.mutedForeground,
-              fontSize: AppTheme.fontSizeBase,
-            ),
-            errorText: widget.error,
-            helperText: widget.helperText,
-            helperStyle: const TextStyle(
               color: AppTheme.mutedForeground,
               fontSize: AppTheme.fontSizeSm,
             ),
-            prefixIcon: widget.prefixIcon,
-            suffixIcon: widget.suffixIcon ?? _buildPasswordToggle(),
+            prefixIcon: prefixIcon,
+            suffixIcon: suffixIcon,
+            errorText: errorText,
+            helperText: helperText,
+            helperStyle: const TextStyle(
+              color: AppTheme.mutedForeground,
+              fontSize: AppTheme.fontSizeXs,
+            ),
+            errorStyle: const TextStyle(
+              color: AppTheme.destructive,
+              fontSize: AppTheme.fontSizeXs,
+            ),
             filled: true,
-            fillColor: widget.enabled ? AppTheme.background : AppTheme.muted,
+            fillColor: isDisabled ? AppTheme.muted : AppTheme.background,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppTheme.radius),
-              borderSide: const BorderSide(color: AppTheme.input),
+              borderSide: BorderSide(
+                color: _getBorderColor(),
+                width: 1,
+              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppTheme.radius),
-              borderSide: const BorderSide(color: AppTheme.input),
+              borderSide: BorderSide(
+                color: _getBorderColor(),
+                width: 1,
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppTheme.radius),
-              borderSide: const BorderSide(color: AppTheme.ring, width: 2),
+              borderSide: BorderSide(
+                color: _getFocusedBorderColor(),
+                width: 2,
+              ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppTheme.radius),
-              borderSide: const BorderSide(color: AppTheme.destructive),
+              borderSide: const BorderSide(
+                color: AppTheme.destructive,
+                width: 1,
+              ),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppTheme.radius),
-              borderSide: const BorderSide(color: AppTheme.destructive, width: 2),
+              borderSide: const BorderSide(
+                color: AppTheme.destructive,
+                width: 2,
+              ),
             ),
             disabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppTheme.radius),
-              borderSide: const BorderSide(color: AppTheme.input),
+              borderSide: BorderSide(
+                color: AppTheme.border.withValues(alpha: 0.5),
+                width: 1,
+              ),
             ),
-            contentPadding: const EdgeInsets.symmetric(
+            contentPadding: padding ?? const EdgeInsets.symmetric(
               horizontal: AppTheme.spacingMd,
               vertical: AppTheme.spacingSm,
             ),
@@ -237,19 +241,109 @@ class _InputState extends State<Input> {
     );
   }
 
-  Widget? _buildPasswordToggle() {
-    if (!widget.obscureText) return null;
+  Color _getBorderColor() {
+    switch (variant) {
+      case InputVariant.default_:
+        return AppTheme.border;
+      case InputVariant.error:
+        return AppTheme.destructive;
+      case InputVariant.success:
+        return AppTheme.success;
+    }
+  }
 
-    return IconButton(
-      icon: Icon(
-        _obscureText ? Icons.visibility_off : Icons.visibility,
-        color: AppTheme.mutedForeground,
+  Color _getFocusedBorderColor() {
+    switch (variant) {
+      case InputVariant.default_:
+        return AppTheme.ring;
+      case InputVariant.error:
+        return AppTheme.destructive;
+      case InputVariant.success:
+        return AppTheme.success;
+    }
+  }
+}
+
+class PasswordInput extends StatefulWidget {
+  final String? label;
+  final String? hint;
+  final String? errorText;
+  final String? helperText;
+  final InputVariant variant;
+  final bool isRequired;
+  final bool isDisabled;
+  final bool isReadOnly;
+  final TextEditingController? controller;
+  final int? maxLength;
+  final Widget? prefixIcon;
+  final VoidCallback? onTap;
+  final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
+  final FormFieldValidator<String>? validator;
+  final FocusNode? focusNode;
+  final EdgeInsets? padding;
+
+  const PasswordInput({
+    super.key,
+    this.label,
+    this.hint,
+    this.errorText,
+    this.helperText,
+    this.variant = InputVariant.default_,
+    this.isRequired = false,
+    this.isDisabled = false,
+    this.isReadOnly = false,
+    this.controller,
+    this.maxLength,
+    this.prefixIcon,
+    this.onTap,
+    this.onChanged,
+    this.onSubmitted,
+    this.validator,
+    this.focusNode,
+    this.padding,
+  });
+
+  @override
+  State<PasswordInput> createState() => _PasswordInputState();
+}
+
+class _PasswordInputState extends State<PasswordInput> {
+  bool _obscureText = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return Input(
+      label: widget.label,
+      hint: widget.hint,
+      errorText: widget.errorText,
+      helperText: widget.helperText,
+      variant: widget.variant,
+      isRequired: widget.isRequired,
+      isDisabled: widget.isDisabled,
+      isReadOnly: widget.isReadOnly,
+      controller: widget.controller,
+      keyboardType: TextInputType.visiblePassword,
+      maxLength: widget.maxLength,
+      prefixIcon: widget.prefixIcon,
+      suffixIcon: IconButton(
+        icon: Icon(
+          _obscureText ? Icons.visibility_off : Icons.visibility,
+          size: 20,
+          color: AppTheme.mutedForeground,
+        ),
+        onPressed: () {
+          setState(() {
+            _obscureText = !_obscureText;
+          });
+        },
       ),
-      onPressed: () {
-        setState(() {
-          _obscureText = !_obscureText;
-        });
-      },
+      onTap: widget.onTap,
+      onChanged: widget.onChanged,
+      onSubmitted: widget.onSubmitted,
+      validator: widget.validator,
+      focusNode: widget.focusNode,
+      padding: widget.padding,
     );
   }
 }

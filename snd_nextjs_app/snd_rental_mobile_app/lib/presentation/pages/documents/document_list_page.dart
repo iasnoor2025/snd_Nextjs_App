@@ -111,7 +111,7 @@ class _DocumentListPageState extends State<DocumentListPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.folder_open,
               size: 64,
               color: AppTheme.mutedForeground,
@@ -119,7 +119,7 @@ class _DocumentListPageState extends State<DocumentListPage> {
             const SizedBox(height: AppTheme.spacingMd),
             Text(
               'No documents found',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: AppTheme.fontSizeLg,
                 fontWeight: AppTheme.fontWeightBold,
                 color: AppTheme.mutedForeground,
@@ -128,7 +128,7 @@ class _DocumentListPageState extends State<DocumentListPage> {
             const SizedBox(height: AppTheme.spacingSm),
             Text(
               'Upload your first document to get started',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: AppTheme.fontSizeSm,
                 color: AppTheme.mutedForeground,
               ),
@@ -248,7 +248,7 @@ class DocumentCard extends StatelessWidget {
                   children: [
                     Text(
                       document.category,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: AppTheme.fontSizeSm,
                         color: AppTheme.mutedForeground,
                       ),
@@ -256,7 +256,7 @@ class DocumentCard extends StatelessWidget {
                     const SizedBox(width: AppTheme.spacingSm),
                     Text(
                       '•',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: AppTheme.fontSizeSm,
                         color: AppTheme.mutedForeground,
                       ),
@@ -264,7 +264,7 @@ class DocumentCard extends StatelessWidget {
                     const SizedBox(width: AppTheme.spacingSm),
                     Text(
                       _formatFileSize(document.fileSize),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: AppTheme.fontSizeSm,
                         color: AppTheme.mutedForeground,
                       ),
@@ -274,7 +274,7 @@ class DocumentCard extends StatelessWidget {
                 const SizedBox(height: AppTheme.spacingXs),
                 Text(
                   'Uploaded by ${document.uploadedBy} • ${_formatDate(document.uploadedAt)}',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: AppTheme.fontSizeXs,
                     color: AppTheme.mutedForeground,
                   ),

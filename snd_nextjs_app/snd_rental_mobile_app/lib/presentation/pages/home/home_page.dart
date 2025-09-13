@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../services/auth_service.dart';
 import '../employees/employee_list_page.dart';
 import '../employees/add_employee_page.dart';
 import '../projects/project_list_page.dart';
 import '../equipment/equipment_list_page.dart';
 import '../rentals/rental_list_page.dart';
 import '../customers/customer_list_page.dart';
+import '../profile/profile_page.dart';
 import '../../widgets/dashboard_card.dart';
 import '../../widgets/ui/futuristic_bottom_nav.dart';
 import '../../providers/employee_provider.dart';
@@ -35,7 +35,7 @@ class _HomePageState extends State<HomePage> {
     const EquipmentListPage(),
     const RentalListPage(),
     const CustomerListPage(),
-    const ProfileTab(),
+    const ProfilePage(),
   ];
 
   @override
@@ -517,71 +517,3 @@ class ProjectsTab extends StatelessWidget {
   }
 }
 
-class ProfileTab extends StatelessWidget {
-  const ProfileTab({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              final authService = context.read<AuthService>();
-              await authService.signOut();
-              if (context.mounted) {
-                Navigator.of(context).pushReplacementNamed('/login');
-              }
-            },
-          ),
-        ],
-      ),
-      body: Consumer<AuthService>(
-        builder: (context, authService, child) {
-          final user = authService.currentUser;
-          
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircleAvatar(
-                  radius: 50,
-                  backgroundImage: user?.photoUrl != null
-                      ? NetworkImage(user!.photoUrl!)
-                      : null,
-                  child: user?.photoUrl == null
-                      ? const Icon(Icons.person, size: 50)
-                      : null,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  user?.displayName ?? 'User',
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(user?.email ?? ''),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    await authService.signOut();
-                    if (context.mounted) {
-                      Navigator.of(context).pushReplacementNamed('/login');
-                    }
-                  },
-                  icon: const Icon(Icons.logout),
-                  label: const Text('Sign Out'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-}

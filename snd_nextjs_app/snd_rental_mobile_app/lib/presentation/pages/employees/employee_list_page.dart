@@ -4,6 +4,7 @@ import '../../providers/employee_provider.dart';
 import '../../widgets/employee_card.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/error_widget.dart' as custom;
+import '../../widgets/ui/input.dart';
 import '../../../core/theme/app_theme.dart';
 import 'add_employee_page.dart';
 import 'employee_details_page.dart';
@@ -156,7 +157,7 @@ class _EmployeeListPageState extends State<EmployeeListPage>
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.people_outline,
                                   size: 16,
                                   color: Colors.white,
@@ -203,75 +204,37 @@ class _EmployeeListPageState extends State<EmployeeListPage>
               child: Column(
                 children: [
                   // Search Bar
-                  Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.primary.withValues(alpha:0.1),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: TextField(
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: 'Search employees by name, file number, or ID...',
-                        hintStyle: TextStyle(
-                          color: AppTheme.mutedForeground.withValues(alpha:0.7),
-                        ),
-                        prefixIcon: Container(
-                          margin: const EdgeInsets.all(12),
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primary.withValues(alpha:0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(
-                            Icons.search,
-                            color: AppTheme.primary,
-                            size: 20,
-                          ),
-                        ),
-                        suffixIcon: _searchController.text.isNotEmpty
-                            ? IconButton(
-                                icon: Icon(
-                                  Icons.clear,
-                                  color: AppTheme.mutedForeground,
-                                ),
-                                onPressed: () {
-                                  _searchController.clear();
-                                  context.read<EmployeeProvider>().searchEmployees('');
-                                },
-                              )
-                            : null,
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(
-                            color: AppTheme.border.withValues(alpha:0.5),
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(
-                            color: AppTheme.border.withValues(alpha:0.5),
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(
-                            color: AppTheme.primary,
-                            width: 2,
-                          ),
-                        ),
+                  Input(
+                    controller: _searchController,
+                    hint: 'Search employees by name, file number, or ID...',
+                    prefixIcon: Container(
+                      margin: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      onChanged: (value) {
-                        context.read<EmployeeProvider>().searchEmployees(value);
-                      },
+                      child: const Icon(
+                        Icons.search,
+                        color: AppTheme.primary,
+                        size: 20,
+                      ),
                     ),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(
+                              Icons.clear,
+                              color: AppTheme.mutedForeground,
+                            ),
+                            onPressed: () {
+                              _searchController.clear();
+                              context.read<EmployeeProvider>().searchEmployees('');
+                            },
+                          )
+                        : null,
+                    onChanged: (value) {
+                      context.read<EmployeeProvider>().searchEmployees(value);
+                    },
                   ),
                   const SizedBox(height: 16),
                   
@@ -475,7 +438,7 @@ class _EmployeeListPageState extends State<EmployeeListPage>
           mainAxisSize: MainAxisSize.min,
           children: [
             if (isSelected) ...[
-              Icon(
+              const Icon(
                 Icons.check,
                 size: 16,
                 color: Colors.white,

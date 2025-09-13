@@ -48,7 +48,7 @@ class EmployeeDetailsPage extends StatelessWidget {
                       employee.firstName.isNotEmpty 
                           ? employee.firstName[0].toUpperCase()
                           : 'E',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: AppTheme.fontWeightBold,
                         color: AppTheme.primary,
@@ -62,7 +62,7 @@ class EmployeeDetailsPage extends StatelessWidget {
                       children: [
                         Text(
                           employee.displayName,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: AppTheme.fontSizeXl,
                             fontWeight: AppTheme.fontWeightBold,
                             color: AppTheme.foreground,
@@ -72,7 +72,7 @@ class EmployeeDetailsPage extends StatelessWidget {
                         if (employee.designation != null)
                           Text(
                             employee.designation!,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: AppTheme.fontSizeSm,
                               color: AppTheme.mutedForeground,
                             ),
@@ -80,7 +80,7 @@ class EmployeeDetailsPage extends StatelessWidget {
                         const SizedBox(height: AppTheme.spacingSm),
                         Text(
                           'File: ${employee.fileNumber} • ID: ${employee.employeeId}',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: AppTheme.fontSizeSm,
                             color: AppTheme.mutedForeground,
                           ),
@@ -101,7 +101,7 @@ class EmployeeDetailsPage extends StatelessWidget {
                 children: [
                   Text(
                     'Contact Information',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: AppTheme.fontSizeLg,
                       fontWeight: AppTheme.fontWeightBold,
                       color: AppTheme.foreground,
@@ -126,7 +126,7 @@ class EmployeeDetailsPage extends StatelessWidget {
                 children: [
                   Text(
                     'Employment Information',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: AppTheme.fontSizeLg,
                       fontWeight: AppTheme.fontWeightBold,
                       color: AppTheme.foreground,
@@ -152,7 +152,7 @@ class EmployeeDetailsPage extends StatelessWidget {
                 children: [
                   Text(
                     'Compensation',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: AppTheme.fontSizeLg,
                       fontWeight: AppTheme.fontWeightBold,
                       color: AppTheme.foreground,
@@ -177,7 +177,7 @@ class EmployeeDetailsPage extends StatelessWidget {
                 children: [
                   Text(
                     'Immigration Information',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: AppTheme.fontSizeLg,
                       fontWeight: AppTheme.fontWeightBold,
                       color: AppTheme.foreground,
@@ -255,7 +255,7 @@ class EmployeeDetailsPage extends StatelessWidget {
             width: 120,
             child: Text(
               label,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: AppTheme.fontSizeSm,
                 fontWeight: AppTheme.fontWeightMedium,
                 color: AppTheme.mutedForeground,
@@ -265,7 +265,7 @@ class EmployeeDetailsPage extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: AppTheme.fontSizeSm,
                 color: AppTheme.foreground,
               ),
