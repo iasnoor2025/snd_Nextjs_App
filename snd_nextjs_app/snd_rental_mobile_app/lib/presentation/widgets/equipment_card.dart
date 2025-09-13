@@ -65,7 +65,7 @@ class EquipmentCard extends StatelessWidget {
             ],
           ),
           
-          const SizedBox(height: AppTheme.spacing),
+          const SizedBox(height: AppTheme.spacing), 
           
           // Assignment Info
           if (equipment.isAssigned) ...[

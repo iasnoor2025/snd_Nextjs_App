@@ -76,6 +76,7 @@ export async function GET() {
           last_name: employeesTable.lastName,
           email: employeesTable.email,
           phone: employeesTable.phone,
+          address: employeesTable.address,
           department_id: employeesTable.departmentId,
           designation_id: employeesTable.designationId,
           status: employeesTable.status,
@@ -84,6 +85,12 @@ export async function GET() {
           nationality: employeesTable.nationality,
           hourly_rate: employeesTable.hourlyRate,
           current_location: employeesTable.currentLocation,
+          supervisor: employeesTable.supervisor,
+          iqama_number: employeesTable.iqamaNumber,
+          iqama_expiry: employeesTable.iqamaExpiry,
+          contract_days_per_month: employeesTable.contractDaysPerMonth,
+          emergency_contact_name: employeesTable.emergencyContactName,
+          emergency_contact_phone: employeesTable.emergencyContactPhone,
           dept_name: departments.name,
           desig_name: designations.name,
         })
@@ -104,6 +111,7 @@ export async function GET() {
           full_name: `${emp.first_name} ${emp.middle_name ? emp.middle_name + ' ' : ''}${emp.last_name}`,
           email: emp.email,
           phone: emp.phone,
+          address: emp.address,
           department: emp.dept_name ? { id: emp.department_id, name: emp.dept_name } : null,
           designation: emp.desig_name ? { id: emp.designation_id, name: emp.desig_name } : null,
           status: emp.status,
@@ -112,6 +120,13 @@ export async function GET() {
           nationality: emp.nationality,
           hourly_rate: emp.hourly_rate,
           current_location: emp.current_location,
+          supervisor: emp.supervisor,
+          supervisor_details: emp.supervisor ? { name: emp.supervisor } : null,
+          iqama_number: emp.iqama_number,
+          iqama_expiry: emp.iqama_expiry ? emp.iqama_expiry.slice(0, 10) : null,
+          contract_days_per_month: emp.contract_days_per_month,
+          emergency_contact_name: emp.emergency_contact_name,
+          emergency_contact_phone: emp.emergency_contact_phone,
         };
       }
     } catch (error) {

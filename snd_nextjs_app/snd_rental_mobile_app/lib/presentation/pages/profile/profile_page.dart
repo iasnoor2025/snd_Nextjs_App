@@ -177,7 +177,7 @@ class _ProfilePageState extends State<ProfilePage>
                         profileProvider.userProfile?.email ?? 
                         user?.email ?? 
                         'user@example.com',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: AppTheme.fontSizeSm,
                           color: AppTheme.mutedForeground,
                         ),
@@ -235,9 +235,10 @@ class _ProfilePageState extends State<ProfilePage>
           ),
           onPressed: () async {
             final authService = context.read<AuthService>();
+            final navigator = Navigator.of(context);
             await authService.signOut();
             if (context.mounted) {
-              Navigator.of(context).pushReplacementNamed('/login');
+              navigator.pushReplacementNamed('/login');
             }
           },
         ),
@@ -271,7 +272,7 @@ class _ProfilePageState extends State<ProfilePage>
       ),
       child: Container(
         margin: const EdgeInsets.all(3),
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           shape: BoxShape.circle,
           color: AppTheme.background,
         ),
@@ -464,7 +465,7 @@ class _ProfilePageState extends State<ProfilePage>
             'Update your account password',
             Icons.lock_outline,
             () {
-              // TODO: Implement change password
+              // TODO: Implement change password 
             },
           ),
           _buildActionRow(
@@ -488,9 +489,10 @@ class _ProfilePageState extends State<ProfilePage>
             'Sign out from all devices',
             Icons.logout,
             () async {
+              final navigator = Navigator.of(context);
               await authService.signOut();
               if (context.mounted) {
-                Navigator.of(context).pushReplacementNamed('/login');
+                navigator.pushReplacementNamed('/login');
               }
             },
             isDestructive: true,
@@ -674,7 +676,7 @@ class _ProfilePageState extends State<ProfilePage>
                 ],
               ),
             ),
-            Icon(
+            const Icon(
               Icons.chevron_right,
               color: AppTheme.mutedForeground,
               size: 20,
