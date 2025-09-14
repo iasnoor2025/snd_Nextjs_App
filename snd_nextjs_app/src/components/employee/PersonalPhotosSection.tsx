@@ -95,7 +95,7 @@ export default function PersonalPhotosSection({ employeeId }: PersonalPhotosSect
                 url: d.filePath || d.url || '',
                 created_at: d.createdAt || d.created_at || new Date().toISOString(),
                 typeLabel: getDocumentTypeLabel(d.documentType),
-                employee_file_number: employeeId,
+                employee_file_number: d.employee_file_number || employeeId, // Use API response file number
                 document_type: d.documentType || '',
               };
 

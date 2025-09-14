@@ -275,7 +275,8 @@ export default function DocumentManager(props: DocumentManagerProps) {
 
   const handleDownload = async (doc: DocumentItem) => {
     try {
-      console.log('Attempting to download document:', doc);
+      console.log('Document employee_file_number:', doc.employee_file_number);
+      console.log('Document downloadPrefix result:', typeof downloadPrefix === 'function' ? downloadPrefix(doc) : downloadPrefix);
       
       // If the URL is a MinIO URL (starts with http), handle it directly
       if (doc.url.startsWith('http')) {
@@ -299,6 +300,13 @@ export default function DocumentManager(props: DocumentManagerProps) {
           typeof downloadPrefix === 'function' ? downloadPrefix(doc) : downloadPrefix;
         const fileNumber =
           prefixFromProp || (doc.employee_file_number ? String(doc.employee_file_number) : '');
+        
+        console.log('Download prefix calculation:', {
+          prefixFromProp,
+          employee_file_number: doc.employee_file_number,
+          finalFileNumber: fileNumber,
+          downloadPrefixType: typeof downloadPrefix
+        });
         // Human-readable type label for display
         const printableType = (doc.typeLabel || 'Document').trim();
         // Determine extension from file_name or URL

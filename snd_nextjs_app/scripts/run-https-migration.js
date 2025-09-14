@@ -1,72 +1,124 @@
-const { Client } = require('pg');
-require('dotenv').config({ path: '.env.local' });
+#!/usr/bin/env node
+
+/**
+ * Database HTTPS Migration Runner
+ * 
+ * This script connects to your database and runs the HTTPS migration
+ * to replace all HTTP URLs with HTTPS URLs
+ */
+
+const { Pool } = require('pg');
+const fs = require('fs');
+const path = require('path');
+
+// Database configuration
+const dbConfig = {
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || 5432,
+  database: process.env.DB_NAME || 'snd_rental_app',
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || '',
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+};
+
+console.log('🔧 Database HTTPS Migration Script');
+console.log('==================================\n');
+
+console.log('📋 Database Configuration:');
+console.log(`Host: ${dbConfig.host}`);
+console.log(`Port: ${dbConfig.port}`);
+console.log(`Database: ${dbConfig.database}`);
+console.log(`User: ${dbConfig.user}`);
+console.log(`SSL: ${dbConfig.ssl ? 'Enabled' : 'Disabled'}\n`);
 
 async function runMigration() {
-  const client = new Client({
-    connectionString: process.env.DATABASE_URL,
-  });
-
+  const pool = new Pool(dbConfig);
+  
   try {
     console.log('🔌 Connecting to database...');
-    await client.connect();
-    console.log('✅ Connected to database');
+    const client = await pool.connect();
+    console.log('✅ Connected to database successfully\n');
 
-    console.log('🔒 Running HTTPS migration...');
+    // Read the migration SQL file
+    const migrationPath = path.join(__dirname, 'comprehensive-https-migration.sql');
+    const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
     
-    // Read the migration SQL
-    const fs = require('fs');
-    const migrationSQL = fs.readFileSync('./drizzle/0015_fix_http_urls_to_https.sql', 'utf8');
-    
-    console.log('📝 Migration SQL:');
-    console.log(migrationSQL);
-    
+    console.log('📄 Running HTTPS migration...');
+    console.log('This will update all HTTP URLs to HTTPS in the following tables:');
+    console.log('- employee_documents');
+    console.log('- equipment_documents');
+    console.log('- media');
+    console.log('- Any other tables with file URLs\n');
+
     // Execute the migration
     const result = await client.query(migrationSQL);
     
-    console.log('✅ Migration completed successfully!');
-    console.log('📊 Result:', result);
+    console.log('✅ Migration completed successfully!\n');
     
-    // Verify the changes
-    console.log('🔍 Verifying changes...');
+    // Show results
+    console.log('📊 Migration Results:');
+    if (result.rows && result.rows.length > 0) {
+      result.rows.forEach(row => {
+        console.log(`Table: ${row.table_name}`);
+        console.log(`  Total Records: ${row.total_records}`);
+        console.log(`  HTTPS MinIO Records: ${row.https_minio_records}`);
+        console.log(`  HTTP MinIO Records: ${row.http_minio_records}`);
+        console.log(`  HTTPS Supabase Records: ${row.https_supabase_records}`);
+        console.log(`  HTTP Supabase Records: ${row.http_supabase_records}`);
+        console.log('');
+      });
+    }
+
+    // Check for any remaining HTTP URLs
+    console.log('🔍 Checking for remaining HTTP URLs...');
+    const httpCheckQuery = `
+      SELECT 'employee_documents' as table_name, COUNT(*) as http_count
+      FROM employee_documents 
+      WHERE file_path LIKE 'http://%'
+      
+      UNION ALL
+      
+      SELECT 'equipment_documents' as table_name, COUNT(*) as http_count
+      FROM equipment_documents 
+      WHERE file_path LIKE 'http://%'
+      
+      UNION ALL
+      
+      SELECT 'media' as table_name, COUNT(*) as http_count
+      FROM media 
+      WHERE file_path LIKE 'http://%';
+    `;
     
-    // Check employee documents
-    const employeeResult = await client.query(`
-      SELECT COUNT(*) as total, 
-             COUNT(CASE WHEN file_path LIKE 'http://%' THEN 1 END) as http_count,
-             COUNT(CASE WHEN file_path LIKE 'https://%' THEN 1 END) as https_count
-      FROM employee_documents
-    `);
+    const httpCheckResult = await client.query(httpCheckQuery);
     
-    console.log('👥 Employee documents:', employeeResult.rows[0]);
-    
-    // Check equipment documents
-    const equipmentResult = await client.query(`
-      SELECT COUNT(*) as total, 
-             COUNT(CASE WHEN file_path LIKE 'http://%' THEN 1 END) as http_count,
-             COUNT(CASE WHEN file_path LIKE 'https://%' THEN 1 END) as https_count
-      FROM media
-    `);
-    
-    console.log('🔧 Equipment documents:', equipmentResult.rows[0]);
-    
-    // Show some example URLs
-    const sampleUrls = await client.query(`
-      SELECT file_path FROM employee_documents 
-      WHERE file_path LIKE 'https://%' 
-      LIMIT 3
-    `);
-    
-    console.log('📋 Sample HTTPS URLs:');
-    sampleUrls.rows.forEach((row, index) => {
-      console.log(`  ${index + 1}. ${row.file_path}`);
+    let totalHttpUrls = 0;
+    httpCheckResult.rows.forEach(row => {
+      totalHttpUrls += parseInt(row.http_count);
+      if (parseInt(row.http_count) > 0) {
+        console.log(`⚠️  ${row.table_name}: ${row.http_count} HTTP URLs remaining`);
+      }
     });
     
+    if (totalHttpUrls === 0) {
+      console.log('✅ No HTTP URLs remaining - Migration successful!');
+    } else {
+      console.log(`⚠️  Total HTTP URLs remaining: ${totalHttpUrls}`);
+    }
+
+    client.release();
+    
   } catch (error) {
-    console.error('❌ Migration failed:', error);
+    console.error('❌ Migration failed:', error.message);
+    console.error('Stack trace:', error.stack);
+    process.exit(1);
   } finally {
-    await client.end();
-    console.log('🔌 Database connection closed');
+    await pool.end();
+    console.log('\n🔌 Database connection closed');
   }
 }
 
-runMigration();
+// Run the migration
+runMigration().catch(error => {
+  console.error('❌ Script failed:', error);
+  process.exit(1);
+});

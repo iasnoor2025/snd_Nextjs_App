@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
-import { employeeDocuments } from '@/lib/drizzle/schema';
+import { employeeDocuments, employees } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { ensureHttps } from '@/lib/utils/url-utils';
 
@@ -31,6 +31,31 @@ export async function GET(
 
     const documentRecord = documentResult[0];
 
+    // Get employee information from the document's employee_id (not URL parameter)
+    const employeeResult = await db
+      .select()
+      .from(employees)
+      .where(eq(employees.id, documentRecord.employeeId))
+      .limit(1);
+
+    if (!employeeResult[0]) {
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+    }
+
+    const employee = employeeResult[0];
+    const fileNumber = employee.fileNumber || String(documentRecord.employeeId);
+    
+    // Debug logging
+    console.log('Download debug:', {
+      documentId: documentRecord.id,
+      documentEmployeeId: documentRecord.employeeId,
+      urlEmployeeId: employeeId,
+      employeeFileNumber: employee.fileNumber,
+      finalFileNumber: fileNumber,
+      documentType: documentRecord.documentType,
+      fileName: documentRecord.fileName
+    });
+
     // Check if user has permission to access this document
     if (session.user.role !== 'SUPER_ADMIN' && 
         session.user.role !== 'ADMIN' && 
@@ -51,11 +76,21 @@ export async function GET(
         // For preview, redirect to the HTTPS URL
         return NextResponse.redirect(ensureHttps(documentRecord.filePath));
       } else {
+        // Generate filename with employee file number
+        const fileExtension = documentRecord.fileName?.split('.').pop() || 'pdf';
+        const documentType = documentRecord.documentType || 'document';
+        const formattedDocumentType = documentType
+          .replace(/_/g, '-')
+          .replace(/\b\w/g, l => l.toUpperCase());
+        
+        const downloadFileName = `Employee-${fileNumber}-${formattedDocumentType}.${fileExtension}`;
+        
         // For download, return the HTTPS URL for the client to handle
         return NextResponse.json({
           success: true,
           downloadUrl: ensureHttps(documentRecord.filePath),
-          fileName: documentRecord.fileName,
+          fileName: downloadFileName,
+          originalFileName: documentRecord.fileName,
           mimeType: documentRecord.mimeType,
         });
       }

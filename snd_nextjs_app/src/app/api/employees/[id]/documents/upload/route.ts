@@ -80,7 +80,8 @@ const uploadDocumentsHandler = async (
         'passport', 'iqama', 'driving_license', 'operator_license', 
         'spsp_license', 'tuv_certification', 'contract', 'medical',
         'visa', 'work_permit', 'training_certificate', 'safety_certificate',
-        'insurance_card', 'bank_details', 'emergency_contact'
+        'insurance_card', 'bank_details', 'emergency_contact',
+        'h2s_card', 'h2s_certificate'
       ];
       
       const result = specificDocumentTypes.includes(documentType.toLowerCase());

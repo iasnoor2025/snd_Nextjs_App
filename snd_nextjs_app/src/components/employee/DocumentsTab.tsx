@@ -41,6 +41,7 @@ interface Document {
   description?: string;
   created_at: string;
   updated_at: string;
+  employee_file_number?: string | number; // Add this field
 }
 
 interface DocumentsTabProps {
@@ -78,6 +79,8 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
     { label: '⚙️ Operator License', value: 'operator_license', priority: 'medium' },
     { label: '🔧 SPSP License', value: 'spsp_license', priority: 'medium' },
     { label: '🏆 TUV Certification', value: 'tuv_certification', priority: 'medium' },
+    { label: '⚠️ H2S Card', value: 'h2s_card', priority: 'medium' },
+    { label: '📜 H2S Certificate', value: 'h2s_certificate', priority: 'medium' },
     { label: '📄 Employment Contract', value: 'contract', priority: 'high' },
     { label: '🏥 Medical Certificate', value: 'medical', priority: 'high' },
     { label: '📁 General Document', value: 'general', priority: 'low' },
@@ -131,9 +134,10 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
   const fetchDocuments = async () => {
     setLoading(true);
     setError(null);
+    console.log('🔄 DocumentsTab - Starting fresh fetch with cache busting');
     try {
       
-      const response = await fetch(`/api/employees/${employeeId}/documents?t=${Date.now()}`, {
+      const response = await fetch(`/api/employees/${employeeId}/documents?t=${Date.now()}&cache=${Math.random()}&v=${Math.random()}&force=${Math.random()}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -145,6 +149,12 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
 
       if (response.ok) {
         const data = await response.json();
+        
+        console.log('🔍 DocumentsTab - Raw API data:', data.slice(0, 2).map(doc => ({
+          id: doc.id,
+          name: doc.name,
+          employee_file_number: doc.employee_file_number
+        })));
         
         // Filter out personal documents (photos, iqama, passport) since they're shown in Personal tab
         const filteredData = Array.isArray(data) ? data.filter((doc: Document) => {
@@ -166,6 +176,12 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
             docType === 'employee_passport'
           );
         }) : [];
+        
+        console.log('🔍 DocumentsTab - Filtered data:', filteredData.slice(0, 2).map(doc => ({
+          id: doc.id,
+          name: doc.name,
+          employee_file_number: doc.employee_file_number
+        })));
         
         setDocuments(filteredData);
       } else {
@@ -367,7 +383,8 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
   const getDownloadFileName = (doc: any) => {
     const typeLabel = getDocumentTypeLabel(doc.document_type);
     const safeType = typeLabel.replace(/\s+/g, '_');
-    const safeFile = (doc.file_number || doc.employee_file_number || employeeId).toString();
+    // Use the employee_file_number from the document data, fallback to employeeId if not available
+    const safeFile = (doc.employee_file_number || employeeId).toString();
     const ext = (doc.file_name || '').split('.').pop() || 'file';
     return `${safeFile}_${safeType}.${ext}`;
   };
@@ -452,7 +469,6 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
           }}
           loadDocuments={async () => {
             try {
-              
               const response = await fetch(`/api/employees/${employeeId}/documents`, {
                 method: 'GET',
                 headers: {
@@ -463,7 +479,6 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
 
               if (response.ok) {
                 const data = await response.json();
-
                 const list = Array.isArray(data) ? data : [];
 
                 // Filter out personal documents (photos, iqama, passport) since they're shown in Personal tab
@@ -598,9 +613,12 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
           canDownload={hasPermission('read', 'employee-document')}
           canPreview={hasPermission('read', 'employee-document')}
           canDelete={hasPermission('delete', 'employee-document')}
-          downloadPrefix={doc =>
-            doc.employee_file_number ? String(doc.employee_file_number) : String(employeeId)
-          }
+          downloadPrefix={doc => {
+            // Extract file number directly from MinIO URL path
+            const url = doc.url || '';
+            const match = url.match(/employee-documents\/employee-(\d+)\//);
+            return match ? match[1] : (doc.employee_file_number ? String(doc.employee_file_number) : String(employeeId));
+          }}
           singleLine={false}
           wrapItems
           showSize={true}

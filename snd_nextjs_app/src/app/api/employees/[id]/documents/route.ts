@@ -1,7 +1,7 @@
 import { db } from '@/lib/drizzle';
-import { employeeDocuments } from '@/lib/drizzle/schema';
+import { employeeDocuments, employees } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, inArray } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { cacheService } from '@/lib/redis/cache-service';
 import { ensureHttps } from '@/lib/utils/url-utils';
@@ -29,11 +29,18 @@ export const GET = withPermission(PermissionConfigs.employee.read)(async (_reque
     const cachedDocuments = await cacheService.get(cacheKey, 'documents');
     
     if (cachedDocuments) {
-      console.log(`Cache hit for employee ${employeeId} documents`);
       return NextResponse.json(cachedDocuments);
     }
 
-    console.log(`Cache miss for employee ${employeeId} documents, fetching from database`);
+    // Get employee information to include file number
+    const employeeResult = await db
+      .select()
+      .from(employees)
+      .where(eq(employees.id, employeeId))
+      .limit(1);
+
+    const employee = employeeResult[0];
+    const fileNumber = employee?.fileNumber || String(employeeId);
 
     // Use the same approach as the working test endpoint
     const documentsRows = await db
@@ -52,6 +59,21 @@ export const GET = withPermission(PermissionConfigs.employee.read)(async (_reque
       .from(employeeDocuments)
       .where(eq(employeeDocuments.employeeId, employeeId))
       .orderBy(desc(employeeDocuments.createdAt));
+
+    // Get all unique employee IDs from the documents
+    const uniqueEmployeeIds = [...new Set(documentsRows.map(doc => doc.employeeId))];
+    
+    // Fetch file numbers for all employees
+    const employeesResult = await db
+      .select()
+      .from(employees)
+      .where(inArray(employees.id, uniqueEmployeeIds));
+    
+    // Create a map of employee ID to file number
+    const employeeFileNumberMap = new Map();
+    employeesResult.forEach(emp => {
+      employeeFileNumberMap.set(emp.id, emp.fileNumber || String(emp.id));
+    });
 
     // Format response to match what DocumentManager expects
     const formattedDocuments = documentsRows.map(doc => {
@@ -83,7 +105,17 @@ export const GET = withPermission(PermissionConfigs.employee.read)(async (_reque
           updatedAt: doc.updatedAt,
           // Additional fields needed for DocumentManager
           typeLabel: displayName,
-          employee_file_number: employeeId,
+          employee_file_number: (() => {
+            // Extract employee ID from file path if it's a MinIO URL
+            const filePath = doc.filePath || '';
+            const minioMatch = filePath.match(/employee-documents\/employee-(\d+)\//);
+            if (minioMatch) {
+              const pathEmployeeId = parseInt(minioMatch[1]);
+              return employeeFileNumberMap.get(pathEmployeeId) || String(pathEmployeeId);
+            }
+            // Fallback to document's employee ID
+            return employeeFileNumberMap.get(doc.employeeId) || String(doc.employeeId);
+          })(),
           // Add image detection properties for profile page
           isImage: doc.mimeType?.startsWith('image/') || false,
           isPhoto: doc.documentType?.toLowerCase().includes('photo') || 
@@ -116,7 +148,17 @@ export const GET = withPermission(PermissionConfigs.employee.read)(async (_reque
           createdAt: doc.createdAt,
           updatedAt: doc.updatedAt,
           typeLabel: 'Unknown Document',
-          employee_file_number: employeeId,
+          employee_file_number: (() => {
+            // Extract employee ID from file path if it's a MinIO URL
+            const filePath = doc.filePath || '';
+            const minioMatch = filePath.match(/employee-documents\/employee-(\d+)\//);
+            if (minioMatch) {
+              const pathEmployeeId = parseInt(minioMatch[1]);
+              return employeeFileNumberMap.get(pathEmployeeId) || String(pathEmployeeId);
+            }
+            // Fallback to document's employee ID
+            return employeeFileNumberMap.get(doc.employeeId) || String(doc.employeeId);
+          })(),
           isImage: false,
           isPhoto: false,
         };
@@ -129,8 +171,6 @@ export const GET = withPermission(PermissionConfigs.employee.read)(async (_reque
       prefix: 'documents',
       tags: [`employee:${employeeId}`, 'documents']
     });
-
-    console.log(`Cached employee ${employeeId} documents for 5 minutes`);
 
     return NextResponse.json(formattedDocuments);
   } catch (error) {
