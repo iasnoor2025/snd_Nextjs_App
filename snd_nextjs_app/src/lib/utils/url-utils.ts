@@ -6,8 +6,8 @@
  * Forces a URL to use HTTPS, replacing any HTTP protocol
  * This is critical for preventing Mixed Content errors in production
  */
-export function ensureHttps(url: string): string {
-  if (!url) return url;
+export function ensureHttps(url: string | null | undefined): string {
+  if (!url || typeof url !== 'string') return url || '';
   
   // Replace http:// with https://
   let secureUrl = url.replace(/^http:/, 'https:');

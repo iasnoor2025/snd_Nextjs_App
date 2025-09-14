@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
 import { media } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
+import { ensureHttps } from '@/lib/utils/url-utils';
 
 export async function GET(
   request: NextRequest,
@@ -46,13 +47,13 @@ export async function GET(
       const isPreview = !url.searchParams.has('download');
       
       if (isPreview) {
-        // For preview, redirect to the Supabase URL
-        return NextResponse.redirect(documentRecord.filePath);
+        // For preview, redirect to the HTTPS URL
+        return NextResponse.redirect(ensureHttps(documentRecord.filePath));
       } else {
-        // For download, return the URL for the client to handle
+        // For download, return the HTTPS URL for the client to handle
         return NextResponse.json({
           success: true,
-          downloadUrl: documentRecord.filePath,
+          downloadUrl: ensureHttps(documentRecord.filePath),
           fileName: documentRecord.fileName,
           mimeType: documentRecord.mimeType,
         });

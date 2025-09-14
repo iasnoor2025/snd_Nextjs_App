@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkUserPermission } from '@/lib/rbac/permission-service';
+import { ensureHttps } from '@/lib/utils/url-utils';
 
 // GET /api/profile/documents - Get current user's employee documents
 export async function GET(_request: NextRequest) {
@@ -110,7 +111,7 @@ export async function GET(_request: NextRequest) {
       id: doc.id,
       documentType: doc.documentType,
       fileName: doc.fileName,
-      filePath: doc.filePath,
+      filePath: ensureHttps(doc.filePath), // Force HTTPS to prevent Mixed Content errors
       description: doc.description || '',
       fileSize: doc.fileSize,
       mimeType: doc.mimeType,
