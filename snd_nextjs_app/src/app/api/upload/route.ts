@@ -92,8 +92,10 @@ export async function POST(request: NextRequest) {
 
     await s3Client.send(command);
 
-    // Generate MinIO public URL
-    const minioUrl = `${process.env.S3_ENDPOINT}/${targetBucket}/${descriptiveFilename}`;
+    // Generate MinIO public URL - Force HTTPS for production
+    const baseUrl = process.env.S3_ENDPOINT?.replace(/\/$/, '');
+    const secureUrl = baseUrl?.replace(/^http:\/\//, 'https://') || baseUrl;
+    const minioUrl = `${secureUrl}/${targetBucket}/${descriptiveFilename}`;
 
     return NextResponse.json({
       success: true,

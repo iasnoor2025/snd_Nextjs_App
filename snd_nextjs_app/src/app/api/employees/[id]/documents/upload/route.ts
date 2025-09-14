@@ -277,8 +277,10 @@ const uploadDocumentsHandler = async (
 
     await s3Client.send(command);
 
-    // Generate MinIO public URL
-    const minioUrl = `${process.env.S3_ENDPOINT}/employee-documents/${fullPath}`;
+    // Generate MinIO public URL - Force HTTPS for production
+    const baseUrl = process.env.S3_ENDPOINT?.replace(/\/$/, '');
+    const secureUrl = baseUrl?.replace(/^http:\/\//, 'https://') || baseUrl;
+    const minioUrl = `${secureUrl}/employee-documents/${fullPath}`;
 
     console.log('File uploaded successfully to MinIO, saving to database...');
     console.log('MinIO URL:', minioUrl);

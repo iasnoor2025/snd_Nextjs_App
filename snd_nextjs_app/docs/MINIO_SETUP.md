@@ -14,7 +14,7 @@ Add these environment variables to your `.env.local` file:
 
 ```bash
 # MinIO Configuration
-S3_ENDPOINT=http://localhost:9000
+S3_ENDPOINT=https://minio.snd-ksa.online  # Use HTTPS for production
 AWS_REGION=us-east-1
 AWS_ACCESS_KEY_ID=your_minio_access_key
 AWS_SECRET_ACCESS_KEY=your_minio_secret_key
@@ -229,7 +229,7 @@ For production deployment with Coolify:
 
 1. **Set environment variables** in Coolify dashboard:
    ```
-   S3_ENDPOINT=https://your-minio-domain.com
+   S3_ENDPOINT=https://minio.snd-ksa.online  # Must use HTTPS for production
    AWS_REGION=us-east-1
    AWS_ACCESS_KEY_ID=your_production_access_key
    AWS_SECRET_ACCESS_KEY=your_production_secret_key

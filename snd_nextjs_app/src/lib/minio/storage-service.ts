@@ -84,9 +84,10 @@ export class MinIOStorageService {
 
       await s3Client.send(command);
 
-      // Generate public URL
+      // Generate public URL - Force HTTPS for production
       const baseUrl = process.env.S3_ENDPOINT?.replace(/\/$/, '');
-      const url = `${baseUrl}/${bucket}/${filePath}`;
+      const secureUrl = baseUrl?.replace(/^http:\/\//, 'https://') || baseUrl;
+      const url = `${secureUrl}/${bucket}/${filePath}`;
 
       return {
         success: true,
@@ -193,9 +194,10 @@ export class MinIOStorageService {
         percentage: 100
       });
 
-      // Generate public URL
+      // Generate public URL - Force HTTPS for production
       const baseUrl = process.env.S3_ENDPOINT?.replace(/\/$/, '');
-      const url = `${baseUrl}/${bucket}/${filePath}`;
+      const secureUrl = baseUrl?.replace(/^http:\/\//, 'https://') || baseUrl;
+      const url = `${secureUrl}/${bucket}/${filePath}`;
 
       return {
         success: true,
