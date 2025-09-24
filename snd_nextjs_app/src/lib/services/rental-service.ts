@@ -560,6 +560,11 @@ export class RentalService {
       await this.createAutomaticAssignments(id);
     }
 
+    // If rental dates changed, update existing assignments
+    if (rentalData.startDate || rentalData.expectedEndDate) {
+      await this.updateRentalAssignmentDates(id, rentalData.startDate, rentalData.expectedEndDate);
+    }
+
     // Recalculate and update financial totals
     await this.recalculateRentalTotals(id);
 
@@ -754,15 +759,16 @@ export class RentalService {
             );
 
           if (existingEquipmentAssignment.length === 0) {
-            // Create new equipment assignment
+            // Create new equipment assignment with proper date sync
             await db.insert(equipmentRentalHistory).values({
               equipmentId: item.equipmentId,
               rentalId: rentalId,
+              projectId: rental.projectId || null,
               assignmentType: 'rental',
               startDate: startDate.toISOString(),
               endDate: endDate?.toISOString() || null,
-              status: 'active',
-              notes: `Auto-created for rental ${rental.rentalNumber}`,
+              status: rental.status === 'active' || rental.status === 'approved' ? 'active' : 'pending',
+              notes: `Auto-created equipment assignment for rental ${rental.rentalNumber}`,
               dailyRate: item.unitPrice,
               totalAmount: item.totalPrice,
               createdAt: new Date().toISOString(),
@@ -786,14 +792,17 @@ export class RentalService {
             );
 
           if (existingEmployeeAssignment.length === 0) {
-            // Create new employee assignment
+            // Create new employee assignment with proper date sync and details
             await db.insert(employeeAssignments).values({
               employeeId: item.operatorId,
               rentalId: rentalId,
+              projectId: rental.projectId || null,
               startDate: startDate.toISOString().split('T')[0],
               endDate: endDate?.toISOString().split('T')[0] || null,
-              status: 'active',
-              notes: `Auto-created for rental ${rental.rentalNumber}`,
+              status: rental.status === 'active' || rental.status === 'approved' ? 'active' : 'pending',
+              notes: `Auto-created operator assignment for rental ${rental.rentalNumber} - Equipment: ${item.equipmentName}`,
+              location: rental.locationId ? `Location ID: ${rental.locationId}` : 'Rental Site',
+              name: `Rental Operator - ${item.equipmentName}`,
               type: 'rental',
               createdAt: new Date().toISOString().split('T')[0],
               updatedAt: new Date().toISOString().split('T')[0],
@@ -862,6 +871,44 @@ export class RentalService {
     }
   }
 
+  // Update assignment dates when rental dates change
+  static async updateRentalAssignmentDates(rentalId: number, newStartDate?: Date, newEndDate?: Date | null) {
+    try {
+      if (!newStartDate && !newEndDate) return;
+
+      const rental = await this.getRental(rentalId);
+      if (!rental) return;
+
+      const startDateStr = newStartDate ? newStartDate.toISOString().split('T')[0] : rental.startDate;
+      const endDateStr = newEndDate ? newEndDate.toISOString().split('T')[0] : 
+                        (newEndDate === null ? null : rental.expectedEndDate);
+
+      // Update employee assignments
+      const employeeUpdateData: any = { updatedAt: new Date().toISOString().split('T')[0] };
+      if (newStartDate) employeeUpdateData.startDate = startDateStr;
+      if (newEndDate !== undefined) employeeUpdateData.endDate = endDateStr;
+
+      await db
+        .update(employeeAssignments)
+        .set(employeeUpdateData)
+        .where(eq(employeeAssignments.rentalId, rentalId));
+
+      // Update equipment assignments
+      const equipmentUpdateData: any = { updatedAt: new Date().toISOString() };
+      if (newStartDate) equipmentUpdateData.startDate = newStartDate.toISOString();
+      if (newEndDate !== undefined) equipmentUpdateData.endDate = newEndDate?.toISOString() || null;
+
+      await db
+        .update(equipmentRentalHistory)
+        .set(equipmentUpdateData)
+        .where(eq(equipmentRentalHistory.rentalId, rentalId));
+
+      console.log(`Updated assignment dates for rental ${rentalId}: start=${startDateStr}, end=${endDateStr}`);
+    } catch (error) {
+      console.error('Error updating rental assignment dates:', error);
+    }
+  }
+
   // Recalculate rental totals based on items
   static async recalculateRentalTotals(rentalId: number) {
     try {
@@ -906,15 +953,17 @@ export class RentalService {
         );
 
       if (existingAssignment.length === 0) {
-        // Create new equipment assignment
+        // Create new equipment assignment with rental sync
+        const rental = await this.getRental(rentalId);
         await db.insert(equipmentRentalHistory).values({
           equipmentId,
           rentalId,
+          projectId: rental?.projectId || null,
           assignmentType: 'rental',
           startDate: startDate.toISOString(),
           endDate: endDate?.toISOString() || null,
           status: 'active',
-          notes: `Auto-created for rental assignment`,
+          notes: `Auto-created for rental assignment - Rental: ${rental?.rentalNumber || rentalId}`,
           dailyRate: unitPrice,
           totalAmount: totalPrice,
           createdAt: new Date().toISOString(),

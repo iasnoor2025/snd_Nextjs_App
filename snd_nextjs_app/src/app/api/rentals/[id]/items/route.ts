@@ -94,16 +94,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // If an operator is assigned, create an employee assignment
     if (body.operatorId && rentalItem) {
       try {
-        // Create employee assignment for rental
+        // Create employee assignment for rental with proper date sync
+        const rentalStartDate = rentalExists.startDate ? new Date(rentalExists.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+        const rentalEndDate = rentalExists.expectedEndDate ? new Date(rentalExists.expectedEndDate).toISOString().split('T')[0] : null;
+        
         await db.insert(employeeAssignments).values({
           employeeId: parseInt(body.operatorId),
           rentalId: parseInt(rentalId),
-          startDate: new Date().toISOString().split('T')[0],
-          endDate: null,
-          status: 'active',
-          notes: `Assigned to rental item: ${equipmentName}`,
-          location: 'Rental Site',
-          name: `Rental Assignment - ${equipmentName}`,
+          projectId: rentalExists.projectId || null,
+          startDate: rentalStartDate,
+          endDate: rentalEndDate,
+          status: rentalExists.status === 'active' || rentalExists.status === 'approved' ? 'active' : 'pending',
+          notes: `Rental operator assignment for ${equipmentName} (Rental: ${rentalExists.rentalNumber})`,
+          location: rentalExists.locationId ? `Location ID: ${rentalExists.locationId}` : 'Rental Site',
+          name: `Rental Operator - ${equipmentName}`,
           type: 'rental',
           createdAt: new Date().toISOString().split('T')[0],
           updatedAt: new Date().toISOString().split('T')[0]
@@ -307,16 +311,20 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
           }
 
-          // Create new employee assignment for rental
+          // Create new employee assignment for rental with proper date sync
+          const rentalStartDate = rentalExists.startDate ? new Date(rentalExists.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+          const rentalEndDate = rentalExists.expectedEndDate ? new Date(rentalExists.expectedEndDate).toISOString().split('T')[0] : null;
+          
           await db.insert(employeeAssignments).values({
             employeeId: newOperatorId,
             rentalId: parseInt(rentalId),
-            startDate: new Date().toISOString().split('T')[0],
-            endDate: null,
-            status: 'active',
-            notes: `Assigned to rental item: ${equipmentName} (Updated)`,
-            location: 'Rental Site',
-            name: `Rental Assignment - ${equipmentName}`,
+            projectId: rentalExists.projectId || null,
+            startDate: rentalStartDate,
+            endDate: rentalEndDate,
+            status: rentalExists.status === 'active' || rentalExists.status === 'approved' ? 'active' : 'pending',
+            notes: `Rental operator assignment for ${equipmentName} (Updated) (Rental: ${rentalExists.rentalNumber})`,
+            location: rentalExists.locationId ? `Location ID: ${rentalExists.locationId}` : 'Rental Site',
+            name: `Rental Operator - ${equipmentName}`,
             type: 'rental',
             createdAt: new Date().toISOString().split('T')[0],
             updatedAt: new Date().toISOString().split('T')[0]

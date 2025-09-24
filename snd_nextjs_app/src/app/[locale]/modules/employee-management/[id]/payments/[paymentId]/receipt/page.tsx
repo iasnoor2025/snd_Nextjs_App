@@ -7,6 +7,7 @@ import { ArrowLeft, Download, Printer } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import jsPDF from 'jspdf';
 
 interface ReceiptData {
   payment: {
@@ -80,8 +81,125 @@ export default function ReceiptPage() {
   }, [employeeId, paymentId]);
 
   const handleDownload = () => {
-    // TODO: Implement PDF download functionality
+    if (!receiptData) return;
+
+    const doc = new jsPDF('portrait', 'mm', 'a4');
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 20;
+    let currentY = margin;
+
+    // Header
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.text('PAYMENT RECEIPT', pageWidth / 2, currentY, { align: 'center' });
+    currentY += 15;
+
+    // Company Info
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text(receiptData.company.name, margin, currentY);
+    currentY += 6;
     
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(receiptData.company.address, margin, currentY);
+    currentY += 5;
+    doc.text(`Phone: ${receiptData.company.phone}`, margin, currentY);
+    currentY += 5;
+    doc.text(`Email: ${receiptData.company.email}`, margin, currentY);
+    currentY += 15;
+
+    // Receipt Details Box
+    doc.setDrawColor(0);
+    doc.setLineWidth(0.5);
+    doc.rect(margin, currentY, pageWidth - 2 * margin, 50);
+    currentY += 8;
+
+    // Receipt Info
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('Receipt Details:', margin + 5, currentY);
+    currentY += 8;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(`Receipt ID: ${receiptData.payment.id}`, margin + 5, currentY);
+    doc.text(`Date: ${new Date(receiptData.payment.payment_date).toLocaleDateString()}`, pageWidth - margin - 50, currentY);
+    currentY += 6;
+
+    doc.text(`Employee: ${receiptData.employee.name}`, margin + 5, currentY);
+    doc.text(`ID: ${receiptData.employee.employee_id}`, pageWidth - margin - 50, currentY);
+    currentY += 6;
+
+    doc.text(`Position: ${receiptData.employee.position}`, margin + 5, currentY);
+    currentY += 6;
+
+    doc.text(`Recorded by: ${receiptData.payment.recorded_by}`, margin + 5, currentY);
+    currentY += 15;
+
+    // Payment Details
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text('Payment Details:', margin, currentY);
+    currentY += 10;
+
+    // Amount Box
+    doc.setFillColor(245, 245, 245);
+    doc.rect(margin, currentY, pageWidth - 2 * margin, 20, 'F');
+    doc.setDrawColor(0);
+    doc.rect(margin, currentY, pageWidth - 2 * margin, 20);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text(`Amount: ${receiptData.payment.amount.toFixed(2)} SAR`, margin + 5, currentY + 12);
+    currentY += 30;
+
+    // Notes if available
+    if (receiptData.payment.notes) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text('Notes:', margin, currentY);
+      currentY += 8;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      const notes = receiptData.payment.notes;
+      const splitNotes = doc.splitTextToSize(notes, pageWidth - 2 * margin);
+      doc.text(splitNotes, margin, currentY);
+      currentY += splitNotes.length * 5 + 10;
+    }
+
+    // Advance details if available
+    if (receiptData.advance) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text('Advance Payment Details:', margin, currentY);
+      currentY += 8;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.text(`Advance ID: ${receiptData.advance.id}`, margin + 5, currentY);
+      currentY += 6;
+      doc.text(`Reason: ${receiptData.advance.reason}`, margin + 5, currentY);
+      currentY += 6;
+      doc.text(`Total Advance: ${receiptData.advance.amount.toFixed(2)} SAR`, margin + 5, currentY);
+      currentY += 6;
+      doc.text(`Repaid Amount: ${receiptData.advance.repaid_amount.toFixed(2)} SAR`, margin + 5, currentY);
+      currentY += 6;
+      doc.text(`Remaining Balance: ${receiptData.advance.balance.toFixed(2)} SAR`, margin + 5, currentY);
+      currentY += 15;
+    }
+
+    // Footer
+    const pageHeight = doc.internal.pageSize.getHeight();
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8);
+    doc.text('This is a computer-generated receipt.', pageWidth / 2, pageHeight - 15, { align: 'center' });
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+
+    // Save the PDF
+    const filename = `Payment_Receipt_${receiptData.employee.employee_id}_${receiptData.payment.id}.pdf`;
+    doc.save(filename);
   };
 
   if (loading) {

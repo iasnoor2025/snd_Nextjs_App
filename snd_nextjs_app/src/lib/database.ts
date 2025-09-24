@@ -499,40 +499,71 @@ export class DatabaseService {
     rentalItems?: any[];
   }) {
     try {
-      // TODO: Implement rental creation with items
-      // This would require transaction handling for rental + rental items
+      const { rentalItems: itemsData, ...rentalData } = data;
 
-      const { rentalItems, ...rentalData } = data;
+      // Use transaction to ensure both rental and items are created together
+      const result = await db.transaction(async (tx) => {
+        // Create the rental first
+        const rentalRows = await tx
+          .insert(rentals)
+          .values({
+            customerId: rentalData.customerId,
+            rentalNumber: rentalData.rentalNumber || `RENTAL-${Date.now()}`,
+            startDate: rentalData.startDate.toISOString().split('T')[0],
+            expectedEndDate: rentalData.expectedEndDate?.toISOString().split('T')[0] || null,
+            actualEndDate: rentalData.actualEndDate?.toISOString().split('T')[0] || null,
+            status: rentalData.status || 'pending',
+            paymentStatus: rentalData.paymentStatus || 'PENDING',
+            subtotal: rentalData.subtotal || 0,
+            taxAmount: rentalData.taxAmount || 0,
+            totalAmount: rentalData.totalAmount || 0,
+            discount: rentalData.discount || 0,
+            tax: rentalData.tax || 0,
+            finalAmount: rentalData.finalAmount || 0,
+            depositAmount: rentalData.depositAmount || 0,
+            paymentTermsDays: rentalData.paymentTermsDays || 30,
+            hasTimesheet: rentalData.hasTimesheet || false,
+            hasOperators: rentalData.hasOperators || false,
+            notes: rentalData.notes || '',
+            createdAt: new Date().toISOString().split('T')[0],
+            updatedAt: new Date().toISOString().split('T')[0],
+          })
+          .returning();
 
-      const rentalRows = await db
-        .insert(rentals)
-        .values({
-          customerId: rentalData.customerId,
-          rentalNumber: rentalData.rentalNumber || `RENTAL-${Date.now()}`,
-          startDate: rentalData.startDate.toISOString().split('T')[0],
-          expectedEndDate: rentalData.expectedEndDate?.toISOString().split('T')[0] || null,
-          actualEndDate: rentalData.actualEndDate?.toISOString().split('T')[0] || null,
-          status: rentalData.status || 'pending',
-          paymentStatus: rentalData.paymentStatus || 'pending',
-          subtotal: rentalData.subtotal || 0,
-          taxAmount: rentalData.taxAmount || 0,
-          totalAmount: rentalData.totalAmount || 0,
-          discount: rentalData.discount || 0,
-          tax: rentalData.tax || 0,
-          finalAmount: rentalData.finalAmount || 0,
-          depositAmount: rentalData.depositAmount || 0,
-          paymentTermsDays: rentalData.paymentTermsDays || 30,
-          hasTimesheet: rentalData.hasTimesheet || false,
-          hasOperators: rentalData.hasOperators || false,
-          notes: rentalData.notes || '',
-          createdAt: new Date().toISOString().split('T')[0],
-          updatedAt: new Date().toISOString().split('T')[0],
-        })
-        .returning();
+        const rental = rentalRows[0];
+        if (!rental) {
+          throw new Error('Failed to create rental');
+        }
 
-      return rentalRows[0] || null;
+        // Create rental items if provided
+        let createdItems: any[] = [];
+        if (itemsData && itemsData.length > 0) {
+          const itemsToInsert = itemsData.map(item => ({
+            rentalId: rental.id,
+            equipmentId: item.equipmentId || null,
+            equipmentName: item.equipmentName || null,
+            unitPrice: item.unitPrice?.toString() || '0',
+            totalPrice: item.totalPrice?.toString() || '0',
+            rateType: item.rateType || 'daily',
+            operatorId: item.operatorId || null,
+            status: item.status || 'active',
+            notes: item.notes || null,
+            createdAt: new Date().toISOString().split('T')[0],
+            updatedAt: new Date().toISOString().split('T')[0],
+          }));
+
+          createdItems = await tx
+            .insert(rentalItems)
+            .values(itemsToInsert)
+            .returning();
+        }
+
+        return { rental, items: createdItems };
+      });
+
+      return result.rental;
     } catch (error) {
-      
+      console.error('Error creating rental with items:', error);
       return null;
     }
   }
@@ -566,43 +597,84 @@ export class DatabaseService {
     }
   ) {
     try {
-      // TODO: Implement rental update with items
+      const { rentalItems: itemsData, ...rentalUpdateData } = data;
 
-      const updateData: any = {};
+      // Use transaction to ensure both rental and items are updated together
+      const result = await db.transaction(async (tx) => {
+        // Prepare update data for rental
+        const updateData: any = {};
 
-      if (data.customerId !== undefined) updateData.customerId = data.customerId;
-      if (data.rentalNumber !== undefined) updateData.rentalNumber = data.rentalNumber;
-      if (data.startDate !== undefined)
-        updateData.startDate = data.startDate.toISOString().split('T')[0];
-      if (data.expectedEndDate !== undefined)
-        updateData.expectedEndDate = data.expectedEndDate?.toISOString().split('T')[0] || null;
-      if (data.actualEndDate !== undefined)
-        updateData.actualEndDate = data.actualEndDate?.toISOString().split('T')[0] || null;
-      if (data.status !== undefined) updateData.status = data.status;
-      if (data.paymentStatus !== undefined) updateData.paymentStatus = data.paymentStatus;
-      if (data.subtotal !== undefined) updateData.subtotal = data.subtotal;
-      if (data.taxAmount !== undefined) updateData.taxAmount = data.taxAmount;
-      if (data.totalAmount !== undefined) updateData.totalAmount = data.totalAmount;
-      if (data.discount !== undefined) updateData.discount = data.discount;
-      if (data.tax !== undefined) updateData.tax = data.tax;
-      if (data.finalAmount !== undefined) updateData.finalAmount = data.finalAmount;
-      if (data.depositAmount !== undefined) updateData.depositAmount = data.depositAmount;
-      if (data.paymentTermsDays !== undefined) updateData.paymentTermsDays = data.paymentTermsDays;
-      if (data.hasTimesheet !== undefined) updateData.hasTimesheet = data.hasTimesheet;
-      if (data.hasOperators !== undefined) updateData.hasOperators = data.hasOperators;
-      if (data.notes !== undefined) updateData.notes = data.notes;
+        if (rentalUpdateData.customerId !== undefined) updateData.customerId = rentalUpdateData.customerId;
+        if (rentalUpdateData.rentalNumber !== undefined) updateData.rentalNumber = rentalUpdateData.rentalNumber;
+        if (rentalUpdateData.startDate !== undefined)
+          updateData.startDate = rentalUpdateData.startDate.toISOString().split('T')[0];
+        if (rentalUpdateData.expectedEndDate !== undefined)
+          updateData.expectedEndDate = rentalUpdateData.expectedEndDate?.toISOString().split('T')[0] || null;
+        if (rentalUpdateData.actualEndDate !== undefined)
+          updateData.actualEndDate = rentalUpdateData.actualEndDate?.toISOString().split('T')[0] || null;
+        if (rentalUpdateData.status !== undefined) updateData.status = rentalUpdateData.status;
+        if (rentalUpdateData.paymentStatus !== undefined) updateData.paymentStatus = rentalUpdateData.paymentStatus;
+        if (rentalUpdateData.subtotal !== undefined) updateData.subtotal = rentalUpdateData.subtotal;
+        if (rentalUpdateData.taxAmount !== undefined) updateData.taxAmount = rentalUpdateData.taxAmount;
+        if (rentalUpdateData.totalAmount !== undefined) updateData.totalAmount = rentalUpdateData.totalAmount;
+        if (rentalUpdateData.discount !== undefined) updateData.discount = rentalUpdateData.discount;
+        if (rentalUpdateData.tax !== undefined) updateData.tax = rentalUpdateData.tax;
+        if (rentalUpdateData.finalAmount !== undefined) updateData.finalAmount = rentalUpdateData.finalAmount;
+        if (rentalUpdateData.depositAmount !== undefined) updateData.depositAmount = rentalUpdateData.depositAmount;
+        if (rentalUpdateData.paymentTermsDays !== undefined) updateData.paymentTermsDays = rentalUpdateData.paymentTermsDays;
+        if (rentalUpdateData.hasTimesheet !== undefined) updateData.hasTimesheet = rentalUpdateData.hasTimesheet;
+        if (rentalUpdateData.hasOperators !== undefined) updateData.hasOperators = rentalUpdateData.hasOperators;
+        if (rentalUpdateData.notes !== undefined) updateData.notes = rentalUpdateData.notes;
 
-      updateData.updatedAt = new Date().toISOString().split('T')[0];
+        updateData.updatedAt = new Date().toISOString().split('T')[0];
 
-      const rentalRows = await db
-        .update(rentals)
-        .set(updateData)
-        .where(eq(rentals.id, id))
-        .returning();
+        // Update the rental
+        const rentalRows = await tx
+          .update(rentals)
+          .set(updateData)
+          .where(eq(rentals.id, id))
+          .returning();
 
-      return rentalRows[0] || null;
+        const rental = rentalRows[0];
+        if (!rental) {
+          throw new Error('Rental not found');
+        }
+
+        // Update rental items if provided
+        let updatedItems: any[] = [];
+        if (itemsData && itemsData.length > 0) {
+          // Delete existing items for this rental
+          await tx
+            .delete(rentalItems)
+            .where(eq(rentalItems.rentalId, id));
+
+          // Insert new items
+          const itemsToInsert = itemsData.map(item => ({
+            rentalId: id,
+            equipmentId: item.equipmentId || null,
+            equipmentName: item.equipmentName || null,
+            unitPrice: item.unitPrice?.toString() || '0',
+            totalPrice: item.totalPrice?.toString() || '0',
+            rateType: item.rateType || 'daily',
+            operatorId: item.operatorId || null,
+            status: item.status || 'active',
+            notes: item.notes || null,
+            createdAt: new Date().toISOString().split('T')[0],
+            updatedAt: new Date().toISOString().split('T')[0],
+          }));
+
+          updatedItems = await tx
+            .insert(rentalItems)
+            .values(itemsToInsert)
+            .returning();
+        }
+
+        return { rental, items: updatedItems };
+      });
+
+      return result.rental;
     } catch (error) {
-      
+      console.error('Error updating rental with items:', error);
       return null;
     }
   }
