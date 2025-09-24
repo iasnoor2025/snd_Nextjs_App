@@ -124,6 +124,19 @@ export default function EquipmentAssignmentPage() {
   const [showAssignmentDialog, setShowAssignmentDialog] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [assignmentToDelete, setAssignmentToDelete] = useState<Assignment | null>(null);
+  const [editAssignmentDialogOpen, setEditAssignmentDialogOpen] = useState(false);
+  const [assignmentToEdit, setAssignmentToEdit] = useState<Assignment | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    assignment_type: '',
+    employee_id: '',
+    project_id: '',
+    start_date: '',
+    end_date: '',
+    daily_rate: '',
+    total_amount: '',
+    notes: '',
+    status: '',
+  });
 
   const equipmentId = params.id as string;
 
@@ -133,6 +146,84 @@ export default function EquipmentAssignmentPage() {
   const handleDeleteClick = (assignment: Assignment) => {
     setAssignmentToDelete(assignment);
     setDeleteDialogOpen(true);
+  };
+
+  const handleEditClick = (assignment: Assignment) => {
+    setAssignmentToEdit(assignment);
+    setEditFormData({
+      assignment_type: assignment.assignment_type,
+      employee_id: assignment.employee?.id?.toString() || '',
+      project_id: assignment.project?.id?.toString() || '',
+      start_date: assignment.start_date ? assignment.start_date.split('T')[0] : '',
+      end_date: assignment.end_date ? assignment.end_date.split('T')[0] : '',
+      daily_rate: assignment.daily_rate?.toString() || '',
+      total_amount: assignment.total_amount?.toString() || '',
+      notes: assignment.notes || '',
+      status: assignment.status,
+    });
+    setEditAssignmentDialogOpen(true);
+  };
+
+  const handleCompleteAssignment = async (assignment: Assignment) => {
+    try {
+      const response = await fetch(`/api/equipment/assignments/${assignment.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          assignment_type: assignment.assignment_type,
+          employee_id: assignment.employee?.id,
+          project_id: assignment.project?.id,
+          start_date: assignment.start_date,
+          end_date: new Date().toISOString().split('T')[0], // Set end date to today
+          daily_rate: assignment.daily_rate,
+          total_amount: assignment.total_amount,
+          notes: assignment.notes,
+          status: 'completed',
+        }),
+      });
+
+      if (response.ok) {
+        toast.success(t('equipment.messages.assignmentCompleted'));
+        await fetchAssignments();
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        toast.error(error.error || t('equipment.messages.completeAssignmentError'));
+      }
+    } catch (error) {
+      console.error('Error completing assignment:', error);
+      toast.error(t('equipment.messages.completeAssignmentError'));
+    }
+  };
+
+  const handleUpdateAssignment = async () => {
+    if (!assignmentToEdit) return;
+
+    try {
+      const response = await fetch(`/api/equipment/assignments/${assignmentToEdit.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editFormData),
+      });
+
+      if (response.ok) {
+        toast.success(t('equipment.messages.assignmentUpdated'));
+        setEditAssignmentDialogOpen(false);
+        setAssignmentToEdit(null);
+        await fetchAssignments();
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        toast.error(error.error || t('equipment.messages.updateAssignmentError'));
+      }
+    } catch (error) {
+      console.error('Error updating assignment:', error);
+      toast.error(t('equipment.messages.updateAssignmentError'));
+    }
   };
 
   const handleDeleteConfirm = async () => {
@@ -487,9 +578,7 @@ export default function EquipmentAssignmentPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => {
-                                  /* TODO: Implement edit */
-                                }}
+                                onClick={() => handleEditClick(assignment)}
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
@@ -498,9 +587,7 @@ export default function EquipmentAssignmentPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => {
-                                  /* TODO: Implement complete */
-                                }}
+                                onClick={() => handleCompleteAssignment(assignment)}
                               >
                                 <CheckCircle className="h-4 w-4" />
                               </Button>
@@ -524,6 +611,106 @@ export default function EquipmentAssignmentPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Edit Assignment Dialog */}
+        <Dialog open={editAssignmentDialogOpen} onOpenChange={setEditAssignmentDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Edit Equipment Assignment</DialogTitle>
+              <DialogDescription>
+                Update the assignment details for {equipment?.name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-assignment-type">Assignment Type</Label>
+                <select
+                  id="edit-assignment-type"
+                  value={editFormData.assignment_type}
+                  onChange={(e) => setEditFormData({ ...editFormData, assignment_type: e.target.value })}
+                  className="w-full p-2 border rounded"
+                >
+                  <option value="rental">Rental</option>
+                  <option value="project">Project</option>
+                  <option value="manual">Manual</option>
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="edit-status">Status</Label>
+                <select
+                  id="edit-status"
+                  value={editFormData.status}
+                  onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                  className="w-full p-2 border rounded"
+                >
+                  <option value="active">Active</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="edit-start-date">Start Date</Label>
+                <input
+                  id="edit-start-date"
+                  type="date"
+                  value={editFormData.start_date}
+                  onChange={(e) => setEditFormData({ ...editFormData, start_date: e.target.value })}
+                  className="w-full p-2 border rounded"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-end-date">End Date</Label>
+                <input
+                  id="edit-end-date"
+                  type="date"
+                  value={editFormData.end_date}
+                  onChange={(e) => setEditFormData({ ...editFormData, end_date: e.target.value })}
+                  className="w-full p-2 border rounded"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-daily-rate">Daily Rate</Label>
+                <input
+                  id="edit-daily-rate"
+                  type="number"
+                  step="0.01"
+                  value={editFormData.daily_rate}
+                  onChange={(e) => setEditFormData({ ...editFormData, daily_rate: e.target.value })}
+                  className="w-full p-2 border rounded"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-total-amount">Total Amount</Label>
+                <input
+                  id="edit-total-amount"
+                  type="number"
+                  step="0.01"
+                  value={editFormData.total_amount}
+                  onChange={(e) => setEditFormData({ ...editFormData, total_amount: e.target.value })}
+                  className="w-full p-2 border rounded"
+                />
+              </div>
+              <div className="col-span-2">
+                <Label htmlFor="edit-notes">Notes</Label>
+                <textarea
+                  id="edit-notes"
+                  value={editFormData.notes}
+                  onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+                  className="w-full p-2 border rounded"
+                  rows={3}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditAssignmentDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateAssignment}>
+                Update Assignment
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Delete Confirmation Dialog */}
         <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
