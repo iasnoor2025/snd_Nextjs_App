@@ -1095,7 +1095,7 @@ export default function RentalDetailPage() {
 
     try {
       const response = await fetch(`/api/rentals/${rental.id}/activate`, {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
       });
 

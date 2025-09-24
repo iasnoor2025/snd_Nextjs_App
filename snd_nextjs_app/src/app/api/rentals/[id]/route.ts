@@ -1,4 +1,7 @@
+import { db } from '@/lib/drizzle';
+import { rentalItems, rentals } from '@/lib/drizzle/schema';
 import { RentalService } from '@/lib/services/rental-service';
+import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -74,15 +77,31 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const success = await RentalService.deleteRental(parseInt(id));
+    const rentalId = parseInt(id);
 
-    if (!success) {
-      return NextResponse.json({ error: 'Rental not found' }, { status: 404 });
-    }
-
-    return NextResponse.json({ message: 'Rental deleted successfully' });
-  } catch (error) {
+    // Get assignment count before deletion for reporting
+    const assignmentCounts = await RentalService.deleteAllRentalAssignments(rentalId);
     
-    return NextResponse.json({ error: 'Failed to delete rental' }, { status: 500 });
+    // Delete rental items and rental itself
+    await db.delete(rentalItems).where(eq(rentalItems.rentalId, rentalId));
+    await db.delete(rentals).where(eq(rentals.id, rentalId));
+
+    return NextResponse.json({ 
+      success: true,
+      message: 'Rental and all associated data deleted successfully',
+      deletedData: {
+        rental: 1,
+        employeeAssignments: assignmentCounts.employeeAssignments,
+        equipmentAssignments: assignmentCounts.equipmentAssignments,
+        rentalItems: 'all'
+      }
+    });
+  } catch (error) {
+    console.error('Error deleting rental:', error);
+    return NextResponse.json({ 
+      success: false,
+      error: 'Failed to delete rental',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }

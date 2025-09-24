@@ -1,17 +1,13 @@
-import { db } from '@/lib/db';
-import { employeeAssignments } from '@/lib/drizzle/schema';
 import { RentalService } from '@/lib/services/rental-service';
-import { and, eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; itemId: string }> }
 ) {
-  const { id, itemId } = await params;
+  const { itemId } = await params;
   try {
     const body = await request.json();
-    const rentalId = id;
 
     // Get current rental item to check if operator changed
     const newOperatorId = body.operatorId ? parseInt(body.operatorId) : null;
@@ -95,40 +91,13 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string; itemId: string }> }
 ) {
-  const { id, itemId } = await params;
+  const { itemId } = await params;
   try {
-    const rentalId = id;
+    // Delete rental item (this now includes automatic assignment cleanup)
+    const success = await RentalService.deleteRentalItem(parseInt(itemId));
 
-    // Get current rental item to check if it has an operator
-    const currentItem = await RentalService.getRentalItem(parseInt(itemId));
-    const operatorId = currentItem?.operatorId;
-
-    // Delete rental item
-    await RentalService.deleteRentalItem(parseInt(itemId));
-
-    // If the item had an operator, end their assignment
-    if (operatorId) {
-      try {
-        await db
-          .update(employeeAssignments)
-          .set({
-            status: 'inactive',
-            endDate: new Date().toISOString().split('T')[0],
-          })
-          .where(
-            and(
-              eq(employeeAssignments.employeeId, operatorId),
-              eq(employeeAssignments.rentalId, parseInt(rentalId)),
-              eq(employeeAssignments.type, 'rental_item'),
-              eq(employeeAssignments.status, 'active')
-            )
-          );
-
-      } catch (assignmentError) {
-        
-        // Don't fail the rental item deletion if assignment update fails
-        // Just log the error
-      }
+    if (!success) {
+      return NextResponse.json({ error: 'Failed to delete rental item' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });

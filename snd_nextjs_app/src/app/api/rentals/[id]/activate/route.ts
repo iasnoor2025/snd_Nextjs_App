@@ -30,20 +30,25 @@ export async function PUT(
       return NextResponse.json({ error: 'Rental not found' }, { status: 404 });
     }
 
+    // Check if rental has placeholder startDate and update it to today if activating
+    const updateData: any = {
+      status: 'active',
+      updatedAt: new Date().toISOString().split('T')[0],
+    };
+
+    // If startDate is the placeholder (Dec 31, 2099), update to today's date
+    if (rental.startDate === '2099-12-31') {
+      updateData.startDate = new Date().toISOString().split('T')[0];
+    }
+
     // Update rental status to active
     await db
       .update(rentals)
-      .set({
-        status: 'active',
-        updatedAt: new Date().toISOString().split('T')[0],
-      })
+      .set(updateData)
       .where(eq(rentals.id, id));
 
-    // Create/update automatic assignments with rental dates
+    // Create/update automatic assignments with rental dates (this now handles both create and update)
     await RentalService.createAutomaticAssignments(id);
-
-    // Update assignment statuses to active
-    await RentalService.updateRentalAssignmentStatus(id, 'active');
 
     return NextResponse.json({
       success: true,

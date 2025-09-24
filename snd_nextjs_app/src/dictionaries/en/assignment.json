@@ -84,7 +84,9 @@
     "failedToLoad": "Failed to load assignments",
     "failedToCreate": "Failed to create assignment",
     "failedToUpdate": "Failed to update assignment",
-    "failedToDelete": "Failed to delete assignment"
+    "failedToDelete": "Failed to delete assignment",
+    "loadingError": "Error loading assignments",
+    "saveError": "Error saving assignment"
   },
   "validation": {
     "required": "This field is required",
@@ -155,6 +157,7 @@
     "deleting": "Deleting...",
     "create": "Create",
     "update": "Update",
+    "delete": "Delete",
     "cancel": "Cancel"
   },
 

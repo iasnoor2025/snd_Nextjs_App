@@ -527,6 +527,11 @@ export class RentalService {
       currentRental?.status !== 'active' &&
       currentRental?.status !== 'approved';
 
+    // If status is changing to active and startDate is the placeholder, update to today
+    if (isStatusChangingToActive && currentRental?.startDate === '2099-12-31') {
+      updateData.startDate = new Date().toISOString().split('T')[0];
+    }
+
     await db.update(rentals).set(updateData).where(eq(rentals.id, id));
 
     // Handle rental items if provided
@@ -574,16 +579,51 @@ export class RentalService {
   // Delete rental
   static async deleteRental(id: number) {
     try {
-      // Delete rental items first
+      console.log(`Starting cascade deletion for rental ${id}`);
+
+      // Delete all associated assignments first
+      await this.deleteAllRentalAssignments(id);
+
+      // Delete rental items
       await db.delete(rentalItems).where(eq(rentalItems.rentalId, id));
 
       // Delete rental
       await db.delete(rentals).where(eq(rentals.id, id));
 
+      console.log(`Successfully deleted rental ${id} and all associated data`);
       return true;
     } catch (error) {
-      
+      console.error('Error deleting rental:', error);
       return false;
+    }
+  }
+
+  // Delete all assignments associated with a rental
+  static async deleteAllRentalAssignments(rentalId: number) {
+    try {
+      console.log(`Deleting all assignments for rental ${rentalId}`);
+
+      // Delete employee assignments linked to this rental
+      const deletedEmployeeAssignments = await db
+        .delete(employeeAssignments)
+        .where(eq(employeeAssignments.rentalId, rentalId))
+        .returning();
+
+      // Delete equipment assignments linked to this rental
+      const deletedEquipmentAssignments = await db
+        .delete(equipmentRentalHistory)
+        .where(eq(equipmentRentalHistory.rentalId, rentalId))
+        .returning();
+
+      console.log(`Deleted ${deletedEmployeeAssignments.length} employee assignments and ${deletedEquipmentAssignments.length} equipment assignments for rental ${rentalId}`);
+      
+      return {
+        employeeAssignments: deletedEmployeeAssignments.length,
+        equipmentAssignments: deletedEquipmentAssignments.length
+      };
+    } catch (error) {
+      console.error('Error deleting rental assignments:', error);
+      throw error;
     }
   }
 
@@ -705,10 +745,20 @@ export class RentalService {
   // Delete rental item
   static async deleteRentalItem(id: number) {
     try {
-      // Get the rental ID before deleting
+      // Get the rental item details before deleting
       const item = await this.getRentalItem(id);
-      const rentalId = item?.rentalId;
+      if (!item) {
+        return false;
+      }
       
+      const rentalId = item.rentalId;
+      const equipmentId = item.equipmentId;
+      const operatorId = item.operatorId;
+      
+      // Clean up associated assignments before deleting the item
+      await this.cleanupRentalItemAssignments(rentalId, equipmentId, operatorId);
+      
+      // Delete the rental item
       await db.delete(rentalItems).where(eq(rentalItems.id, id));
       
       // Recalculate rental totals after deleting item
@@ -720,6 +770,40 @@ export class RentalService {
     } catch (error) {
       console.error('Error deleting rental item:', error);
       return false;
+    }
+  }
+
+  // Clean up employee and equipment assignments when a rental item is deleted
+  static async cleanupRentalItemAssignments(rentalId: number, equipmentId?: number | null, operatorId?: number | null) {
+    try {
+      // Clean up equipment assignments if equipmentId exists
+      if (equipmentId) {
+        await db
+          .delete(equipmentRentalHistory)
+          .where(
+            and(
+              eq(equipmentRentalHistory.equipmentId, equipmentId),
+              eq(equipmentRentalHistory.rentalId, rentalId)
+            )
+          );
+      }
+
+      // Clean up employee assignments if operatorId exists
+      if (operatorId) {
+        await db
+          .delete(employeeAssignments)
+          .where(
+            and(
+              eq(employeeAssignments.employeeId, operatorId),
+              eq(employeeAssignments.rentalId, rentalId)
+            )
+          );
+      }
+
+      console.log(`Cleaned up assignments for rental ${rentalId}, equipment ${equipmentId}, operator ${operatorId}`);
+    } catch (error) {
+      console.error('Error cleaning up rental item assignments:', error);
+      throw error;
     }
   }
 
@@ -746,15 +830,14 @@ export class RentalService {
       // Create equipment assignments for each rental item with equipment
       for (const item of items) {
         if (item.equipmentId) {
-          // Check if equipment assignment already exists
+          // Check if equipment assignment already exists (any status)
           const existingEquipmentAssignment = await db
             .select()
             .from(equipmentRentalHistory)
             .where(
               and(
                 eq(equipmentRentalHistory.equipmentId, item.equipmentId),
-                eq(equipmentRentalHistory.rentalId, rentalId),
-                eq(equipmentRentalHistory.status, 'active')
+                eq(equipmentRentalHistory.rentalId, rentalId)
               )
             );
 
@@ -774,20 +857,30 @@ export class RentalService {
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             });
-            
+          } else {
+            // Update existing equipment assignment
+            await db
+              .update(equipmentRentalHistory)
+              .set({
+                startDate: startDate.toISOString(),
+                endDate: endDate?.toISOString() || null,
+                status: rental.status === 'active' || rental.status === 'approved' ? 'active' : 'pending',
+                projectId: rental.projectId || null,
+                updatedAt: new Date().toISOString(),
+              })
+              .where(eq(equipmentRentalHistory.id, existingEquipmentAssignment[0]?.id));
           }
         }
 
         if (item.operatorId) {
-          // Check if employee assignment already exists
+          // Check if employee assignment already exists (any status)
           const existingEmployeeAssignment = await db
             .select()
             .from(employeeAssignments)
             .where(
               and(
                 eq(employeeAssignments.employeeId, item.operatorId),
-                eq(employeeAssignments.rentalId, rentalId),
-                eq(employeeAssignments.status, 'active')
+                eq(employeeAssignments.rentalId, rentalId)
               )
             );
 
@@ -807,24 +900,37 @@ export class RentalService {
               createdAt: new Date().toISOString().split('T')[0],
               updatedAt: new Date().toISOString().split('T')[0],
             });
+          } else {
+            // Update existing employee assignment
+            await db
+              .update(employeeAssignments)
+              .set({
+                startDate: startDate.toISOString().split('T')[0],
+                endDate: endDate?.toISOString().split('T')[0] || null,
+                status: rental.status === 'active' || rental.status === 'approved' ? 'active' : 'pending',
+                projectId: rental.projectId || null,
+                location: rental.locationId ? `Location ID: ${rental.locationId}` : 'Rental Site',
+                updatedAt: new Date().toISOString().split('T')[0],
+              })
+              .where(eq(employeeAssignments.id, existingEmployeeAssignment[0]?.id));
+          }
             
-            // Auto-assign rental supervisor to the employee if rental has a supervisor
-            if (rental.supervisor) {
-              try {
-                // Update the employee's supervisor field to match the rental's supervisor
-                await db
-                  .update(employees)
-                  .set({
-                    supervisor: rental.supervisor,
-                    updatedAt: new Date().toISOString().split('T')[0],
-                  })
-                  .where(eq(employees.id, item.operatorId));
-                
-                console.log(`Auto-assigned supervisor ${rental.supervisor} to employee ${item.operatorId} for rental ${rental.rentalNumber}`);
-              } catch (supervisorError) {
-                console.error('Failed to auto-assign supervisor to employee:', supervisorError);
-                // Don't fail the main assignment if supervisor assignment fails
-              }
+          // Auto-assign rental supervisor to the employee if rental has a supervisor (regardless of new/update)
+          if (rental.supervisor && item.operatorId) {
+            try {
+              // Update the employee's supervisor field to match the rental's supervisor
+              await db
+                .update(employees)
+                .set({
+                  supervisor: rental.supervisor,
+                  updatedAt: new Date().toISOString().split('T')[0],
+                })
+                .where(eq(employees.id, item.operatorId));
+              
+              console.log(`Auto-assigned supervisor ${rental.supervisor} to employee ${item.operatorId} for rental ${rental.rentalNumber}`);
+            } catch (supervisorError) {
+              console.error('Failed to auto-assign supervisor to employee:', supervisorError);
+              // Don't fail the main assignment if supervisor assignment fails
             }
           }
         }
