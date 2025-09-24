@@ -147,7 +147,7 @@ class _AddCustomerPageState extends State<AddCustomerPage> {
               const SizedBox(height: 16),
               
               DropdownButtonFormField<String>(
-                value: _selectedStatus,
+                initialValue: _selectedStatus,
                 decoration: const InputDecoration(
                   labelText: 'Status *',
                   prefixIcon: Icon(Icons.flag),

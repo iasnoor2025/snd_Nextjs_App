@@ -107,28 +107,28 @@ class _DocumentListPageState extends State<DocumentListPage> {
     final documents = _getPlaceholderDocuments();
     
     if (documents.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.folder_open,
               size: 64,
               color: AppTheme.mutedForeground,
             ),
-            const SizedBox(height: AppTheme.spacingMd),
+            SizedBox(height: AppTheme.spacingMd),
             Text(
               'No documents found',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: AppTheme.fontSizeLg,
                 fontWeight: AppTheme.fontWeightBold,
                 color: AppTheme.mutedForeground,
               ),
             ),
-            const SizedBox(height: AppTheme.spacingSm),
+            SizedBox(height: AppTheme.spacingSm),
             Text(
               'Upload your first document to get started',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: AppTheme.fontSizeSm,
                 color: AppTheme.mutedForeground,
               ),
@@ -235,7 +235,7 @@ class DocumentCard extends StatelessWidget {
               children: [
                 Text(
                   document.fileName,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: AppTheme.fontSizeSm,
                     fontWeight: AppTheme.fontWeightMedium,
                     color: AppTheme.foreground,
@@ -254,9 +254,9 @@ class DocumentCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: AppTheme.spacingSm),
-                    Text(
+                    const Text(
                       '•',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: AppTheme.fontSizeSm,
                         color: AppTheme.mutedForeground,
                       ),

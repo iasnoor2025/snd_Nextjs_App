@@ -14,13 +14,13 @@ export interface Employee {
   id: string;
   first_name: string;
   last_name: string;
-  designation?: string;
+  designation?: string | { name: string };
   hourly_rate?: number;
   employee_number?: string;
   file_number?: string;
   email?: string;
   phone?: string;
-  department?: string;
+  department?: string | { name: string };
   status?: string;
 }
 
@@ -54,6 +54,7 @@ export function EmployeeDropdown({
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const isLoading = externalLoading !== undefined ? externalLoading : loading;
@@ -117,25 +118,63 @@ export function EmployeeDropdown({
     loadEmployees();
   }, []);
 
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   // Filter employees based on search term
-  const filteredEmployees = employees.filter(
-    employee =>
-      !searchTerm ||
-      employee.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.employee_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.file_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.id.toString().includes(searchTerm)
-  );
+  const filteredEmployees = React.useMemo(() => {
+    if (!debouncedSearchTerm.trim()) {
+      return employees;
+    }
+    
+    const searchLower = debouncedSearchTerm.toLowerCase().trim();
+    
+    return employees.filter(employee => {
+      // Check first name
+      if (employee.first_name?.toLowerCase().includes(searchLower)) return true;
+      
+      // Check last name
+      if (employee.last_name?.toLowerCase().includes(searchLower)) return true;
+      
+      // Check designation
+      const designationName = typeof employee.designation === 'string' 
+        ? employee.designation 
+        : employee.designation?.name;
+      if (designationName?.toLowerCase().includes(searchLower)) return true;
+      
+      // Check employee number
+      if (employee.employee_number?.toLowerCase().includes(searchLower)) return true;
+      
+      // Check file number
+      if (employee.file_number?.toLowerCase().includes(searchLower)) return true;
+      
+      // Check email
+      if (employee.email?.toLowerCase().includes(searchLower)) return true;
+      
+      // Check department
+      const departmentName = typeof employee.department === 'string'
+        ? employee.department
+        : employee.department?.name;
+      if (departmentName?.toLowerCase().includes(searchLower)) return true;
+      
+      // Check ID
+      if (employee.id.toString().includes(searchLower)) return true;
+      
+      return false;
+    });
+  }, [employees, debouncedSearchTerm]);
 
   // Sort employees to prioritize file number matches first, then others
   const sortedEmployees = filteredEmployees.sort((a, b) => {
     // If there's a search term, prioritize matches
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
+    if (debouncedSearchTerm) {
+      const searchLower = debouncedSearchTerm.toLowerCase();
       
              // Check for exact file number match first (highest priority)
        const aFileExact = a.file_number?.toLowerCase() === searchLower;
@@ -256,8 +295,14 @@ export function EmployeeDropdown({
                 type="text"
                 placeholder="Search employees..."
                 value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  setSearchTerm(e.target.value);
+                }}
+                onKeyDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                autoComplete="off"
               />
             </div>
           )}
@@ -273,36 +318,31 @@ export function EmployeeDropdown({
           ) : employees.length > 0 ? (
             <>
               {sortedEmployees
-                .slice(0, searchTerm ? undefined : 100) // Show first 100 if no search, all if searching
+                .slice(0, debouncedSearchTerm ? undefined : 100) // Show first 100 if no search, all if searching
                 .map(employee => (
                   <SelectItem
                     key={employee.id}
                     value={employee.id}
                     className="cursor-pointer hover:bg-gray-100"
                   >
-                    <div className="flex flex-col">
+                    <div className="flex items-center w-full">
                       <span className="font-medium">
                         {employee.first_name} {employee.last_name}
+                        {employee.file_number && (
+                          <span className="text-blue-600 font-mono ml-1">
+                            (File: {employee.file_number})
+                          </span>
+                        )}
                       </span>
-                      {employee.file_number && (
-                        <span className="text-sm text-blue-600 font-mono">
-                          File: {employee.file_number}
-                        </span>
-                      )}
-                      {employee.designation && (
-                        <span className="text-xs text-gray-500">
-                          {employee.designation?.name || employee.designation}
-                        </span>
-                      )}
                     </div>
                   </SelectItem>
                 ))}
-              {!searchTerm && employees.length > 100 && (
+              {!debouncedSearchTerm && employees.length > 100 && (
                 <SelectItem value="more-employees" disabled className="text-center text-gray-500">
                   Showing first 100 of {employees.length} employees. Type to search for more.
                 </SelectItem>
               )}
-              {searchTerm && sortedEmployees.length === 0 && (
+              {debouncedSearchTerm && sortedEmployees.length === 0 && (
                 <SelectItem value="no-results" disabled>
                   No employees found
                 </SelectItem>
@@ -321,7 +361,9 @@ export function EmployeeDropdown({
       {selectedEmployee && (
         <div className="text-xs text-gray-500">
           Selected: {selectedEmployee.first_name} {selectedEmployee.last_name}
-          {selectedEmployee.file_number && ` (File: ${selectedEmployee.file_number})`}
+          {selectedEmployee.file_number && (
+            <span className="text-blue-600"> (File: {selectedEmployee.file_number})</span>
+          )}
         </div>
       )}
     </div>
