@@ -158,8 +158,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
         const errorData = await response.json();
         toast.error(errorData.error || t('assignment.messages.saveError'));
       }
-        } catch {
-      
+    } catch {
       toast.error(t('assignment.messages.saveError'));
     } finally {
       setSubmitting(false);
@@ -176,14 +175,19 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
     try {
       // Update assignment logic here
 
-      const response = await fetch(`/api/employees/${employeeId}/assignments`, {
+      const response = await fetch(`/api/employees/${employeeId}/assignments/${selectedAssignment.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...formData,
-          id: selectedAssignment.id, // Include the assignment ID in the body
+          name: formData.name,
+          type: formData.type,
+          location: formData.location,
+          startDate: formData.start_date,
+          endDate: formData.end_date,
+          status: formData.status,
+          notes: formData.notes,
         }),
       });
 
@@ -198,8 +202,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
 
         toast.error(errorData.error || t('assignment.messages.updateError'));
       }
-        } catch {
-      
+    } catch {
       toast.error(t('assignment.messages.updateError'));
     } finally {
       setSubmitting(false);
@@ -227,8 +230,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
         const errorData = await response.json();
         toast.error(errorData.error || t('assignment.messages.deleteError'));
       }
-        } catch {
-      
+    } catch {
       toast.error(t('assignment.messages.deleteError'));
     } finally {
       setDeletingId(null);

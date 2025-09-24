@@ -219,6 +219,8 @@ export default function AssignmentsManagementPage() {
           startDate: selectedAssignment.startDate,
           endDate: selectedAssignment.endDate,
           status: selectedAssignment.status,
+          name: selectedAssignment.name,
+          location: selectedAssignment.location,
           notes: selectedAssignment.notes,
         }),
       });
@@ -287,6 +289,34 @@ export default function AssignmentsManagementPage() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedAssignments.size === 0) {
+      toast.error('Please select assignments to delete');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/assignments/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: Array.from(selectedAssignments) }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast.success(result.message);
+        setSelectedAssignments(new Set());
+        fetchAssignments();
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Failed to delete assignments');
+      }
+    } catch (error) {
+      console.error('Error deleting assignments:', error);
+      toast.error('Failed to delete assignments');
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig: { [key: string]: { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } } = {
       active: { label: 'Active', variant: 'default' },
@@ -332,10 +362,22 @@ export default function AssignmentsManagementPage() {
             <h1 className="text-3xl font-bold tracking-tight">Assignments</h1>
             <p className="text-muted-foreground">Manage employee assignments and projects</p>
           </div>
-          <Button onClick={() => setShowCreateDialog(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Assignment
-          </Button>
+          <div className="flex gap-2">
+            {selectedAssignments.size > 0 && (
+              <Button 
+                variant="destructive" 
+                onClick={handleBulkDelete}
+                className="mr-2"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Selected ({selectedAssignments.size})
+              </Button>
+            )}
+            <Button onClick={() => setShowCreateDialog(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Assignment
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}
