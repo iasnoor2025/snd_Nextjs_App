@@ -208,8 +208,8 @@ export class FinalSettlementPDFService {
             margin: 20mm 15mm 20mm 15mm;
             @top-left {
                 content: url("file://${path.join(process.cwd(), 'public', 'snd-logo.png')}");
-                width: 60px;
-                height: 60px;
+                width: 150px;
+                height: 150px;
             }
         }
         body {
@@ -229,8 +229,8 @@ export class FinalSettlementPDFService {
             gap: 20px;
         }
         .logo {
-            width: 120px;
-            height: 120px;
+            width: 200px;
+            height: 200px;
             flex-shrink: 0;
         }
         .header-content {
@@ -563,8 +563,8 @@ export class FinalSettlementPDFService {
             margin: 20mm 15mm 20mm 15mm;
             @top-left {
                 content: url("file://${path.join(process.cwd(), 'public', 'snd-logo.png')}");
-                width: 60px;
-                height: 60px;
+                width: 150px;
+                height: 150px;
             }
         }
         body {
@@ -586,8 +586,8 @@ export class FinalSettlementPDFService {
             gap: 20px;
         }
         .logo {
-            width: 120px;
-            height: 120px;
+            width: 200px;
+            height: 200px;
             flex-shrink: 0;
         }
         .header-content {
@@ -916,8 +916,8 @@ export class FinalSettlementPDFService {
             margin: 20mm 15mm 20mm 15mm;
             @top-left {
                 content: url("file://${path.join(process.cwd(), 'public', 'snd-logo.png')}");
-                width: 60px;
-                height: 60px;
+                width: 250px;
+                height: 250px;
             }
         }
         body {
