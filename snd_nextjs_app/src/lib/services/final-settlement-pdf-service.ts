@@ -214,10 +214,11 @@ export class FinalSettlementPDFService {
         }
         body {
             font-family: 'Arial', sans-serif;
-            line-height: 1.6;
+            line-height: 1.3;
             margin: 0;
-            padding: 20px;
+            padding: 10px;
             color: #333;
+            font-size: 10px;
         }
         .header {
             border-bottom: 3px solid #2563eb;
@@ -228,8 +229,8 @@ export class FinalSettlementPDFService {
             gap: 20px;
         }
         .logo {
-            width: 80px;
-            height: 80px;
+            width: 120px;
+            height: 120px;
             flex-shrink: 0;
         }
         .header-content {
@@ -346,8 +347,8 @@ export class FinalSettlementPDFService {
     <div class="header">
         <img src="${logoBase64}" alt="Company Logo" class="logo" />
         <div class="header-content">
-            <div class="company-name">Samhan Naser Al-Dosari Est</div>
-            <div class="document-title">FINAL SETTLEMENT CERTIFICATE</div>
+            <div class="company-name">Samhan Naser Al-Dosari Est | مؤسسة سمحان ناصر الدوسري</div>
+            <div class="document-title">FINAL SETTLEMENT CERTIFICATE | شهادة التسوية النهائية</div>
             <div class="settlement-number">Settlement No: ${data.settlementNumber}</div>
             <div>Date: ${formatDate(data.preparedAt)}</div>
         </div>
@@ -568,10 +569,11 @@ export class FinalSettlementPDFService {
         }
         body {
             font-family: 'Tahoma', 'Arial', sans-serif;
-            line-height: 1.8;
+            line-height: 1.3;
             margin: 0;
-            padding: 20px;
+            padding: 10px;
             color: #333;
+            font-size: 10px;
             direction: rtl;
             text-align: right;
         }
@@ -584,8 +586,8 @@ export class FinalSettlementPDFService {
             gap: 20px;
         }
         .logo {
-            width: 80px;
-            height: 80px;
+            width: 120px;
+            height: 120px;
             flex-shrink: 0;
         }
         .header-content {
@@ -702,10 +704,8 @@ export class FinalSettlementPDFService {
     <div class="header">
         <img src="${logoBase64}" alt="Company Logo" class="logo" />
         <div class="header-content">
-            <div class="company-name">${data.companyName || 'مؤسسة سمحان ناصر الدوسري'}</div>
-            <div>${data.companyAddress || 'المملكة العربية السعودية'}</div>
-            <div>الهاتف: ${data.companyPhone || 'غير متوفر'} | البريد الإلكتروني: ${data.companyEmail || 'غير متوفر'}</div>
-            <div class="document-title">شهادة التسوية النهائية</div>
+            <div class="company-name">Samhan Naser Al-Dosari Est | مؤسسة سمحان ناصر الدوسري</div>
+            <div class="document-title">FINAL SETTLEMENT CERTIFICATE | شهادة التسوية النهائية</div>
             <div class="settlement-number">رقم التسوية: ${data.settlementNumber}</div>
             <div>التاريخ: ${formatDate(data.preparedAt)}</div>
         </div>
@@ -922,23 +922,23 @@ export class FinalSettlementPDFService {
         }
         body {
             font-family: 'Arial', 'Tahoma', sans-serif;
-            line-height: 1.6;
+            line-height: 1.3;
             margin: 0;
-            padding: 15px;
+            padding: 8px;
             color: #333;
-            font-size: 12px;
+            font-size: 9px;
         }
         .bilingual-header {
-            border-bottom: 3px solid #2563eb;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
         }
         .logo {
-            width: 60px;
-            height: 60px;
+            width: 50px;
+            height: 50px;
             flex-shrink: 0;
         }
         .header-content {
@@ -946,10 +946,10 @@ export class FinalSettlementPDFService {
             text-align: center;
         }
         .company-name {
-            font-size: 18px;
+            font-size: 14px;
             font-weight: bold;
             color: #1e40af;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
         }
         .document-title {
             font-size: 16px;
@@ -1069,13 +1069,10 @@ export class FinalSettlementPDFService {
         <img src="${logoBase64}" alt="Company Logo" class="logo" />
         <div class="header-content">
             <div class="company-name">
-                Samhan Naser Al-Dosari Est<br>
-                مؤسسة سمحان ناصر الدوسري
+                Samhan Naser Al-Dosari Est | مؤسسة سمحان ناصر الدوسري
             </div>
-            <div>Kingdom of Saudi Arabia | المملكة العربية السعودية</div>
             <div class="document-title">
-                FINAL SETTLEMENT CERTIFICATE<br>
-                شهادة التسوية النهائية
+                FINAL SETTLEMENT CERTIFICATE | شهادة التسوية النهائية
             </div>
             <div class="settlement-number">Settlement No / رقم التسوية: ${data.settlementNumber}</div>
             <div>Date / التاريخ: ${formatDate(data.preparedAt)} | ${formatDateAr(data.preparedAt)}</div>
