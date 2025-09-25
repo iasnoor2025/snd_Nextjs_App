@@ -14,6 +14,7 @@ import {
   employeeSalaries,
   employeeSkill,
   employeeTraining,
+  finalSettlements,
   equipment,
   equipmentCategories,
   equipmentMaintenance,
@@ -92,6 +93,7 @@ export const employeesRelations = relations(employees, ({ one, many }) => ({
   employeeSalaries: many(employeeSalaries),
   employeeSkills: many(employeeSkill),
   employeeTrainings: many(employeeTraining),
+  finalSettlements: many(finalSettlements),
   designation: one(designations, {
     fields: [employees.designationId],
     references: [designations.id],
@@ -767,5 +769,28 @@ export const projectSubcontractorsRelations = relations(projectSubcontractors, (
   assignedBy: one(employees, {
     fields: [projectSubcontractors.assignedBy],
     references: [employees.id],
+  }),
+}));
+
+export const finalSettlementsRelations = relations(finalSettlements, ({ one }) => ({
+  employee: one(employees, {
+    fields: [finalSettlements.employeeId],
+    references: [employees.id],
+  }),
+  resignation: one(employeeResignations, {
+    fields: [finalSettlements.resignationId],
+    references: [employeeResignations.id],
+  }),
+  preparedByUser: one(users, {
+    fields: [finalSettlements.preparedBy],
+    references: [users.id],
+  }),
+  approvedByUser: one(users, {
+    fields: [finalSettlements.approvedBy],
+    references: [users.id],
+  }),
+  paidByUser: one(users, {
+    fields: [finalSettlements.paidBy],
+    references: [users.id],
   }),
 }));

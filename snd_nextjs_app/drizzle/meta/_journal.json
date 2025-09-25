@@ -176,6 +176,13 @@
       "when": 1758777641936,
       "tag": "0024_supreme_epoch",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1758781891846,
+      "tag": "0025_eager_sprite",
+      "breakpoints": true
     }
   ]
 }

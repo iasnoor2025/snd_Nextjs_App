@@ -1,0 +1,550 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Calculator,
+  AlertTriangle,
+  DollarSign,
+  Calendar,
+  FileText,
+  Info,
+} from 'lucide-react';
+
+interface UnpaidSalaryInfo {
+  employeeId: number;
+  unpaidMonths: number;
+  unpaidAmount: number;
+  lastPaidMonth?: number;
+  lastPaidYear?: number;
+  lastPaidDate?: string;
+  totalUnpaidMonths: number;
+}
+
+interface CreateFinalSettlementDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  employeeId: number;
+  employeeName: string;
+  unpaidSalaryInfo: UnpaidSalaryInfo | null;
+  onSuccess: () => void;
+}
+
+const formSchema = z.object({
+  lastWorkingDate: z.string().min(1, 'Last working date is required'),
+  isResignation: z.boolean().default(false),
+  resignationId: z.number().optional(),
+  accruedVacationDays: z.number().min(0).default(0),
+  otherBenefits: z.number().min(0).default(0),
+  otherBenefitsDescription: z.string().optional(),
+  pendingAdvances: z.number().min(0).default(0),
+  equipmentDeductions: z.number().min(0).default(0),
+  otherDeductions: z.number().min(0).default(0),
+  otherDeductionsDescription: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+type FormData = z.infer<typeof formSchema>;
+
+export function CreateFinalSettlementDialog({
+  open,
+  onOpenChange,
+  employeeId,
+  employeeName,
+  unpaidSalaryInfo,
+  onSuccess,
+}: CreateFinalSettlementDialogProps) {
+  const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      lastWorkingDate: new Date().toISOString().split('T')[0],
+      isResignation: false,
+      accruedVacationDays: 0,
+      otherBenefits: 0,
+      pendingAdvances: 0,
+      equipmentDeductions: 0,
+      otherDeductions: 0,
+    },
+  });
+
+  // Watch form values for real-time preview
+  const formValues = form.watch();
+
+  useEffect(() => {
+    if (open && formValues.lastWorkingDate) {
+      generatePreview();
+    }
+  }, [open, formValues.lastWorkingDate, formValues.isResignation]);
+
+  const generatePreview = async () => {
+    try {
+      if (!formValues.lastWorkingDate) return;
+
+      const response = await fetch('/api/final-settlements/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employeeId,
+          lastWorkingDate: formValues.lastWorkingDate,
+          isResignation: formValues.isResignation,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setPreview(data.data);
+      }
+    } catch (error) {
+      console.error('Error generating preview:', error);
+    }
+  };
+
+  const onSubmit = async (data: FormData) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(`/api/employees/${employeeId}/final-settlements`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create final settlement');
+      }
+
+      const result = await response.json();
+      
+      // Show success and close dialog
+      onSuccess();
+      form.reset();
+      setPreview(null);
+    } catch (err) {
+      console.error('Error creating final settlement:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create final settlement');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return `${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} SAR`;
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Calculator className="h-5 w-5" />
+            Create Final Settlement for {employeeName}
+          </DialogTitle>
+        </DialogHeader>
+
+        {error && (
+          <Alert className="mb-4">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Unpaid Salary Warning */}
+        {unpaidSalaryInfo && unpaidSalaryInfo.unpaidMonths > 0 && (
+          <Alert className="mb-4 border-orange-200 bg-orange-50 text-orange-800">
+            <AlertTriangle className="h-4 w-4 text-orange-600" />
+            <AlertDescription>
+              <strong>Unpaid Salary Detected:</strong> This employee has {unpaidSalaryInfo.unpaidMonths} unpaid {unpaidSalaryInfo.unpaidMonths === 1 ? 'month' : 'months'} 
+              totaling {formatCurrency(unpaidSalaryInfo.unpaidAmount)}. This will be automatically included in the settlement.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Form */}
+          <div className="space-y-6">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                {/* Basic Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Settlement Details</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="lastWorkingDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Last Working Date</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="isResignation"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">Employee Resignation</FormLabel>
+                            <FormDescription>
+                              Check this if the employee resigned voluntarily. 
+                              This affects end-of-service benefit calculation.
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* Benefits */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Additional Benefits</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="accruedVacationDays"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Accrued Vacation Days</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.5"
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Unused vacation days that will be compensated
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="otherBenefits"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Other Benefits Amount (SAR)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="otherBenefitsDescription"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Other Benefits Description</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Describe other benefits (if any)"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* Deductions */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Deductions</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="pendingAdvances"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Pending Advances (SAR)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Outstanding salary advances to be deducted
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="equipmentDeductions"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Equipment Deductions (SAR)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Cost of unreturned or damaged equipment
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="otherDeductions"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Other Deductions (SAR)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="otherDeductionsDescription"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Other Deductions Description</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Describe other deductions (if any)"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* Notes */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Additional Notes</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <FormField
+                      control={form.control}
+                      name="notes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Notes</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Any additional notes or comments..."
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+              </form>
+            </Form>
+          </div>
+
+          {/* Preview */}
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Settlement Preview
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {preview ? (
+                  <div className="space-y-4">
+                    {/* Service Information */}
+                    <div>
+                      <h4 className="font-medium mb-2">Service Period</h4>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <div>Total Service: {preview.serviceDetails?.totalServiceYears}Y {preview.serviceDetails?.totalServiceMonths}M {preview.serviceDetails?.totalServiceDays}D</div>
+                        <div>Last Working: {new Date(preview.serviceDetails?.lastWorkingDate).toLocaleDateString()}</div>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Financial Summary */}
+                    <div>
+                      <h4 className="font-medium mb-2">Financial Summary</h4>
+                      <div className="space-y-2 text-sm">
+                        {unpaidSalaryInfo && unpaidSalaryInfo.unpaidAmount > 0 && (
+                          <div className="flex justify-between">
+                            <span>Unpaid Salaries ({unpaidSalaryInfo.unpaidMonths} months):</span>
+                            <span className="font-medium">{formatCurrency(unpaidSalaryInfo.unpaidAmount)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span>End of Service Benefit:</span>
+                          <span className="font-medium">{formatCurrency(preview.endOfServiceBenefit?.endOfServiceBenefit || 0)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Accrued Vacation:</span>
+                          <span className="font-medium">{formatCurrency((formValues.accruedVacationDays || 0) * (preview.employee?.basicSalary || 0) / 30)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Other Benefits:</span>
+                          <span className="font-medium">{formatCurrency(formValues.otherBenefits || 0)}</span>
+                        </div>
+                        <Separator />
+                        <div className="flex justify-between font-medium">
+                          <span>Gross Amount:</span>
+                          <span>{formatCurrency(
+                            (unpaidSalaryInfo?.unpaidAmount || 0) +
+                            (preview.endOfServiceBenefit?.endOfServiceBenefit || 0) +
+                            ((formValues.accruedVacationDays || 0) * (preview.employee?.basicSalary || 0) / 30) +
+                            (formValues.otherBenefits || 0)
+                          )}</span>
+                        </div>
+                        <div className="flex justify-between text-red-600">
+                          <span>Total Deductions:</span>
+                          <span>-{formatCurrency(
+                            (formValues.pendingAdvances || 0) +
+                            (formValues.equipmentDeductions || 0) +
+                            (formValues.otherDeductions || 0)
+                          )}</span>
+                        </div>
+                        <Separator />
+                        <div className="flex justify-between font-bold text-green-600 text-lg">
+                          <span>Net Amount:</span>
+                          <span>{formatCurrency(
+                            (unpaidSalaryInfo?.unpaidAmount || 0) +
+                            (preview.endOfServiceBenefit?.endOfServiceBenefit || 0) +
+                            ((formValues.accruedVacationDays || 0) * (preview.employee?.basicSalary || 0) / 30) +
+                            (formValues.otherBenefits || 0) -
+                            (formValues.pendingAdvances || 0) -
+                            (formValues.equipmentDeductions || 0) -
+                            (formValues.otherDeductions || 0)
+                          )}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Legal Information */}
+                    <Alert>
+                      <Info className="h-4 w-4" />
+                      <AlertDescription className="text-xs">
+                        <strong>Saudi Labor Law:</strong> This calculation is based on Article 84 of the Saudi Labor Law. 
+                        {formValues.isResignation ? ' As this is a resignation, benefits may be reduced according to service period.' : ' Full benefits apply for company termination.'}
+                      </AlertDescription>
+                    </Alert>
+                  </div>
+                ) : (
+                  <div className="text-center text-muted-foreground py-8">
+                    <Calculator className="mx-auto h-8 w-8 mb-2 opacity-50" />
+                    <p>Enter last working date to see preview</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            onClick={form.handleSubmit(onSubmit)}
+            disabled={loading || !preview}
+          >
+            {loading ? 'Creating...' : 'Create Settlement'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

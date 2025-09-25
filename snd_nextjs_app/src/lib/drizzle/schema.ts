@@ -891,6 +891,120 @@ export const employeeResignations = pgTable(
   ]
 );
 
+export const finalSettlements = pgTable(
+  'final_settlements',
+  {
+    id: serial().primaryKey().notNull(),
+    employeeId: integer('employee_id').notNull(),
+    resignationId: integer('resignation_id'),
+    settlementNumber: text('settlement_number').notNull().unique(),
+    
+    // Employee Details
+    employeeName: text('employee_name').notNull(),
+    fileNumber: text('file_number'),
+    iqamaNumber: text('iqama_number'),
+    nationality: text('nationality'),
+    designation: text('designation'),
+    department: text('department'),
+    hireDate: date('hire_date').notNull(),
+    lastWorkingDate: date('last_working_date').notNull(),
+    
+    // Service Details
+    totalServiceYears: integer('total_service_years').notNull(),
+    totalServiceMonths: integer('total_service_months').notNull(),
+    totalServiceDays: integer('total_service_days').notNull(),
+    
+    // Salary Information
+    lastBasicSalary: numeric('last_basic_salary', { precision: 10, scale: 2 }).notNull(),
+    lastAllowances: numeric('last_allowances', { precision: 10, scale: 2 }).default('0'),
+    unpaidSalaryMonths: integer('unpaid_salary_months').default(0).notNull(),
+    unpaidSalaryAmount: numeric('unpaid_salary_amount', { precision: 10, scale: 2 }).default('0'),
+    
+    // End of Service Benefits (Saudi Labor Law)
+    endOfServiceBenefit: numeric('end_of_service_benefit', { precision: 10, scale: 2 }).notNull(),
+    benefitCalculationMethod: text('benefit_calculation_method').notNull(), // 'resigned' or 'terminated'
+    
+    // Other Benefits
+    accruedVacationDays: integer('accrued_vacation_days').default(0),
+    accruedVacationAmount: numeric('accrued_vacation_amount', { precision: 10, scale: 2 }).default('0'),
+    otherBenefits: numeric('other_benefits', { precision: 10, scale: 2 }).default('0'),
+    otherBenefitsDescription: text('other_benefits_description'),
+    
+    // Deductions
+    pendingAdvances: numeric('pending_advances', { precision: 10, scale: 2 }).default('0'),
+    equipmentDeductions: numeric('equipment_deductions', { precision: 10, scale: 2 }).default('0'),
+    otherDeductions: numeric('other_deductions', { precision: 10, scale: 2 }).default('0'),
+    otherDeductionsDescription: text('other_deductions_description'),
+    
+    // Final Settlement
+    grossAmount: numeric('gross_amount', { precision: 10, scale: 2 }).notNull(),
+    totalDeductions: numeric('total_deductions', { precision: 10, scale: 2 }).notNull(),
+    netAmount: numeric('net_amount', { precision: 10, scale: 2 }).notNull(),
+    
+    // Status and Approval
+    status: text('status').default('draft').notNull(), // draft, pending_approval, approved, paid
+    notes: text('notes'),
+    
+    // Approval Details
+    preparedBy: integer('prepared_by').notNull(),
+    preparedAt: date('prepared_at').default(sql`CURRENT_DATE`).notNull(),
+    approvedBy: integer('approved_by'),
+    approvedAt: date('approved_at'),
+    
+    // Payment Details
+    paidBy: integer('paid_by'),
+    paidAt: date('paid_at'),
+    paymentMethod: text('payment_method'),
+    paymentReference: text('payment_reference'),
+    
+    // Document Details
+    pdfPath: text('pdf_path'),
+    employeeSignatureDate: date('employee_signature_date'),
+    companySignatureDate: date('company_signature_date'),
+    
+    currency: text('currency').default('SAR').notNull(),
+    createdAt: date('created_at').default(sql`CURRENT_DATE`).notNull(),
+    updatedAt: date('updated_at').notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.employeeId],
+      foreignColumns: [employees.id],
+      name: 'final_settlements_employee_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('restrict'),
+    foreignKey({
+      columns: [table.resignationId],
+      foreignColumns: [employeeResignations.id],
+      name: 'final_settlements_resignation_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+    foreignKey({
+      columns: [table.preparedBy],
+      foreignColumns: [users.id],
+      name: 'final_settlements_prepared_by_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('restrict'),
+    foreignKey({
+      columns: [table.approvedBy],
+      foreignColumns: [users.id],
+      name: 'final_settlements_approved_by_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+    foreignKey({
+      columns: [table.paidBy],
+      foreignColumns: [users.id],
+      name: 'final_settlements_paid_by_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+  ]
+);
+
 export const employeeSalaries = pgTable(
   'employee_salaries',
   {

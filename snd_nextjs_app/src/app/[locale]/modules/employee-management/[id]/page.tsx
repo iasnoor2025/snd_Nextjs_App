@@ -49,6 +49,7 @@ import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
 
 import TimesheetSummary from '@/components/employee/timesheets/TimesheetSummary';
+import { FinalSettlementManager } from '@/components/final-settlements/final-settlement-manager';
 import { useConfirmationDialog } from '@/components/providers/confirmation-provider';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { ExpiryStatusDisplay, getExpiryStatus } from '@/lib/utils/expiry-utils';
@@ -2419,24 +2420,14 @@ export default function EmployeeShowPage() {
         </TabsContent>
 
         <TabsContent value="final-settlements" className="mt-6 space-y-6">
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold">Final Settlement</h2>
-              {hasPermission('create', 'FinalSettlement') && <Button>Create Settlement</Button>}
-            </div>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="text-center text-muted-foreground">
-                  <Receipt className="mx-auto mb-4 h-12 w-12 opacity-50" />
-                  <p>No final settlements found for this employee.</p>
-                  {hasPermission('create', 'FinalSettlement') && (
-                    <Button className="mt-4">Create New Settlement</Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <FinalSettlementManager
+            employeeId={employee.id}
+            employeeName={employee.full_name}
+            canCreate={hasPermission('create', 'FinalSettlement')}
+            canView={hasPermission('read', 'FinalSettlement')}
+            canApprove={hasPermission('update', 'FinalSettlement')}
+            canPay={hasPermission('update', 'FinalSettlement')}
+          />
         </TabsContent>
       </Tabs>
     </div>
