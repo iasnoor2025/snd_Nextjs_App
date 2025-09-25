@@ -8,22 +8,34 @@ import {
   rentals,
 } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
-import { asc, eq } from 'drizzle-orm';
+import { asc, eq, or, ilike, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
 import { autoExtractDoorNumber } from '@/lib/utils/equipment-utils';
 
 // GET /api/equipment - List equipment with assignments
-const getEquipmentHandler = async (_request: NextRequest) => {
+const getEquipmentHandler = async (request: NextRequest) => {
   try {
-    // Generate cache key for equipment list
-    const cacheKey = generateCacheKey('equipment', 'list', {});
+    // Extract pagination and filtering parameters
+    const url = new URL(request.url);
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const limit = parseInt(url.searchParams.get('limit') || '1000'); // Increase default limit to show all equipment
+    const search = url.searchParams.get('search') || '';
+    const status = url.searchParams.get('status') || '';
+    const type = url.searchParams.get('type') || '';
+    const category = url.searchParams.get('category') || '';
+    
+    const offset = (page - 1) * limit;
+    
+    // Generate cache key for equipment list with parameters
+    const cacheKey = generateCacheKey('equipment', 'list', { page, limit, search, status, type, category });
     
     try {
       return await cacheQueryResult(
         cacheKey,
         async () => {
-          const equipment = await db
+          // Build base query
+          let equipmentQuery = db
             .select({
               id: equipmentTable.id,
               name: equipmentTable.name,
@@ -46,8 +58,58 @@ const getEquipmentHandler = async (_request: NextRequest) => {
               door_number: equipmentTable.doorNumber,
               assigned_to: equipmentTable.assignedTo,
             })
-            .from(equipmentTable)
-            .orderBy(asc(equipmentTable.name));
+            .from(equipmentTable);
+
+          // Add search filter if provided
+          if (search) {
+            equipmentQuery = equipmentQuery.where(
+              or(
+                ilike(equipmentTable.name, `%${search}%`),
+                ilike(equipmentTable.manufacturer, `%${search}%`),
+                ilike(equipmentTable.serialNumber, `%${search}%`)
+              )
+            );
+          }
+
+          // Add status filter if provided
+          if (status) {
+            equipmentQuery = equipmentQuery.where(eq(equipmentTable.status, status));
+          }
+
+          // Note: Type filtering is handled on frontend via category_id
+
+          // Add category filter if provided
+          if (category) {
+            equipmentQuery = equipmentQuery.where(eq(equipmentTable.categoryId, parseInt(category)));
+          }
+
+          // Apply pagination and get results
+          const equipment = await equipmentQuery
+            .orderBy(asc(equipmentTable.name))
+            .limit(limit)
+            .offset(offset);
+
+          // Get total count for pagination
+          let countQuery = db
+            .select({ count: sql<number>`count(*)` })
+            .from(equipmentTable);
+
+          if (search) {
+            countQuery = countQuery.where(
+              or(
+                ilike(equipmentTable.name, `%${search}%`),
+                ilike(equipmentTable.manufacturer, `%${search}%`),
+                ilike(equipmentTable.serialNumber, `%${search}%`)
+              )
+            );
+          }
+
+          if (status) {
+            countQuery = countQuery.where(eq(equipmentTable.status, status));
+          }
+
+          const [totalResult] = await countQuery;
+          const total = Number(totalResult?.count || 0);
 
           // Get current active assignments for equipment
           let currentAssignments: any[] = [];
@@ -139,7 +201,12 @@ const getEquipmentHandler = async (_request: NextRequest) => {
             return NextResponse.json({
               success: true,
               data: equipmentWithAssignments,
-              total: equipmentWithAssignments.length,
+              total,
+              page,
+              limit,
+              totalPages: Math.ceil(total / limit),
+              hasNextPage: page < Math.ceil(total / limit),
+              hasPrevPage: page > 1,
             });
           } catch (error) {
             console.error('Error fetching equipment assignments:', error);

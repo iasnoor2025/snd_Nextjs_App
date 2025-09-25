@@ -193,15 +193,7 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
       
       setDocuments(sortedList);
       
-      // Debug: Log document URLs to help troubleshoot
-      if (sortedList && sortedList.length > 0) {
-        console.log('Documents loaded and sorted:', sortedList.map(doc => ({
-          id: doc.id,
-          name: doc.name,
-          url: doc.url,
-          file_type: doc.file_type
-        })));
-      }
+      // Documents loaded and sorted (removed console logging for performance)
     } catch (error) {
       console.error('Error loading documents:', error);
       toast.error(t('employee.documents.errorLoadingDocuments'));

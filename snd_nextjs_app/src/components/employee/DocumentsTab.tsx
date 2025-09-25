@@ -150,12 +150,6 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
       if (response.ok) {
         const data = await response.json();
         
-        console.log('🔍 DocumentsTab - Raw API data:', data.slice(0, 2).map(doc => ({
-          id: doc.id,
-          name: doc.name,
-          employee_file_number: doc.employee_file_number
-        })));
-        
         // Filter out personal documents (photos, iqama, passport) since they're shown in Personal tab
         const filteredData = Array.isArray(data) ? data.filter((doc: Document) => {
           const docName = doc.name.toLowerCase();
@@ -176,12 +170,6 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
             docType === 'employee_passport'
           );
         }) : [];
-        
-        console.log('🔍 DocumentsTab - Filtered data:', filteredData.slice(0, 2).map(doc => ({
-          id: doc.id,
-          name: doc.name,
-          employee_file_number: doc.employee_file_number
-        })));
         
         setDocuments(filteredData);
       } else {

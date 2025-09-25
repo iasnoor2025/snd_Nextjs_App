@@ -601,14 +601,14 @@ export default function EquipmentManagementPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Label htmlFor="status-filter" className="text-sm font-medium">
+                <Label htmlFor="status-filter" className="text-sm font-medium whitespace-nowrap">
                   {t('equipment.equipment_management.status_filter_label')}:
                 </Label>
                 <select
                   id="status-filter"
                   value={filterStatus}
                   onChange={e => setFilterStatus(e.target.value)}
-                  className="border rounded-md px-3 py-2 text-sm"
+                  className="border rounded-md px-3 py-2 text-sm min-w-[120px]"
                 >
                   <option value="all">{t('equipment.equipment_management.all_status')}</option>
                   <option value="available">{t('equipment.status.available')}</option>
@@ -618,14 +618,14 @@ export default function EquipmentManagementPage() {
                 </select>
               </div>
               <div className="flex items-center gap-2">
-                <Label htmlFor="assignment-filter" className="text-sm font-medium">
+                <Label htmlFor="assignment-filter" className="text-sm font-medium whitespace-nowrap">
                   {t('equipment.equipment_management.assignment_filter_label')}:
                 </Label>
                 <select
                   id="assignment-filter"
                   value={filterAssignment}
                   onChange={e => setFilterAssignment(e.target.value)}
-                  className="border rounded-md px-3 py-2 text-sm"
+                  className="border rounded-md px-3 py-2 text-sm min-w-[140px]"
                 >
                   <option value="all">{t('equipment.equipment_management.all_assignments')}</option>
                   <option value="assigned">{t('equipment.equipment_management.currently_assigned')}</option>
@@ -633,14 +633,14 @@ export default function EquipmentManagementPage() {
                 </select>
               </div>
               <div className="flex items-center gap-2">
-                <Label htmlFor="istimara-filter" className="text-sm font-medium">
+                <Label htmlFor="istimara-filter" className="text-sm font-medium whitespace-nowrap">
                   {t('equipment.equipment_management.istimara_status')}:
                 </Label>
                 <select
                   id="istimara-filter"
                   value={filterIstimara}
                   onChange={e => setFilterIstimara(e.target.value)}
-                  className="border rounded-md px-3 py-2 text-sm"
+                  className="border rounded-md px-3 py-2 text-sm min-w-[120px]"
                 >
                   <option value="all">{t('equipment.equipment_management.all_istimara')}</option>
                   <option value="valid">{t('equipment.equipment_management.valid')}</option>
@@ -649,14 +649,14 @@ export default function EquipmentManagementPage() {
                 </select>
               </div>
               <div className="flex items-center gap-2">
-                <Label htmlFor="type-filter" className="text-sm font-medium">
+                <Label htmlFor="type-filter" className="text-sm font-medium whitespace-nowrap">
                   {t('equipment.equipment_management.type')}:
                 </Label>
                 <select
                   id="type-filter"
                   value={filterType}
                   onChange={e => setFilterType(e.target.value)}
-                  className="border rounded-md px-3 py-2 text-sm"
+                  className="border rounded-md px-3 py-2 text-sm min-w-[120px]"
                 >
                   <option value="all">{t('equipment.equipment_management.all_types')}</option>
                   {Object.keys(equipmentStats).map(type => (

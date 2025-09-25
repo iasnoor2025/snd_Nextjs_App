@@ -387,17 +387,30 @@ export function EmployeeDropdown({
   );
 }
 
-// Hook for using employee data
+// Hook for using employee data with caching
 export function useEmployees() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadEmployees = async () => {
+  const loadEmployees = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
+      // Check if employees are already cached
+      const cachedEmployees = sessionStorage.getItem('employeesCache');
+      const cacheTimestamp = sessionStorage.getItem('employeesCacheTimestamp');
+      const now = Date.now();
+      
+      // Use cache if it's less than 5 minutes old
+      if (cachedEmployees && cacheTimestamp && (now - parseInt(cacheTimestamp)) < 300000) {
+        const employeeData = JSON.parse(cachedEmployees);
+        setEmployees(employeeData);
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch('/api/employees/public?all=true&limit=1000', {
         method: 'GET',
         headers: {
@@ -411,9 +424,13 @@ export function useEmployees() {
 
       const data = await response.json();
       const employeeData = data.data || data || [];
+      
+      // Cache the employees data
+      sessionStorage.setItem('employeesCache', JSON.stringify(employeeData));
+      sessionStorage.setItem('employeesCacheTimestamp', Date.now().toString());
+      
       setEmployees(employeeData);
     } catch (err) {
-
       let errorMsg = 'Failed to load employees';
       if (err instanceof Error) {
         errorMsg = err.message;
@@ -424,11 +441,11 @@ export function useEmployees() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadEmployees();
-  }, []);
+  }, [loadEmployees]);
 
   return { employees, loading, error, refetch: loadEmployees };
 }
