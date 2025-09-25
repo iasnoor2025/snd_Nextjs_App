@@ -77,70 +77,50 @@ function setUserPermissionsInCache(userId: string, permissions: string[]): void 
 // Function to load user permissions from API and cache them
 async function loadUserPermissions(userId: string): Promise<string[]> {
   try {
-    console.log(`🔄 Loading permissions for user ${userId}...`);
     const response = await fetch('/api/user-permissions');
     
     if (response.ok) {
       const data = await response.json();
-      console.log(`📥 API response for user ${userId}:`, data);
       
       if (data.success && data.permissions) {
         setUserPermissionsInCache(userId, data.permissions);
-        console.log(`✅ Cached ${data.permissions.length} permissions for user ${userId}:`, data.permissions);
         return data.permissions;
       }
-    } else {
-      console.error(`❌ API error for user ${userId}:`, response.status, response.statusText);
     }
   } catch (error) {
-    console.error('Error loading user permissions:', error);
+    // Silent error handling for production
   }
   
-  console.log(`⚠️ No permissions loaded for user ${userId}`);
   return [];
 }
 
 // Client-side permission checking (permission-based system)
 function hasPermissionClient(user: User, action: Action, subject: Subject): boolean {
-  // Permission check in progress
-  
   // For ALL roles (including SUPER_ADMIN), check against cached permissions
   // This ensures truly permission-based RBAC instead of role-based
   const userPermissions = getUserPermissionsFromCache(user.id);
-  console.log(`🔐 Permission check for user ${user.id} (${user.role}):`, {
-    action,
-    subject,
-    cachedPermissions: userPermissions,
-    hasCachedPermissions: !!userPermissions
-  });
   
   if (!userPermissions) {
-    // No cached permissions found
-    console.log(`❌ No cached permissions found for user ${user.id}`);
     return false;
   }
   
   // Check for wildcard permissions
   if (userPermissions.includes('*') || userPermissions.includes('manage.all')) {
-    // Wildcard permission granted
     return true;
   }
   
   // Check for specific permission
   const permissionName = `${action}.${subject}`;
   if (userPermissions.includes(permissionName)) {
-    // Specific permission granted
     return true;
   }
   
   // Check if user has manage permission for the subject (which includes read, create, update, delete)
   const managePermission = `manage.${subject}`;
   if (userPermissions.includes(managePermission)) {
-    // Manage permission granted
     return true;
   }
   
-  // Permission denied
   return false;
 }
 
@@ -187,23 +167,12 @@ function canAccessRouteClient(user: User, route: string): boolean {
   if (routePermission.roles.length === 0) {
     // Check if user has the required permission for this route
     const hasAccess = hasPermissionClient(user, routePermission.action, routePermission.subject);
-    
-    // Special debug for employee-dashboard
-    if (route === '/employee-dashboard') {
-      console.log(`🎯 EMPLOYEE-DASHBOARD DEBUG:`);
-      console.log(`  - User role: ${user.role}`);
-      console.log(`  - Required permission: ${routePermission.action}.${routePermission.subject}`);
-      console.log(`  - Has access: ${hasAccess}`);
-      console.log(`  - Cached permissions:`, getUserPermissionsFromCache(user.id));
-    }
-    
     return hasAccess;
   }
   
   // If roles array has specific roles, check if user's role is in the list
   if (routePermission.roles.length > 0) {
     const hasRoleAccess = routePermission.roles.includes(user.role);
-    console.log(`👥 Role-based access for route ${route}: ${hasRoleAccess ? '✅ GRANTED' : '❌ DENIED'} (user role: ${user.role}, required: ${routePermission.roles.join(', ')})`);
     return hasRoleAccess;
   }
   
@@ -225,23 +194,16 @@ export function addNewRoleClient(roleName: string, priority: number, permissions
   
   // Add to fallback permissions
   DYNAMIC_FALLBACK_PERMISSIONS[roleName] = permissions;
-  
-  console.log(`✅ Added new role: ${roleName} with priority ${priority} and ${permissions.length} permissions`);
 }
 
 export function removeRoleClient(roleName: string): void {
   delete DYNAMIC_ROLE_HIERARCHY[roleName];
   delete DYNAMIC_FALLBACK_PERMISSIONS[roleName];
-  
-  console.log(`🗑️ Removed role: ${roleName}`);
 }
 
 export function updateRolePermissionsClient(roleName: string, permissions: string[]): void {
   if (DYNAMIC_FALLBACK_PERMISSIONS[roleName]) {
     DYNAMIC_FALLBACK_PERMISSIONS[roleName] = permissions;
-    console.log(`✅ Updated permissions for role: ${roleName}`);
-  } else {
-    console.warn(`⚠️ Role ${roleName} not found, cannot update permissions`);
   }
 }
 
@@ -280,8 +242,8 @@ export function RBACProvider({ children }: RBACProviderProps) {
   // Load user permissions when user changes
   useEffect(() => {
     if (user) {
-      loadUserPermissions(user.id).catch(error => {
-        console.error(`Failed to load permissions for user ${user.id}:`, error);
+      loadUserPermissions(user.id).catch(() => {
+        // Silent error handling for production
       });
     }
   }, [user]);
