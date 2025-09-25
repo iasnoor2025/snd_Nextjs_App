@@ -160,14 +160,12 @@ export default function DashboardPage() {
             myTeam: accessibleSections.includes('myTeam') && (savedVisibility.myTeam !== false),
           };
           
-          console.log('🔍 Debug - Saved visibility:', savedVisibility);
-          console.log('🔍 Debug - Accessible sections:', accessibleSections);
 
           setAccessibleSections(accessibleSections);
           setSectionVisibility(newVisibility);
           setSectionsLoaded(true);
         } catch (error) {
-          console.error('Error loading user sections:', error);
+          // Handle error silently for production
           // No fallback - if database fails, show minimal access
           setSectionVisibility({
             iqama: false,
@@ -209,7 +207,7 @@ export default function DashboardPage() {
         setStats(data.stats || {});
       }
     } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
+      // Handle error silently for production
     }
   };
 
@@ -222,27 +220,20 @@ export default function DashboardPage() {
         setIqamaData(data.iqamaData || []);
       }
     } catch (error) {
-      console.error('Error fetching Iqama data:', error);
+      // Handle error silently for production
     }
   };
 
   // Fetch Equipment data
   const fetchEquipmentData = async () => {
     try {
-      console.log('Fetching equipment data...');
       const response = await fetch('/api/dashboard/equipment?limit=250');
-      console.log('Equipment API response status:', response.status);
       if (response.ok) {
         const data = await response.json();
-        console.log('Equipment API data:', data);
         setEquipmentData(data.equipment || []);
-      } else {
-        console.error('Equipment API error status:', response.status);
-        const errorText = await response.text();
-        console.error('Equipment API error text:', errorText);
       }
     } catch (error) {
-      console.error('Error fetching Equipment data:', error);
+      // Handle error silently for production
     }
   };
 
@@ -255,7 +246,7 @@ export default function DashboardPage() {
         setTimesheetData(data.timesheetData || []);
       }
     } catch (error) {
-      console.error('Error fetching Timesheet data:', error);
+      // Handle error silently for production
     }
   };
 
@@ -268,7 +259,7 @@ export default function DashboardPage() {
         setActivities(data.recentActivity || []);
       }
     } catch (error) {
-      console.error('Error fetching Activity data:', error);
+      // Handle error silently for production
     }
   };
 
@@ -289,7 +280,7 @@ export default function DashboardPage() {
       ]);
 
     } catch (_error) {
-      console.error('Error fetching dashboard data:', _error);
+      // Handle error silently for production
       // Show user-friendly message for any error
       setApprovalSuccess('Dashboard loaded with basic data. Some sections may be limited.');
       setTimeout(() => setApprovalSuccess(null), 5000);
@@ -429,7 +420,7 @@ export default function DashboardPage() {
         throw new Error(errorData.error || t('dashboard.failedToUpdateIqama'));
       }
     } catch (error) {
-      console.error('Iqama update error:', error);
+      // Handle error silently for production
       setApprovalSuccess(`Error: ${error instanceof Error ? error.message : t('dashboard.failedToUpdateIqama')}`);
       setTimeout(() => setApprovalSuccess(null), 5000);
     } finally {
@@ -474,7 +465,7 @@ export default function DashboardPage() {
         throw new Error(errorData.error || t('dashboard.failedToUpdateEquipment'));
       }
     } catch (error) {
-      console.error('Equipment update error:', error);
+      // Handle error silently for production
               setApprovalSuccess(`Error: ${error instanceof Error ? error.message : t('dashboard.failedToUpdateEquipment')}`);
       setTimeout(() => setApprovalSuccess(null), 5000);
     } finally {
@@ -672,7 +663,7 @@ export default function DashboardPage() {
       
       await PDFGenerator.generateCombinedExpiredReport(pdfIqamaData, pdfEquipmentData);
     } catch (error) {
-      console.error('Failed to generate PDF:', error);
+      // Handle error silently for production
       alert(t('dashboard.pdfGenerationFailed'));
     }
   };
