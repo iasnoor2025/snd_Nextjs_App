@@ -4,6 +4,7 @@ import path from 'path';
 
 export interface SettlementPDFData {
   settlementNumber: string;
+  settlementType: 'vacation' | 'exit';
   employeeName: string;
   employeeNameAr?: string;
   fileNumber?: string;
@@ -50,7 +51,7 @@ export class FinalSettlementPDFService {
     language: 'en' | 'ar' = 'en'
   ): Promise<Buffer> {
     const browser = await puppeteer.launch({
-      headless: 'new',
+      headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
 
@@ -78,7 +79,7 @@ export class FinalSettlementPDFService {
         },
       });
 
-      return pdfBuffer;
+      return Buffer.from(pdfBuffer);
     } finally {
       await browser.close();
     }
@@ -91,7 +92,7 @@ export class FinalSettlementPDFService {
     settlementData: SettlementPDFData
   ): Promise<Buffer> {
     const browser = await puppeteer.launch({
-      headless: 'new',
+      headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
 
@@ -113,7 +114,7 @@ export class FinalSettlementPDFService {
         },
       });
 
-      return pdfBuffer;
+      return Buffer.from(pdfBuffer);
     } finally {
       await browser.close();
     }
@@ -172,6 +173,12 @@ export class FinalSettlementPDFService {
             border-bottom: 3px solid #2563eb;
             padding-bottom: 20px;
             margin-bottom: 30px;
+        }
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 15px auto;
+            display: block;
         }
         .company-name {
             font-size: 24px;
@@ -281,7 +288,8 @@ export class FinalSettlementPDFService {
 </head>
 <body>
     <div class="header">
-        <div class="company-name">${data.companyName || 'SND Equipment Rental Company'}</div>
+        <img src="file://${path.join(process.cwd(), 'public', 'snd-logo.png')}" alt="Company Logo" class="logo" />
+        <div class="company-name">${data.companyName || 'Samhan Naser Al-Dosari Est'}</div>
         <div>${data.companyAddress || 'Kingdom of Saudi Arabia'}</div>
         <div>Phone: ${data.companyPhone || 'N/A'} | Email: ${data.companyEmail || 'N/A'}</div>
         <div class="document-title">FINAL SETTLEMENT CERTIFICATE</div>
@@ -384,7 +392,7 @@ export class FinalSettlementPDFService {
                 </tr>
                 ` : ''}
                 <tr>
-                    <td>End of Service Benefits</td>
+                    <td>${data.settlementType === 'vacation' ? 'Vacation Allowance' : 'End of Service Benefits'}</td>
                     <td class="amount">${data.endOfServiceBenefit.toFixed(2)}</td>
                 </tr>
                 ${data.accruedVacationAmount > 0 ? `
@@ -502,6 +510,12 @@ export class FinalSettlementPDFService {
             padding-bottom: 20px;
             margin-bottom: 30px;
         }
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 15px auto;
+            display: block;
+        }
         .company-name {
             font-size: 24px;
             font-weight: bold;
@@ -610,7 +624,8 @@ export class FinalSettlementPDFService {
 </head>
 <body>
     <div class="header">
-        <div class="company-name">${data.companyName || 'شركة سند لتأجير المعدات'}</div>
+        <img src="file://${path.join(process.cwd(), 'public', 'snd-logo.png')}" alt="Company Logo" class="logo" />
+        <div class="company-name">${data.companyName || 'مؤسسة سمحان ناصر الدوسري'}</div>
         <div>${data.companyAddress || 'المملكة العربية السعودية'}</div>
         <div>الهاتف: ${data.companyPhone || 'غير متوفر'} | البريد الإلكتروني: ${data.companyEmail || 'غير متوفر'}</div>
         <div class="document-title">شهادة التسوية النهائية</div>
@@ -832,6 +847,12 @@ export class FinalSettlementPDFService {
             padding-bottom: 15px;
             margin-bottom: 20px;
         }
+        .logo {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 10px auto;
+            display: block;
+        }
         .company-name {
             font-size: 18px;
             font-weight: bold;
@@ -953,9 +974,10 @@ export class FinalSettlementPDFService {
 </head>
 <body>
     <div class="bilingual-header">
+        <img src="file://${path.join(process.cwd(), 'public', 'snd-logo.png')}" alt="Company Logo" class="logo" />
         <div class="company-name">
-            SND Equipment Rental Company<br>
-            شركة سند لتأجير المعدات
+            Samhan Naser Al-Dosari Est<br>
+            مؤسسة سمحان ناصر الدوسري
         </div>
         <div>Kingdom of Saudi Arabia | المملكة العربية السعودية</div>
         <div class="document-title">
@@ -1093,8 +1115,8 @@ export class FinalSettlementPDFService {
             </tr>
             ` : ''}
             <tr>
-                <td class="en-col">End of Service Benefits</td>
-                <td class="ar-col">مكافأة نهاية الخدمة</td>
+                <td class="en-col">${data.settlementType === 'vacation' ? 'Vacation Allowance' : 'End of Service Benefits'}</td>
+                <td class="ar-col">${data.settlementType === 'vacation' ? 'بدل إجازة' : 'مكافأة نهاية الخدمة'}</td>
                 <td class="amount-col">${data.endOfServiceBenefit.toFixed(2)}</td>
             </tr>
             ${data.accruedVacationAmount > 0 ? `

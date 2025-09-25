@@ -14,6 +14,16 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Table,
   TableBody,
   TableCell,
@@ -36,8 +46,9 @@ import {
   User,
   Building,
   CreditCard,
+  Trash2,
 } from 'lucide-react';
-import { useI18n } from '@/contexts/i18n-context';
+import { useI18n } from '@/hooks/use-i18n';
 import { CreateFinalSettlementDialog } from './create-final-settlement-dialog';
 import { ViewFinalSettlementDialog } from './view-final-settlement-dialog';
 import { UnpaidSalaryAlert } from './unpaid-salary-alert';
@@ -45,10 +56,15 @@ import { UnpaidSalaryAlert } from './unpaid-salary-alert';
 interface FinalSettlement {
   id: number;
   settlementNumber: string;
+  settlementType: 'vacation' | 'exit';
   employeeName: string;
   fileNumber?: string;
   hireDate: string;
   lastWorkingDate: string;
+  vacationStartDate?: string;
+  vacationEndDate?: string;
+  expectedReturnDate?: string;
+  vacationDays?: number;
   totalServiceYears: number;
   totalServiceMonths: number;
   unpaidSalaryMonths: number;
@@ -82,6 +98,7 @@ interface FinalSettlementManagerProps {
   canView?: boolean;
   canApprove?: boolean;
   canPay?: boolean;
+  canDelete?: boolean;
 }
 
 export function FinalSettlementManager({
@@ -91,6 +108,7 @@ export function FinalSettlementManager({
   canView = true,
   canApprove = false,
   canPay = false,
+  canDelete = false,
 }: FinalSettlementManagerProps) {
   const { t, isRTL } = useI18n();
   const [settlements, setSettlements] = useState<FinalSettlement[]>([]);
@@ -100,6 +118,9 @@ export function FinalSettlementManager({
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedSettlement, setSelectedSettlement] = useState<FinalSettlement | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [settlementToDelete, setSettlementToDelete] = useState<FinalSettlement | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -132,7 +153,10 @@ export function FinalSettlementManager({
     }
   };
 
-  const handleCreateSettlement = () => {
+  const [settlementTypeToCreate, setSettlementTypeToCreate] = useState<'vacation' | 'exit'>('exit');
+
+  const handleCreateSettlement = (type: 'vacation' | 'exit') => {
+    setSettlementTypeToCreate(type);
     setCreateDialogOpen(true);
   };
 
@@ -194,6 +218,39 @@ export function FinalSettlementManager({
     });
   };
 
+  const handleDeleteSettlement = (settlement: FinalSettlement) => {
+    setSettlementToDelete(settlement);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteSettlement = async () => {
+    if (!settlementToDelete) return;
+
+    try {
+      setDeleting(true);
+      setError(null);
+
+      const response = await fetch(`/api/final-settlements/${settlementToDelete.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete settlement');
+      }
+
+      // Remove from local state
+      setSettlements(settlements.filter(s => s.id !== settlementToDelete.id));
+      setDeleteDialogOpen(false);
+      setSettlementToDelete(null);
+    } catch (error) {
+      console.error('Error deleting settlement:', error);
+      setError(error instanceof Error ? error.message : 'Failed to delete settlement');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -229,10 +286,23 @@ export function FinalSettlementManager({
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Final Settlements</h2>
         {canCreate && (
-          <Button onClick={handleCreateSettlement} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Create Settlement
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => handleCreateSettlement('vacation')} 
+              className="flex items-center gap-2"
+              variant="outline"
+            >
+              <Calendar className="h-4 w-4" />
+              Vacation Settlement
+            </Button>
+            <Button 
+              onClick={() => handleCreateSettlement('exit')} 
+              className="flex items-center gap-2"
+            >
+              <Receipt className="h-4 w-4" />
+              Exit Settlement
+            </Button>
+          </div>
         )}
       </div>
 
@@ -267,17 +337,18 @@ export function FinalSettlementManager({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
-              <Table>
+            <div className="rounded-md border overflow-x-auto">
+              <Table className="min-w-full">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Settlement No.</TableHead>
-                    <TableHead>Service Period</TableHead>
-                    <TableHead>Unpaid Months</TableHead>
-                    <TableHead>End of Service</TableHead>
-                    <TableHead>Net Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead className="min-w-[120px]">Settlement No.</TableHead>
+                    <TableHead className="min-w-[100px]">Type</TableHead>
+                    <TableHead className="min-w-[200px]">Service Period</TableHead>
+                    <TableHead className="min-w-[120px]">Unpaid Months</TableHead>
+                    <TableHead className="min-w-[120px]">End of Service</TableHead>
+                    <TableHead className="min-w-[120px]">Net Amount</TableHead>
+                    <TableHead className="min-w-[100px]">Status</TableHead>
+                    <TableHead className="w-24 min-w-[96px] text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -287,11 +358,42 @@ export function FinalSettlementManager({
                         {settlement.settlementNumber}
                       </TableCell>
                       <TableCell>
+                        <Badge 
+                          variant={settlement.settlementType === 'vacation' ? 'outline' : 'default'}
+                          className="flex items-center gap-1 w-fit"
+                        >
+                          {settlement.settlementType === 'vacation' ? (
+                            <>
+                              <Calendar className="h-3 w-3" />
+                              Vacation
+                            </>
+                          ) : (
+                            <>
+                              <Building className="h-3 w-3" />
+                              Exit
+                            </>
+                          )}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
                         <div className="text-sm">
-                          <div>{formatDate(settlement.hireDate)} - {formatDate(settlement.lastWorkingDate)}</div>
-                          <div className="text-muted-foreground">
-                            {settlement.totalServiceYears}Y {settlement.totalServiceMonths}M
-                          </div>
+                          {settlement.settlementType === 'vacation' ? (
+                            <>
+                              <div className="text-blue-600 font-medium">
+                                Vacation: {settlement.vacationStartDate && formatDate(settlement.vacationStartDate)} - {settlement.vacationEndDate && formatDate(settlement.vacationEndDate)}
+                              </div>
+                              <div className="text-muted-foreground">
+                                {settlement.vacationDays} days | Return: {settlement.expectedReturnDate && formatDate(settlement.expectedReturnDate)}
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div>{formatDate(settlement.hireDate)} - {formatDate(settlement.lastWorkingDate)}</div>
+                              <div className="text-muted-foreground">
+                                {settlement.totalServiceYears}Y {settlement.totalServiceMonths}M
+                              </div>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -321,8 +423,8 @@ export function FinalSettlementManager({
                       <TableCell>
                         {getStatusBadge(settlement.status)}
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
                           {canView && (
                             <Button
                               variant="ghost"
@@ -341,6 +443,17 @@ export function FinalSettlementManager({
                           >
                             <Download className="h-4 w-4" />
                           </Button>
+                          {canDelete && settlement.status === 'draft' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteSettlement(settlement)}
+                              title="Delete Settlement"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -358,6 +471,7 @@ export function FinalSettlementManager({
         onOpenChange={setCreateDialogOpen}
         employeeId={employeeId}
         employeeName={employeeName}
+        settlementType={settlementTypeToCreate}
         unpaidSalaryInfo={unpaidSalaryInfo}
         onSuccess={() => {
           setCreateDialogOpen(false);
@@ -376,6 +490,33 @@ export function FinalSettlementManager({
           onUpdate={loadData}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-red-600" />
+              Delete Settlement
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete settlement <strong>{settlementToDelete?.settlementNumber}</strong>?
+              <br />
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteSettlement}
+              disabled={deleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

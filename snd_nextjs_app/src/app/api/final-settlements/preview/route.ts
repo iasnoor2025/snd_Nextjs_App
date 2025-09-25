@@ -14,22 +14,61 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       employeeId,
+      settlementType = 'exit',
       lastWorkingDate,
       isResignation = false,
+      vacationStartDate,
+      vacationEndDate,
+      expectedReturnDate,
+      manualUnpaidSalary = 0,
+      manualVacationAllowance = 0,
     } = body;
 
-    if (!employeeId || !lastWorkingDate) {
+    if (!employeeId) {
       return NextResponse.json({ 
-        error: 'Employee ID and last working date are required' 
+        error: 'Employee ID is required' 
       }, { status: 400 });
     }
 
-    // Generate settlement preview data
-    const settlementData = await FinalSettlementService.generateFinalSettlementData(
-      employeeId,
-      lastWorkingDate,
-      isResignation
-    );
+    let settlementData;
+
+    if (settlementType === 'vacation') {
+      // Validate vacation settlement fields
+      if (!vacationStartDate || !vacationEndDate || !expectedReturnDate) {
+        return NextResponse.json({ 
+          error: 'Vacation dates are required for vacation settlements' 
+        }, { status: 400 });
+      }
+
+      // Generate vacation settlement preview data
+      settlementData = await FinalSettlementService.generateVacationSettlementData(
+        employeeId,
+        vacationStartDate,
+        vacationEndDate,
+        expectedReturnDate,
+        {
+          manualUnpaidSalary,
+          manualVacationAllowance,
+        }
+      );
+    } else {
+      // Validate exit settlement fields
+      if (!lastWorkingDate) {
+        return NextResponse.json({ 
+          error: 'Last working date is required for exit settlements' 
+        }, { status: 400 });
+      }
+
+      // Generate exit settlement preview data
+      settlementData = await FinalSettlementService.generateFinalSettlementData(
+        employeeId,
+        lastWorkingDate,
+        isResignation,
+        {
+          manualUnpaidSalary,
+        }
+      );
+    }
 
     return NextResponse.json({
       success: true,

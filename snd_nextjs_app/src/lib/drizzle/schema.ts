@@ -899,6 +899,9 @@ export const finalSettlements = pgTable(
     resignationId: integer('resignation_id'),
     settlementNumber: text('settlement_number').notNull().unique(),
     
+    // Settlement Type: 'vacation' or 'exit'
+    settlementType: text('settlement_type').notNull().default('exit'), // 'vacation' | 'exit'
+    
     // Employee Details
     employeeName: text('employee_name').notNull(),
     fileNumber: text('file_number'),
@@ -908,6 +911,12 @@ export const finalSettlements = pgTable(
     department: text('department'),
     hireDate: date('hire_date').notNull(),
     lastWorkingDate: date('last_working_date').notNull(),
+    
+    // Vacation specific fields
+    vacationStartDate: date('vacation_start_date'),
+    vacationEndDate: date('vacation_end_date'),
+    expectedReturnDate: date('expected_return_date'),
+    vacationDays: integer('vacation_days'),
     
     // Service Details
     totalServiceYears: integer('total_service_years').notNull(),

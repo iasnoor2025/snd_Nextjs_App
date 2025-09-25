@@ -6,7 +6,7 @@ import { authConfig } from '@/lib/auth-config';
 // GET: Get unpaid salary information for a specific employee
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authConfig);
@@ -14,7 +14,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const employeeId = parseInt(params.id);
+    const { id } = await params;
+    const employeeId = parseInt(id);
     if (!employeeId) {
       return NextResponse.json({ error: 'Invalid employee ID' }, { status: 400 });
     }

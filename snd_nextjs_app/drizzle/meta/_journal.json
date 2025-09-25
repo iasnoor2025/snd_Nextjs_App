@@ -183,6 +183,13 @@
       "when": 1758781891846,
       "tag": "0025_eager_sprite",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1758784237882,
+      "tag": "0026_slimy_cable",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/drizzle';
+import { db } from '@/lib/db';
 import { finalSettlements } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { FinalSettlementPDFService, SettlementPDFData } from '@/lib/services/final-settlement-pdf-service';

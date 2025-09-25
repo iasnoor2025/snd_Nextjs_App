@@ -2421,12 +2421,13 @@ export default function EmployeeShowPage() {
 
         <TabsContent value="final-settlements" className="mt-6 space-y-6">
           <FinalSettlementManager
-            employeeId={employee.id}
+            employeeId={parseInt(employeeId)}
             employeeName={employee.full_name}
-            canCreate={hasPermission('create', 'FinalSettlement')}
-            canView={hasPermission('read', 'FinalSettlement')}
-            canApprove={hasPermission('update', 'FinalSettlement')}
-            canPay={hasPermission('update', 'FinalSettlement')}
+            canCreate={hasPermission('create', 'Employee')}
+            canView={hasPermission('read', 'Employee')}
+            canApprove={hasPermission('update', 'Employee')}
+            canPay={hasPermission('update', 'Employee')}
+            canDelete={hasPermission('delete', 'Employee')}
           />
         </TabsContent>
       </Tabs>

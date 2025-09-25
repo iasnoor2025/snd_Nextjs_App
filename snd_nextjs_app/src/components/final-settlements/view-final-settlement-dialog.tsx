@@ -47,6 +47,7 @@ import {
 interface FinalSettlement {
   id: number;
   settlementNumber: string;
+  settlementType: 'vacation' | 'exit';
   employeeName: string;
   fileNumber?: string;
   iqamaNumber?: string;
@@ -55,12 +56,24 @@ interface FinalSettlement {
   department?: string;
   hireDate: string;
   lastWorkingDate: string;
+  vacationStartDate?: string;
+  vacationEndDate?: string;
+  expectedReturnDate?: string;
+  vacationDays?: number;
   totalServiceYears: number;
   totalServiceMonths: number;
   totalServiceDays: number;
   unpaidSalaryMonths: number;
   unpaidSalaryAmount: string;
   endOfServiceBenefit: string;
+  accruedVacationDays?: number;
+  accruedVacationAmount?: string;
+  otherBenefits?: string;
+  otherBenefitsDescription?: string;
+  pendingAdvances?: string;
+  equipmentDeductions?: string;
+  otherDeductions?: string;
+  otherDeductionsDescription?: string;
   grossAmount: string;
   totalDeductions: string;
   netAmount: string;
@@ -323,10 +336,41 @@ export function ViewFinalSettlementDialog({
                     <span className="text-muted-foreground">Hire Date:</span>
                     <span>{formatDate(settlement.hireDate)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Last Working Date:</span>
-                    <span>{formatDate(settlement.lastWorkingDate)}</span>
-                  </div>
+                  
+                  {settlement.settlementType === 'vacation' ? (
+                    <>
+                      {settlement.vacationStartDate && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Vacation Start Date:</span>
+                          <span>{formatDate(settlement.vacationStartDate)}</span>
+                        </div>
+                      )}
+                      {settlement.vacationEndDate && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Vacation End Date:</span>
+                          <span>{formatDate(settlement.vacationEndDate)}</span>
+                        </div>
+                      )}
+                      {settlement.expectedReturnDate && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Expected Return Date:</span>
+                          <span>{formatDate(settlement.expectedReturnDate)}</span>
+                        </div>
+                      )}
+                      {settlement.vacationDays && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Vacation Days:</span>
+                          <span className="font-medium">{settlement.vacationDays} days</span>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Last Working Date:</span>
+                      <span>{formatDate(settlement.lastWorkingDate)}</span>
+                    </div>
+                  )}
+                  
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Total Service:</span>
                     <span className="font-medium">
@@ -367,10 +411,34 @@ export function ViewFinalSettlementDialog({
                           <span className="font-medium">{formatCurrency(settlement.unpaidSalaryAmount)}</span>
                         </div>
                       )}
-                      <div className="flex justify-between">
-                        <span>End of Service Benefits:</span>
-                        <span className="font-medium">{formatCurrency(settlement.endOfServiceBenefit)}</span>
-                      </div>
+                      
+                      {settlement.settlementType === 'vacation' ? (
+                        <div className="flex justify-between">
+                          <span>Vacation Allowance:</span>
+                          <span className="font-medium">{formatCurrency(settlement.endOfServiceBenefit)}</span>
+                        </div>
+                      ) : (
+                        <div className="flex justify-between">
+                          <span>End of Service Benefits:</span>
+                          <span className="font-medium">{formatCurrency(settlement.endOfServiceBenefit)}</span>
+                        </div>
+                      )}
+
+                      {/* Additional Benefits for Exit Settlements */}
+                      {settlement.settlementType === 'exit' && settlement.accruedVacationDays && parseFloat(settlement.accruedVacationAmount || '0') > 0 && (
+                        <div className="flex justify-between">
+                          <span>Accrued Vacation ({settlement.accruedVacationDays} days):</span>
+                          <span className="font-medium">{formatCurrency(settlement.accruedVacationAmount || '0')}</span>
+                        </div>
+                      )}
+
+                      {/* Other Benefits */}
+                      {settlement.otherBenefits && parseFloat(settlement.otherBenefits) > 0 && (
+                        <div className="flex justify-between">
+                          <span>Other Benefits{settlement.otherBenefitsDescription ? ` (${settlement.otherBenefitsDescription})` : ''}:</span>
+                          <span className="font-medium">{formatCurrency(settlement.otherBenefits)}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -389,6 +457,29 @@ export function ViewFinalSettlementDialog({
                       {/* Deductions */}
                       <div>
                         <h4 className="font-medium mb-2 text-red-700">Deductions</h4>
+                        <div className="space-y-2 text-sm">
+                          {settlement.pendingAdvances && parseFloat(settlement.pendingAdvances) > 0 && (
+                            <div className="flex justify-between">
+                              <span>Pending Advances:</span>
+                              <span className="font-medium text-red-600">-{formatCurrency(settlement.pendingAdvances)}</span>
+                            </div>
+                          )}
+                          
+                          {settlement.equipmentDeductions && parseFloat(settlement.equipmentDeductions) > 0 && (
+                            <div className="flex justify-between">
+                              <span>Equipment Deductions:</span>
+                              <span className="font-medium text-red-600">-{formatCurrency(settlement.equipmentDeductions)}</span>
+                            </div>
+                          )}
+                          
+                          {settlement.otherDeductions && parseFloat(settlement.otherDeductions) > 0 && (
+                            <div className="flex justify-between">
+                              <span>Other Deductions{settlement.otherDeductionsDescription ? ` (${settlement.otherDeductionsDescription})` : ''}:</span>
+                              <span className="font-medium text-red-600">-{formatCurrency(settlement.otherDeductions)}</span>
+                            </div>
+                          )}
+                        </div>
+                        <Separator className="my-2" />
                         <div className="flex justify-between font-medium">
                           <span>Total Deductions:</span>
                           <span className="text-red-600">-{formatCurrency(settlement.totalDeductions)}</span>

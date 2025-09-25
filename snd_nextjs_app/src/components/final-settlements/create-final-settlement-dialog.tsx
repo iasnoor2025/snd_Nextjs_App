@@ -51,31 +51,61 @@ interface CreateFinalSettlementDialogProps {
   onOpenChange: (open: boolean) => void;
   employeeId: number;
   employeeName: string;
+  settlementType: 'vacation' | 'exit';
   unpaidSalaryInfo: UnpaidSalaryInfo | null;
   onSuccess: () => void;
 }
 
-const formSchema = z.object({
-  lastWorkingDate: z.string().min(1, 'Last working date is required'),
-  isResignation: z.boolean().default(false),
-  resignationId: z.number().optional(),
-  accruedVacationDays: z.number().min(0).default(0),
-  otherBenefits: z.number().min(0).default(0),
-  otherBenefitsDescription: z.string().optional(),
-  pendingAdvances: z.number().min(0).default(0),
-  equipmentDeductions: z.number().min(0).default(0),
-  otherDeductions: z.number().min(0).default(0),
-  otherDeductionsDescription: z.string().optional(),
-  notes: z.string().optional(),
-});
+const createFormSchema = (settlementType: 'vacation' | 'exit') => {
+  const baseSchema = {
+    // Common fields
+    manualUnpaidSalary: z.number().min(0).default(0), // Manual unpaid salary override
+    otherBenefits: z.number().min(0).default(0),
+    otherBenefitsDescription: z.string().optional(),
+    pendingAdvances: z.number().min(0).default(0),
+    equipmentDeductions: z.number().min(0).default(0),
+    otherDeductions: z.number().min(0).default(0),
+    otherDeductionsDescription: z.string().optional(),
+    notes: z.string().optional(),
+  };
 
-type FormData = z.infer<typeof formSchema>;
+  if (settlementType === 'vacation') {
+    return z.object({
+      ...baseSchema,
+      // Vacation settlement fields
+      vacationStartDate: z.string().min(1, 'Vacation start date is required'),
+      vacationEndDate: z.string().min(1, 'Vacation end date is required'),
+      expectedReturnDate: z.string().min(1, 'Expected return date is required'),
+      manualVacationAllowance: z.number().min(0).default(0), // Manual vacation allowance override
+      // Optional/unused for vacation
+      lastWorkingDate: z.string().optional(),
+      isResignation: z.boolean().default(false),
+      resignationId: z.number().optional(),
+      accruedVacationDays: z.number().min(0).default(0),
+    });
+  } else {
+    return z.object({
+      ...baseSchema,
+      // Exit settlement fields
+      lastWorkingDate: z.string().min(1, 'Last working date is required'),
+      isResignation: z.boolean().default(false),
+      resignationId: z.number().optional(),
+      accruedVacationDays: z.number().min(0).default(0),
+      // Optional/unused for exit
+      vacationStartDate: z.string().optional(),
+      vacationEndDate: z.string().optional(),
+      expectedReturnDate: z.string().optional(),
+      manualVacationAllowance: z.number().min(0).default(0),
+    });
+  }
+};
 
 export function CreateFinalSettlementDialog({
   open,
   onOpenChange,
   employeeId,
   employeeName,
+  settlementType,
   unpaidSalaryInfo,
   onSuccess,
 }: CreateFinalSettlementDialogProps) {
@@ -83,16 +113,37 @@ export function CreateFinalSettlementDialog({
   const [preview, setPreview] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const formSchema = createFormSchema(settlementType);
+  type FormData = z.infer<typeof formSchema>;
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      lastWorkingDate: new Date().toISOString().split('T')[0],
-      isResignation: false,
-      accruedVacationDays: 0,
+    defaultValues: settlementType === 'vacation' ? {
+      manualUnpaidSalary: 0,
+      vacationStartDate: new Date().toISOString().split('T')[0],
+      vacationEndDate: '',
+      expectedReturnDate: '',
+      manualVacationAllowance: 0,
       otherBenefits: 0,
       pendingAdvances: 0,
       equipmentDeductions: 0,
       otherDeductions: 0,
+      isResignation: false,
+      accruedVacationDays: 0,
+      lastWorkingDate: '',
+    } : {
+      manualUnpaidSalary: 0,
+      lastWorkingDate: new Date().toISOString().split('T')[0],
+      isResignation: false,
+      accruedVacationDays: 0,
+      manualVacationAllowance: 0,
+      otherBenefits: 0,
+      pendingAdvances: 0,
+      equipmentDeductions: 0,
+      otherDeductions: 0,
+      vacationStartDate: '',
+      vacationEndDate: '',
+      expectedReturnDate: '',
     },
   });
 
@@ -100,23 +151,48 @@ export function CreateFinalSettlementDialog({
   const formValues = form.watch();
 
   useEffect(() => {
-    if (open && formValues.lastWorkingDate) {
-      generatePreview();
+    if (open) {
+      if (settlementType === 'vacation' && formValues.vacationStartDate && formValues.vacationEndDate && formValues.expectedReturnDate) {
+        generatePreview();
+      } else if (settlementType === 'exit' && formValues.lastWorkingDate) {
+        generatePreview();
+      }
     }
-  }, [open, formValues.lastWorkingDate, formValues.isResignation]);
+  }, [open, formValues.lastWorkingDate, formValues.isResignation, formValues.vacationStartDate, formValues.vacationEndDate, formValues.expectedReturnDate, formValues.manualUnpaidSalary, formValues.manualVacationAllowance]);
 
   const generatePreview = async () => {
     try {
-      if (!formValues.lastWorkingDate) return;
+      let requestBody: any = {
+        employeeId,
+        settlementType,
+      };
+
+      if (settlementType === 'vacation') {
+        if (!formValues.vacationStartDate || !formValues.vacationEndDate || !formValues.expectedReturnDate) return;
+        
+        requestBody = {
+          ...requestBody,
+          vacationStartDate: formValues.vacationStartDate,
+          vacationEndDate: formValues.vacationEndDate,
+          expectedReturnDate: formValues.expectedReturnDate,
+          manualUnpaidSalary: formValues.manualUnpaidSalary || 0,
+          manualVacationAllowance: formValues.manualVacationAllowance || 0,
+        };
+      } else {
+        if (!formValues.lastWorkingDate) return;
+        
+        requestBody = {
+          ...requestBody,
+          lastWorkingDate: formValues.lastWorkingDate,
+          isResignation: formValues.isResignation,
+          manualUnpaidSalary: formValues.manualUnpaidSalary || 0,
+        };
+      }
 
       const response = await fetch('/api/final-settlements/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          employeeId,
-          lastWorkingDate: formValues.lastWorkingDate,
-          isResignation: formValues.isResignation,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (response.ok) {
@@ -136,7 +212,10 @@ export function CreateFinalSettlementDialog({
       const response = await fetch(`/api/employees/${employeeId}/final-settlements`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          settlementType,
+        }),
       });
 
       if (!response.ok) {
@@ -167,8 +246,12 @@ export function CreateFinalSettlementDialog({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Calculator className="h-5 w-5" />
-            Create Final Settlement for {employeeName}
+            {settlementType === 'vacation' ? (
+              <Calendar className="h-5 w-5" />
+            ) : (
+              <Calculator className="h-5 w-5" />
+            )}
+            Create {settlementType === 'vacation' ? 'Vacation' : 'Exit'} Settlement for {employeeName}
           </DialogTitle>
         </DialogHeader>
 
@@ -194,48 +277,145 @@ export function CreateFinalSettlementDialog({
           {/* Form */}
           <div className="space-y-6">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <div className="space-y-4">
                 {/* Basic Information */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg">Settlement Details</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    {/* Manual Unpaid Salary - Common for both types */}
                     <FormField
                       control={form.control}
-                      name="lastWorkingDate"
+                      name="manualUnpaidSalary"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Last Working Date</FormLabel>
+                          <FormLabel>Manual Unpaid Salary (SAR)</FormLabel>
                           <FormControl>
-                            <Input type="date" {...field} />
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            />
                           </FormControl>
+                          <FormDescription>
+                            Override automatic unpaid salary calculation (leave 0 to use system calculation)
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
 
-                    <FormField
-                      control={form.control}
-                      name="isResignation"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                            <FormLabel className="text-base">Employee Resignation</FormLabel>
-                            <FormDescription>
-                              Check this if the employee resigned voluntarily. 
-                              This affects end-of-service benefit calculation.
-                            </FormDescription>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
+                    {settlementType === 'vacation' ? (
+                      <>
+                        {/* Vacation Settlement Fields */}
+                        <FormField
+                          control={form.control}
+                          name="vacationStartDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Vacation Start Date</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="vacationEndDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Vacation End Date</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="expectedReturnDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Expected Return Date</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="manualVacationAllowance"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Manual Vacation Allowance (SAR)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Override the calculated vacation allowance (leave 0 for automatic calculation)
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        {/* Exit Settlement Fields */}
+                        <FormField
+                          control={form.control}
+                          name="lastWorkingDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Last Working Date</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="isResignation"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                              <div className="space-y-0.5">
+                                <FormLabel className="text-base">Employee Resignation</FormLabel>
+                                <FormDescription>
+                                  Check this if the employee resigned voluntarily. 
+                                  This affects end-of-service benefit calculation.
+                                </FormDescription>
+                              </div>
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </>
+                    )}
                   </CardContent>
                 </Card>
 
@@ -245,28 +425,30 @@ export function CreateFinalSettlementDialog({
                     <CardTitle className="text-lg">Additional Benefits</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="accruedVacationDays"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Accrued Vacation Days</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.5"
-                              {...field}
-                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Unused vacation days that will be compensated
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {settlementType === 'exit' && (
+                      <FormField
+                        control={form.control}
+                        name="accruedVacationDays"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Accrued Vacation Days</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.5"
+                                {...field}
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Unused vacation days that will be compensated
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
 
                     <FormField
                       control={form.control}
@@ -422,7 +604,7 @@ export function CreateFinalSettlementDialog({
                     />
                   </CardContent>
                 </Card>
-              </form>
+              </div>
             </Form>
           </div>
 
@@ -453,20 +635,41 @@ export function CreateFinalSettlementDialog({
                     <div>
                       <h4 className="font-medium mb-2">Financial Summary</h4>
                       <div className="space-y-2 text-sm">
-                        {unpaidSalaryInfo && unpaidSalaryInfo.unpaidAmount > 0 && (
+                        {(unpaidSalaryInfo && unpaidSalaryInfo.unpaidAmount > 0) || formValues.manualUnpaidSalary > 0 ? (
                           <div className="flex justify-between">
-                            <span>Unpaid Salaries ({unpaidSalaryInfo.unpaidMonths} months):</span>
-                            <span className="font-medium">{formatCurrency(unpaidSalaryInfo.unpaidAmount)}</span>
+                            <span>Unpaid Salaries ({unpaidSalaryInfo?.unpaidMonths || 0} months):</span>
+                            <span className="font-medium">{formatCurrency(
+                              formValues.manualUnpaidSalary > 0 
+                                ? formValues.manualUnpaidSalary 
+                                : (unpaidSalaryInfo?.unpaidAmount || 0)
+                            )}</span>
                           </div>
+                        ) : null}
+                        
+                        {settlementType === 'vacation' ? (
+                          <>
+                            <div className="flex justify-between">
+                              <span>Vacation Allowance:</span>
+                              <span className="font-medium">{formatCurrency(
+                                formValues.manualVacationAllowance > 0 
+                                  ? formValues.manualVacationAllowance 
+                                  : (preview.vacationDetails?.vacationAllowance || 0)
+                              )}</span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex justify-between">
+                              <span>End of Service Benefit:</span>
+                              <span className="font-medium">{formatCurrency(preview.endOfServiceBenefit?.endOfServiceBenefit || 0)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Accrued Vacation:</span>
+                              <span className="font-medium">{formatCurrency((formValues.accruedVacationDays || 0) * (preview.employee?.basicSalary || 0) / 30)}</span>
+                            </div>
+                          </>
                         )}
-                        <div className="flex justify-between">
-                          <span>End of Service Benefit:</span>
-                          <span className="font-medium">{formatCurrency(preview.endOfServiceBenefit?.endOfServiceBenefit || 0)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Accrued Vacation:</span>
-                          <span className="font-medium">{formatCurrency((formValues.accruedVacationDays || 0) * (preview.employee?.basicSalary || 0) / 30)}</span>
-                        </div>
+                        
                         <div className="flex justify-between">
                           <span>Other Benefits:</span>
                           <span className="font-medium">{formatCurrency(formValues.otherBenefits || 0)}</span>
@@ -475,10 +678,18 @@ export function CreateFinalSettlementDialog({
                         <div className="flex justify-between font-medium">
                           <span>Gross Amount:</span>
                           <span>{formatCurrency(
-                            (unpaidSalaryInfo?.unpaidAmount || 0) +
-                            (preview.endOfServiceBenefit?.endOfServiceBenefit || 0) +
-                            ((formValues.accruedVacationDays || 0) * (preview.employee?.basicSalary || 0) / 30) +
-                            (formValues.otherBenefits || 0)
+                            settlementType === 'vacation' ? (
+                              (formValues.manualUnpaidSalary > 0 ? formValues.manualUnpaidSalary : (unpaidSalaryInfo?.unpaidAmount || 0)) +
+                              (formValues.manualVacationAllowance > 0 
+                                ? formValues.manualVacationAllowance 
+                                : (preview.vacationDetails?.vacationAllowance || 0)) +
+                              (formValues.otherBenefits || 0)
+                            ) : (
+                              (formValues.manualUnpaidSalary > 0 ? formValues.manualUnpaidSalary : (unpaidSalaryInfo?.unpaidAmount || 0)) +
+                              (preview.endOfServiceBenefit?.endOfServiceBenefit || 0) +
+                              ((formValues.accruedVacationDays || 0) * (preview.employee?.basicSalary || 0) / 30) +
+                              (formValues.otherBenefits || 0)
+                            )
                           )}</span>
                         </div>
                         <div className="flex justify-between text-red-600">
@@ -493,13 +704,24 @@ export function CreateFinalSettlementDialog({
                         <div className="flex justify-between font-bold text-green-600 text-lg">
                           <span>Net Amount:</span>
                           <span>{formatCurrency(
-                            (unpaidSalaryInfo?.unpaidAmount || 0) +
-                            (preview.endOfServiceBenefit?.endOfServiceBenefit || 0) +
-                            ((formValues.accruedVacationDays || 0) * (preview.employee?.basicSalary || 0) / 30) +
-                            (formValues.otherBenefits || 0) -
-                            (formValues.pendingAdvances || 0) -
-                            (formValues.equipmentDeductions || 0) -
-                            (formValues.otherDeductions || 0)
+                            settlementType === 'vacation' ? (
+                              (formValues.manualUnpaidSalary > 0 ? formValues.manualUnpaidSalary : (unpaidSalaryInfo?.unpaidAmount || 0)) +
+                              (formValues.manualVacationAllowance > 0 
+                                ? formValues.manualVacationAllowance 
+                                : (preview.vacationDetails?.vacationAllowance || 0)) +
+                              (formValues.otherBenefits || 0) -
+                              (formValues.pendingAdvances || 0) -
+                              (formValues.equipmentDeductions || 0) -
+                              (formValues.otherDeductions || 0)
+                            ) : (
+                              (formValues.manualUnpaidSalary > 0 ? formValues.manualUnpaidSalary : (unpaidSalaryInfo?.unpaidAmount || 0)) +
+                              (preview.endOfServiceBenefit?.endOfServiceBenefit || 0) +
+                              ((formValues.accruedVacationDays || 0) * (preview.employee?.basicSalary || 0) / 30) +
+                              (formValues.otherBenefits || 0) -
+                              (formValues.pendingAdvances || 0) -
+                              (formValues.equipmentDeductions || 0) -
+                              (formValues.otherDeductions || 0)
+                            )
                           )}</span>
                         </div>
                       </div>

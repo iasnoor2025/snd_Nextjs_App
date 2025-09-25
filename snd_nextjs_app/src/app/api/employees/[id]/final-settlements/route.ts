@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/drizzle';
+import { db } from '@/lib/db';
 import { finalSettlements, employees, users } from '@/lib/drizzle/schema';
 import { eq, desc } from 'drizzle-orm';
 import { FinalSettlementService } from '@/lib/services/final-settlement-service';
@@ -9,7 +9,7 @@ import { authConfig } from '@/lib/auth-config';
 // GET: Fetch final settlements for a specific employee
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authConfig);
@@ -17,7 +17,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const employeeId = parseInt(params.id);
+    const { id } = await params;
+    const employeeId = parseInt(id);
     if (!employeeId) {
       return NextResponse.json({ error: 'Invalid employee ID' }, { status: 400 });
     }
@@ -27,15 +28,29 @@ export async function GET(
       .select({
         id: finalSettlements.id,
         settlementNumber: finalSettlements.settlementNumber,
+        settlementType: finalSettlements.settlementType,
         employeeName: finalSettlements.employeeName,
         fileNumber: finalSettlements.fileNumber,
         hireDate: finalSettlements.hireDate,
         lastWorkingDate: finalSettlements.lastWorkingDate,
+        vacationStartDate: finalSettlements.vacationStartDate,
+        vacationEndDate: finalSettlements.vacationEndDate,
+        expectedReturnDate: finalSettlements.expectedReturnDate,
+        vacationDays: finalSettlements.vacationDays,
         totalServiceYears: finalSettlements.totalServiceYears,
         totalServiceMonths: finalSettlements.totalServiceMonths,
+        totalServiceDays: finalSettlements.totalServiceDays,
         unpaidSalaryMonths: finalSettlements.unpaidSalaryMonths,
         unpaidSalaryAmount: finalSettlements.unpaidSalaryAmount,
         endOfServiceBenefit: finalSettlements.endOfServiceBenefit,
+        accruedVacationDays: finalSettlements.accruedVacationDays,
+        accruedVacationAmount: finalSettlements.accruedVacationAmount,
+        otherBenefits: finalSettlements.otherBenefits,
+        otherBenefitsDescription: finalSettlements.otherBenefitsDescription,
+        pendingAdvances: finalSettlements.pendingAdvances,
+        equipmentDeductions: finalSettlements.equipmentDeductions,
+        otherDeductions: finalSettlements.otherDeductions,
+        otherDeductionsDescription: finalSettlements.otherDeductionsDescription,
         grossAmount: finalSettlements.grossAmount,
         totalDeductions: finalSettlements.totalDeductions,
         netAmount: finalSettlements.netAmount,
@@ -69,7 +84,7 @@ export async function GET(
 // POST: Create a new final settlement for a specific employee
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authConfig);
@@ -77,16 +92,25 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const employeeId = parseInt(params.id);
+    const { id } = await params;
+    const employeeId = parseInt(id);
     if (!employeeId) {
       return NextResponse.json({ error: 'Invalid employee ID' }, { status: 400 });
     }
 
     const body = await request.json();
     const {
+      settlementType = 'exit', // 'vacation' or 'exit'
       lastWorkingDate,
       isResignation = false,
       resignationId,
+      // Vacation specific fields
+      vacationStartDate,
+      vacationEndDate,
+      expectedReturnDate,
+      manualVacationAllowance = 0,
+      // Common fields
+      manualUnpaidSalary = 0, // Manual unpaid salary override
       accruedVacationDays = 0,
       otherBenefits = 0,
       otherBenefitsDescription,
@@ -96,10 +120,6 @@ export async function POST(
       otherDeductionsDescription,
       notes,
     } = body;
-
-    if (!lastWorkingDate) {
-      return NextResponse.json({ error: 'Last working date is required' }, { status: 400 });
-    }
 
     // Verify employee exists
     const employee = await db
@@ -112,23 +132,58 @@ export async function POST(
       return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
 
-    // Generate final settlement data
-    const settlementData = await FinalSettlementService.generateFinalSettlementData(
-      employeeId,
-      lastWorkingDate,
-      isResignation,
-      {
-        accruedVacationDays,
-        otherBenefits,
-        otherBenefitsDescription,
-        pendingAdvances,
-        equipmentDeductions,
-        otherDeductions,
-        otherDeductionsDescription,
-      }
-    );
+    let settlementData;
 
-    // Create the final settlement record
+    if (settlementType === 'vacation') {
+      // Validate vacation specific fields
+      if (!vacationStartDate || !vacationEndDate || !expectedReturnDate) {
+        return NextResponse.json({ 
+          error: 'Vacation dates are required for vacation settlements' 
+        }, { status: 400 });
+      }
+
+        // Generate vacation settlement data
+        settlementData = await FinalSettlementService.generateVacationSettlementData(
+          employeeId,
+          vacationStartDate,
+          vacationEndDate,
+          expectedReturnDate,
+          {
+            manualUnpaidSalary,
+            manualVacationAllowance,
+            otherBenefits,
+            otherBenefitsDescription,
+            pendingAdvances,
+            equipmentDeductions,
+            otherDeductions,
+            otherDeductionsDescription,
+          }
+        );
+    } else {
+      // Exit settlement
+      if (!lastWorkingDate) {
+        return NextResponse.json({ error: 'Last working date is required' }, { status: 400 });
+      }
+
+      // Generate exit settlement data
+      settlementData = await FinalSettlementService.generateFinalSettlementData(
+        employeeId,
+        lastWorkingDate,
+        isResignation,
+        {
+          manualUnpaidSalary,
+          accruedVacationDays,
+          otherBenefits,
+          otherBenefitsDescription,
+          pendingAdvances,
+          equipmentDeductions,
+          otherDeductions,
+          otherDeductionsDescription,
+        }
+      );
+    }
+
+    // Create the settlement record
     const newSettlement = await FinalSettlementService.createFinalSettlement(
       settlementData,
       session.user.id,
@@ -142,7 +197,7 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      message: 'Final settlement created successfully',
+      message: `${settlementType === 'vacation' ? 'Vacation' : 'Final'} settlement created successfully`,
       data: {
         settlement: newSettlement,
         calculationDetails: settlementData,
