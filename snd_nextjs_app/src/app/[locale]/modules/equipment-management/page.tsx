@@ -54,10 +54,10 @@ import {
 } from '@/lib/translation-utils';
 import {
   getEquipmentCategoryName,
-  getEquipmentCategoryIcon,
-  getEquipmentCategoryColor,
+  // getEquipmentCategoryIcon,
+  // getEquipmentCategoryColor,
   groupEquipmentByCategory,
-  filterEquipmentByCategory,
+  // filterEquipmentByCategory,
 } from '@/lib/utils/equipment-type-utils';
 
 interface EquipmentCategory {
@@ -126,7 +126,7 @@ interface Equipment {
 
 export default function EquipmentManagementPage() {
   const { t, isRTL } = useI18n();
-  const { user, hasPermission, getAllowedActions } = useRBAC();
+  const { hasPermission } = useRBAC();
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -153,7 +153,7 @@ export default function EquipmentManagementPage() {
   const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
   const [showEditCategoryModal, setShowEditCategoryModal] = useState(false);
   const [showCategoryManagementModal, setShowCategoryManagementModal] = useState(false);
-  const [selectedCategory] = useState<EquipmentCategory | null>(null);
+  const [_selectedCategory] = useState<EquipmentCategory | null>(null);
   const [newCategory, setNewCategory] = useState({
     name: '',
     description: '',
@@ -166,8 +166,8 @@ export default function EquipmentManagementPage() {
 
   const router = useRouter();
 
-  // Get allowed actions for equipment management
-  const allowedActions = getAllowedActions('Equipment');
+  // Get allowed actions for equipment management (for future use)
+  // const allowedActions = getAllowedActions('Equipment');
 
   useEffect(() => {
     fetchEquipment();
@@ -196,6 +196,7 @@ export default function EquipmentManagementPage() {
         toast.error('Failed to load equipment');
       }
     } catch (error) {
+      console.error('Failed to load equipment:', error);
       setEquipment([]);
       
       toast.error('Failed to load equipment');
