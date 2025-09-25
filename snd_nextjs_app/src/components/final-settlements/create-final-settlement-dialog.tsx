@@ -12,7 +12,6 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
-  Form,
   FormControl,
   FormDescription,
   FormField,
@@ -66,6 +65,11 @@ const createFormSchema = (settlementType: 'vacation' | 'exit') => {
     equipmentDeductions: z.number().min(0).default(0),
     otherDeductions: z.number().min(0).default(0),
     otherDeductionsDescription: z.string().optional(),
+    // Absent calculation fields
+    absentCalculationPeriod: z.enum(['last_month', 'unpaid_period', 'custom']).default('last_month'),
+    absentCalculationStartDate: z.string().optional(),
+    absentCalculationEndDate: z.string().optional(),
+    manualAbsentDays: z.number().min(0).default(0), // Manual absent days override
     notes: z.string().optional(),
   };
 
@@ -128,6 +132,10 @@ export function CreateFinalSettlementDialog({
       pendingAdvances: 0,
       equipmentDeductions: 0,
       otherDeductions: 0,
+      absentCalculationPeriod: 'last_month',
+      absentCalculationStartDate: '',
+      absentCalculationEndDate: '',
+      manualAbsentDays: 0,
       isResignation: false,
       accruedVacationDays: 0,
       lastWorkingDate: '',
@@ -141,6 +149,10 @@ export function CreateFinalSettlementDialog({
       pendingAdvances: 0,
       equipmentDeductions: 0,
       otherDeductions: 0,
+      absentCalculationPeriod: 'unpaid_period',
+      absentCalculationStartDate: '',
+      absentCalculationEndDate: '',
+      manualAbsentDays: 0,
       vacationStartDate: '',
       vacationEndDate: '',
       expectedReturnDate: '',
@@ -158,7 +170,7 @@ export function CreateFinalSettlementDialog({
         generatePreview();
       }
     }
-  }, [open, formValues.lastWorkingDate, formValues.isResignation, formValues.vacationStartDate, formValues.vacationEndDate, formValues.expectedReturnDate, formValues.manualUnpaidSalary, formValues.manualVacationAllowance]);
+  }, [open, formValues.lastWorkingDate, formValues.isResignation, formValues.vacationStartDate, formValues.vacationEndDate, formValues.expectedReturnDate, formValues.manualUnpaidSalary, formValues.manualVacationAllowance, formValues.absentCalculationPeriod, formValues.absentCalculationStartDate, formValues.absentCalculationEndDate, formValues.manualAbsentDays]);
 
   const generatePreview = async () => {
     try {
@@ -177,6 +189,10 @@ export function CreateFinalSettlementDialog({
           expectedReturnDate: formValues.expectedReturnDate,
           manualUnpaidSalary: formValues.manualUnpaidSalary || 0,
           manualVacationAllowance: formValues.manualVacationAllowance || 0,
+          absentCalculationPeriod: formValues.absentCalculationPeriod,
+          absentCalculationStartDate: formValues.absentCalculationStartDate,
+          absentCalculationEndDate: formValues.absentCalculationEndDate,
+          manualAbsentDays: formValues.manualAbsentDays || 0,
         };
       } else {
         if (!formValues.lastWorkingDate) return;
@@ -186,6 +202,10 @@ export function CreateFinalSettlementDialog({
           lastWorkingDate: formValues.lastWorkingDate,
           isResignation: formValues.isResignation,
           manualUnpaidSalary: formValues.manualUnpaidSalary || 0,
+          absentCalculationPeriod: formValues.absentCalculationPeriod,
+          absentCalculationStartDate: formValues.absentCalculationStartDate,
+          absentCalculationEndDate: formValues.absentCalculationEndDate,
+          manualAbsentDays: formValues.manualAbsentDays || 0,
         };
       }
 
@@ -276,7 +296,7 @@ export function CreateFinalSettlementDialog({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Form */}
           <div className="space-y-6">
-            <Form {...form}>
+            <div>
               <div className="space-y-4">
                 {/* Basic Information */}
                 <Card>
@@ -307,6 +327,94 @@ export function CreateFinalSettlementDialog({
                         </FormItem>
                       )}
                     />
+
+                    {/* Absent Calculation - Common for both types */}
+                    <Separator />
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        <h4 className="font-medium">Absent Calculation</h4>
+                      </div>
+                      
+                      <FormField
+                        control={form.control}
+                        name="absentCalculationPeriod"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Calculation Period</FormLabel>
+                            <FormControl>
+                              <select
+                                {...field}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              >
+                                <option value="last_month">Last Month</option>
+                                <option value="unpaid_period">Unpaid Period</option>
+                                <option value="custom">Custom Period</option>
+                              </select>
+                            </FormControl>
+                            <FormDescription>
+                              Choose the period for absent calculation
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {formValues.absentCalculationPeriod === 'custom' && (
+                        <>
+                          <FormField
+                            control={form.control}
+                            name="absentCalculationStartDate"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Start Date</FormLabel>
+                                <FormControl>
+                                  <Input type="date" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="absentCalculationEndDate"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>End Date</FormLabel>
+                                <FormControl>
+                                  <Input type="date" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </>
+                      )}
+
+                      <FormField
+                        control={form.control}
+                        name="manualAbsentDays"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Manual Absent Days</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="1"
+                                {...field}
+                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Override automatic absent calculation (leave 0 to use system calculation)
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
 
                     {settlementType === 'vacation' ? (
                       <>
@@ -605,7 +713,7 @@ export function CreateFinalSettlementDialog({
                   </CardContent>
                 </Card>
               </div>
-            </Form>
+            </div>
           </div>
 
           {/* Preview */}
@@ -631,13 +739,48 @@ export function CreateFinalSettlementDialog({
 
                     <Separator />
 
+                    {/* Absent Calculation Details */}
+                    {preview.absentCalculation && (
+                      <div>
+                        <h4 className="font-medium mb-2 text-orange-700">Absent Calculation</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>Calculation Period:</span>
+                            <span className="font-medium capitalize">{preview.absentCalculation.calculationPeriod.replace('_', ' ')}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Period:</span>
+                            <span className="font-medium">
+                              {preview.absentCalculation.startDate} to {preview.absentCalculation.endDate}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Absent Days:</span>
+                            <span className="font-medium">{preview.absentCalculation.absentDays}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Daily Rate:</span>
+                            <span className="font-medium">{formatCurrency(preview.absentCalculation.dailyRate)}</span>
+                          </div>
+                          <div className="flex justify-between text-red-600">
+                            <span>Absent Deduction:</span>
+                            <span className="font-medium">-{formatCurrency(preview.absentCalculation.absentDeduction)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <Separator />
+
                     {/* Financial Summary */}
                     <div>
                       <h4 className="font-medium mb-2">Financial Summary</h4>
                       <div className="space-y-2 text-sm">
                         {(unpaidSalaryInfo && unpaidSalaryInfo.unpaidAmount > 0) || formValues.manualUnpaidSalary > 0 ? (
                           <div className="flex justify-between">
-                            <span>Unpaid Salaries ({unpaidSalaryInfo?.unpaidMonths || 0} months):</span>
+                            <span>Unpaid Salaries ({formValues.manualUnpaidSalary > 0 && preview.employee?.basicSalary && preview.employee.basicSalary > 0
+                              ? (formValues.manualUnpaidSalary / preview.employee.basicSalary).toFixed(1)
+                              : (unpaidSalaryInfo?.unpaidMonths || 0)} months):</span>
                             <span className="font-medium">{formatCurrency(
                               formValues.manualUnpaidSalary > 0 
                                 ? formValues.manualUnpaidSalary 
@@ -697,7 +840,8 @@ export function CreateFinalSettlementDialog({
                           <span>-{formatCurrency(
                             (formValues.pendingAdvances || 0) +
                             (formValues.equipmentDeductions || 0) +
-                            (formValues.otherDeductions || 0)
+                            (formValues.otherDeductions || 0) +
+                            (preview.absentCalculation?.absentDeduction || 0)
                           )}</span>
                         </div>
                         <Separator />
@@ -712,7 +856,8 @@ export function CreateFinalSettlementDialog({
                               (formValues.otherBenefits || 0) -
                               (formValues.pendingAdvances || 0) -
                               (formValues.equipmentDeductions || 0) -
-                              (formValues.otherDeductions || 0)
+                              (formValues.otherDeductions || 0) -
+                              (preview.absentCalculation?.absentDeduction || 0)
                             ) : (
                               (formValues.manualUnpaidSalary > 0 ? formValues.manualUnpaidSalary : (unpaidSalaryInfo?.unpaidAmount || 0)) +
                               (preview.endOfServiceBenefit?.endOfServiceBenefit || 0) +
@@ -720,7 +865,8 @@ export function CreateFinalSettlementDialog({
                               (formValues.otherBenefits || 0) -
                               (formValues.pendingAdvances || 0) -
                               (formValues.equipmentDeductions || 0) -
-                              (formValues.otherDeductions || 0)
+                              (formValues.otherDeductions || 0) -
+                              (preview.absentCalculation?.absentDeduction || 0)
                             )
                           )}</span>
                         </div>

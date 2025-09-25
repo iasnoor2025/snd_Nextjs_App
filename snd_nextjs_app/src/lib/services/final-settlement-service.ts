@@ -3,9 +3,12 @@ import {
   employees, 
   payrolls, 
   finalSettlements,
-  employeeSalaries
+  employeeSalaries,
+  timesheets,
+  designations,
+  departments
 } from '@/lib/drizzle/schema';
-import { eq, desc, and, like } from 'drizzle-orm';
+import { eq, desc, and, like, gte, lte } from 'drizzle-orm';
 
 export interface UnpaidSalaryInfo {
   employeeId: number;
@@ -22,13 +25,27 @@ export interface EndOfServiceCalculation {
   totalServiceMonths: number;
   totalServiceDays: number;
   endOfServiceBenefit: number;
-  benefitCalculationMethod: 'resigned' | 'terminated';
+  benefitCalculationMethod: 'resigned' | 'terminated' | 'vacation';
   calculationDetails: {
     yearsForCalculation: number;
     monthsForCalculation: number;
     fullBenefitYears: number;
     halfBenefitYears: number;
     reductionPercentage: number;
+  };
+}
+
+export interface AbsentCalculation {
+  absentDays: number;
+  absentDeduction: number;
+  calculationPeriod: 'last_month' | 'unpaid_period' | 'custom';
+  startDate?: string;
+  endDate?: string;
+  dailyRate: number;
+  calculationDetails: {
+    totalDaysInPeriod: number;
+    workingDaysInPeriod: number;
+    absentDates: string[];
   };
 }
 
@@ -60,6 +77,7 @@ export interface FinalSettlementData {
   };
   salaryInfo: UnpaidSalaryInfo;
   endOfServiceBenefit: EndOfServiceCalculation;
+  absentCalculation: AbsentCalculation;
   finalCalculation: {
     grossAmount: number;
     totalDeductions: number;
@@ -73,6 +91,7 @@ export interface FinalSettlementData {
       pendingAdvances: number;
       equipmentDeductions: number;
       otherDeductions: number;
+      absentDeduction: number;
     };
   };
 }
@@ -303,10 +322,14 @@ export class FinalSettlementService {
       equipmentDeductions?: number;
       otherDeductions?: number;
       otherDeductionsDescription?: string;
+      absentCalculationPeriod?: 'last_month' | 'unpaid_period' | 'custom';
+      absentCalculationStartDate?: string;
+      absentCalculationEndDate?: string;
+      manualAbsentDays?: number;
     }
   ): Promise<FinalSettlementData> {
     try {
-      // Get employee details
+      // Get employee details with department and designation names
       const employeeData = await db
         .select({
           id: employees.id,
@@ -317,10 +340,12 @@ export class FinalSettlementService {
           nationality: employees.nationality,
           hireDate: employees.hireDate,
           basicSalary: employees.basicSalary,
-          departmentName: employees.departmentId,
-          designationName: employees.designationId,
+          departmentName: departments.name,
+          designationName: designations.name,
         })
         .from(employees)
+        .leftJoin(departments, eq(employees.departmentId, departments.id))
+        .leftJoin(designations, eq(employees.designationId, designations.id))
         .where(eq(employees.id, employeeId))
         .limit(1);
 
@@ -383,6 +408,21 @@ export class FinalSettlementService {
         },
       };
 
+      // Calculate absent days and deduction
+      const absentCalculation = await this.calculateAbsentDays(
+        employeeId,
+        additionalData?.absentCalculationPeriod || 'last_month',
+        additionalData?.absentCalculationStartDate,
+        additionalData?.absentCalculationEndDate,
+        currentBasicSalary
+      );
+
+      // Override absent days if manual value is provided
+      if (additionalData?.manualAbsentDays && additionalData.manualAbsentDays > 0) {
+        absentCalculation.absentDays = additionalData.manualAbsentDays;
+        absentCalculation.absentDeduction = additionalData.manualAbsentDays * absentCalculation.dailyRate;
+      }
+
       // Calculate final amounts
       const unpaidSalaries = salaryInfo.unpaidAmount;
       const otherBenefits = additionalData?.otherBenefits || 0;
@@ -392,7 +432,8 @@ export class FinalSettlementService {
       const pendingAdvances = additionalData?.pendingAdvances || 0;
       const equipmentDeductions = additionalData?.equipmentDeductions || 0;
       const otherDeductions = additionalData?.otherDeductions || 0;
-      const totalDeductions = pendingAdvances + equipmentDeductions + otherDeductions;
+      const absentDeduction = absentCalculation.absentDeduction;
+      const totalDeductions = pendingAdvances + equipmentDeductions + otherDeductions + absentDeduction;
 
       const netAmount = grossAmount - totalDeductions;
 
@@ -400,12 +441,12 @@ export class FinalSettlementService {
         settlementType: 'vacation',
         employee: {
           id: emp.id,
-          name: `${emp.firstName} ${emp.lastName}`,
-          fileNumber: emp.fileNumber,
-          iqamaNumber: emp.iqamaNumber,
-          nationality: emp.nationality,
-          designation: emp.designationName?.toString(),
-          department: emp.departmentName?.toString(),
+          name: `${emp.firstName || ''} ${emp.lastName || ''}`,
+          fileNumber: emp.fileNumber || undefined,
+          iqamaNumber: emp.iqamaNumber || undefined,
+          nationality: emp.nationality || undefined,
+          designation: emp.designationName || undefined,
+          department: emp.departmentName || undefined,
           hireDate: emp.hireDate!,
           basicSalary: currentBasicSalary,
         },
@@ -424,6 +465,7 @@ export class FinalSettlementService {
         },
         salaryInfo,
         endOfServiceBenefit,
+        absentCalculation,
         finalCalculation: {
           grossAmount: Math.round(grossAmount * 100) / 100,
           totalDeductions: Math.round(totalDeductions * 100) / 100,
@@ -437,6 +479,7 @@ export class FinalSettlementService {
             pendingAdvances: Math.round(pendingAdvances * 100) / 100,
             equipmentDeductions: Math.round(equipmentDeductions * 100) / 100,
             otherDeductions: Math.round(otherDeductions * 100) / 100,
+            absentDeduction: Math.round(absentDeduction * 100) / 100,
           },
         },
       };
@@ -462,10 +505,14 @@ export class FinalSettlementService {
       equipmentDeductions?: number;
       otherDeductions?: number;
       otherDeductionsDescription?: string;
+      absentCalculationPeriod?: 'last_month' | 'unpaid_period' | 'custom';
+      absentCalculationStartDate?: string;
+      absentCalculationEndDate?: string;
+      manualAbsentDays?: number;
     }
   ): Promise<FinalSettlementData> {
     try {
-      // Get employee details
+      // Get employee details with department and designation names
       const employeeData = await db
         .select({
           id: employees.id,
@@ -476,10 +523,12 @@ export class FinalSettlementService {
           nationality: employees.nationality,
           hireDate: employees.hireDate,
           basicSalary: employees.basicSalary,
-          departmentName: employees.departmentId,
-          designationName: employees.designationId,
+          departmentName: departments.name,
+          designationName: designations.name,
         })
         .from(employees)
+        .leftJoin(departments, eq(employees.departmentId, departments.id))
+        .leftJoin(designations, eq(employees.designationId, designations.id))
         .where(eq(employees.id, employeeId))
         .limit(1);
 
@@ -534,6 +583,21 @@ export class FinalSettlementService {
       const dailyRate = currentBasicSalary / 30;
       const accruedVacationAmount = accruedVacationDays * dailyRate;
 
+      // Calculate absent days and deduction
+      const absentCalculation = await this.calculateAbsentDays(
+        employeeId,
+        additionalData?.absentCalculationPeriod || 'unpaid_period',
+        additionalData?.absentCalculationStartDate,
+        additionalData?.absentCalculationEndDate,
+        currentBasicSalary
+      );
+
+      // Override absent days if manual value is provided
+      if (additionalData?.manualAbsentDays && additionalData.manualAbsentDays > 0) {
+        absentCalculation.absentDays = additionalData.manualAbsentDays;
+        absentCalculation.absentDeduction = additionalData.manualAbsentDays * absentCalculation.dailyRate;
+      }
+
       // Calculate final amounts
       const unpaidSalaries = salaryInfo.unpaidAmount;
       const endOfServiceAmount = endOfServiceBenefit.endOfServiceBenefit;
@@ -544,7 +608,8 @@ export class FinalSettlementService {
       const pendingAdvances = additionalData?.pendingAdvances || 0;
       const equipmentDeductions = additionalData?.equipmentDeductions || 0;
       const otherDeductions = additionalData?.otherDeductions || 0;
-      const totalDeductions = pendingAdvances + equipmentDeductions + otherDeductions;
+      const absentDeduction = absentCalculation.absentDeduction;
+      const totalDeductions = pendingAdvances + equipmentDeductions + otherDeductions + absentDeduction;
 
       const netAmount = grossAmount - totalDeductions;
 
@@ -552,12 +617,12 @@ export class FinalSettlementService {
         settlementType: 'exit',
         employee: {
           id: emp.id,
-          name: `${emp.firstName} ${emp.lastName}`,
-          fileNumber: emp.fileNumber,
-          iqamaNumber: emp.iqamaNumber,
-          nationality: emp.nationality,
-          designation: emp.designationName?.toString(),
-          department: emp.departmentName?.toString(),
+          name: `${emp.firstName || ''} ${emp.lastName || ''}`,
+          fileNumber: emp.fileNumber || undefined,
+          iqamaNumber: emp.iqamaNumber || undefined,
+          nationality: emp.nationality || undefined,
+          designation: emp.designationName || undefined,
+          department: emp.departmentName || undefined,
           hireDate: emp.hireDate!,
           basicSalary: currentBasicSalary,
         },
@@ -569,6 +634,7 @@ export class FinalSettlementService {
         },
         salaryInfo,
         endOfServiceBenefit,
+        absentCalculation,
         finalCalculation: {
           grossAmount: Math.round(grossAmount * 100) / 100,
           totalDeductions: Math.round(totalDeductions * 100) / 100,
@@ -582,6 +648,7 @@ export class FinalSettlementService {
               pendingAdvances: Math.round(pendingAdvances * 100) / 100,
               equipmentDeductions: Math.round(equipmentDeductions * 100) / 100,
               otherDeductions: Math.round(otherDeductions * 100) / 100,
+              absentDeduction: Math.round(absentDeduction * 100) / 100,
             },
         },
       };
@@ -677,6 +744,14 @@ export class FinalSettlementService {
           equipmentDeductions: settlementData.finalCalculation.breakdown.equipmentDeductions.toString(),
           otherDeductions: settlementData.finalCalculation.breakdown.otherDeductions.toString(),
           otherDeductionsDescription: additionalData?.otherDeductionsDescription || null,
+          
+          // Absent Calculation
+          absentDays: settlementData.absentCalculation.absentDays,
+          absentDeduction: settlementData.absentCalculation.absentDeduction.toString(),
+          absentCalculationPeriod: settlementData.absentCalculation.calculationPeriod,
+          absentCalculationStartDate: settlementData.absentCalculation.startDate || null,
+          absentCalculationEndDate: settlementData.absentCalculation.endDate || null,
+          
           grossAmount: settlementData.finalCalculation.grossAmount.toString(),
           totalDeductions: settlementData.finalCalculation.totalDeductions.toString(),
           netAmount: settlementData.finalCalculation.netAmount.toString(),
@@ -692,6 +767,165 @@ export class FinalSettlementService {
       return newSettlement[0];
     } catch (error) {
       console.error('Error creating final settlement:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Calculate absent days and deduction for an employee
+   */
+  static async calculateAbsentDays(
+    employeeId: number,
+    calculationPeriod: 'last_month' | 'unpaid_period' | 'custom',
+    startDate?: string,
+    endDate?: string,
+    basicSalary?: number
+  ): Promise<AbsentCalculation> {
+    try {
+      let periodStart: Date;
+      let periodEnd: Date;
+
+      // Determine calculation period
+      if (calculationPeriod === 'last_month') {
+        const lastMonth = new Date();
+        lastMonth.setMonth(lastMonth.getMonth() - 1);
+        periodStart = new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 1);
+        periodEnd = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0);
+      } else if (calculationPeriod === 'unpaid_period') {
+        const unpaidInfo = await this.getUnpaidSalaryInfo(employeeId);
+        const lastPaidDate = unpaidInfo.lastPaidDate ? new Date(unpaidInfo.lastPaidDate) : new Date();
+        periodStart = new Date(lastPaidDate.getFullYear(), lastPaidDate.getMonth() + 1, 1);
+        periodEnd = new Date();
+      } else if (calculationPeriod === 'custom' && startDate && endDate) {
+        periodStart = new Date(startDate);
+        periodEnd = new Date(endDate);
+      } else {
+        // Default to last month if custom dates are not provided
+        const lastMonth = new Date();
+        lastMonth.setMonth(lastMonth.getMonth() - 1);
+        periodStart = new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 1);
+        periodEnd = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0);
+      }
+
+      // Get employee's basic salary if not provided
+      let currentBasicSalary = basicSalary;
+      if (!currentBasicSalary) {
+        const latestSalary = await db
+          .select({
+            basicSalary: employeeSalaries.basicSalary,
+          })
+          .from(employeeSalaries)
+          .where(eq(employeeSalaries.employeeId, employeeId))
+          .orderBy(desc(employeeSalaries.effectiveDate))
+          .limit(1);
+        
+        currentBasicSalary = latestSalary.length > 0 
+          ? parseFloat(latestSalary[0]!.basicSalary) 
+          : 0;
+      }
+
+      // Get timesheets for the period
+      const timesheetData = await db
+        .select({
+          date: timesheets.date,
+          hoursWorked: timesheets.hoursWorked,
+          overtimeHours: timesheets.overtimeHours,
+          status: timesheets.status,
+        })
+        .from(timesheets)
+        .where(
+          and(
+            eq(timesheets.employeeId, employeeId),
+            gte(timesheets.date, periodStart.toISOString().split('T')[0]),
+            lte(timesheets.date, periodEnd.toISOString().split('T')[0])
+          )
+        )
+        .orderBy(timesheets.date);
+
+      // Create a map of timesheet data by date
+      const timesheetMap = new Map();
+      timesheetData.forEach(ts => {
+        timesheetMap.set(ts.date, {
+          hours: parseFloat(ts.hoursWorked),
+          overtime: parseFloat(ts.overtimeHours),
+          status: ts.status,
+        });
+      });
+
+      // Calculate absent days using the same logic as payroll
+      let absentDays = 0;
+      const absentDates: string[] = [];
+      const totalDaysInPeriod = Math.ceil((periodEnd.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+      for (let day = 0; day < totalDaysInPeriod; day++) {
+        const currentDate = new Date(periodStart);
+        currentDate.setDate(periodStart.getDate() + day);
+        
+        // Skip if date is beyond period end
+        if (currentDate > periodEnd) break;
+
+        const dateString = currentDate.toISOString().split('T')[0];
+        const dayOfWeek = currentDate.getDay();
+        const isFriday = dayOfWeek === 5; // Friday is day 5
+
+        const dayData = timesheetMap.get(dateString);
+        const hasHoursWorked = dayData && (dayData.hours > 0 || dayData.overtime > 0);
+
+        if (isFriday) {
+          // Special logic for Fridays
+          if (hasHoursWorked) {
+            // Friday has hours worked - count as present
+            continue;
+          } else {
+            // Friday has no hours - check if Thursday and Saturday are also absent
+            const thursdayDate = new Date(currentDate);
+            thursdayDate.setDate(currentDate.getDate() - 1);
+            const saturdayDate = new Date(currentDate);
+            saturdayDate.setDate(currentDate.getDate() + 1);
+
+            const thursdayString = thursdayDate.toISOString().split('T')[0];
+            const saturdayString = saturdayDate.toISOString().split('T')[0];
+
+            const thursdayData = timesheetMap.get(thursdayString);
+            const saturdayData = timesheetMap.get(saturdayString);
+
+            const thursdayAbsent = !thursdayData || (thursdayData.hours === 0 && thursdayData.overtime === 0);
+            const saturdayAbsent = !saturdayData || (saturdayData.hours === 0 && saturdayData.overtime === 0);
+
+            // Count Friday as absent only if Thursday and Saturday are also absent
+            if (thursdayAbsent && saturdayAbsent) {
+              absentDays++;
+              absentDates.push(dateString);
+            }
+          }
+        } else {
+          // Non-Friday days - count as absent if no hours worked
+          if (!hasHoursWorked) {
+            absentDays++;
+            absentDates.push(dateString);
+          }
+        }
+      }
+
+      // Calculate daily rate and deduction
+      const dailyRate = currentBasicSalary / 30; // Standard 30-day month
+      const absentDeduction = absentDays * dailyRate;
+
+      return {
+        absentDays,
+        absentDeduction,
+        calculationPeriod,
+        startDate: periodStart.toISOString().split('T')[0],
+        endDate: periodEnd.toISOString().split('T')[0],
+        dailyRate,
+        calculationDetails: {
+          totalDaysInPeriod,
+          workingDaysInPeriod: totalDaysInPeriod - absentDays,
+          absentDates,
+        },
+      };
+    } catch (error) {
+      console.error('Error calculating absent days:', error);
       throw error;
     }
   }

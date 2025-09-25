@@ -30,6 +30,12 @@ export interface SettlementPDFData {
   equipmentDeductions: number;
   otherDeductions: number;
   otherDeductionsDescription?: string;
+  // Absent calculation fields
+  absentDays: number;
+  absentDeduction: number;
+  absentCalculationPeriod: string;
+  absentCalculationStartDate?: string;
+  absentCalculationEndDate?: string;
   grossAmount: number;
   totalDeductions: number;
   netAmount: number;
@@ -43,6 +49,27 @@ export interface SettlementPDFData {
 }
 
 export class FinalSettlementPDFService {
+  /**
+   * Format currency value with proper Saudi Riyal formatting
+   */
+  private static formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('en-SA', {
+      style: 'currency',
+      currency: 'SAR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  }
+
+  /**
+   * Format currency value without currency symbol (for PDF tables)
+   */
+  private static formatAmount(amount: number): string {
+    return new Intl.NumberFormat('en-SA', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  }
   /**
    * Generate PDF document for final settlement
    */
@@ -169,16 +196,21 @@ export class FinalSettlementPDFService {
             color: #333;
         }
         .header {
-            text-align: center;
             border-bottom: 3px solid #2563eb;
             padding-bottom: 20px;
             margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
         }
         .logo {
             width: 80px;
             height: 80px;
-            margin: 0 auto 15px auto;
-            display: block;
+            flex-shrink: 0;
+        }
+        .header-content {
+            flex: 1;
+            text-align: center;
         }
         .company-name {
             font-size: 24px;
@@ -288,13 +320,13 @@ export class FinalSettlementPDFService {
 </head>
 <body>
     <div class="header">
-        <img src="file://${path.join(process.cwd(), 'public', 'snd-logo.png')}" alt="Company Logo" class="logo" />
-        <div class="company-name">${data.companyName || 'Samhan Naser Al-Dosari Est'}</div>
-        <div>${data.companyAddress || 'Kingdom of Saudi Arabia'}</div>
-        <div>Phone: ${data.companyPhone || 'N/A'} | Email: ${data.companyEmail || 'N/A'}</div>
-        <div class="document-title">FINAL SETTLEMENT CERTIFICATE</div>
-        <div class="settlement-number">Settlement No: ${data.settlementNumber}</div>
-        <div>Date: ${formatDate(data.preparedAt)}</div>
+        <img src="/snd-logo.png" alt="Company Logo" class="logo" />
+        <div class="header-content">
+            <div class="company-name">Samhan Naser Al-Dosari Est</div>
+            <div class="document-title">FINAL SETTLEMENT CERTIFICATE</div>
+            <div class="settlement-number">Settlement No: ${data.settlementNumber}</div>
+            <div>Date: ${formatDate(data.preparedAt)}</div>
+        </div>
     </div>
 
     <div class="section">
@@ -388,57 +420,63 @@ export class FinalSettlementPDFService {
                 ${data.unpaidSalaryAmount > 0 ? `
                 <tr>
                     <td>Unpaid Salaries (${data.unpaidSalaryMonths} months)</td>
-                    <td class="amount">${data.unpaidSalaryAmount.toFixed(2)}</td>
+                    <td class="amount">${this.formatAmount(data.unpaidSalaryAmount)}</td>
                 </tr>
                 ` : ''}
                 <tr>
                     <td>${data.settlementType === 'vacation' ? 'Vacation Allowance' : 'End of Service Benefits'}</td>
-                    <td class="amount">${data.endOfServiceBenefit.toFixed(2)}</td>
+                    <td class="amount">${this.formatAmount(data.endOfServiceBenefit)}</td>
                 </tr>
                 ${data.accruedVacationAmount > 0 ? `
                 <tr>
                     <td>Accrued Vacation (${data.accruedVacationDays} days)</td>
-                    <td class="amount">${data.accruedVacationAmount.toFixed(2)}</td>
+                    <td class="amount">${this.formatAmount(data.accruedVacationAmount)}</td>
                 </tr>
                 ` : ''}
                 ${data.otherBenefits > 0 ? `
                 <tr>
                     <td>Other Benefits ${data.otherBenefitsDescription ? `(${data.otherBenefitsDescription})` : ''}</td>
-                    <td class="amount">${data.otherBenefits.toFixed(2)}</td>
+                    <td class="amount">${this.formatAmount(data.otherBenefits)}</td>
                 </tr>
                 ` : ''}
                 <tr class="total-row">
                     <td><strong>Gross Amount</strong></td>
-                    <td class="amount"><strong>${data.grossAmount.toFixed(2)}</strong></td>
+                    <td class="amount"><strong>${this.formatAmount(data.grossAmount)}</strong></td>
                 </tr>
                 ${data.totalDeductions > 0 ? `
                 <tr><td colspan="2"><strong>Deductions:</strong></td></tr>
                 ${data.pendingAdvances > 0 ? `
                 <tr>
                     <td>Pending Advances</td>
-                    <td class="amount">(${data.pendingAdvances.toFixed(2)})</td>
+                    <td class="amount">(${this.formatAmount(data.pendingAdvances)})</td>
                 </tr>
                 ` : ''}
                 ${data.equipmentDeductions > 0 ? `
                 <tr>
                     <td>Equipment Deductions</td>
-                    <td class="amount">(${data.equipmentDeductions.toFixed(2)})</td>
+                    <td class="amount">(${this.formatAmount(data.equipmentDeductions)})</td>
                 </tr>
                 ` : ''}
                 ${data.otherDeductions > 0 ? `
                 <tr>
                     <td>Other Deductions ${data.otherDeductionsDescription ? `(${data.otherDeductionsDescription})` : ''}</td>
-                    <td class="amount">(${data.otherDeductions.toFixed(2)})</td>
+                    <td class="amount">(${this.formatAmount(data.otherDeductions)})</td>
+                </tr>
+                ` : ''}
+                ${data.absentDeduction > 0 ? `
+                <tr>
+                    <td>Absent Deduction (${data.absentDays} days)</td>
+                    <td class="amount">(${this.formatAmount(data.absentDeduction)})</td>
                 </tr>
                 ` : ''}
                 <tr class="total-row">
                     <td><strong>Total Deductions</strong></td>
-                    <td class="amount"><strong>(${data.totalDeductions.toFixed(2)})</strong></td>
+                    <td class="amount"><strong>(${this.formatAmount(data.totalDeductions)})</strong></td>
                 </tr>
                 ` : ''}
                 <tr class="net-amount">
                     <td><strong>NET SETTLEMENT AMOUNT</strong></td>
-                    <td class="amount"><strong>${data.netAmount.toFixed(2)}</strong></td>
+                    <td class="amount"><strong>${this.formatAmount(data.netAmount)}</strong></td>
                 </tr>
             </tbody>
         </table>
@@ -505,16 +543,21 @@ export class FinalSettlementPDFService {
             text-align: right;
         }
         .header {
-            text-align: center;
             border-bottom: 3px solid #2563eb;
             padding-bottom: 20px;
             margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
         }
         .logo {
             width: 80px;
             height: 80px;
-            margin: 0 auto 15px auto;
-            display: block;
+            flex-shrink: 0;
+        }
+        .header-content {
+            flex: 1;
+            text-align: center;
         }
         .company-name {
             font-size: 24px;
@@ -625,12 +668,14 @@ export class FinalSettlementPDFService {
 <body>
     <div class="header">
         <img src="file://${path.join(process.cwd(), 'public', 'snd-logo.png')}" alt="Company Logo" class="logo" />
-        <div class="company-name">${data.companyName || 'مؤسسة سمحان ناصر الدوسري'}</div>
-        <div>${data.companyAddress || 'المملكة العربية السعودية'}</div>
-        <div>الهاتف: ${data.companyPhone || 'غير متوفر'} | البريد الإلكتروني: ${data.companyEmail || 'غير متوفر'}</div>
-        <div class="document-title">شهادة التسوية النهائية</div>
-        <div class="settlement-number">رقم التسوية: ${data.settlementNumber}</div>
-        <div>التاريخ: ${formatDate(data.preparedAt)}</div>
+        <div class="header-content">
+            <div class="company-name">${data.companyName || 'مؤسسة سمحان ناصر الدوسري'}</div>
+            <div>${data.companyAddress || 'المملكة العربية السعودية'}</div>
+            <div>الهاتف: ${data.companyPhone || 'غير متوفر'} | البريد الإلكتروني: ${data.companyEmail || 'غير متوفر'}</div>
+            <div class="document-title">شهادة التسوية النهائية</div>
+            <div class="settlement-number">رقم التسوية: ${data.settlementNumber}</div>
+            <div>التاريخ: ${formatDate(data.preparedAt)}</div>
+        </div>
     </div>
 
     <div class="section">
@@ -724,57 +769,57 @@ export class FinalSettlementPDFService {
                 ${data.unpaidSalaryAmount > 0 ? `
                 <tr>
                     <td>الرواتب غير المدفوعة (${data.unpaidSalaryMonths} شهر)</td>
-                    <td class="amount">${data.unpaidSalaryAmount.toFixed(2)}</td>
+                    <td class="amount">${this.formatAmount(data.unpaidSalaryAmount)}</td>
                 </tr>
                 ` : ''}
                 <tr>
                     <td>مكافأة نهاية الخدمة</td>
-                    <td class="amount">${data.endOfServiceBenefit.toFixed(2)}</td>
+                    <td class="amount">${this.formatAmount(data.endOfServiceBenefit)}</td>
                 </tr>
                 ${data.accruedVacationAmount > 0 ? `
                 <tr>
                     <td>رصيد الإجازات (${data.accruedVacationDays} يوم)</td>
-                    <td class="amount">${data.accruedVacationAmount.toFixed(2)}</td>
+                    <td class="amount">${this.formatAmount(data.accruedVacationAmount)}</td>
                 </tr>
                 ` : ''}
                 ${data.otherBenefits > 0 ? `
                 <tr>
                     <td>مزايا أخرى ${data.otherBenefitsDescription ? `(${data.otherBenefitsDescription})` : ''}</td>
-                    <td class="amount">${data.otherBenefits.toFixed(2)}</td>
+                    <td class="amount">${this.formatAmount(data.otherBenefits)}</td>
                 </tr>
                 ` : ''}
                 <tr class="total-row">
                     <td><strong>إجمالي المستحقات</strong></td>
-                    <td class="amount"><strong>${data.grossAmount.toFixed(2)}</strong></td>
+                    <td class="amount"><strong>${this.formatAmount(data.grossAmount)}</strong></td>
                 </tr>
                 ${data.totalDeductions > 0 ? `
                 <tr><td colspan="2"><strong>الخصومات:</strong></td></tr>
                 ${data.pendingAdvances > 0 ? `
                 <tr>
                     <td>السلف المعلقة</td>
-                    <td class="amount">(${data.pendingAdvances.toFixed(2)})</td>
+                    <td class="amount">(${this.formatAmount(data.pendingAdvances)})</td>
                 </tr>
                 ` : ''}
                 ${data.equipmentDeductions > 0 ? `
                 <tr>
                     <td>خصومات المعدات</td>
-                    <td class="amount">(${data.equipmentDeductions.toFixed(2)})</td>
+                    <td class="amount">(${this.formatAmount(data.equipmentDeductions)})</td>
                 </tr>
                 ` : ''}
                 ${data.otherDeductions > 0 ? `
                 <tr>
                     <td>خصومات أخرى ${data.otherDeductionsDescription ? `(${data.otherDeductionsDescription})` : ''}</td>
-                    <td class="amount">(${data.otherDeductions.toFixed(2)})</td>
+                    <td class="amount">(${this.formatAmount(data.otherDeductions)})</td>
                 </tr>
                 ` : ''}
                 <tr class="total-row">
                     <td><strong>إجمالي الخصومات</strong></td>
-                    <td class="amount"><strong>(${data.totalDeductions.toFixed(2)})</strong></td>
+                    <td class="amount"><strong>(${this.formatAmount(data.totalDeductions)})</strong></td>
                 </tr>
                 ` : ''}
                 <tr class="net-amount">
                     <td><strong>صافي مبلغ التسوية</strong></td>
-                    <td class="amount"><strong>${data.netAmount.toFixed(2)}</strong></td>
+                    <td class="amount"><strong>${this.formatAmount(data.netAmount)}</strong></td>
                 </tr>
             </tbody>
         </table>
@@ -842,16 +887,21 @@ export class FinalSettlementPDFService {
             font-size: 12px;
         }
         .bilingual-header {
-            text-align: center;
             border-bottom: 3px solid #2563eb;
             padding-bottom: 15px;
             margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
         .logo {
             width: 60px;
             height: 60px;
-            margin: 0 auto 10px auto;
-            display: block;
+            flex-shrink: 0;
+        }
+        .header-content {
+            flex: 1;
+            text-align: center;
         }
         .company-name {
             font-size: 18px;
@@ -975,17 +1025,19 @@ export class FinalSettlementPDFService {
 <body>
     <div class="bilingual-header">
         <img src="file://${path.join(process.cwd(), 'public', 'snd-logo.png')}" alt="Company Logo" class="logo" />
-        <div class="company-name">
-            Samhan Naser Al-Dosari Est<br>
-            مؤسسة سمحان ناصر الدوسري
+        <div class="header-content">
+            <div class="company-name">
+                Samhan Naser Al-Dosari Est<br>
+                مؤسسة سمحان ناصر الدوسري
+            </div>
+            <div>Kingdom of Saudi Arabia | المملكة العربية السعودية</div>
+            <div class="document-title">
+                FINAL SETTLEMENT CERTIFICATE<br>
+                شهادة التسوية النهائية
+            </div>
+            <div class="settlement-number">Settlement No / رقم التسوية: ${data.settlementNumber}</div>
+            <div>Date / التاريخ: ${formatDate(data.preparedAt)} | ${formatDateAr(data.preparedAt)}</div>
         </div>
-        <div>Kingdom of Saudi Arabia | المملكة العربية السعودية</div>
-        <div class="document-title">
-            FINAL SETTLEMENT CERTIFICATE<br>
-            شهادة التسوية النهائية
-        </div>
-        <div class="settlement-number">Settlement No / رقم التسوية: ${data.settlementNumber}</div>
-        <div>Date / التاريخ: ${formatDate(data.preparedAt)} | ${formatDateAr(data.preparedAt)}</div>
     </div>
 
     <div class="bilingual-section">
@@ -1111,65 +1163,72 @@ export class FinalSettlementPDFService {
             <tr>
                 <td class="en-col">Unpaid Salaries (${data.unpaidSalaryMonths} months)</td>
                 <td class="ar-col">الرواتب غير المدفوعة (${data.unpaidSalaryMonths} شهر)</td>
-                <td class="amount-col">${data.unpaidSalaryAmount.toFixed(2)}</td>
+                <td class="amount-col">${this.formatAmount(data.unpaidSalaryAmount)}</td>
             </tr>
             ` : ''}
             <tr>
                 <td class="en-col">${data.settlementType === 'vacation' ? 'Vacation Allowance' : 'End of Service Benefits'}</td>
                 <td class="ar-col">${data.settlementType === 'vacation' ? 'بدل إجازة' : 'مكافأة نهاية الخدمة'}</td>
-                <td class="amount-col">${data.endOfServiceBenefit.toFixed(2)}</td>
+                <td class="amount-col">${this.formatAmount(data.endOfServiceBenefit)}</td>
             </tr>
             ${data.accruedVacationAmount > 0 ? `
             <tr>
                 <td class="en-col">Accrued Vacation (${data.accruedVacationDays} days)</td>
                 <td class="ar-col">رصيد الإجازات (${data.accruedVacationDays} يوم)</td>
-                <td class="amount-col">${data.accruedVacationAmount.toFixed(2)}</td>
+                <td class="amount-col">${this.formatAmount(data.accruedVacationAmount)}</td>
             </tr>
             ` : ''}
             ${data.otherBenefits > 0 ? `
             <tr>
                 <td class="en-col">Other Benefits</td>
                 <td class="ar-col">مزايا أخرى</td>
-                <td class="amount-col">${data.otherBenefits.toFixed(2)}</td>
+                <td class="amount-col">${this.formatAmount(data.otherBenefits)}</td>
             </tr>
             ` : ''}
             <tr class="total-row">
                 <td class="en-col"><strong>Gross Amount</strong></td>
                 <td class="ar-col"><strong>إجمالي المستحقات</strong></td>
-                <td class="amount-col"><strong>${data.grossAmount.toFixed(2)}</strong></td>
+                <td class="amount-col"><strong>${this.formatAmount(data.grossAmount)}</strong></td>
             </tr>
             ${data.totalDeductions > 0 ? `
             ${data.pendingAdvances > 0 ? `
             <tr>
                 <td class="en-col">Pending Advances</td>
                 <td class="ar-col">السلف المعلقة</td>
-                <td class="amount-col">(${data.pendingAdvances.toFixed(2)})</td>
+                <td class="amount-col">(${this.formatAmount(data.pendingAdvances)})</td>
             </tr>
             ` : ''}
             ${data.equipmentDeductions > 0 ? `
             <tr>
                 <td class="en-col">Equipment Deductions</td>
                 <td class="ar-col">خصومات المعدات</td>
-                <td class="amount-col">(${data.equipmentDeductions.toFixed(2)})</td>
+                <td class="amount-col">(${this.formatAmount(data.equipmentDeductions)})</td>
             </tr>
             ` : ''}
             ${data.otherDeductions > 0 ? `
             <tr>
                 <td class="en-col">Other Deductions</td>
                 <td class="ar-col">خصومات أخرى</td>
-                <td class="amount-col">(${data.otherDeductions.toFixed(2)})</td>
+                <td class="amount-col">(${this.formatAmount(data.otherDeductions)})</td>
+            </tr>
+            ` : ''}
+            ${data.absentDeduction > 0 ? `
+            <tr>
+                <td class="en-col">Absent Deduction (${data.absentDays} days)</td>
+                <td class="ar-col">خصم الغياب (${data.absentDays} أيام)</td>
+                <td class="amount-col">(${this.formatAmount(data.absentDeduction)})</td>
             </tr>
             ` : ''}
             <tr class="total-row">
                 <td class="en-col"><strong>Total Deductions</strong></td>
                 <td class="ar-col"><strong>إجمالي الخصومات</strong></td>
-                <td class="amount-col"><strong>(${data.totalDeductions.toFixed(2)})</strong></td>
+                <td class="amount-col"><strong>(${this.formatAmount(data.totalDeductions)})</strong></td>
             </tr>
             ` : ''}
             <tr class="net-amount">
                 <td class="en-col"><strong>NET SETTLEMENT AMOUNT</strong></td>
                 <td class="ar-col"><strong>صافي مبلغ التسوية</strong></td>
-                <td class="amount-col"><strong>${data.netAmount.toFixed(2)}</strong></td>
+                <td class="amount-col"><strong>${this.formatAmount(data.netAmount)}</strong></td>
             </tr>
         </tbody>
     </table>

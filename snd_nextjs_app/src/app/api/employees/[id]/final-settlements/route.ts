@@ -118,6 +118,11 @@ export async function POST(
       equipmentDeductions = 0,
       otherDeductions = 0,
       otherDeductionsDescription,
+      // Absent calculation fields
+      absentCalculationPeriod = 'last_month',
+      absentCalculationStartDate,
+      absentCalculationEndDate,
+      manualAbsentDays = 0,
       notes,
     } = body;
 
@@ -157,6 +162,10 @@ export async function POST(
             equipmentDeductions,
             otherDeductions,
             otherDeductionsDescription,
+            absentCalculationPeriod,
+            absentCalculationStartDate,
+            absentCalculationEndDate,
+            manualAbsentDays,
           }
         );
     } else {
@@ -179,6 +188,10 @@ export async function POST(
           equipmentDeductions,
           otherDeductions,
           otherDeductionsDescription,
+          absentCalculationPeriod,
+          absentCalculationStartDate,
+          absentCalculationEndDate,
+          manualAbsentDays,
         }
       );
     }

@@ -945,6 +945,13 @@ export const finalSettlements = pgTable(
     otherDeductions: numeric('other_deductions', { precision: 10, scale: 2 }).default('0'),
     otherDeductionsDescription: text('other_deductions_description'),
     
+    // Absent Calculation
+    absentDays: integer('absent_days').default(0),
+    absentDeduction: numeric('absent_deduction', { precision: 10, scale: 2 }).default('0'),
+    absentCalculationPeriod: text('absent_calculation_period'), // 'last_month', 'unpaid_period', 'custom'
+    absentCalculationStartDate: date('absent_calculation_start_date'),
+    absentCalculationEndDate: date('absent_calculation_end_date'),
+    
     // Final Settlement
     grossAmount: numeric('gross_amount', { precision: 10, scale: 2 }).notNull(),
     totalDeductions: numeric('total_deductions', { precision: 10, scale: 2 }).notNull(),

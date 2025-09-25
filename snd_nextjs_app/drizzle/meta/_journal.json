@@ -190,6 +190,13 @@
       "when": 1758784237882,
       "tag": "0026_slimy_cable",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1758791554605,
+      "tag": "0027_exotic_sphinx",
+      "breakpoints": true
     }
   ]
 }

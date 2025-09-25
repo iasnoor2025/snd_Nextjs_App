@@ -22,6 +22,10 @@ export async function POST(request: NextRequest) {
       expectedReturnDate,
       manualUnpaidSalary = 0,
       manualVacationAllowance = 0,
+      absentCalculationPeriod = 'last_month',
+      absentCalculationStartDate,
+      absentCalculationEndDate,
+      manualAbsentDays = 0,
     } = body;
 
     if (!employeeId) {
@@ -49,6 +53,10 @@ export async function POST(request: NextRequest) {
         {
           manualUnpaidSalary,
           manualVacationAllowance,
+          absentCalculationPeriod,
+          absentCalculationStartDate,
+          absentCalculationEndDate,
+          manualAbsentDays,
         }
       );
     } else {
@@ -66,6 +74,10 @@ export async function POST(request: NextRequest) {
         isResignation,
         {
           manualUnpaidSalary,
+          absentCalculationPeriod,
+          absentCalculationStartDate,
+          absentCalculationEndDate,
+          manualAbsentDays,
         }
       );
     }
