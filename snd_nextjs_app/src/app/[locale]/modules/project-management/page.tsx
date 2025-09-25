@@ -859,39 +859,6 @@ export default function ProjectManagementPage() {
 
 
 
-        {/* permission-based content example */} 
-        <PermissionBased action="manage" subject="Project">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('project.project_administration')}</CardTitle>
-              <CardDescription>{t('project.advanced_project_management_features')}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-2">
-                <PermissionContent action="manage" subject="Project">
-                  <Button variant="outline">
-                    <Settings className="h-4 w-4 mr-2" />
-                    {t('project.project_settings')}
-                  </Button>
-                </PermissionContent>
-
-                <PermissionContent action="export" subject="Project">
-                  <Button variant="outline">
-                    <FileText className="h-4 w-4 mr-2" />
-                    {t('project.generate_reports')}
-                  </Button>
-                </PermissionContent>
-
-                <PermissionContent action="import" subject="Project">
-                  <Button variant="outline">
-                    <Upload className="h-4 w-4 mr-2" />
-                    {t('project.import_projects')}
-                  </Button>
-                </PermissionContent>
-              </div>
-            </CardContent>
-          </Card>
-        </PermissionBased>
       </div>
     </ProtectedRoute>
   );

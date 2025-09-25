@@ -938,39 +938,6 @@ export default function RentalManagementPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Role-based content example */}
-        <PermissionBased action="manage" subject="Rental">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('rental.administration.title')}</CardTitle>
-              <CardDescription>{t('rental.administration.subtitle')}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-2">
-                <PermissionContent action="approve" subject="Rental">
-                  <Button variant="outline">
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    {t('rental.actions.approve')}
-                  </Button>
-                </PermissionContent>
-
-                <PermissionContent action="reject" subject="Rental">
-                  <Button variant="outline">
-                    <XCircle className="h-4 w-4 mr-2" />
-                    {t('rental.actions.reject')}
-                  </Button>
-                </PermissionContent>
-
-                <PermissionContent action="manage" subject="Rental">
-                  <Button variant="outline">
-                    <Settings className="h-4 w-4 mr-2" />
-                    {t('rental.actions.manage')}
-                  </Button>
-                </PermissionContent>
-              </div>
-            </CardContent>
-          </Card>
-        </PermissionBased>
       </div>
     </ProtectedRoute>
   );
