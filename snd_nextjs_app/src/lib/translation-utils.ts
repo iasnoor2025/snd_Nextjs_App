@@ -4,9 +4,10 @@ import { useI18n } from '@/hooks/use-i18n';
  * Format a number according to the current locale
  */
 export function useNumberFormat() {
-  const { locale } = useI18n();
+  const { t } = useI18n();
 
   return (value: number, options?: Intl.NumberFormatOptions) => {
+    const locale = 'en-US'; // Use default locale
     return new Intl.NumberFormat(locale, options).format(value);
   };
 }
@@ -15,11 +16,12 @@ export function useNumberFormat() {
  * Format a date according to the current locale
  */
 export function useDateFormat() {
-  const { locale } = useI18n();
+  const { t } = useI18n();
 
   return (date: Date | string, options?: Intl.DateTimeFormatOptions) => {
     const dateObj = typeof date === 'string' ? new Date(date) : date;
-    return new Intl.DateTimeFormat(currentLanguage, options).format(dateObj);
+    const locale = 'en-US'; // Use default locale or get from context
+    return new Intl.DateTimeFormat(locale, options).format(dateObj);
   };
 }
 
@@ -27,10 +29,11 @@ export function useDateFormat() {
  * Format currency according to the current locale
  */
 export function useCurrencyFormat() {
-  const { locale } = useI18n();
+  const { t } = useI18n();
 
-  return (amount: number, currency = 'USD', options?: Intl.NumberFormatOptions) => {
-    return new Intl.NumberFormat(currentLanguage, {
+  return (amount: number, currency = 'SAR', options?: Intl.NumberFormatOptions) => {
+    const locale = 'ar-SA'; // Use SAR currency locale
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency,
       ...options,
@@ -258,7 +261,7 @@ export const convertToArabicNumerals = (
   return (
     text.replace(/[0-9]/g, d => {
       const num = parseInt(d);
-      return num >= 0 && num <= 9 ? '٠١٢٣٤٥٦٧٨٩'[num] : d;
+      return num >= 0 && num <= 9 ? '٠١٢٣٤٥٦٧٨٩'[num] || d : d;
     })
   );
 };

@@ -247,7 +247,7 @@ export class DashboardService {
       // Get today's timesheets
       let todayTimesheetsResult = { count: 0 };
       try {
-        const todayStr: string = today.toISOString().split('T')[0];
+        const todayStr: string = today.toISOString().split('T')[0] || '';
         if (todayStr) {
           const result = await db
             .select({ count: count() })

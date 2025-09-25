@@ -221,7 +221,7 @@ function getLocale(request: NextRequest): string {
   if (acceptLanguage) {
     const preferredLocale = acceptLanguage
       .split(',')
-      .map((lang) => lang.split(';')[0].trim())
+      .map((lang) => lang.split(';')[0]?.trim())
       .find((lang) => i18n.locales.includes(lang as "en" | "ar"));
     
     if (preferredLocale && i18n.locales.includes(preferredLocale as "en" | "ar")) {

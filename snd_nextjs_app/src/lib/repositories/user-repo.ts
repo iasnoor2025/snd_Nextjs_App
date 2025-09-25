@@ -77,9 +77,9 @@ export async function upsertGoogleUser(email: string, name: string | null): Prom
     name: userName,
     password: '',
     isActive: true,
-    emailVerifiedAt: new Date().toISOString(),
+    emailVerifiedAt: new Date().toISOString().split('T')[0],
     roleId: employeeRoleId, // Dynamically fetched from database
-    updatedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString().split('T')[0],
   }).returning({ id: users.id });
   
   // Create role relationship in modelHasRoles table

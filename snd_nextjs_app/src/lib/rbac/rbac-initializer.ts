@@ -70,8 +70,8 @@ export class RBACInitializer {
       await db.insert(roles).values({
         name: role.name,
         guardName: role.guardName,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: new Date().toISOString().split('T')[0],
+        updatedAt: new Date().toISOString().split('T')[0],
       });
     }
 
@@ -106,8 +106,8 @@ export class RBACInitializer {
       await db.insert(permissions).values({
         name: permission,
         guardName: 'web',
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: new Date().toISOString().split('T')[0],
+        updatedAt: new Date().toISOString().split('T')[0],
       });
     }
 
@@ -207,7 +207,7 @@ export class RBACInitializer {
           await db.update(users)
             .set({
               password: hashedPassword,
-              updatedAt: new Date(),
+              updatedAt: new Date().toISOString().split('T')[0],
             })
             .where(eq(users.id, existingUserData.id));
           

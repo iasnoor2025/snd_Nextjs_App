@@ -94,14 +94,14 @@ function generateTablePDF(data: any[], title: string, filename: string) {
       3: { halign: "center", cellWidth: 40 }, // Iqama/Equip #
       4: { halign: "center", cellWidth: 40 }, // Expiry Date
     },
-    didDrawPage: (data) => {
+    didDrawPage: () => {
       // Footer (Page number)
       const pageSize = doc.internal.pageSize;
       const pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight();
       doc.setFontSize(8);
       doc.setTextColor(100);
       doc.text(
-        `Page ${doc.internal.getNumberOfPages()}`,
+        `Page ${doc.internal.pages ? doc.internal.pages.length - 1 : 1}`,
         pageSize.width / 2,
         pageHeight - 10,
         { align: "center" }

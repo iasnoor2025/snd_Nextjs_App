@@ -225,7 +225,7 @@ export class CacheService {
       
       // Parse memory info
       const memoryMatch = info.match(/used_memory_human:(\S+)/);
-      const memory = memoryMatch ? memoryMatch[1] : 'Unknown';
+      const memory = memoryMatch ? memoryMatch[1] || 'Unknown' : 'Unknown';
       
       return {
         keys,

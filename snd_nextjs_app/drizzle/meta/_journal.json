@@ -169,6 +169,13 @@
       "when": 1757398162022,
       "tag": "0023_unique_brood",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1758777641936,
+      "tag": "0024_supreme_epoch",
+      "breakpoints": true
     }
   ]
 }

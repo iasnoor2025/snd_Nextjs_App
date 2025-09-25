@@ -1,8 +1,8 @@
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/database';
-import { users } from '@/lib/database/schema';
+import { authOptions } from '@/lib/auth-config';
+import { db } from '@/lib/drizzle';
+import { users } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { uploadToMinIO } from '@/lib/utils/file-upload';
 import formidable from 'formidable';
