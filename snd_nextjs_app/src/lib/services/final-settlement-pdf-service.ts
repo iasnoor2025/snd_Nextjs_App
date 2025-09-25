@@ -70,6 +70,21 @@ export class FinalSettlementPDFService {
       maximumFractionDigits: 2,
     }).format(amount);
   }
+
+  /**
+   * Get logo as base64 data URL for embedding in PDF
+   */
+  private static async getLogoBase64(): Promise<string> {
+    try {
+      const logoPath = path.join(process.cwd(), 'public', 'snd-logo.png');
+      const logoBuffer = await fs.readFile(logoPath);
+      const base64 = logoBuffer.toString('base64');
+      return `data:image/png;base64,${base64}`;
+    } catch (error) {
+      console.error('Error reading logo file:', error);
+      return '';
+    }
+  }
   /**
    * Generate PDF document for final settlement
    */
@@ -89,8 +104,8 @@ export class FinalSettlementPDFService {
       await page.setViewport({ width: 1200, height: 1600 });
       
       const htmlContent = language === 'ar' 
-        ? this.generateArabicTemplate(settlementData)
-        : this.generateEnglishTemplate(settlementData);
+        ? await this.generateArabicTemplate(settlementData)
+        : await this.generateEnglishTemplate(settlementData);
 
       await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
 
@@ -127,7 +142,7 @@ export class FinalSettlementPDFService {
       const page = await browser.newPage();
       await page.setViewport({ width: 1200, height: 1600 });
       
-      const htmlContent = this.generateBilingualTemplate(settlementData);
+      const htmlContent = await this.generateBilingualTemplate(settlementData);
       await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
 
       const pdfBuffer = await page.pdf({
@@ -176,7 +191,8 @@ export class FinalSettlementPDFService {
   /**
    * Generate English PDF template
    */
-  private static generateEnglishTemplate(data: SettlementPDFData): string {
+  private static async generateEnglishTemplate(data: SettlementPDFData): Promise<string> {
+    const logoBase64 = await this.getLogoBase64();
     const formatCurrency = (amount: number) => `${data.currency} ${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
     const formatDate = (date: string) => new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
@@ -188,6 +204,14 @@ export class FinalSettlementPDFService {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Final Settlement - ${data.settlementNumber}</title>
     <style>
+        @page {
+            margin: 20mm 15mm 20mm 15mm;
+            @top-left {
+                content: url("file://${path.join(process.cwd(), 'public', 'snd-logo.png')}");
+                width: 60px;
+                height: 60px;
+            }
+        }
         body {
             font-family: 'Arial', sans-serif;
             line-height: 1.6;
@@ -320,7 +344,7 @@ export class FinalSettlementPDFService {
 </head>
 <body>
     <div class="header">
-        <img src="/snd-logo.png" alt="Company Logo" class="logo" />
+        <img src="${logoBase64}" alt="Company Logo" class="logo" />
         <div class="header-content">
             <div class="company-name">Samhan Naser Al-Dosari Est</div>
             <div class="document-title">FINAL SETTLEMENT CERTIFICATE</div>
@@ -521,7 +545,8 @@ export class FinalSettlementPDFService {
   /**
    * Generate Arabic PDF template
    */
-  private static generateArabicTemplate(data: SettlementPDFData): string {
+  private static async generateArabicTemplate(data: SettlementPDFData): Promise<string> {
+    const logoBase64 = await this.getLogoBase64();
     const formatCurrency = (amount: number) => `${amount.toLocaleString('ar-SA', { minimumFractionDigits: 2 })} ${data.currency}`;
     const formatDate = (date: string) => new Date(date).toLocaleDateString('ar-SA');
 
@@ -533,6 +558,14 @@ export class FinalSettlementPDFService {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>التسوية النهائية - ${data.settlementNumber}</title>
     <style>
+        @page {
+            margin: 20mm 15mm 20mm 15mm;
+            @top-left {
+                content: url("file://${path.join(process.cwd(), 'public', 'snd-logo.png')}");
+                width: 60px;
+                height: 60px;
+            }
+        }
         body {
             font-family: 'Tahoma', 'Arial', sans-serif;
             line-height: 1.8;
@@ -667,7 +700,7 @@ export class FinalSettlementPDFService {
 </head>
 <body>
     <div class="header">
-        <img src="file://${path.join(process.cwd(), 'public', 'snd-logo.png')}" alt="Company Logo" class="logo" />
+        <img src="${logoBase64}" alt="Company Logo" class="logo" />
         <div class="header-content">
             <div class="company-name">${data.companyName || 'مؤسسة سمحان ناصر الدوسري'}</div>
             <div>${data.companyAddress || 'المملكة العربية السعودية'}</div>
@@ -864,7 +897,8 @@ export class FinalSettlementPDFService {
   /**
    * Generate bilingual PDF template (Arabic and English)
    */
-  private static generateBilingualTemplate(data: SettlementPDFData): string {
+  private static async generateBilingualTemplate(data: SettlementPDFData): Promise<string> {
+    const logoBase64 = await this.getLogoBase64();
     const formatCurrency = (amount: number) => `${data.currency} ${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
     const formatCurrencyAr = (amount: number) => `${amount.toLocaleString('ar-SA', { minimumFractionDigits: 2 })} ${data.currency}`;
     const formatDate = (date: string) => new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -878,6 +912,14 @@ export class FinalSettlementPDFService {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Final Settlement / التسوية النهائية - ${data.settlementNumber}</title>
     <style>
+        @page {
+            margin: 20mm 15mm 20mm 15mm;
+            @top-left {
+                content: url("file://${path.join(process.cwd(), 'public', 'snd-logo.png')}");
+                width: 60px;
+                height: 60px;
+            }
+        }
         body {
             font-family: 'Arial', 'Tahoma', sans-serif;
             line-height: 1.6;
@@ -1024,7 +1066,7 @@ export class FinalSettlementPDFService {
 </head>
 <body>
     <div class="bilingual-header">
-        <img src="file://${path.join(process.cwd(), 'public', 'snd-logo.png')}" alt="Company Logo" class="logo" />
+        <img src="${logoBase64}" alt="Company Logo" class="logo" />
         <div class="header-content">
             <div class="company-name">
                 Samhan Naser Al-Dosari Est<br>
