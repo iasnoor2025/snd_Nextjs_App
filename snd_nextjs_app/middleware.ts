@@ -6,10 +6,13 @@ import { i18n } from '@/lib/i18n-config';
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  console.log('🔍 Middleware triggered for path:', pathname);
+  // Only log in development to reduce production overhead
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 Middleware triggered for path:', pathname);
+  }
 
-  // Define public routes that should bypass middleware completely
-  const publicRoutes = [
+  // Define public routes that should bypass middleware completely (using Set for O(1) lookup)
+  const publicRoutes = new Set([
     '/login',
     '/signup', 
     '/forgot-password',
@@ -23,27 +26,28 @@ export async function middleware(request: NextRequest) {
     '/api/debug-auth',
     '/api/timesheets/auto-generate', // Allow timesheet auto-generation
     '/api/rbac/initialize', // Allow RBAC initialization and status check
+  ]);
 
-  ];
-
-  // Define static assets
-  const staticAssets = [
+  // Define static assets (using Set for O(1) lookup)
+  const staticAssets = new Set([
     '/images',
     '/icons',
     '/fonts',
     '/css',
     '/js',
     '/api-docs',
-  ];
+  ]);
 
-  // Check if it's a public route or static asset
-  if (publicRoutes.some(route => pathname.startsWith(route)) ||
-      staticAssets.some(asset => pathname.startsWith(asset))) {
+  // Check if it's a public route or static asset (optimized for performance)
+  const isPublicRoute = Array.from(publicRoutes).some(route => pathname.startsWith(route));
+  const isStaticAsset = Array.from(staticAssets).some(asset => pathname.startsWith(asset));
+  
+  if (isPublicRoute || isStaticAsset) {
     return NextResponse.next();
   }
 
   // Check if it's a locale-specific public route (e.g., /en/login, /ar/login)
-  const localeSpecificPublicRoutes = publicRoutes.flatMap(route => 
+  const localeSpecificPublicRoutes = Array.from(publicRoutes).flatMap(route => 
     i18n.locales.map(locale => `/${locale}${route}`)
   );
   

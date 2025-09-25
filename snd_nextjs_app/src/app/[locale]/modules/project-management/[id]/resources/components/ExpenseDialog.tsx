@@ -52,7 +52,7 @@ const EXPENSE_CATEGORIES = [
   { value: 'meals', label: 'Meals' },
   { value: 'utilities', label: 'Utilities' },
   { value: 'office_supplies', label: 'Office Supplies' },
-  { value: 'safety', label: 'Safety' },
+  { value: 'safety', label: t('common.navigation.safety') },
   { value: 'permits', label: 'Permits' },
   { value: 'other', label: 'Other' },
 ];

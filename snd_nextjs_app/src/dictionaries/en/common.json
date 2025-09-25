@@ -14,7 +14,8 @@
     "timesheets": "Timesheets",
     "settings": "Settings",
     "reporting": "Reporting",
-    "analytics": "Analytics"
+    "analytics": "Analytics",
+    "safety": "Safety"
   },
   "actions": {
     "create": "Create",

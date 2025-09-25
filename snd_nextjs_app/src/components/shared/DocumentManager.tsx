@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Download, Eye, FileText, Loader2, Trash2, Upload, X } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo, memo } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
@@ -53,7 +53,7 @@ interface DocumentManagerProps {
   showDate?: boolean;
 }
 
-export default function DocumentManager(props: DocumentManagerProps) {
+const DocumentManagerComponent = function DocumentManager(props: DocumentManagerProps) {
   const { t } = useI18n();
   
   // Debug logging
@@ -159,32 +159,37 @@ export default function DocumentManager(props: DocumentManagerProps) {
   const [documentName, setDocumentName] = useState('');
   const [previewImage, setPreviewImage] = useState<DocumentItem | null>(null);
 
+  // Memoized sorting function to prevent recreation on every render
+  const sortDocuments = useCallback((list: DocumentItem[]) => {
+    const sortedList = Array.isArray(list) ? [...list] : [];
+    
+    // Sort documents by priority: 1. Photo, 2. Iqama, 3. Passport, 4. Others
+    return sortedList.sort((a, b) => {
+      const aName = a.name.toLowerCase();
+      const bName = b.name.toLowerCase();
+      
+      // Priority 1: Photos (highest priority)
+      if (aName.includes('photo') || aName.includes('picture') || aName.includes('image')) return -1;
+      if (bName.includes('photo') || bName.includes('picture') || bName.includes('image')) return 1;
+      
+      // Priority 2: Iqama
+      if (aName.includes('iqama')) return -1;
+      if (bName.includes('iqama')) return 1;
+      
+      // Priority 3: Passport
+      if (aName.includes('passport')) return -1;
+      if (bName.includes('passport')) return 1;
+      
+      // Priority 4: Others (lowest priority)
+      return 0;
+    });
+  }, []);
+
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
       const list = await loadDocuments();
-      const sortedList = Array.isArray(list) ? list : [];
-      
-      // Sort documents by priority: 1. Photo, 2. Iqama, 3. Passport, 4. Others
-      sortedList.sort((a, b) => {
-        const aName = a.name.toLowerCase();
-        const bName = b.name.toLowerCase();
-        
-        // Priority 1: Photos (highest priority)
-        if (aName.includes('photo') || aName.includes('picture') || aName.includes('image')) return -1;
-        if (bName.includes('photo') || bName.includes('picture') || bName.includes('image')) return 1;
-        
-        // Priority 2: Iqama
-        if (aName.includes('iqama')) return -1;
-        if (bName.includes('iqama')) return 1;
-        
-        // Priority 3: Passport
-        if (aName.includes('passport')) return -1;
-        if (bName.includes('passport')) return 1;
-        
-        // Priority 4: Others (lowest priority)
-        return 0;
-      });
+      const sortedList = sortDocuments(list);
       
       setDocuments(sortedList);
       
@@ -203,7 +208,7 @@ export default function DocumentManager(props: DocumentManagerProps) {
     } finally {
       setLoading(false);
     }
-  }, [loadDocuments]);
+  }, [loadDocuments, sortDocuments]);
 
   useEffect(() => {
     void refresh();
@@ -770,4 +775,7 @@ export default function DocumentManager(props: DocumentManagerProps) {
       )}
     </Card>
   );
-}
+};
+
+// Memoize the component to prevent unnecessary re-renders
+export default memo(DocumentManagerComponent);

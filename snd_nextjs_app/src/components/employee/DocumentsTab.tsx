@@ -137,12 +137,12 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
     console.log('🔄 DocumentsTab - Starting fresh fetch with cache busting');
     try {
       
-      const response = await fetch(`/api/employees/${employeeId}/documents?t=${Date.now()}&cache=${Math.random()}&v=${Math.random()}&force=${Math.random()}`, {
+      const response = await fetch(`/api/employees/${employeeId}/documents`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'Cache-Control': 'max-age=300', // Cache for 5 minutes
         },
-        // Add credentials to ensure cookies are sent
         credentials: 'include',
       });
       

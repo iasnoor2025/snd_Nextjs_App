@@ -76,11 +76,11 @@ export default function SafetyManagementPage() {
       if (response.success) {
         setIncidents(response.data || []);
       } else {
-        toast.error('Failed to load safety incidents');
+        toast.error(t('safety.messages.failedToLoad'));
       }
     } catch (error) {
       console.error('Error fetching incidents:', error);
-      toast.error('Failed to load safety incidents');
+      toast.error(t('safety.messages.failedToLoad'));
     } finally {
       setLoading(false);
     }
@@ -90,7 +90,7 @@ export default function SafetyManagementPage() {
     e.preventDefault();
 
     if (!formData.title || !formData.reportedBy || !formData.incidentDate) {
-      toast.error('Please fill in all required fields');
+      toast.error(t('safety.validation.validationError'));
       return;
     }
 
@@ -99,7 +99,7 @@ export default function SafetyManagementPage() {
       const response = await ApiService.post('/safety-incidents', formData);
       
       if (response.success) {
-        toast.success('Safety incident created successfully');
+        toast.success(t('safety.messages.createSuccess'));
         setIsCreateDialogOpen(false);
         setFormData({
           title: '',
@@ -114,11 +114,11 @@ export default function SafetyManagementPage() {
         });
         fetchIncidents();
       } else {
-        toast.error(response.message || 'Failed to create incident');
+        toast.error(response.message || t('safety.messages.createError'));
       }
     } catch (error) {
       console.error('Error creating incident:', error);
-      toast.error('Failed to create incident');
+      toast.error(t('safety.messages.createError'));
     } finally {
       setLoading(false);
     }
@@ -170,9 +170,9 @@ export default function SafetyManagementPage() {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <Shield className="h-8 w-8 text-blue-600" />
-              {t('safety:title')}
+              {t('safety.title')}
             </h1>
-            <p className="text-muted-foreground">{t('safety:subtitle')}</p>
+            <p className="text-muted-foreground">{t('safety.subtitle')}</p>
           </div>
           <div className="flex gap-2">
             {hasPermission('create', 'Safety') && (
@@ -181,7 +181,7 @@ export default function SafetyManagementPage() {
                 className="flex items-center gap-2"
               >
                 <Plus className="h-4 w-4" />
-                {t('safety:actions.reportIncident')}
+                {t('safety.actions.reportIncident')}
               </Button>
             )}
           </div>
@@ -191,7 +191,7 @@ export default function SafetyManagementPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('safety:stats.totalIncidents')}</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('safety.stats.totalIncidents')}</CardTitle>
               <AlertTriangle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -201,7 +201,7 @@ export default function SafetyManagementPage() {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('safety:stats.openCases')}</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('safety.stats.openCases')}</CardTitle>
               <AlertCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -211,7 +211,7 @@ export default function SafetyManagementPage() {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('safety:stats.underInvestigation')}</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('safety.stats.underInvestigation')}</CardTitle>
               <Search className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -221,7 +221,7 @@ export default function SafetyManagementPage() {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('safety:stats.criticalIssues')}</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('safety.stats.criticalIssues')}</CardTitle>
               <Shield className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -233,15 +233,15 @@ export default function SafetyManagementPage() {
         {/* Filters */}
         <Card>
           <CardHeader>
-            <CardTitle>{t('safety:incidents.title')}</CardTitle>
-            <CardDescription>{t('safety:incidents.description')}</CardDescription>
+            <CardTitle>{t('safety.incidents.title')}</CardTitle>
+            <CardDescription>{t('safety.incidents.description')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col sm:flex-row gap-4 mb-4">
               <div className="flex-1">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder={t('safety:search.placeholder')}
+                  placeholder={t('safety.search.placeholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-8"
@@ -249,43 +249,43 @@ export default function SafetyManagementPage() {
               </div>
               <Select value={severityFilter} onValueChange={setSeverityFilter}>
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder={t('safety:filters.severityPlaceholder')} />
+                  <SelectValue placeholder={t('safety.filters.severityPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('safety:filters.allSeverities')}</SelectItem>
-                  <SelectItem value="low">{t('safety:severity.low')}</SelectItem>
-                  <SelectItem value="medium">{t('safety:severity.medium')}</SelectItem>
-                  <SelectItem value="high">{t('safety:severity.high')}</SelectItem>
-                  <SelectItem value="critical">{t('safety:severity.critical')}</SelectItem>
+                  <SelectItem value="all">{t('safety.filters.allSeverities')}</SelectItem>
+                  <SelectItem value="low">{t('safety.severity.low')}</SelectItem>
+                  <SelectItem value="medium">{t('safety.severity.medium')}</SelectItem>
+                  <SelectItem value="high">{t('safety.severity.high')}</SelectItem>
+                  <SelectItem value="critical">{t('safety.severity.critical')}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder={t('safety:filters.statusPlaceholder')} />
+                  <SelectValue placeholder={t('safety.filters.statusPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('safety:filters.allStatuses')}</SelectItem>
-                  <SelectItem value="open">{t('safety:status.open')}</SelectItem>
-                  <SelectItem value="investigating">{t('safety:status.investigating')}</SelectItem>
-                  <SelectItem value="resolved">{t('safety:status.resolved')}</SelectItem>
-                  <SelectItem value="closed">{t('safety:status.closed')}</SelectItem>
+                  <SelectItem value="all">{t('safety.filters.allStatuses')}</SelectItem>
+                  <SelectItem value="open">{t('safety.status.open')}</SelectItem>
+                  <SelectItem value="investigating">{t('safety.status.investigating')}</SelectItem>
+                  <SelectItem value="resolved">{t('safety.status.resolved')}</SelectItem>
+                  <SelectItem value="closed">{t('safety.status.closed')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {loading ? (
-              <div className="text-center py-8">{t('safety:messages.loading')}</div>
+              <div className="text-center py-8">{t('safety.messages.loading')}</div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('safety:table.headers.title')}</TableHead>
-                    <TableHead>{t('safety:table.headers.severity')}</TableHead>
-                    <TableHead>{t('safety:table.headers.status')}</TableHead>
-                    <TableHead>{t('safety:table.headers.location')}</TableHead>
-                    <TableHead>{t('safety:table.headers.reportedBy')}</TableHead>
-                    <TableHead>{t('safety:table.headers.date')}</TableHead>
-                    <TableHead>{t('safety:table.headers.cost')}</TableHead>
+                    <TableHead>{t('safety.table.headers.title')}</TableHead>
+                    <TableHead>{t('safety.table.headers.severity')}</TableHead>
+                    <TableHead>{t('safety.table.headers.status')}</TableHead>
+                    <TableHead>{t('safety.table.headers.location')}</TableHead>
+                    <TableHead>{t('safety.table.headers.reportedBy')}</TableHead>
+                    <TableHead>{t('safety.table.headers.date')}</TableHead>
+                    <TableHead>{t('safety.table.headers.cost')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -294,12 +294,12 @@ export default function SafetyManagementPage() {
                       <TableCell className="font-medium">{incident.title}</TableCell>
                       <TableCell>
                         <Badge variant={getSeverityColor(incident.severity)}>
-                          {incident.severity}
+                          {t(`safety.severity.${incident.severity}`)}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <Badge variant={getStatusColor(incident.status)}>
-                          {incident.status}
+                          {t(`safety.status.${incident.status}`)}
                         </Badge>
                       </TableCell>
                       <TableCell>{incident.location}</TableCell>
@@ -318,11 +318,132 @@ export default function SafetyManagementPage() {
 
             {filteredIncidents.length === 0 && !loading && (
               <div className="text-center py-8 text-muted-foreground">
-                No incidents found matching your criteria
+                {t('safety.search.noResults')}
               </div>
             )}
           </CardContent>
         </Card>
+
+        {/* Create Incident Dialog */}
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>{t('safety.actions.reportIncident')}</DialogTitle>
+              <DialogDescription>
+                {t('safety.description')}
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleCreateIncident} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">{t('safety.fields.title')}</Label>
+                  <Input
+                    id="title"
+                    placeholder={t('safety.fields.titlePlaceholder')}
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="location">{t('safety.fields.location')}</Label>
+                  <Input
+                    id="location"
+                    placeholder={t('safety.fields.locationPlaceholder')}
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="description">{t('safety.fields.description')}</Label>
+                <Textarea
+                  id="description"
+                  placeholder={t('safety.fields.descriptionPlaceholder')}
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="severity">{t('safety.fields.severity')}</Label>
+                  <Select value={formData.severity} onValueChange={(value) => setFormData({ ...formData, severity: value as any })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">{t('safety.severity.low')}</SelectItem>
+                      <SelectItem value="medium">{t('safety.severity.medium')}</SelectItem>
+                      <SelectItem value="high">{t('safety.severity.high')}</SelectItem>
+                      <SelectItem value="critical">{t('safety.severity.critical')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="incidentDate">{t('safety.fields.incidentDate')}</Label>
+                  <Input
+                    id="incidentDate"
+                    type="date"
+                    value={formData.incidentDate}
+                    onChange={(e) => setFormData({ ...formData, incidentDate: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reportedBy">{t('safety.fields.reportedBy')}</Label>
+                  <Input
+                    id="reportedBy"
+                    value={formData.reportedBy}
+                    onChange={(e) => setFormData({ ...formData, reportedBy: e.target.value })}
+                    placeholder={t('safety.fields.reportedBy')}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cost">{t('safety.fields.cost')}</Label>
+                  <Input
+                    id="cost"
+                    type="number"
+                    placeholder={t('safety.fields.costPlaceholder')}
+                    value={formData.cost}
+                    onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="resolution">{t('safety.fields.resolution')}</Label>
+                <Textarea
+                  id="resolution"
+                  placeholder={t('safety.fields.resolutionPlaceholder')}
+                  value={formData.resolution}
+                  onChange={(e) => setFormData({ ...formData, resolution: e.target.value })}
+                  rows={2}
+                />
+              </div>
+
+              <DialogFooter>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsCreateDialogOpen(false)}
+                >
+                  {t('safety.actions.cancel')}
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? t('safety.messages.saving') : t('safety.actions.save')}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </ProtectedRoute>
   );

@@ -278,10 +278,10 @@ export default function ReportingDashboardPage() {
           const safetyScore = totalIncidents > 0 ? Math.round((resolvedIncidents / totalIncidents) * 100) : 100;
           
           cards.push(
-            { title: 'Total Incidents', value: totalIncidents, icon: Shield, color: 'red' },
-            { title: 'Resolved Incidents', value: resolvedIncidents, icon: Shield, color: 'green' },
-            { title: 'Pending Incidents', value: pendingIncidents, icon: Shield, color: 'orange' },
-            { title: 'Safety Score', value: `${safetyScore}%`, icon: Shield, color: 'blue' }
+            { title: t('safety.stats.totalIncidents'), value: totalIncidents, icon: Shield, color: 'red' },
+            { title: t('safety.stats.resolvedCases'), value: resolvedIncidents, icon: Shield, color: 'green' },
+            { title: t('safety.stats.openCases'), value: pendingIncidents, icon: Shield, color: 'orange' },
+            { title: t('reporting.safetyScore'), value: `${safetyScore}%`, icon: Shield, color: 'blue' }
           );
         }
         break;

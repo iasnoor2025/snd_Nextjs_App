@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, memo } from 'react';
 
 export interface Employee {
   id: string;
@@ -59,13 +59,26 @@ export function EmployeeDropdown({
 
   const isLoading = externalLoading !== undefined ? externalLoading : loading;
 
-  const loadEmployees = async () => {
+  const loadEmployees = useCallback(async () => {
     const currentLoading = true;
     setLoading(currentLoading);
     onLoadingChange?.(currentLoading);
     setErrorMessage(null);
 
     try {
+      // Check if employees are already cached
+      const cachedEmployees = sessionStorage.getItem('employeesCache');
+      const cacheTimestamp = sessionStorage.getItem('employeesCacheTimestamp');
+      const now = Date.now();
+      
+      // Use cache if it's less than 5 minutes old
+      if (cachedEmployees && cacheTimestamp && (now - parseInt(cacheTimestamp)) < 300000) {
+        const employeeData = JSON.parse(cachedEmployees);
+        setEmployees(employeeData);
+        setLoading(false);
+        onLoadingChange?.(false);
+        return;
+      }
 
       // Use the public API endpoint that doesn't require authentication
       const response = await fetch('/api/employees/public?all=true&limit=1000', {
@@ -86,6 +99,10 @@ export function EmployeeDropdown({
       if (employeeData.length === 0) {
         setErrorMessage('No employees found in the database.');
       }
+
+      // Cache the employees data
+      sessionStorage.setItem('employeesCache', JSON.stringify(employeeData));
+      sessionStorage.setItem('employeesCacheTimestamp', Date.now().toString());
 
       setEmployees(employeeData);
     } catch (error) {
@@ -111,12 +128,12 @@ export function EmployeeDropdown({
       setLoading(currentLoading);
       onLoadingChange?.(currentLoading);
     }
-  };
+  }, [onLoadingChange]);
 
   // Load employees when component mounts
   useEffect(() => {
     loadEmployees();
-  }, []);
+  }, [loadEmployees]);
 
   // Debounce search term
   useEffect(() => {

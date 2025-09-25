@@ -3,16 +3,58 @@
 import { ProtectedRoute } from '@/components/protected-route';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { DashboardModals } from '@/components/dashboard/DashboardModals';
-import { EquipmentSection } from '@/components/dashboard/EquipmentSection';
-import { FinancialOverviewSection } from '@/components/dashboard/FinancialOverviewSection';
-import { IqamaSection } from '@/components/dashboard/IqamaSection';
-import ManualAssignmentSection from '@/components/dashboard/ManualAssignmentSection';
-import ProjectOverviewSection from '@/components/dashboard/ProjectOverviewSection';
-import { QuickActions } from '@/components/dashboard/QuickActions';
-import { RecentActivity } from '@/components/dashboard/RecentActivity';
-import { TimesheetsSection } from '@/components/dashboard/TimesheetsSection';
-import EmployeeAdvanceSection from '@/components/dashboard/EmployeeAdvanceSection';
-import MyTeamSection from '@/components/dashboard/MyTeamSection';
+import dynamic from 'next/dynamic';
+
+// Lazy-load dashboard sections for better performance
+const EquipmentSection = dynamic(() => import('@/components/dashboard/EquipmentSection').then(mod => ({ default: mod.EquipmentSection })), {
+  loading: () => <div className="animate-pulse h-48 bg-gray-100 rounded-lg" />,
+  ssr: false
+});
+
+const FinancialOverviewSection = dynamic(() => import('@/components/dashboard/FinancialOverviewSection').then(mod => ({ default: mod.FinancialOverviewSection })), {
+  loading: () => <div className="animate-pulse h-48 bg-gray-100 rounded-lg" />,
+  ssr: false
+});
+
+const IqamaSection = dynamic(() => import('@/components/dashboard/IqamaSection').then(mod => ({ default: mod.IqamaSection })), {
+  loading: () => <div className="animate-pulse h-48 bg-gray-100 rounded-lg" />,
+  ssr: false
+});
+
+const ManualAssignmentSection = dynamic(() => import('@/components/dashboard/ManualAssignmentSection'), {
+  loading: () => <div className="animate-pulse h-48 bg-gray-100 rounded-lg" />,
+  ssr: false
+});
+
+const ProjectOverviewSection = dynamic(() => import('@/components/dashboard/ProjectOverviewSection'), {
+  loading: () => <div className="animate-pulse h-48 bg-gray-100 rounded-lg" />,
+  ssr: false
+});
+
+const QuickActions = dynamic(() => import('@/components/dashboard/QuickActions').then(mod => ({ default: mod.QuickActions })), {
+  loading: () => <div className="animate-pulse h-32 bg-gray-100 rounded-lg" />,
+  ssr: false
+});
+
+const RecentActivity = dynamic(() => import('@/components/dashboard/RecentActivity').then(mod => ({ default: mod.RecentActivity })), {
+  loading: () => <div className="animate-pulse h-48 bg-gray-100 rounded-lg" />,
+  ssr: false
+});
+
+const TimesheetsSection = dynamic(() => import('@/components/dashboard/TimesheetsSection').then(mod => ({ default: mod.TimesheetsSection })), {
+  loading: () => <div className="animate-pulse h-48 bg-gray-100 rounded-lg" />,
+  ssr: false
+});
+
+const EmployeeAdvanceSection = dynamic(() => import('@/components/dashboard/EmployeeAdvanceSection'), {
+  loading: () => <div className="animate-pulse h-48 bg-gray-100 rounded-lg" />,
+  ssr: false
+});
+
+const MyTeamSection = dynamic(() => import('@/components/dashboard/MyTeamSection'), {
+  loading: () => <div className="animate-pulse h-48 bg-gray-100 rounded-lg" />,
+  ssr: false
+});
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/hooks/use-i18n';
 import { PDFGenerator } from '@/lib/utils/pdf-generator';
@@ -34,7 +76,7 @@ import {
 import { Download } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback, memo } from 'react';
 import { getUserAccessibleSectionsClient } from '@/lib/rbac/client-permission-service';
 
 export default function DashboardPage() {
@@ -263,8 +305,69 @@ export default function DashboardPage() {
     }
   };
 
-  // Fetch all dashboard data in parallel
-  const fetchDashboardData = async (showLoading = false) => {
+  // Memoized fetch functions to prevent recreation on every render
+  const memoizedFetchDashboardStats = useCallback(async () => {
+    try {
+      const response = await fetch('/api/dashboard/stats');
+      if (response.ok) {
+        const data = await response.json();
+        setStats(data.stats || {});
+      }
+    } catch (error) {
+      // Handle error silently for production
+    }
+  }, []);
+
+  const memoizedFetchIqamaData = useCallback(async () => {
+    try {
+      const response = await fetch('/api/dashboard/iqama?limit=10000');
+      if (response.ok) {
+        const data = await response.json();
+        setIqamaData(data.iqamaData || []);
+      }
+    } catch (error) {
+      // Handle error silently for production
+    }
+  }, []);
+
+  const memoizedFetchEquipmentData = useCallback(async () => {
+    try {
+      const response = await fetch('/api/dashboard/equipment?limit=10000');
+      if (response.ok) {
+        const data = await response.json();
+        setEquipmentData(data.equipmentData || []);
+      }
+    } catch (error) {
+      // Handle error silently for production
+    }
+  }, []);
+
+  const memoizedFetchTimesheetData = useCallback(async () => {
+    try {
+      const response = await fetch('/api/dashboard/timesheets?limit=10000');
+      if (response.ok) {
+        const data = await response.json();
+        setTimesheetData(data.timesheetData || []);
+      }
+    } catch (error) {
+      // Handle error silently for production
+    }
+  }, []);
+
+  const memoizedFetchActivityData = useCallback(async () => {
+    try {
+      const response = await fetch('/api/dashboard/activity?limit=10000');
+      if (response.ok) {
+        const data = await response.json();
+        setActivities(data.activities || []);
+      }
+    } catch (error) {
+      // Handle error silently for production
+    }
+  }, []);
+
+  // Fetch all dashboard data in parallel with optimized functions
+  const fetchDashboardData = useCallback(async (showLoading = false) => {
     try {
       if (showLoading) {
         setLoading(true);
@@ -272,11 +375,11 @@ export default function DashboardPage() {
       
       // Fetch all data in parallel for better performance
       await Promise.all([
-        fetchDashboardStats(),
-        fetchIqamaData(),
-        fetchEquipmentData(),
-        fetchTimesheetData(),
-        fetchActivityData()
+        memoizedFetchDashboardStats(),
+        memoizedFetchIqamaData(),
+        memoizedFetchEquipmentData(),
+        memoizedFetchTimesheetData(),
+        memoizedFetchActivityData()
       ]);
 
     } catch (_error) {
@@ -313,7 +416,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [memoizedFetchDashboardStats, memoizedFetchIqamaData, memoizedFetchEquipmentData, memoizedFetchTimesheetData, memoizedFetchActivityData]);
 
   // Fetch only timesheet data for quick updates (legacy)
   const fetchTimesheetDataLegacy = async () => {

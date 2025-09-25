@@ -279,7 +279,6 @@ class ApiService {
     sort_order?: 'asc' | 'desc';
   }) {
     return this.get('/equipment', params, {
-      toastMessage: 'Equipment loaded successfully',
       errorMessage: 'Failed to load equipment',
     });
   }
@@ -420,7 +419,6 @@ class ApiService {
     source?: 'erpnext' | 'local';
   }) {
     return this.get('/equipment', params, {
-      toastMessage: 'Equipment loaded successfully',
       errorMessage: 'Failed to load equipment',
     });
   }

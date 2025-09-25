@@ -164,7 +164,7 @@ const getEquipmentHandler = async (_request: NextRequest) => {
           }
         },
         {
-          ttl: 300, // 5 minutes
+          ttl: 600, // 10 minutes - equipment changes less frequently
           prefix: 'equipment',
           tags: [CACHE_TAGS.EQUIPMENT]
         }

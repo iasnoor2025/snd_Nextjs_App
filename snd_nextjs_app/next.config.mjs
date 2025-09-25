@@ -10,6 +10,16 @@ const nextConfig = {
   experimental: {
     optimizeCss: true,
     scrollRestoration: true,
+    // Enable SWC minification for better performance
+    swcMinify: true,
+    // Optimize package imports
+    optimizePackageImports: [
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-select',
+      'lucide-react',
+      'recharts'
+    ],
   },
 
   // Turbopack configuration (moved from experimental.turbo)
@@ -24,14 +34,23 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   
-  // Image optimization
+  // Image optimization - Enhanced for performance
   images: {
     formats: ['image/webp', 'image/avif'],
-    minimumCacheTTL: 60,
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    minimumCacheTTL: 86400, // Cache for 24 hours
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    domains: [], // Add your image domains here if needed
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+    ],
+    // Enable image optimization for better performance
+    unoptimized: false,
   },
 
   // Environment variables - ensure ERPNext variables are available in production
@@ -51,9 +70,31 @@ const nextConfig = {
     "puppeteer",
   ],
 
-  // Webpack configuration for compatibility
-  webpack: (config) => {
-    // Add any additional webpack configuration if needed
+  // Webpack configuration for compatibility and performance
+  webpack: (config, { isServer }) => {
+    // Optimize bundle splitting
+    if (!isServer) {
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        cacheGroups: {
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            chunks: 'all',
+          },
+          common: {
+            name: 'common',
+            minChunks: 2,
+            chunks: 'all',
+            enforce: true,
+          },
+        },
+      };
+    }
+    
+    // Let Next.js handle tree shaking optimizations to avoid cache conflicts
+    // Removed usedExports setting as it conflicts with Next.js caching
+    
     return config;
   },
 
