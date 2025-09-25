@@ -743,7 +743,7 @@ export default function EmployeeShowPage() {
               <span className="hidden font-medium sm:inline">{t('employee.tabs.resignations')}</span>
             </TabsTrigger>
           )}
-          {hasPermission('read', 'final-settlement') && (
+          {hasPermission('read', 'FinalSettlement') && (
             <TabsTrigger value="final-settlements" className="flex items-center gap-2 px-3 py-2">
               <Receipt className="h-4 w-4" />
               <span className="hidden font-medium sm:inline">{t('employee.tabs.finalSettlements')}</span>
