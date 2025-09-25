@@ -36,7 +36,6 @@ import {
   Loader2,
   Package,
   Plus,
-  RotateCw,
   Search,
   Trash2,
 } from 'lucide-react';
@@ -130,7 +129,6 @@ export default function EquipmentManagementPage() {
   const { user, hasPermission, getAllowedActions } = useRBAC();
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterAssignment, setFilterAssignment] = useState('all');
@@ -206,24 +204,6 @@ export default function EquipmentManagementPage() {
     }
   };
 
-  const syncEquipmentFromERPNext = async () => {
-    setSyncing(true);
-    try {
-      const response = await ApiService.syncEquipmentFromERPNext();
-      if (response.success) {
-        toast.success(
-          `Equipment synced successfully! ${response.data?.newCount || 0} new, ${response.data?.updatedCount || 0} updated`
-        );
-        await fetchEquipment(); // Refresh the equipment list
-      } else {
-        toast.error('Failed to sync equipment from ERPNext');
-      }
-    } catch (error) {
-      toast.error('Failed to sync equipment from ERPNext');
-    } finally {
-      setSyncing(false);
-    }
-  };
 
   // Category management functions
   const fetchCategories = async () => {
@@ -539,21 +519,6 @@ export default function EquipmentManagementPage() {
                 {t('equipment.equipment_management.manage_categories')}
               </Button>
             )}
-            {hasPermission('sync', 'Equipment') && (
-              <Button
-                onClick={syncEquipmentFromERPNext}
-                disabled={syncing}
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                {syncing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <RotateCw className="h-4 w-4" />
-                )}
-                {syncing ? t('equipment.syncing') : t('equipment.sync_from_erpnext')}
-              </Button>
-            )}
           </div>
         </div>
 
@@ -791,8 +756,8 @@ export default function EquipmentManagementPage() {
                               <div className="flex flex-col items-center space-y-2">
                                 <Package className="h-8 w-8 text-muted-foreground" />
                                 <p>{t('equipment.equipment_management.no_equipment_found')}</p>
-                                <p className="text-sm">
-                                  {t('equipment.equipment_management.sync_erpnext_to_get_started')}
+                                <p className="text-sm text-muted-foreground">
+                                  Add equipment using the "Add Equipment" button above
                                 </p>
                               </div>
                             ) : (
