@@ -398,25 +398,33 @@ export default function EquipmentManagementPage() {
 
     // Istimara status filtering
     let matchesIstimara = true;
-    if (filterIstimara !== 'all' && item.istimara_expiry_date) {
-      const isExpired = new Date(item.istimara_expiry_date) < new Date();
-      const isExpiringSoon = (() => {
-        const date = new Date(item.istimara_expiry_date);
-        const today = new Date();
-        const thirtyDaysFromNow = new Date();
-        thirtyDaysFromNow.setDate(today.getDate() + 30);
-        today.setHours(0, 0, 0, 0);
-        date.setHours(0, 0, 0, 0);
-        thirtyDaysFromNow.setHours(0, 0, 0, 0);
-        return date >= today && date <= thirtyDaysFromNow;
-      })();
+    if (filterIstimara !== 'all') {
+      if (!item.istimara_expiry_date) {
+        // If no expiry date is set, only match "not_specified" filter
+        matchesIstimara = filterIstimara === 'not_specified';
+      } else {
+        const isExpired = new Date(item.istimara_expiry_date) < new Date();
+        const isExpiringSoon = (() => {
+          const date = new Date(item.istimara_expiry_date);
+          const today = new Date();
+          const thirtyDaysFromNow = new Date();
+          thirtyDaysFromNow.setDate(today.getDate() + 30);
+          today.setHours(0, 0, 0, 0);
+          date.setHours(0, 0, 0, 0);
+          thirtyDaysFromNow.setHours(0, 0, 0, 0);
+          return date >= today && date <= thirtyDaysFromNow;
+        })();
 
-      if (filterIstimara === 'expired') {
-        matchesIstimara = isExpired;
-      } else if (filterIstimara === 'expiring_soon') {
-        matchesIstimara = isExpiringSoon;
-      } else if (filterIstimara === 'valid') {
-        matchesIstimara = !isExpired && !isExpiringSoon;
+        if (filterIstimara === 'expired') {
+          matchesIstimara = isExpired;
+        } else if (filterIstimara === 'expiring_soon') {
+          matchesIstimara = isExpiringSoon;
+        } else if (filterIstimara === 'valid') {
+          matchesIstimara = !isExpired && !isExpiringSoon;
+        } else if (filterIstimara === 'not_specified') {
+          // Equipment with expiry date should not match "not_specified"
+          matchesIstimara = false;
+        }
       }
     }
 
@@ -646,6 +654,7 @@ export default function EquipmentManagementPage() {
                   <option value="valid">{t('equipment.equipment_management.valid')}</option>
                   <option value="expired">{t('equipment.equipment_management.expired')}</option>
                   <option value="expiring_soon">{t('equipment.equipment_management.expiring_soon')}</option>
+                  <option value="not_specified">{t('equipment.equipment_management.not_specified')}</option>
                 </select>
               </div>
               <div className="flex items-center gap-2">
