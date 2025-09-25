@@ -31,6 +31,10 @@ const allPermissions = [
   'create.employee-performance', 'read.employee-performance', 'update.employee-performance', 'delete.employee-performance', 'manage.employee-performance',
   'create.employee-resignation', 'read.employee-resignation', 'update.employee-resignation', 'delete.employee-resignation', 'manage.employee-resignation',
   
+  // Final Settlement management
+  'create.FinalSettlement', 'read.FinalSettlement', 'update.FinalSettlement', 'delete.FinalSettlement', 'manage.FinalSettlement',
+  'approve.FinalSettlement', 'reject.FinalSettlement', 'process.FinalSettlement', 'export.FinalSettlement',
+  
   // Customer management
   'create.Customer', 'read.Customer', 'update.Customer', 'delete.Customer', 'manage.Customer',
   'create.customer-document', 'read.customer-document', 'update.customer-document', 'delete.customer-document', 'manage.customer-document',
@@ -216,6 +220,7 @@ const rolePermissions = {
     'manage.Report', 'manage.Settings', 'manage.Company', 'manage.Safety',
     'manage.employee-document', 'manage.equipment-document', 'manage.SalaryIncrement', 'manage.Advance',
     'manage.Assignment', 'manage.Location', 'manage.Maintenance', 'manage.Iqama',
+    'manage.FinalSettlement', 'approve.FinalSettlement', 'process.FinalSettlement', 'export.FinalSettlement',
     'read.own-profile', 'update.own-profile'
   ],
   MANAGER: [
@@ -225,6 +230,7 @@ const rolePermissions = {
     'read.Report', 'read.Settings', 'read.Company', 'read.Safety',
     'manage.employee-document', 'manage.equipment-document', 'manage.SalaryIncrement', 'manage.Advance',
     'manage.Assignment', 'read.Location', 'read.Maintenance', 'manage.Iqama',
+    'manage.FinalSettlement', 'approve.FinalSettlement', 'process.FinalSettlement', 'export.FinalSettlement',
     'read.own-profile', 'update.own-profile'
   ],
   SUPERVISOR: [
@@ -234,6 +240,7 @@ const rolePermissions = {
     'read.Report', 'read.Settings', 'read.Company', 'read.Safety',
     'manage.employee-document', 'read.equipment-document', 'read.SalaryIncrement', 'read.Advance',
     'read.Assignment', 'read.Location', 'read.Maintenance', 'manage.Iqama',
+    'read.FinalSettlement', 'export.FinalSettlement',
     'read.own-profile', 'update.own-profile'
   ],
   OPERATOR: [
@@ -243,6 +250,7 @@ const rolePermissions = {
     'read.Report', 'read.Settings', 'read.Company', 'read.Safety',
     'read.employee-document', 'read.equipment-document', 'read.SalaryIncrement', 'read.Advance',
     'read.Assignment', 'read.Location', 'read.Maintenance', 'read.Iqama',
+    'read.FinalSettlement',
     'read.own-profile', 'update.own-profile'
   ],
   EMPLOYEE: [
@@ -268,7 +276,8 @@ const rolePermissions = {
   ],
   FINANCE_SPECIALIST: [
     'read.Payroll', 'read.SalaryIncrement', 'read.Advance', 'read.Report',
-    'read.Employee', 'export.Report'
+    'read.Employee', 'export.Report',
+    'manage.FinalSettlement', 'approve.FinalSettlement', 'process.FinalSettlement', 'export.FinalSettlement'
   ],
   HR_SPECIALIST: [
     'read.Employee', 'read.Leave', 'read.performance-review', 'read.Training',

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ChevronDown, ChevronRight, Shield, Users, Settings, FileText, Calendar, Truck, Wrench, Building, ChartBar, UserCheck, CreditCard, Clock, FolderOpen, Briefcase, MapPin, Shield as Safety, DollarSign } from 'lucide-react';
+import { ChevronDown, ChevronRight, Shield, Users, Settings, FileText, Calendar, Truck, Wrench, Building, ChartBar, UserCheck, CreditCard, Clock, FolderOpen, Briefcase, MapPin, Shield as Safety, DollarSign, Receipt } from 'lucide-react';
 
 interface Permission {
   id: number;
@@ -130,6 +130,11 @@ const PERMISSION_CATEGORIES = {
     icon: FileText,
     color: 'bg-amber-100 text-amber-800',
     permissions: ['Iqama', 'iqama-application', 'iqama-renewal', 'iqama-expiry']
+  },
+  'Final Settlement Management': {
+    icon: Receipt,
+    color: 'bg-emerald-100 text-emerald-800',
+    permissions: ['FinalSettlement']
   }
 };
 
@@ -208,6 +213,7 @@ export function PermissionManagement({
       'Skill': 'Department & Organization',
       'Training': 'Department & Organization',
       'Iqama': 'Iqama Management',
+      'FinalSettlement': 'Final Settlement Management',
       'advance-payment': 'Advance Management',
       'advance-history': 'Advance Management'
     };
