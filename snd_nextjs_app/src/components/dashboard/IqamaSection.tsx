@@ -61,6 +61,9 @@ interface IqamaData {
   operatorLicenseExpiry?: string | null;
   tuvCertificationNumber?: string | null;
   tuvCertificationExpiry?: string | null;
+  // Dynamic fields added during processing
+  documentNumber?: string | null;
+  documentExpiry?: string | null;
 }
 
 interface IqamaSectionProps {
@@ -179,6 +182,7 @@ export function IqamaSection({
     const numberField = docType.numberField;
     const expiryField = docType.expiryField;
     
+    
     return safeIqamaData.map(item => {
       // Get document-specific data
       const documentNumber = item[numberField as keyof IqamaData] as string | null;
@@ -216,9 +220,12 @@ export function IqamaSection({
         // Override the original fields for display
         iqamaNumber: documentNumber,
         expiryDate: documentExpiry || '',
+        // Ensure position field is preserved correctly
+        position: item.position || 'Position Not Set',
       };
     });
   };
+
 
   const currentDocumentData = getCurrentDocumentData();
   
@@ -232,6 +239,29 @@ export function IqamaSection({
       item.position?.toLowerCase().includes(search.toLowerCase()) ||
       item.documentNumber?.toLowerCase().includes(search.toLowerCase());
 
+    // Smart filtering based on document type
+    if (search) {
+      // When searching, show all matches regardless of document status
+      return matchesSearch;
+    }
+    
+    if (statusFilter === 'missing') {
+      // Show only employees without this document type
+      // Employee has document if they have either document number OR expiry date
+      const hasDocumentNumber = item.documentNumber && item.documentNumber !== 'N/A' && item.documentNumber.trim() !== '';
+      const hasExpiryDate = item.expiryDate && item.expiryDate.trim() !== '';
+      return !hasDocumentNumber && !hasExpiryDate && item.status === 'missing';
+    }
+    
+    if (statusFilter === 'all') {
+      // Show only employees who have this document type (excluding missing status)
+      // Employee has document if they have either document number OR expiry date
+      const hasDocumentNumber = item.documentNumber && item.documentNumber !== 'N/A' && item.documentNumber.trim() !== '';
+      const hasExpiryDate = item.expiryDate && item.expiryDate.trim() !== '';
+      return (hasDocumentNumber || hasExpiryDate);
+    }
+    
+    // For specific status filters (expired, expiring, active)
     return matchesStatus && matchesSearch;
   });
 
@@ -310,14 +340,14 @@ export function IqamaSection({
                 </SelectContent>
               </Select>
             </div>
-            <PermissionBased action="management" subject="Iqama">
+            <PermissionBased action="manage" subject="Iqama">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleDownloadExpiredPDF}
                 disabled={expiredIqamaData.length === 0}
                 className="flex items-center gap-2"
-                title={expiredIqamaData.length === 0 ? t('dashboard.iqama.noExpiredRecords') : t('dashboard.iqama.downloadPdfTitle', { count: expiredIqamaData.length })}
+                title={expiredIqamaData.length === 0 ? t('dashboard.iqama.noExpiredRecords') : t('dashboard.iqama.downloadPdfTitle', { count: expiredIqamaData.length.toString() })}
               >
                 <Download className="h-4 w-4" />
                 Download PDF ({expiredIqamaData.length})
@@ -380,6 +410,24 @@ export function IqamaSection({
               >
                 {t('dashboard.iqama.clear')}
               </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Document Type Information */}
+        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md">
+          <div className="text-sm text-blue-700 dark:text-blue-300">
+            <strong>💡 Smart Filtering:</strong> 
+            {safeSelectedDocumentType === 'iqama' ? (
+              <>Showing all employees with their Iqama status.</>
+            ) : safeSelectedDocumentType === 'drivingLicense' ? (
+              <>Showing only employees who have Driving License documents (Active/Expired/Expiring). Select "Missing" status to see employees without licenses.</>
+            ) : safeSelectedDocumentType === 'spsp' ? (
+              <>Showing only employees who have SPSP License documents. To see all employees, search for a specific name.</>
+            ) : safeSelectedDocumentType === 'passport' ? (
+              <>Showing only employees who have Passport documents. To see all employees, search for a specific name.</>
+            ) : (
+              <>Showing only employees who have {currentDocType?.label.toLowerCase().replace(' management', '')} documents. To see all employees, search for a specific name.</>
             )}
           </div>
         </div>
@@ -488,8 +536,8 @@ export function IqamaSection({
                       >
                         <AlertTriangle className="h-3 w-3" />
                         {item.daysRemaining < 0
-                          ? t('dashboard.iqama.daysOverdue', { days: Math.abs(item.daysRemaining) })
-                          : t('dashboard.iqama.daysRemaining', { days: item.daysRemaining })}
+                          ? t('dashboard.iqama.daysOverdue', { days: Math.abs(item.daysRemaining!).toString() })
+                          : t('dashboard.iqama.daysRemaining', { days: item.daysRemaining!.toString() })}
                       </div>
                     ) : (
                       <span className="text-muted-foreground">
@@ -646,7 +694,7 @@ export function IqamaSection({
             </div>
 
             <div className="text-sm text-muted-foreground">
-              {t('dashboard.iqama.pagination.page', { current: currentPage, total: totalPages })}
+              {t('dashboard.iqama.pagination.page', { current: currentPage.toString(), total: totalPages.toString() })}
             </div>
           </div>
         )}
@@ -654,11 +702,28 @@ export function IqamaSection({
         {filteredData.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
             <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="font-medium">{t('dashboard.iqama.noRecordsFound')}</p>
+            <p className="font-medium">
+              {safeSelectedDocumentType === 'iqama' 
+                ? t('dashboard.iqama.noRecordsFound')
+                : `No ${safeSelectedDocumentType === 'spsp' ? 'SPSP' : safeSelectedDocumentType === 'drivingLicense' ? 'Driving License' : safeSelectedDocumentType === 'passport' ? 'Passport' : currentDocType?.label.toLowerCase().replace(' management', '')} records found`
+              }
+            </p>
             <p className="text-sm opacity-80">
               {search || statusFilter !== 'all'
-                ? t('dashboard.iqama.tryAdjustingSearch')
-                : t('dashboard.iqama.allRecordsActive')}
+                ? (safeSelectedDocumentType === 'iqama' 
+                    ? t('dashboard.iqama.tryAdjustingSearch')
+                    : 'Try adjusting your search criteria or filters.'
+                  )
+                : safeSelectedDocumentType === 'iqama'
+                  ? t('dashboard.iqama.allRecordsActive')
+                  : safeSelectedDocumentType === 'spsp' 
+                    ? 'No employees currently have SPSP licenses in the system.'
+                    : safeSelectedDocumentType === 'drivingLicense'
+                      ? 'No employees currently have Driving Licenses in the system.'
+                      : safeSelectedDocumentType === 'passport'
+                        ? 'No employees currently have Passports in the system.'
+                        : 'No employees currently have ' + currentDocType?.label.toLowerCase().replace(' management', '') + 's in the system.'
+              }
             </p>
           </div>
         )}
