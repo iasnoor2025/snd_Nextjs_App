@@ -45,54 +45,16 @@ export default async function LocaleLayout({
   const isRTL = validLocale === 'ar';
   
   return (
-    <html 
+    <div 
       lang={validLocale} 
       dir={isRTL ? 'rtl' : 'ltr'} 
-      suppressHydrationWarning 
       className={`${inter.variable} ${isRTL ? 'rtl' : ''}`}
     >
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              try {
-                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                  document.documentElement.classList.add('dark')
-                } else {
-                  document.documentElement.classList.remove('dark')
-                }
-              } catch (_) {}
-            `,
-          }}
-        />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              // Prevent flash of unstyled content
-              (function() {
-                try {
-                  var theme = localStorage.getItem('theme');
-                  var systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                  var finalTheme = theme || systemTheme;
-                  
-                  if (finalTheme === 'dark') {
-                    document.documentElement.classList.add('dark');
-                  } else {
-                    document.documentElement.classList.remove('dark');
-                  }
-                } catch (e) {}
-              })();
-            `,
-          }}
-        />
-      </head>
-      <body className="font-sans antialiased" suppressHydrationWarning>
-        <Providers>
-          <RBACInitializer />
-          <ConditionalLayout>{children}</ConditionalLayout>
-          <Toaster position="top-right" richColors closeButton duration={4000} />
-        </Providers>
-      </body>
-    </html>
+      <Providers>
+        <RBACInitializer />
+        <ConditionalLayout>{children}</ConditionalLayout>
+        <Toaster position="top-right" richColors closeButton duration={4000} />
+      </Providers>
+    </div>
   );
 }
