@@ -26,7 +26,6 @@ export const GET = withPermission(PermissionConfigs.dashboard.read)(async (_requ
 
     // Fetch Iqama data
     const iqamaData = await DashboardService.getIqamaData(limit);
-    
 
     return NextResponse.json({ iqamaData });
   } catch (error) {

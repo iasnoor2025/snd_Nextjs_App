@@ -25,6 +25,18 @@ interface IqamaData {
   expiryDate: string;
   status: 'active' | 'expired' | 'expiring' | 'missing';
   daysRemaining: number | null;
+  // Additional document fields
+  iqamaExpiry?: string | null;
+  passportNumber?: string | null;
+  passportExpiry?: string | null;
+  drivingLicenseNumber?: string | null;
+  drivingLicenseExpiry?: string | null;
+  spspLicenseNumber?: string | null;
+  spspLicenseExpiry?: string | null;
+  operatorLicenseNumber?: string | null;
+  operatorLicenseExpiry?: string | null;
+  tuvCertificationNumber?: string | null;
+  tuvCertificationExpiry?: string | null;
 }
 
 interface EquipmentData {
@@ -45,7 +57,7 @@ interface EquipmentData {
 }
 
 interface DashboardModalsProps {
-  // Iqama Modal
+  // Document Modal
   isIqamaModalOpen: boolean;
   setIsIqamaModalOpen: (open: boolean) => void;
   selectedIqama: IqamaData | null;
@@ -53,6 +65,7 @@ interface DashboardModalsProps {
   setNewExpiryDate: (date: string) => void;
   updatingIqama: boolean;
   onUpdateIqama: () => void;
+  selectedDocumentType?: 'iqama' | 'passport' | 'drivingLicense' | 'spsp' | 'operatorLicense' | 'tuvCertification';
 
   // Equipment Modal
   isEquipmentUpdateModalOpen: boolean;
@@ -78,7 +91,7 @@ interface DashboardModalsProps {
 }
 
 export function DashboardModals({
-  // Iqama Modal
+  // Document Modal
   isIqamaModalOpen,
   setIsIqamaModalOpen,
   selectedIqama,
@@ -86,6 +99,7 @@ export function DashboardModals({
   setNewExpiryDate,
   updatingIqama,
   onUpdateIqama,
+  selectedDocumentType = 'iqama',
 
   // Equipment Modal
   isEquipmentUpdateModalOpen,
@@ -111,17 +125,45 @@ export function DashboardModals({
 }: DashboardModalsProps) {
   const { t } = useI18n();
 
+  // Document type configuration
+  const documentTypes = {
+    iqama: {
+      label: 'Iqama',
+      expiryField: 'iqama_expiry'
+    },
+    passport: {
+      label: 'Passport',
+      expiryField: 'passport_expiry'
+    },
+    drivingLicense: {
+      label: 'Driving License',
+      expiryField: 'driving_license_expiry'
+    },
+    spsp: {
+      label: 'SPSP License',
+      expiryField: 'spsp_license_expiry'
+    },
+    operatorLicense: {
+      label: 'Operator License',
+      expiryField: 'operator_license_expiry'
+    },
+    tuvCertification: {
+      label: 'TUV Certification',
+      expiryField: 'tuv_certification_expiry'
+    }
+  };
+
+  const currentDocType = documentTypes[selectedDocumentType];
+
   return (
     <>
-      {/* Iqama Update Modal */}
+      {/* Document Update Modal */}
       <Dialog open={isIqamaModalOpen} onOpenChange={setIsIqamaModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t('dashboard.modals.updateIqamaExpiry')}</DialogTitle>
+            <DialogTitle>Update {currentDocType.label} Expiry</DialogTitle>
             <DialogDescription>
-              {t('dashboard.modals.updateIqamaExpiryDescription', {
-                name: selectedIqama?.employeeName,
-              })}
+              Update the expiry date for {selectedIqama?.employeeName}'s {currentDocType.label.toLowerCase()}.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">

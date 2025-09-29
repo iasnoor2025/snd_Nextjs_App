@@ -60,6 +60,18 @@ export interface IqamaData {
   position: string | null;
   companyName?: string | null;
   location?: string | null;
+  // Additional document fields
+  iqamaExpiry?: string | null;
+  passportNumber?: string | null;
+  passportExpiry?: string | null;
+  drivingLicenseNumber?: string | null;
+  drivingLicenseExpiry?: string | null;
+  spspLicenseNumber?: string | null;
+  spspLicenseExpiry?: string | null;
+  operatorLicenseNumber?: string | null;
+  operatorLicenseExpiry?: string | null;
+  tuvCertificationNumber?: string | null;
+  tuvCertificationExpiry?: string | null;
 }
 
 export interface EquipmentData {
@@ -491,6 +503,19 @@ export class DashboardService {
           department: departments.name,
           companyName: sql<string>`'Company Name'`, // Placeholder - you can update this with actual company field
           location: sql<string>`'Location'`, // Placeholder - you can update this with actual location field
+          // Additional document fields
+          passportNumber: employees.passportNumber,
+          passportExpiry: employees.passportExpiry,
+          drivingLicenseNumber: employees.drivingLicenseNumber,
+          drivingLicenseExpiry: employees.drivingLicenseExpiry,
+          spspLicenseNumber: employees.spspLicenseNumber,
+          spspLicenseExpiry: employees.spspLicenseExpiry,
+          operatorLicenseNumber: employees.operatorLicenseNumber,
+          operatorLicenseExpiry: employees.operatorLicenseExpiry,
+          tuvCertificationNumber: employees.tuvCertificationNumber,
+          tuvCertificationExpiry: employees.tuvCertificationExpiry,
+          // Map database fields to component field names
+          iqamaExpiry: employees.iqamaExpiry,
         })
         .from(employees)
         .leftJoin(departments, eq(employees.departmentId, departments.id))

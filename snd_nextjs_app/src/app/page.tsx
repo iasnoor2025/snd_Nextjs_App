@@ -106,6 +106,7 @@ export default function DashboardPage() {
   const [selectedIqama, setSelectedIqama] = useState<IqamaData | null>(null);
   const [selectedEquipment, setSelectedEquipment] = useState<EquipmentData | null>(null);
   const [selectedTimesheetForEdit, setSelectedTimesheetForEdit] = useState<TimesheetData | null>(null);
+  const [selectedDocumentType, setSelectedDocumentType] = useState<'iqama' | 'passport' | 'drivingLicense' | 'spsp' | 'operatorLicense' | 'tuvCertification'>('iqama');
 
   // State for form inputs
   const [newExpiryDate, setNewExpiryDate] = useState('');
@@ -497,16 +498,29 @@ export default function DashboardPage() {
     setRefreshing(false);
   };
 
-  // Handle Iqama update
+  // Handle Document update (supporting different document types)
   const handleUpdateIqama = async () => {
     if (!selectedIqama || !newExpiryDate) return;
+
+    // Map document types to their database fields
+    const documentFields = {
+      iqama: 'iqama_expiry',
+      passport: 'passport_expiry',
+      drivingLicense: 'driving_license_expiry',
+      spsp: 'spsp_license_expiry',
+      operatorLicense: 'operator_license_expiry',
+      tuvCertification: 'tuv_certification_expiry'
+    };
+
+    const updateField = documentFields[selectedDocumentType];
+    const updatePayload = { [updateField]: newExpiryDate };
 
     try {
       setUpdatingIqama(true);
       const response = await fetch(`/api/employees/${selectedIqama.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ iqama_expiry: newExpiryDate }),
+        body: JSON.stringify(updatePayload),
       });
 
       if (response.ok) {
@@ -955,6 +969,8 @@ export default function DashboardPage() {
                 onHideSection={() => {
                   toggleSection('iqama');
                 }}
+                selectedDocumentType={selectedDocumentType}
+                onDocumentTypeChange={setSelectedDocumentType}
               />
             </IqamaPermission>
           )}
@@ -1154,7 +1170,7 @@ export default function DashboardPage() {
 
         {/* Modals */}
         <DashboardModals
-          // Iqama Modal
+          // Document Modal
           isIqamaModalOpen={isIqamaModalOpen}
           setIsIqamaModalOpen={setIsIqamaModalOpen}
           selectedIqama={selectedIqama as any}
@@ -1162,6 +1178,7 @@ export default function DashboardPage() {
           setNewExpiryDate={setNewExpiryDate}
           updatingIqama={updatingIqama}
           onUpdateIqama={handleUpdateIqama}
+          selectedDocumentType={selectedDocumentType}
           // Equipment Modal
           isEquipmentUpdateModalOpen={isEquipmentUpdateModalOpen}
           setIsEquipmentUpdateModalOpen={setIsEquipmentUpdateModalOpen}
