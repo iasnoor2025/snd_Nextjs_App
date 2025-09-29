@@ -96,7 +96,7 @@ export function IqamaSection({
       expiryField: 'iqamaExpiry',
       numberLabel: 'Iqama #',
       buttonText: 'Manage Iqama',
-      managementRoute: '/iqama-management'
+      managementRoute: '/modules/employee-management'
     },
     passport: {
       label: 'Passport Management',
@@ -106,7 +106,7 @@ export function IqamaSection({
       expiryField: 'passportExpiry',
       numberLabel: 'Passport #',
       buttonText: 'Manage Passport',
-      managementRoute: '/passport-management'
+      managementRoute: '/modules/employee-management'
     },
     drivingLicense: {
       label: 'Driving License Management',
@@ -116,7 +116,7 @@ export function IqamaSection({
       expiryField: 'drivingLicenseExpiry',
       numberLabel: 'License #',
       buttonText: 'Manage License',
-      managementRoute: '/driving-license-management'
+      managementRoute: '/modules/employee-management'
     },
     spsp: {
       label: 'SPSP Management',
@@ -126,7 +126,7 @@ export function IqamaSection({
       expiryField: 'spspLicenseExpiry',
       numberLabel: 'SPSP #',
       buttonText: 'Manage SPSP',
-      managementRoute: '/spsp-management'
+      managementRoute: '/modules/employee-management'
     },
     operatorLicense: {
       label: 'Operator License Management',
@@ -136,7 +136,7 @@ export function IqamaSection({
       expiryField: 'operatorLicenseExpiry',
       numberLabel: 'Operator #',
       buttonText: 'Manage Operator License',
-      managementRoute: '/operator-license-management'
+      managementRoute: '/modules/employee-management'
     },
     tuvCertification: {
       label: 'TUV Certification Management',
@@ -146,7 +146,7 @@ export function IqamaSection({
       expiryField: 'tuvCertificationExpiry',
       numberLabel: 'TUV #',
       buttonText: 'Manage TUV Certification',
-      managementRoute: '/tuv-certification-management'
+      managementRoute: '/modules/employee-management'
     }
   };
 
