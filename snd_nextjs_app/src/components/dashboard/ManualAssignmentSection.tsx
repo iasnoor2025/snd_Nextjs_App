@@ -125,7 +125,7 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
     
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(1000);
+    const [itemsPerPage] = useState(10);
     const [totalPages, setTotalPages] = useState(1);
 
     // Form state
@@ -1027,8 +1027,8 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                                                     </tr>
                                             ))
                                         ) : (
-                                            // Show all assignments
-                                            filteredAssignments.map(assignment => (
+                                            // Show paginated assignments
+                                            getCurrentPageAssignments().map(assignment => (
                                                 <tr key={assignment.id} className="border-b hover:bg-muted/20">
                                                     <td className="p-3 text-sm">
                                                         <span className="font-mono bg-muted px-2 py-1 rounded text-xs">
@@ -1126,12 +1126,15 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                                                 (filtered from {assignments.filter(a => a.status === 'active').length} active)
                                             </span>
                                         )}
+                                        {filteredAssignments.length > itemsPerPage && (
+                                            <span className="ml-2 text-xs">(page {currentPage} of {totalPages})</span>
+                                        )}
                                     </>
                                 )}
                             </div>
 
                             {/* Pagination Controls */}
-                            {totalPages > 1 && (
+                            {(totalPages > 1) && (
                                 <div className="flex items-center justify-center gap-2 mt-4">
                                     <Button
                                         variant="outline"
@@ -1172,11 +1175,17 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                                 <div className="text-center text-xs text-muted-foreground mt-2">
                                     {showAllEmployees && totalPages > 1 ? (
                                         <>Page {currentPage} of {totalPages} • </>
+                                    ) : !showAllEmployees && filteredAssignments.length > itemsPerPage ? (
+                                        <>Page {currentPage} of {totalPages} • </>
                                     ) : null}
                                     {showAllEmployees ? (
                                         <>Showing {Math.min(itemsPerPage, getCurrentPageData().length)} of {getTotalItems()} items</>
                                     ) : (
-                                        <>Showing all {filteredAssignments.length} assignments</>
+                                        filteredAssignments.length > itemsPerPage ? (
+                                            <>Showing {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredAssignments.length)} of {filteredAssignments.length} assignments</>
+                                        ) : (
+                                            <>Showing all {filteredAssignments.length} assignments</>
+                                        )
                                     )}
                                 </div>
                             )}
