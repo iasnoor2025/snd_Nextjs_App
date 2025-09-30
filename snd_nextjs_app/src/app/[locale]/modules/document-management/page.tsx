@@ -216,10 +216,10 @@ export default function DocumentManagementPage() {
   };
 
   const handleSelectAll = () => {
-    if (selectedDocuments.size === documents.length) {
+    if (selectedDocuments.size === filteredDocuments.length) {
       setSelectedDocuments(new Set());
     } else {
-      setSelectedDocuments(new Set(documents.map(doc => doc.id)));
+      setSelectedDocuments(new Set(filteredDocuments.map(doc => doc.id)));
     }
   };
 
@@ -359,13 +359,8 @@ export default function DocumentManagementPage() {
     return <FileText className="h-5 w-5" />;
   };
 
-  // Memoized filtered documents for better performance
-  const filteredDocuments = useMemo(() => {
-    return documents.filter(doc => {
-      if (documentType !== 'all' && doc.type !== documentType) return false;
-      return true;
-    });
-  }, [documents, documentType]);
+  // Use documents directly since API already filters by type
+  const filteredDocuments = documents;
 
   return (
     <ProtectedRoute>
@@ -518,7 +513,7 @@ export default function DocumentManagementPage() {
                 <div className="grid grid-cols-12 gap-4 p-3 bg-muted rounded-lg font-medium text-sm">
                   <div className="col-span-1">
                     <Checkbox
-                      checked={selectedDocuments.size === documents.length && documents.length > 0}
+                      checked={selectedDocuments.size === filteredDocuments.length && filteredDocuments.length > 0}
                       onCheckedChange={handleSelectAll}
                     />
                   </div>
