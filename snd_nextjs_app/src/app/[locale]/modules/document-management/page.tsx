@@ -300,9 +300,23 @@ export default function DocumentManagementPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Combine PDF error response:', errorData);
-        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+          errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+        }
+        
+        console.error('Combine PDF error response:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData,
+          url: response.url
+        });
+        
+        const errorMessage = errorData?.message || errorData?.error || `HTTP ${response.status}: ${response.statusText}`;
+        throw new Error(errorMessage);
       }
 
       // Get the PDF blob and download it

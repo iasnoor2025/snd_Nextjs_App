@@ -1,6 +1,6 @@
 import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
-import { employeeDocuments, employees, equipment, media } from '@/lib/drizzle/schema';
+import { employeeDocuments, employees, equipment, equipmentDocuments } from '@/lib/drizzle/schema';
 import { eq, inArray } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
@@ -77,20 +77,21 @@ export async function POST(_request: NextRequest) {
       console.log('Fetching equipment documents with IDs:', documentIds);
       const equipmentDocs = await db
         .select({
-          id: media.id,
-          fileName: media.fileName,
-          filePath: media.filePath,
-          fileSize: media.fileSize,
-          mimeType: media.mimeType,
-          createdAt: media.createdAt,
-          modelId: media.modelId,
+          id: equipmentDocuments.id,
+          fileName: equipmentDocuments.fileName,
+          filePath: equipmentDocuments.filePath,
+          fileSize: equipmentDocuments.fileSize,
+          mimeType: equipmentDocuments.mimeType,
+          createdAt: equipmentDocuments.createdAt,
+          equipmentId: equipmentDocuments.equipmentId,
           equipmentName: equipment.name,
           equipmentModel: equipment.modelNumber,
           equipmentSerial: equipment.serialNumber,
+          equipmentDoorNumber: equipment.doorNumber,
         })
-        .from(media)
-        .leftJoin(equipment, eq(equipment.id, media.modelId))
-        .where(inArray(media.id, documentIds));
+        .from(equipmentDocuments)
+        .leftJoin(equipment, eq(equipment.id, equipmentDocuments.equipmentId))
+        .where(inArray(equipmentDocuments.id, documentIds));
 
       console.log('Found equipment documents:', equipmentDocs.length);
 
@@ -99,13 +100,14 @@ export async function POST(_request: NextRequest) {
           ...doc,
           type: 'equipment',
           name: doc.fileName,
-          url: doc.filePath, // This should be the file path, not the full URL
+          url: (doc.filePath || '').replace(/^http:/, 'https:'), // Force HTTPS to prevent Mixed Content errors
           fileName: doc.fileName,
           filePath: doc.filePath,
           mimeType: doc.mimeType,
           equipmentName: doc.equipmentName,
           equipmentModel: doc.equipmentModel,
           equipmentSerial: doc.equipmentSerial,
+          equipmentDoorNumber: doc.equipmentDoorNumber,
         }))
       );
     }
@@ -144,10 +146,24 @@ export async function POST(_request: NextRequest) {
     });
   } catch (error) {
     console.error('Combine PDF error:', error);
+    
+    // Provide more detailed error information
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
+    console.error('Error details:', {
+      message: errorMessage,
+      stack: errorStack,
+      timestamp: new Date().toISOString()
+    });
+    
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to combine documents: ' + (error as Error).message,
+        message: 'Failed to combine documents: ' + errorMessage,
+        error: errorMessage,
+        timestamp: new Date().toISOString(),
+        ...(process.env.NODE_ENV === 'development' && { stack: errorStack })
       },
       { status: 500 }
     );
