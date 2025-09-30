@@ -4,6 +4,7 @@ import { ProtectedRoute } from '@/components/protected-route';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -39,6 +40,8 @@ import { useState } from 'react';
 import { useI18n } from '@/hooks/use-i18n';
 import { toast } from 'sonner';
 import React from 'react';
+import { EquipmentReportPDFService } from '@/lib/services/equipment-report-pdf-service';
+import { EquipmentReportExcelService } from '@/lib/services/equipment-report-excel-service';
 
 interface ReportData {
   success: boolean;
@@ -85,12 +88,18 @@ export default function ReportingDashboardPage() {
   const [customerFilter, setCustomerFilter] = useState('all');
   const [customersWithRentals, setCustomersWithRentals] = useState<any[]>([]);
   const [loadingCustomers, setLoadingCustomers] = useState(false);
+  const [equipmentCategories, setEquipmentCategories] = useState<any[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [includeInactive, setIncludeInactive] = useState(false);
 
   const reportTypes = [
     { id: 'overview', name: t('reporting.overview_report'), icon: Building },
     { id: 'employee_analytics', name: t('reporting.employee_analytics'), icon: Users },
     { id: 'project_analytics', name: t('reporting.project_analytics'), icon: Target },
     { id: 'equipment_analytics', name: t('reporting.equipment_analytics'), icon: Car },
+    { id: 'equipment_by_category', name: 'Equipment Report by Category', icon: Car },
     { id: 'financial_analytics', name: t('reporting.financial_analytics'), icon: DollarSign },
     { id: 'operational_analytics', name: t('reporting.operational_analytics'), icon: Activity },
     { id: 'hr_analytics', name: t('reporting.hr_analytics'), icon: Users },
@@ -123,13 +132,46 @@ export default function ReportingDashboardPage() {
     }
   };
 
-  // Fetch customers when customer equipment report is selected
+  // Fetch equipment categories when equipment report is selected
+  const fetchEquipmentCategories = async () => {
+    if (selectedReport !== 'equipment_by_category') return;
+    
+    try {
+      setLoadingCategories(true);
+      const response = await fetch('/api/equipment/categories');
+      if (response.ok) {
+        const data = await response.json();
+        setEquipmentCategories(data.data || []);
+      } else {
+        console.error('Failed to fetch equipment categories');
+        setEquipmentCategories([]);
+      }
+    } catch (error) {
+      console.error('Error fetching equipment categories:', error);
+      setEquipmentCategories([]);
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
+  // Fetch data when specific report types are selected
   React.useEffect(() => {
     if (selectedReport === 'customer_equipment') {
       fetchCustomersWithRentals();
-    } else {
-      // Reset customer filter when switching to other report types
+      // Reset equipment filters when switching to customer equipment report
+      setCategoryFilter('all');
+      setStatusFilter('all');
+      setIncludeInactive(false);
+    } else if (selectedReport === 'equipment_by_category') {
+      fetchEquipmentCategories();
+      // Reset customer filter when switching to equipment report
       setCustomerFilter('all');
+    } else {
+      // Reset all filters when switching to other report types
+      setCustomerFilter('all');
+      setCategoryFilter('all');
+      setStatusFilter('all');
+      setIncludeInactive(false);
     }
   }, [selectedReport]);
 
@@ -144,6 +186,9 @@ export default function ReportingDashboardPage() {
         endDate: new Date().toISOString(),
         ...(departmentFilter !== 'all' && { departmentId: departmentFilter }),
         ...(customerFilter !== 'all' && { customerId: customerFilter }),
+        ...(categoryFilter !== 'all' && { categoryId: categoryFilter }),
+        ...(statusFilter !== 'all' && { status: statusFilter }),
+        ...(includeInactive && { includeInactive: 'true' }),
       });
 
       const controller = new AbortController();
@@ -151,6 +196,8 @@ export default function ReportingDashboardPage() {
 
       const apiEndpoint = selectedReport === 'customer_equipment' 
         ? `/api/reports/customer-equipment?${params}`
+        : selectedReport === 'equipment_by_category'
+        ? `/api/reports/equipment?${params}`
         : `/api/reports/comprehensive?${params}`;
       
       const response = await fetch(apiEndpoint, {
@@ -232,6 +279,18 @@ export default function ReportingDashboardPage() {
             { title: 'Active Equipment', value: data.equipment_stats.active_equipment || 0, icon: Car, color: 'green' },
             { title: 'Total Value', value: `SAR ${Number(data.equipment_stats.total_value || 0).toLocaleString()}`, icon: DollarSign, color: 'purple' },
             { title: 'Average Value', value: `SAR ${Number(data.equipment_stats.avg_value || 0).toFixed(0)}`, icon: DollarSign, color: 'orange' }
+          );
+        }
+        break;
+      case 'equipment_by_category':
+        if (data.summary_stats) {
+          cards.push(
+            { title: 'Total Equipment', value: data.summary_stats.totalEquipment || 0, icon: Car, color: 'blue' },
+            { title: 'Active Equipment', value: data.summary_stats.activeEquipment || 0, icon: Car, color: 'green' },
+            { title: 'Available Equipment', value: data.summary_stats.availableEquipment || 0, icon: Car, color: 'emerald' },
+            { title: 'Rented Equipment', value: data.summary_stats.rentedEquipment || 0, icon: Car, color: 'orange' },
+            { title: 'Maintenance Equipment', value: data.summary_stats.maintenanceEquipment || 0, icon: Car, color: 'red' },
+            { title: 'Total Value', value: `SAR ${Number(data.summary_stats.totalValue || 0).toLocaleString()}`, icon: DollarSign, color: 'purple' }
           );
         }
         break;
@@ -515,6 +574,143 @@ export default function ReportingDashboardPage() {
           );
         }
         break;
+      case 'equipment_by_category':
+        if (data.equipment_by_category && Object.keys(data.equipment_by_category).length > 0) {
+          return (
+            <div className="space-y-6">
+              {/* Category Statistics */}
+              {data.category_stats && data.category_stats.length > 0 && (
+                <div className="bg-white rounded-lg shadow">
+                  <div className="px-6 py-4 border-b border-gray-200">
+                    <h3 className="text-lg font-medium text-gray-900">Category Statistics</h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Category</TableHead>
+                          <TableHead>Total</TableHead>
+                          <TableHead>Active</TableHead>
+                          <TableHead>Available</TableHead>
+                          <TableHead>Rented</TableHead>
+                          <TableHead>Maintenance</TableHead>
+                          <TableHead>Total Value</TableHead>
+                          <TableHead>Avg Daily Rate</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {data.category_stats.map((category: any, index: number) => (
+                          <TableRow key={category.categoryId || index}>
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-2">
+                                {category.categoryIcon && <span>{category.categoryIcon}</span>}
+                                {category.categoryName}
+                              </div>
+                            </TableCell>
+                            <TableCell>{category.totalEquipment}</TableCell>
+                            <TableCell>
+                              <Badge variant="default">{category.activeEquipment}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="secondary">{category.availableEquipment}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{category.rentedEquipment}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="destructive">{category.maintenanceEquipment}</Badge>
+                            </TableCell>
+                            <TableCell>SAR {Number(category.totalValue).toLocaleString()}</TableCell>
+                            <TableCell>SAR {Number(category.avgDailyRate).toFixed(2)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+
+              {/* Equipment by Category */}
+              {Object.values(data.equipment_by_category).map((category: any, categoryIndex: number) => (
+                <div key={category.categoryId || categoryIndex} className="bg-white rounded-lg shadow">
+                  <div className="px-6 py-4 border-b border-gray-200">
+                    <h3 className="text-lg font-medium text-gray-900">
+                      <div className="flex items-center gap-2">
+                        {category.categoryIcon && <span>{category.categoryIcon}</span>}
+                        {category.categoryName} ({category.equipment.length} items)
+                      </div>
+                    </h3>
+                    {category.categoryDescription && (
+                      <p className="text-sm text-gray-600 mt-1">{category.categoryDescription}</p>
+                    )}
+                  </div>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Manufacturer</TableHead>
+                          <TableHead>Model</TableHead>
+                          <TableHead>Serial</TableHead>
+                          <TableHead>Door #</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Location</TableHead>
+                          <TableHead>Assigned To</TableHead>
+                          <TableHead>Purchase Price</TableHead>
+                          <TableHead>Daily Rate</TableHead>
+                          <TableHead>Condition</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {category.equipment.map((equipment: any, equipmentIndex: number) => (
+                          <TableRow key={equipment.id || equipmentIndex}>
+                            <TableCell className="font-medium">{equipment.name}</TableCell>
+                            <TableCell>{equipment.manufacturer || 'N/A'}</TableCell>
+                            <TableCell>{equipment.modelNumber || 'N/A'}</TableCell>
+                            <TableCell>{equipment.serialNumber || 'N/A'}</TableCell>
+                            <TableCell>{equipment.doorNumber || 'N/A'}</TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={
+                                  equipment.status === 'available' ? 'default' :
+                                  equipment.status === 'rented' ? 'secondary' :
+                                  equipment.status === 'maintenance' ? 'destructive' : 'outline'
+                                }
+                              >
+                                {equipment.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{equipment.locationName || 'N/A'}</TableCell>
+                            <TableCell>
+                              {equipment.assignedEmployeeName ? (
+                                <Badge variant="outline">{equipment.assignedEmployeeName}</Badge>
+                              ) : (
+                                <Badge variant="secondary">Unassigned</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>SAR {Number(equipment.purchasePrice || 0).toLocaleString()}</TableCell>
+                            <TableCell>SAR {Number(equipment.dailyRate || 0).toFixed(2)}</TableCell>
+                            <TableCell>{equipment.assetCondition || 'N/A'}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        } else {
+          return (
+            <div className="text-center py-8">
+              <p className="text-gray-500">No equipment data found.</p>
+              <p className="text-sm text-gray-400 mt-2">
+                Make sure there are equipment records in the system.
+              </p>
+            </div>
+          );
+        }
+        break;
     }
 
     return null;
@@ -533,6 +729,44 @@ export default function ReportingDashboardPage() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  const downloadPDFReport = async () => {
+    if (!reportData || selectedReport !== 'equipment_by_category') return;
+    
+    try {
+      const loadingToastId = toast.loading('Generating PDF report...');
+      
+      await EquipmentReportPDFService.downloadEquipmentReportPDF(
+        reportData,
+        `equipment-report-${new Date().toISOString().split('T')[0]}.pdf`
+      );
+      
+      toast.dismiss(loadingToastId);
+      toast.success('PDF report downloaded successfully');
+    } catch (error) {
+      console.error('Error generating PDF report:', error);
+      toast.error('Failed to generate PDF report');
+    }
+  };
+
+  const downloadExcelReport = async () => {
+    if (!reportData || selectedReport !== 'equipment_by_category') return;
+    
+    try {
+      const loadingToastId = toast.loading('Generating Excel report...');
+      
+      await EquipmentReportExcelService.downloadEquipmentReportExcel(
+        reportData,
+        `equipment-report-${new Date().toISOString().split('T')[0]}.xlsx`
+      );
+      
+      toast.dismiss(loadingToastId);
+      toast.success('Excel report downloaded successfully');
+    } catch (error) {
+      console.error('Error generating Excel report:', error);
+      toast.error('Failed to generate Excel report');
+    }
   };
 
   return (
@@ -634,6 +868,69 @@ export default function ReportingDashboardPage() {
                     </Select>
                   </div>
                 )}
+
+                {/* Equipment Category Filter - Only show for equipment by category report */}
+                {selectedReport === 'equipment_by_category' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="category-filter">Equipment Category</Label>
+                    <Select 
+                      value={categoryFilter} 
+                      onValueChange={setCategoryFilter}
+                      disabled={loadingCategories}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={loadingCategories ? "Loading categories..." : "Select category"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Categories</SelectItem>
+                        {equipmentCategories.map((category) => (
+                          <SelectItem key={category.id} value={category.id.toString()}>
+                            <div className="flex items-center gap-2">
+                              {category.icon && <span>{category.icon}</span>}
+                              <span>{category.name}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Status Filter - Only show for equipment by category report */}
+                {selectedReport === 'equipment_by_category' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="status-filter">Equipment Status</Label>
+                    <Select 
+                      value={statusFilter} 
+                      onValueChange={setStatusFilter}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        <SelectItem value="available">Available</SelectItem>
+                        <SelectItem value="rented">Rented</SelectItem>
+                        <SelectItem value="maintenance">Maintenance</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Include Inactive Checkbox - Only show for equipment by category report */}
+                {selectedReport === 'equipment_by_category' && (
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="include-inactive" 
+                      checked={includeInactive}
+                      onCheckedChange={(checked) => setIncludeInactive(checked as boolean)}
+                    />
+                    <Label htmlFor="include-inactive" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      Include Inactive Equipment
+                    </Label>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-4">
@@ -642,10 +939,24 @@ export default function ReportingDashboardPage() {
                   {loading ? t('reporting.generating') : t('reporting.generate_report')}
                 </Button>
                 {reportData && (
-                  <Button onClick={exportReport} variant="outline" className="flex items-center gap-2">
-                    <Download className="h-4 w-4" />
-                    {t('reporting.export_report')}
-                  </Button>
+                  <>
+                    <Button onClick={exportReport} variant="outline" className="flex items-center gap-2">
+                      <Download className="h-4 w-4" />
+                      {t('reporting.export_report')}
+                    </Button>
+                    {selectedReport === 'equipment_by_category' && (
+                      <>
+                        <Button onClick={downloadPDFReport} variant="outline" className="flex items-center gap-2">
+                          <Download className="h-4 w-4" />
+                          Download PDF
+                        </Button>
+                        <Button onClick={downloadExcelReport} variant="outline" className="flex items-center gap-2">
+                          <Download className="h-4 w-4" />
+                          Download Excel
+                        </Button>
+                      </>
+                    )}
+                  </>
                 )}
               </div>
             </CardContent>
