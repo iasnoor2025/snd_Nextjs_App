@@ -367,6 +367,12 @@ export class FinalSettlementService {
       // Override unpaid salary amount if manual value is provided
       if (additionalData?.manualUnpaidSalary && additionalData.manualUnpaidSalary > 0) {
         salaryInfo.unpaidAmount = additionalData.manualUnpaidSalary;
+        // Calculate months based on manual amount and current salary
+        const currentSalary = parseFloat(emp.basicSalary || '0');
+        if (currentSalary > 0) {
+          salaryInfo.unpaidMonths = Math.round((additionalData.manualUnpaidSalary / currentSalary) * 10) / 10; // Round to 1 decimal
+          salaryInfo.totalUnpaidMonths = salaryInfo.unpaidMonths;
+        }
       }
 
       // Get latest salary for vacation allowance calculation and basic salary display
@@ -546,6 +552,12 @@ export class FinalSettlementService {
       // Override unpaid salary amount if manual value is provided
       if (additionalData?.manualUnpaidSalary && additionalData.manualUnpaidSalary > 0) {
         salaryInfo.unpaidAmount = additionalData.manualUnpaidSalary;
+        // Calculate months based on manual amount and current salary
+        const currentSalary = currentBasicSalary + currentAllowances;
+        if (currentSalary > 0) {
+          salaryInfo.unpaidMonths = Math.round((additionalData.manualUnpaidSalary / currentSalary) * 10) / 10; // Round to 1 decimal
+          salaryInfo.totalUnpaidMonths = salaryInfo.unpaidMonths;
+        }
       }
 
       // Get latest salary information

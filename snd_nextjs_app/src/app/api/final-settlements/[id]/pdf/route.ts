@@ -53,7 +53,9 @@ export async function GET(
       totalServiceMonths: settlementData.totalServiceMonths,
       totalServiceDays: settlementData.totalServiceDays,
       lastBasicSalary: parseFloat(settlementData.lastBasicSalary),
-      unpaidSalaryMonths: settlementData.unpaidSalaryMonths,
+      unpaidSalaryMonths: settlementData.unpaidSalaryAmount > 0 && parseFloat(settlementData.lastBasicSalary) > 0 
+        ? Math.round((parseFloat(settlementData.unpaidSalaryAmount) / parseFloat(settlementData.lastBasicSalary)) * 10) / 10
+        : settlementData.unpaidSalaryMonths,
       unpaidSalaryAmount: parseFloat(settlementData.unpaidSalaryAmount),
       endOfServiceBenefit: parseFloat(settlementData.endOfServiceBenefit),
       benefitCalculationMethod: settlementData.benefitCalculationMethod,
@@ -156,7 +158,9 @@ export async function POST(
       totalServiceMonths: settlementData.totalServiceMonths,
       totalServiceDays: settlementData.totalServiceDays,
       lastBasicSalary: parseFloat(settlementData.lastBasicSalary),
-      unpaidSalaryMonths: settlementData.unpaidSalaryMonths,
+      unpaidSalaryMonths: settlementData.unpaidSalaryAmount > 0 && parseFloat(settlementData.lastBasicSalary) > 0 
+        ? Math.round((parseFloat(settlementData.unpaidSalaryAmount) / parseFloat(settlementData.lastBasicSalary)) * 10) / 10
+        : settlementData.unpaidSalaryMonths,
       unpaidSalaryAmount: parseFloat(settlementData.unpaidSalaryAmount),
       endOfServiceBenefit: parseFloat(settlementData.endOfServiceBenefit),
       benefitCalculationMethod: settlementData.benefitCalculationMethod,

@@ -377,12 +377,14 @@ export function ViewFinalSettlementDialog({
                       {settlement.totalServiceYears} Years, {settlement.totalServiceMonths} Months, {settlement.totalServiceDays} Days
                     </span>
                   </div>
-                  {settlement.unpaidSalaryMonths > 0 && (
+                  {settlement.unpaidSalaryAmount > 0 && parseFloat(settlement.lastBasicSalary) > 0 && (
                     <>
                       <Separator />
                       <div className="flex justify-between text-orange-600">
                         <span>Unpaid Salary Months:</span>
-                        <span className="font-medium">{settlement.unpaidSalaryMonths} months</span>
+                        <span className="font-medium">
+                          {Math.round((parseFloat(settlement.unpaidSalaryAmount) / parseFloat(settlement.lastBasicSalary)) * 10) / 10} months
+                        </span>
                       </div>
                     </>
                   )}
@@ -405,9 +407,9 @@ export function ViewFinalSettlementDialog({
                   <div>
                     <h4 className="font-medium mb-2 text-green-700">Benefits</h4>
                     <div className="space-y-2 text-sm">
-                      {settlement.unpaidSalaryMonths > 0 && (
+                      {settlement.unpaidSalaryAmount > 0 && parseFloat(settlement.lastBasicSalary) > 0 && (
                         <div className="flex justify-between">
-                          <span>Unpaid Salaries ({settlement.unpaidSalaryMonths} months):</span>
+                          <span>Unpaid Salaries ({Math.round((parseFloat(settlement.unpaidSalaryAmount) / parseFloat(settlement.lastBasicSalary)) * 10) / 10} months):</span>
                           <span className="font-medium">{formatCurrency(settlement.unpaidSalaryAmount)}</span>
                         </div>
                       )}
