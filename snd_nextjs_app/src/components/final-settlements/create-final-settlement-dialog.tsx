@@ -1003,6 +1003,9 @@ export function CreateFinalSettlementDialog({
                               (formValues.manualVacationAllowance > 0 
                                 ? formValues.manualVacationAllowance 
                                 : (preview.vacationDetails?.vacationAllowance || 0)) +
+                              (formValues.overtimeAmount > 0 
+                                ? formValues.overtimeAmount 
+                                : (preview.finalCalculation?.breakdown?.overtimeAmount || 0)) +
                               (formValues.otherBenefits || 0) -
                               (formValues.pendingAdvances || 0) -
                               (formValues.equipmentDeductions || 0) -
@@ -1012,6 +1015,9 @@ export function CreateFinalSettlementDialog({
                               (formValues.manualUnpaidSalary > 0 ? formValues.manualUnpaidSalary : (unpaidSalaryInfo?.unpaidAmount || 0)) +
                               (preview.endOfServiceBenefit?.endOfServiceBenefit || 0) +
                               ((formValues.accruedVacationDays || 0) * (preview.employee?.basicSalary || 0) / 30) +
+                              (formValues.overtimeAmount > 0 
+                                ? formValues.overtimeAmount 
+                                : (preview.finalCalculation?.breakdown?.overtimeAmount || 0)) +
                               (formValues.otherBenefits || 0) -
                               (formValues.pendingAdvances || 0) -
                               (formValues.equipmentDeductions || 0) -
