@@ -59,6 +59,7 @@ interface FinalSettlement {
   vacationStartDate?: string;
   vacationEndDate?: string;
   expectedReturnDate?: string;
+  vacationDurationMonths?: number;
   vacationDays?: number;
   totalServiceYears: number;
   totalServiceMonths: number;
@@ -68,6 +69,8 @@ interface FinalSettlement {
   endOfServiceBenefit: string;
   accruedVacationDays?: number;
   accruedVacationAmount?: string;
+  overtimeHours?: string;
+  overtimeAmount?: string;
   otherBenefits?: string;
   otherBenefitsDescription?: string;
   pendingAdvances?: string;
@@ -345,6 +348,12 @@ export function ViewFinalSettlementDialog({
                           <span>{formatDate(settlement.vacationStartDate)}</span>
                         </div>
                       )}
+                      {settlement.vacationDurationMonths && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Vacation Duration:</span>
+                          <span className="font-medium">{settlement.vacationDurationMonths} months</span>
+                        </div>
+                      )}
                       {settlement.vacationEndDate && (
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Vacation End Date:</span>
@@ -431,6 +440,14 @@ export function ViewFinalSettlementDialog({
                         <div className="flex justify-between">
                           <span>Accrued Vacation ({settlement.accruedVacationDays} days):</span>
                           <span className="font-medium">{formatCurrency(settlement.accruedVacationAmount || '0')}</span>
+                        </div>
+                      )}
+
+                      {/* Overtime Benefits */}
+                      {settlement.overtimeHours && parseFloat(settlement.overtimeHours) > 0 && (
+                        <div className="flex justify-between">
+                          <span>Overtime ({settlement.overtimeHours} hours):</span>
+                          <span className="font-medium">{formatCurrency(settlement.overtimeAmount || '0')}</span>
                         </div>
                       )}
 

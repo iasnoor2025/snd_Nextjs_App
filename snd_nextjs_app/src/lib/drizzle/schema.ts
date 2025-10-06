@@ -916,6 +916,7 @@ export const finalSettlements = pgTable(
     vacationStartDate: date('vacation_start_date'),
     vacationEndDate: date('vacation_end_date'),
     expectedReturnDate: date('expected_return_date'),
+    vacationDurationMonths: numeric('vacation_duration_months', { precision: 4, scale: 1 }),
     vacationDays: integer('vacation_days'),
     
     // Service Details
@@ -926,7 +927,7 @@ export const finalSettlements = pgTable(
     // Salary Information
     lastBasicSalary: numeric('last_basic_salary', { precision: 10, scale: 2 }).notNull(),
     lastAllowances: numeric('last_allowances', { precision: 10, scale: 2 }).default('0'),
-    unpaidSalaryMonths: integer('unpaid_salary_months').default(0).notNull(),
+    unpaidSalaryMonths: numeric('unpaid_salary_months', { precision: 4, scale: 1 }).default('0').notNull(),
     unpaidSalaryAmount: numeric('unpaid_salary_amount', { precision: 10, scale: 2 }).default('0'),
     
     // End of Service Benefits (Saudi Labor Law)
@@ -936,6 +937,8 @@ export const finalSettlements = pgTable(
     // Other Benefits
     accruedVacationDays: integer('accrued_vacation_days').default(0),
     accruedVacationAmount: numeric('accrued_vacation_amount', { precision: 10, scale: 2 }).default('0'),
+    overtimeHours: numeric('overtime_hours', { precision: 8, scale: 2 }).default('0'),
+    overtimeAmount: numeric('overtime_amount', { precision: 10, scale: 2 }).default('0'),
     otherBenefits: numeric('other_benefits', { precision: 10, scale: 2 }).default('0'),
     otherBenefitsDescription: text('other_benefits_description'),
     

@@ -2,7 +2,12 @@ import * as React from 'react';
 
 import { cn } from '@/lib/utils';
 
-function Input({ className, type, ...props }: React.ComponentProps<'input'>) {
+function Input({ className, type, value, defaultValue, onChange, ...props }: React.ComponentProps<'input'>) {
+  // Prevent uncontrolled -> controlled switch warnings by normalizing value/defaultValue
+  const isControlled = value !== undefined;
+  const normalizedValue = isControlled ? (value as any) : undefined;
+  const normalizedDefaultValue = !isControlled ? (defaultValue as any ?? '') : undefined;
+
   return (
     <input
       type={type}
@@ -14,6 +19,9 @@ function Input({ className, type, ...props }: React.ComponentProps<'input'>) {
         'aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive',
         className
       )}
+      value={normalizedValue}
+      defaultValue={normalizedDefaultValue}
+      onChange={onChange}
       {...props}
     />
   );

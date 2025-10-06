@@ -45,6 +45,8 @@ export async function GET(
         endOfServiceBenefit: finalSettlements.endOfServiceBenefit,
         accruedVacationDays: finalSettlements.accruedVacationDays,
         accruedVacationAmount: finalSettlements.accruedVacationAmount,
+        overtimeHours: finalSettlements.overtimeHours,
+        overtimeAmount: finalSettlements.overtimeAmount,
         otherBenefits: finalSettlements.otherBenefits,
         otherBenefitsDescription: finalSettlements.otherBenefitsDescription,
         pendingAdvances: finalSettlements.pendingAdvances,
@@ -108,9 +110,12 @@ export async function POST(
       vacationStartDate,
       vacationEndDate,
       expectedReturnDate,
+      vacationDurationMonths,
       manualVacationAllowance = 0,
       // Common fields
       manualUnpaidSalary = 0, // Manual unpaid salary override
+      overtimeHours = 0, // Overtime hours
+      overtimeAmount = 0, // Manual overtime amount override
       accruedVacationDays = 0,
       otherBenefits = 0,
       otherBenefitsDescription,
@@ -154,7 +159,10 @@ export async function POST(
           vacationEndDate,
           expectedReturnDate,
           {
+            vacationDurationMonths,
             manualUnpaidSalary,
+            overtimeHours,
+            overtimeAmount,
             manualVacationAllowance,
             otherBenefits,
             otherBenefitsDescription,
@@ -181,6 +189,8 @@ export async function POST(
         isResignation,
         {
           manualUnpaidSalary,
+          overtimeHours,
+          overtimeAmount,
           accruedVacationDays,
           otherBenefits,
           otherBenefitsDescription,
@@ -202,6 +212,9 @@ export async function POST(
       session.user.id,
       resignationId,
       {
+        vacationDurationMonths: settlementType === 'vacation' ? vacationDurationMonths : undefined,
+        overtimeHours,
+        overtimeAmount,
         otherBenefitsDescription,
         otherDeductionsDescription,
         notes,

@@ -59,6 +59,8 @@ const createFormSchema = (settlementType: 'vacation' | 'exit') => {
   const baseSchema = {
     // Common fields
     manualUnpaidSalary: z.number().min(0).default(0), // Manual unpaid salary override
+    overtimeHours: z.number().min(0).default(0), // Overtime hours
+    overtimeAmount: z.number().min(0).default(0), // Manual overtime amount override
     otherBenefits: z.number().min(0).default(0),
     otherBenefitsDescription: z.string().optional(),
     pendingAdvances: z.number().min(0).default(0),
@@ -78,6 +80,7 @@ const createFormSchema = (settlementType: 'vacation' | 'exit') => {
       ...baseSchema,
       // Vacation settlement fields
       vacationStartDate: z.string().min(1, 'Vacation start date is required'),
+      vacationDurationMonths: z.number().min(0.1, 'Vacation duration must be at least 0.1 months').max(12, 'Vacation duration cannot exceed 12 months'),
       vacationEndDate: z.string().min(1, 'Vacation end date is required'),
       expectedReturnDate: z.string().min(1, 'Expected return date is required'),
       manualVacationAllowance: z.number().min(0).default(0), // Manual vacation allowance override
@@ -124,7 +127,10 @@ export function CreateFinalSettlementDialog({
     resolver: zodResolver(formSchema),
     defaultValues: settlementType === 'vacation' ? {
       manualUnpaidSalary: 0,
+      overtimeHours: 0,
+      overtimeAmount: 0,
       vacationStartDate: new Date().toISOString().split('T')[0],
+      vacationDurationMonths: 1,
       vacationEndDate: '',
       expectedReturnDate: '',
       manualVacationAllowance: 0,
@@ -141,6 +147,8 @@ export function CreateFinalSettlementDialog({
       lastWorkingDate: '',
     } : {
       manualUnpaidSalary: 0,
+      overtimeHours: 0,
+      overtimeAmount: 0,
       lastWorkingDate: new Date().toISOString().split('T')[0],
       isResignation: false,
       accruedVacationDays: 0,
@@ -170,7 +178,7 @@ export function CreateFinalSettlementDialog({
         generatePreview();
       }
     }
-  }, [open, formValues.lastWorkingDate, formValues.isResignation, formValues.vacationStartDate, formValues.vacationEndDate, formValues.expectedReturnDate, formValues.manualUnpaidSalary, formValues.manualVacationAllowance, formValues.absentCalculationPeriod, formValues.absentCalculationStartDate, formValues.absentCalculationEndDate, formValues.manualAbsentDays]);
+  }, [open, formValues.lastWorkingDate, formValues.isResignation, formValues.vacationStartDate, formValues.vacationDurationMonths, formValues.vacationEndDate, formValues.expectedReturnDate, formValues.manualUnpaidSalary, formValues.overtimeHours, formValues.overtimeAmount, formValues.manualVacationAllowance, formValues.absentCalculationPeriod, formValues.absentCalculationStartDate, formValues.absentCalculationEndDate, formValues.manualAbsentDays]);
 
   const generatePreview = async () => {
     try {
@@ -185,9 +193,12 @@ export function CreateFinalSettlementDialog({
         requestBody = {
           ...requestBody,
           vacationStartDate: formValues.vacationStartDate,
+          vacationDurationMonths: formValues.vacationDurationMonths || 1,
           vacationEndDate: formValues.vacationEndDate,
           expectedReturnDate: formValues.expectedReturnDate,
           manualUnpaidSalary: formValues.manualUnpaidSalary || 0,
+          overtimeHours: formValues.overtimeHours || 0,
+          overtimeAmount: formValues.overtimeAmount || 0,
           manualVacationAllowance: formValues.manualVacationAllowance || 0,
           absentCalculationPeriod: formValues.absentCalculationPeriod,
           absentCalculationStartDate: formValues.absentCalculationStartDate,
@@ -202,6 +213,8 @@ export function CreateFinalSettlementDialog({
           lastWorkingDate: formValues.lastWorkingDate,
           isResignation: formValues.isResignation,
           manualUnpaidSalary: formValues.manualUnpaidSalary || 0,
+          overtimeHours: formValues.overtimeHours || 0,
+          overtimeAmount: formValues.overtimeAmount || 0,
           absentCalculationPeriod: formValues.absentCalculationPeriod,
           absentCalculationStartDate: formValues.absentCalculationStartDate,
           absentCalculationEndDate: formValues.absentCalculationEndDate,
@@ -328,6 +341,57 @@ export function CreateFinalSettlementDialog({
                       )}
                     />
 
+                    {/* Overtime Fields - Common for both types */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="overtimeHours"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Overtime Hours</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.5"
+                                placeholder="e.g., 20.5"
+                                {...field}
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Total overtime hours worked
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="overtimeAmount"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Overtime Amount (SAR)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                placeholder="e.g., 1500.00"
+                                {...field}
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Manual overtime amount override
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
                     {/* Absent Calculation - Common for both types */}
                     <Separator />
                     <div className="space-y-4">
@@ -426,8 +490,76 @@ export function CreateFinalSettlementDialog({
                             <FormItem>
                               <FormLabel>Vacation Start Date</FormLabel>
                               <FormControl>
-                                <Input type="date" {...field} />
+                                <Input 
+                                  type="date" 
+                                  {...field}
+                                  onChange={(e) => {
+                                    field.onChange(e);
+                                    
+                                    // Auto-calculate vacation end date and expected return date if duration is set
+                                    if (formValues.vacationDurationMonths && formValues.vacationDurationMonths > 0) {
+                                      const startDate = new Date(e.target.value);
+                                      const endDate = new Date(startDate);
+                                      endDate.setMonth(endDate.getMonth() + formValues.vacationDurationMonths);
+                                      
+                                      // Set vacation end date (last day of vacation)
+                                      const vacationEndDate = new Date(endDate);
+                                      vacationEndDate.setDate(vacationEndDate.getDate() - 1);
+                                      
+                                      // Set expected return date (next working day after vacation)
+                                      const expectedReturnDate = new Date(endDate);
+                                      
+                                      form.setValue('vacationEndDate', vacationEndDate.toISOString().split('T')[0]);
+                                      form.setValue('expectedReturnDate', expectedReturnDate.toISOString().split('T')[0]);
+                                    }
+                                  }}
+                                />
                               </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="vacationDurationMonths"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Vacation Duration (Months)</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="number" 
+                                  step="0.1" 
+                                  min="0.1" 
+                                  max="12" 
+                                  placeholder="e.g., 1.5 for 1.5 months"
+                                  {...field}
+                                  onChange={(e) => {
+                                    const value = parseFloat(e.target.value) || 0;
+                                    field.onChange(value);
+                                    
+                                    // Auto-calculate vacation end date and expected return date
+                                    if (formValues.vacationStartDate && value > 0) {
+                                      const startDate = new Date(formValues.vacationStartDate);
+                                      const endDate = new Date(startDate);
+                                      endDate.setMonth(endDate.getMonth() + value);
+                                      
+                                      // Set vacation end date (last day of vacation)
+                                      const vacationEndDate = new Date(endDate);
+                                      vacationEndDate.setDate(vacationEndDate.getDate() - 1);
+                                      
+                                      // Set expected return date (next working day after vacation)
+                                      const expectedReturnDate = new Date(endDate);
+                                      
+                                      form.setValue('vacationEndDate', vacationEndDate.toISOString().split('T')[0]);
+                                      form.setValue('expectedReturnDate', expectedReturnDate.toISOString().split('T')[0]);
+                                    }
+                                  }}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Enter vacation duration in months (e.g., 1.5 for 1.5 months)
+                              </FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -812,6 +944,18 @@ export function CreateFinalSettlementDialog({
                             </div>
                           </>
                         )}
+
+                        {/* Overtime Benefits */}
+                        {(formValues.overtimeHours > 0 || formValues.overtimeAmount > 0) && (
+                          <div className="flex justify-between">
+                            <span>Overtime ({formValues.overtimeHours > 0 ? `${formValues.overtimeHours} hours` : 'manual amount'}):</span>
+                            <span className="font-medium">{formatCurrency(
+                              formValues.overtimeAmount > 0 
+                                ? formValues.overtimeAmount 
+                                : (preview.finalCalculation?.breakdown?.overtimeAmount || 0)
+                            )}</span>
+                          </div>
+                        )}
                         
                         <div className="flex justify-between">
                           <span>Other Benefits:</span>
@@ -826,11 +970,17 @@ export function CreateFinalSettlementDialog({
                               (formValues.manualVacationAllowance > 0 
                                 ? formValues.manualVacationAllowance 
                                 : (preview.vacationDetails?.vacationAllowance || 0)) +
+                              (formValues.overtimeAmount > 0 
+                                ? formValues.overtimeAmount 
+                                : (preview.finalCalculation?.breakdown?.overtimeAmount || 0)) +
                               (formValues.otherBenefits || 0)
                             ) : (
                               (formValues.manualUnpaidSalary > 0 ? formValues.manualUnpaidSalary : (unpaidSalaryInfo?.unpaidAmount || 0)) +
                               (preview.endOfServiceBenefit?.endOfServiceBenefit || 0) +
                               ((formValues.accruedVacationDays || 0) * (preview.employee?.basicSalary || 0) / 30) +
+                              (formValues.overtimeAmount > 0 
+                                ? formValues.overtimeAmount 
+                                : (preview.finalCalculation?.breakdown?.overtimeAmount || 0)) +
                               (formValues.otherBenefits || 0)
                             )
                           )}</span>
