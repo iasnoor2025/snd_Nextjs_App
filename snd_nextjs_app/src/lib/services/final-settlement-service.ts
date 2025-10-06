@@ -317,6 +317,8 @@ export class FinalSettlementService {
     additionalData?: {
       vacationDurationMonths?: number; // Vacation duration in months
       manualUnpaidSalary?: number; // Manual unpaid salary override
+      overtimeHours?: number; // Overtime hours
+      overtimeAmount?: number; // Manual overtime amount override
       manualVacationAllowance?: number;
       otherBenefits?: number;
       otherBenefitsDescription?: string;

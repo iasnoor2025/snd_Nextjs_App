@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { finalSettlements, employees } from '@/lib/drizzle/schema';
-import { eq } from 'drizzle-orm';
+import { finalSettlements, employees, employeeLeaves } from '@/lib/drizzle/schema';
+import { eq, and, or, lte, gte, like } from 'drizzle-orm';
 import { getServerSession } from 'next-auth/next';
 import { authConfig } from '@/lib/auth-config';
 
@@ -203,7 +203,15 @@ export async function DELETE(
 
     // Check if settlement exists and is in draft status
     const settlement = await db
-      .select({ id: finalSettlements.id, status: finalSettlements.status })
+      .select({
+        id: finalSettlements.id,
+        status: finalSettlements.status,
+        employeeId: finalSettlements.employeeId,
+        settlementType: finalSettlements.settlementType,
+        vacationStartDate: finalSettlements.vacationStartDate,
+        vacationEndDate: finalSettlements.vacationEndDate,
+        settlementNumber: finalSettlements.settlementNumber,
+      })
       .from(finalSettlements)
       .where(eq(finalSettlements.id, settlementId))
       .limit(1);
@@ -216,6 +224,26 @@ export async function DELETE(
       return NextResponse.json({ 
         error: 'Only draft settlements can be deleted' 
       }, { status: 400 });
+    }
+
+    // If vacation settlement, also delete matching Annual Leave
+    const s = settlement[0];
+    if (s.settlementType === 'vacation' && s.vacationStartDate && s.vacationEndDate) {
+      await db
+        .delete(employeeLeaves)
+        .where(
+          and(
+            eq(employeeLeaves.employeeId, s.employeeId),
+            eq(employeeLeaves.leaveType, 'Annual Leave'),
+            or(
+              like(employeeLeaves.reason, `%${s.settlementNumber}%`),
+              and(
+                lte(employeeLeaves.startDate, s.vacationEndDate),
+                gte(employeeLeaves.endDate, s.vacationStartDate)
+              )
+            )
+          )
+        );
     }
 
     // Delete the settlement

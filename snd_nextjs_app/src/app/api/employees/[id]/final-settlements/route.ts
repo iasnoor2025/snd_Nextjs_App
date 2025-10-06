@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { finalSettlements, employees, users } from '@/lib/drizzle/schema';
-import { eq, desc } from 'drizzle-orm';
+import { finalSettlements, employees, users, employeeLeaves, employeeAssignments } from '@/lib/drizzle/schema';
+import { eq, desc, and, or, lte, gte, like, isNull, ne } from 'drizzle-orm';
 import { FinalSettlementService } from '@/lib/services/final-settlement-service';
 import { getServerSession } from 'next-auth/next';
 import { authConfig } from '@/lib/auth-config';
@@ -221,6 +221,44 @@ export async function POST(
       }
     );
 
+    // Auto-create a Leave Request for Vacation settlements
+    if (settlementType === 'vacation' && vacationStartDate && vacationEndDate) {
+      const start = new Date(vacationStartDate);
+      const end = new Date(vacationEndDate);
+      const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      await db.insert(employeeLeaves).values({
+        employeeId,
+        leaveType: 'Annual Leave',
+        startDate: vacationStartDate,
+        endDate: vacationEndDate,
+        days,
+        reason: `Auto-created from vacation settlement ${newSettlement.settlementNumber}`,
+        status: 'approved',
+        approvedBy: session.user.id,
+        approvedAt: new Date().toISOString().split('T')[0],
+        createdAt: new Date().toISOString().split('T')[0],
+        updatedAt: new Date().toISOString().split('T')[0],
+      });
+
+      // Complete any active employee assignments effective day before vacation starts
+      const assignmentEnd = new Date(start);
+      assignmentEnd.setDate(assignmentEnd.getDate() - 1);
+      const assignmentEndStr = assignmentEnd.toISOString().split('T')[0];
+      await db
+        .update(employeeAssignments)
+        .set({ status: 'completed', endDate: assignmentEndStr, updatedAt: new Date().toISOString().split('T')[0] })
+        .where(
+          and(
+            eq(employeeAssignments.employeeId, employeeId),
+            or(
+              ne(employeeAssignments.status, 'completed'),
+              isNull(employeeAssignments.endDate),
+              gte(employeeAssignments.endDate, vacationStartDate)
+            )
+          )
+        );
+    }
+
     return NextResponse.json({
       success: true,
       message: `${settlementType === 'vacation' ? 'Vacation' : 'Final'} settlement created successfully`,
@@ -237,6 +275,71 @@ export async function POST(
         message: 'Failed to create final settlement',
         error: error instanceof Error ? error.message : 'Unknown error',
       },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authConfig);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id } = await params;
+    const settlementId = parseInt(new URL(request.url).searchParams.get('settlementId') || '');
+    const employeeId = parseInt(id);
+
+    if (!employeeId || !settlementId) {
+      return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+    }
+
+    // Fetch the settlement to know its type and dates
+    const settlement = await db
+      .select()
+      .from(finalSettlements)
+      .where(eq(finalSettlements.id, settlementId))
+      .limit(1);
+
+    if (!settlement.length) {
+      return NextResponse.json({ error: 'Settlement not found' }, { status: 404 });
+    }
+
+    const s = settlement[0];
+
+    // If it is a vacation settlement, delete the auto-created Annual Leave
+    if (s.settlementType === 'vacation' && s.vacationStartDate && s.vacationEndDate) {
+      await db
+        .delete(employeeLeaves)
+        .where(
+          and(
+            eq(employeeLeaves.employeeId, employeeId),
+            eq(employeeLeaves.leaveType, 'Annual Leave'),
+            or(
+              // Match the exact record created from this settlement via reason
+              like(employeeLeaves.reason, `%${s.settlementNumber}%`),
+              // Or any Annual Leave that overlaps the same vacation period
+              and(
+                lte(employeeLeaves.startDate, s.vacationEndDate),
+                gte(employeeLeaves.endDate, s.vacationStartDate)
+              )
+            )
+          )
+        );
+    }
+
+    // Delete the settlement itself
+    await db.delete(finalSettlements).where(eq(finalSettlements.id, settlementId));
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting final settlement:', error);
+    return NextResponse.json(
+      { success: false, message: 'Failed to delete final settlement' },
       { status: 500 }
     );
   }
