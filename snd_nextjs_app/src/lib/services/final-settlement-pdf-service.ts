@@ -114,10 +114,10 @@ export class FinalSettlementPDFService {
         format: 'A4',
         printBackground: true,
         margin: {
-          top: '20mm',
-          right: '15mm',
-          bottom: '20mm',
-          left: '15mm',
+          top: '8mm',
+          right: '8mm',
+          bottom: '8mm',
+          left: '8mm',
         },
       });
 
@@ -149,10 +149,10 @@ export class FinalSettlementPDFService {
         format: 'A4',
         printBackground: true,
         margin: {
-          top: '15mm',
-          right: '10mm',
-          bottom: '15mm',
-          left: '10mm',
+          top: '6mm',
+          right: '6mm',
+          bottom: '6mm',
+          left: '6mm',
         },
       });
 
@@ -214,23 +214,23 @@ export class FinalSettlementPDFService {
         }
         body {
             font-family: 'Arial', sans-serif;
-            line-height: 1.3;
+            line-height: 1.2;
             margin: 0;
-            padding: 10px;
+            padding: 5px;
             color: #333;
-            font-size: 10px;
+            font-size: 9px;
         }
         .header {
-            border-bottom: 3px solid #2563eb;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 15px;
         }
         .logo {
-            width: 200px;
-            height: 200px;
+            width: 80px;
+            height: 80px;
             flex-shrink: 0;
         }
         .header-content {
@@ -255,7 +255,7 @@ export class FinalSettlementPDFService {
             margin-bottom: 10px;
         }
         .section {
-            margin-bottom: 25px;
+            margin-bottom: 15px;
         }
         .section-title {
             font-size: 16px;
@@ -314,10 +314,10 @@ export class FinalSettlementPDFService {
             font-weight: bold;
         }
         .signatures {
-            margin-top: 50px;
+            margin-top: 25px;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 40px;
+            gap: 20px;
         }
         .signature-box {
             border: 1px solid #d1d5db;
@@ -578,16 +578,16 @@ export class FinalSettlementPDFService {
             text-align: right;
         }
         .header {
-            border-bottom: 3px solid #2563eb;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 15px;
         }
         .logo {
-            width: 200px;
-            height: 200px;
+            width: 80px;
+            height: 80px;
             flex-shrink: 0;
         }
         .header-content {
@@ -612,7 +612,7 @@ export class FinalSettlementPDFService {
             margin-bottom: 10px;
         }
         .section {
-            margin-bottom: 25px;
+            margin-bottom: 15px;
         }
         .section-title {
             font-size: 16px;
@@ -671,10 +671,10 @@ export class FinalSettlementPDFService {
             font-weight: bold;
         }
         .signatures {
-            margin-top: 50px;
+            margin-top: 25px;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 40px;
+            gap: 20px;
         }
         .signature-box {
             border: 1px solid #d1d5db;
@@ -922,19 +922,19 @@ export class FinalSettlementPDFService {
         }
         body {
             font-family: 'Arial', 'Tahoma', sans-serif;
-            line-height: 1.3;
+            line-height: 1.2;
             margin: 0;
-            padding: 8px;
+            padding: 4px;
             color: #333;
-            font-size: 9px;
+            font-size: 8px;
         }
         .bilingual-header {
             border-bottom: 2px solid #2563eb;
-            padding-bottom: 8px;
-            margin-bottom: 12px;
+            padding-bottom: 5px;
+            margin-bottom: 8px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
         }
         .logo {
             width: 50px;
@@ -965,18 +965,18 @@ export class FinalSettlementPDFService {
         .bilingual-section {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
+            gap: 15px;
+            margin-bottom: 15px;
             border: 1px solid #e5e7eb;
             border-radius: 5px;
             overflow: hidden;
         }
         .english-side {
-            padding: 15px;
+            padding: 10px;
             border-right: 1px solid #e5e7eb;
         }
         .arabic-side {
-            padding: 15px;
+            padding: 10px;
             direction: rtl;
             text-align: right;
         }
@@ -1039,10 +1039,10 @@ export class FinalSettlementPDFService {
             font-weight: bold;
         }
         .signatures {
-            margin-top: 30px;
+            margin-top: 20px;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 15px;
         }
         .signature-box {
             border: 1px solid #d1d5db;
