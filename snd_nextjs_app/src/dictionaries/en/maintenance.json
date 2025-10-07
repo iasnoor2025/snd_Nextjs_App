@@ -33,8 +33,12 @@
     "descriptionPlaceholder": "Describe the maintenance work needed",
     "scheduledDate": "Scheduled Date",
     "dueDate": "Due Date",
-    "assignedTo": "Assigned To",
+    "assignedTo": "Assigned Employee",
+    "selectEmployee": "Select employee (optional)",
     "cost": "Cost",
+    "estimatedCost": "Estimated Cost",
+    "costPlaceholder": "SAR",
+    "datePlaceholder": "mm/dd/yyyy",
     "status": "Status",
     "createdAt": "Created At",
     "updatedAt": "Updated At"
@@ -74,6 +78,7 @@
     "failedToDelete": "Failed to delete maintenance record"
   },
   "validation": {
+    "validationError": "Please fill in all required fields",
     "required": "This field is required",
     "invalidDate": "Invalid date",
     "invalidDateRange": "Invalid date range",
@@ -83,6 +88,39 @@
     "scheduledDateRequired": "Scheduled date is required",
     "dueDateAfterScheduled": "Due date must be after scheduled date",
     "invalidCost": "Invalid cost"
+  },
+  "items": {
+    "title": "Repair Items & Costs",
+    "addItem": "Add Item",
+    "name": "Item Name",
+    "namePlaceholder": "Enter item name",
+    "quantity": "Quantity",
+    "unit": "Unit",
+    "unitPlaceholder": "e.g., pieces, hours, liters",
+    "unitCost": "Unit Cost (SAR)",
+    "totalCost": "Total Cost",
+    "description": "Description",
+    "descriptionPlaceholder": "Enter item description",
+    "noItems": "No repair items added yet",
+    "totalCost": "Total Items Cost"
+  },
+  "workflow": {
+    "title": "Maintenance Workflow",
+    "progress": "Progress",
+    "completed": "completed",
+    "scheduled": "Scheduled",
+    "scheduledDesc": "Maintenance is scheduled and ready to begin",
+    "inProgress": "In Progress",
+    "inProgressDesc": "Maintenance work is currently being performed",
+    "completed": "Completed",
+    "completedDesc": "Maintenance work has been completed successfully",
+    "pending": "Pending",
+    "in_progress": "In Progress",
+    "startStep": "Start This Step",
+    "startWork": "Start Work",
+    "markCompleted": "Mark as Completed",
+    "completeMaintenance": "Complete Maintenance",
+    "cancel": "Cancel Maintenance"
   },
   "table": {
     "headers": {

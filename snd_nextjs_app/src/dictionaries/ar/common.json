@@ -81,6 +81,9 @@
       "logout": "تسجيل الخروج",
       "refreshSession": "تحديث الجلسة",
       "settings": "الإعدادات"
+    },
+    "app": {
+      "name": "نظام إدارة الإيجار SND"
     }
   },
   "messages": {

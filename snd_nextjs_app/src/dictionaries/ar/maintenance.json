@@ -33,8 +33,12 @@
     "descriptionPlaceholder": "وصف العمل المطلوب للصيانة",
     "scheduledDate": "تاريخ الجدولة",
     "dueDate": "تاريخ الاستحقاق",
-    "assignedTo": "مخصص لـ",
+    "assignedTo": "الموظف المخصص",
+    "selectEmployee": "اختر الموظف (اختياري)",
     "cost": "التكلفة",
+    "estimatedCost": "التكلفة المقدرة",
+    "costPlaceholder": "ريال سعودي",
+    "datePlaceholder": "يوم/شهر/سنة",
     "status": "الحالة",
     "createdAt": "تاريخ الإنشاء",
     "updatedAt": "تاريخ التحديث"
@@ -74,6 +78,7 @@
     "failedToDelete": "فشل في حذف سجل الصيانة"
   },
   "validation": {
+    "validationError": "يرجى إدخال جميع الحقول المطلوبة",
     "required": "هذا الحقل مطلوب",
     "invalidDate": "التاريخ غير صحيح",
     "invalidDateRange": "نطاق التاريخ غير صحيح",
@@ -83,6 +88,39 @@
     "scheduledDateRequired": "تاريخ الجدولة مطلوب",
     "dueDateAfterScheduled": "تاريخ الاستحقاق يجب أن يكون بعد تاريخ الجدولة",
     "invalidCost": "التكلفة غير صحيحة"
+  },
+  "items": {
+    "title": "عناصر الإصلاح والتكاليف",
+    "addItem": "إضافة عنصر",
+    "name": "اسم العنصر",
+    "namePlaceholder": "أدخل اسم العنصر",
+    "quantity": "الكمية",
+    "unit": "الوحدة",
+    "unitPlaceholder": "مثل: قطع، ساعات، لترات",
+    "unitCost": "تكلفة الوحدة (ريال)",
+    "totalCost": "التكلفة الإجمالية",
+    "description": "الوصف",
+    "descriptionPlaceholder": "أدخل وصف العنصر",
+    "noItems": "لم يتم إضافة عناصر إصلاح بعد",
+    "totalCost": "إجمالي تكلفة العناصر"
+  },
+  "workflow": {
+    "title": "سير عمل الصيانة",
+    "progress": "التقدم",
+    "completed": "مكتمل",
+    "scheduled": "مجدول",
+    "scheduledDesc": "تم جدولة الصيانة وهي جاهزة للبدء",
+    "inProgress": "قيد التنفيذ",
+    "inProgressDesc": "يتم تنفيذ أعمال الصيانة حالياً",
+    "completed": "مكتمل",
+    "completedDesc": "تم إنجاز أعمال الصيانة بنجاح",
+    "pending": "في الانتظار",
+    "in_progress": "قيد التنفيذ",
+    "startStep": "بدء هذه الخطوة",
+    "startWork": "بدء العمل",
+    "markCompleted": "تمييز كمكتمل",
+    "completeMaintenance": "إكمال الصيانة",
+    "cancel": "إلغاء الصيانة"
   },
   "table": {
     "headers": {

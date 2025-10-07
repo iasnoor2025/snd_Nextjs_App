@@ -89,7 +89,13 @@ export function EquipmentDropdown({
         setErrorMessage('No equipment found in the database.');
       }
 
-      setEquipment(equipmentData);
+      // Ensure all equipment IDs are strings
+      const normalizedEquipment = equipmentData.map((item: any) => ({
+        ...item,
+        id: item.id.toString()
+      }));
+
+      setEquipment(normalizedEquipment);
     } catch (error) {
       let errorMsg = 'Failed to load equipment. Please try again.';
       if (error instanceof Error) {
@@ -173,7 +179,17 @@ export function EquipmentDropdown({
   });
 
   // Get selected equipment for display
-  const selectedEquipment = equipment.find(item => item.id === value);
+  const selectedEquipment = equipment.find(item => item.id === value || item.id.toString() === value);
+  
+  // Debug logging
+  if (value && equipment.length > 0) {
+    console.log('EquipmentDropdown Debug:', {
+      value,
+      equipmentCount: equipment.length,
+      selectedEquipment,
+      firstEquipment: equipment[0]
+    });
+  }
 
   return (
     <div className={`space-y-2 ${className}`}>
@@ -201,8 +217,14 @@ export function EquipmentDropdown({
                 type="text"
                 placeholder="Search equipment..."
                 value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  setSearchTerm(e.target.value);
+                }}
+                onKeyDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                autoComplete="off"
               />
             </div>
           )}
@@ -308,7 +330,14 @@ export function useEquipment() {
 
       const data = await response.json();
       const equipmentData = data.data || data.equipment || data || [];
-      setEquipment(equipmentData);
+      
+      // Ensure all equipment IDs are strings
+      const normalizedEquipment = equipmentData.map((item: any) => ({
+        ...item,
+        id: item.id.toString()
+      }));
+      
+      setEquipment(normalizedEquipment);
     } catch (err) {
       let errorMsg = 'Failed to load equipment';
       if (err instanceof Error) {

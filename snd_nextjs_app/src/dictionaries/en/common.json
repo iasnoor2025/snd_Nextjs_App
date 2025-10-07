@@ -80,6 +80,9 @@
       "logout": "Logout",
       "refreshSession": "Refresh Session",
       "settings": "Settings"
+    },
+    "app": {
+      "name": "SND Rental Management"
     }
   },
   "messages": {
