@@ -122,6 +122,12 @@
     "completeMaintenance": "Complete Maintenance",
     "cancel": "Cancel Maintenance"
   },
+  "details": {
+    "basicInfo": "Basic Information",
+    "maintenanceId": "Maintenance ID",
+    "notFound": "Maintenance Not Found",
+    "notFoundDesc": "The requested maintenance record could not be found."
+  },
   "table": {
     "headers": {
       "equipment": "Equipment",

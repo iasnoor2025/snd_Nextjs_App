@@ -23,6 +23,7 @@ import { Calendar, Plus, Search, Wrench, AlertTriangle, Clock } from 'lucide-rea
 import ApiService from '@/lib/api-service';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
+import { useRouter } from 'next/navigation';
 
 interface MaintenanceRecord {
   id: number;
@@ -51,15 +52,13 @@ interface MaintenanceRecord {
 export default function MaintenanceManagementPage() {
   const { hasPermission } = useRBAC();
   const { t } = useI18n();
+  const router = useRouter();
   const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedMaintenance, setSelectedMaintenance] = useState<MaintenanceRecord | null>(null);
   const [formData, setFormData] = useState({
     equipment_id: '',
     type: 'corrective' as 'scheduled' | 'corrective' | 'emergency' | 'inspection',
@@ -161,29 +160,11 @@ export default function MaintenanceManagementPage() {
   };
 
   const handleViewMaintenance = (id: number) => {
-    const maintenance = maintenanceRecords.find(record => record.id === id);
-    if (maintenance) {
-      setSelectedMaintenance(maintenance);
-      setIsViewDialogOpen(true);
-    }
+    router.push(`/modules/maintenance-management/${id}`);
   };
 
   const handleEditMaintenance = (id: number) => {
-    const maintenance = maintenanceRecords.find(record => record.id === id);
-    if (maintenance) {
-      setSelectedMaintenance(maintenance);
-      setFormData({
-        equipment_id: maintenance.equipment_id.toString(),
-        type: maintenance.type as 'scheduled' | 'corrective' | 'emergency' | 'inspection',
-        title: maintenance.title,
-        description: maintenance.description,
-        scheduled_date: maintenance.scheduled_date,
-        due_date: maintenance.due_date || '',
-        assigned_to_employee_id: maintenance.mechanic?.id.toString() || '',
-        cost: maintenance.cost || '',
-      });
-      setIsEditDialogOpen(true);
-    }
+    router.push(`/modules/maintenance-management/${id}/edit`);
   };
 
   const handleDeleteMaintenance = async (id: number) => {
@@ -414,225 +395,7 @@ export default function MaintenanceManagementPage() {
           </Dialog>
         </div>
 
-        {/* View Maintenance Dialog */}
-        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Maintenance Details</DialogTitle>
-              <DialogDescription>
-                View maintenance record information
-              </DialogDescription>
-            </DialogHeader>
-            {selectedMaintenance && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Equipment</Label>
-                    <p className="text-sm">
-                      {selectedMaintenance.equipment.name}
-                      {selectedMaintenance.equipment.doorNumber && ` (Door: ${selectedMaintenance.equipment.doorNumber})`}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Maintenance Type</Label>
-                    <Badge variant={getTypeColor(selectedMaintenance.type)}>
-                      {selectedMaintenance.type}
-                    </Badge>
-                  </div>
-                </div>
-                
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Title</Label>
-                  <p className="text-sm">{selectedMaintenance.title}</p>
-                </div>
-                
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Description</Label>
-                  <p className="text-sm">{selectedMaintenance.description}</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Scheduled Date</Label>
-                    <p className="text-sm">{new Date(selectedMaintenance.scheduled_date).toLocaleDateString()}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Due Date</Label>
-                    <p className="text-sm">
-                      {selectedMaintenance.due_date ? new Date(selectedMaintenance.due_date).toLocaleDateString() : 'Not set'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">{t('maintenance.fields.assignedTo')}</Label>
-                    <p className="text-sm">
-                      {selectedMaintenance.mechanic 
-                        ? `${selectedMaintenance.mechanic.first_name} ${selectedMaintenance.mechanic.last_name}`
-                        : 'Not assigned'
-                      }
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">{t('maintenance.fields.estimatedCost')}</Label>
-                    <p className="text-sm">
-                      {selectedMaintenance.cost ? `SAR ${Number(selectedMaintenance.cost).toLocaleString()}` : 'Not set'}
-                    </p>
-                  </div>
-                </div>
-
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">{t('maintenance.fields.status')}</Label>
-                  <Badge variant={getStatusColor(selectedMaintenance.status)}>
-                    {selectedMaintenance.status.replace('_', ' ')}
-                  </Badge>
-                </div>
-
-                {/* Maintenance Workflow */}
-                <MaintenanceWorkflow
-                  currentStatus={selectedMaintenance.status}
-                  onStatusChange={(status) => {
-                    // Handle status change
-                    console.log('Status change requested:', status);
-                  }}
-                  onComplete={() => {
-                    // Handle completion
-                    console.log('Maintenance completion requested');
-                  }}
-                  readonly={true}
-                />
-              </div>
-            )}
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsViewDialogOpen(false)}>
-                {t('common.actions.close')}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Edit Maintenance Dialog */}
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>{t('maintenance.actions.editMaintenance')}</DialogTitle>
-              <DialogDescription>
-                {t('maintenance.create.description')}
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleUpdateMaintenance} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <EquipmentDropdown
-                    key={`edit-equipment-${isEditDialogOpen}`}
-                    value={formData.equipment_id}
-                    onValueChange={(value: string) => setFormData({ ...formData, equipment_id: value })}
-                    label={t('maintenance.fields.equipment')}
-                    placeholder={t('maintenance.fields.selectEquipment')}
-                    required={true}
-                    showSearch={true}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit_type">{t('maintenance.fields.type')} *</Label>
-                  <Select value={formData.type} onValueChange={(value: string) => setFormData({ ...formData, type: value as 'scheduled' | 'corrective' | 'emergency' | 'inspection' })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="scheduled">{t('maintenance.types.scheduled')}</SelectItem>
-                      <SelectItem value="corrective">{t('maintenance.types.corrective')}</SelectItem>
-                      <SelectItem value="emergency">{t('maintenance.types.emergency')}</SelectItem>
-                      <SelectItem value="inspection">{t('maintenance.types.inspection')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div>
-                <Label htmlFor="edit_title">{t('maintenance.fields.title')} *</Label>
-                <Input
-                  id="edit_title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder={t('maintenance.fields.titlePlaceholder')}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit_description">{t('maintenance.fields.description')}</Label>
-                <Textarea
-                  id="edit_description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder={t('maintenance.fields.descriptionPlaceholder')}
-                  rows={3}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="edit_scheduled_date">{t('maintenance.fields.scheduledDate')} *</Label>
-                  <Input
-                    id="edit_scheduled_date"
-                    type="date"
-                    value={formData.scheduled_date}
-                    onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit_due_date">{t('maintenance.fields.dueDate')}</Label>
-                  <Input
-                    id="edit_due_date"
-                    type="date"
-                    value={formData.due_date}
-                    onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <EmployeeDropdown
-                    key={`edit-employee-${isEditDialogOpen}`}
-                    value={formData.assigned_to_employee_id}
-                    onValueChange={(value: string) => setFormData({ ...formData, assigned_to_employee_id: value })}
-                    label={t('maintenance.fields.assignedTo')}
-                    placeholder={t('maintenance.fields.selectEmployee')}
-                    required={false}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit_cost">{t('maintenance.fields.cost')}</Label>
-                  <Input
-                    id="edit_cost"
-                    type="number"
-                    value={formData.cost}
-                    onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
-                      placeholder={t('maintenance.fields.costPlaceholder')}
-                  />
-                </div>
-                </div>
-
-                {/* Maintenance Items Manager */}
-                <MaintenanceItemsManager
-                  items={maintenanceItems}
-                  onItemsChange={setMaintenanceItems}
-                />
-
-                <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                  {t('common.actions.cancel')}
-                </Button>
-                <Button type="submit" disabled={loading}>
-                  {loading ? t('maintenance.messages.saving') : t('maintenance.actions.update')}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+        {/* View/Edit dialogs removed; navigation-based details/edit pages are used now */}
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

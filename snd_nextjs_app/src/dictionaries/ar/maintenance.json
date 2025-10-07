@@ -122,6 +122,12 @@
     "completeMaintenance": "إكمال الصيانة",
     "cancel": "إلغاء الصيانة"
   },
+  "details": {
+    "basicInfo": "المعلومات الأساسية",
+    "maintenanceId": "رقم الصيانة",
+    "notFound": "لم يتم العثور على الصيانة",
+    "notFoundDesc": "لم يتم العثور على سجل الصيانة المطلوب."
+  },
   "table": {
     "headers": {
       "equipment": "المعدات",
