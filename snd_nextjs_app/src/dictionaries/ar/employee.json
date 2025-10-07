@@ -325,6 +325,7 @@
     "suspended": "معلق",
     "terminated": "منتهي",
     "onLeave": "في إجازة",
+    "on_leave": "في إجازة",
     "left": "خرج من الشركة",
     "probation": "فترة تجريبية",
     "unknown": "غير معروف"
@@ -718,6 +719,7 @@
     "suspended": "معلق",
     "left": "مغادر",
     "onLeave": "في إجازة",
+    "on_leave": "في إجازة",
     "assigned": "معين",
     "unknown": "غير معروف"
   },

@@ -18,7 +18,7 @@ import {
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { updateEmployeeStatusBasedOnLeave } from '@/lib/utils/employee-status';
 import { ERPNextSyncService } from '@/lib/services/erpnext-sync-service';
-import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, inArray, or, sql, isNull, gte } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/employees - List employees
@@ -151,7 +151,15 @@ const getEmployeesHandler = async (request: NextRequest) => {
           .innerJoin(employeesTable, eq(employeesTable.id, employeeAssignments.employeeId))
           .leftJoin(projects, eq(projects.id, employeeAssignments.projectId))
           .leftJoin(rentals, eq(rentals.id, employeeAssignments.rentalId))
-          .where(eq(employeeAssignments.status, 'active'))
+          .where(
+            and(
+              eq(employeeAssignments.status, 'active'),
+              or(
+                isNull(employeeAssignments.endDate),
+                gte(employeeAssignments.endDate, new Date().toISOString().split('T')[0])
+              )
+            )
+          )
           .orderBy(desc(employeeAssignments.startDate));
       } else {
         // For paginated view, only get assignments for current page employees
@@ -176,7 +184,11 @@ const getEmployeesHandler = async (request: NextRequest) => {
           .where(
             and(
               inArray(employeesTable.fileNumber, employeeFileNumbers),
-              eq(employeeAssignments.status, 'active')
+              eq(employeeAssignments.status, 'active'),
+              or(
+                isNull(employeeAssignments.endDate),
+                gte(employeeAssignments.endDate, new Date().toISOString().split('T')[0])
+              )
             )
           )
           .orderBy(desc(employeeAssignments.startDate));
@@ -204,7 +216,15 @@ const getEmployeesHandler = async (request: NextRequest) => {
             .from(projectManpower)
             .innerJoin(employeesTable, eq(employeesTable.id, projectManpower.employeeId))
             .leftJoin(projects, eq(projects.id, projectManpower.projectId))
-            .where(eq(projectManpower.status, 'active'))
+            .where(
+              and(
+                eq(projectManpower.status, 'active'),
+                or(
+                  isNull(projectManpower.endDate),
+                  gte(projectManpower.endDate, new Date().toISOString().split('T')[0])
+                )
+              )
+            )
             .orderBy(desc(projectManpower.startDate));
         } else {
           projectAssignmentQuery = db
@@ -227,7 +247,11 @@ const getEmployeesHandler = async (request: NextRequest) => {
             .where(
               and(
                 inArray(employeesTable.fileNumber, employeeFileNumbers),
-                eq(projectManpower.status, 'active')
+                eq(projectManpower.status, 'active'),
+                or(
+                  isNull(projectManpower.endDate),
+                  gte(projectManpower.endDate, new Date().toISOString().split('T')[0])
+                )
               )
             )
             .orderBy(desc(projectManpower.startDate));

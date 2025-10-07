@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { finalSettlements, employees, users, employeeLeaves, employeeAssignments } from '@/lib/drizzle/schema';
-import { eq, desc, and, or, lte, gte, like, isNull, ne } from 'drizzle-orm';
+import { finalSettlements, employees, employeeLeaves, employeeAssignments } from '@/lib/drizzle/schema';
+import { eq, desc, and, or, lte, gte, like, ne } from 'drizzle-orm';
 import { FinalSettlementService } from '@/lib/services/final-settlement-service';
 import { getServerSession } from 'next-auth/next';
 import { authConfig } from '@/lib/auth-config';
@@ -239,24 +239,59 @@ export async function POST(
         createdAt: new Date().toISOString().split('T')[0],
         updatedAt: new Date().toISOString().split('T')[0],
       });
+    }
 
-      // Complete any active employee assignments effective day before vacation starts
-      const assignmentEnd = new Date(start);
+    // Complete any active employee assignments for both vacation and exit settlements
+    if (settlementType === 'vacation' && vacationStartDate) {
+      // For vacation settlements, complete assignments day before vacation starts
+      const assignmentEnd = new Date(vacationStartDate);
       assignmentEnd.setDate(assignmentEnd.getDate() - 1);
       const assignmentEndStr = assignmentEnd.toISOString().split('T')[0];
-      await db
+      
+      console.log(`[Final Settlement] Completing assignments for employee ${employeeId} before vacation starts on ${vacationStartDate}, setting endDate to ${assignmentEndStr}`);
+      
+      // First, let's see what assignments exist for this employee
+      const existingAssignments = await db
+        .select()
+        .from(employeeAssignments)
+        .where(eq(employeeAssignments.employeeId, employeeId));
+      
+      console.log(`[Final Settlement] Existing assignments for employee ${employeeId}:`, existingAssignments);
+      
+      const updateResult = await db
         .update(employeeAssignments)
         .set({ status: 'completed', endDate: assignmentEndStr, updatedAt: new Date().toISOString().split('T')[0] })
         .where(
           and(
             eq(employeeAssignments.employeeId, employeeId),
-            or(
-              ne(employeeAssignments.status, 'completed'),
-              isNull(employeeAssignments.endDate),
-              gte(employeeAssignments.endDate, vacationStartDate)
-            )
+            ne(employeeAssignments.status, 'completed')
           )
         );
+      
+      console.log(`[Final Settlement] Assignment update result for employee ${employeeId}:`, updateResult);
+    } else if (settlementType === 'exit' && lastWorkingDate) {
+      // For exit settlements, complete assignments on the last working date
+      console.log(`[Final Settlement] Completing assignments for employee ${employeeId} for exit settlement, setting endDate to ${lastWorkingDate}`);
+      
+      // First, let's see what assignments exist for this employee
+      const existingAssignments = await db
+        .select()
+        .from(employeeAssignments)
+        .where(eq(employeeAssignments.employeeId, employeeId));
+      
+      console.log(`[Final Settlement] Existing assignments for employee ${employeeId}:`, existingAssignments);
+      
+      const updateResult = await db
+        .update(employeeAssignments)
+        .set({ status: 'completed', endDate: lastWorkingDate, updatedAt: new Date().toISOString().split('T')[0] })
+        .where(
+          and(
+            eq(employeeAssignments.employeeId, employeeId),
+            ne(employeeAssignments.status, 'completed')
+          )
+        );
+      
+      console.log(`[Final Settlement] Assignment update result for employee ${employeeId}:`, updateResult);
     }
 
     return NextResponse.json({
@@ -330,6 +365,60 @@ export async function DELETE(
             )
           )
         );
+
+      // Restore assignments that were completed for this vacation settlement
+      console.log(`[Final Settlement] Restoring assignments for employee ${employeeId} after deleting vacation settlement`);
+      
+      // First, let's see what assignments exist for this employee
+      const existingAssignments = await db
+        .select()
+        .from(employeeAssignments)
+        .where(eq(employeeAssignments.employeeId, employeeId));
+      
+      console.log(`[Final Settlement] Existing assignments for employee ${employeeId}:`, existingAssignments);
+      
+      // Restore assignments that were completed on the day before vacation started
+      const vacationStartDate = s.vacationStartDate;
+      const assignmentEndDate = new Date(vacationStartDate);
+      assignmentEndDate.setDate(assignmentEndDate.getDate() - 1);
+      const assignmentEndDateStr = assignmentEndDate.toISOString().split('T')[0];
+      
+      const restoreResult = await db
+        .update(employeeAssignments)
+        .set({ 
+          status: 'active', 
+          endDate: null, 
+          updatedAt: new Date().toISOString().split('T')[0] 
+        })
+        .where(
+          and(
+            eq(employeeAssignments.employeeId, employeeId),
+            eq(employeeAssignments.status, 'completed'),
+            eq(employeeAssignments.endDate, assignmentEndDateStr)
+          )
+        );
+      
+      console.log(`[Final Settlement] Assignment restore result for employee ${employeeId}:`, restoreResult);
+    } else if (s.settlementType === 'exit' && s.lastWorkingDate) {
+      // For exit settlements, restore assignments that were completed on the last working date
+      console.log(`[Final Settlement] Restoring assignments for employee ${employeeId} after deleting exit settlement`);
+      
+      const restoreResult = await db
+        .update(employeeAssignments)
+        .set({ 
+          status: 'active', 
+          endDate: null, 
+          updatedAt: new Date().toISOString().split('T')[0] 
+        })
+        .where(
+          and(
+            eq(employeeAssignments.employeeId, employeeId),
+            eq(employeeAssignments.status, 'completed'),
+            eq(employeeAssignments.endDate, s.lastWorkingDate)
+          )
+        );
+      
+      console.log(`[Final Settlement] Assignment restore result for employee ${employeeId}:`, restoreResult);
     }
 
     // Delete the settlement itself

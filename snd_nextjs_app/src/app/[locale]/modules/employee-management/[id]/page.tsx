@@ -601,7 +601,7 @@ export default function EmployeeShowPage() {
       case 'inactive':
         return <Badge className="bg-red-100 text-red-800">{t('employee.status.inactive')}</Badge>;
       case 'on_leave':
-        return <Badge className="bg-yellow-100 text-yellow-800">{t('employee.status.onLeave')}</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800">{t('employee.status.on_leave')}</Badge>;
       case 'terminated':
         return <Badge className="bg-gray-100 text-gray-800">{t('employee.status.terminated')}</Badge>;
       case 'left':

@@ -213,6 +213,7 @@
     "inactive": "Inactive",
     "terminated": "Terminated",
     "onLeave": "On Leave",
+    "on_leave": "On Leave",
     "left": "Exit the company",
     "probation": "Probation",
     "unknown": "Unknown"
@@ -607,6 +608,7 @@
     "suspended": "Suspended",
     "left": "Left",
     "onLeave": "On Leave",
+    "on_leave": "On Leave",
     "assigned": "Assigned",
     "unknown": "Unknown"
   },
