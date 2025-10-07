@@ -74,7 +74,13 @@
     "notes": "Notes",
     "selectCustomer": "Select Customer",
     "createRental": "Create Rental",
-    "na": "N/A"
+    "na": "N/A",
+    "actions": {
+      "profile": "Profile",
+      "logout": "Logout",
+      "refreshSession": "Refresh Session",
+      "settings": "Settings"
+    }
   },
   "messages": {
     "success": "Operation completed successfully",

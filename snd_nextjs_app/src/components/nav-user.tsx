@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/use-auth';
-import { useI18n } from '@/hooks/use-i18n';
+import { useTranslation } from 'react-i18next';
 import { LogOut, User } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import Link from 'next/link';
@@ -16,7 +16,8 @@ import React from 'react';
 
 export function NavUser() {
   const { session, status } = useAuth();
-  const { t, isRTL } = useI18n();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
 
   if (status === 'loading') {
     return (

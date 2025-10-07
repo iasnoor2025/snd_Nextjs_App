@@ -75,7 +75,13 @@
     "notes": "ملاحظات",
     "selectCustomer": "اختر العميل",
     "createRental": "إنشاء إيجار",
-    "na": "غير متاح"
+    "na": "غير متاح",
+    "actions": {
+      "profile": "الملف الشخصي",
+      "logout": "تسجيل الخروج",
+      "refreshSession": "تحديث الجلسة",
+      "settings": "الإعدادات"
+    }
   },
   "messages": {
     "success": "تم إنجاز العملية بنجاح",

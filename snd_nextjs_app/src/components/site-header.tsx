@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { useI18n } from '@/hooks/use-i18n';
+import { useTranslation } from 'react-i18next';
 import { LogOut, RefreshCw, Settings, User } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
@@ -23,7 +23,8 @@ import { ThemeToggle } from './theme-toggle';
 
 export function SiteHeader() {
   const { data: session, status } = useSession();
-  const { t, isRTL } = useI18n();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const [currentUserRole, setCurrentUserRole] = useState<string>('USER');
 
   // Fetch current user's role from the database
