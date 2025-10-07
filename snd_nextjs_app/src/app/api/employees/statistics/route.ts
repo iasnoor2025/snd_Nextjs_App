@@ -1,8 +1,8 @@
 import { authConfig } from '@/lib/auth-config';
 import { db } from '@/lib/db';
-import { employeeAssignments, employees, projectManpower } from '@/lib/drizzle/schema';
+import { employeeAssignments, employees, projectManpower, employeeLeaves } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql, gte, lte } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
 
@@ -246,6 +246,37 @@ const getEmployeeStatisticsHandler = async () => {
     console.log('🔍 Project assignments count:', projectAssignments);
     console.log('🔍 Rental assignments count:', rentalAssignments);
 
+    // Count employees currently on leave
+    let employeesOnLeave = 0;
+    if (totalEmployees > 0) {
+      const today = new Date().toISOString().split('T')[0];
+      
+      const leaveRows = await db
+        .select({
+          employeeId: employeeLeaves.employeeId,
+          status: employeeLeaves.status,
+          startDate: employeeLeaves.startDate,
+          endDate: employeeLeaves.endDate,
+        })
+        .from(employeeLeaves)
+        .where(
+          and(
+            eq(employeeLeaves.status, 'approved'),
+            lte(employeeLeaves.startDate, today),
+            gte(employeeLeaves.endDate, today)
+          )
+        );
+
+      // Count unique employees currently on leave
+      const employeesOnLeaveSet = new Set();
+      leaveRows.forEach(row => {
+        employeesOnLeaveSet.add(row.employeeId);
+      });
+      
+      employeesOnLeave = employeesOnLeaveSet.size;
+      console.log('🔍 Employees on leave count:', employeesOnLeave);
+    }
+
     return NextResponse.json({
       success: true,
       data: {
@@ -253,6 +284,7 @@ const getEmployeeStatisticsHandler = async () => {
         currentlyAssigned,
         projectAssignments,
         rentalAssignments,
+        employeesOnLeave,
       },
       message: 'Employee statistics retrieved successfully',
     });

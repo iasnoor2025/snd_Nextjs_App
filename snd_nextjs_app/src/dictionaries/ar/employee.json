@@ -599,7 +599,8 @@
     "totalEmployees": "إجمالي الموظفين",
     "currentlyAssigned": "معين حالياً",
     "projectAssignments": "تعيينات المشاريع",
-    "rentalAssignments": "تعيينات الإيجار"
+    "rentalAssignments": "تعيينات الإيجار",
+    "employeesOnLeave": "الموظفون في إجازة"
   },
 
   "assignment": {
