@@ -47,9 +47,11 @@ export function UnpaidSalaryAlert({ unpaidSalaryInfo }: UnpaidSalaryAlertProps) 
   };
 
   const getSeverityLevel = () => {
-    if (unpaidSalaryInfo.unpaidMonths >= 6) return 'critical';
-    if (unpaidSalaryInfo.unpaidMonths >= 3) return 'high';
-    if (unpaidSalaryInfo.unpaidMonths >= 1) return 'medium';
+    const monthsToCheck = unpaidSalaryInfo.unpaidMonths;
+    
+    if (monthsToCheck >= 6) return 'critical';
+    if (monthsToCheck >= 3) return 'high';
+    if (monthsToCheck >= 1) return 'medium';
     return 'low';
   };
 

@@ -41,7 +41,6 @@ import {
   CheckCircle,
   Clock,
   DollarSign,
-  Calculator,
   Calendar,
   User,
   Building,
@@ -140,7 +139,12 @@ export function FinalSettlementManager({
       setSettlements(settlementsData.data || []);
 
       // Load unpaid salary information
-      const unpaidSalaryResponse = await fetch(`/api/employees/${employeeId}/unpaid-salary`);
+      const unpaidSalaryResponse = await fetch(`/api/employees/${employeeId}/unpaid-salary`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-store',
+        },
+      });
       if (unpaidSalaryResponse.ok) {
         const unpaidSalaryData = await unpaidSalaryResponse.json();
         setUnpaidSalaryInfo(unpaidSalaryData.data);
@@ -217,6 +221,7 @@ export function FinalSettlementManager({
       day: 'numeric',
     });
   };
+
 
   const handleDeleteSettlement = (settlement: FinalSettlement) => {
     setSettlementToDelete(settlement);
@@ -517,6 +522,7 @@ export function FinalSettlementManager({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
     </div>
   );
 }

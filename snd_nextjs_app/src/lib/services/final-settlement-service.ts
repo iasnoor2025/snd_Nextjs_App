@@ -103,6 +103,9 @@ export class FinalSettlementService {
    */
   static async getUnpaidSalaryInfo(employeeId: number): Promise<UnpaidSalaryInfo> {
     try {
+      // New rule: unpaid salary always starts from October 2025 (paid up to September 2025)
+      // We intentionally ignore any manual adjustments or payroll history for this calculation.
+
       // Get employee basic salary and hire date
       const employee = await db
         .select({
@@ -142,45 +145,13 @@ export class FinalSettlementService {
         ? parseFloat(latestSalary[0]!.allowances || '0') 
         : 0;
 
-      // Get all paid payrolls for this employee
-      const paidPayrolls = await db
-        .select({
-          month: payrolls.month,
-          year: payrolls.year,
-          finalAmount: payrolls.finalAmount,
-          paidAt: payrolls.paidAt,
-        })
-        .from(payrolls)
-        .where(
-          and(
-            eq(payrolls.employeeId, employeeId),
-            eq(payrolls.paymentStatus, 'paid')
-          )
-        )
-        .orderBy(desc(payrolls.year), desc(payrolls.month));
-
-      // Find the last paid month/year
-      let lastPaidMonth: number | undefined;
-      let lastPaidYear: number | undefined;
-      let lastPaidDate: string | undefined;
-
-      if (paidPayrolls.length > 0) {
-        lastPaidMonth = paidPayrolls[0]!.month;
-        lastPaidYear = paidPayrolls[0]!.year;
-        lastPaidDate = paidPayrolls[0]!.paidAt || undefined;
-      }
-
-      // Calculate unpaid months from hire date or last paid month to today
-      const startDate = lastPaidMonth && lastPaidYear 
-        ? new Date(lastPaidYear, lastPaidMonth, 1) // Start from the month after last paid
-        : hireDate;
-
-      const unpaidMonths = this.calculateMonthsBetween(startDate, today);
-      
-      // If there was a last payment, we need to exclude that month and start from the next month
-      const totalUnpaidMonths = lastPaidMonth && lastPaidYear 
-        ? unpaidMonths - 1 // Subtract 1 because we start from the month after last payment
-        : unpaidMonths;
+      // Force: unpaid starts from September 2025 (meaning paid up to August 2025)
+      const lastPaidMonth: number = 8; // August
+      const lastPaidYear: number = 2025;
+      const startDate = new Date(2025, 8, 1); // Sep 1, 2025
+      // Include the start month (September) in the count
+      const monthsFromStart = this.calculateMonthsBetween(startDate, today);
+      const totalUnpaidMonths = Math.max(0, monthsFromStart + 1);
 
       const unpaidAmount = Math.max(0, totalUnpaidMonths) * (currentBasicSalary + currentAllowances);
 
@@ -190,7 +161,7 @@ export class FinalSettlementService {
         unpaidAmount,
         lastPaidMonth,
         lastPaidYear,
-        lastPaidDate,
+        lastPaidDate: new Date(lastPaidYear, lastPaidMonth - 1, 1).toISOString().split('T')[0],
         totalUnpaidMonths: Math.max(0, totalUnpaidMonths),
       };
     } catch (error) {
@@ -199,9 +170,6 @@ export class FinalSettlementService {
     }
   }
 
-  /**
-   * Calculate end of service benefits according to Saudi Labor Law
-   */
   static calculateEndOfServiceBenefit(
     hireDate: Date,
     lastWorkingDate: Date,

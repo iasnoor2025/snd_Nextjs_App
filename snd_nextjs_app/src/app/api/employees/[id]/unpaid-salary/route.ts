@@ -3,6 +3,9 @@ import { FinalSettlementService } from '@/lib/services/final-settlement-service'
 import { getServerSession } from 'next-auth/next';
 import { authConfig } from '@/lib/auth-config';
 
+// Always compute on request; do not cache
+export const dynamic = 'force-dynamic';
+
 // GET: Get unpaid salary information for a specific employee
 export async function GET(
   request: NextRequest,
@@ -26,6 +29,11 @@ export async function GET(
     return NextResponse.json({
       success: true,
       data: unpaidSalaryInfo,
+    }, {
+      // Disable caching so the UI reflects newly applied adjustments immediately
+      headers: {
+        'Cache-Control': 'no-store, max-age=0',
+      },
     });
   } catch (error) {
     console.error('Error fetching unpaid salary info:', error);
