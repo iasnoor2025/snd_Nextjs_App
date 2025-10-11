@@ -5,6 +5,7 @@ import {
   projectTasks, 
   projectMilestones, 
   projectRisks,
+  projectMaterials,
   employees,
   timesheets 
 } from '@/lib/drizzle/schema';
@@ -102,15 +103,15 @@ export async function GET(
             .from(projectMilestones)
             .where(eq(projectMilestones.projectId, parseInt(projectId))),
 
-          // Resource statistics
+          // Resource statistics - using project materials as resources
           db
             .select({
-              total: count(projectResources.id),
-              totalCost: sum(projectResources.totalCost),
-              avgCost: avg(projectResources.totalCost),
+              total: count(projectMaterials.id),
+              totalCost: sum(projectMaterials.totalCost),
+              avgCost: avg(projectMaterials.totalCost),
             })
-            .from(projectResources)
-            .where(eq(projectResources.projectId, parseInt(projectId))),
+            .from(projectMaterials)
+            .where(eq(projectMaterials.projectId, parseInt(projectId))),
 
           // Risk statistics
           db
@@ -161,25 +162,25 @@ export async function GET(
         // Get cost analysis
         const costData = await db
           .select({
-            resourceId: projectResources.id,
-            type: projectResources.type,
-            name: projectResources.name,
-            totalCost: projectResources.totalCost,
-            date: projectResources.date,
-            status: projectResources.status,
+            resourceId: projectMaterials.id,
+            type: projectMaterials.category,
+            name: projectMaterials.materialName,
+            totalCost: projectMaterials.totalCost,
+            date: projectMaterials.createdAt,
+            status: projectMaterials.status,
           })
-          .from(projectResources)
-          .where(eq(projectResources.projectId, parseInt(projectId)))
-          .orderBy(desc(projectResources.totalCost));
+          .from(projectMaterials)
+          .where(eq(projectMaterials.projectId, parseInt(projectId)))
+          .orderBy(desc(projectMaterials.totalCost));
 
         const costSummary = await db
           .select({
-            totalCost: sum(projectResources.totalCost),
-            avgCost: avg(projectResources.totalCost),
-            resourceCount: count(projectResources.id),
+            totalCost: sum(projectMaterials.totalCost),
+            avgCost: avg(projectMaterials.totalCost),
+            resourceCount: count(projectMaterials.id),
           })
-          .from(projectResources)
-          .where(eq(projectResources.projectId, parseInt(projectId)));
+          .from(projectMaterials)
+          .where(eq(projectMaterials.projectId, parseInt(projectId)));
 
         reportData = {
           project: selectedProject,

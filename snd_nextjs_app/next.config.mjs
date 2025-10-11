@@ -1,17 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
-    ignoreDuringBuilds: true, // Keep disabled for now
+    ignoreDuringBuilds: true, // Temporarily disable ESLint validation
   },
   typescript: {
-    ignoreBuildErrors: true, // Enable TypeScript validation
+    ignoreBuildErrors: true, // Temporarily disable TypeScript validation
   },
   // Performance optimizations
   experimental: {
     optimizeCss: true,
     scrollRestoration: true,
-    // Enable SWC minification for better performance
-    swcMinify: true,
     // Optimize package imports
     optimizePackageImports: [
       '@radix-ui/react-dialog',

@@ -6,7 +6,10 @@ import { i18n } from '@/lib/i18n-config';
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  console.log('🔍 Middleware triggered for path:', pathname);
+  // Only log in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 Middleware triggered for path:', pathname);
+  }
 
   // Define public routes that should bypass middleware completely
   const publicRoutes = [

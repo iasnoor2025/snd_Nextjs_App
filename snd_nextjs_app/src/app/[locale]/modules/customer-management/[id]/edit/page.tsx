@@ -452,7 +452,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                     type="number"
                     step="0.01"
                     value={formData.creditLimit}
-                    onChange={e => handleInputChange('creditLimit', parseFloat(e.target.value) || 0)}
+                    onChange={e => handleInputChange('creditLimit', String(parseFloat(e.target.value) || 0))}
                     placeholder="0.00"
                   />
                 </div>

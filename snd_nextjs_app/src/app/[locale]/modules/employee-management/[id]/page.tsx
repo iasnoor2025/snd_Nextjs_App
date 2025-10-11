@@ -174,6 +174,12 @@ export default function EmployeeShowPage() {
   // Leave data state
   const [leaves, setLeaves] = useState<any[]>([]);
   const [loadingLeaves, setLoadingLeaves] = useState(false);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [designations, setDesignations] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [editingEmployee, setEditingEmployee] = useState<any>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [updating, setUpdating] = useState(false);
 
   // Filter advances for repayment (approved and partially repaid, but not fully repaid)
   const approvedAdvances = advances.filter(
@@ -2422,7 +2428,7 @@ export default function EmployeeShowPage() {
         <TabsContent value="final-settlements" className="mt-6 space-y-6">
           <FinalSettlementManager
             employeeId={parseInt(employeeId)}
-            employeeName={employee.full_name}
+            employeeName={`${employee.first_name} ${employee.last_name}`}
             canCreate={hasPermission('create', 'FinalSettlement')}
             canView={hasPermission('read', 'FinalSettlement')}
             canApprove={hasPermission('approve', 'FinalSettlement')}

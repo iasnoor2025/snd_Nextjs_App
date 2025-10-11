@@ -31,7 +31,7 @@ async function checkEmployeeFileNumbers() {
     
     console.log('\n📊 Employee File Numbers:');
     employeesData.forEach(emp => {
-      console.log(`ID: ${emp.id}, FileNumber: ${emp.fileNumber || 'N/A'}, EmployeeNumber: ${emp.employeeNumber || 'N/A'}, Name: ${emp.firstName || 'N/A'} ${emp.lastName || 'N/A'}`);
+      console.log(`ID: ${emp.id}, FileNumber: ${emp.fileNumber || 'N/A'}, Name: ${emp.firstName || 'N/A'} ${emp.lastName || 'N/A'}`);
     });
     
     console.log('\n📋 Summary:');

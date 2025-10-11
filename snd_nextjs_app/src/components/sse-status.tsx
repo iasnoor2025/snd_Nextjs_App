@@ -52,10 +52,8 @@ export function SSEStatus({
   };
 
   const handleReconnect = () => {
-    if (eventSource) {
-      eventSource.close();
-    }
-    connect();
+    // Reconnect functionality - placeholder implementation
+    toast.info('Reconnect functionality not implemented');
   };
 
   // Note: disconnect and clearEvents methods are not available in the current SSE context

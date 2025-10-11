@@ -8,35 +8,13 @@ import { NextResponse } from 'next/server';
 
 const getEmployeeStatisticsHandler = async () => {
   try {
-    console.log('🔍 Statistics API - Starting...');
-
     // Get session to check user role
     const session = await getServerSession(authConfig);
     const user = session?.user;
-    
-    console.log('🔍 User role:', user?.role);
 
     // Get total employee count
     const totalEmployeesRows = await db.select({ count: sql<number>`count(*)` }).from(employees);
     const totalEmployees = Number((totalEmployeesRows as { count: number }[])[0]?.count ?? 0);
-    
-    console.log('🔍 Total employees found:', totalEmployees);
-    
-    // Debug: Check all assignments in the database
-    const allAssignments = await db
-      .select({
-        id: employeeAssignments.id,
-        employeeId: employeeAssignments.employeeId,
-        type: employeeAssignments.type,
-        status: employeeAssignments.status,
-        startDate: employeeAssignments.startDate,
-        endDate: employeeAssignments.endDate,
-      })
-      .from(employeeAssignments)
-      .limit(10);
-    
-    console.log('🔍 All assignments in database (first 10):', allAssignments);
-    console.log('🔍 Total assignments count:', allAssignments.length);
 
     // Get employees with current assignments
     let currentlyAssigned = 0;

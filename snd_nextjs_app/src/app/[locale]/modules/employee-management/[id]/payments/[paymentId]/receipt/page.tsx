@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { usePrint } from '@/hooks/use-print';
 import { ArrowLeft, Download, Printer } from 'lucide-react';
 import Link from 'next/link';
@@ -305,18 +306,16 @@ export default function ReceiptPage() {
                       </p>
                       <p>
                         <span className="font-medium">Advance Date:</span>{' '}
-                        {new Date(receiptData.advance.advance_date).toLocaleDateString()}
+                        {new Date(receiptData.advance.payment_date).toLocaleDateString()}
                       </p>
                     </div>
                     <div>
                       <p>
-                        <span className="font-medium">Purpose:</span> {receiptData.advance.purpose}
+                        <span className="font-medium">Purpose:</span> {receiptData.advance.reason}
                       </p>
                       <p>
                         <span className="font-medium">Status:</span>{' '}
-                        <Badge variant={receiptData.advance.status === 'approved' ? 'default' : 'secondary'}>
-                          {receiptData.advance.status}
-                        </Badge>
+                        <Badge variant="default">Paid</Badge>
                       </p>
                     </div>
                   </div>

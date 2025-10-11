@@ -66,13 +66,16 @@ async function checkMinIOFiles() {
     
     // Display files grouped by folder
     Object.keys(filesByFolder).sort().forEach(folder => {
-      console.log(`📁 ${folder}/ (${filesByFolder[folder].length} files)`);
-      filesByFolder[folder].forEach(file => {
-        const sizeKB = Math.round((file.size || 0) / 1024);
-        const date = file.lastModified ? new Date(file.lastModified).toLocaleDateString() : 'Unknown';
-        console.log(`  📄 ${file.key} (${sizeKB}KB, ${date})`);
-      });
-      console.log('');
+      const folderFiles = filesByFolder[folder];
+      if (folderFiles) {
+        console.log(`📁 ${folder}/ (${folderFiles.length} files)`);
+        folderFiles.forEach(file => {
+          const sizeKB = Math.round((file.size || 0) / 1024);
+          const date = file.lastModified ? new Date(file.lastModified).toLocaleDateString() : 'Unknown';
+          console.log(`  📄 ${file.key} (${sizeKB}KB, ${date})`);
+        });
+        console.log('');
+      }
     });
     
     // Summary
@@ -86,7 +89,8 @@ async function checkMinIOFiles() {
     if (employeeFolders.length > 0) {
       console.log('\n📋 Employee Folders:');
       employeeFolders.forEach(folder => {
-        const fileCount = filesByFolder[folder].length;
+        const folderFiles = filesByFolder[folder];
+        const fileCount = folderFiles ? folderFiles.length : 0;
         console.log(`  ${folder}: ${fileCount} files`);
       });
     }

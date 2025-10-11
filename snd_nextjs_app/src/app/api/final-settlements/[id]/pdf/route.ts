@@ -99,7 +99,7 @@ export async function GET(
       'Content-Length': pdfBuffer.length.toString(),
     });
 
-    return new NextResponse(pdfBuffer, { headers });
+    return new NextResponse(pdfBuffer as any, { headers });
   } catch (error) {
     console.error('Error generating settlement PDF:', error);
     return NextResponse.json(
@@ -227,7 +227,7 @@ export async function POST(
         'Content-Length': pdfBuffer.length.toString(),
       });
 
-      return new NextResponse(pdfBuffer, { headers });
+      return new NextResponse(pdfBuffer as any, { headers });
     }
   } catch (error) {
     console.error('Error generating settlement PDF:', error);

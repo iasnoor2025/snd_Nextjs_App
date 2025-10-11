@@ -272,7 +272,7 @@ export default function CustomerManagementPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{t('customer.search.resultCount', { count: filteredCustomers.length })}</CardTitle>
+            <CardTitle>{t('customer.search.resultCount', { count: String(filteredCustomers.length) })}</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
@@ -347,7 +347,7 @@ export default function CustomerManagementPage() {
               {t('customer.pagination.previous')}
             </Button>
             <span className="flex items-center px-4">
-              {t('customer.pagination.page', { current: currentPage, total: totalPages })}
+              {t('customer.pagination.page', { current: String(currentPage), total: String(totalPages) })}
             </span>
             <Button
               variant="outline"

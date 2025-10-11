@@ -38,6 +38,21 @@ interface EmployeeDashboardData {
     hire_date: string;
     basic_salary: number;
     status: string;
+    nationality?: string;
+    supervisor?: string;
+    location?: string;
+    contract_hours_per_day?: number;
+    contract_days_per_month?: number;
+    address?: string;
+    city?: string;
+    country?: string;
+    hourly_rate?: number;
+    food_allowance?: number;
+    housing_allowance?: number;
+    transport_allowance?: number;
+    bank_name?: string;
+    emergency_contact_name?: string;
+    emergency_contact_phone?: string;
     department: {
       id: number;
       name: string;
@@ -573,7 +588,7 @@ export default function EmployeeDashboard() {
                       <div className="flex justify-between items-center py-2 border-b border-gray-50">
                         <span className="text-sm text-gray-600">{t('dashboard.nationality')}</span>
                         <span className="text-sm font-medium text-gray-900">
-                          {(dashboardData?.employee as any)?.nationality || 'N/A'}
+                          {(dashboardData?.employee as any)?.nationality || 'N/A'} 
                         </span>
                       </div>
                       <div className="flex justify-between items-center py-2 border-b border-gray-50">

@@ -521,9 +521,9 @@ export default function CompanyManagementPage() {
               <div className="flex items-center justify-between mt-6">
                 <div className="text-sm text-muted-foreground">
                   {t('company.pagination.showing', {
-                    start: ((companies.pagination.page - 1) * companies.pagination.limit) + 1,
-                    end: Math.min(companies.pagination.page * companies.pagination.limit, companies.pagination.total),
-                    total: companies.pagination.total
+                    start: String(((companies.pagination.page - 1) * companies.pagination.limit) + 1),
+                    end: String(Math.min(companies.pagination.page * companies.pagination.limit, companies.pagination.total)),
+                    total: String(companies.pagination.total)
                   })}
                 </div>
                 

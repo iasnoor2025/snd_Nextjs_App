@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { usePerformance } from '@/hooks/use-performance';
-import { Activity, BarChart3, Cpu, HardDrive, Network, Server, Thermometer } from 'lucide-react';
+import { Activity, BarChart3, Cpu, HardDrive, Network, Server, Thermometer, CheckCircle, AlertTriangle, Gauge, CardDescription, Zap, TrendingUp, Clock, Memory } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
 export function PerformanceDashboard() {
