@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { employeeAssignments, projects, rentals } from '@/lib/drizzle/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and, ne, lt } from 'drizzle-orm';
 import { getServerSession } from 'next-auth/next';
 import { authConfig } from '@/lib/auth-config';
+import { AssignmentService } from '@/lib/services/assignment-service';
 
 // GET: Fetch assignments for a specific employee
 export async function GET(
@@ -105,29 +106,24 @@ export async function POST(
       }, { status: 400 });
     }
 
-    // Create the assignment
-    const newAssignment = await db
-      .insert(employeeAssignments)
-      .values({
-        employeeId,
-        name,
-        type,
-        location: location || '',
-        startDate: start_date,
-        endDate: end_date || null,
-        status,
-        notes: notes || '',
-        projectId: project_id ? parseInt(project_id) : null,
-        rentalId: rental_id ? parseInt(rental_id) : null,
-        createdAt: new Date().toISOString().split('T')[0],
-        updatedAt: new Date().toISOString().split('T')[0],
-      })
-      .returning();
+    // Create the assignment using the service (service ensures previous assignment is completed)
+    const newAssignment = await AssignmentService.createAssignment({
+      employeeId,
+      name,
+      type,
+      location: location || '',
+      startDate: start_date,
+      endDate: end_date || null,
+      status,
+      notes: notes || '',
+      projectId: project_id ? parseInt(project_id) : null,
+      rentalId: rental_id ? parseInt(rental_id) : null,
+    });
 
     return NextResponse.json({
       success: true,
       message: 'Assignment created successfully',
-      data: newAssignment[0],
+      data: newAssignment,
     });
   } catch (error) {
     console.error('Error creating assignment:', error);

@@ -2,9 +2,10 @@ import { authConfig } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
 import { employeeAssignments, employees, projects, users } from '@/lib/drizzle/schema';
 import { withEmployeeListPermission } from '@/lib/rbac/api-middleware';
-import { and, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import { and, desc, eq, ilike, inArray, or, sql, lt } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { AssignmentService } from '@/lib/services/assignment-service';
 
 // GET /api/assignments - List manual assignments with employee data filtering
 const getAssignmentsHandler = async (
@@ -190,26 +191,18 @@ const createAssignmentHandler = async (
       body.employeeId = request.employeeAccess.ownEmployeeId.toString();
     }
 
-    const [assignment] = await db
-      .insert(employeeAssignments)
-      .values({
-        employeeId: parseInt(body.employeeId),
-        projectId: projectId ? parseInt(projectId) : null,
-        type: assignmentType,
-        name: name || '',
-        location: location || '',
-        startDate: new Date(startDate).toISOString(),
-        endDate: endDate ? new Date(endDate).toISOString() : null,
-        status,
-        notes: notes || '',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      })
-      .returning();
-
-    if (!assignment) {
-      return NextResponse.json({ error: 'Failed to create assignment' }, { status: 500 });
-    }
+    // Create assignment using the service
+    const assignment = await AssignmentService.createAssignment({
+      employeeId: parseInt(body.employeeId),
+      name: name || '',
+      type: assignmentType,
+      location: location || '',
+      startDate: startDate,
+      endDate: endDate ? new Date(endDate).toISOString() : null,
+      status,
+      notes: notes || '',
+      projectId: projectId ? parseInt(projectId) : null,
+    });
 
     // Fetch the created assignment with related data
     const [assignmentWithDetails] = await db
@@ -274,6 +267,12 @@ export const PUT = withEmployeeListPermission(
       const body = await request.json();
       const { id, employeeId, projectId, assignmentType, startDate, endDate, status, name, location, notes } = body;
 
+      // If status is being set to completed and no end date is provided, set it to today
+      let finalEndDate = endDate;
+      if (status === 'completed' && !finalEndDate) {
+        finalEndDate = new Date().toISOString().split('T')[0];
+      }
+
       await db
         .update(employeeAssignments)
         .set({
@@ -283,7 +282,7 @@ export const PUT = withEmployeeListPermission(
           name: name,
           location: location,
           startDate: new Date(startDate).toISOString(),
-          endDate: endDate ? new Date(endDate).toISOString() : null,
+          endDate: finalEndDate ? new Date(finalEndDate).toISOString() : null,
           status,
           notes: notes,
           updatedAt: new Date().toISOString(),

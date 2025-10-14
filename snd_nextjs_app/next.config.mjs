@@ -28,9 +28,63 @@ const nextConfig = {
     },
   },
 
-  // Bundle optimization
+  // Bundle optimization - Enhanced for better performance
   compress: true,
   poweredByHeader: false,
+  
+  // Enhanced webpack configuration for better bundle splitting
+  webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
+    // Optimize bundle splitting
+    config.optimization.splitChunks = {
+      chunks: 'all',
+      cacheGroups: {
+        // Vendor chunks for better caching
+        vendor: {
+          test: /[\\/]node_modules[\\/]/,
+          name: 'vendors',
+          chunks: 'all',
+          priority: 10,
+        },
+        // Common chunks for shared code
+        common: {
+          name: 'common',
+          minChunks: 2,
+          chunks: 'all',
+          priority: 5,
+          reuseExistingChunk: true,
+        },
+        // UI library chunks
+        ui: {
+          test: /[\\/]node_modules[\\/](@radix-ui|lucide-react)[\\/]/,
+          name: 'ui',
+          chunks: 'all',
+          priority: 8,
+        },
+        // Chart library chunks
+        charts: {
+          test: /[\\/]node_modules[\\/](recharts|d3)[\\/]/,
+          name: 'charts',
+          chunks: 'all',
+          priority: 7,
+        },
+      },
+    };
+
+    // Optimize module resolution
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': require('path').resolve(__dirname, 'src'),
+    };
+
+    // Add performance hints
+    config.performance = {
+      hints: dev ? false : 'warning',
+      maxEntrypointSize: 512000, // 500KB
+      maxAssetSize: 512000, // 500KB
+    };
+
+    return config;
+  },
   
   // Image optimization - Enhanced for performance
   images: {

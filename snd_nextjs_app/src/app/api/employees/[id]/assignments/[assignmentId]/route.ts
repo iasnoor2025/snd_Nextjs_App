@@ -9,6 +9,7 @@ import {
 import { and, eq } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { AssignmentService } from '@/lib/services/assignment-service';
 
 export async function PUT(
   request: NextRequest,
@@ -45,25 +46,24 @@ export async function PUT(
       return NextResponse.json({ error: 'Assignment not found' }, { status: 404 });
     }
 
-    // Update assignment in database
-    const assignmentResult = await db
-      .update(employeeAssignments)
-      .set({
+    // Update assignment using the service
+    const assignmentResult = await AssignmentService.updateAssignment(
+      assignmentId,
+      employeeId,
+      {
         name: body.name,
         type: body.type,
         location: body.location,
-        startDate: new Date(body.startDate).toISOString(),
-        endDate: body.endDate ? new Date(body.endDate).toISOString() : null,
+        startDate: body.startDate,
+        endDate: body.endDate,
         status: body.status,
         notes: body.notes,
-        projectId: body.projectId || null,
-        rentalId: body.rentalId || null,
-        updatedAt: new Date().toISOString(),
-      })
-      .where(eq(employeeAssignments.id, assignmentId))
-      .returning();
+        projectId: body.projectId,
+        rentalId: body.rentalId,
+      }
+    );
 
-    const assignment = assignmentResult[0];
+    const assignment = assignmentResult;
 
     if (!assignment) {
       return NextResponse.json({ error: 'Assignment not found' }, { status: 404 });
@@ -131,7 +131,7 @@ export async function PUT(
       },
     });
   } catch (error) {
-    
+    console.error('Error in PUT /api/employees/[id]/assignments/[assignmentId]:', error);
     return NextResponse.json(
       {
         success: false,
@@ -179,7 +179,7 @@ export async function DELETE(
     const assignment = assignmentResult[0];
 
     // If this is a manual assignment that was created from an equipment assignment, also delete the corresponding equipment assignment
-    let deletedEquipmentAssignment: any = null;
+    let deletedEquipmentAssignment: unknown = null;
     if (
       assignment.type === 'manual' &&
       assignment.name &&
@@ -207,23 +207,25 @@ export async function DELETE(
           deletedEquipmentAssignment = equipmentAssignment;
           
         }
-      } catch (assignmentError) {
+      } catch {
         
         // Don't fail the employee assignment deletion if equipment assignment deletion fails
       }
     }
 
-    // Delete assignment from database
-    await db.delete(employeeAssignments).where(eq(employeeAssignments.id, assignmentId));
+    // Delete assignment using the service
+    const result = await AssignmentService.deleteAssignment(assignmentId, employeeId);
 
     return NextResponse.json({
       success: true,
       message:
         'Assignment deleted successfully' +
-        (deletedEquipmentAssignment ? ' and equipment assignment deleted automatically' : ''),
+        (deletedEquipmentAssignment ? ' and equipment assignment deleted automatically' : '') +
+        (result.reactivatedAssignment ? ' and previous assignment reactivated' : ''),
       data: {
-        deletedEmployeeAssignment: assignment,
+        deletedEmployeeAssignment: result.deletedAssignment,
         deletedEquipmentAssignment,
+        reactivatedAssignment: result.reactivatedAssignment,
       },
     });
   } catch (error) {

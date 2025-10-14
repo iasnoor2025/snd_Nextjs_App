@@ -455,28 +455,8 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
             });
 
             if (response.ok) {
-                // If this is a new assignment, mark previous assignments as completed
-                if (formData.employeeId) {
-                    const previousAssignments = assignments.filter(a =>
-                        a.employee_id === parseInt(formData.employeeId) &&
-                        a.status !== 'completed'
-                    );
-
-                    for (const prevAssignment of previousAssignments) {
-                        await fetch(`/api/employees/${formData.employeeId}/assignments`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                id: prevAssignment.id,
-                                status: 'completed',
-                            }),
-                        });
-                    }
-                }
-
-                toast.success('Assignment created successfully. Previous assignments marked as completed.');
+                // Server handles closing previous assignments; no client-side forcing needed
+                toast.success('Assignment created successfully.');
                 setShowCreateDialog(false);
                 setFormData({
                     employeeId: '',
@@ -515,14 +495,23 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
 
         setSubmitting(true);
         try {
-            const response = await fetch(`/api/employees/${currentEmployeeId}/assignments`, {
+            const targetEmployeeIdForEdit = allowAllEmployees && selectedAssignment?.employee_id
+                ? selectedAssignment.employee_id
+                : currentEmployeeId;
+
+            const response = await fetch(`/api/employees/${targetEmployeeIdForEdit}/assignments/${selectedAssignment.id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    ...formData,
-                    id: selectedAssignment.id,
+                    name: formData.name,
+                    type: formData.type,
+                    location: formData.location,
+                    startDate: formData.start_date,
+                    endDate: formData.end_date,
+                    status: formData.status,
+                    notes: formData.notes,
                 }),
             });
 

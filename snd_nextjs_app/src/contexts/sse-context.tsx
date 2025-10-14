@@ -236,7 +236,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
 
       // Add connection timeout for faster failure detection
       connectionTimeoutRef.current = setTimeout(() => {
-        if (connectionStatus === 'connecting' as const) {
+        if (connectionStatus === 'connecting') {
           setConnectionStatus('error');
           setIsConnected(false);
         }

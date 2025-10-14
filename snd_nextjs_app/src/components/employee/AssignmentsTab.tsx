@@ -173,7 +173,14 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
 
     setSubmitting(true);
     try {
-      // Update assignment logic here
+      // If status is being changed to completed and no end date is provided,
+      // set it to one day before the assignment start date
+      let endDate = formData.end_date;
+      if (formData.status === 'completed' && !endDate) {
+        const d = new Date(formData.start_date);
+        d.setDate(d.getDate() - 1);
+        endDate = d.toISOString().split('T')[0];
+      }
 
       const response = await fetch(`/api/employees/${employeeId}/assignments/${selectedAssignment.id}`, {
         method: 'PUT',
@@ -185,7 +192,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
           type: formData.type,
           location: formData.location,
           startDate: formData.start_date,
-          endDate: formData.end_date,
+          endDate: endDate,
           status: formData.status,
           notes: formData.notes,
         }),
@@ -215,13 +222,52 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
     setDeletingId(selectedAssignment.id);
     try {
       const response = await fetch(
-        `/api/employees/${employeeId}/assignments?assignmentId=${selectedAssignment.id}`,
+        `/api/employees/${employeeId}/assignments/${selectedAssignment.id}`,
         {
           method: 'DELETE',
         }
       );
 
       if (response.ok) {
+        // If this was an active assignment, find and activate the next completed assignment
+        if (selectedAssignment.status === 'active') {
+          // Find the most recent completed assignment for this employee
+          const completedAssignments = assignments.filter(a => 
+            a.status === 'completed' && 
+            a.id !== selectedAssignment.id
+          );
+
+          if (completedAssignments.length > 0) {
+            // Sort by creation date to get the most recent
+            const mostRecentCompleted = completedAssignments.sort((a, b) => 
+              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            )[0];
+
+            // Update the most recent completed assignment to active and remove end date
+            if (mostRecentCompleted) {
+              try {
+                await fetch(`/api/employees/${employeeId}/assignments/${mostRecentCompleted.id}`, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    name: mostRecentCompleted.name,
+                    type: mostRecentCompleted.type,
+                    location: mostRecentCompleted.location,
+                    startDate: mostRecentCompleted.start_date,
+                    endDate: null, // Remove end date
+                    status: 'active',
+                    notes: mostRecentCompleted.notes,
+                  }),
+                });
+              } catch (updateError) {
+                console.warn('Failed to activate previous assignment:', updateError);
+              }
+            }
+          }
+        }
+
         toast.success('Assignment deleted successfully');
         setShowDeleteDialog(false);
         setSelectedAssignment(null);
