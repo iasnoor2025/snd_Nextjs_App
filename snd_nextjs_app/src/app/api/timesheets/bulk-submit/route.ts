@@ -233,6 +233,19 @@ export async function POST(request: NextRequest) {
     // Allow Google Apps Script requests that include the shared secret,
     // otherwise require a NextAuth session.
     const isTrustedGAS = isGoogleAppsScript && expectedSecret && incomingSecret === expectedSecret;
+    
+    // TEMPORARY DEBUG: Log authentication details
+    console.log('Authentication check:', {
+      isGoogleAppsScript,
+      hasExpectedSecret: !!expectedSecret,
+      hasIncomingSecret: !!incomingSecret,
+      secretMatch: incomingSecret === expectedSecret,
+      isTrustedGAS,
+      userAgent,
+      incomingSecretLength: incomingSecret.length,
+      expectedSecretLength: expectedSecret?.length || 0
+    });
+    
     if (!isTrustedGAS) {
       const session = await getServerSession(authConfig);
       if (!session?.user?.id) {

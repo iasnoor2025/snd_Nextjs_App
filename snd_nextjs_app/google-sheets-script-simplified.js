@@ -342,6 +342,13 @@ function saveToDatabase(empCode, monthKey, params) {
       'x-gas-secret': gasSharedSecret.substring(0, 10) + '...' // Show first 10 chars for debugging
     });
 
+    console.log('Exact User-Agent being sent:', 'GoogleAppsScript');
+    console.log('Exact x-gas-secret being sent:', gasSharedSecret);
+    
+    // Debug: Check exact header values
+    console.log('User-Agent char codes:', Array.from('GoogleAppsScript').map(c => c.charCodeAt(0)));
+    console.log('Secret char codes (first 10):', Array.from(gasSharedSecret.substring(0, 10)).map(c => c.charCodeAt(0)));
+
     const response = UrlFetchApp.fetch(apiUrl, {
       method: 'POST',
       headers: {
@@ -441,5 +448,61 @@ function getMonthlyData(empCode, monthKey) {
   } catch (error) {
     console.error('getMonthlyData error:', error);
     return [];
+  }
+}
+
+// Test function to verify API authentication
+function testAPIAuth() {
+  try {
+    console.log('=== Testing API Authentication ===');
+    
+    const apiUrl = 'https://myapp.snd-ksa.online/api/timesheets/bulk-submit';
+    const gasSharedSecret = PropertiesService.getScriptProperties().getProperty('GAS_SHARED_SECRET');
+    
+    console.log('Secret retrieved:', gasSharedSecret ? 'YES' : 'NO');
+    console.log('Secret length:', gasSharedSecret ? gasSharedSecret.length : 0);
+    
+    // Debug: Check exact header values
+    console.log('Test User-Agent char codes:', Array.from('GoogleAppsScript').map(c => c.charCodeAt(0)));
+    console.log('Test Secret char codes (first 10):', Array.from(gasSharedSecret.substring(0, 10)).map(c => c.charCodeAt(0)));
+    
+    const testData = {
+      empCode: '429',
+      month: '2023-04',
+      dates: ['2023-04-01'],
+      workingHours: ['8'],
+      overtime: ['0']
+    };
+    
+    const response = UrlFetchApp.fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'GoogleAppsScript',
+        'Accept': 'application/json',
+        'x-gas-secret': gasSharedSecret
+      },
+      payload: JSON.stringify(testData),
+      muteHttpExceptions: true
+    });
+    
+    const statusCode = response.getResponseCode();
+    const responseText = response.getContentText();
+    
+    console.log('Test API Response Status:', statusCode);
+    console.log('Test API Response:', responseText);
+    
+    return {
+      success: statusCode === 200,
+      statusCode: statusCode,
+      response: responseText
+    };
+    
+  } catch (error) {
+    console.error('Test API Error:', error);
+    return {
+      success: false,
+      error: error.toString()
+    };
   }
 }
