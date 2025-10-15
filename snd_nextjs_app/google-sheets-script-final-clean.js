@@ -1,15 +1,23 @@
 // Google Apps Script for Employee Monthly Work Log
-// Simplified version without authentication complexity
+// Complete rewrite - clean and organized
 
-// Main function to submit monthly data
+// ============================================================================
+// MAIN FUNCTIONS
+// ============================================================================
+
+/**
+ * Main function to submit monthly data - saves to both Google Sheets and Database
+ */
 function submitMonthlyData(formData) {
   console.log('=== submitMonthlyData START ===');
+  
   const params = decodeData(formData);
   const empCode = params.empCode && params.empCode[0] ? params.empCode[0] : null;
   const monthKey = params.month && params.month[0] ? params.month[0] : null;
 
   console.log('Processing for:', { empCode, monthKey });
 
+  // Save to Google Sheets
   let googleSheetsResult = { success: false, message: 'Google Sheets save skipped' };
   try {
     googleSheetsResult = saveToGoogleSheets(empCode, monthKey, params);
@@ -19,6 +27,7 @@ function submitMonthlyData(formData) {
     googleSheetsResult = { success: false, message: `Google Sheets save failed: ${error.message}` };
   }
   
+  // Save to Database
   let databaseResult = { success: false, message: 'Database save skipped' };
   try {
     databaseResult = saveToDatabase(empCode, monthKey, params);
@@ -33,7 +42,37 @@ function submitMonthlyData(formData) {
   return { message, results: { googleSheets: googleSheetsResult, database: databaseResult } };
 }
 
-// Handle POST requests from Next.js API
+// ============================================================================
+// HTTP HANDLERS
+// ============================================================================
+
+/**
+ * Serve the HTML UI (for your existing interface)
+ */
+function doGet(e) {
+  try {
+    console.log('=== doGet START ===');
+    console.log('GET request parameters:', e.parameter);
+    
+    // Serve your existing HTML interface
+    return HtmlService
+      .createHtmlOutputFromFile('index')
+      .setTitle('Employee Monthly Work Log - Dual Save');
+      
+  } catch (error) {
+    console.error('Error in doGet:', error);
+    return ContentService
+      .createTextOutput(JSON.stringify({
+        success: false,
+        message: 'Error in doGet: ' + error.toString()
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+/**
+ * Handle POST requests from Next.js API
+ */
 function doPost(e) {
   try {
     console.log('=== doPost START ===');
@@ -81,12 +120,55 @@ function doPost(e) {
   }
 }
 
-// Save to Google Sheets (original functionality)
+// ============================================================================
+// GOOGLE SHEETS FUNCTIONS
+// ============================================================================
+
+/**
+ * Save to Google Sheets
+ */
 function saveToGoogleSheets(empCode, monthKey, params) {
   try {
     console.log('=== saveToGoogleSheets START ===');
     
     const ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    if (!ss) {
+      console.log('No active spreadsheet found, trying to get spreadsheet by ID');
+      try {
+        const spreadsheetId = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+        if (spreadsheetId) {
+          const ssById = SpreadsheetApp.openById(spreadsheetId);
+          return saveToSpreadsheet(ssById, empCode, monthKey, params);
+        }
+      } catch (error) {
+        console.log('Could not open spreadsheet by ID:', error);
+      }
+      
+      console.log('No spreadsheet available, skipping Google Sheets save');
+      return {
+        success: false,
+        message: 'No spreadsheet available for Google Sheets save',
+        error: 'No active spreadsheet'
+      };
+    }
+    
+    return saveToSpreadsheet(ss, empCode, monthKey, params);
+  } catch (error) {
+    console.error('Error saving to Google Sheets:', error);
+    return {
+      success: false,
+      message: 'Failed to save to Google Sheets',
+      error: error.toString()
+    };
+  }
+}
+
+/**
+ * Helper function to save data to spreadsheet
+ */
+function saveToSpreadsheet(ss, empCode, monthKey, params) {
+  try {
     const sheet = ss.getSheetByName('Monthly Work Log') || ss.insertSheet('Monthly Work Log');
     
     // Clear existing data for this employee and month
@@ -129,16 +211,93 @@ function saveToGoogleSheets(empCode, monthKey, params) {
       entriesCount: dates.length
     };
   } catch (error) {
-    console.error('Error saving to Google Sheets:', error);
+    console.error('Error saving to spreadsheet:', error);
     return {
       success: false,
-      message: 'Failed to save to Google Sheets',
+      message: 'Failed to save to spreadsheet',
       error: error.toString()
     };
   }
 }
 
-// Save to Database using new dedicated endpoint
+/**
+ * Get monthly data from Google Sheets
+ */
+function getMonthlyData(empCode, monthKey) {
+  try {
+    console.log('=== getMonthlyData START ===');
+    console.log('Parameters:', { empCode, monthKey });
+    
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    if (!ss) {
+      console.log('No active spreadsheet found, trying to get spreadsheet by ID');
+      try {
+        const spreadsheetId = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+        if (spreadsheetId) {
+          const ssById = SpreadsheetApp.openById(spreadsheetId);
+          return getDataFromSpreadsheet(ssById, empCode, monthKey);
+        }
+      } catch (error) {
+        console.log('Could not open spreadsheet by ID:', error);
+      }
+      
+      console.log('No spreadsheet available, returning empty array');
+      return [];
+    }
+    
+    return getDataFromSpreadsheet(ss, empCode, monthKey);
+  } catch (error) {
+    console.error('getMonthlyData error:', error);
+    return [];
+  }
+}
+
+/**
+ * Helper function to get data from spreadsheet
+ */
+function getDataFromSpreadsheet(ss, empCode, monthKey) {
+  try {
+    const sheet = ss.getSheetByName('Monthly Work Log');
+    
+    if (!sheet) {
+      console.log('No Monthly Work Log sheet found, returning empty array');
+      return [];
+    }
+    
+    const dataRange = sheet.getDataRange();
+    const values = dataRange.getValues();
+    
+    console.log('All sheet data rows:', values.length);
+    
+    const filteredRows = values.filter(row => 
+      row[0] === empCode && row[1] === monthKey
+    );
+    
+    console.log('Filtered rows for employee and month:', filteredRows.length);
+    console.log('Sample filtered row:', filteredRows[0]);
+    
+    const result = filteredRows.map(row => ({
+      date: row[2],
+      workingHours: row[3],
+      overtime: row[4]
+    }));
+    
+    console.log('Final result:', result);
+    return result;
+  } catch (error) {
+    console.error('Error getting data from spreadsheet:', error);
+    return [];
+  }
+}
+
+// ============================================================================
+// DATABASE FUNCTIONS
+// ============================================================================
+
+/**
+ * Save to Database using dedicated endpoint
+ */
 function saveToDatabase(empCode, monthKey, params) {
   try {
     console.log('=== saveToDatabase START ===');
@@ -239,47 +398,9 @@ function saveToDatabase(empCode, monthKey, params) {
   }
 }
 
-// Get monthly data from Google Sheets
-function getMonthlyData(empCode, monthKey) {
-  try {
-    console.log('=== getMonthlyData START ===');
-    console.log('Parameters:', { empCode, monthKey });
-    
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss.getSheetByName('Monthly Work Log');
-    
-    if (!sheet) {
-      console.log('No Monthly Work Log sheet found, returning empty array');
-      return [];
-    }
-    
-    const dataRange = sheet.getDataRange();
-    const values = dataRange.getValues();
-    
-    console.log('All sheet data rows:', values.length);
-    
-    const filteredRows = values.filter(row => 
-      row[0] === empCode && row[1] === monthKey
-    );
-    
-    console.log('Filtered rows for employee and month:', filteredRows.length);
-    console.log('Sample filtered row:', filteredRows[0]);
-    
-    const result = filteredRows.map(row => ({
-      date: row[2],
-      workingHours: row[3],
-      overtime: row[4]
-    }));
-    
-    console.log('Final result:', result);
-    return result;
-  } catch (error) {
-    console.error('getMonthlyData error:', error);
-    return [];
-  }
-}
-
-// Get monthly data from database (fallback)
+/**
+ * Get monthly data from database (fallback)
+ */
 function getMonthlyDataFromDatabase(empCode, monthKey) {
   try {
     console.log('=== getMonthlyDataFromDatabase START ===');
@@ -320,7 +441,13 @@ function getMonthlyDataFromDatabase(empCode, monthKey) {
   }
 }
 
-// Decode URL-encoded data
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * Decode URL-encoded data
+ */
 function decodeData(data) {
   return data
     .split('&')
@@ -333,10 +460,16 @@ function decodeData(data) {
     }, {});
 }
 
-// Test function to verify API authentication
-function testAPIAuth() {
+// ============================================================================
+// TEST FUNCTIONS
+// ============================================================================
+
+/**
+ * Test function to verify API connection
+ */
+function testAPIConnection() {
   try {
-    console.log('=== Testing API Authentication ===');
+    console.log('=== Testing API Connection ===');
     
     const apiUrl = 'https://myapp.snd-ksa.online/api/timesheets/gas-submit';
     

@@ -326,37 +326,13 @@ function saveToDatabase(empCode, monthKey, params) {
     console.log('Payload length:', payload.length);
     console.log('Payload preview:', payload.substring(0, 200) + '...');
 
-    // Debug: Check if secret is being retrieved correctly
-    const gasSharedSecret = PropertiesService.getScriptProperties().getProperty('GAS_SHARED_SECRET');
-    console.log('Retrieved GAS_SHARED_SECRET:', gasSharedSecret ? 'FOUND (length: ' + gasSharedSecret.length + ')' : 'NOT FOUND');
-    console.log('All script properties:', PropertiesService.getScriptProperties().getKeys());
-
-    if (!gasSharedSecret) {
-      throw new Error('GAS_SHARED_SECRET is not set in script properties. Please add it in Project Settings > Script Properties.');
-    }
-
-    console.log('Sending headers:', {
-      'Content-Type': 'application/json',
-      'User-Agent': 'GoogleAppsScript',
-      'Accept': 'application/json',
-      'x-gas-secret': gasSharedSecret.substring(0, 10) + '...' // Show first 10 chars for debugging
-    });
-
-    console.log('Exact User-Agent being sent:', 'GoogleAppsScript');
-    console.log('Exact x-gas-secret being sent:', gasSharedSecret);
-    
-    // Debug: Check exact header values
-    console.log('User-Agent char codes:', Array.from('GoogleAppsScript').map(c => c.charCodeAt(0)));
-    console.log('Secret char codes (first 10):', Array.from(gasSharedSecret.substring(0, 10)).map(c => c.charCodeAt(0)));
+    console.log('Sending request to:', apiUrl);
 
     const response = UrlFetchApp.fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': 'GoogleAppsScript',
-        'Accept': 'application/json',
-        // Shared secret header for server-to-server auth
-        'x-gas-secret': gasSharedSecret || ''
+        'Accept': 'application/json'
       },
       payload: payload,
       muteHttpExceptions: true
@@ -451,20 +427,14 @@ function getMonthlyData(empCode, monthKey) {
   }
 }
 
-// Test function to verify API authentication
-function testAPIAuth() {
+// Test function to verify API connection
+function testAPIConnection() {
   try {
-    console.log('=== Testing API Authentication ===');
+    console.log('=== Testing API Connection ===');
     
     const apiUrl = 'https://myapp.snd-ksa.online/api/timesheets/gas-submit';
-    const gasSharedSecret = PropertiesService.getScriptProperties().getProperty('GAS_SHARED_SECRET');
     
-    console.log('Secret retrieved:', gasSharedSecret ? 'YES' : 'NO');
-    console.log('Secret length:', gasSharedSecret ? gasSharedSecret.length : 0);
-    
-    // Debug: Check exact header values
-    console.log('Test User-Agent char codes:', Array.from('GoogleAppsScript').map(c => c.charCodeAt(0)));
-    console.log('Test Secret char codes (first 10):', Array.from(gasSharedSecret.substring(0, 10)).map(c => c.charCodeAt(0)));
+    console.log('Testing API without authentication...');
     
     const testData = {
       empCode: '429',
@@ -478,9 +448,7 @@ function testAPIAuth() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': 'GoogleAppsScript',
-        'Accept': 'application/json',
-        'x-gas-secret': gasSharedSecret
+        'Accept': 'application/json'
       },
       payload: JSON.stringify(testData),
       muteHttpExceptions: true
