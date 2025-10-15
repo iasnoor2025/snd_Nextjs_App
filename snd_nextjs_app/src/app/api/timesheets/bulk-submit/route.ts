@@ -135,7 +135,7 @@ async function saveToDatabase(employeeId: number, monthKey: string, timesheetDat
   try {
     // Check if timesheets exist for this month (to determine if it's an update)
     const monthStart = new Date(monthKey + '-01');
-    const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
+    // Note: monthEnd kept previously for SQL bounds; JS filter below doesn't need it
     
     // Check if any timesheets exist for this employee in this month
     // First, let's check what dates actually exist for this employee
@@ -213,7 +213,12 @@ export async function POST(request: NextRequest) {
   try {
     // Check if this is a request from Google Apps Script
     const userAgent = request.headers.get('user-agent') || '';
-    const isGoogleAppsScript = userAgent.includes('GoogleAppsScript');
+    // Some environments send variations like 'Google-Apps-Script'
+    const isGoogleAppsScript = /Google[- ]?Apps?Script/i.test(userAgent);
+
+    // Shared secret header for server-to-server auth (set in .env)
+    const incomingSecret = request.headers.get('x-gas-secret') || '';
+    const expectedSecret = process.env.GAS_SHARED_SECRET;
     
     console.log('Request received:', {
       userAgent,
@@ -221,8 +226,10 @@ export async function POST(request: NextRequest) {
       contentType: request.headers.get('content-type')
     });
     
-    // Allow Google Apps Script requests without session authentication
-    if (!isGoogleAppsScript) {
+    // Allow Google Apps Script requests that include the shared secret,
+    // otherwise require a NextAuth session.
+    const isTrustedGAS = isGoogleAppsScript && expectedSecret && incomingSecret === expectedSecret;
+    if (!isTrustedGAS) {
       const session = await getServerSession(authConfig);
       if (!session?.user?.id) {
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
