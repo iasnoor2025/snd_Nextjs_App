@@ -138,16 +138,22 @@ async function saveToDatabase(employeeId: number, monthKey: string, timesheetDat
     const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
     
     // Check if any timesheets exist for this employee in this month
-    const existingTimesheets = await db
-      .select({ id: timesheets.id })
+    // First, let's check what dates actually exist for this employee
+    const allEmployeeTimesheets = await db
+      .select({ id: timesheets.id, date: timesheets.date })
       .from(timesheets)
-      .where(
-        and(
-          eq(timesheets.employeeId, employeeId),
-          sql`DATE(${timesheets.date}) >= DATE(${monthStart.toISOString().split('T')[0]})`,
-          sql`DATE(${timesheets.date}) <= DATE(${monthEnd.toISOString().split('T')[0]})`
-        )
-      );
+      .where(eq(timesheets.employeeId, employeeId));
+    
+    console.log(`All timesheets for employee ${employeeId}:`, allEmployeeTimesheets.map(t => t.date));
+    
+    // Now filter for the specific month
+    const existingTimesheets = allEmployeeTimesheets.filter(t => {
+      const timesheetDate = new Date(t.date);
+      return timesheetDate.getFullYear() === monthStart.getFullYear() && 
+             timesheetDate.getMonth() === monthStart.getMonth();
+    });
+    
+    console.log(`Filtered timesheets for ${monthKey}:`, existingTimesheets.map(t => t.date));
 
     const isUpdate = existingTimesheets.length > 0;
     console.log(`Found ${existingTimesheets.length} existing timesheets for employee ${employeeId} in ${monthKey}`);
@@ -155,16 +161,15 @@ async function saveToDatabase(employeeId: number, monthKey: string, timesheetDat
     // If updating, delete existing timesheets for this month
     if (isUpdate) {
       console.log(`Deleting existing timesheets for employee ${employeeId} in ${monthKey}`);
-      const _deleteResult = await db
-        .delete(timesheets)
-        .where(
-          and(
-            eq(timesheets.employeeId, employeeId),
-            sql`DATE(${timesheets.date}) >= DATE(${monthStart.toISOString().split('T')[0]})`,
-            sql`DATE(${timesheets.date}) <= DATE(${monthEnd.toISOString().split('T')[0]})`
-          )
-        );
-      console.log(`Deleted timesheets for employee ${employeeId} in ${monthKey}`);
+      
+      // Delete each timesheet individually to avoid SQL complexity
+      for (const timesheet of existingTimesheets) {
+        await db
+          .delete(timesheets)
+          .where(eq(timesheets.id, timesheet.id));
+      }
+      
+      console.log(`Deleted ${existingTimesheets.length} timesheets for employee ${employeeId} in ${monthKey}`);
     }
 
     // Insert all timesheet entries
@@ -276,7 +281,7 @@ export async function POST(request: NextRequest) {
       if (wh === 'A') {
         hoursWorked = 0; // Absent
       } else if (wh === 'Fri') {
-        hoursWorked = 4; // Friday half day
+        hoursWorked = 0; // Friday should be 0 or "Fri", not 4 hours
       } else {
         hoursWorked = parseFloat(wh) || 0;
       }

@@ -94,8 +94,8 @@ export default function BulkTimesheetForm({ className }: BulkTimesheetFormProps)
             const existing = existingData[index];
             return existing ? {
               ...item,
-              workingHours: existing.workingHours,
-              overtime: existing.overtime
+              workingHours: existing.workingHours === 'Fri' ? 'Fri' : parseFloat(existing.workingHours || '0').toFixed(1),
+              overtime: parseFloat(existing.overtime || '0').toFixed(1)
             } : item;
           })
         );
@@ -203,17 +203,17 @@ export default function BulkTimesheetForm({ className }: BulkTimesheetFormProps)
 
   return (
     <Card className={className}>
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2 text-lg">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-base">
           <Calendar className="h-4 w-4" />
           Employee Monthly Work Log
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Input Fields - More Compact */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <CardContent className="space-y-3">
+        {/* Input Fields - Ultra Compact */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           <div className="space-y-1">
-            <Label htmlFor="empCode" className="text-sm font-medium flex items-center gap-1">
+            <Label htmlFor="empCode" className="text-xs font-medium flex items-center gap-1">
               <User className="h-3 w-3" />
               Employee Code
             </Label>
@@ -222,11 +222,11 @@ export default function BulkTimesheetForm({ className }: BulkTimesheetFormProps)
               placeholder="E.g., EMP123"
               value={empCode}
               onChange={(e) => setEmpCode(e.target.value)}
-              className="h-8"
+              className="h-7 text-sm"
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="month" className="text-sm font-medium">
+            <Label htmlFor="month" className="text-xs font-medium">
               Select Month
             </Label>
             <Input
@@ -234,76 +234,71 @@ export default function BulkTimesheetForm({ className }: BulkTimesheetFormProps)
               type="month"
               value={month}
               onChange={(e) => setMonth(e.target.value)}
-              className="h-8"
+              className="h-7 text-sm"
             />
           </div>
         </div>
 
-        {/* Timesheet Table - More Compact */}
-        {datesArr.length > 0 && (
-          <div className="space-y-3">
-            <div className="overflow-x-auto border rounded-lg">
-              <Table className="min-w-full">
-                <TableHeader>
-                  <TableRow className="h-8">
-                    <TableHead className="w-20 text-xs font-medium">Dates</TableHead>
+            {/* Timesheet Table - Ultra Compact Design */}
+            {datesArr.length > 0 && (
+              <div className="space-y-2">
+                <div className="border rounded-lg overflow-hidden">
+                  <div className="grid text-xs" style={{gridTemplateColumns: `60px repeat(${datesArr.length}, 1fr)`}}>
+                    {/* Header Row */}
+                    <div className="col-span-1 bg-gray-100 p-1 font-medium text-center border-r">Day</div>
                     {datesArr.map((date, index) => (
-                      <TableHead 
+                      <div 
                         key={index} 
-                        className={`text-center min-w-8 text-xs font-medium ${isFriday(date) ? 'bg-green-50' : ''}`}
+                        className={`text-center p-1 font-medium border-r ${isFriday(date) ? 'bg-green-50' : 'bg-gray-50'}`}
                       >
                         {index + 1}
-                      </TableHead>
+                      </div>
                     ))}
-                  </TableRow>
-                  <TableRow className="h-6">
-                    <TableHead className="w-20 text-xs">Days</TableHead>
+                    
+                    {/* Days Row */}
+                    <div className="col-span-1 bg-gray-100 p-1 text-center border-r text-gray-600">Days</div>
                     {datesArr.map((date, index) => (
-                      <TableHead 
+                      <div 
                         key={index} 
-                        className={`text-center text-xs ${isFriday(date) ? 'bg-green-50' : ''}`}
+                        className={`text-center p-1 border-r text-gray-600 ${isFriday(date) ? 'bg-green-50' : ''}`}
                       >
                         {getDayName(date)}
-                      </TableHead>
+                      </div>
                     ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow className="h-8">
-                    <TableHead className="bg-gray-50 text-xs font-medium">Regular Hours</TableHead>
+                    
+                    {/* Regular Hours Row */}
+                    <div className="col-span-1 bg-gray-100 p-1 font-medium text-center border-r">Reg</div>
                     {timesheetData.map((item, index) => (
-                      <TableCell 
+                      <div 
                         key={index} 
-                        className={`text-center p-0.5 ${isFriday(item.date) ? 'bg-green-50' : ''}`}
+                        className={`text-center p-0 border-r ${isFriday(item.date) ? 'bg-green-50' : ''}`}
                       >
                         <Input
-                          className="w-10 h-6 text-xs text-center border-gray-300"
-                          value={item.workingHours}
+                          className="w-full h-6 text-xs text-center border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300"
+                          value={item.workingHours === 'Fri' ? 'Fri' : parseFloat(item.workingHours || '0').toFixed(1)}
                           onChange={(e) => updateTimesheetData(index, 'workingHours', e.target.value)}
-                          placeholder="8"
+                          placeholder="8.0"
                         />
-                      </TableCell>
+                      </div>
                     ))}
-                  </TableRow>
-                  <TableRow className="h-8">
-                    <TableHead className="bg-gray-50 text-xs font-medium">Overtime Hours</TableHead>
+                    
+                    {/* Overtime Hours Row */}
+                    <div className="col-span-1 bg-gray-100 p-1 font-medium text-center border-r">OT</div>
                     {timesheetData.map((item, index) => (
-                      <TableCell 
+                      <div 
                         key={index} 
-                        className={`text-center p-0.5 ${isFriday(item.date) ? 'bg-green-50' : ''}`}
+                        className={`text-center p-0 border-r ${isFriday(item.date) ? 'bg-green-50' : ''}`}
                       >
                         <Input
-                          className="w-10 h-6 text-xs text-center border-gray-300"
-                          value={item.overtime}
+                          className="w-full h-6 text-xs text-center border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300"
+                          value={parseFloat(item.overtime || '0').toFixed(1)}
                           onChange={(e) => updateTimesheetData(index, 'overtime', e.target.value)}
-                          placeholder="0"
+                          placeholder="0.0"
                         />
-                      </TableCell>
+                      </div>
                     ))}
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
+                  </div>
+                </div>
 
             {/* Submit Button - More Compact */}
             <div className="flex justify-end">
