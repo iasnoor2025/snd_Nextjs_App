@@ -289,7 +289,7 @@ function saveToDatabase(empCode, monthKey, params) {
     console.log('=== saveToDatabase START ===');
     console.log('Input parameters:', { empCode, monthKey, params });
     
-    const apiUrl = 'https://myapp.snd-ksa.online/api/timesheets/bulk-submit';
+    const apiUrl = 'https://myapp.snd-ksa.online/api/timesheets/gas-submit';
     
     // Prepare data for API with validation
     const dates = params['date[]'] || [];
@@ -456,7 +456,7 @@ function testAPIAuth() {
   try {
     console.log('=== Testing API Authentication ===');
     
-    const apiUrl = 'https://myapp.snd-ksa.online/api/timesheets/bulk-submit';
+    const apiUrl = 'https://myapp.snd-ksa.online/api/timesheets/gas-submit';
     const gasSharedSecret = PropertiesService.getScriptProperties().getProperty('GAS_SHARED_SECRET');
     
     console.log('Secret retrieved:', gasSharedSecret ? 'YES' : 'NO');
