@@ -223,7 +223,11 @@ export async function POST(request: NextRequest) {
     console.log('Request received:', {
       userAgent,
       isGoogleAppsScript,
-      contentType: request.headers.get('content-type')
+      contentType: request.headers.get('content-type'),
+      hasGasSecret: !!incomingSecret,
+      incomingSecretLength: incomingSecret.length,
+      expectedSecretLength: expectedSecret?.length || 0,
+      secretMatch: incomingSecret === expectedSecret
     });
     
     // Allow Google Apps Script requests that include the shared secret,

@@ -326,6 +326,22 @@ function saveToDatabase(empCode, monthKey, params) {
     console.log('Payload length:', payload.length);
     console.log('Payload preview:', payload.substring(0, 200) + '...');
 
+    // Debug: Check if secret is being retrieved correctly
+    const gasSharedSecret = PropertiesService.getScriptProperties().getProperty('GAS_SHARED_SECRET');
+    console.log('Retrieved GAS_SHARED_SECRET:', gasSharedSecret ? 'FOUND (length: ' + gasSharedSecret.length + ')' : 'NOT FOUND');
+    console.log('All script properties:', PropertiesService.getScriptProperties().getKeys());
+
+    if (!gasSharedSecret) {
+      throw new Error('GAS_SHARED_SECRET is not set in script properties. Please add it in Project Settings > Script Properties.');
+    }
+
+    console.log('Sending headers:', {
+      'Content-Type': 'application/json',
+      'User-Agent': 'GoogleAppsScript',
+      'Accept': 'application/json',
+      'x-gas-secret': gasSharedSecret.substring(0, 10) + '...' // Show first 10 chars for debugging
+    });
+
     const response = UrlFetchApp.fetch(apiUrl, {
       method: 'POST',
       headers: {
@@ -333,7 +349,7 @@ function saveToDatabase(empCode, monthKey, params) {
         'User-Agent': 'GoogleAppsScript',
         'Accept': 'application/json',
         // Shared secret header for server-to-server auth
-        'x-gas-secret': PropertiesService.getScriptProperties().getProperty('GAS_SHARED_SECRET') || ''
+        'x-gas-secret': gasSharedSecret || ''
       },
       payload: payload,
       muteHttpExceptions: true
