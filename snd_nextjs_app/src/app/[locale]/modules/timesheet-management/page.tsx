@@ -58,6 +58,7 @@ import {
   Search,
   Settings,
   Trash2,
+  Upload,
   XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -768,6 +769,15 @@ export default function TimesheetManagementPage() {
                 <Settings className="h-4 w-4 mr-2" />
                 Init Cron
               </Button>
+            </PermissionContent>
+
+            <PermissionContent action="create" subject="Timesheet">
+              <Link href="/modules/timesheet-management/bulk-submit">
+                <Button variant="outline">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Bulk Submit
+                </Button>
+              </Link>
             </PermissionContent>
 
             <PermissionContent action="create" subject="Timesheet">
