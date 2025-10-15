@@ -211,9 +211,22 @@ async function saveToDatabase(employeeId: number, monthKey: string, timesheetDat
  */
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authConfig);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    // Check if this is a request from Google Apps Script
+    const userAgent = request.headers.get('user-agent') || '';
+    const isGoogleAppsScript = userAgent.includes('GoogleAppsScript');
+    
+    console.log('Request received:', {
+      userAgent,
+      isGoogleAppsScript,
+      contentType: request.headers.get('content-type')
+    });
+    
+    // Allow Google Apps Script requests without session authentication
+    if (!isGoogleAppsScript) {
+      const session = await getServerSession(authConfig);
+      if (!session?.user?.id) {
+        return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+      }
     }
 
     const body = await request.json();

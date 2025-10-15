@@ -201,6 +201,7 @@ function saveToGoogleSheets(empCode, monthKey, params) {
  */
 function saveToDatabase(empCode, monthKey, params) {
   try {
+    // Use the correct API URL based on environment
     const apiUrl = 'https://myapp.snd-ksa.online/api/timesheets/bulk-submit';
     
     // Prepare data for API
@@ -212,6 +213,13 @@ function saveToDatabase(empCode, monthKey, params) {
       overtime: params['overtime[]']
     };
 
+    console.log('Attempting to save to database:', {
+      url: apiUrl,
+      empCode: empCode,
+      month: monthKey,
+      datesCount: params['date[]'].length
+    });
+
     const response = UrlFetchApp.fetch(apiUrl, {
       method: 'POST',
       headers: {
@@ -222,8 +230,13 @@ function saveToDatabase(empCode, monthKey, params) {
       muteHttpExceptions: true
     });
 
+    console.log('Database API response:', {
+      statusCode: response.getResponseCode(),
+      content: response.getContentText()
+    });
+
     if (response.getResponseCode() !== 200) {
-      throw new Error(`API Error: ${response.getContentText()}`);
+      throw new Error(`API Error (${response.getResponseCode()}): ${response.getContentText()}`);
     }
 
     const result = JSON.parse(response.getContentText());
@@ -234,6 +247,7 @@ function saveToDatabase(empCode, monthKey, params) {
       data: result.data
     };
   } catch (error) {
+    console.error('Database save error:', error);
     return {
       success: false,
       message: `Database save failed: ${error.message}`,
@@ -294,6 +308,7 @@ function getMonthlyDataFromSheets(empCode, monthKey) {
  */
 function getMonthlyDataFromDatabase(empCode, monthKey) {
   try {
+    // Use the correct API URL based on environment
     const apiUrl = `https://myapp.snd-ksa.online/api/timesheets/bulk-submit?empCode=${empCode}&month=${monthKey}`;
     
     const response = UrlFetchApp.fetch(apiUrl, {
