@@ -239,17 +239,30 @@ function saveToGoogleSheets(empCode, monthKey, params) {
       const dayName = dt.toLocaleDateString('en-US', { weekday: 'long' });
       const pretty = Utilities.formatDate(dt, Session.getScriptTimeZone(), 'MMMM dd, yyyy');
       
-      let wh = (whs[i] || '').trim() || 'A';
+      let wh = (whs[i] || '').trim();
       const ot = ots[i] || '';
 
       // Friday special logic
       if (dayName === 'Friday') {
-        const prev = i > 0 ? (whs[i - 1] || 'A') : 'A';
-        const next = i < dates.length - 1 ? (whs[i + 1] || 'A') : 'A';
-        if (prev === 'A' && next === 'A') {
+        // Friday NEVER shows working hours - only 'Fri' or 'A'
+        // If Friday has hours worked, they should be in Overtime column
+        
+        // Check previous and next days
+        const prev = i > 0 ? (whs[i - 1] || '').trim() : '';
+        const next = i < dates.length - 1 ? (whs[i + 1] || '').trim() : '';
+        
+        // If both previous and next days are Absent, mark Friday as Absent too
+        if ((prev === 'A' || prev === '') && (next === 'A' || next === '')) {
           wh = 'A';
-        } else if (wh === 'A') {
+        } else {
+          // Otherwise, ALWAYS mark as 'Fri' (Friday is always off day for regular hours)
           wh = 'Fri';
+          // Note: If someone works on Friday, hours go to Overtime column
+        }
+      } else {
+        // For non-Friday days, if empty treat as 'A' (Absent)
+        if (wh === '') {
+          wh = 'A';
         }
       }
 
@@ -406,23 +419,36 @@ function getMonthlyData(empCode, monthKey) {
     const folder = getOrCreateFolder();
     const files = folder.getFilesByName(empCode);
     if (!files.hasNext()) {
+      console.log('No spreadsheet found for employee:', empCode);
       return [];
     }
     const ss = SpreadsheetApp.open(files.next());
     const sheet = ss.getSheetByName(monthKey);
     if (!sheet || sheet.getLastRow() <= 1) {
+      console.log('No data found in sheet:', monthKey);
       return [];
     }
 
     const allRows = sheet.getDataRange().getValues();
     allRows.shift(); // drop header
-    return allRows.map(r => ({
-      date: r[1],
-      workingHours: r[2],
-      overtime: r[3]
+    
+    console.log('Found', allRows.length, 'rows of data');
+    console.log('Sample row:', allRows[0]);
+    
+    // Return data in format: { workingHours: "8", overtime: "1" }
+    const result = allRows.map(r => ({
+      workingHours: r[2], // Column 3: Working Hours
+      overtime: r[3]      // Column 4: Overtime Hours
     }));
+    
+    console.log('Returning', result.length, 'records');
+    console.log('Sample record:', result[0]);
+    
+    return result;
   } catch (error) {
     console.error('getMonthlyData error:', error);
+    console.error('Error details:', error.message);
+    console.error('Error stack:', error.stack);
     return [];
   }
 }

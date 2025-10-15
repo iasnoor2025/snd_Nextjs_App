@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Loader2, Save, Calendar, User } from 'lucide-react';
+import { Loader2, Save, Calendar, User, ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface TimesheetData {
   date: string;
@@ -20,6 +21,7 @@ interface BulkTimesheetFormProps {
 }
 
 export default function BulkTimesheetForm({ className }: BulkTimesheetFormProps) {
+  const router = useRouter();
   const [empCode, setEmpCode] = useState('');
   const [month, setMonth] = useState('');
   const [datesArr, setDatesArr] = useState<string[]>([]);
@@ -204,13 +206,25 @@ export default function BulkTimesheetForm({ className }: BulkTimesheetFormProps)
   return (
     <Card className={className}>
       <CardHeader className="pb-6">
-        <CardTitle className="flex items-center gap-3 text-xl">
-          <Calendar className="h-5 w-5" />
-          Employee Monthly Work Log
-        </CardTitle>
-        <CardDescription>
-          Enter daily working hours and overtime for the selected month
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <Calendar className="h-5 w-5" />
+              Employee Monthly Work Log
+            </CardTitle>
+            <CardDescription className="mt-2">
+              Enter daily working hours and overtime for the selected month
+            </CardDescription>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => router.push('/modules/timesheet-management')}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Input Fields - Shadcn UI Design */}
