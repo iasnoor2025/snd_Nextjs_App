@@ -110,11 +110,17 @@ function submitMonthlyData(formData) {
   const empCode = params.empCode[0];
   const monthKey = params.month[0]; // e.g. "2025-04"
 
-  // 1. Save to Google Sheets (original functionality)
+  // 1. Save to Google Sheets (original functionality) - ALWAYS try this first
   const googleSheetsResult = saveToGoogleSheets(empCode, monthKey, params);
   
-  // 2. Save to Database via API
-  const databaseResult = saveToDatabase(empCode, monthKey, params);
+  // 2. Try to save to Database via API (but don't let it fail the whole process)
+  let databaseResult = { success: false, message: 'Database save skipped' };
+  try {
+    databaseResult = saveToDatabase(empCode, monthKey, params);
+  } catch (error) {
+    console.error('Database save failed, but continuing:', error);
+    databaseResult = { success: false, message: `Database save failed: ${error.message}` };
+  }
   
   // Return combined result message
   const message = `Data processed for ${monthKey} - Google Sheets: ${googleSheetsResult.success ? 'Success' : 'Failed'}, Database: ${databaseResult.success ? 'Success' : 'Failed'}`;

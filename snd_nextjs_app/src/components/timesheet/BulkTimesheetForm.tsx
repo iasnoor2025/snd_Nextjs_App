@@ -94,8 +94,8 @@ export default function BulkTimesheetForm({ className }: BulkTimesheetFormProps)
             const existing = existingData[index];
                 return existing ? {
                   ...item,
-                  workingHours: existing.workingHours === 'Fri' ? 'Fri' : existing.workingHours || '',
-                  overtime: existing.overtime || ''
+                  workingHours: existing.workingHours === 'Fri' ? 'Fri' : (existing.workingHours ? parseFloat(existing.workingHours).toString() : ''),
+                  overtime: existing.overtime ? parseFloat(existing.overtime).toString() : ''
                 } : item;
           })
         );
@@ -285,7 +285,7 @@ export default function BulkTimesheetForm({ className }: BulkTimesheetFormProps)
                     >
                       <Input
                         className="w-full h-9 text-sm text-center border border-border bg-background hover:bg-accent hover:text-accent-foreground focus:bg-background focus:text-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2 px-2"
-                        value={item.workingHours === 'Fri' ? 'Fri' : item.workingHours || ''}
+                        value={item.workingHours === 'Fri' ? 'Fri' : (item.workingHours ? parseFloat(item.workingHours).toString() : '')}
                         onChange={(e) => updateTimesheetData(index, 'workingHours', e.target.value)}
                         placeholder="8.0"
                       />
@@ -303,7 +303,7 @@ export default function BulkTimesheetForm({ className }: BulkTimesheetFormProps)
                     >
                       <Input
                         className="w-full h-9 text-sm text-center border border-border bg-background hover:bg-accent hover:text-accent-foreground focus:bg-background focus:text-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2 px-2"
-                        value={item.overtime || ''}
+                        value={item.overtime ? parseFloat(item.overtime).toString() : ''}
                         onChange={(e) => updateTimesheetData(index, 'overtime', e.target.value)}
                         placeholder="0.0"
                       />

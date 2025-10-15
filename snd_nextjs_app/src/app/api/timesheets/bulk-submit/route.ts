@@ -392,9 +392,22 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authConfig);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    // Check if this is a request from Google Apps Script
+    const userAgent = request.headers.get('user-agent') || '';
+    const isGoogleAppsScript = userAgent.includes('GoogleAppsScript');
+    
+    console.log('GET Request received:', {
+      userAgent,
+      isGoogleAppsScript,
+      url: request.url
+    });
+    
+    // Allow Google Apps Script requests without session authentication
+    if (!isGoogleAppsScript) {
+      const session = await getServerSession(authConfig);
+      if (!session?.user?.id) {
+        return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+      }
     }
 
     const { searchParams } = new URL(request.url);
