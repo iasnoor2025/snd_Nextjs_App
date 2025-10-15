@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -92,11 +92,11 @@ export default function BulkTimesheetForm({ className }: BulkTimesheetFormProps)
         setTimesheetData(prev => 
           prev.map((item, index) => {
             const existing = existingData[index];
-            return existing ? {
-              ...item,
-              workingHours: existing.workingHours === 'Fri' ? 'Fri' : parseFloat(existing.workingHours || '0').toFixed(1),
-              overtime: parseFloat(existing.overtime || '0').toFixed(1)
-            } : item;
+                return existing ? {
+                  ...item,
+                  workingHours: existing.workingHours === 'Fri' ? 'Fri' : existing.workingHours || '',
+                  overtime: existing.overtime || ''
+                } : item;
           })
         );
         toast.success('Existing data loaded');
@@ -203,18 +203,21 @@ export default function BulkTimesheetForm({ className }: BulkTimesheetFormProps)
 
   return (
     <Card className={className}>
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Calendar className="h-4 w-4" />
+      <CardHeader className="pb-6">
+        <CardTitle className="flex items-center gap-3 text-xl">
+          <Calendar className="h-5 w-5" />
           Employee Monthly Work Log
         </CardTitle>
+        <CardDescription>
+          Enter daily working hours and overtime for the selected month
+        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
-        {/* Input Fields - Ultra Compact */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <Label htmlFor="empCode" className="text-xs font-medium flex items-center gap-1">
-              <User className="h-3 w-3" />
+      <CardContent className="space-y-6">
+        {/* Input Fields - Shadcn UI Design */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label htmlFor="empCode" className="text-sm font-medium flex items-center gap-2">
+              <User className="h-4 w-4" />
               Employee Code
             </Label>
             <Input
@@ -222,11 +225,11 @@ export default function BulkTimesheetForm({ className }: BulkTimesheetFormProps)
               placeholder="E.g., EMP123"
               value={empCode}
               onChange={(e) => setEmpCode(e.target.value)}
-              className="h-7 text-sm"
+              className="h-10"
             />
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="month" className="text-xs font-medium">
+          <div className="space-y-2">
+            <Label htmlFor="month" className="text-sm font-medium">
               Select Month
             </Label>
             <Input
@@ -234,84 +237,94 @@ export default function BulkTimesheetForm({ className }: BulkTimesheetFormProps)
               type="month"
               value={month}
               onChange={(e) => setMonth(e.target.value)}
-              className="h-7 text-sm"
+              className="h-10"
             />
           </div>
         </div>
 
-            {/* Timesheet Table - Ultra Compact Design */}
-            {datesArr.length > 0 && (
-              <div className="space-y-2">
-                <div className="border rounded-lg overflow-hidden">
-                  <div className="grid text-xs" style={{gridTemplateColumns: `60px repeat(${datesArr.length}, 1fr)`}}>
-                    {/* Header Row */}
-                    <div className="col-span-1 bg-gray-100 p-1 font-medium text-center border-r">Day</div>
-                    {datesArr.map((date, index) => (
-                      <div 
-                        key={index} 
-                        className={`text-center p-1 font-medium border-r ${isFriday(date) ? 'bg-green-50' : 'bg-gray-50'}`}
-                      >
-                        {index + 1}
-                      </div>
-                    ))}
-                    
-                    {/* Days Row */}
-                    <div className="col-span-1 bg-gray-100 p-1 text-center border-r text-gray-600">Days</div>
-                    {datesArr.map((date, index) => (
-                      <div 
-                        key={index} 
-                        className={`text-center p-1 border-r text-gray-600 ${isFriday(date) ? 'bg-green-50' : ''}`}
-                      >
-                        {getDayName(date)}
-                      </div>
-                    ))}
-                    
-                    {/* Regular Hours Row */}
-                    <div className="col-span-1 bg-gray-100 p-1 font-medium text-center border-r">Reg</div>
-                    {timesheetData.map((item, index) => (
-                      <div 
-                        key={index} 
-                        className={`text-center p-0 border-r ${isFriday(item.date) ? 'bg-green-50' : ''}`}
-                      >
-                        <Input
-                          className="w-full h-6 text-xs text-center border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300"
-                          value={item.workingHours === 'Fri' ? 'Fri' : parseFloat(item.workingHours || '0').toFixed(1)}
-                          onChange={(e) => updateTimesheetData(index, 'workingHours', e.target.value)}
-                          placeholder="8.0"
-                        />
-                      </div>
-                    ))}
-                    
-                    {/* Overtime Hours Row */}
-                    <div className="col-span-1 bg-gray-100 p-1 font-medium text-center border-r">OT</div>
-                    {timesheetData.map((item, index) => (
-                      <div 
-                        key={index} 
-                        className={`text-center p-0 border-r ${isFriday(item.date) ? 'bg-green-50' : ''}`}
-                      >
-                        <Input
-                          className="w-full h-6 text-xs text-center border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300"
-                          value={parseFloat(item.overtime || '0').toFixed(1)}
-                          onChange={(e) => updateTimesheetData(index, 'overtime', e.target.value)}
-                          placeholder="0.0"
-                        />
-                      </div>
-                    ))}
+        {/* Timesheet Table - Shadcn UI Design */}
+        {datesArr.length > 0 && (
+          <div className="space-y-4">
+            <div className="rounded-lg border bg-card">
+              <div className="overflow-x-auto">
+                <div className="grid text-sm" style={{gridTemplateColumns: `100px repeat(${datesArr.length}, 1fr)`}}>
+                  {/* Header Row */}
+                  <div className="bg-muted p-3 font-semibold text-center border-r flex items-center justify-center">
+                    <span className="text-muted-foreground">Day</span>
                   </div>
+                  {datesArr.map((date, index) => (
+                    <div 
+                      key={index} 
+                      className={`text-center p-2 font-medium border-r flex items-center justify-center ${isFriday(date) ? 'bg-green-100 dark:bg-green-900/30' : 'bg-muted/50'}`}
+                    >
+                      {index + 1}
+                    </div>
+                  ))}
+                  
+                  {/* Days Row */}
+                  <div className="bg-muted p-3 text-center border-r text-muted-foreground flex items-center justify-center">
+                    <span className="text-xs">Days</span>
+                  </div>
+                  {datesArr.map((date, index) => (
+                    <div 
+                      key={index} 
+                      className={`text-center p-2 border-r text-muted-foreground flex items-center justify-center ${isFriday(date) ? 'bg-green-100 dark:bg-green-900/30' : ''}`}
+                    >
+                      <span className="text-xs">{getDayName(date)}</span>
+                    </div>
+                  ))}
+                  
+                  {/* Regular Hours Row */}
+                  <div className="bg-muted p-3 font-semibold text-center border-r flex items-center justify-center">
+                    <span className="text-muted-foreground">Regular</span>
+                  </div>
+                  {timesheetData.map((item, index) => (
+                    <div 
+                      key={index} 
+                      className={`text-center p-1 border-r flex items-center justify-center ${isFriday(item.date) ? 'bg-green-100 dark:bg-green-900/30' : ''}`}
+                    >
+                      <Input
+                        className="w-full h-9 text-sm text-center border border-border bg-background hover:bg-accent hover:text-accent-foreground focus:bg-background focus:text-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2 px-2"
+                        value={item.workingHours === 'Fri' ? 'Fri' : item.workingHours || ''}
+                        onChange={(e) => updateTimesheetData(index, 'workingHours', e.target.value)}
+                        placeholder="8.0"
+                      />
+                    </div>
+                  ))}
+                  
+                  {/* Overtime Hours Row */}
+                  <div className="bg-muted p-3 font-semibold text-center border-r flex items-center justify-center">
+                    <span className="text-muted-foreground">Overtime</span>
+                  </div>
+                  {timesheetData.map((item, index) => (
+                    <div 
+                      key={index} 
+                      className={`text-center p-1 border-r flex items-center justify-center ${isFriday(item.date) ? 'bg-green-100 dark:bg-green-900/30' : ''}`}
+                    >
+                      <Input
+                        className="w-full h-9 text-sm text-center border border-border bg-background hover:bg-accent hover:text-accent-foreground focus:bg-background focus:text-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2 px-2"
+                        value={item.overtime || ''}
+                        onChange={(e) => updateTimesheetData(index, 'overtime', e.target.value)}
+                        placeholder="0.0"
+                      />
+                    </div>
+                  ))}
                 </div>
+              </div>
+            </div>
 
-            {/* Submit Button - More Compact */}
-            <div className="flex justify-end">
+            {/* Submit Button - Shadcn UI Design */}
+            <div className="flex justify-end pt-2">
               <Button 
                 onClick={handleSubmit}
                 disabled={!empCode.trim() || !month || isSubmitting || isLoading}
-                className="flex items-center gap-2 h-8 px-4"
-                size="sm"
+                className="flex items-center gap-2 h-10 px-6"
+                size="default"
               >
                 {isSubmitting ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Save className="h-3 w-3" />
+                  <Save className="h-4 w-4" />
                 )}
                 {isSubmitting ? 'Saving...' : 'Save Log'}
               </Button>
@@ -319,11 +332,13 @@ export default function BulkTimesheetForm({ className }: BulkTimesheetFormProps)
           </div>
         )}
 
-        {/* Loading State - More Compact */}
+        {/* Loading State - Shadcn UI Design */}
         {isLoading && (
-          <div className="flex items-center justify-center py-4">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="ml-2 text-sm">Loading existing data...</span>
+          <div className="flex items-center justify-center py-6">
+            <div className="flex items-center gap-3 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span className="text-sm font-medium">Loading existing data...</span>
+            </div>
           </div>
         )}
       </CardContent>
