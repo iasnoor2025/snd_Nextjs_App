@@ -194,12 +194,25 @@ export async function POST(request: NextRequest) {
       const ot = overtimeHours[i] || '0';
 
       let hoursWorked = 0;
-      if (wh === 'A') {
-        hoursWorked = 0;
-      } else if (wh === 'Fri') {
-        hoursWorked = 0;
+      let description = `${dayName} work log`;
+      
+      // Apply same Friday logic as Google Apps Script
+      if (dayName === 'Fri') {
+        // If Friday and hours are 0, empty, or 'A', store as 0 but mark as Friday
+        if (wh === '0' || wh === '' || wh === 'A' || wh === 'Fri') {
+          hoursWorked = 0;
+          description = 'Friday - Off Day';
+        } else {
+          // Friday with actual hours worked
+          hoursWorked = parseFloat(wh) || 0;
+        }
       } else {
-        hoursWorked = parseFloat(wh) || 0;
+        // Regular days
+        if (wh === 'A') {
+          hoursWorked = 0;
+        } else {
+          hoursWorked = parseFloat(wh) || 0;
+        }
       }
 
       const overtime = parseFloat(ot) || 0;
@@ -212,7 +225,7 @@ export async function POST(request: NextRequest) {
         startTime: dt.toISOString(),
         endTime: null,
         status: 'pending',
-        description: `${dayName} work log`,
+        description: description,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
