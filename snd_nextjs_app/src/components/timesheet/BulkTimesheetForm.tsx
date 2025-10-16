@@ -297,12 +297,18 @@ export default function BulkTimesheetForm({ className }: BulkTimesheetFormProps)
                       key={index} 
                       className={`text-center p-1 border-r flex items-center justify-center ${isFriday(item.date) ? 'bg-green-100 dark:bg-green-900/30' : ''}`}
                     >
-                      <Input
-                        className="w-full h-9 text-sm text-center border border-border bg-background hover:bg-accent hover:text-accent-foreground focus:bg-background focus:text-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2 px-2"
-                        value={item.workingHours === 'Fri' ? 'Fri' : (item.workingHours ? parseFloat(item.workingHours).toString() : '')}
-                        onChange={(e) => updateTimesheetData(index, 'workingHours', e.target.value)}
-                        placeholder="8.0"
-                      />
+                      {isFriday(item.date) ? (
+                        <div className="w-full h-9 text-sm text-center border border-border bg-muted flex items-center justify-center px-2 text-muted-foreground">
+                          Fri
+                        </div>
+                      ) : (
+                        <Input
+                          className="w-full h-9 text-sm text-center border border-border bg-background hover:bg-accent hover:text-accent-foreground focus:bg-background focus:text-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2 px-2"
+                          value={item.workingHours}
+                          onChange={(e) => updateTimesheetData(index, 'workingHours', e.target.value)}
+                          placeholder="8.0"
+                        />
+                      )}
                     </div>
                   ))}
                   
@@ -317,7 +323,7 @@ export default function BulkTimesheetForm({ className }: BulkTimesheetFormProps)
                     >
                       <Input
                         className="w-full h-9 text-sm text-center border border-border bg-background hover:bg-accent hover:text-accent-foreground focus:bg-background focus:text-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2 px-2"
-                        value={item.overtime ? parseFloat(item.overtime).toString() : ''}
+                        value={item.overtime}
                         onChange={(e) => updateTimesheetData(index, 'overtime', e.target.value)}
                         placeholder="0.0"
                       />
