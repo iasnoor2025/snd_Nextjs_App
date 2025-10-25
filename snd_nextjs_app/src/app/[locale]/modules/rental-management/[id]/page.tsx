@@ -915,6 +915,21 @@ export default function RentalDetailPage() {
     }
   };
 
+  // Fetch ERPNext invoice amount
+  const fetchErpnextInvoiceAmount = async (invoiceId: string) => {
+    try {
+      const response = await fetch(`/api/erpnext/invoice/${invoiceId}`);
+      if (response.ok) {
+        const invoiceData = await response.json();
+        if (invoiceData.grand_total) {
+          setErpnextInvoiceAmount(parseFloat(invoiceData.grand_total));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch ERPNext invoice amount:', error);
+    }
+  };
+
   // Fetch rental details
   const fetchRental = async () => {
     try {
@@ -933,6 +948,11 @@ export default function RentalDetailPage() {
       }
 
       setRental(data);
+      
+      // Fetch ERPNext invoice amount if invoice exists
+      if (data.invoiceId) {
+        fetchErpnextInvoiceAmount(data.invoiceId);
+      }
       
       // Fetch equipment names for rental items that have fallback names
       if (data.rentalItems && data.rentalItems.length > 0) {
@@ -2155,7 +2175,7 @@ export default function RentalDetailPage() {
                       {rental.invoiceId && (
                         <TableRow>
                           <TableCell>{rental.invoiceId}</TableCell>
-                          <TableCell>SAR {formatAmount(rental.totalAmount)}</TableCell>
+                          <TableCell>SAR {formatAmount(erpnextInvoiceAmount || rental.totalAmount)}</TableCell>
                           <TableCell>{getPaymentStatusBadge(rental.paymentStatus)}</TableCell>
                           <TableCell>
                             {rental.paymentDueDate ? format(new Date(rental.paymentDueDate), 'MMM dd, yyyy') : 'N/A'}
