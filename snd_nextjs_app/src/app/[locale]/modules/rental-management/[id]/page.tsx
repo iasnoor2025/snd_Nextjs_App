@@ -52,6 +52,7 @@ import {
   Plus,
   Printer,
   Receipt,
+  RefreshCw,
   Share2,
   Trash2,
   Truck,
@@ -724,6 +725,9 @@ export default function RentalDetailPage() {
   const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
   const [isEditItemDialogOpen, setIsEditItemDialogOpen] = useState(false);
   const [isAddPaymentDialogOpen, setIsAddPaymentDialogOpen] = useState(false);
+  const [isMonthSelectionOpen, setIsMonthSelectionOpen] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState('');
+  const [erpnextInvoiceAmount, setErpnextInvoiceAmount] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     customerId: '',
     rentalNumber: '',
@@ -767,7 +771,8 @@ export default function RentalDetailPage() {
   // Calculate financial totals from rental items
   const calculateFinancials = (items: any[]) => {
     const subtotal = items.reduce((sum, item) => {
-      const itemTotal = parseFloat(item.totalPrice?.toString() || '0') || 0;
+      // Calculate item total based on rate type and duration
+      const itemTotal = calculateItemTotal(item);
       return sum + itemTotal;
     }, 0);
     
@@ -785,6 +790,49 @@ export default function RentalDetailPage() {
     };
   };
 
+  // Calculate total price for a single rental item based on rate type and duration
+  const calculateItemTotal = (item: any): number => {
+    const { unitPrice, quantity = 1, rateType = 'daily' } = item;
+    const basePrice = parseFloat(unitPrice?.toString() || '0') || 0;
+    
+    // Calculate actual rental period
+    if (rental?.startDate) {
+      const startDate = new Date(rental.startDate);
+      let endDate: Date;
+      
+      // Use actual end date if rental is completed, otherwise use today
+      if (rental.status === 'completed' && rental.expectedEndDate) {
+        endDate = new Date(rental.expectedEndDate);
+      } else {
+        // For active rentals, calculate from start date to today
+        endDate = new Date();
+      }
+      
+      // Ensure we don't go before the start date
+      if (endDate < startDate) {
+        endDate = startDate;
+      }
+      
+      if (rateType === 'hourly') {
+        const hoursDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)));
+        return basePrice * hoursDiff * quantity;
+      } else if (rateType === 'weekly') {
+        const weeksDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 7)));
+        return basePrice * weeksDiff * quantity;
+      } else if (rateType === 'monthly') {
+        const monthsDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
+        return basePrice * monthsDiff * quantity;
+      } else {
+        // Daily rate - calculate days
+        const daysDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+        return basePrice * daysDiff * quantity;
+      }
+    }
+    
+    // Fallback to stored totalPrice if no start date available
+    return parseFloat(item.totalPrice?.toString() || '0') || 0;
+  };
+
   // Recalculate totals when rental items change
   const recalculateTotals = () => {
     if (rental && rental.rentalItems) {
@@ -793,6 +841,13 @@ export default function RentalDetailPage() {
       setRental(prev => prev ? { ...prev, ...financials } : null);
     }
   };
+
+  // Recalculate totals when rental dates change
+  useEffect(() => {
+    if (rental && rental.rentalItems && rental.startDate && rental.expectedEndDate) {
+      recalculateTotals();
+    }
+  }, [rental?.startDate, rental?.expectedEndDate]);
 
   // Fetch supervisor details when rental loads
   useEffect(() => {
@@ -870,8 +925,9 @@ export default function RentalDetailPage() {
       }
       let data = await response.json();
 
-      // Recalculate financial totals from rental items
-      if (data.rentalItems && data.rentalItems.length > 0) {
+      // Recalculate financial totals from rental items ONLY if no invoice exists
+      // Once an invoice is generated, use the amounts from the database (ERPNext amounts)
+      if (!data.invoiceId && data.rentalItems && data.rentalItems.length > 0) {
         const financials = calculateFinancials(data.rentalItems);
         data = { ...data, ...financials };
       }
@@ -982,6 +1038,179 @@ export default function RentalDetailPage() {
     }
   };
 
+  // Sync equipment assignments to rental items
+  const syncEquipmentAssignments = async () => {
+    if (!rental) return;
+
+    try {
+      const response = await fetch(`/api/rentals/${rental.id}/sync-equipment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to sync equipment assignments');
+      }
+
+      const result = await response.json();
+      toast.success(result.message);
+      
+      // Refresh rental data to show new items
+      fetchRental();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to sync equipment assignments');
+    }
+  };
+
+  // Generate automated monthly invoices for all active rentals
+  const generateAutomatedMonthlyInvoices = async () => {
+    try {
+      const response = await fetch('/api/billing/automated-monthly', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate automated monthly invoices');
+      }
+
+      const result = await response.json();
+      toast.success(result.message);
+      
+      // Refresh rental data to show updated invoice info
+      fetchRental();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to generate automated monthly invoices');
+    }
+  };
+
+  // Generate monthly invoice for active rental
+  const generateMonthlyInvoice = async () => {
+    if (!rental) return;
+
+    // Show month selection dialog
+    setIsMonthSelectionOpen(true);
+  };
+
+  // Generate invoice for selected month
+  const generateInvoiceForMonth = async () => {
+    if (!rental || !selectedMonth) return;
+
+    try {
+      console.log('Generating invoice for month:', selectedMonth);
+      console.log('Rental ID:', rental.id);
+      
+      const response = await fetch(`/api/rentals/${rental.id}/invoice`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          billingMonth: selectedMonth
+        })
+      });
+
+      console.log('Invoice API response status:', response.status);
+      console.log('Invoice API response ok:', response.ok);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Invoice API error:', errorData);
+        throw new Error(errorData.error || `Failed to generate monthly invoice (${response.status})`);
+      }
+
+      const result = await response.json();
+      console.log('Invoice API success:', result);
+      toast.success(result.message || 'Invoice generated successfully');
+      
+      // Close dialog and refresh rental data
+      setIsMonthSelectionOpen(false);
+      setSelectedMonth('');
+      fetchRental();
+    } catch (err) {
+      console.error('Invoice generation error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate monthly invoice';
+      toast.error(errorMessage);
+      
+      // Close dialog on error
+      setIsMonthSelectionOpen(false);
+      setSelectedMonth('');
+    }
+  };
+
+  // Sync all invoices to detect deleted invoices
+  const syncAllInvoices = async () => {
+    try {
+      const response = await fetch('/api/billing/sync-invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to sync all invoices');
+      }
+
+      const result = await response.json();
+      toast.success(result.message);
+      
+      // Refresh rental data to show updated invoice status
+      fetchRental();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to sync all invoices');
+    }
+  };
+
+  // Sync payment status from ERPNext
+  const syncPaymentStatus = async () => {
+    if (!rental) return;
+
+    try {
+      const response = await fetch('/api/billing/monthly', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to sync payment status');
+      }
+
+      const result = await response.json();
+      toast.success(result.message);
+      
+      // Refresh rental data to show updated payment status
+      fetchRental();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to sync payment status');
+    }
+  };
+
+  // Clean up duplicate rental items
+  const cleanupDuplicates = async () => {
+    if (!rental) return;
+
+    try {
+      const response = await fetch(`/api/rentals/${rental.id}/cleanup-duplicates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to cleanup duplicates');
+      }
+
+      const result = await response.json();
+      toast.success(result.message);
+      
+      // Refresh rental data to show cleaned items
+      fetchRental();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to cleanup duplicates');
+    }
+  };
+
   // Delete rental
   const deleteRental = async () => {
     if (!rental) return;
@@ -1008,20 +1237,8 @@ export default function RentalDetailPage() {
   const generateInvoice = async () => {
     if (!rental) return;
 
-    try {
-      const response = await fetch(`/api/rentals/${rental.id}/invoice`, {
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate invoice');
-      }
-
-      toast.success('Invoice generated successfully');
-      fetchRental();
-    } catch (err) {
-      toast.error('Failed to generate invoice');
-    }
+    // Show month selection dialog
+    setIsMonthSelectionOpen(true);
   };
 
   // Generate quotation
@@ -1600,8 +1817,68 @@ export default function RentalDetailPage() {
             </TabsContent>
 
             <TabsContent value="workflow" className="space-y-6">
+              {/* Monthly Billing Controls */}
+              {rental.status === 'active' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Monthly Billing</CardTitle>
+                    <CardDescription>Generate monthly invoices and sync payment status with ERPNext</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex gap-4">
+                      <Button 
+                        onClick={generateAutomatedMonthlyInvoices}
+                        className="flex items-center gap-2"
+                      >
+                        <Calendar className="w-4 h-4" />
+                        Generate All Monthly Invoices
+                      </Button>
+                      <Button 
+                        onClick={generateMonthlyInvoice}
+                        disabled={!rental || rental.invoiceId}
+                        className="flex items-center gap-2"
+                      >
+                        <Receipt className="w-4 h-4" />
+                        Generate Monthly Invoice
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={syncPaymentStatus}
+                        className="flex items-center gap-2"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        Sync Payment Status
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={syncAllInvoices}
+                        className="flex items-center gap-2"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        Sync All Invoices
+                      </Button>
+                    </div>
+                    {rental.invoiceId && (
+                      <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
+                        <p className="text-sm text-green-800">
+                          <strong>Invoice Generated:</strong> {rental.invoiceId}
+                        </p>
+                        <p className="text-sm text-green-600">
+                          Payment Status: {rental.paymentStatus}
+                        </p>
+                        {rental.outstandingAmount && parseFloat(rental.outstandingAmount) > 0 && (
+                          <p className="text-sm text-green-600">
+                            Outstanding: SAR {formatAmount(rental.outstandingAmount)}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+              
               {/* Unified Timeline */}
-                              <UnifiedTimeline rental={rental} t={t} />
+              <UnifiedTimeline rental={rental} t={t} />
             </TabsContent>
 
             <TabsContent value="items" className="space-y-6">
@@ -1609,10 +1886,30 @@ export default function RentalDetailPage() {
                 <CardHeader>
                   <div className="flex justify-between items-center">
                     <CardTitle>{t('rental.rentalItems')}</CardTitle>
-                    <Button size="sm" onClick={() => setIsAddItemDialogOpen(true)}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      {t('rental.addItem')}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={syncEquipmentAssignments}
+                        disabled={!rental || rental.rentalItems?.length > 0}
+                      >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Sync Equipment
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={cleanupDuplicates}
+                        disabled={!rental || !rental.rentalItems?.length}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Clean Duplicates
+                      </Button>
+                      <Button size="sm" onClick={() => setIsAddItemDialogOpen(true)}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        {t('rental.addItem')}
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -1694,11 +1991,25 @@ export default function RentalDetailPage() {
                         } else {
                         }
 
-                        // Calculate duration if we have start and end dates
+                        // Calculate duration based on actual rental period
                         let durationText = 'N/A';
-                        if (rental.startDate && rental.expectedEndDate) {
+                        if (rental.startDate) {
                           const startDate = new Date(rental.startDate);
-                          const endDate = new Date(rental.expectedEndDate);
+                          let endDate: Date;
+                          
+                          // Use actual end date if rental is completed, otherwise use today
+                          if (rental.status === 'completed' && rental.expectedEndDate) {
+                            endDate = new Date(rental.expectedEndDate);
+                          } else {
+                            // For active rentals, calculate from start date to today
+                            endDate = new Date();
+                          }
+                          
+                          // Ensure we don't go before the start date
+                          if (endDate < startDate) {
+                            endDate = startDate;
+                          }
+                          
                           const rateType = item.rateType || 'daily';
                           
                           if (rateType === 'hourly') {
@@ -1730,7 +2041,7 @@ export default function RentalDetailPage() {
                               </Badge>
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">{durationText}</TableCell>
-                                                         <TableCell className="font-mono font-semibold">SAR {formatAmount(item.totalPrice)}</TableCell>
+                                                         <TableCell className="font-mono font-semibold">SAR {formatAmount(calculateItemTotal(item))}</TableCell>
                             <TableCell className="text-sm">{operatorName}</TableCell>
                             <TableCell>
                               <Badge variant={item.status === 'active' ? 'default' : 'secondary'}>
@@ -1841,27 +2152,60 @@ export default function RentalDetailPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {rental.invoices?.map(invoice => (
-                        <TableRow key={invoice.id}>
-                          <TableCell>{invoice.invoiceNumber}</TableCell>
-                                                     <TableCell>SAR {formatAmount(invoice.amount)}</TableCell>
-                          <TableCell>{getPaymentStatusBadge(invoice.status)}</TableCell>
-                          <TableCell>{format(new Date(invoice.dueDate), 'MMM dd, yyyy')}</TableCell>
+                      {rental.invoiceId && (
+                        <TableRow>
+                          <TableCell>{rental.invoiceId}</TableCell>
+                          <TableCell>SAR {formatAmount(rental.totalAmount)}</TableCell>
+                          <TableCell>{getPaymentStatusBadge(rental.paymentStatus)}</TableCell>
+                          <TableCell>
+                            {rental.paymentDueDate ? format(new Date(rental.paymentDueDate), 'MMM dd, yyyy') : 'N/A'}
+                          </TableCell>
                           <TableCell>
                             <div className="flex gap-2">
-                              <Button variant="outline" size="sm">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => window.open(`/api/rentals/${rental.id}/invoice/view`, '_blank')}
+                              >
                                 <Eye className="w-4 h-4" />
                               </Button>
-                              <Button variant="outline" size="sm">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => window.open(`/api/rentals/${rental.id}/invoice/download`, '_blank')}
+                              >
                                 <Download className="w-4 h-4" />
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={async () => {
+                                  try {
+                                    const response = await fetch(`/api/rentals/${rental.id}/invoice/sync`, {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' }
+                                    });
+                                    const result = await response.json();
+                                    if (result.success) {
+                                      toast.success(result.message);
+                                      fetchRental();
+                                    } else {
+                                      toast.error(result.error || 'Failed to sync invoice');
+                                    }
+                                  } catch (err) {
+                                    toast.error('Failed to sync invoice');
+                                  }
+                                }}
+                              >
+                                <RefreshCw className="w-4 h-4" />
                               </Button>
                             </div>
                           </TableCell>
                         </TableRow>
-                      ))}
+                      )}
                     </TableBody>
                   </Table>
-                  {(!rental.invoices || rental.invoices.length === 0) && (
+                  {!rental.invoiceId && (
                     <div className="text-center py-8 text-muted-foreground">{t('rental.noInvoicesFound')}</div>
                   )}
                 </CardContent>
@@ -2336,6 +2680,68 @@ export default function RentalDetailPage() {
             </Button>
             <Button onClick={updateRentalItem}>{t('rental.updateRental')}</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Month Selection Dialog */}
+      <Dialog open={isMonthSelectionOpen} onOpenChange={setIsMonthSelectionOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Select Billing Month</DialogTitle>
+            <DialogDescription>Choose the month for which to generate the invoice</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="billingMonth">Billing Month</Label>
+              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a month" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(() => {
+                    if (!rental?.startDate) return [];
+                    
+                    const startDate = new Date(rental.startDate);
+                    const currentDate = new Date();
+                    const months = [];
+                    
+                    // Start from rental start date month
+                    let currentMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+                    
+                    // Generate months from start date to current month only
+                    const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+                    
+                    while (currentMonth <= endDate) {
+                      const monthName = currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' });
+                      const monthValue = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
+                      
+                      months.push(
+                        <SelectItem key={monthValue} value={monthValue}>
+                          {monthName}
+                        </SelectItem>
+                      );
+                      
+                      // Move to next month
+                      currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
+                    }
+                    
+                    return months;
+                  })()}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsMonthSelectionOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={generateInvoiceForMonth}
+                disabled={!selectedMonth}
+              >
+                Generate Invoice
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

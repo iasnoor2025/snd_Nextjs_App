@@ -21,6 +21,12 @@ interface ERPNextInvoiceData {
   customer_name?: string;
   posting_date: string;
   due_date: string;
+  set_posting_time?: number; // Enable "Edit Posting Date and Time"
+  custom_from?: string; // ERPNext custom From date field
+  custom_to?: string; // ERPNext custom To date field
+  from_date?: string; // ERPNext from_date field
+  to_date?: string; // ERPNext to_date field
+  custom_subject?: string; // ERPNext custom subject field
   items: ERPNextInvoiceItem[];
   taxes_and_charges?: string;
   taxes_and_charges_table?: any[];
@@ -101,22 +107,21 @@ export class ERPNextInvoiceService {
         throw new Error('Customer information is required for invoice generation');
       }
 
-      if (!rental.totalAmount || parseFloat(rental.totalAmount.toString()) <= 0) {
-        // If stored total is zero, calculate from rental items
-        
-        const rentalItems = await RentalService.getRentalItems(rental.id);
-        const calculatedTotal = rentalItems.reduce((sum, item) => {
-          const itemTotal = parseFloat(item.totalPrice?.toString() || '0') || 0;
-          return sum + itemTotal;
-        }, 0);
+      // Always use the rental's calculated amounts (subtotal, taxAmount, totalAmount)
+      // These should be pre-calculated and accurate
+      const subtotal = parseFloat(rental.subtotal?.toString() || '0') || 0;
+      const taxAmount = parseFloat(rental.taxAmount?.toString() || '0') || 0;
+      const totalAmount = parseFloat(rental.totalAmount?.toString() || '0') || 0;
 
-        if (calculatedTotal > 0) {
-          
-          // Update the rental object with calculated total
-          rental.totalAmount = calculatedTotal.toString();
-        } else {
-          throw new Error('Rental must have a valid total amount (calculated from items)');
-        }
+      console.log('Using rental amounts for invoice:', {
+        subtotal,
+        taxAmount,
+        totalAmount,
+        rentalId: rental.id
+      });
+
+      if (totalAmount <= 0) {
+        throw new Error('Rental must have a valid total amount');
       }
 
       // Get rental items from the rental service
@@ -149,15 +154,21 @@ export class ERPNextInvoiceService {
         doctype: 'Sales Invoice',
         customer: rental.customer?.name || rental.customerName || `CUST-${rental.customerId}`,
         customer_name: rental.customer?.name || rental.customerName,
-        posting_date:
-          new Date().toISOString().split('T')[0] || new Date().toISOString().slice(0, 10),
-        due_date:
-          new Date(Date.now() + (rental.paymentTermsDays || 30) * 24 * 60 * 60 * 1000)
+        posting_date: rental.invoiceDate || new Date().toISOString().split('T')[0],
+        due_date: rental.paymentDueDate || new Date(Date.now() + (rental.paymentTermsDays || 30) * 24 * 60 * 60 * 1000)
             .toISOString()
-            .split('T')[0] ||
-          new Date(Date.now() + (rental.paymentTermsDays || 30) * 24 * 60 * 60 * 1000)
+            .split('T')[0],
+        set_posting_time: 1, // Enable "Edit Posting Date and Time"
+        // Use the correct ERPNext field names for From/To dates
+        custom_from: rental.customFrom || rental.invoiceDate || new Date().toISOString().split('T')[0], // ERPNext custom From date
+        custom_to: rental.customTo || rental.paymentDueDate || new Date(Date.now() + (rental.paymentTermsDays || 30) * 24 * 60 * 60 * 1000)
             .toISOString()
-            .slice(0, 10),
+            .split('T')[0], // ERPNext custom To date
+        from_date: rental.customFrom || rental.invoiceDate || new Date().toISOString().split('T')[0], // ERPNext from_date field
+        to_date: rental.customTo || rental.paymentDueDate || new Date(Date.now() + (rental.paymentTermsDays || 30) * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .split('T')[0], // ERPNext to_date field
+        custom_subject: rental.customSubject || `Invoice for ${rental.rentalNumber} - ${rental.invoiceMonth || 'Monthly Billing'}`, // ERPNext custom subject field
         items: [],
         currency: 'SAR',
         company: 'Samhan Naser Al-Dosri Est',
@@ -205,23 +216,42 @@ export class ERPNextInvoiceService {
         ];
       }
 
-      // Calculate totals
-      const subtotal = invoiceData.items.reduce((sum, item) => sum + item.amount, 0);
+      // Use pre-calculated amounts from rental instead of recalculating
+      invoiceData.base_total = subtotal;
+      invoiceData.total = subtotal;
+      invoiceData.base_grand_total = totalAmount;
+      invoiceData.grand_total = totalAmount;
+      invoiceData.outstanding_amount = totalAmount;
+      invoiceData.base_total_taxes_and_charges = taxAmount;
+      invoiceData.total_taxes_and_charges = taxAmount;
+      invoiceData.base_rounded_total = totalAmount;
+      invoiceData.rounded_total = totalAmount;
 
-      // Calculate VAT using the existing template rate (15%)
-      const vatRate = 15;
-      const vatAmount = (subtotal * vatRate) / 100;
-      const totalWithVAT = subtotal + vatAmount;
-      const grandTotalWithVAT =
-        totalWithVAT - (parseFloat(rental.discount?.toString() || '0') || 0);
-
-      // ERPNext will use the existing tax template data
-      invoiceData.total = totalWithVAT;
-      invoiceData.grand_total = grandTotalWithVAT;
-      invoiceData.outstanding_amount = grandTotalWithVAT;
-      invoiceData.tax_amount = vatAmount;
+      console.log('Invoice totals set from rental:', {
+        subtotal,
+        taxAmount,
+        totalAmount,
+        base_total: invoiceData.base_total,
+        grand_total: invoiceData.grand_total
+      });
 
       // Log the complete invoice data for debugging
+      console.log('Complete invoice data being sent to ERPNext:', {
+        posting_date: invoiceData.posting_date,
+        due_date: invoiceData.due_date,
+        custom_from: invoiceData.custom_from,
+        custom_to: invoiceData.custom_to,
+        from_date: invoiceData.from_date,
+        to_date: invoiceData.to_date,
+        custom_subject: invoiceData.custom_subject,
+        set_posting_time: invoiceData.set_posting_time,
+        rental_invoiceDate: rental.invoiceDate,
+        rental_paymentDueDate: rental.paymentDueDate,
+        rental_customFrom: rental.customFrom,
+        rental_customTo: rental.customTo,
+        rental_invoiceMonth: rental.invoiceMonth,
+        rental_customSubject: rental.customSubject
+      });
 
       // Create invoice in ERPNext
       const response = await this.makeERPNextRequest('/api/resource/Sales Invoice', {

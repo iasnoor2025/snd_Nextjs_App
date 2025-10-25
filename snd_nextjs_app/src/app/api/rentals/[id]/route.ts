@@ -13,9 +13,18 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Rental not found' }, { status: 404 });
     }
 
-    return NextResponse.json(rental);
-  } catch (error) {
+    // Fetch rental items separately
+    const rentalItems = await RentalService.getRentalItems(parseInt(id));
     
+    // Combine rental data with rental items
+    const rentalWithItems = {
+      ...rental,
+      rentalItems: rentalItems
+    };
+
+    return NextResponse.json(rentalWithItems);
+  } catch (error) {
+    console.error('Error fetching rental:', error);
     return NextResponse.json({ error: 'Failed to fetch rental' }, { status: 500 });
   }
 }

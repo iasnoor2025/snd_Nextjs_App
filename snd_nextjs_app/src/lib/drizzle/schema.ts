@@ -677,6 +677,9 @@ export const rentals = pgTable(
     depositRefunded: boolean('deposit_refunded').default(false).notNull(),
     depositRefundDate: date('deposit_refund_date'),
     invoiceId: text('invoice_id'),
+    lastInvoiceDate: date('last_invoice_date'),
+    lastInvoiceId: text('last_invoice_id'),
+    lastInvoiceAmount: numeric('last_invoice_amount', { precision: 12, scale: 2 }),
     locationId: integer('location_id'),
     supervisor: text('supervisor'),
     createdAt: date('created_at')

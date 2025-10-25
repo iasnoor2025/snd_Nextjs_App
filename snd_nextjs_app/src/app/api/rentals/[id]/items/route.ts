@@ -54,29 +54,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     // Calculate total price based on rate type and duration
-    let totalPrice = parseFloat(body.totalPrice || body.unitPrice);
-    
-    // If we have start and end dates, calculate based on duration
-    if (rentalExists.startDate && rentalExists.expectedEndDate) {
-      const startDate = new Date(rentalExists.startDate);
-      const endDate = new Date(rentalExists.expectedEndDate);
-      const rateType = body.rateType || 'daily';
-      
-      if (rateType === 'hourly') {
-        const hoursDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)));
-        totalPrice = parseFloat(body.unitPrice) * hoursDiff;
-      } else if (rateType === 'weekly') {
-        const weeksDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 7)));
-        totalPrice = parseFloat(body.unitPrice) * weeksDiff;
-      } else if (rateType === 'monthly') {
-        const monthsDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
-        totalPrice = parseFloat(body.unitPrice) * monthsDiff;
-      } else {
-        // Daily rate - calculate days
-        const daysDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
-        totalPrice = parseFloat(body.unitPrice) * daysDiff;
-      }
-    }
+    const totalPrice = RentalService.calculateItemTotal({
+      unitPrice: body.unitPrice,
+      quantity: body.quantity || 1,
+      rateType: body.rateType || 'daily',
+      totalPrice: body.totalPrice
+    }, rentalExists);
 
     // Add rental item
     const rentalItem = await RentalService.addRentalItem({

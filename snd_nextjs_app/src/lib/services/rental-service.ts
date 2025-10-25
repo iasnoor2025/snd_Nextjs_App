@@ -1015,14 +1015,34 @@ export class RentalService {
     }
   }
 
+  // Get rental by ID (alias for getRental)
+  static async getRentalById(id: number) {
+    return this.getRental(id);
+  }
+
   // Recalculate rental totals based on items
   static async recalculateRentalTotals(rentalId: number) {
     try {
       const items = await this.getRentalItems(rentalId);
-      const subtotal = items.reduce((sum, item) => {
-        const itemTotal = parseFloat(item.totalPrice?.toString() || '0') || 0;
-        return sum + itemTotal;
-      }, 0);
+      const rental = await this.getRentalById(rentalId);
+      
+      if (!rental) {
+        throw new Error('Rental not found');
+      }
+      
+      let subtotal = 0;
+      
+      // Update each rental item with calculated total and accumulate subtotal
+      for (const item of items) {
+        const itemTotal = this.calculateItemTotal(item, rental);
+        subtotal += itemTotal;
+        
+        // Update the rental item's totalPrice with the calculated amount
+        await db.update(rentalItems).set({
+          totalPrice: itemTotal.toString(),
+          updatedAt: new Date().toISOString().split('T')[0],
+        }).where(eq(rentalItems.id, item.id));
+      }
       
       const taxRate = 15; // Default 15% VAT for KSA
       const taxAmount = subtotal * (taxRate / 100);
@@ -1038,9 +1058,60 @@ export class RentalService {
         updatedAt: new Date().toISOString().split('T')[0],
       }).where(eq(rentals.id, rentalId));
       
+      console.log('Recalculated rental totals:', {
+        rentalId,
+        subtotal,
+        taxAmount,
+        totalAmount,
+        itemsUpdated: items.length
+      });
+      
     } catch (error) {
       console.error('Error recalculating rental totals:', error);
     }
+  }
+
+  // Calculate total price for a single rental item based on rate type and duration
+  static calculateItemTotal(item: any, rental: any): number {
+    const { unitPrice, quantity = 1, rateType = 'daily' } = item;
+    const basePrice = parseFloat(unitPrice?.toString() || '0') || 0;
+    
+    // Calculate actual rental period
+    if (rental?.startDate) {
+      const startDate = new Date(rental.startDate);
+      let endDate: Date;
+      
+      // Use actual end date if rental is completed, otherwise use today
+      if (rental.status === 'completed' && rental.expectedEndDate) {
+        endDate = new Date(rental.expectedEndDate);
+      } else {
+        // For active rentals, calculate from start date to today
+        endDate = new Date();
+      }
+      
+      // Ensure we don't go before the start date
+      if (endDate < startDate) {
+        endDate = startDate;
+      }
+      
+      if (rateType === 'hourly') {
+        const hoursDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)));
+        return basePrice * hoursDiff * quantity;
+      } else if (rateType === 'weekly') {
+        const weeksDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 7)));
+        return basePrice * weeksDiff * quantity;
+      } else if (rateType === 'monthly') {
+        const monthsDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
+        return basePrice * monthsDiff * quantity;
+      } else {
+        // Daily rate - calculate days
+        const daysDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+        return basePrice * daysDiff * quantity;
+      }
+    }
+    
+    // Fallback to stored totalPrice if no start date available
+    return parseFloat(item.totalPrice?.toString() || '0') || 0;
   }
 
   // Create or update equipment assignment for rental item
