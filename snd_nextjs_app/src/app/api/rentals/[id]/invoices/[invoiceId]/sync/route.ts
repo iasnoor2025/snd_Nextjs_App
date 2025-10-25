@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { RentalInvoiceService } from '@/lib/services/rental-invoice-service';
+import { RentalService } from '@/lib/services/rental-service';
 import { ERPNextInvoiceService } from '@/lib/services/erpnext-invoice-service';
 
 export async function POST(
@@ -27,11 +28,47 @@ export async function POST(
     // Get invoice details from ERPNext
     const invoiceDetails = await ERPNextInvoiceService.getInvoice(invoiceId);
     
-    if (!invoiceDetails) {
-      return NextResponse.json(
-        { error: 'Invoice not found in ERPNext' },
-        { status: 404 }
-      );
+    // Check if invoice was deleted in ERPNext
+    if (!invoiceDetails || invoiceDetails.error) {
+      console.log(`Invoice ${invoiceId} not found in ERPNext - likely deleted`);
+      
+      // Delete the invoice from our database
+      try {
+        await RentalInvoiceService.deleteInvoice(invoiceId);
+        
+        // Also check if this was the main invoice for the rental and reset if needed
+        const rental = await RentalService.getRental(rentalId);
+        if (rental?.invoiceId === invoiceId) {
+          // Reset the main rental invoice fields
+          const resetData = {
+            invoiceId: null,
+            invoiceDate: null,
+            paymentDueDate: null,
+            paymentStatus: 'pending' as const,
+            totalAmount: null,
+            finalAmount: null
+          };
+          
+          await RentalService.updateRental(rentalId, resetData);
+          console.log(`Reset rental ${rentalId} invoice fields after ERPNext deletion`);
+        }
+        
+        return NextResponse.json({
+          success: true,
+          message: 'Invoice was deleted in ERPNext and has been unlinked from rental',
+          action: 'deleted'
+        });
+        
+      } catch (deleteError) {
+        console.error('Error deleting invoice after ERPNext deletion:', deleteError);
+        return NextResponse.json(
+          { 
+            error: 'Invoice deleted in ERPNext but failed to unlink from rental',
+            details: deleteError instanceof Error ? deleteError.message : 'Unknown error'
+          },
+          { status: 500 }
+        );
+      }
     }
 
     // Update the invoice record in our database

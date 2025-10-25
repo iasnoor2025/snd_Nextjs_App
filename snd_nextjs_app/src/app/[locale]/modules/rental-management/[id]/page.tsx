@@ -1293,7 +1293,7 @@ export default function RentalDetailPage() {
   // Sync all invoices to detect deleted invoices
   const syncAllInvoices = async () => {
     try {
-      const response = await fetch('/api/billing/sync-invoices', {
+      const response = await fetch('/api/billing/sync-all-invoices', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -1304,10 +1304,25 @@ export default function RentalDetailPage() {
       }
 
       const result = await response.json();
-      toast.success(result.message);
       
-      // Refresh rental data to show updated invoice status
+      // Show detailed results
+      const { summary } = result;
+      let message = `Sync completed: ${summary.totalProcessed} processed`;
+      if (summary.deletedFromERPNext > 0) {
+        message += `, ${summary.deletedFromERPNext} deleted from ERPNext`;
+      }
+      if (summary.statusUpdated > 0) {
+        message += `, ${summary.statusUpdated} status updated`;
+      }
+      if (summary.errors > 0) {
+        message += `, ${summary.errors} errors`;
+      }
+      
+      toast.success(message);
+      
+      // Refresh rental data and invoices to show updated status
       fetchRental();
+      fetchRentalInvoices();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to sync all invoices');
     }
