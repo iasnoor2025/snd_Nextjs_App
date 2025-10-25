@@ -13,6 +13,7 @@ export async function middleware(request: NextRequest) {
 
   // Define public routes that should bypass middleware completely
   const publicRoutes = [
+    '/login',
     '/signup', 
     '/forgot-password',
     '/reset-password',
@@ -25,7 +26,6 @@ export async function middleware(request: NextRequest) {
     '/api/debug-auth',
     '/api/timesheets/auto-generate', // Allow timesheet auto-generation
     '/api/rbac/initialize', // Allow RBAC initialization and status check
-
   ];
 
   // Define static assets
@@ -198,18 +198,27 @@ function getClientSafeRoutePermission(pathname: string) {
     '/modules/leave-management': { action: 'read', subject: 'Leave', roles: [] },
     '/modules/location-management': { action: 'read', subject: 'Settings', roles: [] },
     '/modules/user-management': { action: 'read', subject: 'User', roles: [] },
-
     '/modules/safety-management': { action: 'read', subject: 'Safety', roles: [] },
     '/modules/salary-increments': { action: 'read', subject: 'SalaryIncrement', roles: [] },
     '/modules/reporting': { action: 'read', subject: 'Report', roles: [] },
-
-
     '/modules/document-management': { action: 'read', subject: 'Document', roles: [] },
     '/admin': { action: 'read', subject: 'Settings', roles: [] },
     '/reports': { action: 'read', subject: 'Report', roles: [] },
   };
   
-  return routePermissions[pathname] || null;
+  // Check for exact match first
+  if (routePermissions[pathname]) {
+    return routePermissions[pathname];
+  }
+  
+  // Check for sub-routes (e.g., /en/modules/timesheet-management/bulk-submit should match /modules/timesheet-management)
+  for (const [route, permission] of Object.entries(routePermissions)) {
+    if (pathname.includes(route)) {
+      return permission;
+    }
+  }
+  
+  return null;
 }
 
 function getLocale(request: NextRequest): string {
