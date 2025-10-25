@@ -2,6 +2,7 @@ import { db } from '@/lib/db';
 import { rentals } from '@/lib/drizzle/schema';
 import { ERPNextInvoiceService } from '@/lib/services/erpnext-invoice-service';
 import { RentalService } from '@/lib/services/rental-service';
+import { RentalInvoiceService } from '@/lib/services/rental-invoice-service';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -317,6 +318,22 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         },
         { status: 500 }
       );
+    }
+
+    // Create rental invoice record for tracking multiple invoices
+    try {
+      await RentalInvoiceService.createRentalInvoice({
+        rentalId: parseInt(id),
+        invoiceId: invoiceId,
+        invoiceDate: billingMonth ? invoiceRental.invoiceDate : new Date().toISOString().split('T')[0],
+        dueDate: billingMonth ? invoiceRental.paymentDueDate : new Date(Date.now() + (updatedRental.paymentTermsDays || 30) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        amount: invoiceAmount.toString(),
+        status: invoiceStatus
+      });
+      console.log('Created rental invoice record for tracking');
+    } catch (invoiceRecordError) {
+      console.error('Failed to create rental invoice record:', invoiceRecordError);
+      // Don't fail the whole operation if invoice record creation fails
     }
 
     // Verify the rental was updated

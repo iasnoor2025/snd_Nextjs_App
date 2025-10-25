@@ -50,7 +50,7 @@ export async function POST(
         invoiceDate: invoiceDetails.posting_date || new Date().toISOString().split('T')[0],
         dueDate: invoiceDetails.due_date || null,
         amount: invoiceDetails.grand_total?.toString() || '0',
-        status: 'pending'
+        status: invoiceDetails.status || 'pending'
       });
 
       // Also update rental record with latest invoice info
@@ -58,7 +58,7 @@ export async function POST(
         invoiceId: invoiceId,
         invoiceDate: invoiceDetails.posting_date || new Date().toISOString().split('T')[0],
         paymentDueDate: invoiceDetails.due_date || null,
-        paymentStatus: 'pending' as const,
+        paymentStatus: invoiceDetails.status === 'Paid' ? 'paid' as const : 'pending' as const,
         totalAmount: invoiceDetails.grand_total?.toString() || '0',
         finalAmount: invoiceDetails.grand_total?.toString() || '0'
       };

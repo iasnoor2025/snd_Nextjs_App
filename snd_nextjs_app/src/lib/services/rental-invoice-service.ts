@@ -118,6 +118,23 @@ export class RentalInvoiceService {
     }
   }
 
+  // Update invoice status
+  static async updateInvoiceStatus(invoiceId: string, status: string) {
+    try {
+      const result = await db.execute(sql`
+        UPDATE rental_invoices 
+        SET status = ${status}, updated_at = CURRENT_DATE
+        WHERE invoice_id = ${invoiceId}
+        RETURNING *
+      `);
+
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error updating invoice status:', error);
+      throw error;
+    }
+  }
+
   // Delete invoice
   static async deleteInvoice(invoiceId: string) {
     try {
