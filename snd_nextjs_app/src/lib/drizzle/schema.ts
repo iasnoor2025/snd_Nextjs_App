@@ -677,6 +677,10 @@ export const rentals = pgTable(
     depositRefunded: boolean('deposit_refunded').default(false).notNull(),
     depositRefundDate: date('deposit_refund_date'),
     invoiceId: text('invoice_id'),
+    paymentId: text('payment_id'),
+    lastPaymentDate: date('last_payment_date'),
+    lastPaymentAmount: numeric('last_payment_amount', { precision: 12, scale: 2 }),
+    outstandingAmount: numeric('outstanding_amount', { precision: 12, scale: 2 }).default('0').notNull(),
     lastInvoiceDate: date('last_invoice_date'),
     lastInvoiceId: text('last_invoice_id'),
     lastInvoiceAmount: numeric('last_invoice_amount', { precision: 12, scale: 2 }),
@@ -738,6 +742,49 @@ export const rentals = pgTable(
       .onDelete('set null'),
   ]
 );
+
+export const rentalInvoices = pgTable('rental_invoices', {
+  id: serial().primaryKey().notNull(),
+  rentalId: integer('rental_id').notNull(),
+  invoiceId: text('invoice_id').notNull(),
+  invoiceDate: date('invoice_date').notNull(),
+  dueDate: date('due_date'),
+  amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
+  status: text('status').default('pending').notNull(),
+  createdAt: date('created_at')
+    .default(sql`CURRENT_DATE`)
+    .notNull(),
+  updatedAt: date('updated_at').notNull(),
+}, table => [
+  foreignKey({
+    columns: [table.rentalId],
+    foreignColumns: [rentals.id],
+  })
+    .onUpdate('cascade')
+    .onDelete('cascade'),
+  uniqueIndex('rental_invoices_invoice_id_key').on(table.invoiceId),
+]);
+
+export const rentalPayments = pgTable('rental_payments', {
+  id: serial().primaryKey().notNull(),
+  rentalId: integer('rental_id').notNull(),
+  paymentId: text('payment_id').notNull(),
+  paymentDate: date('payment_date').notNull(),
+  amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
+  status: text('status').default('pending').notNull(),
+  createdAt: date('created_at')
+    .default(sql`CURRENT_DATE`)
+    .notNull(),
+  updatedAt: date('updated_at').notNull(),
+}, table => [
+  foreignKey({
+    columns: [table.rentalId],
+    foreignColumns: [rentals.id],
+  })
+    .onUpdate('cascade')
+    .onDelete('cascade'),
+  uniqueIndex('rental_payments_payment_id_key').on(table.paymentId),
+]);
 
 export const departments = pgTable('departments', {
   id: serial().primaryKey().notNull(),

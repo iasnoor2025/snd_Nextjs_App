@@ -586,4 +586,32 @@ export class ERPNextInvoiceService {
       );
     }
   }
+
+  // Get invoices by customer
+  static async getInvoicesByCustomer(customerId: string): Promise<any[]> {
+    try {
+      const response = await this.makeERPNextRequest(
+        `/api/resource/Sales Invoice?filters=[["customer","=","${customerId}"]]&limit_page_length=100&order_by=posting_date desc`
+      );
+      return response.data || [];
+    } catch (error) {
+      throw new Error(
+        `Failed to fetch invoices for customer: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  // Get invoices by rental number (if stored in ERPNext)
+  static async getInvoicesByRentalNumber(rentalNumber: string): Promise<any[]> {
+    try {
+      const response = await this.makeERPNextRequest(
+        `/api/resource/Sales Invoice?filters=[["custom_rental_number","=","${rentalNumber}"]]&limit_page_length=100&order_by=posting_date desc`
+      );
+      return response.data || [];
+    } catch (error) {
+      throw new Error(
+        `Failed to fetch invoices for rental: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
 }

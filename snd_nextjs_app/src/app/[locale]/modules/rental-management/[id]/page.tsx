@@ -57,6 +57,7 @@ import {
   Trash2,
   Truck,
   User,
+  X,
   XCircle,
 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
@@ -728,6 +729,12 @@ export default function RentalDetailPage() {
   const [isMonthSelectionOpen, setIsMonthSelectionOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState('');
   const [erpnextInvoiceAmount, setErpnextInvoiceAmount] = useState<number | null>(null);
+  const [isManualInvoiceDialogOpen, setIsManualInvoiceDialogOpen] = useState(false);
+  const [isManualPaymentDialogOpen, setIsManualPaymentDialogOpen] = useState(false);
+  const [manualInvoiceId, setManualInvoiceId] = useState('');
+  const [manualPaymentId, setManualPaymentId] = useState('');
+  const [rentalInvoices, setRentalInvoices] = useState<any[]>([]);
+  const [rentalPayments, setRentalPayments] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     customerId: '',
     rentalNumber: '',
@@ -915,6 +922,72 @@ export default function RentalDetailPage() {
     }
   };
 
+  // Fetch rental invoices (try database first, then ERPNext)
+  const fetchRentalInvoices = async () => {
+    try {
+      // Try local database approach first (now that migration is complete)
+      const response = await fetch(`/api/rentals/${rentalId}/invoices`);
+      if (response.ok) {
+        const invoices = await response.json();
+        setRentalInvoices(invoices);
+        return;
+      }
+    } catch (error) {
+      console.error('Failed to fetch rental invoices from database:', error);
+    }
+
+    // Fallback: Try ERPNext-only approach
+    try {
+      const response = await fetch(`/api/rentals/${rentalId}/invoices-erpnext`);
+      if (response.ok) {
+        const invoices = await response.json();
+        // Transform ERPNext invoices to match our UI format
+        const transformedInvoices = invoices.map((invoice: any, index: number) => ({
+          id: index + 1,
+          invoiceId: invoice.name,
+          amount: invoice.grand_total || invoice.total || '0',
+          status: invoice.status || 'pending',
+          dueDate: invoice.due_date,
+          invoiceDate: invoice.posting_date
+        }));
+        setRentalInvoices(transformedInvoices);
+        return;
+      }
+    } catch (error) {
+      console.error('Failed to fetch invoices from ERPNext:', error);
+    }
+
+    // Final fallback: Use single invoice from rental
+    if (rental?.invoiceId) {
+      setRentalInvoices([{
+        id: 1,
+        invoiceId: rental.invoiceId,
+        amount: rental.totalAmount,
+        status: rental.paymentStatus,
+        dueDate: rental.paymentDueDate,
+        invoiceDate: rental.invoiceDate
+      }]);
+    } else {
+      setRentalInvoices([]);
+    }
+  };
+
+  // Fetch rental payments
+  const fetchRentalPayments = async () => {
+    try {
+      const response = await fetch(`/api/rentals/${rentalId}/payments`);
+      if (response.ok) {
+        const payments = await response.json();
+        setRentalPayments(payments);
+      } else {
+        setRentalPayments([]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch rental payments:', error);
+      setRentalPayments([]);
+    }
+  };
+
   // Fetch ERPNext invoice amount
   const fetchErpnextInvoiceAmount = async (invoiceId: string) => {
     try {
@@ -927,6 +1000,66 @@ export default function RentalDetailPage() {
       }
     } catch (error) {
       console.error('Failed to fetch ERPNext invoice amount:', error);
+    }
+  };
+
+  // Link existing invoice from ERPNext
+  const linkManualInvoice = async () => {
+    if (!manualInvoiceId.trim()) {
+      toast.error('Please enter an invoice ID');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/rentals/${rentalId}/link-invoice`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invoiceId: manualInvoiceId.trim() })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to link invoice');
+      }
+
+      toast.success('Invoice linked successfully');
+      setIsManualInvoiceDialogOpen(false);
+      setManualInvoiceId('');
+      fetchRental(); // Refresh rental data first
+      fetchRentalInvoices(); // Then refresh invoice list
+    } catch (error) {
+      console.error('Error linking invoice:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to link invoice');
+    }
+  };
+
+  // Link existing payment from ERPNext
+  const linkManualPayment = async () => {
+    if (!manualPaymentId.trim()) {
+      toast.error('Please enter a payment ID');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/rentals/${rentalId}/link-payment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentId: manualPaymentId.trim() })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to link payment');
+      }
+
+      toast.success('Payment linked successfully');
+      setIsManualPaymentDialogOpen(false);
+      setManualPaymentId('');
+      fetchRental(); // Refresh rental data first
+      fetchRentalPayments(); // Then refresh payment list
+    } catch (error) {
+      console.error('Error linking payment:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to link payment');
     }
   };
 
@@ -949,10 +1082,9 @@ export default function RentalDetailPage() {
 
       setRental(data);
       
-      // Fetch ERPNext invoice amount if invoice exists
-      if (data.invoiceId) {
-        fetchErpnextInvoiceAmount(data.invoiceId);
-      }
+      // Fetch rental invoices and payments
+      fetchRentalInvoices();
+      fetchRentalPayments();
       
       // Fetch equipment names for rental items that have fallback names
       if (data.rentalItems && data.rentalItems.length > 0) {
@@ -2105,44 +2237,84 @@ export default function RentalDetailPage() {
                 <CardHeader>
                   <div className="flex justify-between items-center">
                     <CardTitle>{t('rental.payments')}</CardTitle>
-                    <Button size="sm" onClick={() => setIsAddPaymentDialogOpen(true)}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      {t('rental.addPayment')}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => setIsManualPaymentDialogOpen(true)}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Link Payment
+                      </Button>
+                      <Button size="sm" onClick={() => setIsAddPaymentDialogOpen(true)}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        {t('rental.addPayment')}
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{t('rental.date')}</TableHead>
+                        <TableHead>Payment ID</TableHead>
                         <TableHead>{t('rental.amount')}</TableHead>
-                        <TableHead>{t('rental.method')}</TableHead>
-                        <TableHead>{t('rental.reference')}</TableHead>
+                        <TableHead>{t('rental.date')}</TableHead>
                         <TableHead>{t('rental.table.headers.status')}</TableHead>
                         <TableHead>{t('rental.table.headers.actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {rental.payments?.map(payment => (
+                      {rentalPayments.map((payment) => (
                         <TableRow key={payment.id}>
+                          <TableCell>{payment.paymentId}</TableCell>
+                          <TableCell>SAR {formatAmount(parseFloat(payment.amount))}</TableCell>
                           <TableCell>
-                            {format(new Date(payment.paymentDate), 'MMM dd, yyyy')}
+                            {payment.paymentDate ? format(new Date(payment.paymentDate), 'MMM dd, yyyy') : 'N/A'}
                           </TableCell>
-                                                     <TableCell>SAR {formatAmount(payment.amount)}</TableCell>
-                          <TableCell>{payment.paymentMethod}</TableCell>
-                          <TableCell>{payment.reference}</TableCell>
                           <TableCell>{getPaymentStatusBadge(payment.status)}</TableCell>
                           <TableCell>
-                            <Button variant="outline" size="sm">
-                              <Eye className="w-4 h-4" />
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => window.open(`/api/erpnext/payment/${payment.paymentId}`, '_blank')}
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                              <Button 
+                                variant="destructive" 
+                                size="sm"
+                                onClick={async () => {
+                                  if (confirm(`Are you sure you want to unlink payment ${payment.paymentId}?`)) {
+                                    try {
+                                      const response = await fetch(`/api/rentals/${rentalId}/payments/${payment.paymentId}/unlink`, {
+                                        method: 'DELETE',
+                                        headers: { 'Content-Type': 'application/json' }
+                                      });
+                                      const result = await response.json();
+                                      if (result.success) {
+                                        toast.success(result.message);
+                                        fetchRentalPayments();
+                                      } else {
+                                        toast.error(result.error || 'Failed to unlink payment');
+                                      }
+                                    } catch (err) {
+                                      console.error('Error unlinking payment:', err);
+                                      toast.error('Failed to unlink payment');
+                                    }
+                                  }
+                                }}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
-                  {(!rental.payments || rental.payments.length === 0) && (
+                  {rentalPayments.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground">{t('rental.noPaymentsFound')}</div>
                   )}
                 </CardContent>
@@ -2154,10 +2326,20 @@ export default function RentalDetailPage() {
                 <CardHeader>
                   <div className="flex justify-between items-center">
                     <CardTitle>{t('rental.invoices')}</CardTitle>
-                    <Button size="sm" onClick={generateInvoice}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      {t('rental.generateInvoice')}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => setIsManualInvoiceDialogOpen(true)}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Link Invoice
+                      </Button>
+                      <Button size="sm" onClick={generateInvoice}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        {t('rental.generateInvoice')}
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -2172,60 +2354,80 @@ export default function RentalDetailPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {rental.invoiceId && (
-                        <TableRow>
-                          <TableCell>{rental.invoiceId}</TableCell>
-                          <TableCell>SAR {formatAmount(erpnextInvoiceAmount || rental.totalAmount)}</TableCell>
-                          <TableCell>{getPaymentStatusBadge(rental.paymentStatus)}</TableCell>
+                      {rentalInvoices.map((invoice) => (
+                        <TableRow key={invoice.id}>
+                          <TableCell>{invoice.invoiceId}</TableCell>
+                          <TableCell>SAR {formatAmount(parseFloat(invoice.amount))}</TableCell>
+                          <TableCell>{getPaymentStatusBadge(invoice.status)}</TableCell>
                           <TableCell>
-                            {rental.paymentDueDate ? format(new Date(rental.paymentDueDate), 'MMM dd, yyyy') : 'N/A'}
+                            {invoice.dueDate ? format(new Date(invoice.dueDate), 'MMM dd, yyyy') : 'N/A'}
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-2">
                               <Button 
                                 variant="outline" 
                                 size="sm"
-                                onClick={() => window.open(`/api/rentals/${rental.id}/invoice/view`, '_blank')}
+                                onClick={() => window.open(`/api/erpnext/invoice/${invoice.invoiceId}`, '_blank')}
                               >
                                 <Eye className="w-4 h-4" />
                               </Button>
                               <Button 
                                 variant="outline" 
                                 size="sm"
-                                onClick={() => window.open(`/api/rentals/${rental.id}/invoice/download`, '_blank')}
-                              >
-                                <Download className="w-4 h-4" />
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
                                 onClick={async () => {
                                   try {
-                                    const response = await fetch(`/api/rentals/${rental.id}/invoice/sync`, {
+                                    const response = await fetch(`/api/rentals/${rentalId}/invoices/${invoice.invoiceId}/sync`, {
                                       method: 'POST',
                                       headers: { 'Content-Type': 'application/json' }
                                     });
                                     const result = await response.json();
                                     if (result.success) {
                                       toast.success(result.message);
-                                      fetchRental();
+                                      fetchRentalInvoices();
                                     } else {
                                       toast.error(result.error || 'Failed to sync invoice');
                                     }
                                   } catch (err) {
+                                    console.error('Error syncing invoice:', err);
                                     toast.error('Failed to sync invoice');
                                   }
                                 }}
                               >
                                 <RefreshCw className="w-4 h-4" />
                               </Button>
+                              <Button 
+                                variant="destructive" 
+                                size="sm"
+                                onClick={async () => {
+                                  if (confirm(`Are you sure you want to unlink invoice ${invoice.invoiceId}?`)) {
+                                    try {
+                                      const response = await fetch(`/api/rentals/${rentalId}/invoices/${invoice.invoiceId}/unlink`, {
+                                        method: 'DELETE',
+                                        headers: { 'Content-Type': 'application/json' }
+                                      });
+                                      const result = await response.json();
+                                      if (result.success) {
+                                        toast.success(result.message);
+                                        fetchRentalInvoices();
+                                      } else {
+                                        toast.error(result.error || 'Failed to unlink invoice');
+                                      }
+                                    } catch (err) {
+                                      console.error('Error unlinking invoice:', err);
+                                      toast.error('Failed to unlink invoice');
+                                    }
+                                  }
+                                }}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>
-                      )}
+                      ))}
                     </TableBody>
                   </Table>
-                  {!rental.invoiceId && (
+                  {rentalInvoices.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground">{t('rental.noInvoicesFound')}</div>
                   )}
                 </CardContent>
@@ -2776,6 +2978,68 @@ export default function RentalDetailPage() {
         itemName={confirmation.confirmationState.itemName}
         isLoading={false}
       />
+
+      {/* Manual Invoice Linking Dialog */}
+      <Dialog open={isManualInvoiceDialogOpen} onOpenChange={setIsManualInvoiceDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Link Existing Invoice</DialogTitle>
+            <DialogDescription>
+              Enter the invoice ID from ERPNext to link it to this rental.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="manualInvoiceId">Invoice ID</Label>
+              <Input
+                id="manualInvoiceId"
+                placeholder="e.g., ACC-SINV-2025-00001"
+                value={manualInvoiceId}
+                onChange={(e) => setManualInvoiceId(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsManualInvoiceDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={linkManualInvoice} disabled={!manualInvoiceId.trim()}>
+              Link Invoice
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manual Payment Linking Dialog */}
+      <Dialog open={isManualPaymentDialogOpen} onOpenChange={setIsManualPaymentDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Link Existing Payment</DialogTitle>
+            <DialogDescription>
+              Enter the payment ID from ERPNext to link it to this rental.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="manualPaymentId">Payment ID</Label>
+              <Input
+                id="manualPaymentId"
+                placeholder="e.g., ACC-PAY-2025-00001"
+                value={manualPaymentId}
+                onChange={(e) => setManualPaymentId(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsManualPaymentDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={linkManualPayment} disabled={!manualPaymentId.trim()}>
+              Link Payment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

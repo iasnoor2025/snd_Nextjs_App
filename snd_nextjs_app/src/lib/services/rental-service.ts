@@ -1183,4 +1183,41 @@ export class RentalService {
       console.error('Error removing equipment assignment:', error);
     }
   }
+
+  // Get rental by invoice ID
+  static async getRentalByInvoiceId(invoiceId: string) {
+    try {
+      // Use raw query to avoid schema issues with missing fields
+      const result = await db.execute(sql`
+        SELECT id, rental_number, invoice_id 
+        FROM rentals 
+        WHERE invoice_id = ${invoiceId} 
+        LIMIT 1
+      `);
+      
+      return result.rows[0] || null;
+    } catch (error) {
+      console.error('Error fetching rental by invoice ID:', error);
+      // Return null instead of throwing to allow the linking process to continue
+      return null;
+    }
+  }
+
+  // Get rental by payment ID
+  static async getRentalByPaymentId(paymentId: string) {
+    try {
+      // Use raw query to avoid schema issues with missing fields
+      const result = await db.execute(sql`
+        SELECT id, rental_number, payment_id 
+        FROM rentals 
+        WHERE payment_id = ${paymentId} 
+        LIMIT 1
+      `);
+      
+      return result.rows[0] || null;
+    } catch (error) {
+      console.error('Error fetching rental by payment ID:', error);
+      return null;
+    }
+  }
 }
