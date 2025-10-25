@@ -139,16 +139,39 @@ export default function UserManagementPage() {
   const [rolePermissions, setRolePermissions] = useState<Record<number, Permission[]>>({});
 
   // Fetch users with role information
-  const fetchUsers = async () => {
+  const fetchUsers = async (retryCount = 0) => {
     try {
-      // Fetching users
-      const response = await fetch('/api/users');
-              // API response received
+      console.log(`🔄 Fetching users (attempt ${retryCount + 1})...`);
+      
+      // Add cache-busting parameter to prevent stale data
+      const timestamp = new Date().getTime();
+      const response = await fetch(`/api/users?t=${timestamp}`, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+        },
+      });
+      
+      console.log(`📡 API response status: ${response.status}`);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch users');
+        const errorText = await response.text();
+        console.error(`❌ API error response:`, errorText);
+        
+        // Handle specific error cases
+        if (response.status === 401) {
+          throw new Error('Authentication required. Please log in again.');
+        } else if (response.status === 403) {
+          throw new Error('Insufficient permissions to view users.');
+        } else if (response.status === 500) {
+          throw new Error('Server error occurred while fetching users.');
+        } else {
+          throw new Error(`Failed to fetch users (${response.status}): ${errorText}`);
+        }
       }
+      
       const usersData = await response.json();
-              // Users data received
+      console.log(`📊 Users data received:`, usersData);
       
       // The API returns { success: true, users: [...] }
       let usersArray = [];
@@ -157,14 +180,40 @@ export default function UserManagementPage() {
       } else if (Array.isArray(usersData)) {
         // Fallback: if the API returns the array directly
         usersArray = usersData;
+      } else {
+        console.warn('⚠️ Unexpected API response format:', usersData);
+        usersArray = [];
       }
       
-              // Final users array processed
+      console.log(`✅ Final users array processed: ${usersArray.length} users`);
       setUsers(usersArray);
+      setError(null); // Clear any previous errors
+      
     } catch (error) {
-      console.error('Error in fetchUsers:', error);
-      // Always set an empty array on error
+      console.error(`❌ Error in fetchUsers (attempt ${retryCount + 1}):`, error);
+      
+      // Retry logic for network errors
+      if (retryCount < 2 && (
+        error instanceof TypeError && error.message.includes('fetch') ||
+        error instanceof Error && (
+          error.message.includes('NetworkError') ||
+          error.message.includes('Failed to fetch') ||
+          error.message.includes('Server error')
+        )
+      )) {
+        console.log(`🔄 Retrying fetchUsers in ${(retryCount + 1) * 1000}ms...`);
+        await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 1000));
+        return fetchUsers(retryCount + 1);
+      }
+      
+      // Set error state and empty array
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch users';
+      setError(errorMessage);
       setUsers([]);
+      
+      // Show user-friendly error message
+      toast.error(`Failed to load users: ${errorMessage}`);
+      
       throw error;
     }
   };
@@ -767,7 +816,7 @@ export default function UserManagementPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // useEffect fetchData called
+        console.log('🚀 Starting user management data fetch...');
         setLoading(true);
         setError(null);
         
@@ -776,12 +825,38 @@ export default function UserManagementPage() {
         setRoles([]);
         setPermissions([]);
 
-        // Calling Promise.all
-        await Promise.all([fetchUsers(), fetchRoles(), fetchPermissions()]);
-                  // Promise.all completed
+        // Fetch data with individual error handling
+        const results = await Promise.allSettled([
+          fetchUsers(),
+          fetchRoles(),
+          fetchPermissions()
+        ]);
+
+        // Check for any failures
+        const failures = results.filter(result => result.status === 'rejected');
+        if (failures.length > 0) {
+          const errorMessages = failures.map(failure => 
+            failure.reason instanceof Error ? failure.reason.message : 'Unknown error'
+          );
+          console.warn('⚠️ Some data fetch operations failed:', errorMessages);
+          
+          // If all operations failed, set a general error
+          if (failures.length === results.length) {
+            setError('Failed to load user management data. Please try refreshing the page.');
+            toast.error('Failed to load user management data');
+          } else {
+            // Partial failure - show warning but don't block the UI
+            toast.warning(`Some data may be incomplete: ${errorMessages.join(', ')}`);
+          }
+        } else {
+          console.log('✅ All user management data loaded successfully');
+        }
+        
       } catch (err) {
-        console.error('Error loading user management data:', err);
-        setError(err instanceof Error ? err.message : t('user.loadDataFailed'));
+        console.error('❌ Critical error loading user management data:', err);
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load user management data';
+        setError(errorMessage);
+        toast.error(`Critical error: ${errorMessage}`);
         
         // Ensure we always have arrays even on error
         setUsers([]);
@@ -791,6 +866,7 @@ export default function UserManagementPage() {
         setLoading(false);
       }
     };
+    
     fetchData();
   }, []);
 
@@ -825,9 +901,36 @@ export default function UserManagementPage() {
   if (error) {
     return (
       <ProtectedRoute requiredPermission={{ action: 'manage', subject: 'User' }}>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-red-500">
-            {t('user.error')}: {error}
+        <div className="container mx-auto py-6">
+          <div className="flex flex-col items-center justify-center h-64 space-y-4">
+            <div className="text-center">
+              <h2 className="text-xl font-semibold text-red-600 mb-2">
+                {t('user.error')}
+              </h2>
+              <p className="text-gray-600 mb-4">
+                {error}
+              </p>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => {
+                    setError(null);
+                    setLoading(true);
+                    fetchUsers().finally(() => setLoading(false));
+                  }}
+                  variant="outline"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Retry Loading Users
+                </Button>
+                <Button 
+                  onClick={() => window.location.reload()}
+                  variant="default"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh Page
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </ProtectedRoute>
@@ -859,6 +962,19 @@ export default function UserManagementPage() {
             <p className="text-muted-foreground">{t('user.userRoleManagementDescription')}</p>
           </div>
           <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                setLoading(true);
+                Promise.allSettled([fetchUsers(), fetchRoles(), fetchPermissions()])
+                  .finally(() => setLoading(false));
+              }}
+              disabled={loading}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Refresh Data
+            </Button>
             <Button variant="outline" size="sm">
               <Shield className="h-4 w-4 mr-2" />
               {t('user.exportUsers')}

@@ -1,164 +1,35 @@
 import { db } from '@/lib/db';
-import { modelHasRoles, roles, users } from '@/lib/drizzle/schema';
+import { modelHasRoles, roles, users, permissions, roleHasPermissions } from '@/lib/drizzle/schema';
 import { eq, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
-// Define role permissions based on the ability system
-const rolePermissions = {
-  SUPER_ADMIN: [
-    'users.read',
-    'users.create',
-    'users.update',
-    'users.delete',
-    'roles.read',
-    'roles.create',
-    'roles.update',
-    'roles.delete',
-    'equipment.read',
-    'equipment.create',
-    'equipment.update',
-    'equipment.delete',
-    'rentals.read',
-    'rentals.create',
-    'rentals.update',
-    'rentals.delete',
-    'employees.read',
-    'employees.create',
-    'employees.update',
-    'employees.delete',
-    'projects.read',
-    'projects.create',
-    'projects.update',
-    'projects.delete',
-    'reports.read',
-    'reports.create',
-    'reports.export',
-    // Timesheet permissions - full access
-    'timesheets.read',
-    'timesheets.create',
-    'timesheets.update',
-    'timesheets.delete',
-    'timesheets.approve',
-    'timesheets.reject',
-    'timesheets.approve.foreman',
-    'timesheets.approve.incharge',
-    'timesheets.approve.checking',
-    'timesheets.approve.manager',
-  ],
-  ADMIN: [
-    'users.read',
-    'users.create',
-    'users.update',
-    'users.delete',
-    'roles.read',
-    'roles.create',
-    'roles.update',
-    'roles.delete',
-    'equipment.read',
-    'equipment.create',
-    'equipment.update',
-    'equipment.delete',
-    'rentals.read',
-    'rentals.create',
-    'rentals.update',
-    'rentals.delete',
-    'employees.read',
-    'employees.create',
-    'employees.update',
-    'employees.delete',
-    'projects.read',
-    'projects.create',
-    'projects.update',
-    'projects.delete',
-    'reports.read',
-    'reports.create',
-    'reports.export',
-    // Timesheet permissions - full access
-    'timesheets.read',
-    'timesheets.create',
-    'timesheets.update',
-    'timesheets.delete',
-    'timesheets.approve',
-    'timesheets.reject',
-    'timesheets.approve.foreman',
-    'timesheets.approve.incharge',
-    'timesheets.approve.checking',
-    'timesheets.approve.manager',
-  ],
-  MANAGER: [
-    'employees.read',
-    'employees.update',
-    'equipment.read',
-    'equipment.update',
-    'rentals.read',
-    'rentals.create',
-    'rentals.update',
-    'projects.read',
-    'projects.create',
-    'projects.update',
-    'reports.read',
-    'reports.export',
-    // Timesheet permissions - manager level
-    'timesheets.read',
-    'timesheets.create',
-    'timesheets.update',
-    'timesheets.approve',
-    'timesheets.reject',
-    'timesheets.approve.manager',
-  ],
-  SUPERVISOR: [
-    'employees.read',
-    'equipment.read',
-    'rentals.read',
-    'rentals.create',
-    'rentals.update',
-    'projects.read',
-    'projects.create',
-    'projects.update',
-    'reports.read',
-    // Timesheet permissions - supervisor level
-    'timesheets.read',
-    'timesheets.create',
-    'timesheets.update',
-    'timesheets.approve.foreman',
-    'timesheets.approve.incharge',
-  ],
-  OPERATOR: [
-    'employees.read',
-    'employees.update',
-    'equipment.read',
-    'rentals.read',
-    'rentals.create',
-    'rentals.update',
-    'projects.read',
-    // Timesheet permissions - operator level
-    'timesheets.read',
-    'timesheets.create',
-    'timesheets.update',
-    'timesheets.approve.foreman',
-  ],
-  EMPLOYEE: [
-    'employees.read',
-    'employees.update',
-    'equipment.read',
-    'rentals.read',
-    'rentals.create',
-    'rentals.update',
-    'projects.read',
-    // Timesheet permissions - employee level
-    'timesheets.read',
-    'timesheets.create',
-    'timesheets.update',
-  ],
-  USER: [
-    'employees.read',
-    'equipment.read',
-    'rentals.read',
-    'projects.read',
-    // Timesheet permissions - read only
-    'timesheets.read',
-  ],
-};
+// Dynamic role permissions - loaded from database
+async function getRolePermissions(roleName: string) {
+  try {
+    const roleRows = await db
+      .select({ id: roles.id })
+      .from(roles)
+      .where(eq(roles.name, roleName))
+      .limit(1);
+    
+    if (roleRows.length === 0) {
+      return [];
+    }
+    
+    const roleId = roleRows[0].id;
+    
+    const permissionRows = await db
+      .select({ name: permissions.name })
+      .from(roleHasPermissions)
+      .leftJoin(permissions, eq(permissions.id, roleHasPermissions.permissionId))
+      .where(eq(roleHasPermissions.roleId, roleId));
+    
+    return permissionRows.map(r => r.name!).filter(Boolean);
+  } catch (error) {
+    console.error('Error fetching role permissions:', error);
+    return [];
+  }
+}
 
 // Define role descriptions
 const roleDescriptions = {
@@ -203,11 +74,14 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
     const userCount = Number(userCountRows[0]?.count || 0);
 
+    // Get dynamic permissions from database
+    const rolePermissionsList = await getRolePermissions(role!.name);
+
     const roleWithUserCount = {
       id: role!.id,
       name: role!.name,
       description: roleDescriptions[role!.name as keyof typeof roleDescriptions] || '',
-      permissions: rolePermissions[role!.name as keyof typeof rolePermissions] || [],
+      permissions: rolePermissionsList,
       isActive: true,
       createdAt: role!.createdAt,
       userCount: userCount,

@@ -30,16 +30,18 @@ interface RBACProviderProps {
   children: React.ReactNode;
 }
 
-// Dynamic role hierarchy configuration (can be updated without code changes)
+// Dynamic role hierarchy configuration (matches database priorities)
 const DYNAMIC_ROLE_HIERARCHY: Record<string, number> = {
-  'SUPER_ADMIN': 1, // Always highest priority
-  // All other roles will be assigned priorities dynamically
-  'ADMIN': 2, // Will be assigned dynamically
-  // 'MANAGER': 3, // Will be assigned dynamically
-  // 'SUPERVISOR': 4, // Will be assigned dynamically
-  // 'OPERATOR': 5, // Will be assigned dynamically
-  // 'EMPLOYEE': 6, // Will be assigned dynamically
-  // 'USER': 7, // Will be assigned dynamically
+  'SUPER_ADMIN': 1,        // Highest priority - Full system access
+  'ADMIN': 2,              // Administrative access
+  'MANAGER': 3,            // Management access
+  'SUPERVISOR': 4,         // Supervisory access
+  'OPERATOR': 5,           // Operational access
+  'EMPLOYEE': 6,           // Employee access
+  'FINANCE_SPECIALIST': 7, // Finance specialist
+  'HR_SPECIALIST': 8,      // HR specialist
+  'SALES_REPRESENTATIVE': 9, // Sales representative
+  'USER': 999,             // Lowest priority - Basic user access
 };
 
 // Dynamic fallback permissions configuration (can be updated without code changes)
@@ -77,18 +79,26 @@ function setUserPermissionsInCache(userId: string, permissions: string[]): void 
 // Function to load user permissions from API and cache them
 async function loadUserPermissions(userId: string): Promise<string[]> {
   try {
-    const response = await fetch('/api/user-permissions');
+    // Add cache-busting timestamp to force fresh data
+    const timestamp = new Date().getTime();
+    const response = await fetch(`/api/user-permissions?t=${timestamp}`, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+      },
+    });
     
     if (response.ok) {
       const data = await response.json();
       
       if (data.success && data.permissions) {
+        console.log('🔄 Loaded user permissions:', data.permissions.slice(0, 5), data.permissions.length > 5 ? '...' : '');
         setUserPermissionsInCache(userId, data.permissions);
         return data.permissions;
       }
     }
   } catch (error) {
-    // Silent error handling for production
+    console.error('Failed to load user permissions:', error);
   }
   
   return [];

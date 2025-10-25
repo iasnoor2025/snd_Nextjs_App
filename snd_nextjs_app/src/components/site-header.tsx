@@ -32,12 +32,19 @@ export function SiteHeader() {
     const fetchCurrentUserRole = async () => {
       if (session?.user?.email) {
         try {
-          const response = await fetch('/api/auth/me');
+          // Add cache-busting timestamp to force fresh data
+          const timestamp = new Date().getTime();
+          const response = await fetch(`/api/auth/me?t=${timestamp}`, {
+            headers: {
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache',
+            },
+          });
           if (response.ok) {
             const data = await response.json();
             if (data.success && data.user) {
+              console.log('🔄 Updated user role from API:', data.user.role);
               setCurrentUserRole(data.user.role);
-              // Role fetched from API
             }
           }
         } catch (error) {
@@ -49,8 +56,30 @@ export function SiteHeader() {
     fetchCurrentUserRole();
   }, [session?.user?.email]);
 
-  const refreshSession = () => {
-    // Reload the page to refresh the session
+  const refreshSession = async () => {
+    try {
+      // Force refresh user role
+      const timestamp = new Date().getTime();
+      const response = await fetch(`/api/auth/me?t=${timestamp}`, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.user) {
+          console.log('🔄 Manually refreshed user role:', data.user.role);
+          setCurrentUserRole(data.user.role);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to refresh session:', error);
+    }
+    
+    // Fallback: reload the page
     window.location.reload();
   };
 

@@ -24,15 +24,18 @@ export const getRolePriority = async (roleName: string): Promise<number> => {
       return role[0].priority;
     }
     
-    // Default priority mapping for existing roles
+    // Default priority mapping for existing roles (matches database)
     const defaultPriority: Record<string, number> = {
-      'SUPER_ADMIN': 1,
-      'ADMIN': 2,
-      'MANAGER': 3,
-      'SUPERVISOR': 4,
-      'OPERATOR': 5,
-      'EMPLOYEE': 6,
-      'USER': 7,
+      'SUPER_ADMIN': 1,        // Highest priority - Full system access
+      'ADMIN': 2,              // Administrative access
+      'MANAGER': 3,            // Management access
+      'SUPERVISOR': 4,         // Supervisory access
+      'OPERATOR': 5,           // Operational access
+      'EMPLOYEE': 6,           // Employee access
+      'FINANCE_SPECIALIST': 7, // Finance specialist
+      'HR_SPECIALIST': 8,      // HR specialist
+      'SALES_REPRESENTATIVE': 9, // Sales representative
+      'USER': 999,             // Lowest priority - Basic user access
     };
     
     return defaultPriority[roleName] || 10; // Default priority for new roles
