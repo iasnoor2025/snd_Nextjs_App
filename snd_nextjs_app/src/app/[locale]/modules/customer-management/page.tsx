@@ -1,6 +1,16 @@
 'use client';
 
 import { ProtectedRoute } from '@/components/protected-route';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,6 +54,9 @@ export default function CustomerManagementPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Get allowed actions for customer management
   const allowedActions = getAllowedActions('Customer');
@@ -143,29 +156,37 @@ export default function CustomerManagementPage() {
     window.location.href = `/modules/customer-management/${customer.id}/edit`;
   };
 
-  const handleDeleteCustomer = async (customer: Customer) => {
-    
-    if (confirm(t('common.messages.deleteConfirm'))) {
-      try {
-        const response = await fetch(`/api/customers`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ id: customer.id }),
-        });
+  const handleDeleteCustomer = (customer: Customer) => {
+    setCustomerToDelete(customer);
+    setDeleteDialogOpen(true);
+  };
 
-        if (response.ok) {
-          toast.success(t('common.messages.deleteSuccess'));
-          fetchCustomers(); // Refresh the list
-        } else {
-          const error = await response.json();
-          toast.error(t('common.messages.deleteError') + ': ' + error.message);
-        }
-      } catch (error) {
-        
-        toast.error(t('common.messages.deleteError'));
+  const confirmDeleteCustomer = async () => {
+    if (!customerToDelete) return;
+
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/customers`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: customerToDelete.id }),
+      });
+
+      if (response.ok) {
+        toast.success(t('common.messages.deleteSuccess'));
+        fetchCustomers(); // Refresh the list
+        setDeleteDialogOpen(false);
+        setCustomerToDelete(null);
+      } else {
+        const error = await response.json();
+        toast.error(t('common.messages.deleteError') + ': ' + error.message);
       }
+    } catch (error) {
+      toast.error(t('common.messages.deleteError'));
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -218,7 +239,10 @@ export default function CustomerManagementPage() {
           </div>
           <div className="flex gap-2">
             {hasPermission('create', 'Customer') && (
-              <Button className="flex items-center gap-2">
+              <Button 
+                onClick={handleAddCustomer}
+                className="flex items-center gap-2"
+              >
                 <Plus className="h-4 w-4" />
                 {t('customer.actions.add_customer')}
               </Button>
@@ -358,6 +382,44 @@ export default function CustomerManagementPage() {
             </Button>
           </div>
         )}
+
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('customer.delete.title')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {customerToDelete && (
+                  <>
+                    {t('customer.delete.description')}
+                    {' '}
+                    <strong>{customerToDelete.name}</strong>?
+                    {' '}
+                    {t('customer.delete.warning')}
+                  </>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleting}>
+                {t('common.actions.cancel')}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDeleteCustomer}
+                disabled={deleting}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {deleting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t('common.actions.loading')}
+                  </>
+                ) : (
+                  t('common.actions.delete')
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </ProtectedRoute>
   );

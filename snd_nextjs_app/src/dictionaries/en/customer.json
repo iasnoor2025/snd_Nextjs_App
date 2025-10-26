@@ -142,6 +142,11 @@
     "completed": "Sync completed",
     "failed": "Sync failed"
   },
+  "delete": {
+    "title": "Delete Customer",
+    "description": "Are you sure you want to delete",
+    "warning": "This action cannot be undone."
+  },
   "stats": {
     "totalRentals": "Total Rentals",
     "totalValue": "Total Value",
