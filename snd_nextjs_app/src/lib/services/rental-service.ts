@@ -809,6 +809,7 @@ export class RentalService {
       status?: string;
       notes?: string;
       startDate?: string | null;
+      completedDate?: string | null;
     }
   ) {
     const updateData: any = { ...data };

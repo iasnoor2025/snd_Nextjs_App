@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { employeeAssignments, employees, equipment } from '@/lib/drizzle/schema';
 import { RentalService } from '@/lib/services/rental-service';
+import { CentralAssignmentService } from '@/lib/services/central-assignment-service';
 import { and, eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { EquipmentStatusService } from '@/lib/services/equipment-status-service';
@@ -78,49 +79,24 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       startDate: body.startDate && body.startDate !== '' ? body.startDate : null, // Add start date for new items
     });
 
-    // If an operator is assigned, create an employee assignment
+    // If an operator is assigned, create an employee assignment using central service
     if (body.operatorId && rentalItem) {
       try {
-        // Complete previous active assignments for this employee
-        if (body.startDate) {
-          const startDate = new Date(body.startDate);
-          const previousDay = new Date(startDate);
-          previousDay.setDate(previousDay.getDate() - 1);
-          const completedDateStr = previousDay.toISOString().split('T')[0];
-
-          // Complete previous active assignments for this employee
-          await db
-            .update(employeeAssignments)
-            .set({
-              endDate: completedDateStr,
-              status: 'completed',
-              updatedAt: new Date().toISOString().split('T')[0],
-            })
-            .where(
-              and(
-                eq(employeeAssignments.employeeId, parseInt(body.operatorId)),
-                eq(employeeAssignments.status, 'active')
-              )
-            );
-        }
-
-        // Create employee assignment for rental with proper date sync
         const assignmentStartDate = body.startDate || rentalExists.startDate || new Date().toISOString().split('T')[0];
-        const rentalEndDate = rentalExists.expectedEndDate ? new Date(rentalExists.expectedEndDate).toISOString().split('T')[0] : null;
+        const rentalEndDate = rentalExists.expectedEndDate ? new Date(rentalExists.expectedEndDate).toISOString().split('T')[0] : undefined;
         
-        await db.insert(employeeAssignments).values({
-          employeeId: parseInt(body.operatorId),
-          rentalId: parseInt(rentalId),
-          projectId: rentalExists.projectId || null,
+        // Use central assignment service for employee assignment (with automatic completion)
+        await CentralAssignmentService.createAssignment({
+          type: 'employee',
+          entityId: parseInt(body.operatorId),
+          assignmentType: 'rental',
           startDate: assignmentStartDate,
           endDate: rentalEndDate,
           status: rentalExists.status === 'active' || rentalExists.status === 'approved' ? 'active' : 'pending',
           notes: `Rental operator assignment for ${equipmentName} (Rental: ${rentalExists.rentalNumber})`,
-          location: rentalExists.locationId ? `Location ID: ${rentalExists.locationId}` : 'Rental Site',
-          name: `Rental Operator - ${equipmentName}`,
-          type: 'rental',
-          createdAt: new Date().toISOString().split('T')[0],
-          updatedAt: new Date().toISOString().split('T')[0]
+          rentalId: parseInt(rentalId),
+          projectId: rentalExists.projectId || undefined,
+          equipmentName: equipmentName,
         });
 
         // Auto-assign rental supervisor to the employee if rental has a supervisor

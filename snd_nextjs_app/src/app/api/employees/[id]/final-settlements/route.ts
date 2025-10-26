@@ -6,6 +6,7 @@ import { FinalSettlementService } from '@/lib/services/final-settlement-service'
 import { getServerSession } from 'next-auth/next';
 import { authConfig } from '@/lib/auth-config';
 import { AssignmentService } from '@/lib/services/assignment-service';
+import { CentralAssignmentService } from '@/lib/services/central-assignment-service';
 
 // GET: Fetch final settlements for a specific employee
 export async function GET(
@@ -242,11 +243,11 @@ export async function POST(
       });
     }
 
-    // Complete any active employee assignments for both vacation and exit settlements
+    // Complete any active employee assignments for both vacation and exit settlements using central service
     if (settlementType === 'vacation' && vacationStartDate) {
-      await AssignmentService.completeAssignmentsForVacation(employeeId, vacationStartDate);
+      await CentralAssignmentService.completeAssignmentsForVacation(employeeId, vacationStartDate);
     } else if (settlementType === 'exit' && lastWorkingDate) {
-      await AssignmentService.completeAssignmentsForExit(employeeId, lastWorkingDate);
+      await CentralAssignmentService.completeAssignmentsForExit(employeeId, lastWorkingDate);
     }
 
     return NextResponse.json({

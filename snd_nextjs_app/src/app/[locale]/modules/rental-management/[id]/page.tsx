@@ -1740,7 +1740,7 @@ export default function RentalDetailPage() {
     switch (actionType) {
       case 'handover':
         toast.info(
-          'Operator Handover Mode: Previous operator will be ended, new operator will be assigned'
+          'Operator Handover Mode: Old rental item will be completed, new item will be created with new operator'
         );
         break;
       case 'remove':
@@ -1785,6 +1785,44 @@ export default function RentalDetailPage() {
       'This action cannot be undone. Are you sure you want to delete this rental item?',
       () => {
         deleteRentalItem(item.id);
+      }
+    );
+  };
+
+  // Handle completing/returning rental item
+  const completeRentalItem = async (item: RentalItem) => {
+    if (!rental) return;
+
+    try {
+      const response = await fetch(`/api/rentals/${rental.id}/items/${item.id}/return`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          returnDate: new Date().toISOString().split('T')[0],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to complete rental item');
+      }
+
+      toast.success(`${item.equipmentName} returned successfully`);
+      
+      // Refresh only rental items
+      fetchRentalItems();
+    } catch (err) {
+      toast.error(`Failed to return ${item.equipmentName}`);
+    }
+  };
+
+  // Handle complete with confirmation dialog
+  const handleCompleteItem = (item: RentalItem) => {
+    confirmation.showDeleteConfirmation(
+      item.equipmentName,
+      'Are you sure you want to return this equipment? This will mark it as completed.',
+      () => {
+        completeRentalItem(item);
       }
     );
   };
@@ -2273,6 +2311,17 @@ export default function RentalDetailPage() {
                                 >
                                   <Edit className="w-4 h-4" />
                                 </Button>
+                                {item?.status === 'active' && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleCompleteItem(item)}
+                                    className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                    title="Return Equipment"
+                                  >
+                                    <CheckCircle className="w-4 h-4" />
+                                  </Button>
+                                )}
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -3013,7 +3062,7 @@ export default function RentalDetailPage() {
             </div>
             <div className="text-xs text-muted-foreground">
               {itemFormData.actionType === 'handover' &&
-                'Previous operator will be ended, new operator will be assigned'}
+                'Old rental item will be completed, new item will be created with new operator'}
               {itemFormData.actionType === 'remove' &&
                 'Current operator assignment will be deleted'}
               {itemFormData.actionType === 'add' && 'New operator will be assigned'}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { projectEquipment, projects, equipment, projectManpower, employees } from '@/lib/drizzle/schema';
+import { CentralAssignmentService } from '@/lib/services/central-assignment-service';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
@@ -132,23 +133,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Equipment ID, start date, and hourly rate are required' }, { status: 400 });
     }
 
-    // Create equipment assignment
-    const [newEquipment] = await db
-      .insert(projectEquipment)
-      .values({
-        projectId: parseInt(projectId),
-        equipmentId: parseInt(equipmentId),
-        operatorId: operatorId ? parseInt(operatorId) : null,
-        startDate: new Date(startDate),
-        endDate: endDate ? new Date(endDate) : null,
-        hourlyRate: parseFloat(hourlyRate),
-        estimatedHours: estimatedHours ? parseFloat(estimatedHours) : null,
-        status: 'active',
-        notes,
-        assignedBy: session.user.id ? parseInt(session.user.id) : null,
-        updatedAt: new Date(),
-      })
-      .returning();
+    // Use central assignment service for equipment assignment (with automatic completion)
+    const newEquipment = await CentralAssignmentService.createAssignment({
+      type: 'equipment',
+      entityId: parseInt(equipmentId),
+      assignmentType: 'project',
+      startDate: new Date(startDate).toISOString().split('T')[0],
+      endDate: endDate ? new Date(endDate).toISOString().split('T')[0] : undefined,
+      status: 'active',
+      notes: notes || '',
+      projectId: parseInt(projectId),
+      operatorId: operatorId ? parseInt(operatorId) : undefined,
+      hourlyRate: parseFloat(hourlyRate),
+    });
 
     return NextResponse.json({ 
       success: true,

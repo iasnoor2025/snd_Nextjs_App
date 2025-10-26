@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { projectManpower, projects, employees, employeeAssignments } from '@/lib/drizzle/schema';
+import { CentralAssignmentService } from '@/lib/services/central-assignment-service';
 import { eq, and, desc, asc, like } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
@@ -159,7 +160,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         // Don't fail the main operation if supervisor assignment fails
       }
 
-      // Auto-create employee assignment when assigned to project
+      // Auto-create employee assignment when assigned to project (using central service)
       try {
         // Get project details for the assignment name
         const projectDetails = await db
@@ -183,19 +184,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           );
 
         if (existingAssignment.length === 0) {
-          // Create new employee assignment for the project
-          await db.insert(employeeAssignments).values({
-            employeeId: parseInt(employeeId),
-            projectId: parseInt(projectId),
-            name: `Project Assignment - ${projectName}`,
-            type: 'project',
-            location: 'Project Site',
-            startDate: new Date(startDate),
-            endDate: endDate ? new Date(endDate) : null,
+          // Use central assignment service (with automatic completion)
+          await CentralAssignmentService.createAssignment({
+            type: 'employee',
+            entityId: parseInt(employeeId),
+            assignmentType: 'project',
+            startDate: new Date(startDate).toISOString().split('T')[0],
+            endDate: endDate ? new Date(endDate).toISOString().split('T')[0] : undefined,
             status: 'active',
             notes: `Auto-created for project: ${projectName} - ${jobTitle}`,
-            createdAt: new Date().toISOString().split('T')[0],
-            updatedAt: new Date().toISOString().split('T')[0],
+            projectId: parseInt(projectId),
           });
 
           console.log(`Auto-created employee assignment for employee ${employeeId} on project ${projectId}`);

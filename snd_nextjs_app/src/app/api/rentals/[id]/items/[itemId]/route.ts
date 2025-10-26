@@ -30,44 +30,48 @@ export async function PUT(
       );
     }
 
-    // Update rental item
-    const rentalItem = await RentalService.updateRentalItem(parseInt(itemId), {
-      equipmentId: body.equipmentId ? parseInt(body.equipmentId) : null,
-      equipmentName: body.equipmentName,
-      unitPrice: parseFloat(body.unitPrice),
-      totalPrice: parseFloat(body.totalPrice || body.unitPrice),
-      rateType: body.rateType || 'daily',
-      operatorId: newOperatorId,
-      status: body.status || 'active',
-      notes: body.notes || '',
-    });
-
     // Handle different operator change scenarios
     const actionType = body.actionType;
+    let rentalItem;
     
     if (actionType === 'handover' && newOperatorId !== previousOperatorId) {
-      // Scenario 1: Operator Changes with handover
+      // Scenario 1: Operator Changes with handover - Don't update the old item, complete it and create new one
       if (newOperatorId !== undefined && newOperatorId !== null) {
-        await handleOperatorHandover(parseInt(rentalId), previousOperatorId, newOperatorId, body.equipmentName);
+        rentalItem = await handleOperatorHandover(parseInt(itemId), parseInt(rentalId), previousOperatorId, newOperatorId, body.equipmentName, currentItem);
       }
-    } else if (actionType === 'remove' && previousOperatorId) {
-      // Scenario 2: Operator Removed - delete assignment
-      await deleteOperatorAssignment(parseInt(rentalId), previousOperatorId);
-    } else if (actionType === 'add' && newOperatorId && !previousOperatorId) {
-      // Scenario 3: New Operator Added
-      if (newOperatorId !== undefined && newOperatorId !== null) {
-        await createNewOperatorAssignment(parseInt(rentalId), newOperatorId, body.equipmentName);
-      }
-    } else if (actionType === 'update' && newOperatorId !== previousOperatorId) {
-      // Scenario 4: Update operator based on rental status
-      if (newOperatorId !== undefined && newOperatorId !== null) {
-        const rental = await RentalService.getRental(parseInt(rentalId));
-        if (rental?.status === 'active') {
-          // If rental is active, use handover logic
-          await handleOperatorHandover(parseInt(rentalId), previousOperatorId, newOperatorId, body.equipmentName);
-        } else {
-          // If rental is not active, just update the operator
-          await updateOperatorInRentalItem(parseInt(rentalId), previousOperatorId, newOperatorId, body.equipmentName);
+    } else {
+      // For non-handover actions, update the rental item normally
+      rentalItem = await RentalService.updateRentalItem(parseInt(itemId), {
+        equipmentId: body.equipmentId ? parseInt(body.equipmentId) : null,
+        equipmentName: body.equipmentName,
+        unitPrice: parseFloat(body.unitPrice),
+        totalPrice: parseFloat(body.totalPrice || body.unitPrice),
+        rateType: body.rateType || 'daily',
+        operatorId: newOperatorId,
+        status: body.status || 'active',
+        notes: body.notes || '',
+      });
+
+      // Handle other operator change scenarios
+      if (actionType === 'remove' && previousOperatorId) {
+        // Scenario 2: Operator Removed - delete assignment
+        await deleteOperatorAssignment(parseInt(rentalId), previousOperatorId);
+      } else if (actionType === 'add' && newOperatorId && !previousOperatorId) {
+        // Scenario 3: New Operator Added
+        if (newOperatorId !== undefined && newOperatorId !== null) {
+          await createNewOperatorAssignment(parseInt(rentalId), newOperatorId, body.equipmentName);
+        }
+      } else if (actionType === 'update' && newOperatorId !== previousOperatorId) {
+        // Scenario 4: Update operator based on rental status
+        if (newOperatorId !== undefined && newOperatorId !== null) {
+          const rental = await RentalService.getRental(parseInt(rentalId));
+          if (rental?.status === 'active') {
+            // If rental is active, use handover logic
+            await handleOperatorHandover(parseInt(itemId), parseInt(rentalId), previousOperatorId, newOperatorId, body.equipmentName, currentItem);
+          } else {
+            // If rental is not active, just update the operator
+            await updateOperatorInRentalItem(parseInt(rentalId), previousOperatorId, newOperatorId, body.equipmentName);
+          }
         }
       }
     }
@@ -87,13 +91,22 @@ export async function PUT(
 
 // Helper functions for operator assignment actions
 
-// Handle operator handover (end previous, start new)
-async function handleOperatorHandover(rentalId: number, previousOperatorId: number | null, newOperatorId: number, equipmentName: string) {
+// Handle operator handover (complete old item, create new item with new operator)
+async function handleOperatorHandover(itemId: number, rentalId: number, previousOperatorId: number | null, newOperatorId: number, equipmentName: string, currentItem: any) {
   const { db } = await import('@/lib/drizzle');
-  const { employeeAssignments } = await import('@/lib/drizzle/schema');
+  const { employeeAssignments, rentalItems } = await import('@/lib/drizzle/schema');
   const { eq, and } = await import('drizzle-orm');
   
   try {
+    // Ensure we have the current item
+    if (!currentItem) {
+      currentItem = await RentalService.getRentalItem(itemId);
+    }
+
+    if (!currentItem) {
+      throw new Error('Current rental item not found');
+    }
+
     // End previous operator assignment if exists
     if (previousOperatorId) {
       await db
@@ -112,8 +125,49 @@ async function handleOperatorHandover(rentalId: number, previousOperatorId: numb
         );
     }
 
+    // Mark the old rental item as completed
+    const completedDate = new Date().toISOString().split('T')[0];
+    await db
+      .update(rentalItems)
+      .set({
+        status: 'completed',
+        completedDate: completedDate,
+        updatedAt: completedDate,
+      })
+      .where(eq(rentalItems.id, currentItem.id));
+
+    // Create new rental item with new operator
+    const newStartDate = new Date().toISOString().split('T')[0];
+    
+    // Get rental details for calculating total
+    const rental = await RentalService.getRental(rentalId);
+    
+    // Calculate total price for the new item
+    const totalPrice = RentalService.calculateItemTotal({
+      unitPrice: currentItem.unitPrice,
+      quantity: 1,
+      rateType: currentItem.rateType || 'daily',
+      totalPrice: currentItem.totalPrice
+    }, rental);
+    
+    const newItem = await RentalService.addRentalItem({
+      rentalId: rentalId,
+      equipmentId: currentItem.equipmentId,
+      equipmentName: currentItem.equipmentName || equipmentName,
+      unitPrice: parseFloat(currentItem.unitPrice?.toString() || '0'),
+      totalPrice: totalPrice,
+      rateType: currentItem.rateType || 'daily',
+      operatorId: newOperatorId,
+      status: 'active',
+      notes: `Handover from operator ${previousOperatorId}`,
+      startDate: newStartDate,
+    });
+
     // Create new operator assignment
     await createNewOperatorAssignment(rentalId, newOperatorId, equipmentName);
+
+    // Return the newly created item
+    return newItem;
   } catch (error) {
     console.error('Error in handleOperatorHandover:', error);
     throw error;

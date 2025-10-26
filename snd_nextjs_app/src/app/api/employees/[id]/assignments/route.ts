@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { employeeAssignments, projects, rentals } from '@/lib/drizzle/schema';
+import { CentralAssignmentService } from '@/lib/services/central-assignment-service';
 import { eq, desc, and, ne, lt } from 'drizzle-orm';
 import { getServerSession } from 'next-auth/next';
 import { authConfig } from '@/lib/auth-config';
@@ -106,18 +107,19 @@ export async function POST(
       }, { status: 400 });
     }
 
-    // Create the assignment using the service (service ensures previous assignment is completed)
-    const newAssignment = await AssignmentService.createAssignment({
-      employeeId,
-      name,
-      type,
-      location: location || '',
+    // Create the assignment using central service (service ensures previous assignment is completed)
+    const newAssignment = await CentralAssignmentService.createAssignment({
+      type: 'employee',
+      entityId: employeeId,
+      assignmentType: type,
       startDate: start_date,
-      endDate: end_date || null,
+      endDate: end_date || undefined,
       status,
       notes: notes || '',
-      projectId: project_id ? parseInt(project_id) : null,
-      rentalId: rental_id ? parseInt(rental_id) : null,
+      name: name,
+      location: location || '',
+      projectId: project_id ? parseInt(project_id) : undefined,
+      rentalId: rental_id ? parseInt(rental_id) : undefined,
     });
 
     return NextResponse.json({

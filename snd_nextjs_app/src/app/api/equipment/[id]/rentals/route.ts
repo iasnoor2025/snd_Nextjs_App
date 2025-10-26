@@ -8,6 +8,7 @@ import {
   projects,
   rentals,
 } from '@/lib/drizzle/schema';
+import { CentralAssignmentService } from '@/lib/services/central-assignment-service';
 import { and, desc, eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
@@ -282,25 +283,21 @@ export const POST = withPermission(PermissionConfigs.equipment.create)(
       );
     }
 
-    // Create the rental history entry
-    const [createdRentalHistory] = await db
-      .insert(equipmentRentalHistory)
-      .values({
-        equipmentId: id,
-        rentalId: assignment_type === 'rental' ? body.rental_id : null,
-        projectId: assignment_type === 'project' ? project_id : null,
-        employeeId: assignment_type === 'manual' ? employee_id : null,
-        assignmentType: assignment_type,
-        startDate: new Date(start_date).toISOString(),
-        endDate: end_date ? new Date(end_date).toISOString() : null,
-        status,
-        notes: notes || '',
-        dailyRate: daily_rate ? parseFloat(daily_rate) : null,
-        totalAmount: total_amount ? parseFloat(total_amount) : null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      } as any)
-      .returning();
+    // Use central assignment service for equipment assignment (with automatic completion)
+    const createdRentalHistory = await CentralAssignmentService.createAssignment({
+      type: 'equipment',
+      entityId: id,
+      assignmentType: assignment_type,
+      startDate: new Date(start_date).toISOString().split('T')[0],
+      endDate: end_date ? new Date(end_date).toISOString().split('T')[0] : undefined,
+      status,
+      notes: notes || '',
+      rentalId: assignment_type === 'rental' ? body.rental_id : undefined,
+      projectId: assignment_type === 'project' ? project_id : undefined,
+      operatorId: assignment_type === 'manual' ? employee_id : undefined,
+      unitPrice: daily_rate ? parseFloat(daily_rate) : undefined,
+      totalPrice: total_amount ? parseFloat(total_amount) : undefined,
+    });
 
     // Automatically update equipment status based on assignment
     await updateEquipmentStatusOnAssignmentChange(id, status);
@@ -352,29 +349,23 @@ export const POST = withPermission(PermissionConfigs.equipment.create)(
       .leftJoin(customers, eq(rentals.customerId, customers.id))
       .leftJoin(projects, eq(equipmentRentalHistory.projectId, projects.id))
       .leftJoin(employees, eq(equipmentRentalHistory.employeeId, employees.id))
-      .where(eq(equipmentRentalHistory.id, createdRentalHistory?.id || 0))
+      .where(eq(equipmentRentalHistory.id, (createdRentalHistory as any)?.id || 0))
       .limit(1);
 
-    // If this is a manual assignment with an employee, also create an employee assignment
+    // If this is a manual assignment with an employee, also create an employee assignment using central service
     let employeeAssignment: any = null;
     if (assignment_type === 'manual' && employee_id) {
       try {
-        employeeAssignment = await db
-          .insert(employeeAssignments)
-          .values({
-            employeeId: parseInt(employee_id),
-            name: `Equipment Assignment - ${equipmentItem.name}`,
-            type: 'manual',
-            location: body.location || null,
-            startDate: new Date(start_date).toISOString(),
-            endDate: end_date ? new Date(end_date).toISOString() : null,
-            status: 'active',
-            notes: `Manual equipment assignment: ${notes || 'No additional notes'}`,
-            projectId: null,
-            rentalId: null,
-            updatedAt: new Date().toISOString(),
-          })
-          .returning();
+        employeeAssignment = await CentralAssignmentService.createAssignment({
+          type: 'employee',
+          entityId: parseInt(employee_id),
+          assignmentType: 'manual',
+          startDate: new Date(start_date).toISOString().split('T')[0],
+          endDate: end_date ? new Date(end_date).toISOString().split('T')[0] : undefined,
+          status: 'active',
+          notes: `Manual equipment assignment: ${notes || 'No additional notes'}`,
+          equipmentName: equipmentItem.name,
+        });
 
       } catch (assignmentError) {
         

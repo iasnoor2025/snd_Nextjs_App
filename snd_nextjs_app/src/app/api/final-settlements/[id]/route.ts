@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { finalSettlements, employees, employeeLeaves, employeeAssignments } from '@/lib/drizzle/schema';
+import { CentralAssignmentService } from '@/lib/services/central-assignment-service';
 import { eq, and, or, lte, gte, like } from 'drizzle-orm';
 import { getServerSession } from 'next-auth/next';
 import { authConfig } from '@/lib/auth-config';
@@ -245,51 +246,15 @@ export async function DELETE(
           )
         );
 
-      // Restore assignments that were completed for this vacation settlement
+      // Restore assignments that were completed for this vacation settlement using central service
       console.log(`[Final Settlement] Restoring assignments for employee ${s.employeeId} after deleting vacation settlement`);
-      
-      // Restore assignments that were completed on the day before vacation started
-      const vacationStartDate = s.vacationStartDate;
-      const assignmentEndDate = new Date(vacationStartDate);
-      assignmentEndDate.setDate(assignmentEndDate.getDate() - 1);
-      const assignmentEndDateStr = assignmentEndDate.toISOString().split('T')[0];
-      
-      const restoreResult = await db
-        .update(employeeAssignments)
-        .set({ 
-          status: 'active', 
-          endDate: null, 
-          updatedAt: new Date().toISOString().split('T')[0] 
-        })
-        .where(
-          and(
-            eq(employeeAssignments.employeeId, s.employeeId),
-            eq(employeeAssignments.status, 'completed'),
-            eq(employeeAssignments.endDate, assignmentEndDateStr)
-          )
-        );
-      
-      console.log(`[Final Settlement] Assignment restore result for employee ${s.employeeId}:`, restoreResult);
+      await CentralAssignmentService.restoreAssignmentsAfterVacationDeletion(s.employeeId, s.vacationStartDate);
+      console.log(`[Final Settlement] Assignment restore complete for employee ${s.employeeId}`);
     } else if (s.settlementType === 'exit' && s.lastWorkingDate) {
-      // For exit settlements, restore assignments that were completed on the last working date
+      // For exit settlements, restore assignments that were completed on the last working date using central service
       console.log(`[Final Settlement] Restoring assignments for employee ${s.employeeId} after deleting exit settlement`);
-      
-      const restoreResult = await db
-        .update(employeeAssignments)
-        .set({ 
-          status: 'active', 
-          endDate: null, 
-          updatedAt: new Date().toISOString().split('T')[0] 
-        })
-        .where(
-          and(
-            eq(employeeAssignments.employeeId, s.employeeId),
-            eq(employeeAssignments.status, 'completed'),
-            eq(employeeAssignments.endDate, s.lastWorkingDate)
-          )
-        );
-      
-      console.log(`[Final Settlement] Assignment restore result for employee ${s.employeeId}:`, restoreResult);
+      await CentralAssignmentService.restoreAssignmentsAfterExitDeletion(s.employeeId, s.lastWorkingDate);
+      console.log(`[Final Settlement] Assignment restore complete for employee ${s.employeeId}`);
     }
 
     // Delete the settlement
