@@ -9,9 +9,10 @@ import bcrypt from 'bcryptjs';
 import { desc, eq, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
+import { withCache, getSimpleCacheKey } from '@/lib/api-middleware-cache';
 
-// GET /api/users - Get all users
-export const GET = withPermission(PermissionConfigs.user.read)(async (request: NextRequest) => {
+// GET /api/users - Get all users with caching
+const getUsersHandler = withPermission(PermissionConfigs.user.read)(async (request: NextRequest) => {
   try {
     // Temporarily disable caching for debugging
     // const cacheKey = generateCacheKey('users', 'list', {});
@@ -105,6 +106,9 @@ export const GET = withPermission(PermissionConfigs.user.read)(async (request: N
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
   }
 });
+
+// Export the handler
+export const GET = getUsersHandler;
 
 // POST /api/users - Create new user
 export const POST = withPermission(PermissionConfigs.user.create)(async (request: NextRequest) => {

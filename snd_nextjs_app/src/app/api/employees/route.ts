@@ -21,11 +21,32 @@ import { ERPNextSyncService } from '@/lib/services/erpnext-sync-service';
 import { and, asc, desc, eq, ilike, inArray, or, sql, isNull, gte } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
-// GET /api/employees - List employees
+// In-memory cache for employee list
+let employeesCache: any = null;
+let employeesCacheTimestamp = 0;
+const EMPLOYEES_CACHE_TTL = 30000; // 30 seconds
+
+// GET /api/employees - List employees with caching
 const getEmployeesHandler = async (request: NextRequest) => {
   try {
-
     const { searchParams } = new URL(request.url);
+    
+    // Check cache first (only for simple list requests)
+    const cacheKey = searchParams.toString();
+    const now = Date.now();
+    const hasFilters = searchParams.has('search') || searchParams.has('department') || 
+                      searchParams.has('status') || searchParams.has('supervisor');
+    
+    // Return cached data if available and no filters applied
+    if (!hasFilters && employeesCache && (now - employeesCacheTimestamp) < EMPLOYEES_CACHE_TTL) {
+      console.log('📦 Serving employees from cache');
+      return NextResponse.json({
+        success: true,
+        employees: employeesCache.employees,
+        pagination: employeesCache.pagination,
+        assignments: employeesCache.assignments,
+      });
+    }
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
     const search = searchParams.get('search') || '';
@@ -357,6 +378,13 @@ const getEmployeesHandler = async (request: NextRequest) => {
         pages: Math.ceil(total / limit),
       },
     };
+
+    // Cache the response if no filters applied
+    if (!hasFilters) {
+      employeesCache = response;
+      employeesCacheTimestamp = now;
+      console.log('💾 Cached employees data');
+    }
 
     return NextResponse.json(response);
   } catch (error) {
