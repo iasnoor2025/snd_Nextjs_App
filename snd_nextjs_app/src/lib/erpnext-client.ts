@@ -514,6 +514,85 @@ export class ERPNextClient {
   }
 
   /**
+   * Fetch customer financial data from ERPNext
+   */
+  async getCustomerFinancialData(erpnextCustomerName: string): Promise<any> {
+    try {
+      console.log('📊 Fetching customer financial data from ERPNext:', erpnextCustomerName);
+      
+      // Fetch customer details with outstanding and credit info
+      const customerData = await this.makeRequest(`/api/resource/Customer/${encodeURIComponent(erpnextCustomerName)}`);
+      
+      // Fetch invoices for this customer
+      const invoices = await this.makeRequest(`/api/resource/Sales Invoice?filters=[["customer","=","${erpnextCustomerName}"]]&limit_page_length=1000`);
+      
+      console.log('📊 Raw invoices from ERPNext:', invoices);
+      
+      // Calculate invoice statistics
+      let totalInvoices = 0;
+      let totalInvoiced = 0;
+      let outstandingAmount = 0;
+      
+      if (invoices.data && invoices.data.length > 0) {
+        totalInvoices = invoices.data.length;
+        console.log(`📊 Processing ${totalInvoices} invoices for customer ${erpnextCustomerName}`);
+        
+        // Log first invoice to see available fields
+        if (invoices.data[0]) {
+          console.log('📊 Sample invoice fields:', Object.keys(invoices.data[0]));
+          console.log('📊 Sample invoice data:', invoices.data[0]);
+        }
+        
+        invoices.data.forEach((invoice: any, index: number) => {
+          // Log each invoice to see what fields exist
+          console.log(`📊 Invoice ${index + 1}:`, {
+            name: invoice.name,
+            customer: invoice.customer,
+            grand_total: invoice.grand_total,
+            outstanding_amount: invoice.outstanding_amount,
+            net_total: invoice.net_total,
+            status: invoice.status,
+            docstatus: invoice.docstatus
+          });
+          
+          // Try multiple field names for amounts - check both string and number types
+          const grandTotal = parseFloat(invoice.grand_total || invoice.total || invoice.amount || '0');
+          const outstanding = parseFloat(invoice.outstanding_amount || invoice.outstanding || '0');
+          
+          console.log(`📊 Parsed amounts - grandTotal: ${grandTotal}, outstanding: ${outstanding}`);
+          
+          totalInvoiced += grandTotal;
+          outstandingAmount += outstanding;
+        });
+      } else {
+        console.log('📊 No invoices found in invoices.data');
+        console.log('📊 Invoices response structure:', invoices);
+      }
+      
+      console.log('📊 Final totals - totalInvoiced:', totalInvoiced, 'outstandingAmount:', outstandingAmount);
+      
+      const financialData = {
+        // From customer record
+        outstandingAmount: parseFloat(customerData.data?.outstanding_amount || '0') || outstandingAmount,
+        totalValue: parseFloat(customerData.data?.total_value || '0') || totalInvoiced,
+        totalInvoiced: totalInvoiced,
+        // Calculated
+        totalInvoices,
+        currentDue: outstandingAmount || parseFloat(customerData.data?.outstanding_amount || '0'),
+        // Credit information
+        creditLimit: parseFloat(customerData.data?.credit_limit || '0'),
+        creditLimitUsed: outstandingAmount || parseFloat(customerData.data?.outstanding_amount || '0'),
+      };
+      
+      console.log('📊 Customer financial data from ERPNext:', financialData);
+      return financialData;
+    } catch (error) {
+      console.error('💥 Error fetching customer financial data from ERPNext:', error);
+      return null;
+    }
+  }
+
+  /**
    * Update a customer in ERPNext
    */
   async updateCustomer(customer: any): Promise<boolean> {

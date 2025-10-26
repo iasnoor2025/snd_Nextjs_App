@@ -128,36 +128,59 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
         setLoading(true);
         setError(null);
 
-        // Fetch customer details
-        const customerResponse = await fetch(`/api/customers/${customerId}`);
-        if (!customerResponse.ok) {
-          throw new Error('Failed to fetch customer');
+        // Fetch customer stats (includes customer, rentals, invoices, and financial data)
+        const statsResponse = await fetch(`/api/customers/${customerId}/stats`);
+        if (!statsResponse.ok) {
+          throw new Error('Failed to fetch customer stats');
         }
-        const customerData = await customerResponse.json();
+        const statsData = await statsResponse.json();
 
-        if (!customerData.success) {
-          throw new Error(customerData.message || 'Failed to fetch customer');
+        if (!statsData.success) {
+          throw new Error(statsData.message || 'Failed to fetch customer stats');
         }
 
-        setCustomer(customerData.customer);
+        console.log('📊 Stats data received:', statsData);
+        console.log('📊 Total rentals:', statsData.stats?.totalRentals);
+        console.log('📊 Total invoices:', statsData.stats?.totalInvoices);
+        console.log('📊 Outstanding:', statsData.stats?.outstandingAmount);
 
-        // Fetch customer rentals
-        const rentalsResponse = await fetch(`/api/rentals?customerId=${customerId}`);
-        if (rentalsResponse.ok) {
-          const rentalsData = await rentalsResponse.json();
-          if (rentalsData.rentals) {
-            setRentals(rentalsData.rentals);
-          } else {
-            setRentals([]);
+        // Set customer from stats (fallback to fetching customer directly if needed)
+        if (statsData.stats) {
+          // We have the customer name, but we need to fetch full customer data
+          const customerResponse = await fetch(`/api/customers/${customerId}`);
+          if (customerResponse.ok) {
+            const customerData = await customerResponse.json();
+            if (customerData.success) {
+              setCustomer(customerData.customer);
+            }
           }
+        }
+
+        // Set rentals from stats
+        if (statsData.rentals) {
+          setRentals(statsData.rentals);
         } else {
-          
           setRentals([]);
         }
 
-        // For now, set empty invoices array since we don't have a dedicated invoice API
-        // TODO: Implement invoice API when available
-        setInvoices([]);
+        // Create invoices array from rental invoices
+        if (statsData.stats.totalInvoices > 0) {
+          // Transform rentals into invoice-like objects for display
+          const rentalInvoices = statsData.rentals
+            .filter((rental: any) => rental.id)
+            .map((rental: any) => ({
+              id: rental.id,
+              invoiceId: rental.rentalNumber || `RENTAL-${rental.id}`,
+              amount: parseFloat(rental.finalAmount || rental.totalAmount || '0'),
+              status: rental.paymentStatus || 'pending',
+              dueDate: rental.expectedEndDate || null,
+              createdAt: rental.createdAt,
+              updatedAt: rental.updatedAt,
+            }));
+          setInvoices(rentalInvoices);
+        } else {
+          setInvoices([]);
+        }
       } catch (error) {
         
         setError(error instanceof Error ? error.message : t('customer.messages.loadingError'));
