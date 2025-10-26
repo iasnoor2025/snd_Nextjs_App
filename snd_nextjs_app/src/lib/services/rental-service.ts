@@ -638,7 +638,66 @@ export class RentalService {
     operatorId?: number | null;
     status?: string;
     notes?: string;
+    startDate?: string | null;
   }) {
+    console.log('RentalService.addRentalItem called with:', data);
+    console.log('Start date in data:', data.startDate);
+
+    // If startDate is provided, update previous active rental items to completed
+    // Only complete items with the same equipment or operator assignments
+    if (data.startDate) {
+      const startDate = new Date(data.startDate);
+      const previousDay = new Date(startDate);
+      previousDay.setDate(previousDay.getDate() - 1);
+      const completedDateStr = previousDay.toISOString().split('T')[0];
+
+      console.log('Completion logic triggered:', {
+        startDate: data.startDate,
+        completedDateStr,
+        equipmentId: data.equipmentId,
+        operatorId: data.operatorId
+      });
+
+      // Update conditions for completion
+      const completionConditions = [];
+
+      // Complete items with the same equipment (across all rentals)
+      if (data.equipmentId) {
+        completionConditions.push(
+          and(
+            eq(rentalItems.status, 'active'),
+            eq(rentalItems.equipmentId, data.equipmentId)
+          )
+        );
+        console.log('Added equipment completion condition for equipmentId:', data.equipmentId);
+      }
+
+      // Complete items with the same operator (across all rentals)
+      if (data.operatorId) {
+        completionConditions.push(
+          and(
+            eq(rentalItems.status, 'active'),
+            eq(rentalItems.operatorId, data.operatorId)
+          )
+        );
+        console.log('Added operator completion condition for operatorId:', data.operatorId);
+      }
+
+      // Execute completion for each condition
+      for (const condition of completionConditions) {
+        console.log('Executing completion condition:', condition);
+        const result = await db
+          .update(rentalItems)
+          .set({
+            completedDate: completedDateStr,
+            status: 'completed',
+            updatedAt: new Date().toISOString().split('T')[0],
+          })
+          .where(condition);
+        console.log('Completion update result:', result);
+      }
+    }
+
     const [result] = await db
       .insert(rentalItems)
       .values({
@@ -651,6 +710,7 @@ export class RentalService {
         operatorId: data.operatorId,
         status: data.status || 'active',
         notes: data.notes || '',
+        startDate: data.startDate || null,
         updatedAt: new Date().toISOString().split('T')[0],
       })
       .returning();
@@ -663,7 +723,9 @@ export class RentalService {
 
   // Get rental items for a rental
   static async getRentalItems(rentalId: number) {
-    return await db
+    console.log('Getting rental items for rental ID:', rentalId);
+    
+    const result = await db
       .select({
         id: rentalItems.id,
         rentalId: rentalItems.rentalId,
@@ -675,16 +737,34 @@ export class RentalService {
         operatorId: rentalItems.operatorId,
         status: rentalItems.status,
         notes: rentalItems.notes,
+        startDate: rentalItems.startDate,
+        completedDate: rentalItems.completedDate,
         createdAt: rentalItems.createdAt,
         updatedAt: rentalItems.updatedAt,
         // Equipment fields
         equipmentModelNumber: equipment.modelNumber,
         equipmentCategoryId: equipment.categoryId,
+        // Operator fields
+        operatorFirstName: employees.firstName,
+        operatorLastName: employees.lastName,
       })
       .from(rentalItems)
       .leftJoin(equipment, eq(rentalItems.equipmentId, equipment.id))
+      .leftJoin(employees, eq(rentalItems.operatorId, employees.id))
       .where(eq(rentalItems.rentalId, rentalId))
       .orderBy(desc(rentalItems.createdAt));
+
+    console.log('Rental items from database:', result);
+    result.forEach((item, index) => {
+      console.log(`Item ${index + 1}:`, {
+        id: item.id,
+        equipmentName: item.equipmentName,
+        startDate: item.startDate,
+        status: item.status
+      });
+    });
+
+    return result;
   }
 
   // Get single rental item
@@ -701,6 +781,8 @@ export class RentalService {
         operatorId: rentalItems.operatorId,
         status: rentalItems.status,
         notes: rentalItems.notes,
+        startDate: rentalItems.startDate,
+        completedDate: rentalItems.completedDate,
         createdAt: rentalItems.createdAt,
         updatedAt: rentalItems.updatedAt,
         // Equipment fields
@@ -726,6 +808,7 @@ export class RentalService {
       operatorId?: number | null;
       status?: string;
       notes?: string;
+      startDate?: string | null;
     }
   ) {
     const updateData: any = { ...data };
@@ -1073,12 +1156,15 @@ export class RentalService {
 
   // Calculate total price for a single rental item based on rate type and duration
   static calculateItemTotal(item: any, rental: any): number {
-    const { unitPrice, quantity = 1, rateType = 'daily' } = item;
+    const { unitPrice, quantity = 1, rateType = 'daily', startDate: itemStartDate } = item;
     const basePrice = parseFloat(unitPrice?.toString() || '0') || 0;
     
     // Calculate actual rental period
-    if (rental?.startDate) {
-      const startDate = new Date(rental.startDate);
+    // Use item's start date if available, otherwise use rental's start date
+    const effectiveStartDate = itemStartDate || rental?.startDate;
+    
+    if (effectiveStartDate) {
+      const startDate = new Date(effectiveStartDate);
       let endDate: Date;
       
       // Use actual end date if rental is completed, otherwise use today
@@ -1117,7 +1203,26 @@ export class RentalService {
   // Create or update equipment assignment for rental item
   static async createEquipmentAssignment(rentalId: number, equipmentId: number, unitPrice: number, totalPrice: number, startDate: Date, endDate?: Date) {
     try {
-      // Check if equipment assignment already exists
+      // Complete previous active assignments for this equipment
+      const previousDay = new Date(startDate);
+      previousDay.setDate(previousDay.getDate() - 1);
+      const completedDateStr = previousDay.toISOString();
+
+      await db
+        .update(equipmentRentalHistory)
+        .set({
+          endDate: completedDateStr,
+          status: 'completed',
+          updatedAt: new Date().toISOString(),
+        })
+        .where(
+          and(
+            eq(equipmentRentalHistory.equipmentId, equipmentId),
+            eq(equipmentRentalHistory.status, 'active')
+          )
+        );
+
+      // Check if equipment assignment already exists for this rental
       const existingAssignment = await db
         .select()
         .from(equipmentRentalHistory)

@@ -175,7 +175,7 @@ interface TimelineEvent {
 }
 
 // Workflow Timeline Component
-function UnifiedTimeline({ rental, t }: { rental: Rental; t: any }) {
+function UnifiedTimeline({ rental, t }: { rental: Rental | null; t: any }) {
   const generateTimelineEvents = (): TimelineEvent[] => {
     if (!rental) return [];
 
@@ -310,6 +310,10 @@ function UnifiedTimeline({ rental, t }: { rental: Rental; t: any }) {
 
     return events;
   };
+
+  if (!rental) {
+    return null;
+  }
 
   const timelineEvents = generateTimelineEvents();
   const activeEvents = timelineEvents.filter(event => event.active);
@@ -755,7 +759,13 @@ export default function RentalDetailPage() {
     status: 'active',
     notes: '',
     actionType: 'update', // 'handover', 'remove', 'add', 'update'
+    startDate: '', // New field for item start date
   });
+
+  // Debug form data changes
+  useEffect(() => {
+    console.log('Form data changed:', itemFormData);
+  }, [itemFormData]);
 
   const [equipment, setEquipment] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
@@ -799,16 +809,21 @@ export default function RentalDetailPage() {
 
   // Calculate total price for a single rental item based on rate type and duration
   const calculateItemTotal = (item: any): number => {
-    const { unitPrice, quantity = 1, rateType = 'daily' } = item;
+    if (!item) return 0;
+    
+    const { unitPrice, quantity = 1, rateType = 'daily', startDate: itemStartDate } = item;
     const basePrice = parseFloat(unitPrice?.toString() || '0') || 0;
     
     // Calculate actual rental period
-    if (rental?.startDate) {
-      const startDate = new Date(rental.startDate);
+    // Use item's start date if available, otherwise use rental's start date
+    const effectiveStartDate = itemStartDate || rental?.startDate;
+    
+    if (effectiveStartDate) {
+      const startDate = new Date(effectiveStartDate);
       let endDate: Date;
       
       // Use actual end date if rental is completed, otherwise use today
-      if (rental.status === 'completed' && rental.expectedEndDate) {
+      if (rental?.status === 'completed' && rental?.expectedEndDate) {
         endDate = new Date(rental.expectedEndDate);
       } else {
         // For active rentals, calculate from start date to today
@@ -1082,6 +1097,19 @@ export default function RentalDetailPage() {
 
       setRental(data);
       
+      console.log('Rental data received:', data);
+      console.log('Rental items:', data.rentalItems);
+      if (data.rentalItems) {
+        data.rentalItems.forEach((item, index) => {
+          console.log(`Frontend Item ${index + 1}:`, {
+            id: item.id,
+            equipmentName: item.equipmentName,
+            startDate: item.startDate,
+            status: item.status
+          });
+        });
+      }
+      
       // Fetch rental invoices and payments
       fetchRentalInvoices();
       fetchRentalPayments();
@@ -1095,6 +1123,41 @@ export default function RentalDetailPage() {
       toast.error('Failed to fetch rental details');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch only rental items (for updates without full refresh)
+  const fetchRentalItems = async () => {
+    if (!rental) return;
+    
+    try {
+      const response = await fetch(`/api/rentals/${rentalId}/items`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch rental items');
+      }
+      const items = await response.json();
+
+      // Update rental items in state
+      setRental(prev => {
+        if (!prev) return prev;
+        
+        // Recalculate financial totals from rental items ONLY if no invoice exists
+        let updatedRental = { ...prev, rentalItems: items };
+        if (!prev.invoiceId && items && items.length > 0) {
+          const financials = calculateFinancials(items);
+          updatedRental = { ...updatedRental, ...financials };
+        }
+        
+        return updatedRental;
+      });
+
+      // Fetch equipment names for rental items that have fallback names
+      if (items && items.length > 0) {
+        fetchEquipmentNames(items);
+      }
+    } catch (err) {
+      console.error('Failed to fetch rental items:', err);
+      toast.error('Failed to refresh rental items');
     }
   };
 
@@ -1154,6 +1217,11 @@ export default function RentalDetailPage() {
       }
       const data = await response.json();
       const employeesData = data.data || data.employees || [];
+      console.log('Fetched employees data:', {
+        responseData: data,
+        employeesData: employeesData.slice(0, 3),
+        totalCount: employeesData.length
+      });
       setEmployees(employeesData);
       
     } catch (err) {
@@ -1536,6 +1604,8 @@ export default function RentalDetailPage() {
   const addRentalItem = async () => {
     if (!rental) return;
 
+    console.log('Form data before submission:', itemFormData);
+
     // Validate required fields
     if (!itemFormData.equipmentId || !itemFormData.unitPrice) {
       toast.error('Please fill in all required fields: Equipment and Unit Price');
@@ -1552,6 +1622,7 @@ export default function RentalDetailPage() {
         rentalId: rental.id,
       };
 
+      console.log('Sending rental item data:', requestData);
 
       const response = await fetch(`/api/rentals/${rental.id}/items`, {
         method: 'POST',
@@ -1580,10 +1651,11 @@ export default function RentalDetailPage() {
         status: 'active',
         notes: '',
         actionType: 'update',
+        startDate: '',
       });
 
-      // Refresh rental data
-      fetchRental();
+      // Refresh only rental items (no full page refresh)
+      fetchRentalItems();
     } catch (err) {
       toast.error('Failed to add rental item');
     }
@@ -1601,6 +1673,7 @@ export default function RentalDetailPage() {
       status: item.status || 'active',
       notes: item.notes || '',
       actionType: 'update', // Default to update mode
+      startDate: item.startDate || item.start_date || '', // Add start date field
     });
     setIsEditItemDialogOpen(true);
   };
@@ -1650,10 +1723,11 @@ export default function RentalDetailPage() {
         status: 'active',
         notes: '',
         actionType: 'update',
+        startDate: '',
       });
 
-      // Refresh rental data
-      fetchRental();
+      // Refresh only rental items (no full page refresh)
+      fetchRentalItems();
     } catch (err) {
       toast.error('Failed to update rental item');
     }
@@ -1696,7 +1770,9 @@ export default function RentalDetailPage() {
       }
 
       toast.success('Rental item deleted successfully');
-      fetchRental();
+      
+      // Refresh only rental items (no full page refresh)
+      fetchRentalItems();
     } catch (err) {
       toast.error('Failed to delete rental item');
     }
@@ -1790,7 +1866,7 @@ export default function RentalDetailPage() {
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{getStatusBadge(rental.status)}</div>
+            <div className="text-2xl font-bold">{getStatusBadge(rental?.status)}</div>
           </CardContent>
         </Card>
         <Card>
@@ -1799,7 +1875,7 @@ export default function RentalDetailPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{getPaymentStatusBadge(rental.paymentStatus)}</div>
+            <div className="text-2xl font-bold">{getPaymentStatusBadge(rental?.paymentStatus)}</div>
           </CardContent>
         </Card>
         <Card>
@@ -2086,6 +2162,7 @@ export default function RentalDetailPage() {
                         <TableHead>{t('rental.equipment')}</TableHead>
                         <TableHead>{t('rental.unitPrice')}</TableHead>
                         <TableHead>{t('rental.rateType')}</TableHead>
+                        <TableHead>Start Date</TableHead>
                         <TableHead>{t('rental.duration')}</TableHead>
                         <TableHead>{t('rental.totalPrice')}</TableHead>
                         <TableHead>{t('rental.operator')}</TableHead>
@@ -2094,78 +2171,42 @@ export default function RentalDetailPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {rental.rentalItems?.map(item => {
+                      {rental.rentalItems?.filter(item => item != null).map(item => {
                         // Debug logging for rental item data
                         console.log('Rental item data:', {
-                          itemId: item.id,
-                          equipmentName: item.equipmentName,
-                          operatorId: item.operatorId,
-                          operatorIdType: typeof item.operatorId,
-                          hasOperatorId: item.operatorId !== null && item.operatorId !== undefined
+                          itemId: item?.id,
+                          equipmentName: item?.equipmentName,
+                          operatorId: item?.operatorId,
+                          operatorIdType: typeof item?.operatorId,
+                          hasOperatorId: item?.operatorId !== null && item?.operatorId !== undefined
                         });
                         
-                        // Find operator name from employees list
-                        const operatorId = item.operatorId;
+                        // Get operator name directly from API response
                         let operatorName = 'N/A';
                         
-                        if (operatorId) {
-                          // Try to find the operator by ID
-                          const operator = employees.find(emp => {
-                            // Handle different data types and formats
-                            const empId = emp.id;
-                            const opId = operatorId;
-                            
-                            // Direct comparison
-                            if (empId === opId) return true;
-                            
-                            // String comparison
-                            if (String(empId) === String(opId)) return true;
-                            
-                            // Number comparison
-                            if (Number(empId) === Number(opId)) return true;
-                            
-                            return false;
-                          });
-                          
-                          if (operator) {
-                            operatorName = `${operator.first_name} ${operator.last_name}`;
-                          } else {
-                            // If not found in employees list, try to fetch directly
-                            // For now, show the operatorId as fallback
-                            operatorName = `Employee ${operatorId}`;
-                          }
-                          
-                          // Enhanced debug logging
-                          console.log('Operator lookup result:', {
-                            operatorId,
-                            operatorIdType: typeof operatorId,
-                            operatorFound: !!operator,
-                            operatorName,
-                            employeesCount: employees.length,
-                            sampleEmployeeIds: employees.slice(0, 5).map(emp => ({
-                              id: emp.id,
-                              type: typeof emp.id,
-                              name: `${emp.first_name} ${emp.last_name}`
-                            })),
-                            comparisonAttempts: employees.slice(0, 3).map(emp => ({
-                              empId: emp.id,
-                              opId: operatorId,
-                              directMatch: emp.id === operatorId,
-                              stringMatch: String(emp.id) === String(operatorId),
-                              numberMatch: Number(emp.id) === Number(operatorId)
-                            }))
-                          });
-                        } else {
+                        if (item?.operatorId && item?.operatorFirstName && item?.operatorLastName) {
+                          operatorName = `${item.operatorFirstName} ${item.operatorLastName}`;
+                        } else if (item?.operatorId) {
+                          operatorName = `Employee ${item.operatorId}`;
                         }
+                        
+                        console.log('Operator data from API:', {
+                          operatorId: item?.operatorId,
+                          operatorFirstName: item?.operatorFirstName,
+                          operatorLastName: item?.operatorLastName,
+                          operatorName
+                        });
 
                         // Calculate duration based on actual rental period
                         let durationText = 'N/A';
-                        if (rental.startDate) {
-                          const startDate = new Date(rental.startDate);
+                        const itemStartDate = (item?.startDate && item.startDate !== '') ? item.startDate : rental?.startDate;
+                        
+                        if (itemStartDate) {
+                          const startDate = new Date(itemStartDate);
                           let endDate: Date;
                           
                           // Use actual end date if rental is completed, otherwise use today
-                          if (rental.status === 'completed' && rental.expectedEndDate) {
+                          if (rental?.status === 'completed' && rental?.expectedEndDate) {
                             endDate = new Date(rental.expectedEndDate);
                           } else {
                             // For active rentals, calculate from start date to today
@@ -2177,7 +2218,7 @@ export default function RentalDetailPage() {
                             endDate = startDate;
                           }
                           
-                          const rateType = item.rateType || 'daily';
+                          const rateType = item?.rateType || 'daily';
                           
                           if (rateType === 'hourly') {
                             const hours = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60));
@@ -2195,24 +2236,32 @@ export default function RentalDetailPage() {
                         }
 
                         return (
-                          <TableRow key={item.id}>
+                          <TableRow key={item?.id}>
                             <TableCell className="font-medium">
-                              {item.equipmentName?.startsWith('Equipment ') && item.equipmentId 
+                              {item?.equipmentName?.startsWith('Equipment ') && item?.equipmentId 
                                 ? (equipmentNames[item.equipmentId.toString()] || item.equipmentName)
-                                : item.equipmentName}
+                                : item?.equipmentName}
                             </TableCell>
-                                                         <TableCell className="font-mono">SAR {formatAmount(item.unitPrice)}</TableCell>
+                                                         <TableCell className="font-mono">SAR {formatAmount(item?.unitPrice)}</TableCell>
                             <TableCell>
                               <Badge variant="outline" className="capitalize">
-                                {item.rateType || 'daily'}
+                                {item?.rateType || 'daily'}
                               </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {item?.startDate && item.startDate !== '' 
+                                ? format(new Date(item.startDate), 'MMM dd, yyyy')
+                                : rental?.startDate 
+                                  ? `Rental: ${format(new Date(rental.startDate), 'MMM dd, yyyy')}`
+                                  : 'N/A'
+                              }
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">{durationText}</TableCell>
                                                          <TableCell className="font-mono font-semibold">SAR {formatAmount(calculateItemTotal(item))}</TableCell>
                             <TableCell className="text-sm">{operatorName}</TableCell>
                             <TableCell>
-                              <Badge variant={item.status === 'active' ? 'default' : 'secondary'}>
-                                {item.status || 'active'}
+                              <Badge variant={item?.status === 'active' ? 'default' : 'secondary'}>
+                                {item?.status || 'active'}
                               </Badge>
                             </TableCell>
                             <TableCell>
@@ -2692,6 +2741,57 @@ export default function RentalDetailPage() {
               </Select>
             </div>
 
+            {/* Date Selection for Active Rentals Only */}
+            {rental?.status === 'active' && (
+              <div className="col-span-2">
+                <Label htmlFor="itemStartDate">Item Start Date</Label>
+                <div className="flex gap-2 mt-1">
+                  <Button
+                    type="button"
+                    variant={itemFormData.startDate === '' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => {
+                      const todayDate = new Date().toISOString().split('T')[0];
+                      console.log('Today button clicked, setting startDate to:', todayDate);
+                      setItemFormData(prev => ({ ...prev, startDate: todayDate }));
+                    }}
+                    className="text-xs"
+                  >
+                    📅 Today
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={itemFormData.startDate !== '' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => {
+                      console.log('Manual Date button clicked, clearing startDate');
+                      setItemFormData(prev => ({ ...prev, startDate: '' }));
+                    }}
+                    className="text-xs"
+                  >
+                    📝 Manual Date
+                  </Button>
+                </div>
+                {itemFormData.startDate !== '' && (
+                  <Input
+                    id="itemStartDate"
+                    type="date"
+                    value={itemFormData.startDate}
+                    onChange={e => setItemFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                    className="mt-2"
+                    min={rental?.startDate}
+                    max={new Date().toISOString().split('T')[0]}
+                  />
+                )}
+                <div className="text-xs text-muted-foreground mt-1">
+                  {itemFormData.startDate === '' 
+                    ? 'Item will start from today' 
+                    : `Item will start from ${itemFormData.startDate}`
+                  }
+                </div>
+              </div>
+            )}
+
             <div>
               <Label htmlFor="status">{t('rental.status')}</Label>
               <Select
@@ -2846,6 +2946,17 @@ export default function RentalDetailPage() {
                   <SelectItem value="maintenance">{t('rental.maintenance')}</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label htmlFor="editStartDate">Start Date</Label>
+              <Input
+                id="editStartDate"
+                type="date"
+                value={itemFormData.startDate}
+                onChange={e => setItemFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                min={rental?.startDate}
+                max={new Date().toISOString().split('T')[0]}
+              />
             </div>
           </div>
           <div>

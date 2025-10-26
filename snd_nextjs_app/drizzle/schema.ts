@@ -1,5 +1,4 @@
-import { pgTable, uniqueIndex, foreignKey, serial, text, numeric, boolean, integer, date, unique, timestamp, jsonb, varchar, primaryKey } from "drizzle-orm/pg-core"
-import type { AnyPgColumn } from "drizzle-orm/pg-core"
+import { pgTable, uniqueIndex, foreignKey, serial, text, numeric, boolean, integer, date, unique, timestamp, type AnyPgColumn, jsonb, varchar, primaryKey } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 
@@ -423,25 +422,6 @@ export const employeeLeaves = pgTable("employee_leaves", {
 		}).onUpdate("cascade").onDelete("restrict"),
 ]);
 
-export const employeeDocuments = pgTable("employee_documents", {
-	id: serial().primaryKey().notNull(),
-	employeeId: integer("employee_id").notNull(),
-	documentType: text("document_type").notNull(),
-	filePath: text("file_path").notNull(),
-	fileName: text("file_name").notNull(),
-	fileSize: integer("file_size"),
-	mimeType: text("mime_type"),
-	description: text(),
-	createdAt: timestamp("created_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-	updatedAt: timestamp("updated_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-}, (table) => [
-	foreignKey({
-			columns: [table.employeeId],
-			foreignColumns: [employees.id],
-			name: "employee_documents_employee_id_fkey"
-		}).onUpdate("cascade").onDelete("restrict"),
-]);
-
 export const employeeSkill = pgTable("employee_skill", {
 	id: serial().primaryKey().notNull(),
 	employeeId: integer("employee_id").notNull(),
@@ -465,22 +445,22 @@ export const employeeSkill = pgTable("employee_skill", {
 		}).onUpdate("cascade").onDelete("restrict"),
 ]);
 
-export const equipmentDocuments = pgTable("equipment_documents", {
+export const employeeDocuments = pgTable("employee_documents", {
 	id: serial().primaryKey().notNull(),
-	equipmentId: integer("equipment_id").notNull(),
+	employeeId: integer("employee_id").notNull(),
 	documentType: text("document_type").notNull(),
 	filePath: text("file_path").notNull(),
 	fileName: text("file_name").notNull(),
 	fileSize: integer("file_size"),
 	mimeType: text("mime_type"),
 	description: text(),
-	createdAt: timestamp("created_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-	updatedAt: timestamp("updated_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
+	updatedAt: date("updated_at").notNull(),
 }, (table) => [
 	foreignKey({
-			columns: [table.equipmentId],
-			foreignColumns: [equipment.id],
-			name: "equipment_documents_equipment_id_fkey"
+			columns: [table.employeeId],
+			foreignColumns: [employees.id],
+			name: "employee_documents_employee_id_fkey"
 		}).onUpdate("cascade").onDelete("restrict"),
 ]);
 
@@ -637,6 +617,10 @@ export const equipment = pgTable("equipment", {
 	istimara: text(),
 	istimaraExpiryDate: date("istimara_expiry_date"),
 	chassisNumber: text("chassis_number"),
+	insurance: text(),
+	insuranceExpiryDate: date("insurance_expiry_date"),
+	tuvCard: text("tuv_card"),
+	tuvCardExpiryDate: date("tuv_card_expiry_date"),
 }, (table) => [
 	uniqueIndex("equipment_door_number_key").using("btree", table.doorNumber.asc().nullsLast().op("text_ops")),
 	uniqueIndex("equipment_erpnext_id_key").using("btree", table.erpnextId.asc().nullsLast().op("text_ops")),
@@ -742,6 +726,25 @@ export const employees = pgTable("employees", {
 			foreignColumns: [organizationalUnits.id],
 			name: "employees_unit_id_fkey"
 		}).onUpdate("cascade").onDelete("set null"),
+]);
+
+export const equipmentDocuments = pgTable("equipment_documents", {
+	id: serial().primaryKey().notNull(),
+	equipmentId: integer("equipment_id").notNull(),
+	documentType: text("document_type").notNull(),
+	filePath: text("file_path").notNull(),
+	fileName: text("file_name").notNull(),
+	fileSize: integer("file_size"),
+	mimeType: text("mime_type"),
+	description: text(),
+	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
+	updatedAt: date("updated_at").notNull(),
+}, (table) => [
+	foreignKey({
+			columns: [table.equipmentId],
+			foreignColumns: [equipment.id],
+			name: "equipment_documents_equipment_id_fkey"
+		}).onUpdate("cascade").onDelete("restrict"),
 ]);
 
 export const failedJobs = pgTable("failed_jobs", {
@@ -1276,32 +1279,6 @@ export const projectTemplates = pgTable("project_templates", {
 		}).onUpdate("cascade").onDelete("set null"),
 ]);
 
-export const rentalItems = pgTable("rental_items", {
-	id: serial().primaryKey().notNull(),
-	rentalId: integer("rental_id").notNull(),
-	equipmentId: integer("equipment_id"),
-	equipmentName: text("equipment_name"),
-	unitPrice: numeric("unit_price", { precision: 10, scale:  2 }).notNull(),
-	totalPrice: numeric("total_price", { precision: 10, scale:  2 }).notNull(),
-	rateType: text("rate_type").default('daily').notNull(),
-	operatorId: integer("operator_id"),
-	status: text().default('active').notNull(),
-	notes: text(),
-	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
-	updatedAt: date("updated_at").notNull(),
-}, (table) => [
-	foreignKey({
-			columns: [table.rentalId],
-			foreignColumns: [rentals.id],
-			name: "rental_items_rental_id_fkey"
-		}).onUpdate("cascade").onDelete("restrict"),
-	foreignKey({
-			columns: [table.equipmentId],
-			foreignColumns: [equipment.id],
-			name: "rental_items_equipment_id_fkey"
-		}).onUpdate("cascade").onDelete("set null"),
-]);
-
 export const rentals = pgTable("rentals", {
 	id: serial().primaryKey().notNull(),
 	customerId: integer("customer_id"),
@@ -1352,6 +1329,13 @@ export const rentals = pgTable("rentals", {
 	mdTerms: text("md_terms"),
 	termsLastUpdated: timestamp("terms_last_updated", { precision: 3, mode: 'string' }),
 	termsUpdateNotes: text("terms_update_notes"),
+	paymentId: text("payment_id"),
+	lastPaymentDate: date("last_payment_date"),
+	lastPaymentAmount: numeric("last_payment_amount", { precision: 12, scale:  2 }),
+	outstandingAmount: numeric("outstanding_amount", { precision: 12, scale:  2 }).default('0').notNull(),
+	lastInvoiceDate: date("last_invoice_date"),
+	lastInvoiceId: text("last_invoice_id"),
+	lastInvoiceAmount: numeric("last_invoice_amount", { precision: 12, scale:  2 }),
 }, (table) => [
 	uniqueIndex("rentals_rental_number_key").using("btree", table.rentalNumber.asc().nullsLast().op("text_ops")),
 	foreignKey({
@@ -1564,18 +1548,6 @@ export const sessions = pgTable("sessions", {
 	lastActivity: integer("last_activity").notNull(),
 });
 
-export const roles = pgTable("roles", {
-  id: serial().primaryKey().notNull(),
-  name: text().notNull(),
-  guardName: text("guard_name").default('web').notNull(),
-  priority: integer().default(999).notNull(),
-  isActive: boolean("is_active").default(true).notNull(),
-  createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
-  updatedAt: date("updated_at").notNull(),
-}, (table) => [
-  uniqueIndex("roles_name_key").using("btree", table.name.asc().nullsLast().op("text_ops")),
-]);
-
 export const systemSettings = pgTable("system_settings", {
 	id: serial().primaryKey().notNull(),
 	key: text().notNull(),
@@ -1588,6 +1560,18 @@ export const systemSettings = pgTable("system_settings", {
 	updatedAt: date("updated_at").notNull(),
 }, (table) => [
 	uniqueIndex("system_settings_key_key").using("btree", table.key.asc().nullsLast().op("text_ops")),
+]);
+
+export const roles = pgTable("roles", {
+	id: serial().primaryKey().notNull(),
+	name: text().notNull(),
+	guardName: text("guard_name").default('web').notNull(),
+	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
+	updatedAt: date("updated_at").notNull(),
+	priority: integer().default(999).notNull(),
+	isActive: boolean("is_active").default(true).notNull(),
+}, (table) => [
+	uniqueIndex("roles_name_key").using("btree", table.name.asc().nullsLast().op("text_ops")),
 ]);
 
 export const telescopeEntries = pgTable("telescope_entries", {
@@ -1875,6 +1859,162 @@ export const equipmentCategories = pgTable("equipment_categories", {
 	updatedAt: date("updated_at").notNull(),
 }, (table) => [
 	uniqueIndex("equipment_categories_name_key").using("btree", table.name.asc().nullsLast().op("text_ops")),
+]);
+
+export const finalSettlements = pgTable("final_settlements", {
+	id: serial().primaryKey().notNull(),
+	employeeId: integer("employee_id").notNull(),
+	resignationId: integer("resignation_id"),
+	settlementNumber: text("settlement_number").notNull(),
+	employeeName: text("employee_name").notNull(),
+	fileNumber: text("file_number"),
+	iqamaNumber: text("iqama_number"),
+	nationality: text(),
+	designation: text(),
+	department: text(),
+	hireDate: date("hire_date").notNull(),
+	lastWorkingDate: date("last_working_date").notNull(),
+	totalServiceYears: integer("total_service_years").notNull(),
+	totalServiceMonths: integer("total_service_months").notNull(),
+	totalServiceDays: integer("total_service_days").notNull(),
+	lastBasicSalary: numeric("last_basic_salary", { precision: 10, scale:  2 }).notNull(),
+	lastAllowances: numeric("last_allowances", { precision: 10, scale:  2 }).default('0'),
+	unpaidSalaryMonths: numeric("unpaid_salary_months", { precision: 4, scale:  1 }).default('0').notNull(),
+	unpaidSalaryAmount: numeric("unpaid_salary_amount", { precision: 10, scale:  2 }).default('0'),
+	endOfServiceBenefit: numeric("end_of_service_benefit", { precision: 10, scale:  2 }).notNull(),
+	benefitCalculationMethod: text("benefit_calculation_method").notNull(),
+	accruedVacationDays: integer("accrued_vacation_days").default(0),
+	accruedVacationAmount: numeric("accrued_vacation_amount", { precision: 10, scale:  2 }).default('0'),
+	otherBenefits: numeric("other_benefits", { precision: 10, scale:  2 }).default('0'),
+	otherBenefitsDescription: text("other_benefits_description"),
+	pendingAdvances: numeric("pending_advances", { precision: 10, scale:  2 }).default('0'),
+	equipmentDeductions: numeric("equipment_deductions", { precision: 10, scale:  2 }).default('0'),
+	otherDeductions: numeric("other_deductions", { precision: 10, scale:  2 }).default('0'),
+	otherDeductionsDescription: text("other_deductions_description"),
+	grossAmount: numeric("gross_amount", { precision: 10, scale:  2 }).notNull(),
+	totalDeductions: numeric("total_deductions", { precision: 10, scale:  2 }).notNull(),
+	netAmount: numeric("net_amount", { precision: 10, scale:  2 }).notNull(),
+	status: text().default('draft').notNull(),
+	notes: text(),
+	preparedBy: integer("prepared_by").notNull(),
+	preparedAt: date("prepared_at").default(sql`CURRENT_DATE`).notNull(),
+	approvedBy: integer("approved_by"),
+	approvedAt: date("approved_at"),
+	paidBy: integer("paid_by"),
+	paidAt: date("paid_at"),
+	paymentMethod: text("payment_method"),
+	paymentReference: text("payment_reference"),
+	pdfPath: text("pdf_path"),
+	employeeSignatureDate: date("employee_signature_date"),
+	companySignatureDate: date("company_signature_date"),
+	currency: text().default('SAR').notNull(),
+	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
+	updatedAt: date("updated_at").notNull(),
+	settlementType: text("settlement_type").default('exit').notNull(),
+	vacationStartDate: date("vacation_start_date"),
+	vacationEndDate: date("vacation_end_date"),
+	expectedReturnDate: date("expected_return_date"),
+	vacationDays: integer("vacation_days"),
+	absentDays: integer("absent_days").default(0),
+	absentDeduction: numeric("absent_deduction", { precision: 10, scale:  2 }).default('0'),
+	absentCalculationPeriod: text("absent_calculation_period"),
+	absentCalculationStartDate: date("absent_calculation_start_date"),
+	absentCalculationEndDate: date("absent_calculation_end_date"),
+	vacationDurationMonths: numeric("vacation_duration_months", { precision: 4, scale:  1 }),
+	overtimeHours: numeric("overtime_hours", { precision: 8, scale:  2 }).default('0'),
+	overtimeAmount: numeric("overtime_amount", { precision: 10, scale:  2 }).default('0'),
+}, (table) => [
+	foreignKey({
+			columns: [table.employeeId],
+			foreignColumns: [employees.id],
+			name: "final_settlements_employee_id_fkey"
+		}).onUpdate("cascade").onDelete("restrict"),
+	foreignKey({
+			columns: [table.resignationId],
+			foreignColumns: [employeeResignations.id],
+			name: "final_settlements_resignation_id_fkey"
+		}).onUpdate("cascade").onDelete("set null"),
+	foreignKey({
+			columns: [table.preparedBy],
+			foreignColumns: [users.id],
+			name: "final_settlements_prepared_by_fkey"
+		}).onUpdate("cascade").onDelete("restrict"),
+	foreignKey({
+			columns: [table.approvedBy],
+			foreignColumns: [users.id],
+			name: "final_settlements_approved_by_fkey"
+		}).onUpdate("cascade").onDelete("set null"),
+	foreignKey({
+			columns: [table.paidBy],
+			foreignColumns: [users.id],
+			name: "final_settlements_paid_by_fkey"
+		}).onUpdate("cascade").onDelete("set null"),
+	unique("final_settlements_settlement_number_unique").on(table.settlementNumber),
+]);
+
+export const rentalInvoices = pgTable("rental_invoices", {
+	id: serial().primaryKey().notNull(),
+	rentalId: integer("rental_id").notNull(),
+	invoiceId: text("invoice_id").notNull(),
+	invoiceDate: date("invoice_date").notNull(),
+	dueDate: date("due_date"),
+	amount: numeric({ precision: 12, scale:  2 }).notNull(),
+	status: text().default('pending').notNull(),
+	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
+	updatedAt: date("updated_at").notNull(),
+}, (table) => [
+	uniqueIndex("rental_invoices_invoice_id_key").using("btree", table.invoiceId.asc().nullsLast().op("text_ops")),
+	foreignKey({
+			columns: [table.rentalId],
+			foreignColumns: [rentals.id],
+			name: "rental_invoices_rental_id_rentals_id_fk"
+		}).onUpdate("cascade").onDelete("cascade"),
+]);
+
+export const rentalPayments = pgTable("rental_payments", {
+	id: serial().primaryKey().notNull(),
+	rentalId: integer("rental_id").notNull(),
+	paymentId: text("payment_id").notNull(),
+	paymentDate: date("payment_date").notNull(),
+	amount: numeric({ precision: 12, scale:  2 }).notNull(),
+	status: text().default('pending').notNull(),
+	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
+	updatedAt: date("updated_at").notNull(),
+}, (table) => [
+	uniqueIndex("rental_payments_payment_id_key").using("btree", table.paymentId.asc().nullsLast().op("text_ops")),
+	foreignKey({
+			columns: [table.rentalId],
+			foreignColumns: [rentals.id],
+			name: "rental_payments_rental_id_rentals_id_fk"
+		}).onUpdate("cascade").onDelete("cascade"),
+]);
+
+export const rentalItems = pgTable("rental_items", {
+	id: serial().primaryKey().notNull(),
+	rentalId: integer("rental_id").notNull(),
+	equipmentId: integer("equipment_id"),
+	equipmentName: text("equipment_name"),
+	unitPrice: numeric("unit_price", { precision: 10, scale:  2 }).notNull(),
+	totalPrice: numeric("total_price", { precision: 10, scale:  2 }).notNull(),
+	rateType: text("rate_type").default('daily').notNull(),
+	operatorId: integer("operator_id"),
+	status: text().default('active').notNull(),
+	notes: text(),
+	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
+	updatedAt: date("updated_at").notNull(),
+	startDate: date("start_date"),
+	completedDate: date("completed_date"),
+}, (table) => [
+	foreignKey({
+			columns: [table.rentalId],
+			foreignColumns: [rentals.id],
+			name: "rental_items_rental_id_fkey"
+		}).onUpdate("cascade").onDelete("restrict"),
+	foreignKey({
+			columns: [table.equipmentId],
+			foreignColumns: [equipment.id],
+			name: "rental_items_equipment_id_fkey"
+		}).onUpdate("cascade").onDelete("set null"),
 ]);
 
 export const modelHasRoles = pgTable("model_has_roles", {

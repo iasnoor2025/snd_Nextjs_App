@@ -1960,6 +1960,8 @@ export const rentalItems = pgTable(
     operatorId: integer('operator_id'),
     status: text().default('active').notNull(),
     notes: text(),
+    startDate: date('start_date'), // Start date for individual rental items
+    completedDate: date('completed_date'), // Completion date for rental items
     createdAt: date('created_at')
       .default(sql`CURRENT_DATE`)
       .notNull(),

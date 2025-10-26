@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { users, customers, employees, advancePayments, employeeDocuments, documentVersions, documentApprovals, employeeAssignments, projects, rentals, employeePerformanceReviews, employeeResignations, employeeSalaries, employeeTraining, trainings, employeeLeaves, employeeSkill, skills, equipment, equipmentDocuments, equipmentMaintenance, equipmentMaintenanceItems, equipmentRentalHistory, designations, departments, organizationalUnits, loans, payrolls, payrollRuns, payrollItems, projectManpower, projectFuel, projectMaterials, projectExpenses, projectMilestones, projectEquipment, projectSubcontractors, projectTasks, projectTemplates, rentalItems, reportTemplates, projectRisks, locations, salaryIncrements, scheduledReports, safetyIncidents, timesheets, timesheetApprovals, weeklyTimesheets, timeOffRequests, timeEntries, advancePaymentHistories, roles, modelHasRoles, permissions, roleHasPermissions, modelHasPermissions } from "./schema";
+import { users, customers, employees, advancePayments, employeeDocuments, documentVersions, documentApprovals, employeeAssignments, projects, rentals, employeePerformanceReviews, employeeResignations, employeeSalaries, employeeTraining, trainings, employeeLeaves, employeeSkill, skills, equipment, equipmentMaintenance, equipmentMaintenanceItems, equipmentRentalHistory, designations, departments, organizationalUnits, equipmentDocuments, loans, payrolls, payrollRuns, payrollItems, projectManpower, projectFuel, projectMaterials, projectExpenses, projectMilestones, projectEquipment, projectSubcontractors, projectTasks, projectTemplates, reportTemplates, projectRisks, locations, salaryIncrements, scheduledReports, safetyIncidents, timesheets, timesheetApprovals, weeklyTimesheets, timeOffRequests, timeEntries, advancePaymentHistories, finalSettlements, rentalInvoices, rentalPayments, rentalItems, roles, modelHasRoles, permissions, roleHasPermissions, modelHasPermissions } from "./schema";
 
 export const customersRelations = relations(customers, ({one, many}) => ({
 	user: one(users, {
@@ -43,6 +43,15 @@ export const usersRelations = relations(users, ({many}) => ({
 	}),
 	scheduledReports: many(scheduledReports),
 	timesheets: many(timesheets),
+	finalSettlements_preparedBy: many(finalSettlements, {
+		relationName: "finalSettlements_preparedBy_users_id"
+	}),
+	finalSettlements_approvedBy: many(finalSettlements, {
+		relationName: "finalSettlements_approvedBy_users_id"
+	}),
+	finalSettlements_paidBy: many(finalSettlements, {
+		relationName: "finalSettlements_paidBy_users_id"
+	}),
 	modelHasRoles: many(modelHasRoles),
 	modelHasPermissions: many(modelHasPermissions),
 }));
@@ -63,8 +72,8 @@ export const employeesRelations = relations(employees, ({one, many}) => ({
 	employeeSalaries: many(employeeSalaries),
 	employeeTrainings: many(employeeTraining),
 	employeeLeaves: many(employeeLeaves),
-	employeeDocuments: many(employeeDocuments),
 	employeeSkills: many(employeeSkill),
+	employeeDocuments: many(employeeDocuments),
 	equipmentMaintenances: many(equipmentMaintenance),
 	equipmentRentalHistories: many(equipmentRentalHistory),
 	equipment: many(equipment),
@@ -138,6 +147,7 @@ export const employeesRelations = relations(employees, ({one, many}) => ({
 	timeOffRequests: many(timeOffRequests),
 	timeEntries: many(timeEntries),
 	advancePaymentHistories: many(advancePaymentHistories),
+	finalSettlements: many(finalSettlements),
 }));
 
 export const documentVersionsRelations = relations(documentVersions, ({one}) => ({
@@ -239,7 +249,6 @@ export const projectsRelations = relations(projects, ({one, many}) => ({
 export const rentalsRelations = relations(rentals, ({one, many}) => ({
 	employeeAssignments: many(employeeAssignments),
 	equipmentRentalHistories: many(equipmentRentalHistory),
-	rentalItems: many(rentalItems),
 	customer: one(customers, {
 		fields: [rentals.customerId],
 		references: [customers.id]
@@ -264,6 +273,9 @@ export const rentalsRelations = relations(rentals, ({one, many}) => ({
 		relationName: "rentals_approvedBy_users_id"
 	}),
 	timesheets: many(timesheets),
+	rentalInvoices: many(rentalInvoices),
+	rentalPayments: many(rentalPayments),
+	rentalItems: many(rentalItems),
 }));
 
 export const employeePerformanceReviewsRelations = relations(employeePerformanceReviews, ({one}) => ({
@@ -273,11 +285,12 @@ export const employeePerformanceReviewsRelations = relations(employeePerformance
 	}),
 }));
 
-export const employeeResignationsRelations = relations(employeeResignations, ({one}) => ({
+export const employeeResignationsRelations = relations(employeeResignations, ({one, many}) => ({
 	employee: one(employees, {
 		fields: [employeeResignations.employeeId],
 		references: [employees.id]
 	}),
+	finalSettlements: many(finalSettlements),
 }));
 
 export const employeeSalariesRelations = relations(employeeSalaries, ({one}) => ({
@@ -324,26 +337,6 @@ export const skillsRelations = relations(skills, ({many}) => ({
 	employeeSkills: many(employeeSkill),
 }));
 
-export const equipmentDocumentsRelations = relations(equipmentDocuments, ({one}) => ({
-	equipment: one(equipment, {
-		fields: [equipmentDocuments.equipmentId],
-		references: [equipment.id]
-	}),
-}));
-
-export const equipmentRelations = relations(equipment, ({one, many}) => ({
-	equipmentDocuments: many(equipmentDocuments),
-	equipmentMaintenances: many(equipmentMaintenance),
-	equipmentRentalHistories: many(equipmentRentalHistory),
-	employee: one(employees, {
-		fields: [equipment.assignedTo],
-		references: [employees.id]
-	}),
-	projectFuels: many(projectFuel),
-	projectEquipments: many(projectEquipment),
-	rentalItems: many(rentalItems),
-}));
-
 export const equipmentMaintenanceRelations = relations(equipmentMaintenance, ({one, many}) => ({
 	equipment: one(equipment, {
 		fields: [equipmentMaintenance.equipmentId],
@@ -354,6 +347,19 @@ export const equipmentMaintenanceRelations = relations(equipmentMaintenance, ({o
 		references: [employees.id]
 	}),
 	equipmentMaintenanceItems: many(equipmentMaintenanceItems),
+}));
+
+export const equipmentRelations = relations(equipment, ({one, many}) => ({
+	equipmentMaintenances: many(equipmentMaintenance),
+	equipmentRentalHistories: many(equipmentRentalHistory),
+	employee: one(employees, {
+		fields: [equipment.assignedTo],
+		references: [employees.id]
+	}),
+	equipmentDocuments: many(equipmentDocuments),
+	projectFuels: many(projectFuel),
+	projectEquipments: many(projectEquipment),
+	rentalItems: many(rentalItems),
 }));
 
 export const equipmentMaintenanceItemsRelations = relations(equipmentMaintenanceItems, ({one}) => ({
@@ -411,6 +417,13 @@ export const organizationalUnitsRelations = relations(organizationalUnits, ({one
 		fields: [organizationalUnits.managerId],
 		references: [employees.id],
 		relationName: "organizationalUnits_managerId_employees_id"
+	}),
+}));
+
+export const equipmentDocumentsRelations = relations(equipmentDocuments, ({one}) => ({
+	equipment: one(equipment, {
+		fields: [equipmentDocuments.equipmentId],
+		references: [equipment.id]
 	}),
 }));
 
@@ -594,17 +607,6 @@ export const projectTemplatesRelations = relations(projectTemplates, ({one}) => 
 	}),
 }));
 
-export const rentalItemsRelations = relations(rentalItems, ({one}) => ({
-	rental: one(rentals, {
-		fields: [rentalItems.rentalId],
-		references: [rentals.id]
-	}),
-	equipment: one(equipment, {
-		fields: [rentalItems.equipmentId],
-		references: [equipment.id]
-	}),
-}));
-
 export const reportTemplatesRelations = relations(reportTemplates, ({one, many}) => ({
 	user: one(users, {
 		fields: [reportTemplates.createdBy],
@@ -739,6 +741,57 @@ export const advancePaymentHistoriesRelations = relations(advancePaymentHistorie
 	employee: one(employees, {
 		fields: [advancePaymentHistories.employeeId],
 		references: [employees.id]
+	}),
+}));
+
+export const finalSettlementsRelations = relations(finalSettlements, ({one}) => ({
+	employee: one(employees, {
+		fields: [finalSettlements.employeeId],
+		references: [employees.id]
+	}),
+	employeeResignation: one(employeeResignations, {
+		fields: [finalSettlements.resignationId],
+		references: [employeeResignations.id]
+	}),
+	user_preparedBy: one(users, {
+		fields: [finalSettlements.preparedBy],
+		references: [users.id],
+		relationName: "finalSettlements_preparedBy_users_id"
+	}),
+	user_approvedBy: one(users, {
+		fields: [finalSettlements.approvedBy],
+		references: [users.id],
+		relationName: "finalSettlements_approvedBy_users_id"
+	}),
+	user_paidBy: one(users, {
+		fields: [finalSettlements.paidBy],
+		references: [users.id],
+		relationName: "finalSettlements_paidBy_users_id"
+	}),
+}));
+
+export const rentalInvoicesRelations = relations(rentalInvoices, ({one}) => ({
+	rental: one(rentals, {
+		fields: [rentalInvoices.rentalId],
+		references: [rentals.id]
+	}),
+}));
+
+export const rentalPaymentsRelations = relations(rentalPayments, ({one}) => ({
+	rental: one(rentals, {
+		fields: [rentalPayments.rentalId],
+		references: [rentals.id]
+	}),
+}));
+
+export const rentalItemsRelations = relations(rentalItems, ({one}) => ({
+	rental: one(rentals, {
+		fields: [rentalItems.rentalId],
+		references: [rentals.id]
+	}),
+	equipment: one(equipment, {
+		fields: [rentalItems.equipmentId],
+		references: [equipment.id]
 	}),
 }));
 

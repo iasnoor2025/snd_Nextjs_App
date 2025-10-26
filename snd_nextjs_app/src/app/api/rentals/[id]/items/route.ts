@@ -11,6 +11,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const body = await request.json();
     const rentalId = id;
 
+    console.log('Received rental item data:', body);
+    console.log('Start date received:', body.startDate);
+
     // Check if rental exists
     const rentalExists = await RentalService.getRental(parseInt(rentalId));
     if (!rentalExists) {
@@ -72,20 +75,44 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       operatorId: body.operatorId ? parseInt(body.operatorId) : null,
       status: body.status || 'active',
       notes: body.notes || '',
+      startDate: body.startDate && body.startDate !== '' ? body.startDate : null, // Add start date for new items
     });
 
     // If an operator is assigned, create an employee assignment
     if (body.operatorId && rentalItem) {
       try {
+        // Complete previous active assignments for this employee
+        if (body.startDate) {
+          const startDate = new Date(body.startDate);
+          const previousDay = new Date(startDate);
+          previousDay.setDate(previousDay.getDate() - 1);
+          const completedDateStr = previousDay.toISOString().split('T')[0];
+
+          // Complete previous active assignments for this employee
+          await db
+            .update(employeeAssignments)
+            .set({
+              endDate: completedDateStr,
+              status: 'completed',
+              updatedAt: new Date().toISOString().split('T')[0],
+            })
+            .where(
+              and(
+                eq(employeeAssignments.employeeId, parseInt(body.operatorId)),
+                eq(employeeAssignments.status, 'active')
+              )
+            );
+        }
+
         // Create employee assignment for rental with proper date sync
-        const rentalStartDate = rentalExists.startDate ? new Date(rentalExists.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+        const assignmentStartDate = body.startDate || rentalExists.startDate || new Date().toISOString().split('T')[0];
         const rentalEndDate = rentalExists.expectedEndDate ? new Date(rentalExists.expectedEndDate).toISOString().split('T')[0] : null;
         
         await db.insert(employeeAssignments).values({
           employeeId: parseInt(body.operatorId),
           rentalId: parseInt(rentalId),
           projectId: rentalExists.projectId || null,
-          startDate: rentalStartDate,
+          startDate: assignmentStartDate,
           endDate: rentalEndDate,
           status: rentalExists.status === 'active' || rentalExists.status === 'approved' ? 'active' : 'pending',
           notes: `Rental operator assignment for ${equipmentName} (Rental: ${rentalExists.rentalNumber})`,
@@ -125,8 +152,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (body.equipmentId && rentalItem) {
       try {
         const rental = await RentalService.getRental(parseInt(rentalId));
-        if (rental?.startDate) {
-          const startDate = new Date(rental.startDate);
+        // Use item's start date if provided, otherwise use rental's start date
+        const itemStartDate = body.startDate && body.startDate !== '' ? body.startDate : rental?.startDate;
+        
+        if (itemStartDate) {
+          const startDate = new Date(itemStartDate);
           const endDate = rental.expectedEndDate ? new Date(rental.expectedEndDate) : undefined;
           
           await RentalService.createEquipmentAssignment(
@@ -257,6 +287,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       operatorId: body.operatorId ? parseInt(body.operatorId) : null,
       status: body.status || 'active',
       notes: body.notes || '',
+      startDate: body.startDate && body.startDate !== '' ? body.startDate : null,
     });
 
     if (!updatedItem) {

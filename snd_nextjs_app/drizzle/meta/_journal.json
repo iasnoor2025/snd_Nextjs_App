@@ -211,6 +211,13 @@
       "when": 1761389885215,
       "tag": "0029_sloppy_nightcrawler",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1761397371520,
+      "tag": "0030_skinny_manta",
+      "breakpoints": true
     }
   ]
 }
