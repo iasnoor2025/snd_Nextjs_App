@@ -771,6 +771,7 @@ export default function RentalDetailPage() {
   const [employees, setEmployees] = useState<any[]>([]);
   const [supervisorDetails, setSupervisorDetails] = useState<any>(null);
   const [equipmentNames, setEquipmentNames] = useState<{[key: string]: string}>({});
+  const [activeTab, setActiveTab] = useState('details');
 
   // Helper function to convert Decimal to number
   const formatAmount = (amount: any): string => {
@@ -1937,10 +1938,10 @@ export default function RentalDetailPage() {
       </div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className={`grid grid-cols-1 ${activeTab === 'items' ? 'lg:grid-cols-1' : 'lg:grid-cols-3'} gap-6`}>
         {/* Left Column - Rental Details */}
-        <div className="lg:col-span-2 space-y-6">
-          <Tabs defaultValue="details" className="w-full">
+        <div className={activeTab === 'items' ? 'space-y-6' : 'lg:col-span-2 space-y-6'}>
+          <Tabs defaultValue="details" value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList>
               <TabsTrigger value="details">{t('rental.tabs.details')}</TabsTrigger>
               <TabsTrigger value="workflow">{t('rental.tabs.workflow')}</TabsTrigger>
@@ -3176,6 +3177,7 @@ export default function RentalDetailPage() {
         </div>
 
         {/* Right Column - Actions & Customer Info */}
+        {activeTab !== 'items' && (
         <div className="space-y-6">
           {/* Quick Actions */}
           <Card>
@@ -3286,6 +3288,7 @@ export default function RentalDetailPage() {
             </Card>
           )}
         </div>
+        )}
       </div>
 
       {/* Edit Rental Dialog */}
