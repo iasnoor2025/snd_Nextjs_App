@@ -3,6 +3,7 @@ import { validateLocale } from '@/lib/locale-utils';
 import { Providers } from '@/components/providers';
 import { ConditionalLayout } from '@/components/conditional-layout';
 import { RBACInitializer } from '@/components/rbac-initializer';
+import ErrorBoundary from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/sonner';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
@@ -50,11 +51,13 @@ export default async function LocaleLayout({
       dir={isRTL ? 'rtl' : 'ltr'} 
       className={`${inter.variable} ${isRTL ? 'rtl' : ''}`}
     >
-      <Providers>
-        <RBACInitializer />
-        <ConditionalLayout>{children}</ConditionalLayout>
-        <Toaster position="top-right" richColors closeButton duration={4000} />
-      </Providers>
+      <ErrorBoundary>
+        <Providers>
+          <RBACInitializer />
+          <ConditionalLayout>{children}</ConditionalLayout>
+          <Toaster position="top-right" richColors closeButton duration={4000} />
+        </Providers>
+      </ErrorBoundary>
     </div>
   );
 }
