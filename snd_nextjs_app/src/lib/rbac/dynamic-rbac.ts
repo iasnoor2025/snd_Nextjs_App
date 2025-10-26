@@ -1,4 +1,4 @@
-import { db } from '@/lib/db';
+import { db } from '@/lib/drizzle';
 import { roles as rolesTable, permissions as permissionsTable, roleHasPermissions as roleHasPermissionsTable } from '@/lib/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 

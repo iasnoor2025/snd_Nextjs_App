@@ -1,4 +1,4 @@
-import { db } from '@/lib/db';
+import { db } from '@/lib/drizzle';
 import { modelHasRoles, roles, users } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { Action, hasPermission, Subject, User } from './custom-rbac';

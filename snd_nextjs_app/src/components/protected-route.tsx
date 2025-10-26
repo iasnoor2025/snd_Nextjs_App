@@ -5,7 +5,7 @@ import { AccessDenied, RBACLoading } from '@/lib/rbac/rbac-components';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
 
@@ -28,6 +28,7 @@ export function ProtectedRoute({
   const router = useRouter();
   const { data: session, status } = useSession();
   const { t } = useI18n();
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -38,8 +39,19 @@ export function ProtectedRoute({
     }
   }, [session, status, router, t]);
 
+  // Track when permissions are loaded
+  useEffect(() => {
+    if (user && !isLoading) {
+      // Wait a bit for permissions to load from API
+      const timer = setTimeout(() => {
+        setPermissionsLoaded(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [user, isLoading]);
+
   // Show loading while checking authentication and permissions
-  if (status === 'loading' || isLoading) {
+  if (status === 'loading' || isLoading || !permissionsLoaded) {
     return <RBACLoading />;
   }
 

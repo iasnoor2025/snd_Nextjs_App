@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
-import { db } from '@/lib/db';
-import { users, roles, permissions, roleHasPermissions } from '@/lib/drizzle/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@/lib/drizzle';
+import { users, roles, permissions, roleHasPermissions, modelHasRoles } from '@/lib/drizzle/schema';
+import { eq, inArray } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
@@ -42,26 +42,40 @@ export async function GET(request: NextRequest) {
     const user = userRecord[0];
     // User found
 
-    // Get role name
-    const roleRecord = await db
+    // Get all roles for this user from modelHasRoles
+    const userRoles = await db
       .select({
-        name: roles.name,
+        roleId: modelHasRoles.roleId,
+        roleName: roles.name,
       })
-      .from(roles)
-      .where(eq(roles.id, user.roleId))
-      .limit(1);
+      .from(modelHasRoles)
+      .leftJoin(roles, eq(modelHasRoles.roleId, roles.id))
+      .where(eq(modelHasRoles.userId, userId));
 
-    const roleName = roleRecord[0]?.name || 'UNKNOWN';
+    const roleIds = userRoles.map(ur => ur.roleId).filter((id): id is number => id !== null);
+    const roleNames = userRoles.map(ur => ur.roleName).filter((name): name is string => name !== null);
+    
+    const roleName = roleNames[0] || 'UNKNOWN';
     // Role name retrieved
 
-    // Get all permissions for the user's role
+    if (roleIds.length === 0) {
+      return NextResponse.json({
+        success: true,
+        userId: user.id,
+        role: roleName,
+        permissions: [],
+        permissionsCount: 0,
+      });
+    }
+
+    // Get all permissions for all user's roles
     const userPermissions = await db
       .select({
         permissionName: permissions.name,
       })
       .from(roleHasPermissions)
       .leftJoin(permissions, eq(roleHasPermissions.permissionId, permissions.id))
-      .where(eq(roleHasPermissions.roleId, user.roleId));
+      .where(inArray(roleHasPermissions.roleId, roleIds));
 
     const permissionNames = userPermissions
       .map(p => p.permissionName)

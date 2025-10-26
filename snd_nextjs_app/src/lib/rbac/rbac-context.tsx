@@ -110,7 +110,14 @@ function hasPermissionClient(user: User, action: Action, subject: Subject): bool
   // This ensures truly permission-based RBAC instead of role-based
   const userPermissions = getUserPermissionsFromCache(user.id);
   
+  // If no permissions loaded yet, allow access temporarily to prevent flash of access denied
+  // This happens on page refresh before permissions are loaded
   if (!userPermissions) {
+    console.log('⚠️ Permissions not yet loaded for user:', user.id);
+    // For SUPER_ADMIN, allow access immediately while permissions load
+    if (user.role === 'SUPER_ADMIN') {
+      return true;
+    }
     return false;
   }
   
@@ -119,15 +126,20 @@ function hasPermissionClient(user: User, action: Action, subject: Subject): bool
     return true;
   }
   
-  // Check for specific permission
+  // Check for specific permission (case-insensitive)
   const permissionName = `${action}.${subject}`;
-  if (userPermissions.includes(permissionName)) {
+  const permissionNameLower = `${action}.${subject.toLowerCase()}`;
+  
+  // Check both capitalized and lowercase versions
+  if (userPermissions.includes(permissionName) || userPermissions.includes(permissionNameLower)) {
     return true;
   }
   
   // Check if user has manage permission for the subject (which includes read, create, update, delete)
   const managePermission = `manage.${subject}`;
-  if (userPermissions.includes(managePermission)) {
+  const managePermissionLower = `manage.${subject.toLowerCase()}`;
+  
+  if (userPermissions.includes(managePermission) || userPermissions.includes(managePermissionLower)) {
     return true;
   }
   

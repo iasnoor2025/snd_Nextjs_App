@@ -86,7 +86,7 @@ export class RBACInitializer {
       'User', 'Employee', 'Customer', 'Equipment', 'Maintenance',
       'Rental', 'Quotation', 'Payroll', 'Timesheet', 'Project',
       'Leave', 'Department', 'Designation', 'Report', 'Settings',
-      'Company', 'Location', 'Advance', 'Assignment', 'Safety'
+      'Company', 'company', 'Location', 'Advance', 'Assignment', 'Safety'
     ];
 
     const allPermissions: string[] = [];
@@ -177,8 +177,8 @@ export class RBACInitializer {
           roleId: superAdminRole[0]!.id,
           status: 1,
           isActive: true,
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          createdAt: new Date().toISOString().split('T')[0],
+          updatedAt: new Date().toISOString().split('T')[0],
         }).returning();
 
         if (userResult[0]) {
