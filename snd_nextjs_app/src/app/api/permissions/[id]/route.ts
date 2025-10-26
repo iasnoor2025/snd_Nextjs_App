@@ -26,7 +26,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     }
 
     // Check if user has permission to view permissions
-    if (!hasPermission(user, 'read', 'Settings')) {
+    if (!(await hasPermission(user, 'read', 'Settings'))) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
@@ -103,7 +103,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     // Check if user has permission to update permissions
-    if (!hasPermission(user, 'update', 'Settings')) {
+    if (!(await hasPermission(user, 'update', 'Settings'))) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
@@ -190,7 +190,7 @@ export async function DELETE(
     }
 
     // Check if user has permission to delete permissions
-    if (!hasPermission(user, 'delete', 'Settings')) {
+    if (!(await hasPermission(user, 'delete', 'Settings'))) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 

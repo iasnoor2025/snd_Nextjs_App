@@ -55,7 +55,8 @@ export async function getUserAccessibleSectionsClient(userId: string): Promise<s
     });
 
     if (!response.ok) {
-      console.error('Failed to get accessible sections:', response.statusText);
+      // Don't log console errors in production - just return empty array
+      // Accessible sections will show defaults
       return [];
     }
 
