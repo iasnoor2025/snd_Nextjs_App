@@ -4,6 +4,7 @@ import { and, asc, desc, eq, ilike, or } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { cacheService } from '@/lib/redis/cache-service';
 import { CACHE_TAGS } from '@/lib/redis';
+import { ERPNextClient } from '@/lib/erpnext-client';
 
 export async function GET(request: NextRequest) {
   try {
@@ -244,6 +245,47 @@ export async function POST(request: NextRequest) {
       
       console.log('🔍 Verifying customer in DB:', JSON.stringify(verifyCustomer, null, 2));
       
+      // Sync to ERPNext if configured
+      try {
+        const erpnextClient = new ERPNextClient();
+        const erpnextId = await erpnextClient.createCustomer({
+          name: insertData.name,
+          companyName: insertData.companyName,
+          contactPerson: insertData.contactPerson,
+          phone: insertData.phone,
+          email: insertData.email,
+          address: insertData.address,
+          city: insertData.city,
+          state: insertData.state,
+          postalCode: insertData.postalCode,
+          country: insertData.country,
+          website: insertData.website,
+          taxNumber: insertData.taxNumber,
+          vatNumber: insertData.vatNumber,
+          creditLimit: insertData.creditLimit,
+          customerGroup: insertData.customerGroup,
+          customerType: insertData.customerType,
+          territory: insertData.territory,
+          language: insertData.language,
+        });
+        
+        if (erpnextId) {
+          console.log('✅ Customer synced to ERPNext:', erpnextId);
+          // Update the customer with erpnextId
+          await db
+            .update(customers)
+            .set({ erpnextId })
+            .where(eq(customers.id, newCustomer[0].id));
+          
+          // Update local reference
+          newCustomer[0].erpnextId = erpnextId;
+        } else {
+          console.warn('⚠️ Failed to sync customer to ERPNext');
+        }
+      } catch (erpnextError) {
+        console.warn('⚠️ ERPNext sync failed (continuing anyway):', erpnextError);
+      }
+      
       // Invalidate the customers list cache
       try {
         await cacheService.invalidateCacheByTag(CACHE_TAGS.CUSTOMERS);
@@ -340,6 +382,47 @@ export async function PUT(request: NextRequest) {
 
     if (updatedCustomer.length === 0) {
       return NextResponse.json({ success: false, message: 'Customer not found' }, { status: 404 });
+    }
+
+    // Sync to ERPNext if configured
+    try {
+      const erpnextClient = new ERPNextClient();
+      const syncSuccess = await erpnextClient.updateCustomer({
+        name: body.name,
+        companyName: body.companyName,
+        contactPerson: body.contactPerson,
+        phone: body.phone,
+        email: body.email,
+        address: body.address,
+        city: body.city,
+        state: body.state,
+        postalCode: body.postalCode,
+        country: body.country,
+        website: body.website,
+        taxNumber: body.taxNumber,
+        vatNumber: body.vatNumber,
+        creditLimit: body.creditLimit,
+        customerGroup: body.customerGroup,
+        customerType: body.customerType,
+        territory: body.territory,
+        language: body.language,
+        erpnextId: updatedCustomer[0].erpnextId,
+      });
+      
+      if (syncSuccess) {
+        console.log('✅ Customer updated in ERPNext');
+      } else {
+        console.warn('⚠️ Failed to update customer in ERPNext');
+      }
+    } catch (erpnextError) {
+      console.warn('⚠️ ERPNext sync failed (continuing anyway):', erpnextError);
+    }
+
+    // Invalidate cache
+    try {
+      await cacheService.invalidateCacheByTag(CACHE_TAGS.CUSTOMERS);
+    } catch (cacheError) {
+      console.warn('⚠️ Failed to invalidate cache:', cacheError);
     }
 
     return NextResponse.json({

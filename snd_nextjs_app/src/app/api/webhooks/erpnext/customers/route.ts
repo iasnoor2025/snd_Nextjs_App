@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 const ERPNEXT_URL = process.env.NEXT_PUBLIC_ERPNEXT_URL;
 const ERPNEXT_API_KEY = process.env.NEXT_PUBLIC_ERPNEXT_API_KEY;
 const ERPNEXT_API_SECRET = process.env.NEXT_PUBLIC_ERPNEXT_API_SECRET;
+const APP_URL = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
   if (!ERPNEXT_URL || !ERPNEXT_API_KEY || !ERPNEXT_API_SECRET) {
@@ -172,7 +173,7 @@ export async function POST(request: NextRequest) {
 
     // Send SSE notification to connected clients
     try {
-      await fetch(`${process.env.APP_URL || 'http://localhost:3000'}/api/sse`, {
+      await fetch(`${APP_URL}/api/sse`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

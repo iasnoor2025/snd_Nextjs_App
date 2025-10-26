@@ -465,4 +465,108 @@ export class ERPNextClient {
       return null;
     }
   }
+
+  /**
+   * Create a customer in ERPNext
+   */
+  async createCustomer(customer: any): Promise<string | null> {
+    try {
+      const data: any = {
+        customer_name: customer.name,
+        customer_group: customer.customerGroup || 'Individual',
+        customer_type: customer.customerType || 'Company',
+        territory: customer.territory || 'All Territories',
+        language: customer.language || 'en',
+      };
+
+      // Add optional fields if they exist
+      if (customer.companyName) data.company_name = customer.companyName;
+      if (customer.contactPerson) data.contact_person = customer.contactPerson;
+      if (customer.phone) data.mobile_no = customer.phone;
+      if (customer.email) data.email_id = customer.email;
+      if (customer.website) data.website = customer.website;
+      if (customer.taxNumber) data.tax_id = customer.taxNumber;
+      if (customer.vatNumber) data.gstin = customer.vatNumber;
+      if (customer.creditLimit) data.credit_limit = parseFloat(customer.creditLimit);
+      
+      // Address fields - for ERPNext we need to set address_line1, city, etc. directly on the Customer
+      if (customer.address) data.address_line1 = customer.address;
+      if (customer.city) data.city = customer.city;
+      if (customer.state) data.state = customer.state;
+      if (customer.postalCode) data.pincode = customer.postalCode;
+      if (customer.country) data.country = customer.country || 'Saudi Arabia';
+
+      console.log('🔍 ERPNext Client - Creating Customer:', {
+        name: customer.name,
+        fullData: data
+      });
+
+      const result = await this.makeRequest('/api/resource/Customer', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+
+      return result.data?.name || null;
+    } catch (error) {
+      console.error('💥 ERPNext Client Create Customer Error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Update a customer in ERPNext
+   */
+  async updateCustomer(customer: any): Promise<boolean> {
+    try {
+      if (!customer.erpnextId) {
+        console.log('⚠️ No ERPNext ID found, creating customer instead');
+        const erpnextId = await this.createCustomer(customer);
+        if (erpnextId) {
+          customer.erpnextId = erpnextId;
+        }
+        return !!erpnextId;
+      }
+
+      const data: any = {
+        customer_name: customer.name,
+      };
+
+      // Add optional fields if they exist
+      if (customer.companyName) data.company_name = customer.companyName;
+      if (customer.contactPerson) data.contact_person = customer.contactPerson;
+      if (customer.phone) data.mobile_no = customer.phone;
+      if (customer.email) data.email_id = customer.email;
+      if (customer.website) data.website = customer.website;
+      if (customer.taxNumber) data.tax_id = customer.taxNumber;
+      if (customer.vatNumber) data.gstin = customer.vatNumber;
+      if (customer.creditLimit) data.credit_limit = parseFloat(customer.creditLimit);
+      if (customer.customerGroup) data.customer_group = customer.customerGroup;
+      if (customer.customerType) data.customer_type = customer.customerType;
+      if (customer.territory) data.territory = customer.territory;
+      if (customer.language) data.language = customer.language;
+      
+      // Address fields - for ERPNext we need to set address_line1, city, etc. directly on the Customer
+      if (customer.address) data.address_line1 = customer.address;
+      if (customer.city) data.city = customer.city;
+      if (customer.state) data.state = customer.state;
+      if (customer.postalCode) data.pincode = customer.postalCode;
+      if (customer.country) data.country = customer.country || 'Saudi Arabia';
+
+      console.log('🔍 ERPNext Client - Updating Customer:', {
+        erpnextId: customer.erpnextId,
+        name: customer.name,
+        fullData: data
+      });
+
+      await this.makeRequest(`/api/resource/Customer/${customer.erpnextId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+
+      return true;
+    } catch (error) {
+      console.error('💥 ERPNext Client Update Customer Error:', error);
+      return false;
+    }
+  }
 }

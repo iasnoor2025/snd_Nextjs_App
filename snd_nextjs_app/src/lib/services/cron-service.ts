@@ -162,7 +162,40 @@ class CronService {
         }
       );
 
+      // Schedule customer sync from ERPNext every 15 minutes (automatic sync without webhooks)
+      cron.schedule(
+        '*/15 * * * *',
+        async () => {
+          console.log('Running automatic customer sync from ERPNext...');
+          try {
+            const response = await fetch(
+              `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/customers/sync/enhanced`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+              }
+            );
 
+            if (response.ok) {
+              const result = await response.json();
+              console.log('Automatic customer sync from ERPNext completed successfully');
+              if (result.data) {
+                console.log(`Synced ${result.data.processed} customers (${result.data.created} created, ${result.data.updated} updated)`);
+              }
+            } else {
+              const errorData = await response.json().catch(() => null);
+              console.warn('Automatic customer sync failed:', errorData?.message || 'Unknown error');
+            }
+          } catch (error) {
+            console.warn('Error in automatic customer sync cron job:', error);
+          }
+        },
+        {
+          timezone: 'Asia/Riyadh', // Saudi Arabia timezone
+        }
+      );
 
       this.isInitialized = true;
       console.log('Cron service initialized successfully with scheduled jobs');
