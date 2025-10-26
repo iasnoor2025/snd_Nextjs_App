@@ -120,9 +120,5 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Configure Next.js to handle multipart form data
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+// Note: Next.js 16 App Router handles body parsing automatically
+// No need for the deprecated config export

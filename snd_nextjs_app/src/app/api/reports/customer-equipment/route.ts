@@ -172,7 +172,7 @@ export async function GET(request: NextRequest) {
       return acc;
     }, {});
     
-    const finalCustomerGroups = Object.values(customerGroups);
+    let finalCustomerGroups = Object.values(customerGroups);
 
     // Summary is already calculated inline above
 
