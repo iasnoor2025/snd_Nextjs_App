@@ -216,7 +216,8 @@
     "workflow": "سير العمل",
     "items": "العناصر",
     "payments": "المدفوعات",
-    "invoices": "الفواتير"
+    "invoices": "الفواتير",
+    "report": "التقرير"
   },
   "payments": "المدفوعات",
   "addPayment": "إضافة دفعة",

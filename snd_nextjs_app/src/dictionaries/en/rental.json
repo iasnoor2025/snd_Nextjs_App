@@ -216,7 +216,8 @@
     "workflow": "Workflow",
     "items": "Items",
     "payments": "Payments",
-    "invoices": "Invoices"
+    "invoices": "Invoices",
+    "report": "Report"
   },
   "payments": "Payments",
   "addPayment": "Add Payment",
