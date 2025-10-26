@@ -20,17 +20,17 @@ interface CustomerFormData {
   phone: string;
   address: string;
   notes: string;
-  company_name: string;
-  contact_person: string;
+  companyName: string;
+  contactPerson: string;
   city: string;
   state: string;
-  postal_code: string;
+  postalCode: string;
   country: string;
   website: string;
-  tax_number: string;
-  credit_limit: string;
-  payment_terms: string;
-  is_active: boolean;
+  taxNumber: string;
+  creditLimit: string;
+  paymentTerms: string;
+  isActive: boolean;
 }
 
 export default function CreateCustomerPage() {
@@ -40,17 +40,17 @@ export default function CreateCustomerPage() {
     phone: '',
     address: '',
     notes: '',
-    company_name: '',
-    contact_person: '',
+    companyName: '',
+    contactPerson: '',
     city: '',
     state: '',
-    postal_code: '',
+    postalCode: '',
     country: '',
     website: '',
-    tax_number: '',
-    credit_limit: '',
-    payment_terms: '',
-    is_active: true,
+    taxNumber: '',
+    creditLimit: '',
+    paymentTerms: '',
+    isActive: true,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -77,32 +77,69 @@ export default function CreateCustomerPage() {
     setLoading(true);
 
     try {
-      const formDataToSend = new FormData();
-
-      // Append all form fields
-      if (formData && typeof formData === 'object') {
-        Object.entries(formData).forEach(([key, value]) => {
-          if (key === 'is_active') {
-            formDataToSend.append(key, value ? '1' : '0');
-          } else {
-            formDataToSend.append(key, value.toString());
-          }
-        });
+      // Validate required fields
+      if (!formData.name) {
+        setErrors({ name: 'Name is required' });
+        toast.error('Please fill in all required fields');
+        return;
       }
 
-      // Append document if selected
-      if (document) {
-        formDataToSend.append('document', document);
+      // Prepare the request body to match API expectations
+      const requestBody: any = {
+        name: formData.name,
+        email: formData.email || null,
+        phone: formData.phone || null,
+        companyName: formData.companyName || null,
+        contactPerson: formData.contactPerson || null,
+        address: formData.address || null,
+        city: formData.city || null,
+        state: formData.state || null,
+        postalCode: formData.postalCode || null,
+        country: formData.country || null,
+        website: formData.website || null,
+        taxNumber: formData.taxNumber || null,
+        paymentTerms: formData.paymentTerms || null,
+        creditLimit: formData.creditLimit || null,
+        notes: formData.notes || null,
+        isActive: formData.isActive,
+        status: 'active',
+        currency: 'SAR',
+        defaultCurrency: 'SAR',
+        language: 'en',
+      };
+
+      console.log('Creating customer with data:', requestBody);
+
+      const response = await fetch('/api/customers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Failed to create customer:', errorData);
+        throw new Error(errorData.error || 'Failed to create customer');
       }
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const result = await response.json();
+      console.log('Customer created successfully:', result);
 
+      // Extract the created customer ID from the response
+      const createdCustomerId = result.customer?.id;
+      
       toast.success('Customer created successfully');
-      // Redirect to customers list
-      window.location.href = '/modules/customer-management';
-    } catch {
-      toast.error('Failed to create customer');
+      
+      // Wait a moment for cache invalidation, then redirect
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Redirect to customers list with cache bust
+      window.location.href = '/modules/customer-management?refresh=' + Date.now();
+    } catch (error) {
+      console.error('Error creating customer:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to create customer');
     } finally {
       setLoading(false);
     }
@@ -167,20 +204,20 @@ export default function CreateCustomerPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="company_name">Company Name</Label>
+                  <Label htmlFor="companyName">Company Name</Label>
                   <Input
-                    id="company_name"
-                    value={formData.company_name}
-                    onChange={e => handleInputChange('company_name', e.target.value)}
+                    id="companyName"
+                    value={formData.companyName}
+                    onChange={e => handleInputChange('companyName', e.target.value)}
                     placeholder="Enter company name"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="contact_person">Contact Person</Label>
+                  <Label htmlFor="contactPerson">Contact Person</Label>
                   <Input
-                    id="contact_person"
-                    value={formData.contact_person}
-                    onChange={e => handleInputChange('contact_person', e.target.value)}
+                    id="contactPerson"
+                    value={formData.contactPerson}
+                    onChange={e => handleInputChange('contactPerson', e.target.value)}
                     placeholder="Enter contact person name"
                   />
                 </div>
@@ -229,15 +266,15 @@ export default function CreateCustomerPage() {
                       placeholder="Enter state"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="postal_code">Postal Code</Label>
-                    <Input
-                      id="postal_code"
-                      value={formData.postal_code}
-                      onChange={e => handleInputChange('postal_code', e.target.value)}
-                      placeholder="Enter postal code"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="postalCode">Postal Code</Label>
+                  <Input
+                    id="postalCode"
+                    value={formData.postalCode}
+                    onChange={e => handleInputChange('postalCode', e.target.value)}
+                    placeholder="Enter postal code"
+                  />
+                </div>
                   <div className="space-y-2">
                     <Label htmlFor="country">Country</Label>
                     <Input
@@ -256,30 +293,30 @@ export default function CreateCustomerPage() {
               <h3 className="text-lg font-semibold">Business Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="tax_number">Tax Number</Label>
+                  <Label htmlFor="taxNumber">Tax Number</Label>
                   <Input
-                    id="tax_number"
-                    value={formData.tax_number}
-                    onChange={e => handleInputChange('tax_number', e.target.value)}
+                    id="taxNumber"
+                    value={formData.taxNumber}
+                    onChange={e => handleInputChange('taxNumber', e.target.value)}
                     placeholder="Enter tax number"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="credit_limit">Credit Limit</Label>
+                  <Label htmlFor="creditLimit">Credit Limit</Label>
                   <Input
-                    id="credit_limit"
+                    id="creditLimit"
                     type="number"
-                    value={formData.credit_limit}
-                    onChange={e => handleInputChange('credit_limit', e.target.value)}
+                    value={formData.creditLimit}
+                    onChange={e => handleInputChange('creditLimit', e.target.value)}
                     placeholder="Enter credit limit"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="payment_terms">Payment Terms</Label>
+                  <Label htmlFor="paymentTerms">Payment Terms</Label>
                   <Input
-                    id="payment_terms"
-                    value={formData.payment_terms}
-                    onChange={e => handleInputChange('payment_terms', e.target.value)}
+                    id="paymentTerms"
+                    value={formData.paymentTerms}
+                    onChange={e => handleInputChange('paymentTerms', e.target.value)}
                     placeholder="e.g., Net 30"
                   />
                 </div>
@@ -323,11 +360,11 @@ export default function CreateCustomerPage() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <Switch
-                    id="is_active"
-                    checked={formData.is_active}
-                    onCheckedChange={checked => handleInputChange('is_active', checked)}
+                    id="isActive"
+                    checked={formData.isActive}
+                    onCheckedChange={checked => handleInputChange('isActive', checked)}
                   />
-                  <Label htmlFor="is_active">Active Customer</Label>
+                  <Label htmlFor="isActive">Active Customer</Label>
                 </div>
               </div>
             </div>

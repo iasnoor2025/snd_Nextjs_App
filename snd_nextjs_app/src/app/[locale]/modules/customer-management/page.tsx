@@ -16,6 +16,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Table,
   TableBody,
   TableCell,
@@ -57,6 +64,9 @@ export default function CustomerManagementPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [sortBy, setSortBy] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [itemsPerPage, setItemsPerPage] = useState(50);
 
   // Get allowed actions for customer management
   const allowedActions = getAllowedActions('Customer');
@@ -68,7 +78,7 @@ export default function CustomerManagementPage() {
       setError(null);
 
       const response = await fetch(
-        `/api/customers?page=${currentPage}&limit=10&sortBy=created_at&sortOrder=desc`
+        `/api/customers?page=${currentPage}&limit=${itemsPerPage}&sort_by=${sortBy}&sort_order=${sortOrder}`
       );
 
       if (!response.ok) {
@@ -81,7 +91,9 @@ export default function CustomerManagementPage() {
         }
       } else {
         const data = await response.json();
+        console.log('Fetched customers data:', data);
         if (data.success) {
+          console.log('Setting customers:', data.customers?.length, 'total pages:', data.pagination?.totalPages);
           setCustomers(data.customers || []);
           setTotalPages(data.pagination?.totalPages || 1);
         } else {
@@ -97,14 +109,26 @@ export default function CustomerManagementPage() {
   };
 
   useEffect(() => {
+    // Clear search when coming from redirect
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('refresh')) {
+      setSearchTerm('');
+      // Remove the refresh param from URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
     fetchCustomers();
-  }, [currentPage]);
+  }, [currentPage, sortBy, sortOrder, itemsPerPage]);
 
-  const filteredCustomers = customers.filter(
-    customer =>
-      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCustomers = customers.filter(customer => {
+    if (!searchTerm) return true; // Show all if no search term
+    const search = searchTerm.toLowerCase();
+    return (
+      customer.name?.toLowerCase().includes(search) ||
+      customer.email?.toLowerCase().includes(search) ||
+      customer.phone?.toLowerCase().includes(search)
+    );
+  });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -278,19 +302,48 @@ export default function CustomerManagementPage() {
             <CardTitle>{t('customer.search.title')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSearch} className="flex gap-4">
+            <div className="flex gap-4 items-end">
               <div className="flex-1">
-                <Input
-                  placeholder={t('customer.search.placeholder')}
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                />
+                <label className="text-sm font-medium mb-2 block">Search</label>
+                <form onSubmit={handleSearch} className="flex gap-2">
+                  <Input
+                    placeholder={t('customer.search.placeholder')}
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                  />
+                  <Button type="submit" variant="outline">
+                    <Search className="h-4 w-4" />
+                  </Button>
+                </form>
               </div>
-              <Button type="submit" variant="outline">
-                <Search className="mr-2 h-4 w-4" />
-                {t('customer.actions.search')}
-              </Button>
-            </form>
+              <div className="w-[250px]">
+                <label className="text-sm font-medium mb-2 block">Sort By</label>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="name">Name</SelectItem>
+                    <SelectItem value="company">Company</SelectItem>
+                    <SelectItem value="email">Email</SelectItem>
+                    <SelectItem value="status">Status</SelectItem>
+                    <SelectItem value="created_at">Date Created</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="w-[140px]">
+                <label className="text-sm font-medium mb-2 block">Order</label>
+                <Select value={sortOrder} onValueChange={setSortOrder}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="asc">Ascending</SelectItem>
+                    <SelectItem value="desc">Descending</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -302,6 +355,7 @@ export default function CustomerManagementPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[50px]">Sl #</TableHead>
                   <TableHead>{t('customer.table.headers.name')}</TableHead>
                   <TableHead>{t('customer.table.headers.email')}</TableHead>
                   <TableHead>{t('customer.table.headers.phone')}</TableHead>
@@ -311,8 +365,12 @@ export default function CustomerManagementPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCustomers.map(customer => (
+                {filteredCustomers.map((customer, index) => {
+                  // Calculate serial number based on pagination
+                  const serialNumber = (currentPage - 1) * itemsPerPage + index + 1;
+                  return (
                   <TableRow key={customer.id}>
+                    <TableCell className="font-medium">{serialNumber}</TableCell>
                     <TableCell className="font-medium">{customer.name}</TableCell>
                     <TableCell>{customer.email}</TableCell>
                     <TableCell>{customer.phone}</TableCell>
@@ -349,7 +407,8 @@ export default function CustomerManagementPage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
 
@@ -361,27 +420,100 @@ export default function CustomerManagementPage() {
           </CardContent>
         </Card>
 
-        {totalPages > 1 && (
-          <div className="flex justify-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-            >
-              {t('customer.pagination.previous')}
-            </Button>
-            <span className="flex items-center px-4">
-              {t('customer.pagination.page', { current: String(currentPage), total: String(totalPages) })}
-            </span>
-            <Button
-              variant="outline"
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
-            >
-              {t('customer.pagination.next')}
-            </Button>
-          </div>
-        )}
+        {/* Enhanced Pagination */}
+        <Card>
+          <CardContent className="flex items-center justify-between pt-6">
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-muted-foreground">
+                Showing {filteredCustomers.length} of {customers.length} customers
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Items per page:</span>
+                <Select value={String(itemsPerPage)} onValueChange={(value) => {
+                  setItemsPerPage(Number(value));
+                  setCurrentPage(1);
+                }}>
+                  <SelectTrigger className="w-[80px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+              >
+                First
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                {t('customer.pagination.previous')}
+              </Button>
+              
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className="w-10"
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+              </div>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                {t('customer.pagination.next')}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+              >
+                Last
+              </Button>
+              
+              <span className="ml-4 text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
 
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogContent>
