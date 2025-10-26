@@ -66,7 +66,7 @@ export default function CustomerManagementPage() {
   const [deleting, setDeleting] = useState(false);
   const [sortBy, setSortBy] = useState('created_at');
   const [sortOrder, setSortOrder] = useState('desc');
-  const [itemsPerPage, setItemsPerPage] = useState(50);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Get allowed actions for customer management
   const allowedActions = getAllowedActions('Customer');
