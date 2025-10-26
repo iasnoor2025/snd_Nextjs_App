@@ -2,9 +2,8 @@ import { authOptions } from '@/lib/auth-config';
 import { DashboardService } from '@/lib/services/dashboard-service';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-export const GET = withPermission(PermissionConfigs.dashboard.read)(async (_request: NextRequest) => {
+export async function GET(_request: NextRequest) {
   try {
     // Check authentication
     const session = await getServerSession(authOptions);
@@ -12,7 +11,7 @@ export const GET = withPermission(PermissionConfigs.dashboard.read)(async (_requ
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Fetch only dashboard stats
+    // Fetch dashboard stats (now optimized with parallel queries!)
     const stats = await DashboardService.getDashboardStats();
     
 
@@ -48,4 +47,4 @@ export const GET = withPermission(PermissionConfigs.dashboard.read)(async (_requ
       }
     });
   }
-});
+}
