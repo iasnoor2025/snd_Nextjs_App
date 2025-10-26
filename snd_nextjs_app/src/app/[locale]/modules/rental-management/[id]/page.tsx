@@ -2205,7 +2205,7 @@ export default function RentalDetailPage() {
                         <TableHead>{t('rental.totalPrice')}</TableHead>
                         <TableHead>{t('rental.operator')}</TableHead>
                         <TableHead>{t('rental.status')}</TableHead>
-                        <TableHead>{t('rental.actions')}</TableHead>
+                        <TableHead>{t('rental.table.headers.actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -2794,49 +2794,17 @@ export default function RentalDetailPage() {
             {rental?.status === 'active' && (
               <div className="col-span-2">
                 <Label htmlFor="itemStartDate">Item Start Date</Label>
-                <div className="flex gap-2 mt-1">
-                  <Button
-                    type="button"
-                    variant={itemFormData.startDate === '' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => {
-                      const todayDate = new Date().toISOString().split('T')[0];
-                      console.log('Today button clicked, setting startDate to:', todayDate);
-                      setItemFormData(prev => ({ ...prev, startDate: todayDate }));
-                    }}
-                    className="text-xs"
-                  >
-                    📅 Today
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={itemFormData.startDate !== '' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => {
-                      console.log('Manual Date button clicked, clearing startDate');
-                      setItemFormData(prev => ({ ...prev, startDate: '' }));
-                    }}
-                    className="text-xs"
-                  >
-                    📝 Manual Date
-                  </Button>
-                </div>
-                {itemFormData.startDate !== '' && (
-                  <Input
-                    id="itemStartDate"
-                    type="date"
-                    value={itemFormData.startDate}
-                    onChange={e => setItemFormData(prev => ({ ...prev, startDate: e.target.value }))}
-                    className="mt-2"
-                    min={rental?.startDate}
-                    max={new Date().toISOString().split('T')[0]}
-                  />
-                )}
+                <Input
+                  id="itemStartDate"
+                  type="date"
+                  value={itemFormData.startDate || new Date().toISOString().split('T')[0]}
+                  onChange={e => setItemFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                  className="mt-1"
+                  min={rental?.startDate}
+                  max={new Date().toISOString().split('T')[0]}
+                />
                 <div className="text-xs text-muted-foreground mt-1">
-                  {itemFormData.startDate === '' 
-                    ? 'Item will start from today' 
-                    : `Item will start from ${itemFormData.startDate}`
-                  }
+                  Select the start date for this item
                 </div>
               </div>
             )}
