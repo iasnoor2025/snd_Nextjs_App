@@ -148,6 +148,30 @@
     "description": "هل أنت متأكد من حذف",
     "warning": "لا يمكن التراجع عن هذا الإجراء."
   },
+  "documents": {
+    "title": "وثائق العملاء",
+    "description": "تحميل وإدارة الوثائق المتعلقة بالعملاء",
+    "loadingDocuments": "جاري تحميل الوثائق...",
+    "errorLoadingDocuments": "خطأ في تحميل الوثائق",
+    "uploadSuccess": "تم تحميل الوثيقة بنجاح",
+    "uploadFailed": "فشل تحميل الوثيقة",
+    "deleteSuccess": "تم حذف الوثيقة بنجاح",
+    "deleteFailed": "فشل حذف الوثيقة",
+    "confirmDelete": "هل أنت متأكد من حذف هذه الوثيقة؟",
+    "downloadStarted": "تم بدء التحميل",
+    "downloadFailed": "فشل تحميل الوثيقة",
+    "document": "وثيقة",
+    "uploadedDocuments": "الوثائق المرفوعة",
+    "noDocumentsYet": "لا توجد وثائق بعد",
+    "uploadDocumentsToStart": "قم بتحميل الوثائق لبدء إدارة ملفات العملاء",
+    "documentName": "اسم الوثيقة",
+    "descriptionPlaceholder": "أدخل وصف الوثيقة...",
+    "uploading": "جاري التحميل...",
+    "dropFilesHere": "قم بإسقاط الملفات هنا للتحميل",
+    "dragAndDropFiles": "اسحب وأفلت الملفات هنا",
+    "orClickToBrowse": "أو انقر للتصفح",
+    "supportedFileTypes": "المدعومة: PDF، DOC، DOCX، JPG، PNG"
+  },
   "stats": {
     "totalRentals": "إجمالي التأجيرات",
     "totalValue": "إجمالي القيمة",
@@ -166,6 +190,7 @@
   "tabs": {
     "rentals": "التأجيرات",
     "invoices": "الفواتير",
+    "documents": "الوثائق",
     "rentalHistory": "تاريخ التأجيرات",
     "invoiceHistory": "تاريخ الفواتير"
   },

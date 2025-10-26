@@ -210,6 +210,14 @@ export const PermissionConfigs = {
     delete: { action: 'delete' as Action, subject: 'equipment-document' },
     manage: { action: 'manage' as Action, subject: 'equipment-document' },
   },
+  // Customer Document permissions (for customer document management)
+  'customer-document': {
+    read: { action: 'read' as Action, subject: 'customer-document' },
+    create: { action: 'create' as Action, subject: 'customer-document' },
+    update: { action: 'update' as Action, subject: 'customer-document' },
+    delete: { action: 'delete' as Action, subject: 'customer-document' },
+    manage: { action: 'manage' as Action, subject: 'customer-document' },
+  },
   // Document Management permissions
   document: {
     read: { action: 'read' as Action, subject: 'Document' },

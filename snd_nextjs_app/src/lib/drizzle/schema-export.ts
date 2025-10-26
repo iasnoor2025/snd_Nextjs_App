@@ -72,6 +72,8 @@ export {
   safetyIncidents,
   
   // Document management
+  customerDocuments,
+  equipmentDocuments,
   documentVersions,
   documentApprovals,
   

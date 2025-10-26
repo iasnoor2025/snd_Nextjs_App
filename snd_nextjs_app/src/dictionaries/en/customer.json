@@ -147,6 +147,30 @@
     "description": "Are you sure you want to delete",
     "warning": "This action cannot be undone."
   },
+  "documents": {
+    "title": "Customer Documents",
+    "description": "Upload and manage customer-related documents",
+    "loadingDocuments": "Loading documents...",
+    "errorLoadingDocuments": "Error Loading Documents",
+    "uploadSuccess": "Document uploaded successfully",
+    "uploadFailed": "Failed to upload document",
+    "deleteSuccess": "Document deleted successfully",
+    "deleteFailed": "Failed to delete document",
+    "confirmDelete": "Are you sure you want to delete this document?",
+    "downloadStarted": "Download started",
+    "downloadFailed": "Failed to download document",
+    "document": "document",
+    "uploadedDocuments": "Uploaded Documents",
+    "noDocumentsYet": "No documents yet",
+    "uploadDocumentsToStart": "Upload documents to start managing customer files",
+    "documentName": "Document Name",
+    "descriptionPlaceholder": "Enter document description...",
+    "uploading": "Uploading...",
+    "dropFilesHere": "Drop files here to upload",
+    "dragAndDropFiles": "Drag and drop files here",
+    "orClickToBrowse": "or click to browse",
+    "supportedFileTypes": "Supported: PDF, DOC, DOCX, JPG, PNG"
+  },
   "stats": {
     "totalRentals": "Total Rentals",
     "totalValue": "Total Value",
@@ -165,6 +189,7 @@
   "tabs": {
     "rentals": "Rentals",
     "invoices": "Invoices",
+    "documents": "Documents",
     "rentalHistory": "Rental History",
     "invoiceHistory": "Invoice History"
   },

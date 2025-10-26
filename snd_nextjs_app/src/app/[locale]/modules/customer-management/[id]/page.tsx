@@ -4,9 +4,17 @@
 export const dynamic = 'force-dynamic';
 
 
+import DocumentManager from '@/components/shared/DocumentManager';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -112,6 +120,7 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedDocumentType, setSelectedDocumentType] = useState('general');
 
   useEffect(() => {
     const fetchCustomerData = async () => {
@@ -385,9 +394,10 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
         {/* Tabs Content */}
         <div className="lg:col-span-2 space-y-6">
           <Tabs defaultValue="rentals" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="rentals">{t('customer.tabs.rentals')} ({rentals.length})</TabsTrigger>
               <TabsTrigger value="invoices">{t('customer.tabs.invoices')} ({invoices.length})</TabsTrigger>
+              <TabsTrigger value="documents">{t('customer.tabs.documents')}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="rentals" className="space-y-4">
@@ -470,6 +480,141 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
                       </TableBody>
                     </Table>
                   )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="documents" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t('customer.tabs.documents')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <DocumentManager
+                    title={t('customer.documents.title')}
+                    description={t('customer.documents.description')}
+                    loadDocuments={async () => {
+                      try {
+                        const response = await fetch(`/api/customers/${customerId}/documents`);
+                        if (!response.ok) {
+                          const errorData = await response.json();
+                          console.error('API Error:', errorData);
+                          throw new Error(errorData.error || t('customer.documents.errorLoadingDocuments'));
+                        }
+                        const data = await response.json();
+                        return data.documents || [];
+                      } catch (error) {
+                        console.error('Error loading customer documents:', error);
+                        toast.error(t('customer.documents.errorLoadingDocuments'));
+                        return [];
+                      }
+                    }}
+                    uploadDocument={async (file, extra) => {
+                      const formData = new FormData();
+                      formData.append('file', file);
+                      formData.append('document_type', extra?.document_type || 'general');
+                      if (extra?.document_name) {
+                        formData.append('document_name', extra.document_name);
+                      }
+                      if (extra?.description) {
+                        formData.append('description', extra.description);
+                      }
+
+                      const response = await fetch(`/api/customers/${customerId}/documents`, {
+                        method: 'POST',
+                        body: formData,
+                      });
+
+                      if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error || t('customer.documents.uploadFailed'));
+                      }
+
+                      const result = await response.json();
+                      toast.success(t('customer.documents.uploadSuccess'));
+                      return result;
+                    }}
+                    deleteDocument={async (documentId) => {
+                      const response = await fetch(`/api/customers/${customerId}/documents?documentId=${documentId}`, {
+                        method: 'DELETE',
+                      });
+
+                      if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error || t('customer.documents.deleteFailed'));
+                      }
+
+                      const result = await response.json();
+                      toast.success(t('customer.documents.deleteSuccess'));
+                      return result;
+                    }}
+                    downloadDocument={async (documentId) => {
+                      const response = await fetch(`/api/customers/${customerId}/documents/${documentId}/download`, {
+                        method: 'GET',
+                      });
+
+                      if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error || t('customer.documents.downloadFailed'));
+                      }
+
+                      // Get the blob from the response
+                      const blob = await response.blob();
+                      
+                      // Create a download link
+                      const url = window.URL.createObjectURL(blob);
+                      const link = document.createElement('a');
+                      link.href = url;
+                      
+                      // Get filename from Content-Disposition header if available
+                      const contentDisposition = response.headers.get('Content-Disposition');
+                      let fileName = 'document';
+                      if (contentDisposition) {
+                        const matches = contentDisposition.match(/filename="?([^"]+)"?/);
+                        if (matches && matches[1]) {
+                          fileName = decodeURIComponent(matches[1]);
+                        }
+                      }
+                      
+                      link.download = fileName;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      
+                      // Clean up the blob URL
+                      window.URL.revokeObjectURL(url);
+                      
+                      toast.success(t('customer.documents.downloadStarted'));
+                    }}
+                    renderExtraControls={
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Document Type</label>
+                        <Select value={selectedDocumentType} onValueChange={setSelectedDocumentType}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select document type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="contract">Contract</SelectItem>
+                            <SelectItem value="license">License</SelectItem>
+                            <SelectItem value="certificate">Certificate</SelectItem>
+                            <SelectItem value="insurance">Insurance</SelectItem>
+                            <SelectItem value="commercial_registration">Commercial Registration</SelectItem>
+                            <SelectItem value="tax_certificate">Tax Certificate</SelectItem>
+                            <SelectItem value="vat_certificate">VAT Certificate</SelectItem>
+                            <SelectItem value="bank_details">Bank Details</SelectItem>
+                            <SelectItem value="credit_agreement">Credit Agreement</SelectItem>
+                            <SelectItem value="purchase_order">P.O (Purchase Order)</SelectItem>
+                            <SelectItem value="general">General</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    }
+                    getExtraUploadData={() => {
+                      return {
+                        document_type: selectedDocumentType || 'general',
+                      };
+                    }}
+                  />
                 </CardContent>
               </Card>
             </TabsContent>

@@ -1789,6 +1789,33 @@ export const customers = pgTable(
   ]
 );
 
+export const customerDocuments = pgTable(
+  'customer_documents',
+  {
+    id: serial().primaryKey().notNull(),
+    customerId: integer('customer_id').notNull(),
+    documentType: text('document_type').notNull(),
+    filePath: text('file_path').notNull(),
+    fileName: text('file_name').notNull(),
+    fileSize: integer('file_size'),
+    mimeType: text('mime_type'),
+    description: text(),
+    createdAt: date('created_at')
+      .default(sql`CURRENT_DATE`)
+      .notNull(),
+    updatedAt: date('updated_at').notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.customerId],
+      foreignColumns: [customers.id],
+      name: 'customer_documents_customer_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('restrict'),
+  ]
+);
+
 export const equipment = pgTable(
   'equipment',
   {

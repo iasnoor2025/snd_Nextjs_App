@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Download, Eye, FileText, Loader2, Trash2, Upload, X } from 'lucide-react';
-import { useCallback, useEffect, useState, useMemo, memo } from 'react';
+import { useCallback, useEffect, useState, memo } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
@@ -32,6 +32,7 @@ interface DocumentManagerProps {
   loadDocuments: () => Promise<DocumentItem[]>;
   uploadDocument: (file: File, extra?: Record<string, any>) => Promise<void> | Promise<any>;
   deleteDocument: (id: number) => Promise<void> | Promise<any>;
+  downloadDocument?: (id: number) => Promise<void> | Promise<any>; // Optional custom download handler
   // UI options
   showNameInput?: boolean;
   nameInputLabel?: string;
@@ -72,6 +73,7 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
     loadDocuments,
     uploadDocument,
     deleteDocument,
+    downloadDocument,
     showNameInput = false,
     nameInputLabel = t('employee.documents.documentName'),
     renderExtraControls,
@@ -272,6 +274,14 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
 
   const handleDownload = async (doc: DocumentItem) => {
     try {
+      // If a custom download handler is provided, use it
+      if (downloadDocument && typeof downloadDocument === 'function') {
+        console.log('Using custom download handler for document:', doc.id);
+        await downloadDocument(doc.id);
+        toast.success(t('employee.documents.downloadStarted'));
+        return;
+      }
+
       console.log('Document employee_file_number:', doc.employee_file_number);
       console.log('Document downloadPrefix result:', typeof downloadPrefix === 'function' ? downloadPrefix(doc) : downloadPrefix);
       
@@ -363,7 +373,14 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
     }
   };
 
-  const isImageFile = (type: string) => type?.startsWith('image/');
+  const isImageFile = (type: string) => {
+    if (!type) return false;
+    const lowerType = type.toLowerCase();
+    // Check for mime types like "image/png", "image/jpeg"
+    if (lowerType.startsWith('image/')) return true;
+    // Check for image file extensions
+    return ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'svg'].includes(lowerType);
+  };
   
   // Check if document is specifically a photo (employee photo, profile picture, etc.)
   const isPhotoDocument = (doc: DocumentItem) => {
@@ -395,23 +412,30 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
     return 'min-h-56'; // Minimum height for other documents, but can grow
   };
 
-  const getFileIcon = (fileType: string) => {
-    if (fileType.includes('pdf')) return '📄';
-    if (fileType.includes('word') || fileType.includes('document') || fileType.includes('doc'))
+  const getFileIcon = (fileType: string | undefined) => {
+    // Handle undefined or null fileType
+    if (!fileType || typeof fileType !== 'string') {
+      return '📄';
+    }
+
+    const lowerFileType = fileType.toLowerCase();
+    
+    if (lowerFileType.includes('pdf')) return '📄';
+    if (lowerFileType.includes('word') || lowerFileType.includes('document') || lowerFileType.includes('doc'))
       return '📝';
     if (
-      fileType.includes('excel') ||
-      fileType.includes('spreadsheet') ||
-      fileType.includes('sheet') ||
-      fileType.includes('xls')
+      lowerFileType.includes('excel') ||
+      lowerFileType.includes('spreadsheet') ||
+      lowerFileType.includes('sheet') ||
+      lowerFileType.includes('xls')
     )
       return '📊';
-    if (fileType.includes('image')) return '🖼️';
-    if (fileType.includes('text') || fileType.includes('plain')) return '📃';
-    if (fileType.includes('zip') || fileType.includes('rar') || fileType.includes('7z')) return '🗜️';
-    if (fileType.includes('powerpoint') || fileType.includes('presentation') || fileType.includes('ppt')) return '📽️';
-    if (fileType.includes('audio') || fileType.includes('mp3') || fileType.includes('wav')) return '🎵';
-    if (fileType.includes('video') || fileType.includes('mp4') || fileType.includes('avi')) return '🎬';
+    if (lowerFileType.includes('image')) return '🖼️';
+    if (lowerFileType.includes('text') || lowerFileType.includes('plain')) return '📃';
+    if (lowerFileType.includes('zip') || lowerFileType.includes('rar') || lowerFileType.includes('7z')) return '🗜️';
+    if (lowerFileType.includes('powerpoint') || lowerFileType.includes('presentation') || lowerFileType.includes('ppt')) return '📽️';
+    if (lowerFileType.includes('audio') || lowerFileType.includes('mp3') || lowerFileType.includes('wav')) return '🎵';
+    if (lowerFileType.includes('video') || lowerFileType.includes('mp4') || lowerFileType.includes('avi')) return '🎬';
     return '📄';
   };
 
@@ -519,7 +543,14 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
                       : 'grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
                 }
               >
-               {documents.map(document => (
+               {documents.map(document => {
+                 // Normalize property names for DocumentItem interface
+                 const fileType = document.file_type || 'UNKNOWN';
+                 const fileSize = document.size || 0;
+                 const fileName = document.file_name || document.name;
+                 const docUrl = document.url;
+                 
+                 return (
                  <div
                    key={document.id}
                                        className={
@@ -528,10 +559,10 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
                         : 'group relative bg-white border border-gray-200 rounded-lg p-3 hover:shadow-lg hover:border-gray-300 transition-all duration-200 cursor-pointer'
                     }
                    onClick={() => {
-                     if (isImageFile(document.file_type)) {
+                     if (isImageFile(fileType)) {
                        setPreviewImage(document);
-                     } else if (document.file_type.includes('pdf') || document.file_type.includes('text')) {
-                       window.open(document.url, '_blank');
+                     } else if (fileType.includes('pdf') || fileType.includes('text')) {
+                       window.open(docUrl, '_blank');
                      }
                    }}
                  >
@@ -539,11 +570,11 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
                                          <div className="flex flex-col h-full">
                                                  {/* Image/Icon Section - Simple and clean like preview */}
                          <div className="flex-1 flex items-center justify-center mb-3">
-                           {isImageFile(document.file_type) ? (
+                           {isImageFile(fileType) ? (
                                                            <div className="relative w-full">
                                 <img
-                                  src={document.url}
-                                  alt={document.name}
+                                  src={docUrl}
+                                  alt={fileName}
                                   className="w-full object-contain rounded border border-gray-200"
                                   style={{ transformOrigin: 'center center' }}
                                   onLoad={(e) => {
@@ -580,9 +611,9 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
                                 className="w-full min-h-20 flex items-center justify-center rounded border border-gray-200 bg-gray-50"
                               >
                                <div className="text-center">
-                                 <div className="text-4xl">{getFileIcon(document.file_type)}</div>
+                                 <div className="text-4xl">{getFileIcon(fileType)}</div>
                                  <div className="text-sm text-gray-600 mt-2">
-                                   {document.file_name?.split('.').pop()?.toUpperCase() || 'DOC'}
+                                   {fileName?.split('.').pop()?.toUpperCase() || 'DOC'}
                                  </div>
                                </div>
                              </div>
@@ -592,22 +623,22 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
                                                                        {/* Document Details - With badges */}
                          <div className="w-full space-y-2">
                            <h3 className="text-sm font-medium text-gray-900 truncate text-center px-2">
-                             {document.name}
+                             {fileName}
                            </h3>
                            
                            {/* Badges for photo documents */}
                            {isPhotoDocument(document) && (
                              <div className="flex items-center justify-center gap-2 text-xs">
                                <span className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1.5 rounded-full font-semibold shadow-md">
-                                 {document.name.toLowerCase().includes('passport') ? t('employee.documents.employeePassport') : 
-                                  document.name.toLowerCase().includes('iqama') ? t('employee.documents.employeeIqama') : t('employee.documents.employeePhoto')}
+                                 {fileName.toLowerCase().includes('passport') ? t('employee.documents.employeePassport') : 
+                                  fileName.toLowerCase().includes('iqama') ? t('employee.documents.employeeIqama') : t('employee.documents.employeePhoto')}
                                </span>
-                               {document.name.toLowerCase().includes('passport') && (
+                               {fileName.toLowerCase().includes('passport') && (
                                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
                                    {t('employee.documents.travelDocument')}
                                  </span>
                                )}
-                               {document.name.toLowerCase().includes('iqama') && (
+                               {fileName.toLowerCase().includes('iqama') && (
                                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
                                    {t('employee.documents.idCard')}
                                  </span>
@@ -620,20 +651,20 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
                    {/* Action Buttons - Overlay on Hover */}
                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-200 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
                      <div className="flex items-center gap-2">
-                       {(isImageFile(document.file_type) || document.file_type.includes('pdf') || document.file_type.includes('text')) && canPreview && (
+                       {(isImageFile(fileType) || fileType.includes('pdf') || fileType.includes('text')) && canPreview && (
                          <Button
                            variant="secondary"
                            size="sm"
                            onClick={(e) => {
                              e.stopPropagation();
-                             if (isImageFile(document.file_type)) {
+                             if (isImageFile(fileType)) {
                                setPreviewImage(document);
-                             } else if (document.file_type.includes('pdf') || document.file_type.includes('text')) {
-                               window.open(document.url, '_blank');
+                             } else if (fileType.includes('pdf') || fileType.includes('text')) {
+                               window.open(docUrl, '_blank');
                              }
                            }}
                            className="h-8 w-8 p-0 shadow-lg"
-                           title={isImageFile(document.file_type) ? t('employee.documents.previewImage') : t('employee.documents.openDocument')}
+                           title={isImageFile(fileType) ? t('employee.documents.previewImage') : t('employee.documents.openDocument')}
                          >
                            <Eye className="h-4 w-4" />
                          </Button>
@@ -672,7 +703,8 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
                      </div>
                    </div>
                  </div>
-               ))}
+                 );
+               })}
              </div>
           )}
         </div>

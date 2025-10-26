@@ -205,6 +205,13 @@ export const PERMISSION_MAPPING: Record<string, string[]> = {
   'delete.equipment-document': ['delete.equipment-document'],
   'manage.equipment-document': ['manage.equipment-document'],
 
+  // Customer-document permissions
+  'read.customer-document': ['read.customer-document'],
+  'create.customer-document': ['create.customer-document'],
+  'update.customer-document': ['update.customer-document'],
+  'delete.customer-document': ['delete.customer-document'],
+  'manage.customer-document': ['manage.customer-document'],
+
   // Document Management permissions
   'read.Document': ['read.Document', 'read.document'],
   'create.Document': ['create.Document', 'create.document'],
