@@ -16,6 +16,15 @@ const nextConfig = {
       'recharts'
     ],
   },
+  
+  // Production optimizations
+  ...(process.env.NODE_ENV === 'production' && {
+    output: 'standalone',
+    generateBuildId: async () => {
+      // Use timestamp for builds
+      return Date.now().toString();
+    },
+  }),
 
   // Turbopack configuration (moved from experimental.turbo)
   turbopack: {
