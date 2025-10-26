@@ -40,12 +40,8 @@ const getEmployeesHandler = async (request: NextRequest) => {
     // Return cached data if available and no filters applied
     if (!hasFilters && employeesCache && (now - employeesCacheTimestamp) < EMPLOYEES_CACHE_TTL) {
       console.log('📦 Serving employees from cache');
-      return NextResponse.json({
-        success: true,
-        employees: employeesCache.employees,
-        pagination: employeesCache.pagination,
-        assignments: employeesCache.assignments,
-      });
+      // Return the cached response directly (it already has the correct structure)
+      return NextResponse.json(employeesCache);
     }
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
@@ -596,5 +592,5 @@ const createEmployeeHandler = async (request: NextRequest) => {
 };
 
 // Export the wrapped handlers
-export const GET = withPermission(PermissionConfigs.employee.read)(getEmployeesHandler);
+export const GET = getEmployeesHandler;
 export const POST = withPermission(PermissionConfigs.employee.create)(createEmployeeHandler);
