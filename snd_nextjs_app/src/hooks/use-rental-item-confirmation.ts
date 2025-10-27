@@ -2,11 +2,13 @@ import { useState, useCallback } from 'react';
 
 export interface RentalItemConfirmationState {
   isOpen: boolean;
-  actionType: 'add' | 'edit' | 'delete' | 'confirm';
+  actionType: 'add' | 'edit' | 'delete' | 'confirm' | 'return';
   title: string;
   description: string;
   itemName?: string;
-  onConfirm?: () => void;
+  onConfirm?: (returnDate?: string) => void;
+  showReturnDate?: boolean;
+  minReturnDate?: string;
 }
 
 export const useRentalItemConfirmation = () => {
@@ -20,11 +22,13 @@ export const useRentalItemConfirmation = () => {
   });
 
   const showConfirmation = useCallback((
-    actionType: 'add' | 'edit' | 'delete' | 'confirm',
+    actionType: 'add' | 'edit' | 'delete' | 'confirm' | 'return',
     title: string,
     description: string,
     itemName?: string,
-    onConfirm?: () => void
+    onConfirm?: (returnDate?: string) => void,
+    showReturnDate?: boolean,
+    minReturnDate?: string
   ) => {
     setConfirmationState({
       isOpen: true,
@@ -33,6 +37,8 @@ export const useRentalItemConfirmation = () => {
       description,
       itemName,
       onConfirm,
+      showReturnDate,
+      minReturnDate,
     });
   }, []);
 
@@ -43,9 +49,9 @@ export const useRentalItemConfirmation = () => {
     }));
   }, []);
 
-  const handleConfirm = useCallback(() => {
+  const handleConfirm = useCallback((returnDate?: string) => {
     if (confirmationState.onConfirm) {
-      confirmationState.onConfirm();
+      confirmationState.onConfirm(returnDate);
     }
     hideConfirmation();
   }, [confirmationState.onConfirm, hideConfirmation]);
@@ -74,6 +80,15 @@ export const useRentalItemConfirmation = () => {
     showConfirmation('delete', 'Delete Rental Item', description, itemName, onConfirm);
   }, [showConfirmation]);
 
+  const showReturnConfirmation = useCallback((
+    itemName: string,
+    description: string,
+    onConfirm: (returnDate?: string) => void,
+    minReturnDate?: string
+  ) => {
+    showConfirmation('return', 'Return Equipment', description, itemName, onConfirm, true, minReturnDate);
+  }, [showConfirmation]);
+
   const showConfirmDialog = useCallback((
     title: string,
     description: string,
@@ -91,5 +106,6 @@ export const useRentalItemConfirmation = () => {
     showEditConfirmation,
     showDeleteConfirmation,
     showConfirmDialog,
+    showReturnConfirmation,
   };
 };

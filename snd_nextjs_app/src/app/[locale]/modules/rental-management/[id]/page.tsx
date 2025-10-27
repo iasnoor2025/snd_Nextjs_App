@@ -1791,7 +1791,7 @@ export default function RentalDetailPage() {
   };
 
   // Handle completing/returning rental item
-  const completeRentalItem = async (item: RentalItem) => {
+  const completeRentalItem = async (item: RentalItem, returnDate?: string) => {
     if (!rental) return;
 
     try {
@@ -1799,7 +1799,7 @@ export default function RentalDetailPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          returnDate: new Date().toISOString().split('T')[0],
+          returnDate: returnDate || new Date().toISOString().split('T')[0],
         }),
       });
 
@@ -1819,12 +1819,20 @@ export default function RentalDetailPage() {
 
   // Handle complete with confirmation dialog
   const handleCompleteItem = (item: RentalItem) => {
-    confirmation.showDeleteConfirmation(
+    // Get the item's start date (use item start date or rental start date)
+    const itemStartDate = item.startDate && item.startDate !== '' 
+      ? item.startDate 
+      : rental?.startDate 
+        ? rental.startDate 
+        : undefined;
+    
+    confirmation.showReturnConfirmation(
       item.equipmentName,
-      'Are you sure you want to return this equipment? This will mark it as completed.',
-      () => {
-        completeRentalItem(item);
-      }
+      'Select the return date for this equipment. This will mark it as completed.',
+      (returnDate) => {
+        completeRentalItem(item, returnDate);
+      },
+      itemStartDate
     );
   };
 
@@ -3749,6 +3757,8 @@ export default function RentalDetailPage() {
         actionType={confirmation.confirmationState.actionType}
         itemName={confirmation.confirmationState.itemName}
         isLoading={false}
+        showReturnDate={confirmation.confirmationState.showReturnDate}
+        minReturnDate={confirmation.confirmationState.minReturnDate}
       />
 
       {/* Manual Invoice Linking Dialog */}
