@@ -728,7 +728,6 @@ export default function EquipmentManagementPage() {
                         <TableHead>{t('equipment.fields.type')}</TableHead>
                         <TableHead>{t('equipment.equipment_management.status')}</TableHead>
                         <TableHead>{t('equipment.equipment_management.current_assignment')}</TableHead>
-                        <TableHead>{t('equipment.equipment_management.daily_rate')}</TableHead>
                         <TableHead>
                           <div className="flex items-center gap-2">
                             <span>{t('equipment.equipment_management.istimara')}</span>
@@ -836,40 +835,61 @@ export default function EquipmentManagementPage() {
                                     {item.current_assignment.employee?.full_name ||
                                       item.current_assignment.project?.name ||
                                       item.current_assignment.rental?.rental_number ||
-                                      item.current_assignment.name ||
                                       t('equipment.equipment_management.assigned')}
                                   </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {item.current_assignment.type === 'project' &&
-                                      item.current_assignment.project?.name &&
-                                      `Project: ${item.current_assignment.project.name}`}
-                                    {item.current_assignment.type === 'rental' &&
-                                      item.current_assignment.rental?.rental_number &&
-                                      `Rental: ${item.current_assignment.rental.rental_number}`}
-                                    {item.current_assignment.type === 'manual' &&
-                                      item.current_assignment.employee?.full_name &&
-                                      `Employee: ${item.current_assignment.employee.full_name}`}
-                                    {!item.current_assignment.project?.name &&
-                                      !item.current_assignment.rental?.rental_number &&
-                                      !item.current_assignment.employee?.full_name &&
-                                      `${item.current_assignment.type} Assignment`}
-                                  </div>
+                                  {/* Only show subtitle if there's additional context beyond what's in main text */}
+                                  {(() => {
+                                    const mainText = item.current_assignment.employee?.full_name || 
+                                                    item.current_assignment.project?.name || 
+                                                    item.current_assignment.rental?.rental_number || 
+                                                    '';
+                                    
+                                    // Show employee name in subtitle if main text is project name
+                                    if (item.current_assignment.project?.name === mainText && 
+                                        item.current_assignment.employee?.full_name) {
+                                      return <div className="text-xs text-muted-foreground">
+                                        Employee: {item.current_assignment.employee.full_name}
+                                      </div>;
+                                    }
+                                    
+                                    // Show rental number in subtitle if main text is employee name
+                                    if (item.current_assignment.employee?.full_name === mainText && 
+                                        item.current_assignment.rental?.rental_number) {
+                                      return <div className="text-xs text-muted-foreground">
+                                        Rental: {item.current_assignment.rental.rental_number}
+                                      </div>;
+                                    }
+                                    
+                                    // Show project name in subtitle if main text is employee name and there's a project
+                                    if (item.current_assignment.employee?.full_name === mainText && 
+                                        item.current_assignment.project?.name) {
+                                      return <div className="text-xs text-muted-foreground">
+                                        Project: {item.current_assignment.project.name}
+                                      </div>;
+                                    }
+                                    
+                                    // Show employee name in subtitle if main text is rental number
+                                    if (item.current_assignment.rental?.rental_number === mainText && 
+                                        item.current_assignment.employee?.full_name) {
+                                      return <div className="text-xs text-muted-foreground">
+                                        Employee: {item.current_assignment.employee.full_name}
+                                      </div>;
+                                    }
+                                    
+                                    // Show project name in subtitle if main text is rental number
+                                    if (item.current_assignment.rental?.rental_number === mainText && 
+                                        item.current_assignment.project?.name) {
+                                      return <div className="text-xs text-muted-foreground">
+                                        Project: {item.current_assignment.project.name}
+                                      </div>;
+                                    }
+                                    
+                                    return null;
+                                  })()}
                                 </div>
                               ) : (
                                 <span className="text-muted-foreground">
                                   {t('equipment.equipment_management.no_assignment')}
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {item.daily_rate ? (
-                                <span className="font-medium">
-                                  {convertToArabicNumerals(item.daily_rate.toString(), isRTL)}{' '}
-                                  {t('equipment.equipment_management.per_day')}
-                                </span>
-                              ) : (
-                                <span className="text-muted-foreground text-sm">
-                                  {t('equipment.equipment_management.not_specified')}
                                 </span>
                               )}
                             </TableCell>

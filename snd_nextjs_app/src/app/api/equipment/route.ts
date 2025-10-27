@@ -116,19 +116,23 @@ const getEquipmentHandler = async (request: NextRequest) => {
 
           try {
             // Get all active assignments with related data
-            currentAssignments = await db
+            const rawAssignments = await db
               .select({
                 equipment_id: equipmentTable.id,
+                assignment_id: equipmentRentalHistory.id,
                 employee_id: employees.id,
-                employee_name: employees.firstName,
+                employee_first_name: employees.firstName,
                 employee_last_name: employees.lastName,
                 project_id: projects.id,
                 project_name: projects.name,
                 rental_id: rentals.id,
                 rental_number: rentals.rentalNumber,
+                rental_customer_id: rentals.customerId,
+                assignment_type: equipmentRentalHistory.assignmentType,
                 assignment_date: equipmentRentalHistory.startDate,
                 return_date: equipmentRentalHistory.endDate,
-                status: equipmentRentalHistory.status,
+                assignment_status: equipmentRentalHistory.status,
+                notes: equipmentRentalHistory.notes,
               })
               .from(equipmentTable)
               .leftJoin(equipmentRentalHistory, eq(equipmentTable.id, equipmentRentalHistory.equipmentId))
@@ -136,6 +140,32 @@ const getEquipmentHandler = async (request: NextRequest) => {
               .leftJoin(projects, eq(equipmentRentalHistory.projectId, projects.id))
               .leftJoin(rentals, eq(equipmentRentalHistory.rentalId, rentals.id))
               .where(eq(equipmentRentalHistory.status, 'active'));
+
+            // Transform the flat data to nested objects expected by frontend
+            currentAssignments = rawAssignments.map(assignment => ({
+              equipment_id: assignment.equipment_id,
+              assignment_id: assignment.assignment_id,
+              employee: assignment.employee_id ? {
+                id: assignment.employee_id,
+                full_name: [assignment.employee_first_name, assignment.employee_last_name].filter(Boolean).join(' '),
+                first_name: assignment.employee_first_name,
+                last_name: assignment.employee_last_name,
+              } : null,
+              project: assignment.project_id ? {
+                id: assignment.project_id,
+                name: assignment.project_name,
+              } : null,
+              rental: assignment.rental_id ? {
+                id: assignment.rental_id,
+                rental_number: assignment.rental_number,
+                customer_id: assignment.rental_customer_id,
+              } : null,
+              type: assignment.assignment_type,
+              assignment_date: assignment.assignment_date,
+              return_date: assignment.return_date,
+              status: assignment.assignment_status,
+              notes: assignment.notes,
+            }));
 
             // Get all active maintenance records
             const maintenanceRecords = await db
