@@ -16,13 +16,21 @@ export const GET = withPermission(async (request: NextRequest) => {
 
     console.log('Found document types:', documentTypes.length);
 
+    // Convert dates to ISO strings for JSON serialization
+    const formattedTypes = documentTypes.map(type => ({
+      ...type,
+      createdAt: type.createdAt ? new Date(type.createdAt).toISOString() : null,
+      updatedAt: type.updatedAt ? new Date(type.updatedAt).toISOString() : null,
+    }));
+
     return NextResponse.json({
       success: true,
-      data: documentTypes,
+      data: formattedTypes,
       message: 'Document types retrieved successfully',
     });
   } catch (error) {
     console.error('Error fetching document types:', error);
+    console.error('Error details:', error);
     return NextResponse.json(
       {
         success: false,
@@ -66,7 +74,7 @@ export const POST = withPermission(async (request: NextRequest) => {
     }
 
     // Create new document type
-    const nowIso = new Date().toISOString();
+    const nowDate = new Date().toISOString().split('T')[0]; // Get YYYY-MM-DD format for date field
     const newDocumentType = await db
       .insert(companyDocumentTypes)
       .values({
@@ -77,14 +85,21 @@ export const POST = withPermission(async (request: NextRequest) => {
         category: body.category || 'general',
         sortOrder: body.sortOrder || 0,
         isActive: true,
-        createdAt: nowIso,
-        updatedAt: nowIso,
+        createdAt: nowDate,
+        updatedAt: nowDate,
       })
       .returning();
 
+    // Format the returned data
+    const formattedType = {
+      ...newDocumentType[0],
+      createdAt: newDocumentType[0].createdAt ? new Date(newDocumentType[0].createdAt).toISOString() : null,
+      updatedAt: newDocumentType[0].updatedAt ? new Date(newDocumentType[0].updatedAt).toISOString() : null,
+    };
+
     return NextResponse.json({
       success: true,
-      data: newDocumentType[0],
+      data: formattedType,
       message: 'Document type created successfully',
     });
   } catch (error) {

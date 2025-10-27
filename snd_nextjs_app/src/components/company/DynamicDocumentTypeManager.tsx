@@ -112,35 +112,38 @@ export default function DynamicDocumentTypeManager() {
   const fetchDocumentTypes = async () => {
     setLoading(true);
     try {
-      // Try the main API first
-      let response;
-      try {
-        response = await fetch('/api/company-document-types');
-      } catch (fetchError) {
-        console.error('Fetch error:', fetchError);
-        // Fallback to test endpoint
-        response = await fetch('/api/test-company-document-types');
-      }
+      const response = await fetch('/api/company-document-types');
       
       // Check if response is ok
       if (!response.ok) {
-        // If it's a 500 error, try the test endpoint
-        if (response.status === 500) {
-          console.log('Main API returned 500, trying test endpoint...');
-          response = await fetch('/api/test-company-document-types');
-          
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-        } else {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error('API error response:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorText,
+        });
+        
+        let errorMessage;
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.error || errorJson.message || `HTTP error! status: ${response.status}`;
+        } catch {
+          errorMessage = errorText || `HTTP error! status: ${response.status}`;
         }
+        
+        console.error('API error message:', errorMessage);
+        toast.error(`Failed to load document types: ${errorMessage}`);
+        setDocumentTypes([]);
+        return;
       }
       
       // Check if response has content
       const text = await response.text();
       if (!text) {
-        throw new Error('Empty response from server');
+        console.error('Empty response from server');
+        toast.error('Empty response from server');
+        setDocumentTypes([]);
+        return;
       }
       
       // Try to parse JSON
@@ -148,8 +151,11 @@ export default function DynamicDocumentTypeManager() {
       try {
         result = JSON.parse(text);
       } catch (parseError) {
-        console.error('Invalid JSON response:', text, parseError);
-        throw new Error('Invalid JSON response from server');
+        console.error('Failed to parse response:', parseError);
+        console.error('Response text:', text);
+        toast.error('Invalid response from server');
+        setDocumentTypes([]);
+        return;
       }
       
       if (result.success) {
@@ -159,12 +165,11 @@ export default function DynamicDocumentTypeManager() {
         }
       } else {
         toast.error(result.message || 'Failed to fetch document types');
+        setDocumentTypes([]);
       }
     } catch (error) {
       console.error('Error fetching document types:', error);
       toast.error('Failed to fetch document types: ' + (error as Error).message);
-      
-      // Set empty array as fallback
       setDocumentTypes([]);
     } finally {
       setLoading(false);

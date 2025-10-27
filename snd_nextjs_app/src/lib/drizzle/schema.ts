@@ -130,7 +130,9 @@ export const companyDocumentTypes = pgTable('company_document_types', {
   createdAt: date('created_at')
     .default(sql`CURRENT_DATE`)
     .notNull(),
-  updatedAt: date('updated_at').notNull(),
+  updatedAt: date('updated_at')
+    .default(sql`CURRENT_DATE`)
+    .notNull(),
 });
 
 export const companies = pgTable('companies', {

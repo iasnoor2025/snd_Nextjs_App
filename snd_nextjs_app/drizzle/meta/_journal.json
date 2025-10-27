@@ -225,6 +225,13 @@
       "when": 1761466254806,
       "tag": "0031_flowery_drax",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1761548811934,
+      "tag": "0032_silly_sphinx",
+      "breakpoints": true
     }
   ]
 }

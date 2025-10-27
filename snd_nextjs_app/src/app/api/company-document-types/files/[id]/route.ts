@@ -3,10 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const DELETE = withPermission(async (
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
   try {
-    const fileId = parseInt(params.id);
+    const { id } = await params;
+    const fileId = parseInt(id);
 
     if (isNaN(fileId)) {
       return NextResponse.json(

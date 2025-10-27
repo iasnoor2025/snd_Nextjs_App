@@ -298,9 +298,14 @@ export async function checkApiPermission(
 
   } catch (error) {
     console.error('Permission check error:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      config: config
+    });
     return {
       authorized: false,
-      error: 'Permission check failed'
+      error: `Permission check failed: ${error instanceof Error ? error.message : String(error)}`
     };
   }
 }
@@ -330,9 +335,14 @@ export function withPermission(config: PermissionConfig) {
         return handler(request, ...args);
       } catch (error) {
         console.error('Permission wrapper error:', error);
+        console.error('Error details in wrapper:', {
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          config: config
+        });
         return NextResponse.json(
           { 
-            error: 'Permission check failed',
+            error: `Permission check failed: ${error instanceof Error ? error.message : String(error)}`,
             code: 'PERMISSION_ERROR'
           },
           { status: 500 }
