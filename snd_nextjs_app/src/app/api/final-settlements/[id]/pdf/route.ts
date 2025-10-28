@@ -9,7 +9,7 @@ import { authConfig } from '@/lib/auth-config';
 // GET: Generate and download PDF for a specific final settlement
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authConfig);
@@ -17,7 +17,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const settlementId = parseInt(params.id);
+    const { id } = await params;
+    const settlementId = parseInt(id);
     if (!settlementId) {
       return NextResponse.json({ error: 'Invalid settlement ID' }, { status: 400 });
     }
@@ -116,7 +117,7 @@ export async function GET(
 // POST: Generate and save PDF for a specific final settlement
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authConfig);
@@ -124,7 +125,8 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const settlementId = parseInt(params.id);
+    const { id } = await params;
+    const settlementId = parseInt(id);
     if (!settlementId) {
       return NextResponse.json({ error: 'Invalid settlement ID' }, { status: 400 });
     }

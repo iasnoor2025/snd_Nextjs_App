@@ -233,12 +233,13 @@ function updateEmployeeDetailsSheet(sheet, data) {
     
     // Write new data if there are any new rows
     if (newRows.length > 0) {
-      const nextRow = lastRow + 1;
+      // Determine the next row after header (row 1)
+      const nextRow = Math.max(lastRow, 1) + 1;
       const dataRange = sheet.getRange(nextRow, 1, newRows.length, headers.length);
       dataRange.setValues(newRows);
       
-      // Apply formatting only to new rows
-      applySheetFormatting(sheet, newRows.length, nextRow - 1);
+      // Apply formatting only to new rows (start at the row we just wrote)
+      applySheetFormatting(sheet, newRows.length, nextRow);
       
       console.log(`Added ${newRows.length} new records`);
     } else {
