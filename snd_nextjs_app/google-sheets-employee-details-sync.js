@@ -166,7 +166,9 @@ function formatEmployeeData(employees) {
  */
 function updateEmployeeDetailsSheet(sheet, data) {
   try {
-    const headers = ['File#', 'Employees Full Name', 'Nationality', 'Category', 'Basic Salary', 'Status'];
+    // Write 12 columns where Status is column 12; columns 6-11 are manual
+    const WRITE_COLUMNS = 12;
+    const headers = ['File#', 'Employees Full Name', 'Nationality', 'Category', 'Basic Salary', 'Food Money', 'OT Rates', 'Gosi', 'Advance', 'Other', 'Bonus', 'Status'];
     
     // Check if sheet is empty or needs headers
     const lastRow = sheet.getLastRow();
@@ -174,10 +176,10 @@ function updateEmployeeDetailsSheet(sheet, data) {
     
     // Setup headers if sheet is empty
     if (lastRow === 0) {
-      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+      sheet.getRange(1, 1, 1, WRITE_COLUMNS).setValues([headers]);
       
       // Style headers
-      const headerRange = sheet.getRange(1, 1, 1, headers.length);
+      const headerRange = sheet.getRange(1, 1, 1, WRITE_COLUMNS);
       headerRange.setBackground('#1f4e79');
       headerRange.setFontColor('white');
       headerRange.setFontWeight('bold');
@@ -208,12 +210,18 @@ function updateEmployeeDetailsSheet(sheet, data) {
       const fileNumber = String(emp.fileNumber).trim();
       if (!existingFileNumbers.has(fileNumber)) {
         newRows.push([
-          emp.fileNumber,
-          emp.fullName,
-          emp.nationality,
-          emp.category,
-          emp.basicSalary,
-          emp.status
+          emp.fileNumber,  // 1
+          emp.fullName,    // 2
+          emp.nationality, // 3
+          emp.category,    // 4
+          emp.basicSalary, // 5
+          '',              // 6 Food Money (manual)
+          '',              // 7 OT Rates (manual)
+          '',              // 8 Gosi (manual)
+          '',              // 9 Advance (manual)
+          '',              // 10 Other (manual)
+          '',              // 11 Bonus (manual)
+          emp.status       // 12 Status
         ]);
         newEmployeeData.push(emp);
       }
@@ -233,15 +241,36 @@ function updateEmployeeDetailsSheet(sheet, data) {
     
     // Write new data if there are any new rows
     if (newRows.length > 0) {
-      // Determine the next row after header (row 1)
-      const nextRow = Math.max(lastRow, 1) + 1;
-      const dataRange = sheet.getRange(nextRow, 1, newRows.length, headers.length);
+      // Find the first empty row to fill gaps
+      let nextRow = 2; // Start after header
+      
+      if (hasData) {
+        // Check if there are empty rows in the middle
+        let foundEmptyRow = false;
+        for (let row = 2; row <= lastRow; row++) {
+          const fileNumberCell = sheet.getRange(row, 1).getValue();
+          if (!fileNumberCell || String(fileNumberCell).trim() === '') {
+            nextRow = row;
+            foundEmptyRow = true;
+            console.log(`Found empty row at ${nextRow}`);
+            break;
+          }
+        }
+        
+        // If no empty row found in middle, append to the end
+        if (!foundEmptyRow) {
+          nextRow = lastRow + 1;
+          console.log(`Appending to end at row ${nextRow}`);
+        }
+      }
+      
+      const dataRange = sheet.getRange(nextRow, 1, newRows.length, WRITE_COLUMNS);
       dataRange.setValues(newRows);
       
       // Apply formatting only to new rows (start at the row we just wrote)
       applySheetFormatting(sheet, newRows.length, nextRow);
       
-      console.log(`Added ${newRows.length} new records`);
+      console.log(`Added ${newRows.length} new records starting at row ${nextRow}`);
     } else {
       console.log('No new records to add');
     }
@@ -258,11 +287,11 @@ function updateEmployeeDetailsSheet(sheet, data) {
     
     // Re-create filter to include all rows
     if (sheet.getLastRow() > 1) {
-      sheet.getRange(1, 1, 1, headers.length).createFilter();
+      sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), WRITE_COLUMNS)).createFilter();
     }
     
     // Auto-resize columns to fit data
-    for (var c = 1; c <= headers.length; c++) {
+    for (var c = 1; c <= WRITE_COLUMNS; c++) {
       sheet.autoResizeColumn(c);
     }
     
@@ -288,12 +317,12 @@ function updateEmployeeDetailsSheet(sheet, data) {
 function applySheetFormatting(sheet, rowCount, startRow = 2) {
   if (rowCount === 0) return;
   
-  // Apply alternating row colors
-  const dataRange = sheet.getRange(startRow, 1, rowCount, 6);
+  // Apply alternating row colors (12 columns up to Status)
+  const dataRange = sheet.getRange(startRow, 1, rowCount, 12);
   
   for (let i = 0; i < rowCount; i++) {
     const row = startRow + i;
-    const range = sheet.getRange(row, 1, 1, 6);
+    const range = sheet.getRange(row, 1, 1, 12);
     
     // Alternate background color
     if (i % 2 === 0) {
@@ -320,18 +349,18 @@ function applySheetFormatting(sheet, rowCount, startRow = 2) {
     }
     
     // Set text alignment
-    const allDataRange = sheet.getRange(startRow, 1, rowCount, 6);
+    const allDataRange = sheet.getRange(startRow, 1, rowCount, 12);
     allDataRange.setHorizontalAlignment('left');
     allDataRange.setVerticalAlignment('middle');
     
     // Color-code the status column based on status value
     if (rowCount > 0) {
-      const statusRange = sheet.getRange(startRow, 6, rowCount, 1);
-      const statusValues = sheet.getRange(startRow, 6, rowCount, 1).getValues();
+      const statusRange = sheet.getRange(startRow, 12, rowCount, 1);
+      const statusValues = statusRange.getValues();
       
       for (let i = 0; i < rowCount; i++) {
         const status = statusValues[i][0];
-        const statusCell = sheet.getRange(startRow + i, 6);
+        const statusCell = sheet.getRange(startRow + i, 12);
         
         // Apply color coding based on status
         if (status === 'active' || status === 'Active') {
