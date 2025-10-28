@@ -33,11 +33,13 @@ function syncEmployeeDetails() {
     const formattedData = formatEmployeeData(employeeData);
     
     // Update the sheet
-    updateEmployeeDetailsSheet(employeeDetailsSheet, formattedData);
+    const result = updateEmployeeDetailsSheet(employeeDetailsSheet, formattedData);
     
-    SpreadsheetApp.getUi().alert('Sync Complete', 
-      `Successfully synced ${formattedData.length} employee records to Employees_Details sheet.`, 
-      SpreadsheetApp.getUi().ButtonSet.OK);
+    const alertMessage = result.newRecords > 0
+      ? `Sync Complete!\n\nAdded ${result.newRecords} new record(s).\nTotal records: ${result.totalRecords}`
+      : `Sync Complete!\n\nNo new records to add.\nTotal records: ${result.totalRecords}`;
+    
+    SpreadsheetApp.getUi().alert('Sync Complete', alertMessage, SpreadsheetApp.getUi().ButtonSet.OK);
     
     console.log('=== Employee Details Sync Complete ===');
     
@@ -160,49 +162,115 @@ function formatEmployeeData(employees) {
 
 /**
  * Update the Employees_Details sheet with formatted data
+ * Only syncs new records that don't already exist
  */
 function updateEmployeeDetailsSheet(sheet, data) {
   try {
-    // Clear existing data
-    sheet.clear();
-    
-    // Set headers
     const headers = ['File#', 'Employees Full Name', 'Nationality', 'Category', 'Basic Salary', 'Status'];
-    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
     
-    // Style headers
-    const headerRange = sheet.getRange(1, 1, 1, headers.length);
-    headerRange.setBackground('#1f4e79'); // Dark blue
-    headerRange.setFontColor('white');
-    headerRange.setFontWeight('bold');
-    headerRange.setFontSize(11);
+    // Check if sheet is empty or needs headers
+    const lastRow = sheet.getLastRow();
+    const hasData = lastRow > 0;
     
-    // Prepare data rows
-    const rows = data.map(emp => [
-      emp.fileNumber,
-      emp.fullName,
-      emp.nationality,
-      emp.category,
-      emp.basicSalary,
-      emp.status
-    ]);
-    
-    // Write data if there are rows
-    if (rows.length > 0) {
-      const dataRange = sheet.getRange(2, 1, rows.length, headers.length);
-      dataRange.setValues(rows);
+    // Setup headers if sheet is empty
+    if (lastRow === 0) {
+      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
       
-      // Apply formatting
-      applySheetFormatting(sheet, data.length);
+      // Style headers
+      const headerRange = sheet.getRange(1, 1, 1, headers.length);
+      headerRange.setBackground('#1f4e79');
+      headerRange.setFontColor('white');
+      headerRange.setFontWeight('bold');
+      headerRange.setFontSize(11);
+      
+      console.log('Initialized sheet with headers');
     }
     
-    // Add filter to header row
-    sheet.getRange(1, 1, 1, headers.length).createFilter();
+    // Get existing File# values from column 1 (skip header row)
+    const existingFileNumbers = new Set();
+    if (hasData && lastRow > 1) {
+      const fileNumberRange = sheet.getRange(2, 1, lastRow - 1, 1);
+      const fileNumbers = fileNumberRange.getValues();
+      fileNumbers.forEach(row => {
+        if (row[0]) {
+          existingFileNumbers.add(String(row[0]).trim());
+        }
+      });
+    }
     
-    // Auto-resize columns
-    sheet.autoResizeColumns(1, headers.length);
+    console.log(`Found ${existingFileNumbers.size} existing records`);
     
-    console.log(`Updated sheet with ${rows.length} employee records`);
+    // Prepare data rows and filter out existing records
+    const newRows = [];
+    const newEmployeeData = [];
+    
+    data.forEach(emp => {
+      const fileNumber = String(emp.fileNumber).trim();
+      if (!existingFileNumbers.has(fileNumber)) {
+        newRows.push([
+          emp.fileNumber,
+          emp.fullName,
+          emp.nationality,
+          emp.category,
+          emp.basicSalary,
+          emp.status
+        ]);
+        newEmployeeData.push(emp);
+      }
+    });
+    
+    console.log(`Adding ${newRows.length} new records`);
+    
+    // Sort new rows numerically by File#
+    newRows.sort((rowA, rowB) => {
+      const a = parseInt(String(rowA[0]).replace(/[^0-9]/g, ''), 10);
+      const b = parseInt(String(rowB[0]).replace(/[^0-9]/g, ''), 10);
+      if (isNaN(a) && isNaN(b)) return 0;
+      if (isNaN(a)) return 1;
+      if (isNaN(b)) return -1;
+      return a - b;
+    });
+    
+    // Write new data if there are any new rows
+    if (newRows.length > 0) {
+      const nextRow = lastRow + 1;
+      const dataRange = sheet.getRange(nextRow, 1, newRows.length, headers.length);
+      dataRange.setValues(newRows);
+      
+      // Apply formatting only to new rows
+      applySheetFormatting(sheet, newRows.length, nextRow - 1);
+      
+      console.log(`Added ${newRows.length} new records`);
+    } else {
+      console.log('No new records to add');
+    }
+    
+    // Add or refresh filter
+    try {
+      const existingFilter = sheet.getFilter();
+      if (existingFilter) {
+        existingFilter.remove();
+      }
+    } catch (e) {
+      // No existing filter
+    }
+    
+    // Re-create filter to include all rows
+    if (sheet.getLastRow() > 1) {
+      sheet.getRange(1, 1, 1, headers.length).createFilter();
+    }
+    
+    // Auto-resize columns to fit data
+    for (var c = 1; c <= headers.length; c++) {
+      sheet.autoResizeColumn(c);
+    }
+    
+    console.log(`Sheet now has ${sheet.getLastRow() - 1} total employee records`);
+    
+    return {
+      newRecords: newRows.length,
+      totalRecords: sheet.getLastRow() - 1
+    };
     
   } catch (error) {
     console.error('Error updating sheet:', error);
@@ -212,15 +280,18 @@ function updateEmployeeDetailsSheet(sheet, data) {
 
 /**
  * Apply formatting to the sheet
+ * @param {Sheet} sheet The sheet to format
+ * @param {number} rowCount Number of rows to format
+ * @param {number} startRow Starting row number (default: 2, after header)
  */
-function applySheetFormatting(sheet, rowCount) {
+function applySheetFormatting(sheet, rowCount, startRow = 2) {
   if (rowCount === 0) return;
   
   // Apply alternating row colors
-  const dataRange = sheet.getRange(2, 1, rowCount, 6);
+  const dataRange = sheet.getRange(startRow, 1, rowCount, 6);
   
   for (let i = 0; i < rowCount; i++) {
-    const row = i + 2; // Start from row 2 (after headers)
+    const row = startRow + i;
     const range = sheet.getRange(row, 1, 1, 6);
     
     // Alternate background color
@@ -237,8 +308,8 @@ function applySheetFormatting(sheet, rowCount) {
     // Format numeric columns (File# and Basic Salary)
     if (rowCount > 0) {
       // Format File# column (1) and Basic Salary column (5) as numbers
-      const fileNumberRange = sheet.getRange(2, 1, rowCount, 1);
-      const basicSalaryRange = sheet.getRange(2, 5, rowCount, 1);
+      const fileNumberRange = sheet.getRange(startRow, 1, rowCount, 1);
+      const basicSalaryRange = sheet.getRange(startRow, 5, rowCount, 1);
       
       // File numbers - ensure they're treated as text to preserve formatting
       fileNumberRange.setNumberFormat('@');
@@ -248,23 +319,24 @@ function applySheetFormatting(sheet, rowCount) {
     }
     
     // Set text alignment
-    const allDataRange = sheet.getRange(2, 1, rowCount, 6);
+    const allDataRange = sheet.getRange(startRow, 1, rowCount, 6);
     allDataRange.setHorizontalAlignment('left');
     allDataRange.setVerticalAlignment('middle');
     
     // Color-code the status column based on status value
     if (rowCount > 0) {
-      const statusRange = sheet.getRange(2, 6, rowCount, 1);
-      const statusValues = sheet.getRange(2, 6, rowCount, 1).getValues();
+      const statusRange = sheet.getRange(startRow, 6, rowCount, 1);
+      const statusValues = sheet.getRange(startRow, 6, rowCount, 1).getValues();
       
       for (let i = 0; i < rowCount; i++) {
         const status = statusValues[i][0];
-        const statusCell = sheet.getRange(i + 2, 6);
+        const statusCell = sheet.getRange(startRow + i, 6);
         
         // Apply color coding based on status
         if (status === 'active' || status === 'Active') {
-          statusCell.setBackground('#90EE90'); // Light green
+          statusCell.setBackground('#1F5A1C'); // Dark green
           statusCell.setFontWeight('bold');
+          statusCell.setFontColor('white');
         } else if (status === 'inactive' || status === 'Inactive') {
           statusCell.setBackground('#FFB6C1'); // Light pink
           statusCell.setFontWeight('bold');
@@ -278,7 +350,7 @@ function applySheetFormatting(sheet, rowCount) {
     }
   
   // Bold the employee name column
-  const nameColumnRange = sheet.getRange(2, 2, rowCount, 1);
+  const nameColumnRange = sheet.getRange(startRow, 2, rowCount, 1);
   nameColumnRange.setFontWeight('bold');
 }
 
@@ -373,13 +445,18 @@ function showInstructions() {
     '🔄 Sync Employee Details: Manually sync all employee data\n\n' +
     '⏰ Enable Auto-Sync: Set up daily automatic sync at 2 AM\n\n' +
     '⏸️ Disable Auto-Sync: Remove automatic sync trigger\n\n' +
+    'Features:\n' +
+    '• Automatically sorts by File#\n' +
+    '• Auto-resizes columns to fit data\n' +
+    '• Color-coded status (green=active, pink=inactive, gold=on leave)\n' +
+    '• Alternating row colors for readability\n\n' +
     'The "Employees_Details" sheet will be created/updated with:\n' +
     '• File#\n' +
     '• Employees Full Name\n' +
     '• Nationality\n' +
     '• Category (Designation)\n' +
     '• Basic Salary\n' +
-    '• Status (with color coding: green=active, pink=inactive, gold=on leave)',
+    '• Status',
     ui.ButtonSet.OK
   );
 }

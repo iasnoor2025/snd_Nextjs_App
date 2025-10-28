@@ -19,7 +19,9 @@ The Google Apps Script (`google-sheets-employee-details-sync.js`) automatically 
 2. **Auto-Sync**: Schedule daily automatic sync at 2 AM
 3. **Auto-Formatting**: Automatically applies colors, borders, and formatting
 4. **Data Filtering**: Adds filter controls to the header row
-5. **Error Handling**: Graceful error handling with user notifications
+5. **Auto-Sort**: Automatically sorts data by File# in ascending order
+6. **Auto-Resize**: Columns automatically resize to fit content
+7. **Error Handling**: Graceful error handling with user notifications
 
 ## Setup Instructions
 
@@ -95,9 +97,11 @@ The script uses the `/api/employees/public` endpoint which should return data in
 ## How It Works
 
 1. **Data Fetching**: The script calls your Next.js API to get all employee data
-2. **Data Formatting**: Converts the API response to the required format with columns: File#, Full Name, Nationality, Category, Basic Salary
+2. **Data Formatting**: Converts the API response to the required format with columns: File#, Full Name, Nationality, Category, Basic Salary, Status
 3. **Sheet Update**: Creates or updates the "Employees_Details" sheet
 4. **Formatting**: Applies colors, borders, and formatting to make the data readable
+5. **Sorting**: Automatically sorts data by File# in ascending order
+6. **Column Sizing**: Automatically resizes all columns to fit content
 
 ## Formatting Applied
 
@@ -105,6 +109,7 @@ The script uses the `/api/employees/public` endpoint which should return data in
 - **Alternating Rows**: Light gray (#f8f9fa) and white backgrounds
 - **Borders**: All cells have borders
 - **Employee Name**: Bold font for employee names
+- **Auto-Sort**: Data automatically sorted by File# in ascending order
 - **Auto-Resize**: Columns automatically resize to fit content
 - **Filters**: Filter controls added to the header row
 - **Status Column**: Color-coded based on status:
