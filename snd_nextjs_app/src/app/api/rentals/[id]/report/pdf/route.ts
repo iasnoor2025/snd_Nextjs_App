@@ -152,17 +152,29 @@ function generateReportHTML(rental: any, rentalItems: any[], selectedMonth: stri
         <meta charset="UTF-8">
         <title>Monthly Items Report - ${rental.rentalNumber}</title>
         <style>
-          body { font-family: Arial, sans-serif; padding: 20px; margin: 0; }
-          h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
-          h2 { color: #666; margin-top: 30px; margin-bottom: 10px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 20px; page-break-inside: auto; }
-          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-          th { background-color: #f2f2f2; font-weight: bold; }
-          .summary { background-color: #f9f9f9; padding: 15px; margin: 20px 0; border-radius: 5px; }
-          .month-section { page-break-after: auto; margin-bottom: 30px; }
+          body { font-family: Arial, sans-serif; padding: 10px; margin: 0; font-size: 12px; }
+          h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 5px; margin-bottom: 10px; font-size: 20px; }
+          h2 { color: #666; margin-top: 15px; margin-bottom: 5px; font-size: 16px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; page-break-inside: auto; font-size: 12px; }
+          th, td { border: 1px solid #ddd; padding: 3px 5px; text-align: left; }
+          th { background-color: #f2f2f2; font-weight: bold; font-size: 12px; }
+          td { font-size: 12px; }
+          .sl-col { width: 35px; text-align: center; }
+          .equipment-col { min-width: 120px; }
+          .price-col { width: 80px; text-align: right; }
+          .rate-col { width: 60px; text-align: center; }
+          .date-col { width: 95px; }
+          .operator-col { min-width: 110px; }
+          .duration-col { width: 75px; text-align: center; }
+          .total-col { width: 100px; text-align: right; font-weight: bold; }
+          .completed-col { width: 100px; }
+          .summary { background-color: #f9f9f9; padding: 8px; margin: 10px 0; border-radius: 4px; font-size: 12px; }
+          .month-section { page-break-after: auto; margin-bottom: 15px; }
           @media print {
-            body { padding: 10px; }
+            body { padding: 6px; font-size: 11px; }
             .no-print { display: none; }
+            table { font-size: 11px; }
+            th, td { padding: 2px 4px; font-size: 11px; }
           }
         </style>
       </head>
@@ -188,19 +200,21 @@ function generateReportHTML(rental: any, rentalItems: any[], selectedMonth: stri
         <table>
           <thead>
             <tr>
-              <th>Equipment</th>
-              <th>Unit Price</th>
-              <th>Rate</th>
-              <th>Start Date</th>
-              <th>Operator</th>
-              <th>Duration</th>
-              <th>Total</th>
+              <th class="sl-col">Sl#</th>
+              <th class="equipment-col">Equipment</th>
+              <th class="price-col">Unit Price</th>
+              <th class="rate-col">Rate</th>
+              <th class="date-col">Start Date</th>
+              <th class="operator-col">Operator</th>
+              <th class="duration-col">Duration</th>
+              <th class="total-col">Total</th>
+              <th class="completed-col">Completed Date</th>
             </tr>
           </thead>
           <tbody>
     `;
     
-    monthData.items.forEach((item: any) => {
+    monthData.items.forEach((item: any, index: number) => {
       const equipmentName = item.equipmentName || 'N/A';
       const operatorName = (item?.operatorFirstName && item?.operatorLastName) 
         ? `${item.operatorFirstName} ${item.operatorLastName}` 
@@ -277,15 +291,23 @@ function generateReportHTML(rental: any, rentalItems: any[], selectedMonth: stri
         }
       }
       
+      // Determine completed date display
+      let completedDateDisplay = '-';
+      if (item.status === 'completed' && item.completedDate) {
+        completedDateDisplay = format(new Date(item.completedDate), 'MMM dd, yyyy');
+      }
+
       html += `
         <tr>
-          <td>${equipmentName}</td>
-          <td>SAR ${parseFloat(item.unitPrice || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</td>
-          <td>${item.rateType || 'daily'}</td>
-          <td>${displayStartDate}</td>
-          <td>${operatorName}</td>
-          <td>${durationText}</td>
-          <td><strong>SAR ${monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</strong></td>
+          <td class="sl-col">${index + 1}</td>
+          <td class="equipment-col">${equipmentName}</td>
+          <td class="price-col">SAR ${parseFloat(item.unitPrice || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</td>
+          <td class="rate-col">${item.rateType || 'daily'}</td>
+          <td class="date-col">${displayStartDate}</td>
+          <td class="operator-col">${operatorName}</td>
+          <td class="duration-col">${durationText}</td>
+          <td class="total-col">SAR ${monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</td>
+          <td class="completed-col">${completedDateDisplay}</td>
         </tr>
       `;
     });

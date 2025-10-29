@@ -35,6 +35,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { format } from 'date-fns';
 import {
   AlertCircle,
+  AlertTriangle,
   ArrowLeft,
   Calendar,
   CalendarCheck,
@@ -781,10 +782,87 @@ export default function RentalDetailPage() {
     startDate: '', // New field for item start date
   });
 
+  const [duplicateWarnings, setDuplicateWarnings] = useState<string[]>([]);
+
   // Debug form data changes
   useEffect(() => {
     console.log('Form data changed:', itemFormData);
   }, [itemFormData]);
+
+  // Check for duplicates when adding item
+  useEffect(() => {
+    if (!isAddItemDialogOpen || !rental?.rentalItems || rental.rentalItems.length === 0) {
+      setDuplicateWarnings([]);
+      return;
+    }
+
+    const warnings: string[] = [];
+    const existingItems = rental.rentalItems.filter(item => item.status === 'active');
+
+    // Check for duplicate equipment with same operator
+    if (itemFormData.equipmentId && itemFormData.operatorId) {
+      const duplicate = existingItems.find(item => 
+        item.equipmentId?.toString() === itemFormData.equipmentId.toString() &&
+        item.operatorId?.toString() === itemFormData.operatorId.toString()
+      );
+      
+      if (duplicate) {
+        const equipmentName = duplicate.equipmentName || `Equipment ${duplicate.equipmentId}`;
+        const startDate = (duplicate as any).startDate || (duplicate as any).start_date;
+        const dateStr = startDate ? new Date(startDate).toLocaleDateString() : 'rental start date';
+        warnings.push(`Same equipment (${equipmentName}) and operator already assigned with active status (started: ${dateStr})`);
+      }
+    }
+
+    // Check for duplicate equipment (even with different operator)
+    if (itemFormData.equipmentId) {
+      const equipmentDuplicates = existingItems.filter(item => 
+        item.equipmentId?.toString() === itemFormData.equipmentId.toString()
+      );
+      
+      if (equipmentDuplicates.length > 0 && !warnings.some(w => w.includes('equipment'))) {
+        const equipmentName = equipmentDuplicates[0].equipmentName || `Equipment ${equipmentDuplicates[0].equipmentId}`;
+        warnings.push(`Equipment "${equipmentName}" already has ${equipmentDuplicates.length} active item(s) in this rental`);
+      }
+    }
+
+    // Check for duplicate operator (even with different equipment)
+    if (itemFormData.operatorId) {
+      const operatorDuplicates = existingItems.filter(item => 
+        item.operatorId?.toString() === itemFormData.operatorId.toString()
+      );
+      
+      if (operatorDuplicates.length > 0 && !warnings.some(w => w.includes('operator'))) {
+        const firstDuplicate = operatorDuplicates[0] as any;
+        const operatorName = firstDuplicate.operatorFirstName && firstDuplicate.operatorLastName
+          ? `${firstDuplicate.operatorFirstName} ${firstDuplicate.operatorLastName}`
+          : `Operator ${firstDuplicate.operatorId}`;
+        warnings.push(`Operator "${operatorName}" already assigned to ${operatorDuplicates.length} active item(s) in this rental`);
+      }
+    }
+
+    // Check for overlapping dates
+    if (itemFormData.startDate && itemFormData.equipmentId) {
+      const newStartDate = new Date(itemFormData.startDate);
+      const overlappingItems = existingItems.filter(item => {
+        if (item.equipmentId?.toString() !== itemFormData.equipmentId.toString()) return false;
+        const itemStartDate = (item as any).startDate || (item as any).start_date;
+        if (!itemStartDate) return false;
+        
+        const itemStart = new Date(itemStartDate);
+        const itemCompletedDate = (item as any).completedDate || (item as any).completed_date;
+        const itemEnd = itemCompletedDate ? new Date(itemCompletedDate) : new Date();
+        
+        return newStartDate >= itemStart && newStartDate <= itemEnd;
+      });
+
+      if (overlappingItems.length > 0) {
+        warnings.push(`Start date overlaps with ${overlappingItems.length} existing active item(s) for this equipment`);
+      }
+    }
+
+    setDuplicateWarnings(warnings);
+  }, [itemFormData.equipmentId, itemFormData.operatorId, itemFormData.startDate, rental?.rentalItems, isAddItemDialogOpen]);
 
   const [equipment, setEquipment] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
@@ -1972,9 +2050,9 @@ export default function RentalDetailPage() {
       </div>
 
       {/* Main Content */}
-      <div className={`grid grid-cols-1 ${activeTab === 'items' ? 'lg:grid-cols-1' : 'lg:grid-cols-3'} gap-6`}>
+      <div className={`grid grid-cols-1 ${activeTab === 'items' || activeTab === 'report' ? 'lg:grid-cols-1' : 'lg:grid-cols-3'} gap-6`}>
         {/* Left Column - Rental Details */}
-        <div className={activeTab === 'items' ? 'space-y-6' : 'lg:col-span-2 space-y-6'}>
+        <div className={activeTab === 'items' || activeTab === 'report' ? 'space-y-6' : 'lg:col-span-2 space-y-6'}>
           <Tabs defaultValue="details" value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList>
               <TabsTrigger value="details">{t('rental.tabs.details')}</TabsTrigger>
@@ -2704,16 +2782,29 @@ export default function RentalDetailPage() {
                               <head>
                                 <title>Monthly Items Report - ${rental?.rentalNumber}</title>
                                 <style>
-                                  body { font-family: Arial, sans-serif; padding: 20px; }
-                                  h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
-                                  h2 { color: #666; margin-top: 30px; }
-                                  table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                                  th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                                  th { background-color: #f2f2f2; font-weight: bold; }
-                                  .summary { background-color: #f9f9f9; padding: 15px; margin: 20px 0; }
-                                  .month-section { page-break-after: auto; margin-bottom: 30px; }
+                                  body { font-family: Arial, sans-serif; padding: 10px; margin: 0; font-size: 12px; }
+                                  h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 5px; margin-bottom: 10px; font-size: 20px; }
+                                  h2 { color: #666; margin-top: 15px; margin-bottom: 5px; font-size: 16px; }
+                                  table { width: 100%; border-collapse: collapse; margin-top: 10px; page-break-inside: auto; font-size: 12px; }
+                                  th, td { border: 1px solid #ddd; padding: 3px 5px; text-align: left; }
+                                  th { background-color: #f2f2f2; font-weight: bold; font-size: 12px; }
+                                  td { font-size: 12px; }
+                                  .sl-col { width: 35px; text-align: center; }
+                                  .equipment-col { min-width: 120px; }
+                                  .price-col { width: 80px; text-align: right; }
+                                  .rate-col { width: 60px; text-align: center; }
+                                  .date-col { width: 95px; }
+                                  .operator-col { min-width: 110px; }
+                                  .duration-col { width: 75px; text-align: center; }
+                                  .total-col { width: 100px; text-align: right; font-weight: bold; }
+                                  .completed-col { width: 100px; }
+                                  .summary { background-color: #f9f9f9; padding: 8px; margin: 10px 0; border-radius: 4px; font-size: 12px; }
+                                  .month-section { page-break-after: auto; margin-bottom: 15px; }
                                   @media print {
+                                    body { padding: 6px; font-size: 11px; }
                                     .no-print { display: none; }
+                                    table { font-size: 11px; }
+                                    th, td { padding: 2px 4px; font-size: 11px; }
                                   }
                                 </style>
                               </head>
@@ -2739,19 +2830,21 @@ export default function RentalDetailPage() {
                                 <table>
                                   <thead>
                                     <tr>
-                                      <th>Equipment</th>
-                                      <th>Unit Price</th>
-                                      <th>Rate</th>
-                                      <th>Start Date</th>
-                                      <th>Operator</th>
-                                      <th>Duration</th>
-                                      <th>Total</th>
+                                      <th class="sl-col">Sl#</th>
+                                      <th class="equipment-col">Equipment</th>
+                                      <th class="price-col">Unit Price</th>
+                                      <th class="rate-col">Rate</th>
+                                      <th class="date-col">Start Date</th>
+                                      <th class="operator-col">Operator</th>
+                                      <th class="duration-col">Duration</th>
+                                      <th class="total-col">Total</th>
+                                      <th class="completed-col">Completed Date</th>
                                     </tr>
                                   </thead>
                                   <tbody>
                             `;
                             
-                            monthData.items.forEach((item: any) => {
+                            monthData.items.forEach((item: any, index: number) => {
                               const equipmentName = item.equipmentName?.startsWith('Equipment ') && item.equipmentId 
                                 ? (equipmentNames[item.equipmentId.toString()] || item.equipmentName)
                                 : item.equipmentName;
@@ -2833,15 +2926,23 @@ export default function RentalDetailPage() {
                                 }
                               }
                               
+                              // Determine completed date display
+                              let completedDateDisplay = '-';
+                              if (item.status === 'completed' && item.completedDate) {
+                                completedDateDisplay = format(new Date(item.completedDate), 'MMM dd, yyyy');
+                              }
+                              
                               html += `
                                 <tr>
-                                  <td>${equipmentName}</td>
-                                  <td>SAR ${parseFloat(item.unitPrice || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</td>
-                                  <td>${item.rateType || 'daily'}</td>
-                                  <td>${displayStartDate}</td>
-                                  <td>${operatorName}</td>
-                                  <td>${durationText}</td>
-                                  <td><strong>SAR ${monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</strong></td>
+                                  <td class="sl-col">${index + 1}</td>
+                                  <td class="equipment-col">${equipmentName}</td>
+                                  <td class="price-col">SAR ${parseFloat(item.unitPrice || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</td>
+                                  <td class="rate-col">${item.rateType || 'daily'}</td>
+                                  <td class="date-col">${displayStartDate}</td>
+                                  <td class="operator-col">${operatorName}</td>
+                                  <td class="duration-col">${durationText}</td>
+                                  <td class="total-col">SAR ${monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</td>
+                                  <td class="completed-col">${completedDateDisplay}</td>
                                 </tr>
                               `;
                             });
@@ -3044,45 +3145,48 @@ export default function RentalDetailPage() {
                     }
                     
                     return sortedMonths.length > 0 ? (
-                      <div className="space-y-6">
+                      <div className="space-y-3">
                         {sortedMonths.map((monthKey) => {
                           const monthData = monthlyData[monthKey];
                           return (
-                            <Card key={monthKey}>
-                              <CardHeader>
+                            <Card key={monthKey} className="text-sm">
+                              <CardHeader className="pb-2 pt-2.5 px-3">
                                 <div className="flex justify-between items-center">
-                                  <CardTitle className="text-lg">{monthData.monthLabel}</CardTitle>
-                                  <div className="flex gap-4 text-sm">
+                                  <CardTitle className="text-lg font-semibold">{monthData.monthLabel}</CardTitle>
+                                  <div className="flex gap-3 text-xs">
                                     <div className="flex flex-col">
-                                      <span className="text-muted-foreground">Items</span>
-                                      <span className="font-semibold">{monthData.totalItems}</span>
+                                      <span className="text-muted-foreground text-[11px]">Items</span>
+                                      <span className="font-semibold text-sm">{monthData.totalItems}</span>
                                     </div>
                                     <div className="flex flex-col text-green-600">
-                                      <span className="text-muted-foreground">Active</span>
-                                      <span className="font-semibold">{monthData.activeItems}</span>
+                                      <span className="text-muted-foreground text-[11px]">Active</span>
+                                      <span className="font-semibold text-sm">{monthData.activeItems}</span>
                                     </div>
                                     <div className="flex flex-col text-blue-600">
-                                      <span className="text-muted-foreground">Value</span>
-                                      <span className="font-semibold">SAR {formatAmount(monthData.totalAmount)}</span>
+                                      <span className="text-muted-foreground text-[11px]">Value</span>
+                                      <span className="font-semibold text-sm">SAR {formatAmount(monthData.totalAmount)}</span>
                                     </div>
                                   </div>
                                 </div>
                               </CardHeader>
-                              <CardContent>
-                                <Table>
-                                  <TableHeader>
-                                    <TableRow>
-                                      <TableHead>Equipment</TableHead>
-                                      <TableHead>Unit Price</TableHead>
-                                      <TableHead>Rate</TableHead>
-                                      <TableHead>Start Date</TableHead>
-                                      <TableHead>Operator</TableHead>
-                                      <TableHead>Duration</TableHead>
-                                      <TableHead>Total</TableHead>
-                                    </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                    {monthData.items.map((item: any) => {
+                              <CardContent className="p-2">
+                                <div className="overflow-x-auto">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow className="border-b">
+                                        <TableHead className="w-10 text-center text-sm py-1 px-1">Sl#</TableHead>
+                                        <TableHead className="text-sm py-1 px-2 min-w-[110px] font-semibold">Equipment</TableHead>
+                                        <TableHead className="text-sm py-1 px-1 w-24">Unit Price</TableHead>
+                                        <TableHead className="text-sm py-1 px-1 w-16">Rate</TableHead>
+                                        <TableHead className="text-sm py-1 px-1 w-24">Start Date</TableHead>
+                                        <TableHead className="text-sm py-1 px-1 min-w-[100px]">Operator</TableHead>
+                                        <TableHead className="text-sm py-1 px-1 w-20">Duration</TableHead>
+                                        <TableHead className="text-sm py-1 px-1 w-28">Total</TableHead>
+                                        <TableHead className="text-sm py-1 px-1 w-28">Completed Date</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {monthData.items.map((item: any, index: number) => {
                                       const equipmentName = item.equipmentName?.startsWith('Equipment ') && item.equipmentId 
                                         ? (equipmentNames[item.equipmentId.toString()] || item.equipmentName)
                                         : item.equipmentName;
@@ -3177,21 +3281,28 @@ export default function RentalDetailPage() {
                                           displayStartDate = `Rental: ${format(new Date(rental.startDate), 'MMM dd, yyyy')}`;
                                         }
                                       
+                                      // Determine completed date display
+                                      let completedDateDisplay = '-';
+                                      if (item.status === 'completed' && item.completedDate) {
+                                        completedDateDisplay = format(new Date(item.completedDate), 'MMM dd, yyyy');
+                                      }
+
                                       return (
-                                        <TableRow key={item.id}>
-                                          <TableCell className="font-medium">{equipmentName}</TableCell>
-                                          <TableCell className="font-mono">SAR {formatAmount(item.unitPrice)}</TableCell>
-                                          <TableCell>
-                                            <Badge variant="outline" className="capitalize">
+                                        <TableRow key={item.id} className="border-b">
+                                          <TableCell className="w-10 text-center text-sm py-1 px-1">{index + 1}</TableCell>
+                                          <TableCell className="font-medium text-sm py-1 px-2 min-w-[110px]">{equipmentName}</TableCell>
+                                          <TableCell className="font-mono text-sm py-1 px-1 w-24">SAR {formatAmount(item.unitPrice)}</TableCell>
+                                          <TableCell className="text-sm py-1 px-1 w-16">
+                                            <Badge variant="outline" className="capitalize text-xs px-1.5 py-0.5 h-5">
                                               {item.rateType || 'daily'}
                                             </Badge>
                                           </TableCell>
-                                          <TableCell className="text-sm text-muted-foreground">
+                                          <TableCell className="text-sm text-muted-foreground py-1 px-1 w-24">
                                             {displayStartDate}
                                           </TableCell>
-                                          <TableCell className="text-sm text-muted-foreground">{operatorName}</TableCell>
-                                          <TableCell className="text-sm text-muted-foreground">{durationText}</TableCell>
-                                          <TableCell className="font-mono font-semibold">
+                                          <TableCell className="text-sm text-muted-foreground py-1 px-1 min-w-[100px]">{operatorName}</TableCell>
+                                          <TableCell className="text-sm text-muted-foreground py-1 px-1 w-20">{durationText}</TableCell>
+                                          <TableCell className="font-mono font-semibold text-sm py-1 px-1 w-28">
                                             {(() => {
                                               const days = parseInt(durationText.replace(' days', '')) || 1;
                                               const unitPrice = parseFloat(item.unitPrice || 0) || 0;
@@ -3199,11 +3310,13 @@ export default function RentalDetailPage() {
                                               return `SAR ${formatAmount(monthlyTotal.toString())}`;
                                             })()}
                                           </TableCell>
+                                          <TableCell className="text-sm text-muted-foreground py-1 px-1 w-28">{completedDateDisplay}</TableCell>
                                         </TableRow>
                                       );
-                                    })}
-                                  </TableBody>
-                                </Table>
+                                      })}
+                                    </TableBody>
+                                  </Table>
+                                </div>
                               </CardContent>
                             </Card>
                           );
@@ -3555,11 +3668,36 @@ export default function RentalDetailPage() {
             </div>
           </div>
 
+          {/* Duplicate Warning */}
+          {duplicateWarnings.length > 0 && (
+            <div className="rounded-md bg-yellow-50 border border-yellow-200 p-3 space-y-2">
+              <div className="flex items-start">
+                <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" />
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-yellow-800 mb-1">Potential Duplicate Detected</h4>
+                  <ul className="list-disc list-inside space-y-1 text-xs text-yellow-700">
+                    {duplicateWarnings.map((warning, index) => (
+                      <li key={index}>{warning}</li>
+                    ))}
+                  </ul>
+                  <p className="text-xs text-yellow-600 mt-2">
+                    Please review before adding. You may want to use the existing item or update it instead.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddItemDialogOpen(false)}>
+            <Button variant="outline" onClick={() => {
+              setIsAddItemDialogOpen(false);
+              setDuplicateWarnings([]);
+            }}>
               Cancel
             </Button>
-            <Button onClick={addRentalItem}>Add Item</Button>
+            <Button onClick={addRentalItem} variant={duplicateWarnings.length > 0 ? 'outline' : 'default'}>
+              {duplicateWarnings.length > 0 ? 'Add Anyway' : 'Add Item'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
