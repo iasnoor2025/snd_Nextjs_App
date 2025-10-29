@@ -628,11 +628,44 @@ const deleteEmployeeHandler = async (
       return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
 
-    // Soft delete employee using Drizzle
-    await db
-      .update(employeesTable)
-      .set({ deletedAt: new Date().toISOString() })
-      .where(eq(employeesTable.id, employeeId));
+    // Permanently delete: clear dependent records first, then delete employee
+    const tablesToClear = [
+      'advance_payment_histories',
+      'advance_payments',
+      'employee_assignments',
+      'employee_documents',
+      'employee_leaves',
+      'employee_performance_reviews',
+      'employee_resignations',
+      'employee_salaries',
+      'employee_skill',
+      'employee_training',
+      'loans',
+      'payrolls',
+      'salary_increments',
+      'time_entries',
+      'timesheets',
+      'time_off_requests',
+      'tax_documents',
+      'weekly_timesheets',
+      'project_manpower',
+      'equipment_rental_history',
+      'equipment_maintenance'
+    ];
+
+    for (const table of tablesToClear) {
+      try {
+        if (table === 'equipment_maintenance') {
+          await db.execute(sql`DELETE FROM ${sql.identifier(table)} WHERE assigned_to_employee_id = ${employeeId}`);
+        } else {
+          await db.execute(sql`DELETE FROM ${sql.identifier(table)} WHERE employee_id = ${employeeId}`);
+        }
+      } catch (err) {
+        console.warn(`Could not delete from table ${table}:`, err);
+      }
+    }
+
+    await db.delete(employeesTable).where(eq(employeesTable.id, employeeId));
 
     // Attempt ERPNext sync to mark employee as inactive
     const erpnextSyncService = ERPNextSyncService.getInstance();

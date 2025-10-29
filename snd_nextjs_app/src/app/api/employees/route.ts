@@ -53,8 +53,8 @@ const getEmployeesHandler = async (request: NextRequest) => {
 
     const skip = (page - 1) * limit;
 
-    // Build filters
-    const filters: unknown[] = [];
+    // Build filters (exclude soft-deleted employees by default)
+    const filters: any[] = [isNull(employeesTable.deletedAt)];
     if (search) {
       const s = `%${search}%`;
       filters.push(
@@ -511,7 +511,7 @@ const createEmployeeHandler = async (request: NextRequest) => {
         foodAllowance: food_allowance ? String(parseFloat(food_allowance)) : '0',
         housingAllowance: housing_allowance ? String(parseFloat(housing_allowance)) : '0',
         transportAllowance: transport_allowance ? String(parseFloat(transport_allowance)) : '0',
-        hourlyRate: hourly_rate ? parseFloat(hourly_rate) : null,
+        hourlyRate: hourly_rate ? String(parseFloat(hourly_rate)) : null,
         absentDeductionRate: absent_deduction_rate ? String(parseFloat(absent_deduction_rate)) : '0',
         overtimeRateMultiplier: overtime_rate_multiplier !== null && overtime_rate_multiplier !== undefined ? String(parseFloat(overtime_rate_multiplier)) : '1.5',
         overtimeFixedRate: overtime_fixed_rate !== null && overtime_fixed_rate !== undefined ? String(parseFloat(overtime_fixed_rate)) : '0',
@@ -552,7 +552,7 @@ const createEmployeeHandler = async (request: NextRequest) => {
         spspLicenseFile: spsp_license_file || null,
         passportFile: passport_file || null,
         iqamaFile: iqama_file || null,
-        updatedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString().split('T')[0],
       })
       .returning();
     const employee = (inserted as any[])[0];

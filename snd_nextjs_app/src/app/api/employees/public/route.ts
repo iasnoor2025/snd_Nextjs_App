@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { departments, designations, employees as employeesTable } from '@/lib/drizzle/schema';
-import { and, asc, eq, ilike, or, ne, notInArray } from 'drizzle-orm';
+import { and, asc, eq, ilike, or, ne, notInArray, isNull } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/employees/public - Get employees for dropdown (no auth required)
@@ -13,8 +13,11 @@ export async function GET(_request: NextRequest) {
     const all = searchParams.get('all') === 'true';
 
     // Build filters
-    // Include all employees except those who have left/exited
-    const filters: any[] = [notInArray(employeesTable.status, ['left', 'exit', 'terminated', 'resigned'])];
+    // Include all employees except those who have left/exited and those soft-deleted
+    const filters: any[] = [
+      notInArray(employeesTable.status, ['left', 'exit', 'terminated', 'resigned']),
+      isNull(employeesTable.deletedAt)
+    ];
     if (search) {
       const s = `%${search}%`;
       filters.push(
