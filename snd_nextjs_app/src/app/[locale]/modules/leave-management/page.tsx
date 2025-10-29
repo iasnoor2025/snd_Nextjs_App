@@ -47,7 +47,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 // i18n refactor: All user-facing strings now use useTranslation('leave')
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
@@ -91,6 +91,7 @@ export default function LeaveManagementPage() {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequestResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [status, setStatus] = useState('all');
   const [leaveType, setLeaveType] = useState('all');
   const [perPage, setPerPage] = useState(10);
@@ -98,12 +99,48 @@ export default function LeaveManagementPage() {
   const [translatedNames, setTranslatedNames] = useState<{ [key: string]: string }>({});
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const isFetchingRef = useRef(false);
 
   // Get allowed actions for leave management
   const allowedActions = getAllowedActions('Leave');
 
-  const fetchLeaveRequests = async () => {
+  // Debounce search input - only update if search actually changed
+  useEffect(() => {
+    // Clear existing timeout
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    // If search is empty, immediately clear debounced search
+    if (search === '') {
+      setDebouncedSearch('');
+      return;
+    }
+
+    // Otherwise, debounce the search
+    const timeout = setTimeout(() => {
+      setDebouncedSearch(search);
+      setCurrentPage(1); // Reset to first page on new search
+    }, 300);
+
+    setSearchTimeout(timeout);
+
+    return () => {
+      if (timeout) clearTimeout(timeout);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
+
+  // Fetch function that can be called from anywhere
+  const fetchLeaveRequests = useCallback(async () => {
+    // Prevent duplicate calls
+    if (isFetchingRef.current) {
+      return;
+    }
+
     try {
+      isFetchingRef.current = true;
       setLoading(true);
 
       // Build query parameters
@@ -120,8 +157,8 @@ export default function LeaveManagementPage() {
         params.append('leaveType', leaveType);
       }
 
-      if (search) {
-        params.append('search', search);
+      if (debouncedSearch) {
+        params.append('search', debouncedSearch);
       }
 
       const response = await fetch(`/api/leave-requests/public?${params.toString()}`, {
@@ -175,16 +212,29 @@ export default function LeaveManagementPage() {
         throw new Error(data.message || 'Failed to fetch leave requests');
       }
     } catch (error) {
-      
-             toast.error(t('leave.error_fetching_leave_requests'));
+      toast.error(t('leave.error_fetching_leave_requests'));
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, status, leaveType, perPage, currentPage]);
 
+  // Fetch leave requests when dependencies change
   useEffect(() => {
     fetchLeaveRequests();
-  }, [search, status, leaveType, perPage, currentPage]);
+  }, [fetchLeaveRequests]);
+
+  // Handler functions to prevent unnecessary re-renders
+  const handleStatusChange = (newStatus: string) => {
+    setStatus(newStatus);
+    setCurrentPage(1); // Reset to first page when filter changes
+  };
+
+  const handleLeaveTypeChange = (newLeaveType: string) => {
+    setLeaveType(newLeaveType);
+    setCurrentPage(1); // Reset to first page when filter changes
+  };
 
   const handleDelete = async (id: string) => {
     setDeleteId(id);
@@ -299,14 +349,6 @@ export default function LeaveManagementPage() {
     return new Date(dateString).toLocaleDateString();
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-                 <div className="text-lg">{t('leave.loading_leave_requests')}</div>
-      </div>
-    );
-  }
-
   return (
     <ProtectedRoute requiredPermission={{ action: 'read', subject: 'Leave' }}>
       <div className="space-y-6">
@@ -340,7 +382,7 @@ export default function LeaveManagementPage() {
                 />
               </div>
               <div className="flex gap-2">
-                <Select value={status} onValueChange={setStatus}>
+                <Select value={status} onValueChange={handleStatusChange}>
                   <SelectTrigger className="w-32">
                     <SelectValue />
                   </SelectTrigger>
@@ -352,7 +394,7 @@ export default function LeaveManagementPage() {
                      <SelectItem value="Cancelled">{t('leave.cancelled')}</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={leaveType} onValueChange={setLeaveType}>
+                <Select value={leaveType} onValueChange={handleLeaveTypeChange}>
                   <SelectTrigger className="w-40">
                     <SelectValue />
                   </SelectTrigger>
@@ -382,7 +424,7 @@ export default function LeaveManagementPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {loading ? (
+                  {loading && !leaveRequests ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-8">
                         <div className="flex items-center justify-center">

@@ -29,13 +29,15 @@ export async function GET(_request: NextRequest) {
 
     // Add search functionality
     if (search) {
+      const searchPattern = `%${search}%`;
       whereConditions.push(
         or(
-          ilike(employees.firstName, `%${search}%`),
-          ilike(employees.lastName, `%${search}%`),
-          ilike(employees.fileNumber, `%${search}%`),
-          ilike(employeeLeaves.reason, `%${search}%`),
-          ilike(employeeLeaves.leaveType, `%${search}%`)
+          ilike(employees.firstName, searchPattern),
+          ilike(employees.middleName, searchPattern),
+          ilike(employees.lastName, searchPattern),
+          ilike(employees.fileNumber, searchPattern),
+          ilike(employeeLeaves.reason, searchPattern),
+          ilike(employeeLeaves.leaveType, searchPattern)
         )
       );
     }
