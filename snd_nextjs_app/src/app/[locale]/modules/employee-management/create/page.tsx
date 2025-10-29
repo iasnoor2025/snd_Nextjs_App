@@ -147,6 +147,7 @@ export default function CreateEmployeePage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [designations, setDesignations] = useState<Designation[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, string>>({});
+  const [suggestedFileNumber, setSuggestedFileNumber] = useState<string>('');
 
   // Add modal states
   const [showAddDepartment, setShowAddDepartment] = useState(false);
@@ -254,6 +255,24 @@ export default function CreateEmployeePage() {
   useEffect(() => {
     fetchDepartments();
     fetchDesignations();
+    // Prefill file number placeholder with next available number
+    (async () => {
+      try {
+        const res = await fetch('/api/employees/next-file-number');
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.success && data?.next) {
+            setSuggestedFileNumber(String(data.next));
+            // If user hasn't typed anything yet, prefill the value
+            setFormData(prev => (
+              prev.fileNumber ? prev : { ...prev, fileNumber: String(data.next) }
+            ));
+          }
+        }
+      } catch {
+        // ignore placeholder errors
+      }
+    })();
   }, []);
 
   // Check permissions
@@ -543,6 +562,7 @@ export default function CreateEmployeePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return; // prevent double submit
     setIsLoading(true);
 
     try {
@@ -577,8 +597,14 @@ export default function CreateEmployeePage() {
           toast.error(result.message || t('employee.messages.createError'));
         }
       } else {
-        const errorData = await response.json();
-        toast.error(errorData.message || t('employee.messages.createError'));
+        const errorData = await response.json().catch(() => ({}));
+        if (response.status === 409) {
+          toast.error(t('employee.messages.fileNumberExists') || 'File number already exists');
+        } else if (response.status === 400) {
+          toast.error(errorData.error || errorData.message || t('employee.messages.createError'));
+        } else {
+          toast.error(errorData.error || errorData.message || t('employee.messages.createError'));
+        }
       }
     } catch {
       
@@ -646,6 +672,7 @@ export default function CreateEmployeePage() {
                         id="fileNumber"
                         value={formData.fileNumber}
                         onChange={e => handleInputChange('fileNumber', e.target.value)}
+                        placeholder={suggestedFileNumber || ''}
                         required
                       />
                     </div>

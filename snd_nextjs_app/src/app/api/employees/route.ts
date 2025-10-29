@@ -557,18 +557,18 @@ const createEmployeeHandler = async (request: NextRequest) => {
       .returning();
     const employee = (inserted as any[])[0];
 
-    // Attempt ERPNext sync using the service
+    // Attempt ERPNext sync using the service (returns ERPNext ID string or null)
     const erpnextSyncService = ERPNextSyncService.getInstance();
-    let erpnextSyncResult = null;
+    let erpnextId: string | null = null;
     
     if (erpnextSyncService.isAvailable()) {
-      erpnextSyncResult = await erpnextSyncService.syncNewEmployee(employee);
+      erpnextId = await erpnextSyncService.syncNewEmployee(employee);
       
       // If sync was successful, update the local employee record with the ERPNext ID
-      if (erpnextSyncResult.success && erpnextSyncResult.erpnextId) {
+      if (erpnextId) {
         await db
           .update(employeesTable)
-          .set({ erpnextId: erpnextSyncResult.erpnextId })
+          .set({ erpnextId })
           .where(eq(employeesTable.id, employee.id));
       }
     }
@@ -578,15 +578,23 @@ const createEmployeeHandler = async (request: NextRequest) => {
         success: true,
         message: 'Employee created successfully',
         employee,
-        erpnextSync: erpnextSyncResult,
+        erpnextSync: { success: Boolean(erpnextId), erpnextId },
       },
       { status: 201 }
     );
   } catch (error) {
     console.error('Error creating employee:', error);
+    const message = error instanceof Error ? error.message : String(error);
+    // Handle race-condition duplicate (unique constraint) as 409 Conflict
+    if ((error as any)?.code === '23505' || message.includes('employees_file_number_key') || message.toLowerCase().includes('unique')) {
+      return NextResponse.json(
+        { success: false, error: 'Employee file number already exists' },
+        { status: 409 }
+      );
+    }
     return NextResponse.json({ 
       success: false,
-      error: 'Internal server error' 
+      error: 'Internal server error'
     }, { status: 500 });
   }
 };
