@@ -34,10 +34,15 @@ export async function PUT(
     const actionType = body.actionType;
     let rentalItem;
     
+    console.log('Update rental item - Action type:', actionType);
+    console.log('Update rental item - Start date from body:', body.startDate);
+    
     if (actionType === 'handover' && newOperatorId !== previousOperatorId) {
       // Scenario 1: Operator Changes with handover - Don't update the old item, complete it and create new one
       if (newOperatorId !== undefined && newOperatorId !== null) {
-        rentalItem = await handleOperatorHandover(parseInt(itemId), parseInt(rentalId), previousOperatorId, newOperatorId, body.equipmentName, currentItem);
+        const handoverStartDate = body.startDate && body.startDate !== '' ? body.startDate : null;
+        console.log('Handover - Using start date:', handoverStartDate);
+        rentalItem = await handleOperatorHandover(parseInt(itemId), parseInt(rentalId), previousOperatorId, newOperatorId, body.equipmentName, currentItem, handoverStartDate);
       }
     } else {
       // For non-handover actions, update the rental item normally
@@ -68,7 +73,8 @@ export async function PUT(
           const rental = await RentalService.getRental(parseInt(rentalId));
           if (rental?.status === 'active') {
             // If rental is active, use handover logic
-            await handleOperatorHandover(parseInt(itemId), parseInt(rentalId), previousOperatorId, newOperatorId, body.equipmentName, currentItem);
+            const handoverStartDate = body.startDate && body.startDate !== '' ? body.startDate : null;
+            await handleOperatorHandover(parseInt(itemId), parseInt(rentalId), previousOperatorId, newOperatorId, body.equipmentName, currentItem, handoverStartDate);
           } else {
             // If rental is not active, just update the operator
             await updateOperatorInRentalItem(parseInt(rentalId), previousOperatorId, newOperatorId, body.equipmentName);
@@ -93,7 +99,7 @@ export async function PUT(
 // Helper functions for operator assignment actions
 
 // Handle operator handover (complete old item, create new item with new operator)
-async function handleOperatorHandover(itemId: number, rentalId: number, previousOperatorId: number | null, newOperatorId: number, equipmentName: string, currentItem: any) {
+async function handleOperatorHandover(itemId: number, rentalId: number, previousOperatorId: number | null, newOperatorId: number, equipmentName: string, currentItem: any, newStartDate: string | null = null) {
   const { db } = await import('@/lib/drizzle');
   const { employeeAssignments, rentalItems } = await import('@/lib/drizzle/schema');
   const { eq, and } = await import('drizzle-orm');
@@ -108,14 +114,25 @@ async function handleOperatorHandover(itemId: number, rentalId: number, previous
       throw new Error('Current rental item not found');
     }
 
+    // Use provided start date or default to today
+    const handoverStartDate = newStartDate || new Date().toISOString().split('T')[0];
+    console.log('handleOperatorHandover - Final start date to use:', handoverStartDate);
+    const handoverStartDateObj = new Date(handoverStartDate);
+    
+    // Calculate completed date (one day before handover start date)
+    const previousDay = new Date(handoverStartDateObj);
+    previousDay.setDate(previousDay.getDate() - 1);
+    const completedDate = previousDay.toISOString().split('T')[0];
+    console.log('handleOperatorHandover - Completed date (previous day):', completedDate);
+
     // End previous operator assignment if exists
     if (previousOperatorId) {
       await db
         .update(employeeAssignments)
         .set({
           status: 'completed',
-          endDate: new Date().toISOString().split('T')[0],
-          updatedAt: new Date().toISOString().split('T')[0],
+          endDate: completedDate,
+          updatedAt: completedDate,
         })
         .where(
           and(
@@ -126,8 +143,7 @@ async function handleOperatorHandover(itemId: number, rentalId: number, previous
         );
     }
 
-    // Mark the old rental item as completed
-    const completedDate = new Date().toISOString().split('T')[0];
+    // Mark the old rental item as completed with the calculated completed date
     await db
       .update(rentalItems)
       .set({
@@ -136,9 +152,6 @@ async function handleOperatorHandover(itemId: number, rentalId: number, previous
         updatedAt: completedDate,
       })
       .where(eq(rentalItems.id, currentItem.id));
-
-    // Create new rental item with new operator
-    const newStartDate = new Date().toISOString().split('T')[0];
     
     // Get rental details for calculating total
     const rental = await RentalService.getRental(rentalId);
@@ -161,11 +174,11 @@ async function handleOperatorHandover(itemId: number, rentalId: number, previous
       operatorId: newOperatorId,
       status: 'active',
       notes: `Handover from operator ${previousOperatorId}`,
-      startDate: newStartDate,
+      startDate: handoverStartDate, // Use the provided start date
     });
 
-    // Create new operator assignment
-    await createNewOperatorAssignment(rentalId, newOperatorId, equipmentName);
+    // Create new operator assignment with handover start date
+    await createNewOperatorAssignment(rentalId, newOperatorId, equipmentName, handoverStartDate);
 
     // Return the newly created item
     return newItem;
@@ -197,7 +210,7 @@ async function deleteOperatorAssignment(rentalId: number, operatorId: number) {
 }
 
 // Create new operator assignment
-async function createNewOperatorAssignment(rentalId: number, operatorId: number, equipmentName: string) {
+async function createNewOperatorAssignment(rentalId: number, operatorId: number, equipmentName: string, assignmentStartDate: string | null = null) {
   const { db } = await import('@/lib/drizzle');
   const { employeeAssignments } = await import('@/lib/drizzle/schema');
   
@@ -206,7 +219,8 @@ async function createNewOperatorAssignment(rentalId: number, operatorId: number,
     const rental = await RentalService.getRental(rentalId);
     if (!rental) return;
 
-    const startDate = rental.startDate === '2099-12-31' ? new Date().toISOString().split('T')[0] : rental.startDate;
+    // Use provided assignment start date (for handovers) or fall back to rental start date
+    const startDate = assignmentStartDate || (rental.startDate === '2099-12-31' ? new Date().toISOString().split('T')[0] : rental.startDate);
     const endDate = rental.expectedEndDate;
 
     await db.insert(employeeAssignments).values({

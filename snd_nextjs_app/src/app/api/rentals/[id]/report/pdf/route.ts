@@ -291,10 +291,28 @@ function generateReportHTML(rental: any, rentalItems: any[], selectedMonth: stri
         }
       }
       
-      // Determine completed date display
+      // Determine completed date display - only show in the month when completed
       let completedDateDisplay = '-';
       if (item.status === 'completed' && item.completedDate) {
-        completedDateDisplay = format(new Date(item.completedDate), 'MMM dd, yyyy');
+        const completedDate = new Date(item.completedDate);
+        completedDate.setHours(0, 0, 0, 0);
+        
+        // Check if completed date falls within the current report month
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const monthParts = monthData.monthLabel.split(' ');
+        const monthName = monthParts[0];
+        const year = parseInt(monthParts[1]);
+        const monthNum = monthNames.indexOf(monthName);
+        
+        const reportMonthStart = new Date(year, monthNum, 1);
+        reportMonthStart.setHours(0, 0, 0, 0);
+        const reportMonthEnd = new Date(year, monthNum + 1, 0);
+        reportMonthEnd.setHours(23, 59, 59, 999);
+        
+        // Only show completed date if it's in this month
+        if (completedDate >= reportMonthStart && completedDate <= reportMonthEnd) {
+          completedDateDisplay = format(completedDate, 'MMM dd, yyyy');
+        }
       }
 
       html += `

@@ -2944,10 +2944,27 @@ export default function RentalDetailPage() {
                                 }
                               }
                               
-                              // Determine completed date display
+                              // Determine completed date display - only show in the month when completed
                               let completedDateDisplay = '-';
-                              if (item.status === 'completed' && item.completedDate) {
-                                completedDateDisplay = format(new Date(item.completedDate), 'MMM dd, yyyy');
+                              if (item.status === 'completed' && (item.completedDate || (item as any).completed_date)) {
+                                const completedDate = new Date((item.completedDate || (item as any).completed_date));
+                                completedDate.setHours(0, 0, 0, 0);
+                                
+                                // Check if completed date falls within the current report month
+                                const [monthName, yearStr] = monthData.monthLabel.split(' ');
+                                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                                const reportMonth = monthNames.indexOf(monthName);
+                                const reportYear = parseInt(yearStr);
+                                
+                                const reportMonthStart = new Date(reportYear, reportMonth, 1);
+                                reportMonthStart.setHours(0, 0, 0, 0);
+                                const reportMonthEnd = new Date(reportYear, reportMonth + 1, 0);
+                                reportMonthEnd.setHours(23, 59, 59, 999);
+                                
+                                // Only show completed date if it's in this month
+                                if (completedDate >= reportMonthStart && completedDate <= reportMonthEnd) {
+                                  completedDateDisplay = format(completedDate, 'MMM dd, yyyy');
+                                }
                               }
                               
                               html += `
@@ -3299,10 +3316,27 @@ export default function RentalDetailPage() {
                                           displayStartDate = `Rental: ${format(new Date(rental.startDate), 'MMM dd, yyyy')}`;
                                         }
                                       
-                                      // Determine completed date display
+                                      // Determine completed date display - only show in the month when completed
                                       let completedDateDisplay = '-';
-                                      if (item.status === 'completed' && item.completedDate) {
-                                        completedDateDisplay = format(new Date(item.completedDate), 'MMM dd, yyyy');
+                                      if (item.status === 'completed' && (item.completedDate || (item as any).completed_date)) {
+                                        const completedDate = new Date((item.completedDate || (item as any).completed_date));
+                                        completedDate.setHours(0, 0, 0, 0);
+                                        
+                                        // Check if completed date falls within the current report month
+                                        const [monthName, yearStr] = monthData.monthLabel.split(' ');
+                                        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                                        const reportMonth = monthNames.indexOf(monthName);
+                                        const reportYear = parseInt(yearStr);
+                                        
+                                        const reportMonthStart = new Date(reportYear, reportMonth, 1);
+                                        reportMonthStart.setHours(0, 0, 0, 0);
+                                        const reportMonthEnd = new Date(reportYear, reportMonth + 1, 0);
+                                        reportMonthEnd.setHours(23, 59, 59, 999);
+                                        
+                                        // Only show completed date if it's in this month
+                                        if (completedDate >= reportMonthStart && completedDate <= reportMonthEnd) {
+                                          completedDateDisplay = format(completedDate, 'MMM dd, yyyy');
+                                        }
                                       }
 
                                       return (
