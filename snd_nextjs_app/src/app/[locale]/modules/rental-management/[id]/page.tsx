@@ -1761,6 +1761,20 @@ export default function RentalDetailPage() {
   };
 
   const openEditItemDialog = (item: any) => {
+    // Format start date for input field (YYYY-MM-DD format)
+    let formattedStartDate = '';
+    if (item.startDate || item.start_date) {
+      const dateValue = item.startDate || item.start_date;
+      if (dateValue) {
+        // If it's already a string in YYYY-MM-DD format, use it directly
+        // Otherwise, convert Date object or ISO string to YYYY-MM-DD
+        const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
+        if (!isNaN(date.getTime())) {
+          formattedStartDate = date.toISOString().split('T')[0];
+        }
+      }
+    }
+
     setItemFormData({
       id: item.id,
       equipmentId: item.equipment_id?.toString() || item.equipmentId?.toString() || '',
@@ -1772,7 +1786,7 @@ export default function RentalDetailPage() {
       status: item.status || 'active',
       notes: item.notes || '',
       actionType: 'update', // Default to update mode
-      startDate: item.startDate || item.start_date || '', // Add start date field
+      startDate: formattedStartDate, // Properly formatted start date for date input
     });
     setIsEditItemDialogOpen(true);
   };
@@ -1793,7 +1807,11 @@ export default function RentalDetailPage() {
       const requestData = {
         ...itemFormData,
         totalPrice,
+        startDate: itemFormData.startDate || null, // Explicitly include startDate
       };
+
+      console.log('Updating rental item with data:', requestData);
+      console.log('Start date value:', itemFormData.startDate);
 
       const response = await fetch(`/api/rentals/${rental.id}/items/${itemFormData.id}`, {
         method: 'PUT',
@@ -3795,11 +3813,16 @@ export default function RentalDetailPage() {
               <Input
                 id="editStartDate"
                 type="date"
-                value={itemFormData.startDate}
+                value={itemFormData.startDate || ''}
                 onChange={e => setItemFormData(prev => ({ ...prev, startDate: e.target.value }))}
-                min={rental?.startDate}
+                min={rental?.startDate ? rental.startDate.split('T')[0] : undefined}
                 max={new Date().toISOString().split('T')[0]}
               />
+              {itemFormData.startDate && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Selected: {new Date(itemFormData.startDate).toLocaleDateString()}
+                </p>
+              )}
             </div>
           </div>
           <div>

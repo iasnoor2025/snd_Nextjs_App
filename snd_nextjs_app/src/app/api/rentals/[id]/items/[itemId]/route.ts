@@ -50,6 +50,7 @@ export async function PUT(
         operatorId: newOperatorId,
         status: body.status || 'active',
         notes: body.notes || '',
+        startDate: body.startDate && body.startDate !== '' ? body.startDate : null,
       });
 
       // Handle other operator change scenarios
