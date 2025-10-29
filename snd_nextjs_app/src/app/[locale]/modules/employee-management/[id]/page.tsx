@@ -52,6 +52,7 @@ import TimesheetSummary from '@/components/employee/timesheets/TimesheetSummary'
 import { FinalSettlementManager } from '@/components/final-settlements/final-settlement-manager';
 import { useConfirmationDialog } from '@/components/providers/confirmation-provider';
 import { useRBAC } from '@/lib/rbac/rbac-context';
+import { useDeleteConfirmations } from '@/lib/utils/confirmation-utils';
 import { ExpiryStatusDisplay, getExpiryStatus } from '@/lib/utils/expiry-utils';
 
 import AssignmentsTab from '@/components/employee/AssignmentsTab';
@@ -129,6 +130,7 @@ interface Employee {
 export default function EmployeeShowPage() {
   const { hasPermission } = useRBAC();
   const { confirm } = useConfirmationDialog();
+  const { confirmDeleteEmployee } = useDeleteConfirmations();
   const { t, isRTL } = useI18n();
   const params = useParams();
   const router = useRouter();
@@ -147,6 +149,7 @@ export default function EmployeeShowPage() {
   const [activeTab, setActiveTab] = useState('personal-info');
   const [salaryHistory, setSalaryHistory] = useState<SalaryIncrement[]>([]);
   const [loadingSalaryHistory, setLoadingSalaryHistory] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Advances state
   const [currentBalance, setCurrentBalance] = useState(0);
@@ -281,6 +284,36 @@ export default function EmployeeShowPage() {
       toast.error('Failed to update employee');
     } finally {
       setUpdating(false);
+    }
+  };
+
+  // Handle delete employee
+  const handleDeleteEmployee = async () => {
+    if (!employee) return;
+
+    const employeeName = `${employee.first_name || ''} ${employee.middle_name || ''} ${employee.last_name || ''}`.trim() || 'this employee';
+    const confirmed = await confirmDeleteEmployee(employeeName);
+    
+    if (confirmed) {
+      setIsDeleting(true);
+      try {
+        const response = await fetch(`/api/employees/${employeeId}`, {
+          method: 'DELETE',
+        });
+
+        if (response.ok) {
+          toast.success(`Employee ${employeeName} deleted successfully`);
+          router.push('/modules/employee-management');
+        } else {
+          const error = await response.json();
+          toast.error(error.error || error.message || 'Failed to delete employee');
+        }
+      } catch (error) {
+        console.error('Error deleting employee:', error);
+        toast.error('Failed to delete employee');
+      } finally {
+        setIsDeleting(false);
+      }
     }
   };
 
@@ -687,9 +720,23 @@ export default function EmployeeShowPage() {
             </Button>
           )}
           {hasPermission('delete', 'Employee') && (
-            <Button variant="destructive" size="sm">
-              <Trash2 className="mr-2 h-4 w-4" />
-              {t('employee.actions.delete')}
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              onClick={handleDeleteEmployee}
+              disabled={isDeleting || !employee}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t('employee.actions.deleting') || 'Deleting...'}
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  {t('employee.actions.delete')}
+                </>
+              )}
             </Button>
           )}
         </div>

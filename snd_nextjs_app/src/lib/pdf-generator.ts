@@ -1,7 +1,7 @@
 // Dynamic import for jsPDF to avoid server-side issues
 let jsPDF: any = null;
 
-const loadJsPDF = async () => {
+export const loadJsPDF = async () => {
   if (!jsPDF) {
     try {
       const { jsPDF: jsPDFModule } = await import('jspdf');

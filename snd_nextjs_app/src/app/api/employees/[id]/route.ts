@@ -3,7 +3,7 @@ import { departments, designations, employees as employeesTable } from '@/lib/dr
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { updateEmployeeStatusBasedOnLeave } from '@/lib/utils/employee-status';
 import { ERPNextSyncService } from '@/lib/services/erpnext-sync-service';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET handler with employee data filtering
@@ -629,9 +629,9 @@ const deleteEmployeeHandler = async (
     }
 
     // Permanently delete: clear dependent records first, then delete employee
+    // Order matters: delete from tables with restrict constraints first
     const tablesToClear = [
-      'advance_payment_histories',
-      'advance_payments',
+      // Tables with ON DELETE restrict - must be deleted first
       'employee_assignments',
       'employee_documents',
       'employee_leaves',
@@ -640,6 +640,9 @@ const deleteEmployeeHandler = async (
       'employee_salaries',
       'employee_skill',
       'employee_training',
+      // Other tables
+      'advance_payment_histories',
+      'advance_payments',
       'loans',
       'payrolls',
       'salary_increments',
@@ -650,21 +653,91 @@ const deleteEmployeeHandler = async (
       'weekly_timesheets',
       'project_manpower',
       'equipment_rental_history',
-      'equipment_maintenance'
+      'final_settlements',
     ];
 
+    // Delete from tables with employee_id foreign keys
     for (const table of tablesToClear) {
       try {
-        if (table === 'equipment_maintenance') {
-          await db.execute(sql`DELETE FROM ${sql.identifier(table)} WHERE assigned_to_employee_id = ${employeeId}`);
-        } else {
-          await db.execute(sql`DELETE FROM ${sql.identifier(table)} WHERE employee_id = ${employeeId}`);
+        await db.execute(sql`DELETE FROM ${sql.identifier(table)} WHERE employee_id = ${employeeId}`);
+      } catch (err: any) {
+        // Extract error details - Drizzle wraps PostgreSQL errors
+        const errorMessage = err?.message || String(err);
+        const errorCode = err?.code || err?.cause?.code || '';
+        
+        // Also check the underlying cause if available
+        const underlyingError = err?.cause || err;
+        const underlyingMessage = underlyingError?.message || errorMessage;
+        const underlyingCode = underlyingError?.code || errorCode;
+        
+        // Enhanced error logging for debugging
+        console.error(`Full error details for ${table}:`, {
+          message: errorMessage,
+          code: errorCode,
+          underlyingMessage,
+          underlyingCode,
+          errorType: err?.constructor?.name,
+          stack: err?.stack?.substring(0, 200)
+        });
+        
+        // PostgreSQL error codes:
+        // 42P01 = undefined_table (table does not exist)
+        // Check both main error and underlying error
+        if (errorCode === '42P01' || underlyingCode === '42P01' ||
+            errorMessage.toLowerCase().includes('does not exist') || 
+            underlyingMessage.toLowerCase().includes('does not exist') ||
+            errorMessage.toLowerCase().includes('relation') && errorMessage.toLowerCase().includes('does not exist') ||
+            underlyingMessage.toLowerCase().includes('relation') && underlyingMessage.toLowerCase().includes('does not exist')) {
+          console.warn(`Table ${table} does not exist in database (code: ${errorCode || underlyingCode}), skipping deletion`);
+          continue;
         }
-      } catch (err) {
-        console.warn(`Could not delete from table ${table}:`, err);
+        
+        // If it's a constraint violation or other serious error, throw
+        console.error(`Error deleting from table ${table} (code: ${errorCode || underlyingCode}):`, err);
+        throw new Error(`Failed to delete related records from ${table}: ${underlyingMessage || errorMessage}`);
       }
     }
 
+    // Delete from equipment_maintenance (uses assigned_to_employee_id)
+    try {
+      await db.execute(sql`DELETE FROM equipment_maintenance WHERE assigned_to_employee_id = ${employeeId}`);
+    } catch (err: any) {
+      const errorMessage = err?.message || String(err);
+      // If table doesn't exist, skip it (non-critical)
+      if (errorMessage.includes('does not exist') || errorMessage.includes('relation') || errorMessage.includes('undefined table')) {
+        console.warn('Table equipment_maintenance does not exist, skipping deletion');
+      } else {
+        console.error('Error deleting from equipment_maintenance:', err);
+        throw new Error(`Failed to delete equipment maintenance records: ${errorMessage}`);
+      }
+    }
+
+    // Set NULL for tables with ON DELETE set null (these don't block deletion but we clean them up)
+    try {
+      await db.execute(sql`UPDATE equipment SET assigned_to = NULL WHERE assigned_to = ${employeeId}`);
+    } catch (err) {
+      console.warn('Error updating equipment assigned_to (non-critical):', err);
+    }
+
+    try {
+      await db.execute(sql`UPDATE project_equipment SET assigned_by = NULL WHERE assigned_by = ${employeeId}`);
+    } catch (err) {
+      console.warn('Error updating project_equipment assigned_by (non-critical):', err);
+    }
+
+    try {
+      await db.execute(sql`UPDATE project_tasks SET assigned_to_id = NULL WHERE assigned_to_id = ${employeeId}`);
+    } catch (err) {
+      console.warn('Error updating project_tasks assigned_to_id (non-critical):', err);
+    }
+
+    try {
+      await db.execute(sql`UPDATE project_risks SET assigned_to_id = NULL WHERE assigned_to_id = ${employeeId}`);
+    } catch (err) {
+      console.warn('Error updating project_risks assigned_to_id (non-critical):', err);
+    }
+
+    // Finally, delete the employee
     await db.delete(employeesTable).where(eq(employeesTable.id, employeeId));
 
     // Attempt ERPNext sync to mark employee as inactive
