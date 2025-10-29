@@ -1,7 +1,7 @@
 import { db } from '@/lib/db';
-import { rentals } from '@/lib/drizzle/schema';
+import { rentals, rentalItems } from '@/lib/drizzle/schema';
 import { RentalService } from '@/lib/services/rental-service';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -20,18 +20,31 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       );
     }
 
+    // Compute completion date once
+    const completionDate = new Date().toISOString().split('T')[0];
+
     // Update rental with completion information
     const updatedRentalResult = await db
       .update(rentals)
       .set({
-        actualEndDate: new Date().toISOString().split('T')[0],
+        actualEndDate: completionDate,
         status: 'completed',
-        completedAt: new Date().toISOString().split('T')[0],
+        completedAt: completionDate,
       })
       .where(eq(rentals.id, parseInt(id)))
       .returning();
 
     const updatedRental = updatedRentalResult[0];
+
+    // Also mark all rental items for this rental as completed
+    await db
+      .update(rentalItems)
+      .set({
+        status: 'completed',
+        completedDate: completionDate,
+        updatedAt: completionDate,
+      })
+      .where(and(eq(rentalItems.rentalId, parseInt(id)), eq(rentalItems.status, 'active')));
 
     return NextResponse.json({
       message: 'Rental completed successfully',

@@ -176,6 +176,8 @@ interface TimelineEvent {
 
 // Workflow Timeline Component
 function UnifiedTimeline({ rental, t }: { rental: Rental | null; t: any }) {
+  const confirmation = useRentalItemConfirmation();
+  
   const generateTimelineEvents = (): TimelineEvent[] => {
     if (!rental) return [];
 
@@ -383,7 +385,7 @@ function UnifiedTimeline({ rental, t }: { rental: Rental | null; t: any }) {
   const handleActivateRental = async () => {
     try {
       const response = await fetch(`/api/rentals/${rental.id}/activate`, {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
       });
       if (!response.ok) {
@@ -429,6 +431,8 @@ function UnifiedTimeline({ rental, t }: { rental: Rental | null; t: any }) {
       toast.error(err instanceof Error ? err.message : 'Failed to generate invoice');
     }
   };
+
+  // Confirm then complete rental is triggered inline where needed
 
   // Get action button for each event
   const getActionButton = (event: TimelineEvent) => {
@@ -493,9 +497,24 @@ function UnifiedTimeline({ rental, t }: { rental: Rental | null; t: any }) {
       case 'completed':
         if (rental.status === 'active' && !rental.actualEndDate) {
           return (
-            <Button size="sm" onClick={handleCompleteRental} className="mt-2">
+            <Button size="sm" onClick={() => confirmation.showConfirmDialog(
+              'Complete Rental',
+              'Are you sure you want to complete this rental? All active items will be marked as completed.',
+              () => handleCompleteRental()
+            )} className="mt-2">
               <CalendarCheck className="w-3 h-3 mr-1" />
               {t('rental.completeRental')}
+            </Button>
+          );
+        } else if (rental.status === 'completed') {
+          return (
+            <Button size="sm" variant="outline" onClick={() => confirmation.showConfirmDialog(
+              'Reactivate Rental',
+              'Are you sure you want to reactivate this rental?',
+              () => handleActivateRental()
+            )} className="mt-2">
+              <RefreshCw className="w-3 h-3 mr-1" />
+              Reactivate
             </Button>
           );
         }
@@ -772,6 +791,7 @@ export default function RentalDetailPage() {
   const [supervisorDetails, setSupervisorDetails] = useState<any>(null);
   const [equipmentNames, setEquipmentNames] = useState<{[key: string]: string}>({});
   const [activeTab, setActiveTab] = useState('details');
+  const confirmation = useRentalItemConfirmation();
 
   // Helper function to convert Decimal to number
   const formatAmount = (amount: any): string => {
@@ -1836,6 +1856,15 @@ export default function RentalDetailPage() {
     );
   };
 
+  // Confirmation helper for completing rental (defined after confirmation hook)
+  function showCompleteRentalConfirm() {
+    confirmation.showConfirmDialog(
+      'Complete Rental',
+      'Are you sure you want to complete this rental? All active items will be marked as completed.',
+      () => handleCompleteRental()
+    );
+  }
+
   // Add useEffect to recalculate totals when rental items change
   useEffect(() => {
     if (rental && rental.rentalItems) {
@@ -1849,9 +1878,6 @@ export default function RentalDetailPage() {
     fetchEquipment();
     fetchEmployees();
   }, [rentalId]);
-
-  // Add confirmation hook for rental item actions
-  const confirmation = useRentalItemConfirmation();
 
   if (loading) {
     return (
@@ -2207,6 +2233,7 @@ export default function RentalDetailPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead>Sl#</TableHead>
                         <TableHead>{t('rental.equipment')}</TableHead>
                         <TableHead>{t('rental.unitPrice')}</TableHead>
                         <TableHead>{t('rental.rateType')}</TableHead>
@@ -2219,7 +2246,16 @@ export default function RentalDetailPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {rental.rentalItems?.filter(item => item != null).map(item => {
+                      {(rental.rentalItems
+                        ? [...rental.rentalItems]
+                            .filter(item => item != null)
+                            .sort((a: any, b: any) => {
+                              const nameA = (a?.equipmentName || '').toString();
+                              const nameB = (b?.equipmentName || '').toString();
+                              return nameA.localeCompare(nameB);
+                            })
+                        : []
+                      ).map((item, index) => {
                         // Debug logging for rental item data
                         console.log('Rental item data:', {
                           itemId: item?.id,
@@ -2285,6 +2321,7 @@ export default function RentalDetailPage() {
 
                         return (
                           <TableRow key={item?.id}>
+                            <TableCell className="w-12 text-center">{index + 1}</TableCell>
                             <TableCell className="font-medium">
                               {item?.equipmentName?.startsWith('Equipment ') && item?.equipmentId 
                                 ? (equipmentNames[item.equipmentId.toString()] || item.equipmentName)
@@ -3239,10 +3276,24 @@ export default function RentalDetailPage() {
                   </Button>
                 )}
               {rental.status === 'active' && !rental.actualEndDate && (
-                <Button className="w-full" variant="outline" onClick={handleCompleteRental}>
+                <Button className="w-full" variant="outline" onClick={() => confirmation.showConfirmDialog(
+                  'Complete Rental',
+                  'Are you sure you want to complete this rental? All active items will be marked as completed.',
+                  () => handleCompleteRental()
+                )}>
                   <CalendarCheck className="w-4 h-4 mr-2" />
                   {t('rental.completeRental')}
                   </Button>
+              )}
+              {rental.status === 'completed' && (
+                <Button className="w-full" variant="outline" onClick={() => confirmation.showConfirmDialog(
+                  'Reactivate Rental',
+                  'Are you sure you want to reactivate this rental?',
+                  () => handleActivateRental()
+                )}>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Reactivate
+                </Button>
               )}
               {(rental.status === 'completed' || rental.actualEndDate) &&
                 !rental.invoiceDate &&

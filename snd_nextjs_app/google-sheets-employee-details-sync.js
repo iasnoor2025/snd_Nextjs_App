@@ -146,8 +146,24 @@ function formatEmployeeData(employees) {
       }
     }
     
-    // Get status
-    const status = emp.status || '';
+    // Normalize status labels
+    let statusRaw = (emp.status || '').toString().trim().toLowerCase();
+    let status;
+    switch (statusRaw) {
+      case 'active':
+        status = 'Active';
+        break;
+      case 'on_leave':
+      case 'on-leave':
+      case 'on leave':
+        status = 'On Leave';
+        break;
+      case 'inactive':
+        status = 'Inactive';
+        break;
+      default:
+        status = emp.status || '';
+    }
     
     return {
       fileNumber: fileNumber.toString(),
@@ -189,21 +205,30 @@ function updateEmployeeDetailsSheet(sheet, data) {
     }
     
     // Get existing File# values from column 1 (skip header row)
+    // Build existing map for updates
     const existingFileNumbers = new Set();
+    const existingMap = new Map();
     if (hasData && lastRow > 1) {
-      const fileNumberRange = sheet.getRange(2, 1, lastRow - 1, 1);
-      const fileNumbers = fileNumberRange.getValues();
-      fileNumbers.forEach(row => {
-        if (row[0]) {
-          existingFileNumbers.add(String(row[0]).trim());
+      const existingRange = sheet.getRange(2, 1, lastRow - 1, WRITE_COLUMNS).getValues();
+      for (let i = 0; i < existingRange.length; i++) {
+        const row = existingRange[i];
+        const fileNum = row[0];
+        if (fileNum) {
+          const rowIndex = 2 + i;
+          existingFileNumbers.add(String(fileNum).trim());
+          existingMap.set(String(fileNum).trim(), {
+            rowIndex,
+            a: row[0], b: row[1], c: row[2], d: row[3], e: row[4], l: row[11],
+          });
         }
-      });
+      }
     }
     
     console.log(`Found ${existingFileNumbers.size} existing records`);
     
     // Prepare data rows and filter out existing records
     const newRows = [];
+    let updatedCells = 0;
     const newEmployeeData = [];
     
     data.forEach(emp => {
@@ -224,6 +249,17 @@ function updateEmployeeDetailsSheet(sheet, data) {
           emp.status       // 12 Status
         ]);
         newEmployeeData.push(emp);
+      }
+      else {
+        const current = existingMap.get(fileNumber);
+        if (current) {
+          if (String(current.a || '') !== String(emp.fileNumber || '')) { sheet.getRange(current.rowIndex, 1).setValue(emp.fileNumber); updatedCells++; }
+          if (String(current.b || '') !== String(emp.fullName || '')) { sheet.getRange(current.rowIndex, 2).setValue(emp.fullName); updatedCells++; }
+          if (String(current.c || '') !== String(emp.nationality || '')) { sheet.getRange(current.rowIndex, 3).setValue(emp.nationality); updatedCells++; }
+          if (String(current.d || '') !== String(emp.category || '')) { sheet.getRange(current.rowIndex, 4).setValue(emp.category); updatedCells++; }
+          if (String(current.e || '') !== String(emp.basicSalary || '')) { sheet.getRange(current.rowIndex, 5).setValue(emp.basicSalary); updatedCells++; }
+          if (String(current.l || '') !== String(emp.status || '')) { sheet.getRange(current.rowIndex, 12).setValue(emp.status); updatedCells++; formatStatusCell(sheet, current.rowIndex); }
+        }
       }
     });
     
@@ -299,12 +335,27 @@ function updateEmployeeDetailsSheet(sheet, data) {
     
     return {
       newRecords: newRows.length,
+      updatedCells,
       totalRecords: sheet.getLastRow() - 1
     };
     
   } catch (error) {
     console.error('Error updating sheet:', error);
     throw error;
+  }
+}
+
+function formatStatusCell(sheet, rowIndex) {
+  const cell = sheet.getRange(rowIndex, 12);
+  const status = (cell.getDisplayValue() || '').toString();
+  if (status === 'Active') {
+    cell.setBackground('#1F5A1C').setFontColor('white').setFontWeight('bold');
+  } else if (status === 'Inactive') {
+    cell.setBackground('#FFB6C1').setFontWeight('bold');
+  } else if (status === 'On Leave') {
+    cell.setBackground('#FFD700').setFontWeight('bold');
+  } else {
+    cell.setBackground('#DDD');
   }
 }
 

@@ -1,7 +1,7 @@
 import { db } from '@/lib/drizzle';
-import { rentals } from '@/lib/drizzle/schema';
+import { rentals, rentalItems } from '@/lib/drizzle/schema';
 import { RentalService } from '@/lib/services/rental-service';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
@@ -33,6 +33,8 @@ export async function PUT(
     // Check if rental has placeholder startDate and update it to today if activating
     const updateData: any = {
       status: 'active',
+      actualEndDate: null,
+      completedAt: null,
       updatedAt: new Date().toISOString().split('T')[0],
     };
 
@@ -46,6 +48,17 @@ export async function PUT(
       .update(rentals)
       .set(updateData)
       .where(eq(rentals.id, id));
+
+    // Reactivate all completed rental items for this rental
+    const today = new Date().toISOString().split('T')[0];
+    await db
+      .update(rentalItems)
+      .set({
+        status: 'active',
+        completedDate: null,
+        updatedAt: today,
+      })
+      .where(and(eq(rentalItems.rentalId, id), eq(rentalItems.status, 'completed')));
 
     // Create/update automatic assignments with rental dates (this now handles both create and update)
     await RentalService.createAutomaticAssignments(id);
