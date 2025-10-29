@@ -260,8 +260,21 @@ function generateReportHTML(rental: any, rentalItems: any[], selectedMonth: stri
         // Determine the end date in this month
         let endInMonth = monthEnd;
         
-        // If rental ended, check if it was within this month
-        if (rental.status === 'completed' && rental.actualEndDate) {
+        // Check if item has a completed date and use it for duration calculation
+        const itemCompletedDate = item.completedDate || (item as any).completed_date;
+        if (itemCompletedDate && item.status === 'completed') {
+          const completedDate = new Date(itemCompletedDate);
+          completedDate.setHours(23, 59, 59, 999);
+          // If completed date is within this month, use it as end date
+          if (completedDate >= monthStart && completedDate <= monthEnd) {
+            endInMonth = completedDate;
+          } else if (completedDate < monthStart) {
+            // If completed before this month, item wasn't active this month
+            endInMonth = monthStart;
+          }
+          // If completed after this month, use month end (item was active all month)
+        } else if (rental.status === 'completed' && rental.actualEndDate) {
+          // Fallback to rental end date if item doesn't have completed date
           const actualEnd = new Date(rental.actualEndDate);
           actualEnd.setHours(23, 59, 59, 999);
           if (actualEnd >= monthStart && actualEnd <= monthEnd) {
