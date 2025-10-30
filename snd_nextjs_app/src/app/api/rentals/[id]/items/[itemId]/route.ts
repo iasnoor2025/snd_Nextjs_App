@@ -53,6 +53,7 @@ export async function PUT(
         totalPrice: parseFloat(body.totalPrice || body.unitPrice),
         rateType: body.rateType || 'daily',
         operatorId: newOperatorId,
+        supervisorId: body.supervisorId ? parseInt(body.supervisorId) : null,
         status: body.status || 'active',
         notes: body.notes || '',
         startDate: body.startDate && body.startDate !== '' ? body.startDate : null,

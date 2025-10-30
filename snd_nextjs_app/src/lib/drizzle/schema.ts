@@ -1987,6 +1987,7 @@ export const rentalItems = pgTable(
     totalPrice: numeric('total_price', { precision: 10, scale: 2 }).notNull(),
     rateType: text('rate_type').default('daily').notNull(),
     operatorId: integer('operator_id'),
+    supervisorId: integer('supervisor_id'),
     status: text().default('active').notNull(),
     notes: text(),
     startDate: date('start_date'), // Start date for individual rental items

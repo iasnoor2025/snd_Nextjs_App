@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { users, customers, employees, advancePayments, employeeDocuments, documentVersions, documentApprovals, employeeAssignments, projects, rentals, employeePerformanceReviews, employeeResignations, employeeSalaries, employeeTraining, trainings, employeeLeaves, employeeSkill, skills, equipment, equipmentMaintenance, equipmentMaintenanceItems, equipmentRentalHistory, designations, departments, organizationalUnits, equipmentDocuments, loans, payrolls, payrollRuns, payrollItems, projectManpower, projectFuel, projectMaterials, projectExpenses, projectMilestones, projectEquipment, projectSubcontractors, projectTasks, projectTemplates, reportTemplates, projectRisks, locations, salaryIncrements, scheduledReports, safetyIncidents, timesheets, timesheetApprovals, weeklyTimesheets, timeOffRequests, timeEntries, advancePaymentHistories, finalSettlements, rentalInvoices, rentalPayments, rentalItems, roles, modelHasRoles, permissions, roleHasPermissions, modelHasPermissions } from "./schema";
+import { users, customers, employees, advancePayments, employeeDocuments, documentVersions, documentApprovals, employeeAssignments, projects, rentals, employeePerformanceReviews, employeeResignations, employeeSalaries, employeeTraining, trainings, employeeLeaves, employeeSkill, skills, equipment, equipmentMaintenance, equipmentMaintenanceItems, equipmentRentalHistory, designations, departments, organizationalUnits, equipmentDocuments, loans, payrolls, payrollRuns, payrollItems, projectManpower, projectFuel, projectMaterials, projectExpenses, projectMilestones, projectEquipment, projectSubcontractors, projectTasks, projectTemplates, reportTemplates, projectRisks, locations, salaryIncrements, scheduledReports, safetyIncidents, timesheets, timesheetApprovals, weeklyTimesheets, timeOffRequests, timeEntries, advancePaymentHistories, finalSettlements, rentalItems, rentalInvoices, rentalPayments, customerDocuments, roles, modelHasRoles, permissions, roleHasPermissions, modelHasPermissions } from "./schema";
 
 export const customersRelations = relations(customers, ({one, many}) => ({
 	user: one(users, {
@@ -8,6 +8,7 @@ export const customersRelations = relations(customers, ({one, many}) => ({
 	}),
 	rentals: many(rentals),
 	projects: many(projects),
+	customerDocuments: many(customerDocuments),
 }));
 
 export const usersRelations = relations(users, ({many}) => ({
@@ -273,9 +274,9 @@ export const rentalsRelations = relations(rentals, ({one, many}) => ({
 		relationName: "rentals_approvedBy_users_id"
 	}),
 	timesheets: many(timesheets),
+	rentalItems: many(rentalItems),
 	rentalInvoices: many(rentalInvoices),
 	rentalPayments: many(rentalPayments),
-	rentalItems: many(rentalItems),
 }));
 
 export const employeePerformanceReviewsRelations = relations(employeePerformanceReviews, ({one}) => ({
@@ -770,6 +771,17 @@ export const finalSettlementsRelations = relations(finalSettlements, ({one}) => 
 	}),
 }));
 
+export const rentalItemsRelations = relations(rentalItems, ({one}) => ({
+	rental: one(rentals, {
+		fields: [rentalItems.rentalId],
+		references: [rentals.id]
+	}),
+	equipment: one(equipment, {
+		fields: [rentalItems.equipmentId],
+		references: [equipment.id]
+	}),
+}));
+
 export const rentalInvoicesRelations = relations(rentalInvoices, ({one}) => ({
 	rental: one(rentals, {
 		fields: [rentalInvoices.rentalId],
@@ -784,14 +796,10 @@ export const rentalPaymentsRelations = relations(rentalPayments, ({one}) => ({
 	}),
 }));
 
-export const rentalItemsRelations = relations(rentalItems, ({one}) => ({
-	rental: one(rentals, {
-		fields: [rentalItems.rentalId],
-		references: [rentals.id]
-	}),
-	equipment: one(equipment, {
-		fields: [rentalItems.equipmentId],
-		references: [equipment.id]
+export const customerDocumentsRelations = relations(customerDocuments, ({one}) => ({
+	customer: one(customers, {
+		fields: [customerDocuments.customerId],
+		references: [customers.id]
 	}),
 }));
 

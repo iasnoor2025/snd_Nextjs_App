@@ -636,6 +636,7 @@ export class RentalService {
     totalPrice: number;
     rateType?: string;
     operatorId?: number | null;
+    supervisorId?: number | null;
     status?: string;
     notes?: string;
     startDate?: string | null;
@@ -708,6 +709,7 @@ export class RentalService {
         totalPrice: data.totalPrice,
         rateType: data.rateType || 'daily',
         operatorId: data.operatorId,
+        supervisorId: data.supervisorId || null,
         status: data.status || 'active',
         notes: data.notes || '',
         startDate: data.startDate || null,
@@ -735,6 +737,7 @@ export class RentalService {
         totalPrice: rentalItems.totalPrice,
         rateType: rentalItems.rateType,
         operatorId: rentalItems.operatorId,
+        supervisorId: rentalItems.supervisorId,
         status: rentalItems.status,
         notes: rentalItems.notes,
         startDate: rentalItems.startDate,
@@ -779,6 +782,7 @@ export class RentalService {
         totalPrice: rentalItems.totalPrice,
         rateType: rentalItems.rateType,
         operatorId: rentalItems.operatorId,
+        supervisorId: rentalItems.supervisorId,
         status: rentalItems.status,
         notes: rentalItems.notes,
         startDate: rentalItems.startDate,
@@ -806,6 +810,7 @@ export class RentalService {
       totalPrice?: number;
       rateType?: string;
       operatorId?: number | null;
+      supervisorId?: number | null;
       status?: string;
       notes?: string;
       startDate?: string | null;

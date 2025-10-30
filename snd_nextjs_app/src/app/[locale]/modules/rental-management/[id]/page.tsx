@@ -776,6 +776,7 @@ export default function RentalDetailPage() {
     totalPrice: 0,
     rateType: 'daily',
     operatorId: '',
+    supervisorId: '',
     status: 'active',
     notes: '',
     actionType: 'update', // 'handover', 'remove', 'add', 'update'
@@ -1747,6 +1748,7 @@ export default function RentalDetailPage() {
         totalPrice: 0,
         rateType: 'daily',
         operatorId: '',
+        supervisorId: '',
         status: 'active',
         notes: '',
         actionType: 'update',
@@ -1783,6 +1785,7 @@ export default function RentalDetailPage() {
       totalPrice: item.total_price || item.totalPrice || 0,
       rateType: item.rate_type || item.rateType || 'daily',
       operatorId: item.operatorId?.toString() || '',
+      supervisorId: item.supervisorId?.toString?.() || item.supervisor_id?.toString?.() || '',
       status: item.status || 'active',
       notes: item.notes || '',
       actionType: 'update', // Default to update mode
@@ -1837,6 +1840,7 @@ export default function RentalDetailPage() {
         totalPrice: 0,
         rateType: 'daily',
         operatorId: '',
+        supervisorId: '',
         status: 'active',
         notes: '',
         actionType: 'update',
@@ -3687,6 +3691,14 @@ export default function RentalDetailPage() {
               />
             </div>
             <div>
+              <EmployeeDropdown
+                value={itemFormData.supervisorId}
+                onValueChange={value => setItemFormData(prev => ({ ...prev, supervisorId: value }))}
+                placeholder={t('rental.fields.selectSupervisor')}
+                label={t('rental.fields.supervisor')}
+              />
+            </div>
+            <div>
               <Label htmlFor="unitPrice">{t('rental.unitPrice')}</Label>
               <Input
                 id="unitPrice"
@@ -3868,6 +3880,14 @@ export default function RentalDetailPage() {
                 onValueChange={value => setItemFormData(prev => ({ ...prev, operatorId: value }))}
                 placeholder="Select operator (optional)"
                 label="Operator"
+              />
+            </div>
+            <div>
+              <EmployeeDropdown
+                value={itemFormData.supervisorId}
+                onValueChange={value => setItemFormData(prev => ({ ...prev, supervisorId: value }))}
+                placeholder="Select supervisor (optional)"
+                label="Supervisor/Foreman"
               />
             </div>
             <div>

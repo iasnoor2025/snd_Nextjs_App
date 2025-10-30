@@ -74,6 +74,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       totalPrice: totalPrice,
       rateType: body.rateType || 'daily',
       operatorId: body.operatorId ? parseInt(body.operatorId) : null,
+      supervisorId: body.supervisorId ? parseInt(body.supervisorId) : null,
       status: body.status || 'active',
       notes: body.notes || '',
       startDate: body.startDate && body.startDate !== '' ? body.startDate : null, // Add start date for new items
