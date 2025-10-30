@@ -73,9 +73,12 @@ function generateReportHTML(rental: any, rentalItems: any[], selectedMonth: stri
     
     const startDate = new Date(itemStartDate);
     
-    // Determine end date
+    // Determine end date for this item
     let endDate = new Date();
-    if (rental.status === 'completed' && rental.actualEndDate) {
+    const itemCompletedDate = item.completedDate || (item as any).completed_date;
+    if (itemCompletedDate) {
+      endDate = new Date(itemCompletedDate);
+    } else if (rental.status === 'completed' && rental.actualEndDate) {
       endDate = new Date(rental.actualEndDate);
     }
     
@@ -100,11 +103,37 @@ function generateReportHTML(rental: any, rentalItems: any[], selectedMonth: stri
       // Calculate monthly amount for this item
       const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
       const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+
+      // Determine the item's overall end date (already computed via itemCompletedDate/rental end/today)
+      const overallItemEnd = endDate;
+
+      // If the item ended before this month starts, skip this month entirely
+      if (overallItemEnd < monthStart) {
+        // Move to next month
+        currentMonth.setMonth(currentMonth.getMonth() + 1);
+        continue;
+      }
       
+      // If the item starts after this month ends, nothing to add for this month
+      if (startDate > monthEnd) {
+        // Move to next month
+        currentMonth.setMonth(currentMonth.getMonth() + 1);
+        continue;
+      }
+
       const startInMonth = startDate > monthStart ? startDate : monthStart;
       let endInMonth = monthEnd;
       
-      if (rental.status === 'completed' && rental.actualEndDate) {
+      // Prefer per-item completed date when available
+      if (itemCompletedDate) {
+        const completed = new Date(itemCompletedDate);
+        if (completed < monthEnd && completed >= monthStart) {
+          endInMonth = completed;
+        } else if (completed < monthStart) {
+          // Completed before this month – it shouldn't add value this month
+          endInMonth = monthStart;
+        }
+      } else if (rental.status === 'completed' && rental.actualEndDate) {
         const actualEnd = new Date(rental.actualEndDate);
         if (actualEnd < monthEnd && actualEnd >= monthStart) {
           endInMonth = actualEnd;
@@ -116,12 +145,16 @@ function generateReportHTML(rental: any, rentalItems: any[], selectedMonth: stri
         }
       }
       
-      if (startDate <= monthEnd) {
+      if (startInMonth <= endInMonth) {
         const startDay = startInMonth.getDate();
         const endDay = endInMonth.getDate();
         const days = endDay - startDay + 1; // +1 for inclusive counting
-        const monthlyAmount = (parseFloat(item.unitPrice || 0) || 0) * Math.max(days, 1);
+        const monthlyAmount = (parseFloat(item.unitPrice || 0) || 0) * Math.max(days, 0);
         acc[monthKey].totalAmount += monthlyAmount;
+      } else {
+        // No valid overlap within this month; skip adding the item
+        currentMonth.setMonth(currentMonth.getMonth() + 1);
+        continue;
       }
       
       acc[monthKey].items.push(item);

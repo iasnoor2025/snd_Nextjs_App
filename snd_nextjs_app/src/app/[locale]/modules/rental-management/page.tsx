@@ -310,6 +310,15 @@ export default function RentalManagementPage() {
       errors.rentalNumber = t('rental.validation.rentalNumberRequired');
     }
     
+    // Date validations
+    if (formData.startDate && formData.expectedEndDate) {
+      const start = new Date(formData.startDate);
+      const end = new Date(formData.expectedEndDate);
+      if (end < start) {
+        errors.expectedEndDate = 'Expected end date cannot be before start date';
+      }
+    }
+    
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -359,6 +368,16 @@ export default function RentalManagementPage() {
     if (!selectedRental) return;
 
     try {
+      // Guard: expectedEndDate must be >= startDate when both provided
+      if (formData.startDate && formData.expectedEndDate) {
+        const start = new Date(formData.startDate);
+        const end = new Date(formData.expectedEndDate);
+        if (end < start) {
+          toast.error('Expected end date cannot be before start date');
+          return;
+        }
+      }
+
       // Calculate financial fields
       const financials = calculateFinancials(formData.rentalItems);
 
@@ -893,7 +912,14 @@ export default function RentalManagementPage() {
                   id="editStartDate"
                   type="date"
                   value={formData.startDate}
-                  onChange={e => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                  onChange={e => setFormData(prev => {
+                    const newStart = e.target.value;
+                    // If expected end date exists and is before new start, snap it to start
+                    if (prev.expectedEndDate && newStart && new Date(prev.expectedEndDate) < new Date(newStart)) {
+                      return { ...prev, startDate: newStart, expectedEndDate: newStart };
+                    }
+                    return { ...prev, startDate: newStart };
+                  })}
                 />
               </div>
               <div>
@@ -902,9 +928,16 @@ export default function RentalManagementPage() {
                   id="editExpectedEndDate"
                   type="date"
                   value={formData.expectedEndDate}
-                  onChange={e =>
-                    setFormData(prev => ({ ...prev, expectedEndDate: e.target.value }))
-                  }
+                  min={formData.startDate || undefined}
+                  onChange={e => {
+                    const val = e.target.value;
+                    // If start date exists and new end is before start, block and show toast
+                    if (formData.startDate && val && new Date(val) < new Date(formData.startDate)) {
+                      toast.error('Expected end date cannot be before start date');
+                      return;
+                    }
+                    setFormData(prev => ({ ...prev, expectedEndDate: val }));
+                  }}
                 />
               </div>
               <div>

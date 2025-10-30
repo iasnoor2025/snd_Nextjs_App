@@ -2712,11 +2712,14 @@ export default function RentalDetailPage() {
                             
                             const startDate = new Date(itemStartDate);
                             
-                            // Determine end date
-                            let endDate = new Date();
-                            if (rental.status === 'completed' && rental.actualEndDate) {
-                              endDate = new Date(rental.actualEndDate);
-                            }
+                          // Determine end date for this item (prefer per-item completedDate)
+                          let endDate = new Date();
+                          const itemCompletedDate = item.completedDate || (item as any).completed_date;
+                          if (itemCompletedDate) {
+                            endDate = new Date(itemCompletedDate);
+                          } else if (rental.status === 'completed' && rental.actualEndDate) {
+                            endDate = new Date(rental.actualEndDate);
+                          }
                             
                             // Generate entries for each month the item was active
                             const currentMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
@@ -2748,8 +2751,31 @@ export default function RentalDetailPage() {
                               
                               const startInMonth = itemStartForCalc > reportMonthStart ? itemStartForCalc : reportMonthStart;
                               let endInMonth = reportMonthEnd;
+
+                              // If the item's overall end is before this month starts, skip this month
+                              const overallItemEnd = endDate;
+                              if (overallItemEnd < reportMonthStart) {
+                                currentMonth.setMonth(currentMonth.getMonth() + 1);
+                                continue;
+                              }
+                              // If the item starts after this month ends, skip
+                              if (itemStartForCalc > reportMonthEnd) {
+                                currentMonth.setMonth(currentMonth.getMonth() + 1);
+                                continue;
+                              }
                               
-                              if (rental.status === 'completed' && rental.actualEndDate) {
+                              // Prefer the item's completedDate when determining the end within this month
+                              const itemCompletedDateForMonth = item.completedDate || (item as any).completed_date;
+                              if (itemCompletedDateForMonth) {
+                                const completed = new Date(itemCompletedDateForMonth);
+                                completed.setHours(23, 59, 59, 999);
+                                if (completed >= reportMonthStart && completed <= reportMonthEnd) {
+                                  endInMonth = completed;
+                                } else if (completed < reportMonthStart) {
+                                  // Completed before this month – item not active this month
+                                  endInMonth = reportMonthStart;
+                                }
+                              } else if (rental.status === 'completed' && rental.actualEndDate) {
                                 const actualEnd = new Date(rental.actualEndDate);
                                 actualEnd.setHours(23, 59, 59, 999);
                                 if (actualEnd >= reportMonthStart && actualEnd <= reportMonthEnd) {
@@ -2763,13 +2789,16 @@ export default function RentalDetailPage() {
                                 }
                               }
                               
-                              if (itemStartForCalc <= reportMonthEnd) {
+                              if (startInMonth <= endInMonth) {
                                 const startDay = startInMonth.getDate();
                                 const endDay = endInMonth.getDate();
                                 const days = endDay - startDay + 1; // +1 for inclusive counting
                                 
-                                const itemAmount = (parseFloat(item.unitPrice || 0) || 0) * Math.max(days, 1);
+                                const itemAmount = (parseFloat(item.unitPrice || 0) || 0) * Math.max(days, 0);
                                 acc[monthKey].totalAmount += itemAmount;
+                              } else {
+                                currentMonth.setMonth(currentMonth.getMonth() + 1);
+                                continue;
                               }
                               
                               acc[monthKey].items.push(item);
@@ -3108,9 +3137,12 @@ export default function RentalDetailPage() {
                       
                       const startDate = new Date(itemStartDate);
                       
-                      // Determine end date
+                      // Determine end date for this item (prefer the item's completedDate)
                       let endDate = new Date();
-                      if (rental.status === 'completed' && rental.actualEndDate) {
+                      const itemCompletedDate = item.completedDate || (item as any).completed_date;
+                      if (itemCompletedDate) {
+                        endDate = new Date(itemCompletedDate);
+                      } else if (rental.status === 'completed' && rental.actualEndDate) {
                         endDate = new Date(rental.actualEndDate);
                       }
                       
@@ -3133,9 +3165,6 @@ export default function RentalDetailPage() {
                           };
                         }
                         
-                        acc[monthKey].items.push(item);
-                        acc[monthKey].totalItems += 1;
-                        
                         // Calculate amount for this specific month
                         const itemStartDate = new Date(item.startDate);
                         const [monthName, yearStr] = monthLabel.split(' ');
@@ -3146,10 +3175,29 @@ export default function RentalDetailPage() {
                         const monthStart = new Date(reportYear, reportMonth, 1);
                         const monthEnd = new Date(reportYear, reportMonth + 1, 0);
                         
+                        // If the item ended before this month starts, skip
+                        if (endDate < monthStart) {
+                          currentMonth.setMonth(currentMonth.getMonth() + 1);
+                          continue;
+                        }
+                        // If the item starts after this month ends, skip
+                        if (itemStartDate > monthEnd) {
+                          currentMonth.setMonth(currentMonth.getMonth() + 1);
+                          continue;
+                        }
+
                         const startInMonth = itemStartDate > monthStart ? itemStartDate : monthStart;
                         let endInMonth = monthEnd;
-                        
-                        if (rental.status === 'completed' && rental.actualEndDate) {
+
+                        // Prefer per-item completed date if exists within this month
+                        if (itemCompletedDate) {
+                          const completed = new Date(itemCompletedDate);
+                          if (completed < monthEnd && completed >= monthStart) {
+                            endInMonth = completed;
+                          } else if (completed < monthStart) {
+                            endInMonth = monthStart;
+                          }
+                        } else if (rental.status === 'completed' && rental.actualEndDate) {
                           const actualEnd = new Date(rental.actualEndDate);
                           if (actualEnd < monthEnd && actualEnd >= monthStart) {
                             endInMonth = actualEnd;
@@ -3160,21 +3208,21 @@ export default function RentalDetailPage() {
                             endInMonth = today;
                           }
                         }
-                        
-                        if (itemStartDate <= monthEnd) {
+
+                        if (startInMonth <= endInMonth) {
                           const startDay = startInMonth.getDate();
                           const endDay = endInMonth.getDate();
-                          const days = endDay - startDay + 1; // +1 for inclusive counting
-                          
-                          // Calculate amount based on days and unit price
-                          const itemAmount = (parseFloat(item.unitPrice || 0) || 0) * Math.max(days, 1);
+                          const days = endDay - startDay + 1; // +1 inclusive
+                          const itemAmount = (parseFloat(item.unitPrice || 0) || 0) * Math.max(days, 0);
                           acc[monthKey].totalAmount += itemAmount;
-                        }
-                        
-                        if (item.status === 'active') {
-                          acc[monthKey].activeItems += 1;
-                        } else if (item.status === 'completed' || item.status === 'removed') {
-                          acc[monthKey].completedItems += 1;
+
+                          acc[monthKey].items.push(item);
+                          acc[monthKey].totalItems += 1;
+                          if (item.status === 'active') {
+                            acc[monthKey].activeItems += 1;
+                          } else if (item.status === 'completed' || item.status === 'removed') {
+                            acc[monthKey].completedItems += 1;
+                          }
                         }
                         
                         // Move to next month
