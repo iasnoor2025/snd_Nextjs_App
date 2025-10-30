@@ -341,6 +341,9 @@ export default function RentalManagementPage() {
         body: JSON.stringify({
           ...formData,
           ...financials,
+          startDate: formData.startDate
+            ? new Date(formData.startDate).toISOString()
+            : undefined,
           expectedEndDate: formData.expectedEndDate
             ? new Date(formData.expectedEndDate).toISOString()
             : null,
@@ -816,6 +819,22 @@ export default function RentalManagementPage() {
                 </div>
               </div>
               
+              <div>
+                <Label htmlFor="startDate" className="text-sm font-medium">
+                  {t('rental.fields.startDate')} ({t('rental.optional')})
+                </Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={formData.startDate}
+                  onChange={e => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                  className="w-full"
+                />
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {t('rental.startDateOptionalHint', { defaultValue: 'Leave empty if rental not started yet' })}
+                </p>
+              </div>
+
               <div>
                 <Label htmlFor="expectedEndDate" className="text-sm font-medium">
                   {t('rental.fields.expectedEndDate')}

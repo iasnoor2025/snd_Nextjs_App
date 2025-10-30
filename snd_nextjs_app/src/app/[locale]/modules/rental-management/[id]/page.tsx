@@ -2341,6 +2341,7 @@ export default function RentalDetailPage() {
                         <TableHead>{t('rental.duration')}</TableHead>
                         <TableHead>{t('rental.totalPrice')}</TableHead>
                         <TableHead>{t('rental.operator')}</TableHead>
+                        <TableHead>{t('rental.fields.supervisor')}</TableHead>
                         <TableHead>{t('rental.status')}</TableHead>
                         <TableHead>{t('rental.table.headers.actions')}</TableHead>
                       </TableRow>
@@ -2372,6 +2373,14 @@ export default function RentalDetailPage() {
                           operatorName = `${item.operatorFirstName} ${item.operatorLastName}`;
                         } else if (item?.operatorId) {
                           operatorName = `Employee ${item.operatorId}`;
+                        }
+
+                        // Supervisor name
+                        let supervisorName = '-';
+                        if (item?.supervisorId && (item as any).supervisorFirstName && (item as any).supervisorLastName) {
+                          supervisorName = `${(item as any).supervisorFirstName} ${(item as any).supervisorLastName}`;
+                        } else if (item?.supervisorId) {
+                          supervisorName = `Employee ${item.supervisorId}`;
                         }
                         
                         console.log('Operator data from API:', {
@@ -2444,6 +2453,7 @@ export default function RentalDetailPage() {
                             <TableCell className="text-sm text-muted-foreground">{durationText}</TableCell>
                                                          <TableCell className="font-mono font-semibold">SAR {formatAmount(calculateItemTotal(item))}</TableCell>
                             <TableCell className="text-sm">{operatorName}</TableCell>
+                            <TableCell className="text-sm">{supervisorName}</TableCell>
                             <TableCell>
                               <Badge variant={item?.status === 'active' ? 'default' : 'secondary'}>
                                 {item?.status || 'active'}

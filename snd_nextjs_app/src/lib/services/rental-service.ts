@@ -396,17 +396,25 @@ export class RentalService {
   }) {
     const { rentalItems: itemsToCreate, ...rentalData } = data;
 
-    // Auto-set start date when status becomes active
+    // Determine start date and workflow status
     let startDate = rentalData.startDate;
     if (rentalData.status === 'active' && !startDate) {
       startDate = new Date();
     }
-    
-    // For pending rentals, set a placeholder date that will be updated when status becomes active
+
+    // Default placeholder when not started yet
+    const NOT_STARTED_SENTINEL = new Date('2099-12-31');
     if (!startDate) {
-      // Set to a far future date to indicate "not started yet"
-      startDate = new Date('2099-12-31');
+      startDate = NOT_STARTED_SENTINEL;
     }
+
+    // If user provided a real start date in the past or today, auto-mark workflow as active from that date
+    const now = new Date();
+    const isRealStart = startDate.getTime() !== NOT_STARTED_SENTINEL.getTime();
+    const isStarted = isRealStart && startDate <= now;
+    const derivedStatus = isStarted ? 'active' : (rentalData.status || 'pending');
+
+    const generatedQuotationId = isStarted ? Math.floor(Date.now() / 1000) : null;
 
     const [rental] = await db
       .insert(rentals)
@@ -416,7 +424,7 @@ export class RentalService {
         startDate: startDate.toISOString().split('T')[0],
         expectedEndDate: rentalData.expectedEndDate?.toISOString().split('T')[0],
         actualEndDate: rentalData.actualEndDate?.toISOString().split('T')[0],
-        status: rentalData.status || 'pending',
+        status: derivedStatus,
         paymentStatus: rentalData.paymentStatus || 'pending',
         subtotal: (rentalData.subtotal || 0).toString(),
         taxAmount: (rentalData.taxAmount || 0).toString(),
@@ -424,9 +432,13 @@ export class RentalService {
         discount: (rentalData.discount || 0).toString(),
         tax: (rentalData.tax || 0).toString(),
         finalAmount: (rentalData.finalAmount || 0).toString(),
+        quotationId: generatedQuotationId,
         supervisor: rentalData.supervisor || null,
         notes: rentalData.notes || '',
         updatedAt: new Date().toISOString().split('T')[0],
+        // Workflow timestamps so timeline shows earlier steps as completed
+        approvedAt: isStarted ? startDate.toISOString().split('T')[0] : null,
+        mobilizationDate: isStarted ? startDate.toISOString().split('T')[0] : null,
       })
       .returning();
 
@@ -726,7 +738,9 @@ export class RentalService {
   // Get rental items for a rental
   static async getRentalItems(rentalId: number) {
     console.log('Getting rental items for rental ID:', rentalId);
-    
+    const { alias } = await import('drizzle-orm/pg-core');
+    const supervisorEmp = alias(employees, 'supervisor_emp');
+
     const result = await db
       .select({
         id: rentalItems.id,
@@ -750,10 +764,14 @@ export class RentalService {
         // Operator fields
         operatorFirstName: employees.firstName,
         operatorLastName: employees.lastName,
+        // Supervisor fields
+        supervisorFirstName: supervisorEmp.firstName,
+        supervisorLastName: supervisorEmp.lastName,
       })
       .from(rentalItems)
       .leftJoin(equipment, eq(rentalItems.equipmentId, equipment.id))
       .leftJoin(employees, eq(rentalItems.operatorId, employees.id))
+      .leftJoin(supervisorEmp, eq(rentalItems.supervisorId, supervisorEmp.id))
       .where(eq(rentalItems.rentalId, rentalId))
       .orderBy(desc(rentalItems.createdAt));
 

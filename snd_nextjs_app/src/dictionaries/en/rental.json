@@ -113,6 +113,8 @@
   "rentalNumber": "Rental Number",
   "selectCustomer": "Select Customer",
   "startDate": "Start Date",
+  "optional": "optional",
+  "startDateOptionalHint": "Leave empty if rental not started yet",
   "expectedEndDate": "Expected End Date",
   "dashboard": {
     "title": "Rental Management",
