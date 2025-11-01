@@ -239,6 +239,7 @@ function generateReportHTML(rental: any, rentalItems: any[], selectedMonth: stri
               <th class="rate-col">Rate</th>
               <th class="date-col">Start Date</th>
               <th class="operator-col">Operator</th>
+              <th class="operator-col">Supervisor</th>
               <th class="duration-col">Duration</th>
               <th class="total-col">Total</th>
               <th class="completed-col">Completed Date</th>
@@ -247,11 +248,47 @@ function generateReportHTML(rental: any, rentalItems: any[], selectedMonth: stri
           <tbody>
     `;
     
-    monthData.items.forEach((item: any, index: number) => {
+    // Group items by supervisor
+    const groupedBySupervisor = monthData.items.reduce((acc: any, item: any) => {
+      const supervisorKey = item?.supervisorId 
+        ? (item?.supervisorFirstName && item?.supervisorLastName
+          ? `${item.supervisorFirstName} ${item.supervisorLastName}`
+          : `Employee ${item.supervisorId}`)
+        : 'No Supervisor';
+      
+      if (!acc[supervisorKey]) {
+        acc[supervisorKey] = [];
+      }
+      acc[supervisorKey].push(item);
+      return acc;
+    }, {});
+    
+    const supervisorKeys = Object.keys(groupedBySupervisor).sort();
+    const hasMultipleSupervisors = supervisorKeys.length > 1;
+    let globalIndex = 0;
+    
+    supervisorKeys.forEach((supervisorKey) => {
+      const supervisorItems = groupedBySupervisor[supervisorKey];
+      
+      // Add supervisor header row if multiple supervisors
+      if (hasMultipleSupervisors) {
+        html += `
+          <tr style="background-color: #f2f2f2;">
+            <td colspan="10" style="font-weight: bold; padding: 6px;">Supervisor: ${supervisorKey}</td>
+          </tr>
+        `;
+      }
+      
+      supervisorItems.forEach((item: any) => {
       const equipmentName = item.equipmentName || 'N/A';
       const operatorName = (item?.operatorFirstName && item?.operatorLastName) 
         ? `${item.operatorFirstName} ${item.operatorLastName}` 
         : (item?.operatorId ? `Employee ${item.operatorId}` : 'N/A');
+      
+      // Get supervisor name
+      const supervisorName = (item?.supervisorFirstName && item?.supervisorLastName)
+        ? `${item.supervisorFirstName} ${item.supervisorLastName}`
+        : (item?.supervisorId ? `Employee ${item.supervisorId}` : 'N/A');
       
       // Calculate duration and determine start date for this specific month
       let durationText = 'N/A';
@@ -361,19 +398,22 @@ function generateReportHTML(rental: any, rentalItems: any[], selectedMonth: stri
         }
       }
 
+      globalIndex++;
       html += `
         <tr>
-          <td class="sl-col">${index + 1}</td>
+          <td class="sl-col">${globalIndex}</td>
           <td class="equipment-col">${equipmentName}</td>
           <td class="price-col">SAR ${parseFloat(item.unitPrice || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</td>
           <td class="rate-col">${item.rateType || 'daily'}</td>
           <td class="date-col">${displayStartDate}</td>
           <td class="operator-col">${operatorName}</td>
+          <td class="operator-col">${supervisorName}</td>
           <td class="duration-col">${durationText}</td>
           <td class="total-col">SAR ${monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</td>
           <td class="completed-col">${completedDateDisplay}</td>
         </tr>
       `;
+    });
     });
     
     html += `
