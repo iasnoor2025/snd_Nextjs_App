@@ -84,6 +84,8 @@ interface Employee {
   tuv_certification_expiry?: string | null;
   spsp_license_number?: string | null;
   spsp_license_expiry?: string | null;
+  is_external?: boolean;
+  company_name?: string | null;
   current_assignment?: {
     id: number;
     type: string;
@@ -116,6 +118,8 @@ export default function EmployeeManagementPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [assignmentFilter, setAssignmentFilter] = useState('all');
+  const [externalFilter, setExternalFilter] = useState('all');
+  const [companyFilter, setCompanyFilter] = useState('all');
   const [sortField, setSortField] = useState<string>('file_number');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [isLoading, setIsLoading] = useState(true);
@@ -123,7 +127,6 @@ export default function EmployeeManagementPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isUpdatingDrivingLicense, setIsUpdatingDrivingLicense] = useState(false);
 
   // Statistics state
   const [statistics, setStatistics] = useState({
@@ -338,38 +341,6 @@ export default function EmployeeManagementPage() {
     }
   };
 
-  const handleUpdateDrivingLicense = async () => {
-    try {
-      setIsUpdatingDrivingLicense(true);
-      console.log('Calling update driving license API...');
-      
-      const response = await fetch('/api/employees/update-driving-license', {
-        method: 'POST',
-      });
-
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
-
-      const result = await response.json();
-      console.log('API response:', result);
-
-      if (result.success) {
-        toast.success(result.message);
-        if (result.data.updatedCount > 0) {
-          await fetchEmployees(); // Refresh the list to show updated data
-        }
-      } else {
-        console.error('API returned error:', result);
-        toast.error(result.message || 'Failed to update driving license numbers');
-      }
-    } catch (error) {
-      console.error('Error updating driving license numbers:', error);
-      toast.error('Failed to update driving license numbers');
-    } finally {
-      setIsUpdatingDrivingLicense(false);
-    }
-  };
-
   const handleExport = async () => {
     try {
       const response = await fetch('/api/employees/export', {
@@ -464,7 +435,16 @@ export default function EmployeeManagementPage() {
             employee.current_assignment.status !== 'active' ||
             !employee.current_assignment.name));
 
-      return matchesSearch && matchesStatus && matchesDepartment && matchesAssignment;
+      const matchesExternal =
+        externalFilter === 'all' ||
+        (externalFilter === 'external' && employee.is_external === true) ||
+        (externalFilter === 'internal' && (!employee.is_external || employee.is_external === false));
+
+      const matchesCompany =
+        companyFilter === 'all' ||
+        (employee.company_name && employee.company_name === companyFilter);
+
+      return matchesSearch && matchesStatus && matchesDepartment && matchesAssignment && matchesExternal && matchesCompany;
     });
 
     filtered.sort((a, b) => {
@@ -505,6 +485,8 @@ export default function EmployeeManagementPage() {
     statusFilter,
     departmentFilter,
     assignmentFilter,
+    externalFilter,
+    companyFilter,
     sortField,
     sortDirection,
   ]);
@@ -524,6 +506,8 @@ export default function EmployeeManagementPage() {
     statusFilter,
     departmentFilter,
     assignmentFilter,
+    externalFilter,
+    companyFilter,
     sortField,
     sortDirection,
     itemsPerPage,
@@ -698,30 +682,6 @@ export default function EmployeeManagementPage() {
                 </div>
               </div>
 
-              <PermissionContent action="update" subject="Employee">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleUpdateDrivingLicense}
-                  disabled={isUpdatingDrivingLicense}
-                  className="flex items-center gap-2"
-                >
-                  {isUpdatingDrivingLicense ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
-                      {t('employee.actions.updating')}
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-sm">🚗</span>
-                      {t('employee.actions.updateDrivingLicense')}
-                    </>
-                  )}
-                </Button>
-              </PermissionContent>
-
-
-
               <Select
                 value={statusFilter}
                 onValueChange={value => {
@@ -775,13 +735,67 @@ export default function EmployeeManagementPage() {
                   <SelectItem value="unassigned">{t('employee.filters.notAssigned')}</SelectItem>
                 </SelectContent>
               </Select>
+
+              <Select
+                value={externalFilter}
+                onValueChange={value => {
+                  setExternalFilter(value);
+                  setCurrentPage(1);
+                  // Reset company filter when switching to internal
+                  if (value !== 'external') {
+                    setCompanyFilter('all');
+                  }
+                }}
+              >
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Employee Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Employees</SelectItem>
+                  <SelectItem value="internal">Internal Only</SelectItem>
+                  <SelectItem value="external">External Only</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {externalFilter === 'external' && (
+                <Select
+                  value={companyFilter}
+                  onValueChange={value => {
+                    setCompanyFilter(value);
+                    setCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Filter by Company" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Companies</SelectItem>
+                    {Array.from(
+                      new Set(
+                        employees
+                          .filter(emp => emp.is_external && emp.company_name)
+                          .map(emp => emp.company_name)
+                          .filter(Boolean)
+                      )
+                    )
+                      .sort()
+                      .map(company => (
+                        <SelectItem key={company} value={company as string}>
+                          {company}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
                          {/* Search Results Summary */}
              {(searchTerm ||
                statusFilter !== 'all' ||
                departmentFilter !== 'all' ||
-               assignmentFilter !== 'all') && (
+               assignmentFilter !== 'all' ||
+               externalFilter !== 'all' ||
+               companyFilter !== 'all') && (
                <div className="mb-4 p-3 bg-muted/50 rounded-md">
                  <div className="text-sm text-muted-foreground">
                    {(() => {
