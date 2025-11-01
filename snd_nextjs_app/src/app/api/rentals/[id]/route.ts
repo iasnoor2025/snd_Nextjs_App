@@ -43,15 +43,21 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Start date is required' }, { status: 400 });
     }
 
-    // Set update data
-    const updateData = {
+    // Get current rental to preserve existing status and paymentStatus if not provided
+    const currentRental = await RentalService.getRental(parseInt(id));
+    if (!currentRental) {
+      return NextResponse.json({ error: 'Rental not found' }, { status: 404 });
+    }
+
+    // Set update data - preserve existing status/paymentStatus if not explicitly provided
+    const updateData: any = {
       customerId: parseInt(body.customerId),
       rentalNumber: body.rentalNumber,
       startDate: new Date(body.startDate),
       expectedEndDate: body.expectedEndDate ? new Date(body.expectedEndDate) : null,
       actualEndDate: body.actualEndDate ? new Date(body.actualEndDate) : null,
-      status: body.status || 'pending',
-      paymentStatus: body.paymentStatus || 'pending',
+      status: body.status !== undefined ? body.status : currentRental.status,
+      paymentStatus: body.paymentStatus !== undefined ? body.paymentStatus : currentRental.paymentStatus,
       subtotal: parseFloat(body.subtotal) || 0,
       taxAmount: parseFloat(body.taxAmount) || 0,
       totalAmount: parseFloat(body.totalAmount) || 0,
@@ -64,8 +70,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       hasOperators: body.hasOperators || false,
       supervisor: body.supervisor || null,
       notes: body.notes || '',
-      rentalItems: body.rentalItems || [],
     };
+
+    // Only include rentalItems if explicitly provided - otherwise preserve existing items
+    if (body.rentalItems !== undefined) {
+      updateData.rentalItems = body.rentalItems;
+    }
 
     const rental = await RentalService.updateRental(parseInt(id), updateData);
 

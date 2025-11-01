@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -3344,22 +3345,22 @@ export default function RentalDetailPage() {
                                     const hasMultipleSupervisors = supervisorKeys.length > 1;
                                     
                                     return (
-                                      <Table>
-                                        <TableHeader>
-                                          <TableRow className="border-b">
-                                            <TableHead className="w-10 text-center text-sm py-1 px-1">Sl#</TableHead>
-                                            <TableHead className="text-sm py-1 px-2 min-w-[110px] font-semibold">Equipment</TableHead>
-                                            <TableHead className="text-sm py-1 px-1 w-24">Unit Price</TableHead>
-                                            <TableHead className="text-sm py-1 px-1 w-16">Rate</TableHead>
-                                            <TableHead className="text-sm py-1 px-1 w-24">Start Date</TableHead>
-                                            <TableHead className="text-sm py-1 px-1 min-w-[100px]">Operator</TableHead>
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow className="border-b">
+                                        <TableHead className="w-10 text-center text-sm py-1 px-1">Sl#</TableHead>
+                                        <TableHead className="text-sm py-1 px-2 min-w-[110px] font-semibold">Equipment</TableHead>
+                                        <TableHead className="text-sm py-1 px-1 w-24">Unit Price</TableHead>
+                                        <TableHead className="text-sm py-1 px-1 w-16">Rate</TableHead>
+                                        <TableHead className="text-sm py-1 px-1 w-24">Start Date</TableHead>
+                                        <TableHead className="text-sm py-1 px-1 min-w-[100px]">Operator</TableHead>
                                             <TableHead className="text-sm py-1 px-1 min-w-[110px]">Supervisor</TableHead>
-                                            <TableHead className="text-sm py-1 px-1 w-20">Duration</TableHead>
-                                            <TableHead className="text-sm py-1 px-1 w-28">Total</TableHead>
-                                            <TableHead className="text-sm py-1 px-1 w-28">Completed Date</TableHead>
-                                          </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
+                                        <TableHead className="text-sm py-1 px-1 w-20">Duration</TableHead>
+                                        <TableHead className="text-sm py-1 px-1 w-28">Total</TableHead>
+                                        <TableHead className="text-sm py-1 px-1 w-28">Completed Date</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
                                           {supervisorKeys.map((supervisorKey, supervisorIndex) => {
                                             const supervisorItems = groupedBySupervisor[supervisorKey];
                                             let slNumber = supervisorIndex === 0 ? 1 : 
@@ -3367,7 +3368,7 @@ export default function RentalDetailPage() {
                                                 sum + groupedBySupervisor[key].length, 1);
                                             
                                             return (
-                                              <>
+                                              <React.Fragment key={`supervisor-${supervisorKey}-${supervisorIndex}`}>
                                                 {hasMultipleSupervisors && (
                                                   <TableRow className="bg-muted/50">
                                                     <TableCell colSpan={10} className="font-semibold text-sm py-2 px-2">
@@ -3380,13 +3381,13 @@ export default function RentalDetailPage() {
                                         ? (equipmentNames[item.equipmentId.toString()] || item.equipmentName)
                                         : item.equipmentName;
                                       
-                                                  // Get operator name directly from API response
-                                                  let operatorName = 'N/A';
-                                                  if (item?.operatorId && item?.operatorFirstName && item?.operatorLastName) {
-                                                    operatorName = `${item.operatorFirstName} ${item.operatorLastName}`;
-                                                  } else if (item?.operatorId) {
-                                                    operatorName = `Employee ${item.operatorId}`;
-                                                  }
+                                      // Get operator name directly from API response
+                                      let operatorName = 'N/A';
+                                      if (item?.operatorId && item?.operatorFirstName && item?.operatorLastName) {
+                                        operatorName = `${item.operatorFirstName} ${item.operatorLastName}`;
+                                      } else if (item?.operatorId) {
+                                        operatorName = `Employee ${item.operatorId}`;
+                                      }
                                                   
                                                   // Get supervisor name
                                                   let supervisorName = 'N/A';
@@ -3395,158 +3396,158 @@ export default function RentalDetailPage() {
                                                   } else if (item?.supervisorId) {
                                                     supervisorName = `Employee ${item.supervisorId}`;
                                                   }
-                                                  
-                                                  // Calculate duration for this specific month
-                                                  let durationText = 'N/A';
-                                                  if (item.startDate) {
-                                                    const itemStartDate = new Date(item.startDate);
-                                                    itemStartDate.setHours(0, 0, 0, 0);
-                                                    
-                                                    // Parse month and year from monthLabel (e.g., "October 2025")
-                                                    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-                                                    const monthParts = monthData.monthLabel.split(' ');
-                                                    const year = parseInt(monthParts[1]);
-                                                    const monthNum = monthNames.indexOf(monthParts[0]);
-                                                    
-                                                    // Get first and last day of the month
-                                                    const monthStart = new Date(year, monthNum, 1);
-                                                    monthStart.setHours(0, 0, 0, 0);
-                                                    const monthEnd = new Date(year, monthNum + 1, 0);
-                                                    monthEnd.setHours(23, 59, 59, 999);
-                                                    
-                                                    // Determine the start date in this month
-                                                    const startInMonth = itemStartDate > monthStart ? itemStartDate : monthStart;
-                                                    
-                                                    // Determine the end date in this month
-                                                    let endInMonth = monthEnd;
-                                                    
-                                                    // Check if item has a completed date and use it for duration calculation
-                                                    const itemCompletedDate = (item.completedDate || (item as any).completed_date);
-                                                    if (itemCompletedDate && item.status === 'completed') {
-                                                      const completedDate = new Date(itemCompletedDate);
-                                                      completedDate.setHours(23, 59, 59, 999);
-                                                      // If completed date is within this month, use it as end date
-                                                      if (completedDate >= monthStart && completedDate <= monthEnd) {
-                                                        endInMonth = completedDate;
-                                                      } else if (completedDate < monthStart) {
-                                                        // If completed before this month, item wasn't active this month
-                                                        endInMonth = monthStart;
-                                                      }
-                                                      // If completed after this month, use month end (item was active all month)
-                                                    } else if (rental.status === 'completed' && rental.actualEndDate) {
-                                                      // Fallback to rental end date if item doesn't have completed date
-                                                      const actualEnd = new Date(rental.actualEndDate);
-                                                      actualEnd.setHours(23, 59, 59, 999);
-                                                      if (actualEnd >= monthStart && actualEnd <= monthEnd) {
-                                                        endInMonth = actualEnd;
-                                                      }
-                                                    } else {
-                                                      // For active rentals, use today if within the month
-                                                      const today = new Date();
-                                                      today.setHours(23, 59, 59, 999);
-                                                      if (today >= monthStart && today <= monthEnd) {
-                                                        endInMonth = today;
-                                                      }
-                                                    }
-                                                    
-                                                    // Calculate days - ensure we don't go outside the month
-                                                    if (itemStartDate > monthEnd) {
-                                                      durationText = '0 days';
-                                                    } else {
-                                                      // Calculate days by getting day components (inclusive)
-                                                      const startDay = startInMonth.getDate();
-                                                      const endDay = endInMonth.getDate();
-                                                      const days = endDay - startDay + 1; // +1 for inclusive counting
-                                                      durationText = days >= 1 ? `${days} days` : '1 day';
-                                                    }
-                                                  }
-                                                  
-                                                  // Determine what start date to show for this month
-                                                  let displayStartDate = 'N/A';
-                                                  if (item.startDate && item.startDate !== '') {
-                                                    const itemStartDate = new Date(item.startDate);
-                                                    itemStartDate.setHours(0, 0, 0, 0);
-                                                    
-                                                    // Check if this is the actual start month or a subsequent month
-                                                    const [monthName, yearStr] = monthData.monthLabel.split(' ');
-                                                    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-                                                    const reportMonth = monthNames.indexOf(monthName);
-                                                    const reportYear = parseInt(yearStr);
-                                                    
-                                                    const reportMonthStart = new Date(reportYear, reportMonth, 1);
-                                                    reportMonthStart.setHours(0, 0, 0, 0);
-                                                    
-                                                    // Check if the start date is on the first day of this month
-                                                    if (itemStartDate.getTime() === reportMonthStart.getTime()) {
-                                                      // Started on 1st of this month - show the actual date
-                                                      displayStartDate = format(itemStartDate, 'MMM dd, yyyy');
-                                                    } else if (itemStartDate >= reportMonthStart && itemStartDate < new Date(reportYear, reportMonth + 1, 1)) {
-                                                      // Started mid-month in this month - show the actual start date
-                                                      displayStartDate = format(itemStartDate, 'MMM dd, yyyy');
-                                                    } else {
-                                                      // This is a month after the start - show first of month
-                                                      displayStartDate = format(reportMonthStart, 'MMM dd, yyyy');
-                                                    }
-                                                  } else if (rental?.startDate) {
-                                                    displayStartDate = `Rental: ${format(new Date(rental.startDate), 'MMM dd, yyyy')}`;
-                                                  }
-                                                  
-                                                  // Determine completed date display - only show in the month when completed
-                                                  let completedDateDisplay = '-';
-                                                  if (item.status === 'completed' && (item.completedDate || (item as any).completed_date)) {
-                                                    const completedDate = new Date((item.completedDate || (item as any).completed_date));
-                                                    completedDate.setHours(0, 0, 0, 0);
-                                                    
-                                                    // Check if completed date falls within the current report month
-                                                    const [monthName, yearStr] = monthData.monthLabel.split(' ');
-                                                    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-                                                    const reportMonth = monthNames.indexOf(monthName);
-                                                    const reportYear = parseInt(yearStr);
-                                                    
-                                                    const reportMonthStart = new Date(reportYear, reportMonth, 1);
-                                                    reportMonthStart.setHours(0, 0, 0, 0);
-                                                    const reportMonthEnd = new Date(reportYear, reportMonth + 1, 0);
-                                                    reportMonthEnd.setHours(23, 59, 59, 999);
-                                                    
-                                                    // Only show completed date if it's in this month
-                                                    if (completedDate >= reportMonthStart && completedDate <= reportMonthEnd) {
-                                                      completedDateDisplay = format(completedDate, 'MMM dd, yyyy');
-                                                    }
-                                                  }
+                                      
+                                      // Calculate duration for this specific month
+                                      let durationText = 'N/A';
+                                      if (item.startDate) {
+                                        const itemStartDate = new Date(item.startDate);
+                                        itemStartDate.setHours(0, 0, 0, 0);
+                                        
+                                        // Parse month and year from monthLabel (e.g., "October 2025")
+                                        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                                        const monthParts = monthData.monthLabel.split(' ');
+                                        const year = parseInt(monthParts[1]);
+                                        const monthNum = monthNames.indexOf(monthParts[0]);
+                                        
+                                        // Get first and last day of the month
+                                        const monthStart = new Date(year, monthNum, 1);
+                                        monthStart.setHours(0, 0, 0, 0);
+                                        const monthEnd = new Date(year, monthNum + 1, 0);
+                                        monthEnd.setHours(23, 59, 59, 999);
+                                        
+                                        // Determine the start date in this month
+                                        const startInMonth = itemStartDate > monthStart ? itemStartDate : monthStart;
+                                        
+                                        // Determine the end date in this month
+                                        let endInMonth = monthEnd;
+                                        
+                                        // Check if item has a completed date and use it for duration calculation
+                                        const itemCompletedDate = (item.completedDate || (item as any).completed_date);
+                                        if (itemCompletedDate && item.status === 'completed') {
+                                          const completedDate = new Date(itemCompletedDate);
+                                          completedDate.setHours(23, 59, 59, 999);
+                                          // If completed date is within this month, use it as end date
+                                          if (completedDate >= monthStart && completedDate <= monthEnd) {
+                                            endInMonth = completedDate;
+                                          } else if (completedDate < monthStart) {
+                                            // If completed before this month, item wasn't active this month
+                                            endInMonth = monthStart;
+                                          }
+                                          // If completed after this month, use month end (item was active all month)
+                                        } else if (rental.status === 'completed' && rental.actualEndDate) {
+                                          // Fallback to rental end date if item doesn't have completed date
+                                          const actualEnd = new Date(rental.actualEndDate);
+                                          actualEnd.setHours(23, 59, 59, 999);
+                                          if (actualEnd >= monthStart && actualEnd <= monthEnd) {
+                                            endInMonth = actualEnd;
+                                          }
+                                        } else {
+                                          // For active rentals, use today if within the month
+                                          const today = new Date();
+                                          today.setHours(23, 59, 59, 999);
+                                          if (today >= monthStart && today <= monthEnd) {
+                                            endInMonth = today;
+                                          }
+                                        }
+                                        
+                                        // Calculate days - ensure we don't go outside the month
+                                        if (itemStartDate > monthEnd) {
+                                          durationText = '0 days';
+                                        } else {
+                                          // Calculate days by getting day components (inclusive)
+                                          const startDay = startInMonth.getDate();
+                                          const endDay = endInMonth.getDate();
+                                          const days = endDay - startDay + 1; // +1 for inclusive counting
+                                          durationText = days >= 1 ? `${days} days` : '1 day';
+                                        }
+                                      }
+                                      
+                                        // Determine what start date to show for this month
+                                        let displayStartDate = 'N/A';
+                                        if (item.startDate && item.startDate !== '') {
+                                          const itemStartDate = new Date(item.startDate);
+                                          itemStartDate.setHours(0, 0, 0, 0);
+                                          
+                                          // Check if this is the actual start month or a subsequent month
+                                          const [monthName, yearStr] = monthData.monthLabel.split(' ');
+                                          const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                                          const reportMonth = monthNames.indexOf(monthName);
+                                          const reportYear = parseInt(yearStr);
+                                          
+                                          const reportMonthStart = new Date(reportYear, reportMonth, 1);
+                                          reportMonthStart.setHours(0, 0, 0, 0);
+                                          
+                                          // Check if the start date is on the first day of this month
+                                          if (itemStartDate.getTime() === reportMonthStart.getTime()) {
+                                            // Started on 1st of this month - show the actual date
+                                            displayStartDate = format(itemStartDate, 'MMM dd, yyyy');
+                                          } else if (itemStartDate >= reportMonthStart && itemStartDate < new Date(reportYear, reportMonth + 1, 1)) {
+                                            // Started mid-month in this month - show the actual start date
+                                            displayStartDate = format(itemStartDate, 'MMM dd, yyyy');
+                                          } else {
+                                            // This is a month after the start - show first of month
+                                            displayStartDate = format(reportMonthStart, 'MMM dd, yyyy');
+                                          }
+                                        } else if (rental?.startDate) {
+                                          displayStartDate = `Rental: ${format(new Date(rental.startDate), 'MMM dd, yyyy')}`;
+                                        }
+                                      
+                                      // Determine completed date display - only show in the month when completed
+                                      let completedDateDisplay = '-';
+                                      if (item.status === 'completed' && (item.completedDate || (item as any).completed_date)) {
+                                        const completedDate = new Date((item.completedDate || (item as any).completed_date));
+                                        completedDate.setHours(0, 0, 0, 0);
+                                        
+                                        // Check if completed date falls within the current report month
+                                        const [monthName, yearStr] = monthData.monthLabel.split(' ');
+                                        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                                        const reportMonth = monthNames.indexOf(monthName);
+                                        const reportYear = parseInt(yearStr);
+                                        
+                                        const reportMonthStart = new Date(reportYear, reportMonth, 1);
+                                        reportMonthStart.setHours(0, 0, 0, 0);
+                                        const reportMonthEnd = new Date(reportYear, reportMonth + 1, 0);
+                                        reportMonthEnd.setHours(23, 59, 59, 999);
+                                        
+                                        // Only show completed date if it's in this month
+                                        if (completedDate >= reportMonthStart && completedDate <= reportMonthEnd) {
+                                          completedDateDisplay = format(completedDate, 'MMM dd, yyyy');
+                                        }
+                                      }
 
-                                                  return (
-                                                    <TableRow key={item.id} className="border-b">
+                                      return (
+                                        <TableRow key={item.id} className="border-b">
                                                       <TableCell className="w-10 text-center text-sm py-1 px-1">{slNumber + itemIndex}</TableCell>
-                                                      <TableCell className="font-medium text-sm py-1 px-2 min-w-[110px]">{equipmentName}</TableCell>
-                                                      <TableCell className="font-mono text-sm py-1 px-1 w-24">SAR {formatAmount(item.unitPrice)}</TableCell>
-                                                      <TableCell className="text-sm py-1 px-1 w-16">
-                                                        <Badge variant="outline" className="capitalize text-xs px-1.5 py-0.5 h-5">
-                                                          {item.rateType || 'daily'}
-                                                        </Badge>
-                                                      </TableCell>
-                                                      <TableCell className="text-sm text-muted-foreground py-1 px-1 w-24">
-                                                        {displayStartDate}
-                                                      </TableCell>
-                                                      <TableCell className="text-sm text-muted-foreground py-1 px-1 min-w-[100px]">{operatorName}</TableCell>
+                                          <TableCell className="font-medium text-sm py-1 px-2 min-w-[110px]">{equipmentName}</TableCell>
+                                          <TableCell className="font-mono text-sm py-1 px-1 w-24">SAR {formatAmount(item.unitPrice)}</TableCell>
+                                          <TableCell className="text-sm py-1 px-1 w-16">
+                                            <Badge variant="outline" className="capitalize text-xs px-1.5 py-0.5 h-5">
+                                              {item.rateType || 'daily'}
+                                            </Badge>
+                                          </TableCell>
+                                          <TableCell className="text-sm text-muted-foreground py-1 px-1 w-24">
+                                            {displayStartDate}
+                                          </TableCell>
+                                          <TableCell className="text-sm text-muted-foreground py-1 px-1 min-w-[100px]">{operatorName}</TableCell>
                                                       <TableCell className="text-sm text-muted-foreground py-1 px-1 min-w-[110px]">{supervisorName}</TableCell>
-                                                      <TableCell className="text-sm text-muted-foreground py-1 px-1 w-20">{durationText}</TableCell>
-                                                      <TableCell className="font-mono font-semibold text-sm py-1 px-1 w-28">
-                                                        {(() => {
-                                                          const days = parseInt(durationText.replace(' days', '')) || 1;
-                                                          const unitPrice = parseFloat(item.unitPrice || 0) || 0;
-                                                          const monthlyTotal = unitPrice * days;
-                                                          return `SAR ${formatAmount(monthlyTotal.toString())}`;
-                                                        })()}
-                                                      </TableCell>
-                                                      <TableCell className="text-sm text-muted-foreground py-1 px-1 w-28">{completedDateDisplay}</TableCell>
-                                                    </TableRow>
+                                          <TableCell className="text-sm text-muted-foreground py-1 px-1 w-20">{durationText}</TableCell>
+                                          <TableCell className="font-mono font-semibold text-sm py-1 px-1 w-28">
+                                            {(() => {
+                                              const days = parseInt(durationText.replace(' days', '')) || 1;
+                                              const unitPrice = parseFloat(item.unitPrice || 0) || 0;
+                                              const monthlyTotal = unitPrice * days;
+                                              return `SAR ${formatAmount(monthlyTotal.toString())}`;
+                                            })()}
+                                          </TableCell>
+                                          <TableCell className="text-sm text-muted-foreground py-1 px-1 w-28">{completedDateDisplay}</TableCell>
+                                        </TableRow>
                                                   );
                                                 })}
-                                              </>
+                                              </React.Fragment>
                                             );
                                           })}
-                                        </TableBody>
-                                      </Table>
+                                    </TableBody>
+                                  </Table>
                                     );
                                   })()}
                                 </div>

@@ -546,13 +546,14 @@ export class RentalService {
 
     await db.update(rentals).set(updateData).where(eq(rentals.id, id));
 
-    // Handle rental items if provided
-    if (itemsToUpdate) {
+    // Handle rental items ONLY if explicitly provided
+    // If rentalItems is undefined, preserve existing items
+    if (itemsToUpdate !== undefined) {
       // Delete existing items
       await db.delete(rentalItems).where(eq(rentalItems.rentalId, id));
 
-      // Create new items
-      if (itemsToUpdate.length > 0) {
+      // Create new items if array is provided (even if empty)
+      if (Array.isArray(itemsToUpdate)) {
         await Promise.all(
           itemsToUpdate.map((item: any) =>
             db.insert(rentalItems).values({
@@ -563,8 +564,11 @@ export class RentalService {
               totalPrice: item.totalPrice,
               rateType: item.rateType || 'daily',
               operatorId: item.operatorId ? parseInt(item.operatorId) : null,
+              supervisorId: item.supervisorId ? parseInt(item.supervisorId) : null,
               status: item.status || 'active',
               notes: item.notes,
+              startDate: item.startDate || null,
+              completedDate: item.completedDate || null,
               updatedAt: new Date().toISOString().split('T')[0],
             })
           )
