@@ -517,6 +517,7 @@
     "designationUpdateError": "فشل في تحديث المسمى الوظيفي",
     "noDepartmentsFound": "لم يتم العثور على أقسام",
     "noDesignationsFound": "لم يتم العثور على مسميات وظيفية",
+    "fetchError": "فشل في جلب الموظفين",
     "departmentDeleteError": "فشل في حذف القسم",
     "designationDeleteError": "فشل في حذف المسمى الوظيفي"
   },

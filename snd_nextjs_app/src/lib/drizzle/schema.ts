@@ -1254,6 +1254,8 @@ export const employees = pgTable(
     accessRestrictionReason: text('access_restriction_reason'),
     status: text().default('active').notNull(),
     currentLocation: text('current_location'),
+    isExternal: boolean('is_external').default(false).notNull(),
+    companyName: text('company_name'),
     createdAt: date('created_at')
       .default(sql`CURRENT_DATE`)
       .notNull(),

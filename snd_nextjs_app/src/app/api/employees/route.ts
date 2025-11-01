@@ -95,6 +95,8 @@ const getEmployeesHandler = async (request: NextRequest) => {
         department_id: employeesTable.departmentId,
         designation_id: employeesTable.designationId,
         status: employeesTable.status,
+        is_external: employeesTable.isExternal,
+        company_name: employeesTable.companyName,
         basic_salary: employeesTable.basicSalary,
         hire_date: employeesTable.hireDate,
         iqama_number: employeesTable.iqamaNumber,
@@ -308,6 +310,8 @@ const getEmployeesHandler = async (request: NextRequest) => {
         email: employee.email || null,
         phone: employee.phone || null,
         status: employee.status || null,
+        is_external: employee.is_external || false,
+        company_name: employee.company_name || null,
         full_name: fullName,
         department: employee.dept_name ? { name: employee.dept_name } : null,
         designation: employee.desig_name ? { name: employee.desig_name } : null,
@@ -385,10 +389,24 @@ const getEmployeesHandler = async (request: NextRequest) => {
     return NextResponse.json(response);
   } catch (error) {
     console.error('Employees API - Error fetching employees:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    // Check if error is due to missing columns (migration not run)
+    if (errorMessage.includes('column') && (errorMessage.includes('is_external') || errorMessage.includes('company_name'))) {
+      return NextResponse.json(
+        {
+          error: 'Database migration required',
+          details: 'The is_external and company_name columns are missing. Please run the migration: npm run drizzle:push or execute scripts/migrations/add-external-employee-company-name.sql',
+          timestamp: new Date().toISOString(),
+        },
+        { status: 500 }
+      );
+    }
+    
     return NextResponse.json(
       {
         error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error',
+        details: errorMessage,
         timestamp: new Date().toISOString(),
       },
       { status: 500 }
@@ -454,6 +472,8 @@ const createEmployeeHandler = async (request: NextRequest) => {
       spsp_license_expiry,
       spsp_license_cost,
       is_operator,
+      is_external,
+      company_name,
       access_start_date,
       access_end_date,
       access_restriction_reason,
@@ -469,6 +489,14 @@ const createEmployeeHandler = async (request: NextRequest) => {
     if (!first_name || !last_name || !fileNumber) {
       return NextResponse.json(
         { error: 'First name, last name, and file number are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate that company name is provided if employee is external
+    if (is_external && !company_name) {
+      return NextResponse.json(
+        { error: 'Company name is required for external employees' },
         { status: 400 }
       );
     }
@@ -542,6 +570,8 @@ const createEmployeeHandler = async (request: NextRequest) => {
         spspLicenseExpiry: spsp_license_expiry ? new Date(spsp_license_expiry).toISOString() : null,
         spspLicenseCost: spsp_license_cost ? String(parseFloat(spsp_license_cost)) : null,
         isOperator: is_operator || false,
+        isExternal: is_external || false,
+        companyName: is_external ? (company_name || null) : null,
         accessStartDate: access_start_date ? new Date(access_start_date).toISOString() : null,
         accessEndDate: access_end_date ? new Date(access_end_date).toISOString() : null,
         accessRestrictionReason: access_restriction_reason || null,

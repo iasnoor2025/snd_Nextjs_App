@@ -213,7 +213,7 @@ export default function EmployeeManagementPage() {
           setEmployees(result.data);
         } else {
           setEmployees([]);
-          toast.error(t('employee:messages.fetchError'));
+          toast.error(t('employee.messages.fetchError'));
         }
       } else {
         setEmployees([]);

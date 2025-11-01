@@ -22,6 +22,8 @@ export interface Employee {
   phone?: string;
   department?: string | { name: string };
   status?: string;
+  is_external?: boolean;
+  company_name?: string | null;
 }
 
 interface EmployeeDropdownProps {
@@ -342,15 +344,27 @@ export function EmployeeDropdown({
                     value={employee.id}
                     className="cursor-pointer hover:bg-gray-100"
                   >
-                    <div className="flex items-center w-full">
-                      <span className="font-medium">
-                        {employee.first_name} {employee.last_name}
-                        {employee.file_number && (
-                          <span className="text-blue-600 font-mono ml-1">
-                            (File: {employee.file_number})
+                    <div className="flex items-center w-full justify-between">
+                      <div className="flex flex-col flex-1">
+                        <span className="font-medium">
+                          {employee.first_name} {employee.last_name}
+                          {employee.file_number && (
+                            <span className="text-blue-600 font-mono ml-1">
+                              (File: {employee.file_number})
+                            </span>
+                          )}
+                        </span>
+                        {employee.is_external && employee.company_name && (
+                          <span className="text-xs text-gray-500 mt-0.5">
+                            Company: {employee.company_name}
                           </span>
                         )}
-                      </span>
+                      </div>
+                      {employee.is_external && (
+                        <span className="ml-2 px-2 py-0.5 text-xs bg-orange-100 text-orange-700 rounded whitespace-nowrap">
+                          External
+                        </span>
+                      )}
                     </div>
                   </SelectItem>
                 ))}
@@ -378,6 +392,12 @@ export function EmployeeDropdown({
       {selectedEmployee && (
         <div className="text-xs text-gray-500">
           Selected: {selectedEmployee.first_name} {selectedEmployee.last_name}
+          {selectedEmployee.is_external && (
+            <span className="text-orange-600 ml-1">(External)</span>
+          )}
+          {selectedEmployee.is_external && selectedEmployee.company_name && (
+            <span className="text-gray-600 ml-1">- {selectedEmployee.company_name}</span>
+          )}
           {selectedEmployee.file_number && (
             <span className="text-blue-600"> (File: {selectedEmployee.file_number})</span>
           )}
