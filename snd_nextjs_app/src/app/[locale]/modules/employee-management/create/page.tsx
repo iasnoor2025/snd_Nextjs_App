@@ -148,16 +148,20 @@ export default function CreateEmployeePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [designations, setDesignations] = useState<Designation[]>([]);
+  const [companies, setCompanies] = useState<Array<{ id: number; name: string }>>([]);
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, string>>({});
   const [suggestedFileNumber, setSuggestedFileNumber] = useState<string>('');
 
   // Add modal states
   const [showAddDepartment, setShowAddDepartment] = useState(false);
   const [showAddDesignation, setShowAddDesignation] = useState(false);
+  const [showAddCompany, setShowAddCompany] = useState(false);
   const [newDepartment, setNewDepartment] = useState({ name: '', code: '' });
   const [newDesignation, setNewDesignation] = useState({ name: '', description: '' });
+  const [newCompany, setNewCompany] = useState({ name: '' });
   const [addingDepartment, setAddingDepartment] = useState(false);
   const [addingDesignation, setAddingDesignation] = useState(false);
+  const [addingCompany, setAddingCompany] = useState(false);
 
   // Edit modal states
   const [showEditDepartment, setShowEditDepartment] = useState(false);
@@ -256,6 +260,20 @@ export default function CreateEmployeePage() {
     }
   };
 
+  const fetchCompanies = async () => {
+    try {
+      const response = await fetch('/api/companies?limit=1000&sortBy=name&sortOrder=asc');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setCompanies(data.data.map((c: any) => ({ id: c.id, name: c.name })));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching companies:', error);
+    }
+  };
+
   // Function to fetch next file number based on external status
   const fetchNextFileNumber = async (isExternal: boolean, autoUpdate: boolean = false) => {
     try {
@@ -296,6 +314,7 @@ export default function CreateEmployeePage() {
   useEffect(() => {
     fetchDepartments();
     fetchDesignations();
+    fetchCompanies();
     // Prefill file number placeholder with next available number (default: regular employee)
     fetchNextFileNumber(false, false);
   }, []);
@@ -431,6 +450,47 @@ export default function CreateEmployeePage() {
       toast.error('Failed to add designation');
     } finally {
       setAddingDesignation(false);
+    }
+  };
+
+  // Add new company
+  const handleAddCompany = async () => {
+    if (!newCompany.name.trim()) {
+      toast.error('Company name is required');
+      return;
+    }
+
+    try {
+      setAddingCompany(true);
+      const response = await fetch('/api/companies', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newCompany.name.trim(),
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success('Company added successfully');
+        // Add the new company to the list
+        const newCompanyData = { id: result.data.id, name: result.data.name };
+        setCompanies(prev => [...prev, newCompanyData].sort((a, b) => a.name.localeCompare(b.name)));
+        // Set the new company as selected
+        setFormData(prev => ({ ...prev, company_name: result.data.name }));
+        setNewCompany({ name: '' });
+        setShowAddCompany(false);
+      } else {
+        toast.error(result.message || 'Failed to add company');
+      }
+    } catch (error) {
+      console.error('Error adding company:', error);
+      toast.error('Failed to add company. Please try again.');
+    } finally {
+      setAddingCompany(false);
     }
   };
 
@@ -1861,14 +1921,34 @@ export default function CreateEmployeePage() {
                         <Label htmlFor="company_name">
                           Company Name <span className="text-red-500">*</span>
                         </Label>
-                        <Input
-                          id="company_name"
-                          type="text"
-                          value={formData.company_name}
-                          onChange={e => handleInputChange('company_name', e.target.value)}
-                          placeholder="Enter company name"
-                          required={formData.is_external}
-                        />
+                        <div className="flex gap-2">
+                          <Select
+                            value={formData.company_name || undefined}
+                            onValueChange={(value) => handleInputChange('company_name', value)}
+                            required={formData.is_external}
+                            className="flex-1"
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a company" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {companies.map((company) => (
+                                <SelectItem key={company.id} value={company.name}>
+                                  {company.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowAddCompany(true)}
+                            className="px-3"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -2028,6 +2108,47 @@ export default function CreateEmployeePage() {
                   </Button>
                   <Button type="button" onClick={handleAddDesignation} disabled={addingDesignation}>
                     {addingDesignation ? t('employee.modals.addDesignation.adding') : t('employee.modals.addDesignation.add')}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Company Modal */}
+        {showAddCompany && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4">Add New Company</h3>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="company_name_input">Company Name <span className="text-red-500">*</span></Label>
+                  <Input
+                    id="company_name_input"
+                    value={newCompany.name}
+                    onChange={e => setNewCompany(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Enter company name"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddCompany();
+                      }
+                    }}
+                  />
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowAddCompany(false);
+                      setNewCompany({ name: '' });
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="button" onClick={handleAddCompany} disabled={addingCompany}>
+                    {addingCompany ? 'Adding...' : 'Add Company'}
                   </Button>
                 </div>
               </div>
