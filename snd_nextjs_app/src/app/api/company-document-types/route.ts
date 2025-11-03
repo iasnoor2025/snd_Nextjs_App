@@ -4,7 +4,7 @@ import { PermissionConfigs, withPermission } from '@/lib/rbac/api-middleware';
 import { eq, asc } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
-export const GET = withPermission(async (request: NextRequest) => {
+export const GET = withPermission(PermissionConfigs.company.read)(async (request: NextRequest) => {
   try {
     console.log('Fetching company document types...');
     
@@ -39,9 +39,9 @@ export const GET = withPermission(async (request: NextRequest) => {
       { status: 500 }
     );
   }
-}, PermissionConfigs.company.read);
+});
 
-export const POST = withPermission(async (request: NextRequest) => {
+export const POST = withPermission(PermissionConfigs.company.manage)(async (request: NextRequest) => {
   try {
     const body = await request.json();
 
@@ -111,4 +111,4 @@ export const POST = withPermission(async (request: NextRequest) => {
       { status: 500 }
     );
   }
-}, PermissionConfigs.company.manage);
+});
