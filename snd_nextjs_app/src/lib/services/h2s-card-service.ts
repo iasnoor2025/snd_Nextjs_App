@@ -1,6 +1,6 @@
 import { db } from '@/lib/drizzle';
 import { employeeTraining, employees, trainings, employeeDocuments } from '@/lib/drizzle/schema';
-import { eq, and, or, ilike } from 'drizzle-orm';
+import { eq, and, or, ilike, isNotNull } from 'drizzle-orm';
 import { QRCodeService } from './qrcode-service';
 
 export interface H2SCardData {
@@ -122,7 +122,7 @@ export class H2SCardService {
       const existing = await db
         .select({ num: employeeTraining.cardNumber })
         .from(employeeTraining)
-        .where(employeeTraining.cardNumber.isNotNull()) as Array<{ num: string | null }>;
+        .where(isNotNull(employeeTraining.cardNumber)) as Array<{ num: string | null }>;
 
       let maxNum = 0;
       for (const row of existing) {

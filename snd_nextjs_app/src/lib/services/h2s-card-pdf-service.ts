@@ -203,42 +203,33 @@ export class H2SCardPDFService {
     // Course details
     const detailsX = photoX + photoWidth + 5;
     let detailsY = photoY + photoHeight - 10;
+    // Row: Course
     page.setFont(helveticaBold);
     page.setFontSize(7);
-    page.drawText('Course: -', {
-      x: detailsX,
-      y: detailsY,
-    });
+    page.drawText('Course:', { x: detailsX, y: detailsY });
     page.setFont(helvetica);
+    page.drawText('-', { x: detailsX + 35, y: detailsY });
     page.drawText(cardData.courseName, {
-      x: detailsX + 35,
+      x: detailsX + 40,
       y: detailsY,
       maxWidth: cardWidth - detailsX - 70,
     });
 
     detailsY -= 10;
+    // Row: Completion Date
     page.setFont(helveticaBold);
-    page.drawText('Completion Date: -', {
-      x: detailsX,
-      y: detailsY,
-    });
+    page.drawText('Completion Date:', { x: detailsX, y: detailsY });
     page.setFont(helvetica);
-    page.drawText(cardData.completionDate, {
-      x: detailsX + 50,
-      y: detailsY,
-    });
+    page.drawText('-', { x: detailsX + 65, y: detailsY });
+    page.drawText(cardData.completionDate, { x: detailsX + 70, y: detailsY });
 
     detailsY -= 10;
+    // Row: Expires
     page.setFont(helveticaBold);
-    page.drawText('Expires: -', {
-      x: detailsX,
-      y: detailsY,
-    });
+    page.drawText('Expires:', { x: detailsX, y: detailsY });
     page.setFont(helvetica);
-    page.drawText(cardData.expiryDate, {
-      x: detailsX + 35,
-      y: detailsY,
-    });
+    page.drawText('-', { x: detailsX + 35, y: detailsY });
+    page.drawText(cardData.expiryDate, { x: detailsX + 40, y: detailsY });
 
     // QR Code
     if (cardData.qrCodeUrl) {
@@ -273,23 +264,21 @@ export class H2SCardPDFService {
       y: yPos - 8,
     });
 
-    // IADC logos
-    page.setFont(helveticaBold);
-    page.setFontSize(6);
-    page.drawText('IADC', {
-      x: 10,
-      y: yPos - 18,
-    });
-    page.drawCircle({
-      x: 25,
-      y: yPos - 15,
-      size: 4,
-      color: rgb(0.8, 0, 0),
-    });
-    page.drawText('IADC', {
-      x: 28,
-      y: yPos - 18,
-    });
+    // IADC logo: embed supplied public/iadc-logo.png if present
+    try {
+      const iadcPath = path.join(process.cwd(), 'public', 'iadc-logo.png');
+      const iadcBytes = fs.readFileSync(iadcPath);
+      const iadcImg = await pdfDoc.embedPng(iadcBytes);
+      page.drawImage(iadcImg, { x: 10, y: yPos - 22, width: 12, height: 12 });
+      page.setFont(helveticaBold);
+      page.setFontSize(6);
+      page.drawText('IADC', { x: 25, y: yPos - 18 });
+    } catch {
+      // fallback text only
+      page.setFont(helveticaBold);
+      page.setFontSize(6);
+      page.drawText('IADC', { x: 10, y: yPos - 18 });
+    }
 
     // Signature
     const signatureText = cardData.trainerName
