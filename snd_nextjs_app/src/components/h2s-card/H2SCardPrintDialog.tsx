@@ -7,7 +7,8 @@ import { H2SCardFront } from './H2SCardFront';
 import { H2SCardBack } from './H2SCardBack';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Printer } from 'lucide-react';
+import { Printer, Download } from 'lucide-react';
+import html2canvas from 'html2canvas';
 
 interface H2SCardPrintDialogProps {
   cardData: H2SCardData | null;
@@ -18,10 +19,15 @@ interface H2SCardPrintDialogProps {
 export function H2SCardPrintDialog({ cardData, open, onOpenChange }: H2SCardPrintDialogProps) {
   const frontPrintRef = useRef<HTMLDivElement>(null);
   const backPrintRef = useRef<HTMLDivElement>(null);
+  // Hidden 1:1 render targets for clean PNG export (no scaling)
+  const hiddenFrontRef = useRef<HTMLDivElement>(null);
+  const hiddenBackRef = useRef<HTMLDivElement>(null);
   const [activeSide, setActiveSide] = useState<'front' | 'back'>('front');
 
   const handlePrintFront = useReactToPrint({
-    content: () => frontPrintRef.current,
+    // react-to-print v3 prefers contentRef
+    // @ts-ignore
+    contentRef: frontPrintRef,
     documentTitle: `H2S-Card-${cardData?.cardNumber}-Front`,
     pageStyle: `
       @page {
@@ -49,7 +55,8 @@ export function H2SCardPrintDialog({ cardData, open, onOpenChange }: H2SCardPrin
   });
 
   const handlePrintBack = useReactToPrint({
-    content: () => backPrintRef.current,
+    // @ts-ignore
+    contentRef: backPrintRef,
     documentTitle: `H2S-Card-${cardData?.cardNumber}-Back`,
     pageStyle: `
       @page {
@@ -76,13 +83,48 @@ export function H2SCardPrintDialog({ cardData, open, onOpenChange }: H2SCardPrin
     `,
   });
 
+  const handleDownload = async (side: 'front' | 'back') => {
+    // Use hidden 1:1 render to avoid scale-induced spacing differences
+    const node = side === 'front' ? hiddenFrontRef.current : hiddenBackRef.current;
+    if (!node) return;
+    try {
+      const canvas = await html2canvas(node, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        scrollY: -window.scrollY,
+        scrollX: -window.scrollX,
+        removeContainer: true,
+      });
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `H2S-Card-${cardData?.cardNumber}-${side}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (e) {
+      console.error('Failed to download card image', e);
+    }
+  };
+
   if (!cardData) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl p-4 overflow-visible">
-        <DialogHeader className="mb-3 pb-3 border-b">
+        <DialogHeader className="mb-3 pb-3 border-b flex items-center justify-between">
           <DialogTitle className="text-lg">H2S Certification Card - {cardData.cardNumber}</DialogTitle>
+          <div className="flex gap-2 no-print">
+            <Button onClick={activeSide === 'front' ? handlePrintFront : handlePrintBack} className="w-auto">
+              <Printer className="h-4 w-4 mr-2" />
+              Print {activeSide === 'front' ? 'Front' : 'Back'}
+            </Button>
+            <Button variant="secondary" onClick={() => handleDownload(activeSide)} className="w-auto">
+              <Download className="h-4 w-4 mr-2" />
+              Download PNG
+            </Button>
+          </div>
         </DialogHeader>
         
         {/* Tabs for Front/Back */}
@@ -124,13 +166,7 @@ export function H2SCardPrintDialog({ cardData, open, onOpenChange }: H2SCardPrin
                 className="flex justify-center scale-[1.75] origin-top"
               >
                 <H2SCardFront cardData={cardData} />
-              </div>
-              <div className="no-print mt-4">
-                <Button onClick={handlePrintFront} className="w-auto">
-                  <Printer className="h-4 w-4 mr-2" />
-                  Print Front
-                </Button>
-              </div>
+            </div>
             </>
           ) : (
             <>
@@ -139,16 +175,20 @@ export function H2SCardPrintDialog({ cardData, open, onOpenChange }: H2SCardPrin
                 className="flex justify-center scale-[1.75] origin-top"
               >
                 <H2SCardBack cardData={cardData} />
-              </div>
-              <div className="no-print mt-4">
-                <Button onClick={handlePrintBack} className="w-auto">
-                  <Printer className="h-4 w-4 mr-2" />
-                  Print Back
-                </Button>
-              </div>
+            </div>
             </>
           )}
         </div>
+
+      {/* Hidden 1:1 renders for PNG export */}
+      <div className="fixed -left-[10000px] top-0 z-[-1]">
+        <div ref={hiddenFrontRef} className="flex justify-center" style={{ paddingTop: '2mm', paddingBottom: '2mm', backgroundColor: '#ffffff' }}>
+          <H2SCardFront cardData={cardData} />
+        </div>
+        <div ref={hiddenBackRef} className="flex justify-center mt-4" style={{ paddingTop: '2mm', paddingBottom: '2mm', backgroundColor: '#ffffff' }}>
+          <H2SCardBack cardData={cardData} />
+        </div>
+      </div>
       </DialogContent>
     </Dialog>
   );

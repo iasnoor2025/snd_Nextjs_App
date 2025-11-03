@@ -2,7 +2,7 @@
 
 import { H2SCardData } from '@/lib/services/h2s-card-service';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 interface H2SCardFrontProps {
   cardData: H2SCardData;
@@ -23,6 +23,27 @@ export function H2SCardFront({ cardData }: H2SCardFrontProps) {
   };
   
   const logoPath = getLogoPath();
+  const absoluteLogo = useMemo(() => {
+    const src = logoPath || '';
+    if (!src) return '';
+    if (src.startsWith('http')) return src;
+    if (typeof window !== 'undefined') return `${window.location.origin}${src.startsWith('/') ? src : `/${src}`}`;
+    return src.startsWith('/') ? src : `/${src}`;
+  }, [logoPath]);
+  const absoluteEmployeePhoto = useMemo(() => {
+    const src = cardData.employeePhoto || '';
+    if (!src) return '';
+    if (src.startsWith('http')) return src;
+    if (typeof window !== 'undefined') return `${window.location.origin}${src.startsWith('/') ? src : `/${src}`}`;
+    return src.startsWith('/') ? src : `/${src}`;
+  }, [cardData.employeePhoto]);
+  const absoluteQr = useMemo(() => {
+    const src = cardData.qrCodeUrl || '';
+    if (!src) return '';
+    if (src.startsWith('http')) return src;
+    if (typeof window !== 'undefined') return `${window.location.origin}${src.startsWith('/') ? src : `/${src}`}`;
+    return src.startsWith('/') ? src : `/${src}`;
+  }, [cardData.qrCodeUrl]);
 
   return (
     <div 
@@ -47,33 +68,17 @@ export function H2SCardFront({ cardData }: H2SCardFrontProps) {
         <div className="relative flex-shrink-0 bg-white border border-gray-200 flex items-center justify-center overflow-hidden"
           style={{ width: '12mm', height: '10mm' }}
         >
-          {!logoError && logoPath ? (
-              logoPath.startsWith('http') ? (
-                // External URL - use regular img tag
-                <img
-                  src={logoPath}
-                  alt="Logo"
-                  className="w-full h-full object-contain p-0.5"
-                  onError={() => {
-                    setLogoError(true);
-                  }}
-                  onLoad={() => setLogoError(false)}
-                />
-              ) : (
-                // Local path - use Next.js Image component (handles locale routing correctly)
-                <Image
-                  src={logoPath}
-                  alt="Logo"
-                  width={48}
-                  height={40}
-                  className="w-full h-full object-contain p-0.5"
-                  unoptimized
-                  onError={() => {
-                    setLogoError(true);
-                  }}
-                  onLoad={() => setLogoError(false)}
-                />
-              )
+          {!logoError && absoluteLogo ? (
+              <img
+                src={absoluteLogo}
+                alt="Logo"
+                className="w-full h-full object-contain p-0.5"
+                crossOrigin="anonymous"
+                onError={() => {
+                  setLogoError(true);
+                }}
+                onLoad={() => setLogoError(false)}
+              />
             ) : (
               <span className="text-[6pt] text-gray-400">Logo</span>
             )}
@@ -117,15 +122,8 @@ export function H2SCardFront({ cardData }: H2SCardFrontProps) {
         <div className="border border-gray-300 bg-gray-100 flex items-center justify-center overflow-hidden"
           style={{ width: '16mm', height: '20mm' }}
         >
-          {cardData.employeePhoto ? (
-            <Image
-              src={cardData.employeePhoto}
-              alt={cardData.employeeName}
-              width={70}
-              height={86}
-              className="object-cover w-full h-full"
-              unoptimized
-            />
+          {absoluteEmployeePhoto ? (
+            <img src={absoluteEmployeePhoto} alt={cardData.employeeName} className="object-cover w-full h-full" crossOrigin="anonymous" />
           ) : (
             <div className="text-xs text-gray-400">Photo</div>
           )}
@@ -135,32 +133,28 @@ export function H2SCardFront({ cardData }: H2SCardFrontProps) {
         <div className="flex-1 flex gap-[1.6mm]">
           {/* Left Details */}
           <div className="flex-1 space-y-[0.5mm] text-[6.3pt] leading-tight break-words hyphens-auto">
-          <div>
-              <span className="font-bold">Course: - </span>
+            <div className="grid" style={{ gridTemplateColumns: 'auto 1.5mm 1fr', columnGap: '1mm' }}>
+              <span className="font-bold whitespace-nowrap">Course:</span>
+              <span className="text-center">-</span>
               <span className="underline">{cardData.courseName}</span>
-          </div>
-          <div>
-              <span className="font-bold">Completion Date: - </span>
+            </div>
+            <div className="grid mt-[0.8mm]" style={{ gridTemplateColumns: 'auto 1.5mm 1fr', columnGap: '1mm' }}>
+              <span className="font-bold whitespace-nowrap">Completion Date:</span>
+              <span className="text-center">-</span>
               <span className="underline">{cardData.completionDate}</span>
-          </div>
-          <div>
-              <span className="font-bold">Expires: - </span>
+            </div>
+            <div className="grid" style={{ gridTemplateColumns: 'auto 1.5mm 1fr', columnGap: '1mm' }}>
+              <span className="font-bold whitespace-nowrap">Expires:</span>
+              <span className="text-center">-</span>
               <span className="underline">{cardData.expiryDate}</span>
-          </div>
+            </div>
           </div>
           {/* QR Code */}
-          {cardData.qrCodeUrl && (
+          {absoluteQr && (
             <div className="border border-gray-300 flex items-center justify-center"
               style={{ width: '16mm', height: '16mm' }}
             >
-              <Image
-                src={cardData.qrCodeUrl}
-                alt="QR Code"
-                width={70}
-                height={70}
-                className="w-full h-full object-contain"
-                unoptimized
-              />
+              <img src={absoluteQr} alt="QR Code" className="w-full h-full object-contain" crossOrigin="anonymous" />
             </div>
           )}
         </div>
@@ -174,9 +168,26 @@ export function H2SCardFront({ cardData }: H2SCardFrontProps) {
           <span> (Train the Trainer) certified from</span>
           <div className="flex items-center gap-[1mm] mt-[0.3mm]">
             <span className="font-bold text-[8px]">IADC</span>
-            <div className="w-3 h-3 rounded-full bg-red-600 flex items-center justify-center text-white text-[6pt] font-bold">
-              IADC
-            </div>
+            {/* Use IADC logo from public/iadc-logo.png (place provided image there) */}
+            <img
+              src={typeof window !== 'undefined' ? `${window.location.origin}/iadc-logo.png` : '/iadc-logo.png'}
+              alt="IADC Logo"
+              width={14}
+              height={14}
+              className="inline-block object-contain"
+              crossOrigin="anonymous"
+              onError={(e) => {
+                const target = e.currentTarget as HTMLImageElement;
+                target.style.display = 'none';
+                const fallback = target.nextElementSibling as HTMLElement | null;
+                if (fallback) fallback.style.display = 'inline-block';
+              }}
+            />
+            {/* Fallback inline badge if logo file not present */}
+            <svg width="12" height="12" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style={{ display: 'none' }}>
+              <circle cx="12" cy="12" r="12" fill="#dc2626" />
+              <text x="12" y="15" textAnchor="middle" fontSize="9" fontWeight="700" fill="#ffffff">IADC</text>
+            </svg>
             <span className="font-bold text-[8px]">IADC</span>
           </div>
         </div>

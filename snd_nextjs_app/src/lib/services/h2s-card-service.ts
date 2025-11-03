@@ -115,9 +115,26 @@ export class H2SCardService {
       }
     }
 
-    // Generate card number if not exists
-    const cardNumber = training.cardNumber || `SND-${String(training.id).padStart(4, '0')}`;
-    if (!training.cardNumber) {
+    // Generate card number if not exists: find highest existing and +1, else start from 1
+    let cardNumber = training.cardNumber as string | null;
+    if (!cardNumber) {
+      // Read existing card numbers and compute next
+      const existing = await db
+        .select({ num: employeeTraining.cardNumber })
+        .from(employeeTraining)
+        .where(employeeTraining.cardNumber.isNotNull()) as Array<{ num: string | null }>;
+
+      let maxNum = 0;
+      for (const row of existing) {
+        const val = row.num || '';
+        const match = val.match(/(\d+)/g);
+        if (match && match.length) {
+          const n = parseInt(match[match.length - 1] || '0', 10);
+          if (!Number.isNaN(n)) maxNum = Math.max(maxNum, n);
+        }
+      }
+      const next = maxNum + 1;
+      cardNumber = `SND-${String(next).padStart(4, '0')}`;
       await db
         .update(employeeTraining)
         .set({ cardNumber, updatedAt: new Date() })
@@ -131,7 +148,7 @@ export class H2SCardService {
       fileNumber: employee.fileNumber,
       employeePhoto,
       courseName: trainingProgram.name,
-      cardNumber,
+      cardNumber: cardNumber!,
       completionDate: training.endDate ? (() => {
         const date = new Date(training.endDate);
         const month = String(date.getMonth() + 1).padStart(2, '0');
