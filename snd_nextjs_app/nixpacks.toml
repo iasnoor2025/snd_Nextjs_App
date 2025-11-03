@@ -2,6 +2,7 @@
 NIXPACKS_NODE_VERSION = "20"
 NEXT_TELEMETRY_DISABLED = "1"
 NODE_OPTIONS = "--max-old-space-size=8192"
+PUPPETEER_SKIP_DOWNLOAD = "1"
 
 # System packages needed by sharp and puppeteer at build/runtime
 [phases.setup]
@@ -15,7 +16,7 @@ nixPkgs = [
   "libuuid",
   "expat",
   "glib",
-  "alsaLib"
+  "alsa-lib"
 ]
 
 [phases.install]
