@@ -1,7 +1,7 @@
 import { db } from '@/lib/db';
-import { companies as companiesTable } from '@/lib/drizzle/schema';
+import { companies as companiesTable, employees } from '@/lib/drizzle/schema';
 import { PermissionConfigs, withPermission } from '@/lib/rbac/api-middleware';
-import { and, asc, eq, ilike, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, isNull, or, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Helper function to format company data for frontend
@@ -179,16 +179,28 @@ export const GET = withPermission(PermissionConfigs.company.read)(async (request
         orderByClause = sortOrder === 'asc' ? asc(companiesTable.name) : desc(companiesTable.name);
         break;
       case 'createdAt':
+      case 'created_at':
         orderByClause = sortOrder === 'asc' ? asc(companiesTable.createdAt) : desc(companiesTable.createdAt);
         break;
       case 'updatedAt':
+      case 'updated_at':
         orderByClause = sortOrder === 'asc' ? asc(companiesTable.updatedAt) : desc(companiesTable.updatedAt);
+        break;
+      case 'employee_count':
+      case 'employeeCount':
+        // For employee count sorting, we'll use a subquery in ORDER BY
+        // Note: We need to reference the alias in ORDER BY, so we'll sort after fetching
+        // For now, sort by name as fallback - we can sort by employee count in memory if needed
+        orderByClause = asc(companiesTable.name);
+        break;
+      case 'industry':
+        orderByClause = sortOrder === 'asc' ? asc(companiesTable.industry) : desc(companiesTable.industry);
         break;
       default:
         orderByClause = asc(companiesTable.name);
     }
 
-    // Fetch companies from database
+    // Fetch companies from database with dynamic employee count calculation
     const companies = await db
       .select({
         id: companiesTable.id,
@@ -286,7 +298,28 @@ export const GET = withPermission(PermissionConfigs.company.read)(async (request
         contactPersonEmail: companiesTable.contactPersonEmail,
         companyType: companiesTable.companyType,
         industry: companiesTable.industry,
-        employeeCount: companiesTable.employeeCount,
+        // Calculate employee count dynamically.
+        // Special rule: For "Samhan Naser Al-Dosary", include employees with NULL/blank companyName as in-house staff.
+        employeeCount: sql<number>`(
+          SELECT COUNT(*)::int
+          FROM ${employees}
+          WHERE ${employees.deletedAt} IS NULL
+            AND (
+              (
+                lower(trim(${companiesTable.name})) = 'samhan naser al-dosary'
+                AND (
+                  ${employees.companyName} IS NULL
+                  OR trim(${employees.companyName}) = ''
+                  OR lower(trim(${employees.companyName})) ILIKE '%' || lower(trim(${companiesTable.name})) || '%'
+                )
+              )
+              OR (
+                lower(trim(${companiesTable.name})) <> 'samhan naser al-dosary'
+                AND ${employees.companyName} IS NOT NULL
+                AND lower(trim(${employees.companyName})) ILIKE '%' || lower(trim(${companiesTable.name})) || '%'
+              )
+            )
+        )`.as('employee_count'),
         // Legacy field for backward compatibility
         legalDocument: companiesTable.legalDocument,
         createdAt: companiesTable.createdAt,
@@ -298,9 +331,19 @@ export const GET = withPermission(PermissionConfigs.company.read)(async (request
       .offset(offset)
       .limit(limit);
 
+    // Sort by employee count in memory if needed (since it's a calculated field)
+    let sortedCompanies = companies;
+    if (sortBy === 'employee_count' || sortBy === 'employeeCount') {
+      sortedCompanies = [...companies].sort((a, b) => {
+        const aCount = Number(a.employeeCount || 0);
+        const bCount = Number(b.employeeCount || 0);
+        return sortOrder === 'asc' ? aCount - bCount : bCount - aCount;
+      });
+    }
+
     return NextResponse.json({
       success: true,
-      data: companies.map(formatCompanyForFrontend),
+      data: sortedCompanies.map(formatCompanyForFrontend),
       pagination: {
         page,
         limit,
