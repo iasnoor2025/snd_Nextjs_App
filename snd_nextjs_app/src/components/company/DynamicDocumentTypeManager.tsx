@@ -22,6 +22,7 @@ import {
   Download,
   Eye
 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -82,7 +83,7 @@ const CATEGORIES = [
   'innovation'
 ];
 
-export default function DynamicDocumentTypeManager() {
+export default function DynamicDocumentTypeManager({ companyId }: { companyId?: number }) {
   const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([]);
   const [documentFiles, setDocumentFiles] = useState<DocumentFile[]>([]);
   const [loading, setLoading] = useState(false);
@@ -106,6 +107,10 @@ export default function DynamicDocumentTypeManager() {
     category: 'general',
     sortOrder: 0,
   });
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [filePendingDelete, setFilePendingDelete] = useState<DocumentFile | null>(null);
+  const [deletingFile, setDeletingFile] = useState(false);
 
   useEffect(() => {
     fetchDocumentTypes();
@@ -188,7 +193,10 @@ export default function DynamicDocumentTypeManager() {
 
   const fetchDocumentFiles = async () => {
     try {
-      const response = await fetch('/api/company-document-types/files', { cache: 'no-store' });
+      const url = companyId
+        ? `/api/company-document-types/files?companyId=${companyId}`
+        : '/api/company-document-types/files';
+      const response = await fetch(url, { cache: 'no-store' });
       if (!response.ok) {
         const errText = await response.text().catch(() => 'Unknown error');
         console.error('Failed to fetch document files:', errText);
@@ -268,7 +276,7 @@ export default function DynamicDocumentTypeManager() {
             content: await fileToBase64(uploadForm.file)
           },
           bucket: 'company-documents',
-          path: `company-${selectedDocumentType.id}`,
+          path: companyId ? `company-${companyId}-${selectedDocumentType.id}` : `company-${selectedDocumentType.id}`,
           documentTypeId: selectedDocumentType.id,
           expiryDate: uploadForm.expiryDate
         }),
@@ -315,25 +323,40 @@ export default function DynamicDocumentTypeManager() {
     }
   };
 
-  const handleDeleteFile = async (fileId: number) => {
-    if (!confirm('Are you sure you want to delete this file?')) return;
+  const handleDeleteFile = (fileId: number) => {
+    const file = documentFiles.find(f => f.id === fileId) || null;
+    setFilePendingDelete(file);
+    setDeleteDialogOpen(!!file);
+  };
 
+  const performDeleteFile = async () => {
+    if (!filePendingDelete) return;
     try {
-      const response = await fetch(`/api/company-document-types/files/${fileId}`, {
-        method: 'DELETE',
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        toast.success('File deleted successfully');
+      setDeletingFile(true);
+      const response = await fetch(filePendingDelete.filePath, { method: 'DELETE' });
+      const contentType = response.headers.get('content-type') || '';
+      let ok = response.ok;
+      let message = '';
+      if (contentType.includes('application/json')) {
+        try {
+          const json = await response.json();
+          ok = ok && !!json.success;
+          message = json.message || '';
+        } catch { /* noop */ }
+      }
+      if (ok) {
+        toast.success(message || 'File deleted successfully');
+        setDeleteDialogOpen(false);
+        setFilePendingDelete(null);
         fetchDocumentFiles();
       } else {
-        toast.error(result.message || 'Failed to delete file');
+        toast.error(message || 'Failed to delete file');
       }
     } catch (error) {
       console.error('Error deleting file:', error);
       toast.error('Failed to delete file');
+    } finally {
+      setDeletingFile(false);
     }
   };
 
@@ -762,6 +785,24 @@ export default function DynamicDocumentTypeManager() {
           </div>
         </div>
       )}
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete file?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. The file will be permanently removed from storage.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingFile}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={performDeleteFile} disabled={deletingFile}>
+              {deletingFile ? 'Deleting…' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
              {/* Upload Form Modal */}
        {showUploadForm && (

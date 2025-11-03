@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { S3Client, ListObjectsV2Command } from '@aws-sdk/client-s3';
 
 // List files in company-documents bucket and map them to document types based on prefix: company-<documentTypeId>/
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const companyId = searchParams.get('companyId');
     const endpoint = process.env.S3_ENDPOINT;
     const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
     const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
@@ -26,10 +28,29 @@ export async function GET(_request: NextRequest) {
       .filter(obj => obj.Key)
       .map((obj, idx) => {
         const key = obj.Key as string;
-        // Expect keys like: company-<id>/<filename>
-        const match = key.match(/^company-(\d+)\/(.+)$/);
-        const documentTypeId = match ? parseInt(match[1]) : 0;
-        const fileName = match ? match[2] : key.split('/').pop() || key;
+        // Supported keys: company-<docTypeId>/<filename> (legacy) OR company-<companyId>-<docTypeId>/<filename>
+        let documentTypeId = 0;
+        let fileName = key.split('/').pop() || key;
+        let keyCompanyId: string | null = null;
+
+        // New pattern with company scope
+        const matchNew = key.match(/^company-(\d+)-(\d+)\/(.+)$/);
+        if (matchNew) {
+          keyCompanyId = matchNew[1];
+          documentTypeId = parseInt(matchNew[2]);
+          fileName = matchNew[3];
+        } else {
+          const matchLegacy = key.match(/^company-(\d+)\/(.+)$/);
+          if (matchLegacy) {
+            documentTypeId = parseInt(matchLegacy[1]);
+            fileName = matchLegacy[2];
+          }
+        }
+
+        // If companyId filter is provided, keep only matching new-pattern keys
+        if (companyId && keyCompanyId !== companyId) {
+          return null as any;
+        }
         const encodedKey = key.split('/').map(encodeURIComponent).join('/');
         return {
           id: idx + 1,
@@ -43,7 +64,8 @@ export async function GET(_request: NextRequest) {
           uploadedAt: new Date().toISOString(),
           uploadedBy: 'system',
         };
-      });
+      })
+      .filter(Boolean);
 
     return NextResponse.json({ success: true, data: items });
   } catch (error) {

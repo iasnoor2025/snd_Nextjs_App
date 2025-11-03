@@ -492,7 +492,7 @@ export default function CompanyDetailPage() {
 
       {/* Dynamic Document Types - Full Width Section */}
       <div className="w-full">
-        <DynamicDocumentTypeManager />
+        <DynamicDocumentTypeManager companyId={company.id} />
       </div>
     </div>
   );

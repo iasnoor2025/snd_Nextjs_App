@@ -42,6 +42,71 @@ export default function EditCompanyPage() {
     saudi_standards_license_expiry: '',
     environmental_license: '',
     environmental_license_expiry: '',
+    // Additional Saudi Law Documents (optional)
+    zakat_registration: '',
+    zakat_registration_expiry: '',
+    saudi_arabia_visa: '',
+    saudi_arabia_visa_expiry: '',
+    investment_license: '',
+    investment_license_expiry: '',
+    import_export_license: '',
+    import_export_license_expiry: '',
+    pharmaceutical_license: '',
+    pharmaceutical_license_expiry: '',
+    food_safety_license: '',
+    food_safety_license_expiry: '',
+    construction_license: '',
+    construction_license_expiry: '',
+    transportation_license: '',
+    transportation_license_expiry: '',
+    banking_license: '',
+    banking_license_expiry: '',
+    insurance_license: '',
+    insurance_license_expiry: '',
+    telecom_license: '',
+    telecom_license_expiry: '',
+    energy_license: '',
+    energy_license_expiry: '',
+    mining_license: '',
+    mining_license_expiry: '',
+    tourism_license: '',
+    tourism_license_expiry: '',
+    education_license: '',
+    education_license_expiry: '',
+    healthcare_license: '',
+    healthcare_license_expiry: '',
+    real_estate_license: '',
+    real_estate_license_expiry: '',
+    legal_services_license: '',
+    legal_services_license_expiry: '',
+    accounting_license: '',
+    accounting_license_expiry: '',
+    advertising_license: '',
+    advertising_license_expiry: '',
+    media_license: '',
+    media_license_expiry: '',
+    security_license: '',
+    security_license_expiry: '',
+    cleaning_license: '',
+    cleaning_license_expiry: '',
+    catering_license: '',
+    catering_license_expiry: '',
+    warehouse_license: '',
+    warehouse_license_expiry: '',
+    logistics_license: '',
+    logistics_license_expiry: '',
+    maintenance_license: '',
+    maintenance_license_expiry: '',
+    training_license: '',
+    training_license_expiry: '',
+    consulting_license: '',
+    consulting_license_expiry: '',
+    research_license: '',
+    research_license_expiry: '',
+    technology_license: '',
+    technology_license_expiry: '',
+    innovation_license: '',
+    innovation_license_expiry: '',
     // Additional Company Information
     website: '',
     contact_person: '',
@@ -85,6 +150,71 @@ export default function EditCompanyPage() {
             saudi_standards_license_expiry: company.saudi_standards_license_expiry || '',
             environmental_license: company.environmental_license || '',
             environmental_license_expiry: company.environmental_license_expiry || '',
+            // Additional Saudi Law Documents (optional)
+            zakat_registration: company.zakat_registration || '',
+            zakat_registration_expiry: company.zakat_registration_expiry || '',
+            saudi_arabia_visa: company.saudi_arabia_visa || '',
+            saudi_arabia_visa_expiry: company.saudi_arabia_visa_expiry || '',
+            investment_license: company.investment_license || '',
+            investment_license_expiry: company.investment_license_expiry || '',
+            import_export_license: company.import_export_license || '',
+            import_export_license_expiry: company.import_export_license_expiry || '',
+            pharmaceutical_license: company.pharmaceutical_license || '',
+            pharmaceutical_license_expiry: company.pharmaceutical_license_expiry || '',
+            food_safety_license: company.food_safety_license || '',
+            food_safety_license_expiry: company.food_safety_license_expiry || '',
+            construction_license: company.construction_license || '',
+            construction_license_expiry: company.construction_license_expiry || '',
+            transportation_license: company.transportation_license || '',
+            transportation_license_expiry: company.transportation_license_expiry || '',
+            banking_license: company.banking_license || '',
+            banking_license_expiry: company.banking_license_expiry || '',
+            insurance_license: company.insurance_license || '',
+            insurance_license_expiry: company.insurance_license_expiry || '',
+            telecom_license: company.telecom_license || '',
+            telecom_license_expiry: company.telecom_license_expiry || '',
+            energy_license: company.energy_license || '',
+            energy_license_expiry: company.energy_license_expiry || '',
+            mining_license: company.mining_license || '',
+            mining_license_expiry: company.mining_license_expiry || '',
+            tourism_license: company.tourism_license || '',
+            tourism_license_expiry: company.tourism_license_expiry || '',
+            education_license: company.education_license || '',
+            education_license_expiry: company.education_license_expiry || '',
+            healthcare_license: company.healthcare_license || '',
+            healthcare_license_expiry: company.healthcare_license_expiry || '',
+            real_estate_license: company.real_estate_license || '',
+            real_estate_license_expiry: company.real_estate_license_expiry || '',
+            legal_services_license: company.legal_services_license || '',
+            legal_services_license_expiry: company.legal_services_license_expiry || '',
+            accounting_license: company.accounting_license || '',
+            accounting_license_expiry: company.accounting_license_expiry || '',
+            advertising_license: company.advertising_license || '',
+            advertising_license_expiry: company.advertising_license_expiry || '',
+            media_license: company.media_license || '',
+            media_license_expiry: company.media_license_expiry || '',
+            security_license: company.security_license || '',
+            security_license_expiry: company.security_license_expiry || '',
+            cleaning_license: company.cleaning_license || '',
+            cleaning_license_expiry: company.cleaning_license_expiry || '',
+            catering_license: company.catering_license || '',
+            catering_license_expiry: company.catering_license_expiry || '',
+            warehouse_license: company.warehouse_license || '',
+            warehouse_license_expiry: company.warehouse_license_expiry || '',
+            logistics_license: company.logistics_license || '',
+            logistics_license_expiry: company.logistics_license_expiry || '',
+            maintenance_license: company.maintenance_license || '',
+            maintenance_license_expiry: company.maintenance_license_expiry || '',
+            training_license: company.training_license || '',
+            training_license_expiry: company.training_license_expiry || '',
+            consulting_license: company.consulting_license || '',
+            consulting_license_expiry: company.consulting_license_expiry || '',
+            research_license: company.research_license || '',
+            research_license_expiry: company.research_license_expiry || '',
+            technology_license: company.technology_license || '',
+            technology_license_expiry: company.technology_license_expiry || '',
+            innovation_license: company.innovation_license || '',
+            innovation_license_expiry: company.innovation_license_expiry || '',
             // Additional Company Information
             website: company.website || '',
             contact_person: company.contact_person || '',
@@ -152,6 +282,9 @@ export default function EditCompanyPage() {
       [field]: value,
     }));
   };
+
+  // Toggle for extra optional Saudi law documents
+  const [showExtraDocs, setShowExtraDocs] = useState(false);
 
   if (loading) {
     return (
@@ -491,6 +624,74 @@ export default function EditCompanyPage() {
                   />
                 </div>
               </div>
+
+              {/* Toggle extra optional fields */}
+              <div className="pt-2">
+                <Button type="button" variant="outline" onClick={() => setShowExtraDocs(v => !v)}>
+                  {showExtraDocs ? 'Hide Additional Saudi Law Documents' : 'Add More Saudi Law Documents'}
+                </Button>
+              </div>
+
+              {showExtraDocs && (
+                <div className="space-y-6 mt-4">
+                  {/* Render many optional pairs in a compact grid */}
+                  {[
+                    ['zakat_registration','zakat_registration_expiry','Zakat Registration'],
+                    ['saudi_arabia_visa','saudi_arabia_visa_expiry','Saudi Arabia Visa'],
+                    ['investment_license','investment_license_expiry','Investment License'],
+                    ['import_export_license','import_export_license_expiry','Import/Export License'],
+                    ['pharmaceutical_license','pharmaceutical_license_expiry','Pharmaceutical License'],
+                    ['food_safety_license','food_safety_license_expiry','Food Safety License'],
+                    ['construction_license','construction_license_expiry','Construction License'],
+                    ['transportation_license','transportation_license_expiry','Transportation License'],
+                    ['banking_license','banking_license_expiry','Banking License'],
+                    ['insurance_license','insurance_license_expiry','Insurance License'],
+                    ['telecom_license','telecom_license_expiry','Telecom License'],
+                    ['energy_license','energy_license_expiry','Energy License'],
+                    ['mining_license','mining_license_expiry','Mining License'],
+                    ['tourism_license','tourism_license_expiry','Tourism License'],
+                    ['education_license','education_license_expiry','Education License'],
+                    ['healthcare_license','healthcare_license_expiry','Healthcare License'],
+                    ['real_estate_license','real_estate_license_expiry','Real Estate License'],
+                    ['legal_services_license','legal_services_license_expiry','Legal Services License'],
+                    ['accounting_license','accounting_license_expiry','Accounting License'],
+                    ['advertising_license','advertising_license_expiry','Advertising License'],
+                    ['media_license','media_license_expiry','Media License'],
+                    ['security_license','security_license_expiry','Security License'],
+                    ['cleaning_license','cleaning_license_expiry','Cleaning License'],
+                    ['catering_license','catering_license_expiry','Catering License'],
+                    ['warehouse_license','warehouse_license_expiry','Warehouse License'],
+                    ['logistics_license','logistics_license_expiry','Logistics License'],
+                    ['maintenance_license','maintenance_license_expiry','Maintenance License'],
+                    ['training_license','training_license_expiry','Training License'],
+                    ['consulting_license','consulting_license_expiry','Consulting License'],
+                    ['research_license','research_license_expiry','Research License'],
+                    ['technology_license','technology_license_expiry','Technology License'],
+                    ['innovation_license','innovation_license_expiry','Innovation License'],
+                  ].map(([key, exp, label]) => (
+                    <div key={key as string} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <Label htmlFor={key as string}>{label as string}</Label>
+                        <Input
+                          id={key as string}
+                          value={(formData as any)[key as string] as string}
+                          onChange={e => handleInputChange(key as string, e.target.value)}
+                          placeholder={`${label} number`}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor={exp as string}>{label as string} Expiry</Label>
+                        <Input
+                          id={exp as string}
+                          type="date"
+                          value={(formData as any)[exp as string] as string}
+                          onChange={e => handleInputChange(exp as string, e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Form Actions */}
