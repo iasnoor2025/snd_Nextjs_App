@@ -1,0 +1,30 @@
+[variables]
+NIXPACKS_NODE_VERSION = "20"
+NEXT_TELEMETRY_DISABLED = "1"
+NODE_OPTIONS = "--max-old-space-size=8192"
+
+# System packages needed by sharp and puppeteer at build/runtime
+[phases.setup]
+nixPkgs = [
+  "nodejs_20",
+  "vips",        # sharp
+  "chromium",    # puppeteer
+  "freetype",
+  "fontconfig",
+  "nss",
+  "libuuid",
+  "expat",
+  "glib",
+  "alsaLib"
+]
+
+[phases.install]
+cmds = ["npm ci"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "npm start"
+
+
