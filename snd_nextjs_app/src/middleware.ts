@@ -32,6 +32,8 @@ export async function middleware(request: NextRequest) {
     '/api/debug-auth',
     '/api/timesheets/auto-generate', // Allow timesheet auto-generation
     '/api/rbac/initialize', // Allow RBAC initialization and status check
+    // Public H2S card viewing (QR should not require login)
+    '/h2s-card',
   ];
 
   // Define static assets
