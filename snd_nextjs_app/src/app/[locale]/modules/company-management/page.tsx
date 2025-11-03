@@ -578,14 +578,6 @@ export default function CompanyManagementPage() {
             </CardHeader>
             <CardContent>
               <div className="flex gap-4">
-                <PermissionContent action="manage" subject="Company">
-                  <Link href="/modules/company-management/document-types">
-                    <Button variant="outline">
-                      <Shield className="h-4 w-4 mr-2" />
-                      {t('company.admin.manageDocumentTypes')}
-                    </Button>
-                  </Link>
-                </PermissionContent>
                 
                 <PermissionContent action="manage" subject="Company">
                   <Button variant="outline">

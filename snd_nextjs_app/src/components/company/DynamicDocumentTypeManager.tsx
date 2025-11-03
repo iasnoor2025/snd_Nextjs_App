@@ -86,6 +86,9 @@ export default function DynamicDocumentTypeManager() {
   const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([]);
   const [documentFiles, setDocumentFiles] = useState<DocumentFile[]>([]);
   const [loading, setLoading] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewFile, setPreviewFile] = useState<DocumentFile | null>(null);
+  const [previewZoom, setPreviewZoom] = useState<number>(1);
   const [showForm, setShowForm] = useState(false);
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -206,9 +209,18 @@ export default function DynamicDocumentTypeManager() {
     }
   };
 
+  const detectMimeFromName = (name: string): string => {
+    const ext = (name.split('.').pop() || '').toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+    if (ext === 'pdf') return 'application/pdf';
+    return '';
+  };
+
   const handleViewFile = (file: DocumentFile) => {
     if (!file.filePath) return;
-    window.open(file.filePath, '_blank');
+    setPreviewFile({ ...file, mimeType: file.mimeType || detectMimeFromName(file.fileName) });
+    setPreviewZoom(1);
+    setPreviewOpen(true);
   };
 
   const handleDownloadFile = (file: DocumentFile) => {
@@ -475,34 +487,38 @@ export default function DynamicDocumentTypeManager() {
         </div>
       </div>
 
-             {/* Document Types Grid */}
+             {/* Document Types Grid - Futuristic Design */}
        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
          {documentTypes.map((docType) => {
            const typeFiles = documentFiles.filter(file => file.documentTypeId === docType.id);
            return (
-             <Card key={docType.id} className="hover:shadow-md transition-shadow">
+             <Card key={docType.id} className="hover:shadow-xl transition-all duration-300 border border-gray-200/50 bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-gray-900 dark:via-gray-800/50 dark:to-gray-900 backdrop-blur-sm overflow-hidden group">
                <CardHeader className="pb-3">
-                 <div className="flex items-start justify-between">
+                 <div className="flex items-start justify-between relative">
+                   <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-2xl -z-10 group-hover:from-blue-500/20 group-hover:to-purple-500/20 transition-all" />
                    <div className="flex-1">
-                     <CardTitle className="text-lg flex items-center gap-2">
-                       <FileText className="h-5 w-5 text-blue-500" />
+                     <CardTitle className="text-lg flex items-center gap-2 font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                       <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-sm border border-blue-300/30">
+                         <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                       </div>
                        {docType.label}
                      </CardTitle>
-                     <div className="flex items-center gap-2 mt-2">
-                       <Badge className={getCategoryColor(docType.category)}>
+                     <div className="flex items-center gap-2 mt-3">
+                       <Badge className={`${getCategoryColor(docType.category)} border border-gray-200/50 shadow-sm font-medium`}>
                          {docType.category}
                        </Badge>
                        {docType.required && (
-                         <Badge variant="destructive" className="text-xs">
+                         <Badge variant="destructive" className="text-xs shadow-sm border border-red-300/30 font-semibold">
                            Required
                          </Badge>
                        )}
                      </div>
                    </div>
-                   <div className="flex items-center gap-1">
+                   <div className="flex items-center gap-1.5 ml-2">
                      <Button
                        variant="ghost"
                        size="sm"
+                       className="hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-400 transition-all rounded-lg"
                        onClick={() => {
                          setSelectedDocumentType(docType);
                          setShowUploadForm(true);
@@ -514,6 +530,7 @@ export default function DynamicDocumentTypeManager() {
                      <Button
                        variant="ghost"
                        size="sm"
+                       className="hover:bg-purple-500/10 hover:text-purple-600 dark:hover:text-purple-400 transition-all rounded-lg"
                        onClick={() => handleEdit(docType)}
                      >
                        <Edit className="h-4 w-4" />
@@ -521,6 +538,7 @@ export default function DynamicDocumentTypeManager() {
                      <Button
                        variant="ghost"
                        size="sm"
+                       className="hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-all rounded-lg"
                        onClick={() => handleDelete(docType.id)}
                      >
                        <Trash2 className="h-4 w-4" />
@@ -529,50 +547,54 @@ export default function DynamicDocumentTypeManager() {
                  </div>
                </CardHeader>
                <CardContent>
-                 <p className="text-sm text-muted-foreground mb-3">
+                 <p className="text-sm text-muted-foreground mb-4 leading-relaxed italic">
                    {docType.description || 'No description provided'}
                  </p>
                  
                  {/* Uploaded Files Section */}
                  {typeFiles.length > 0 && (
-                   <div className="mb-3">
-                     <div className="text-sm font-medium text-gray-700 mb-2">
+                   <div className="mb-4 rounded-lg bg-gradient-to-br from-gray-50/80 to-white dark:from-gray-800/50 dark:to-gray-900/50 border border-gray-200/50 p-3 backdrop-blur-sm">
+                     <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                       <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-blue-500 to-purple-500" />
                        Uploaded Files ({typeFiles.length})
                      </div>
                      <div className="space-y-2">
-                                               {typeFiles.map((file) => (
-                          <div key={file.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-xs">
+                       {typeFiles.map((file) => (
+                          <div key={file.id} className="flex items-center justify-between p-2.5 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-lg border border-gray-200/50 hover:border-blue-300/50 dark:hover:border-blue-600/30 transition-all group/file shadow-sm hover:shadow-md">
                             <div className="flex-1 min-w-0">
-                              <div className="font-medium truncate">{file.fileName}</div>
-                              <div className="text-gray-500">
+                              <div className="font-medium truncate text-gray-800 dark:text-gray-200 text-xs group-hover/file:text-blue-600 dark:group-hover/file:text-blue-400 transition-colors">
+                                {file.fileName}
+                              </div>
+                              <div className="text-gray-500 dark:text-gray-400 text-[10px] mt-0.5 flex items-center gap-2">
                                 {(file.fileSize / 1024 / 1024).toFixed(2)} MB • {new Date(file.uploadedAt).toLocaleDateString()}
                                 {file.expiryDate && (
-                                  <span className={`ml-2 px-1 py-0.5 rounded text-xs ${
+                                  <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-medium shadow-sm ${
                                     new Date(file.expiryDate) < new Date() 
-                                      ? 'bg-red-100 text-red-800' 
+                                      ? 'bg-red-100 text-red-800 border border-red-200/50' 
                                       : new Date(file.expiryDate) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-                                      ? 'bg-yellow-100 text-yellow-800'
-                                      : 'bg-green-100 text-green-800'
+                                      ? 'bg-yellow-100 text-yellow-800 border border-yellow-200/50'
+                                      : 'bg-green-100 text-green-800 border border-green-200/50'
                                   }`}>
                                     Expires: {new Date(file.expiryDate).toLocaleDateString()}
                                   </span>
                                 )}
                               </div>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <Button variant="ghost" size="sm" title="View file" onClick={() => handleViewFile(file)}>
-                                <Eye className="h-3 w-3" />
+                            <div className="flex items-center gap-1 ml-2">
+                              <Button variant="ghost" size="sm" title="View file" onClick={() => handleViewFile(file)} className="hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-400 transition-all rounded-md">
+                                <Eye className="h-3.5 w-3.5" />
                               </Button>
-                              <Button variant="ghost" size="sm" title="Download file" onClick={() => handleDownloadFile(file)}>
-                                <Download className="h-3 w-3" />
+                              <Button variant="ghost" size="sm" title="Download file" onClick={() => handleDownloadFile(file)} className="hover:bg-green-500/10 hover:text-green-600 dark:hover:text-green-400 transition-all rounded-md">
+                                <Download className="h-3.5 w-3.5" />
                               </Button>
                               <Button 
                                 variant="ghost" 
                                 size="sm" 
+                                className="hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-all rounded-md"
                                 onClick={() => handleDeleteFile(file.id)}
                                 title="Delete file"
                               >
-                                <Trash2 className="h-3 w-3" />
+                                <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             </div>
                           </div>
@@ -581,8 +603,8 @@ export default function DynamicDocumentTypeManager() {
                    </div>
                  )}
                  
-                 <div className="text-xs text-muted-foreground">
-                   <div>Key: <code className="bg-gray-100 px-1 rounded">{docType.key}</code></div>
+                 <div className="text-xs text-muted-foreground pt-3 border-t border-gray-200/50 dark:border-gray-700/50 space-y-1">
+                   <div>Key: <code className="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded font-mono text-[10px] border border-gray-200/50">{docType.key}</code></div>
                    <div>Order: {docType.sortOrder}</div>
                    <div>Created: {new Date(docType.createdAt).toLocaleDateString()}</div>
                  </div>
@@ -706,6 +728,37 @@ export default function DynamicDocumentTypeManager() {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Preview Modal */}
+      {previewOpen && previewFile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" onKeyDown={(e) => e.key === 'Escape' && setPreviewOpen(false)}>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setPreviewOpen(false)} />
+          <div className="relative w-[95vw] md:w-[85vw] lg:w-[70vw] h-[85vh] rounded-2xl border border-white/20 bg-white/10 dark:bg-black/20 backdrop-blur-xl shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 bg-white/30 dark:bg-black/30 backdrop-blur-md border-b border-white/20">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold truncate text-white">{previewFile.fileName}</div>
+                <div className="text-[11px] text-white/80">{(previewFile.fileSize / 1024 / 1024).toFixed(2)} MB</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setPreviewZoom((z) => Math.min(3, z + 0.1))} className="bg-white/60 hover:bg-white/80">+</Button>
+                <Button variant="outline" size="sm" onClick={() => setPreviewZoom((z) => Math.max(0.25, z - 0.1))} className="bg-white/60 hover:bg-white/80">-</Button>
+                <Button variant="outline" size="sm" onClick={() => setPreviewZoom(1)} className="bg-white/60 hover:bg-white/80">100%</Button>
+                <Button variant="outline" size="sm" onClick={() => handleDownloadFile(previewFile)} className="bg-white/60 hover:bg-white/80" title="Download">
+                  <Download className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setPreviewOpen(false)} className="bg-white/60 hover:bg-white/80">Close</Button>
+              </div>
+            </div>
+            <div className="w-full h-[calc(85vh-56px)] bg-black/10 dark:bg-black/50 flex items-center justify-center overflow-auto">
+              {previewFile.mimeType?.startsWith('image/') ? (
+                <img src={previewFile.filePath} alt={previewFile.fileName} style={{ transform: `scale(${previewZoom})`, transformOrigin: 'center center' }} className="max-w-none select-none" />
+              ) : (
+                <iframe src={previewFile.filePath} className="w-full h-full bg-white" />
+              )}
+            </div>
           </div>
         </div>
       )}

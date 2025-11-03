@@ -12,17 +12,18 @@ import {
   Edit,
   FileText,
   Globe,
-  Image,
   Mail,
   MapPin,
   Phone,
   Shield,
   Trash2,
   User,
+  Calendar,
+  AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
-import CompanyDocumentManager from '@/components/company/CompanyDocumentManager';
+import DynamicDocumentTypeManager from '@/components/company/DynamicDocumentTypeManager';
 
 interface Company {
   id: number;
@@ -137,26 +138,30 @@ export default function CompanyDetailPage() {
 
   return (
     <div className="w-full space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
+      {/* Modern Header */}
+      <div className="flex items-center justify-between p-6 rounded-xl bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-gray-900 dark:via-gray-800/50 dark:to-gray-900 backdrop-blur-sm border border-gray-200/50 shadow-lg">
+        <div className="flex items-center space-x-4">
           <Link href="/modules/company-management">
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" className="hover:bg-white/60 dark:hover:bg-gray-800/60">
               <ArrowLeft className="h-4 w-4 mr-2" />
               {t('company.actions.back')}
             </Button>
           </Link>
-          <Building2 className="h-6 w-6" />
-          <h1 className="text-2xl font-bold">{company.name}</h1>
+          <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-sm border border-blue-300/30 flex items-center justify-center">
+            <Building2 className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              {company.name}
+            </h1>
+            {company.industry && (
+              <p className="text-sm text-muted-foreground mt-1">{company.industry}</p>
+            )}
+          </div>
         </div>
         <div className="flex gap-2">
-          <Link href="/modules/company-management/document-types">
-            <Button variant="outline">
-              <Shield className="h-4 w-4 mr-2" />
-              {t('company.admin.manageDocumentTypes')}
-            </Button>
-          </Link>
           <Link href={`/modules/company-management/${company.id}/edit`}>
-            <Button>
+            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
               <Edit className="h-4 w-4 mr-2" />
               {t('company.actions.edit')}
             </Button>
@@ -168,327 +173,326 @@ export default function CompanyDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
-              {t('company.fields.basicInfo')}
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Company Information - Consolidated */}
+        <Card className="lg:col-span-2 hover:shadow-xl transition-all duration-300 border border-gray-200/50 bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-gray-900 dark:via-gray-800/50 dark:to-gray-900 backdrop-blur-sm overflow-hidden">
+          <CardHeader className="pb-4 border-b border-gray-200/50 dark:border-gray-700/50">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-sm border border-blue-300/30">
+                <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </div>
+              Company Information
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-gray-500">{t('company.fields.name')}</label>
-              <p className="text-lg font-semibold">{company.name}</p>
+          <CardContent className="pt-6 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                {company.email && (
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-blue-500/10 dark:bg-blue-500/20">
+                      <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">{t('company.fields.email')}</label>
+                      <p className="text-sm font-semibold mt-1 break-all">{company.email}</p>
+                    </div>
+                  </div>
+                )}
+
+                {company.phone && (
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-green-500/10 dark:bg-green-500/20">
+                      <Phone className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">{t('company.fields.phone')}</label>
+                      <p className="text-sm font-semibold mt-1">{company.phone}</p>
+                    </div>
+                  </div>
+                )}
+
+                {company.website && (
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-purple-500/10 dark:bg-purple-500/20">
+                      <Globe className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">{t('company.fields.website')}</label>
+                      <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold mt-1 text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline block break-all">
+                        {company.website}
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                {company.address && (
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-orange-500/10 dark:bg-orange-500/20">
+                      <MapPin className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">{t('company.fields.address')}</label>
+                      <p className="text-sm font-semibold mt-1">{company.address}</p>
+                    </div>
+                  </div>
+                )}
+
+                {company.company_type && (
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">{t('company.fields.companyType')}</label>
+                    <p className="text-sm font-semibold mt-1">{company.company_type}</p>
+                  </div>
+                )}
+
+                {company.employee_count !== null && company.employee_count !== undefined && (
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">{t('company.fields.employeeCount')}</label>
+                    <p className="text-sm font-semibold mt-1">{company.employee_count}</p>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {company.email && (
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-gray-500" />
-                <div>
-                  <label className="text-sm font-medium text-gray-500">{t('company.fields.email')}</label>
-                  <p className="text-sm">{company.email}</p>
+            {/* Contact Person Section */}
+            {(company.contact_person || company.contact_person_phone || company.contact_person_email) && (
+              <div className="pt-6 border-t border-gray-200/50 dark:border-gray-700/50">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Contact Person
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {company.contact_person && (
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">{t('company.fields.contactPerson')}</label>
+                      <p className="text-sm font-semibold mt-1">{company.contact_person}</p>
+                    </div>
+                  )}
+                  {company.contact_person_phone && (
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">{t('company.fields.contactPersonPhone')}</label>
+                      <p className="text-sm font-semibold mt-1">{company.contact_person_phone}</p>
+                    </div>
+                  )}
+                  {company.contact_person_email && (
+                    <div className="md:col-span-2">
+                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">{t('company.fields.contactPersonEmail')}</label>
+                      <p className="text-sm font-semibold mt-1 break-all">{company.contact_person_email}</p>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
-
-            {company.phone && (
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-gray-500" />
-                <div>
-                  <label className="text-sm font-medium text-gray-500">{t('company.fields.phone')}</label>
-                  <p className="text-sm">{company.phone}</p>
-                </div>
-              </div>
-            )}
-
-            {company.address && (
-              <div className="flex items-start gap-2">
-                <MapPin className="h-4 w-4 text-gray-500 mt-1" />
-                <div>
-                  <label className="text-sm font-medium text-gray-500">{t('company.fields.address')}</label>
-                  <p className="text-sm">{company.address}</p>
-                </div>
-              </div>
-            )}
-
-            {company.website && (
-              <div className="flex items-center gap-2">
-                <Globe className="h-4 w-4 text-gray-500" />
-                <div>
-                  <label className="text-sm font-medium text-gray-500">{t('company.fields.website')}</label>
-                  <p className="text-sm text-blue-600 hover:underline cursor-pointer">
-                    <a href={company.website} target="_blank" rel="noopener noreferrer">
-                      {company.website}
-                    </a>
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {company.company_type && (
-              <div>
-                <label className="text-sm font-medium text-gray-500">{t('company.fields.companyType')}</label>
-                <p className="text-sm">{company.company_type}</p>
-              </div>
-            )}
-
-            {company.industry && (
-              <div>
-                <label className="text-sm font-medium text-gray-500">{t('company.fields.industry')}</label>
-                <p className="text-sm">{company.industry}</p>
-              </div>
-            )}
-
-            {company.employee_count && (
-              <div>
-                <label className="text-sm font-medium text-gray-500">{t('company.fields.employeeCount')}</label>
-                <p className="text-sm">{company.employee_count}</p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Contact Person Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              {t('company.fields.contactPerson')}
-            </CardTitle>
+        {/* Quick Stats Card */}
+        <Card className="hover:shadow-xl transition-all duration-300 border border-gray-200/50 bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-gray-900 dark:via-gray-800/50 dark:to-gray-900 backdrop-blur-sm">
+          <CardHeader className="pb-4 border-b border-gray-200/50 dark:border-gray-700/50">
+            <CardTitle className="text-lg">Quick Info</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {company.contact_person && (
-              <div>
-                <label className="text-sm font-medium text-gray-500">{t('company.fields.contactPerson')}</label>
-                <p className="text-sm font-semibold">{company.contact_person}</p>
-              </div>
-            )}
-
-            {company.contact_person_phone && (
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-gray-500" />
-                <div>
-                  <label className="text-sm font-medium text-gray-500">{t('company.fields.contactPersonPhone')}</label>
-                  <p className="text-sm">{company.contact_person_phone}</p>
-                </div>
-              </div>
-            )}
-
-            {company.contact_person_email && (
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-gray-500" />
-                <div>
-                  <label className="text-sm font-medium text-gray-500">{t('company.fields.contactPersonEmail')}</label>
-                  <p className="text-sm">{company.contact_person_email}</p>
-                </div>
-              </div>
-            )}
-
-            {!company.contact_person && !company.contact_person_phone && !company.contact_person_email && (
-              <p className="text-sm text-gray-500">{t('company.messages.noContactInfo')}</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Saudi Law Required Documents */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-red-600">
-              <Shield className="h-5 w-5" />
-              {t('company.documents.title')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {company.commercial_registration && (
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-gray-500" />
-                <div>
-                  <label className="text-sm font-medium text-gray-500">{t('company.documents.commercialRegistration')}</label>
-                  <p className="text-sm font-semibold">{company.commercial_registration}</p>
-                  {company.commercial_registration_expiry && (
-                    <p className="text-xs text-gray-500">
-                      Expires: {new Date(company.commercial_registration_expiry).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {company.tax_registration && (
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-gray-500" />
-                <div>
-                  <label className="text-sm font-medium text-gray-500">{t('company.documents.taxRegistration')}</label>
-                  <p className="text-sm font-semibold">{company.tax_registration}</p>
-                  {company.tax_registration_expiry && (
-                    <p className="text-xs text-gray-500">
-                      Expires: {new Date(company.tax_registration_expiry).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {company.municipality_license && (
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-gray-500" />
-                <div>
-                  <label className="text-sm font-medium text-gray-500">{t('company.documents.municipalityLicense')}</label>
-                  <p className="text-sm font-semibold">{company.municipality_license}</p>
-                  {company.municipality_license_expiry && (
-                    <p className="text-xs text-gray-500">
-                      Expires: {new Date(company.municipality_license_expiry).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {company.chamber_of_commerce && (
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-gray-500" />
-                <div>
-                  <label className="text-sm font-medium text-gray-500">{t('company.documents.chamberOfCommerce')}</label>
-                  <p className="text-sm font-semibold">{company.chamber_of_commerce}</p>
-                  {company.chamber_of_commerce_expiry && (
-                    <p className="text-xs text-gray-500">
-                      Expires: {new Date(company.chamber_of_commerce_expiry).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {company.labor_office_license && (
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-gray-500" />
-                <div>
-                  <label className="text-sm font-medium text-gray-500">{t('company.documents.laborOfficeLicense')}</label>
-                  <p className="text-sm font-semibold">{company.labor_office_license}</p>
-                  {company.labor_office_license_expiry && (
-                    <p className="text-xs text-gray-500">
-                      Expires: {new Date(company.labor_office_license_expiry).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {company.gosi_registration && (
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-gray-500" />
-                <div>
-                  <label className="text-sm font-medium text-gray-500">{t('company.documents.gosiRegistration')}</label>
-                  <p className="text-sm font-semibold">{company.gosi_registration}</p>
-                  {company.gosi_registration_expiry && (
-                    <p className="text-xs text-gray-500">
-                      Expires: {new Date(company.gosi_registration_expiry).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {company.saudi_standards_license && (
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-gray-500" />
-                <div>
-                  <label className="text-sm font-medium text-gray-500">{t('company.documents.saudiStandardsLicense')}</label>
-                  <p className="text-sm font-semibold">{company.saudi_standards_license}</p>
-                  {company.saudi_standards_license_expiry && (
-                    <p className="text-xs text-gray-500">
-                      Expires: {new Date(company.saudi_standards_license_expiry).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {company.environmental_license && (
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-gray-500" />
-                <div>
-                  <label className="text-sm font-medium text-gray-500">{t('company.documents.environmentalLicense')}</label>
-                  <p className="text-sm font-semibold">{company.environmental_license}</p>
-                  {company.environmental_license_expiry && (
-                    <p className="text-xs text-gray-500">
-                      Expires: {new Date(company.environmental_license_expiry).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {!company.commercial_registration && !company.tax_registration && 
-             !company.municipality_license && !company.chamber_of_commerce && 
-             !company.labor_office_license && !company.gosi_registration && 
-             !company.saudi_standards_license && !company.environmental_license && (
-              <p className="text-sm text-gray-500">{t('company.messages.noDocumentsAvailable')}</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Legacy Documents & Files */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('company.documents.files')}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {company.logo && (
-              <div className="flex items-center gap-2">
-                <Image className="h-4 w-4 text-gray-500" />
-                <div>
-                  <label className="text-sm font-medium text-gray-500">{t('company.documents.logo')}</label>
-                  <p className="text-sm text-blue-600 hover:underline cursor-pointer">View Logo</p>
-                </div>
-              </div>
-            )}
-
-            {company.legal_document && (
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-gray-500" />
-                <div>
-                  <label className="text-sm font-medium text-gray-500">{t('company.documents.legalDocument')}</label>
-                  <p className="text-sm text-blue-600 hover:underline cursor-pointer">
-                    View Document
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {!company.logo && !company.legal_document && (
-              <p className="text-sm text-gray-500">{t('company.messages.noDocumentsUploaded')}</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Company Document Manager */}
-        <CompanyDocumentManager 
-          companyId={company.id} 
-          companyName={company.name}
-        />
-
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('company.timestamps.title')}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="pt-6 space-y-4">
             {company.created_at && (
               <div>
-                <label className="text-sm font-medium text-gray-500">{t('company.fields.createdAt')}</label>
-                <p className="text-sm">{new Date(company.created_at).toLocaleString()}</p>
+                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Created</label>
+                <p className="text-sm font-semibold mt-1">{new Date(company.created_at).toLocaleDateString()}</p>
               </div>
             )}
-
             {company.updated_at && (
               <div>
-                <label className="text-sm font-medium text-gray-500">{t('company.fields.updatedAt')}</label>
-                <p className="text-sm">{new Date(company.updated_at).toLocaleString()}</p>
+                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Last Updated</label>
+                <p className="text-sm font-semibold mt-1">{new Date(company.updated_at).toLocaleDateString()}</p>
               </div>
             )}
           </CardContent>
         </Card>
+      </div>
+
+      {/* Saudi Law Required Documents */}
+      <Card className="w-full hover:shadow-xl transition-all duration-300 border border-gray-200/50 bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-gray-900 dark:via-gray-800/50 dark:to-gray-900 backdrop-blur-sm">
+        <CardHeader className="pb-4 border-b border-gray-200/50 dark:border-gray-700/50">
+          <CardTitle className="flex items-center gap-2 text-lg text-red-600 dark:text-red-400">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 backdrop-blur-sm border border-red-300/30">
+              <Shield className="h-4 w-4 text-red-600 dark:text-red-400" />
+            </div>
+            Saudi Law Required Documents
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Left Column - Registration Numbers */}
+            <div className="space-y-4">
+              {company.commercial_registration && (
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center gap-1">
+                    Commercial Registration <span className="text-red-500">*</span>
+                  </label>
+                  <p className="text-sm font-semibold mt-1">{company.commercial_registration}</p>
+                </div>
+              )}
+              {company.tax_registration && (
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center gap-1">
+                    Tax Registration <span className="text-red-500">*</span>
+                  </label>
+                  <p className="text-sm font-semibold mt-1">{company.tax_registration}</p>
+                </div>
+              )}
+              {company.municipality_license && (
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Municipality License</label>
+                  <p className="text-sm font-semibold mt-1">{company.municipality_license}</p>
+                </div>
+              )}
+              {company.chamber_of_commerce && (
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Chamber of Commerce</label>
+                  <p className="text-sm font-semibold mt-1">{company.chamber_of_commerce}</p>
+                </div>
+              )}
+              {company.labor_office_license && (
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Labor Office License</label>
+                  <p className="text-sm font-semibold mt-1">{company.labor_office_license}</p>
+                </div>
+              )}
+              {company.gosi_registration && (
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">GOSI Registration</label>
+                  <p className="text-sm font-semibold mt-1">{company.gosi_registration}</p>
+                </div>
+              )}
+              {company.saudi_standards_license && (
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Saudi Standards License</label>
+                  <p className="text-sm font-semibold mt-1">{company.saudi_standards_license}</p>
+                </div>
+              )}
+              {company.environmental_license && (
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Environmental License</label>
+                  <p className="text-sm font-semibold mt-1">{company.environmental_license}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Right Column - Expiry Dates */}
+            <div className="space-y-4">
+              {company.commercial_registration_expiry && (
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center gap-2">
+                    <Calendar className="h-3 w-3" />
+                    Commercial Registration Expiry
+                  </label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className={`text-sm font-semibold ${
+                      new Date(company.commercial_registration_expiry) < new Date()
+                        ? 'text-red-600 dark:text-red-400'
+                        : new Date(company.commercial_registration_expiry) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+                        ? 'text-yellow-600 dark:text-yellow-400'
+                        : 'text-green-600 dark:text-green-400'
+                    }`}>
+                      {new Date(company.commercial_registration_expiry).toLocaleDateString()}
+                    </p>
+                    {new Date(company.commercial_registration_expiry) < new Date() && (
+                      <AlertTriangle className="h-3 w-3 text-red-600" />
+                    )}
+                  </div>
+                </div>
+              )}
+              {company.tax_registration_expiry && (
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center gap-2">
+                    <Calendar className="h-3 w-3" />
+                    Tax Registration Expiry
+                  </label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className={`text-sm font-semibold ${
+                      new Date(company.tax_registration_expiry) < new Date()
+                        ? 'text-red-600 dark:text-red-400'
+                        : new Date(company.tax_registration_expiry) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+                        ? 'text-yellow-600 dark:text-yellow-400'
+                        : 'text-green-600 dark:text-green-400'
+                    }`}>
+                      {new Date(company.tax_registration_expiry).toLocaleDateString()}
+                    </p>
+                    {new Date(company.tax_registration_expiry) < new Date() && (
+                      <AlertTriangle className="h-3 w-3 text-red-600" />
+                    )}
+                  </div>
+                </div>
+              )}
+              {company.municipality_license_expiry && (
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center gap-2">
+                    <Calendar className="h-3 w-3" />
+                    Municipality License Expiry
+                  </label>
+                  <p className="text-sm font-semibold mt-1">{new Date(company.municipality_license_expiry).toLocaleDateString()}</p>
+                </div>
+              )}
+              {company.chamber_of_commerce_expiry && (
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center gap-2">
+                    <Calendar className="h-3 w-3" />
+                    Chamber of Commerce Expiry
+                  </label>
+                  <p className="text-sm font-semibold mt-1">{new Date(company.chamber_of_commerce_expiry).toLocaleDateString()}</p>
+                </div>
+              )}
+              {company.labor_office_license_expiry && (
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center gap-2">
+                    <Calendar className="h-3 w-3" />
+                    Labor Office License Expiry
+                  </label>
+                  <p className="text-sm font-semibold mt-1">{new Date(company.labor_office_license_expiry).toLocaleDateString()}</p>
+                </div>
+              )}
+              {company.gosi_registration_expiry && (
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center gap-2">
+                    <Calendar className="h-3 w-3" />
+                    GOSI Registration Expiry
+                  </label>
+                  <p className="text-sm font-semibold mt-1">{new Date(company.gosi_registration_expiry).toLocaleDateString()}</p>
+                </div>
+              )}
+              {company.saudi_standards_license_expiry && (
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center gap-2">
+                    <Calendar className="h-3 w-3" />
+                    Saudi Standards License Expiry
+                  </label>
+                  <p className="text-sm font-semibold mt-1">{new Date(company.saudi_standards_license_expiry).toLocaleDateString()}</p>
+                </div>
+              )}
+              {company.environmental_license_expiry && (
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center gap-2">
+                    <Calendar className="h-3 w-3" />
+                    Environmental License Expiry
+                  </label>
+                  <p className="text-sm font-semibold mt-1">{new Date(company.environmental_license_expiry).toLocaleDateString()}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {!company.commercial_registration && !company.tax_registration && 
+           !company.municipality_license && !company.chamber_of_commerce && 
+           !company.labor_office_license && !company.gosi_registration && 
+           !company.saudi_standards_license && !company.environmental_license && (
+            <p className="text-sm text-gray-500 text-center py-8">No Saudi Law documents registered yet</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Dynamic Document Types - Full Width Section */}
+      <div className="w-full">
+        <DynamicDocumentTypeManager />
       </div>
     </div>
   );
