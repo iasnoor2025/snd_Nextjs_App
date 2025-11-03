@@ -57,7 +57,8 @@ export function H2SCardFront({ cardData }: H2SCardFrontProps) {
         minWidth: '85.6mm',
         maxWidth: '85.6mm',
         minHeight: '53.98mm',
-        maxHeight: '53.98mm'
+        maxHeight: '53.98mm',
+        color: '#111111'
       }}
     >
       {/* Header */}

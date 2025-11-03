@@ -22,6 +22,7 @@ export function H2SCardBack({ cardData }: H2SCardBackProps) {
         maxHeight: '53.98mm',
         background:
           "radial-gradient(circle, rgba(200,200,200,0.08) 1px, transparent 1px) 0 0/20px 20px",
+        color: '#111111'
       }}
     >
       {/* Header with H2S Logo and certification line */}
