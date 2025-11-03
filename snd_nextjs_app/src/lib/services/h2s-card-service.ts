@@ -100,7 +100,7 @@ export class H2SCardService {
     // Generate QR code if not exists
     let qrCodeUrl = training.qrCodeUrl;
     if (!qrCodeUrl) {
-      const baseUrl = process.env.APP_URL || 'http://localhost:3000';
+      const baseUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
       qrCodeUrl = await QRCodeService.generateAndUploadQRCode(
         training.id,
         baseUrl
