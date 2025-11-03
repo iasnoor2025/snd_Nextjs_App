@@ -112,7 +112,7 @@ export default function DynamicDocumentTypeManager() {
   const fetchDocumentTypes = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/company-document-types');
+      const response = await fetch('/api/company-document-types', { cache: 'no-store' });
       
       // Check if response is ok
       if (!response.ok) {
@@ -137,11 +137,18 @@ export default function DynamicDocumentTypeManager() {
         return;
       }
       
-      // Check if response has content
+      // Check if response has content and is JSON
+      const contentType = response.headers.get('content-type') || '';
       const text = await response.text();
       if (!text) {
         console.error('Empty response from server');
         toast.error('Empty response from server');
+        setDocumentTypes([]);
+        return;
+      }
+      if (!contentType.includes('application/json')) {
+        console.error('Non-JSON response from server:', text.slice(0, 200));
+        toast.error('Server returned invalid response');
         setDocumentTypes([]);
         return;
       }
@@ -178,15 +185,40 @@ export default function DynamicDocumentTypeManager() {
 
   const fetchDocumentFiles = async () => {
     try {
-      const response = await fetch('/api/company-document-types/files');
-      const result = await response.json();
-      
+      const response = await fetch('/api/company-document-types/files', { cache: 'no-store' });
+      if (!response.ok) {
+        const errText = await response.text().catch(() => 'Unknown error');
+        console.error('Failed to fetch document files:', errText);
+        return;
+      }
+      const contentType = response.headers.get('content-type') || '';
+      const text = await response.text();
+      if (!contentType.includes('application/json')) {
+        console.error('Non-JSON response for files:', text.slice(0, 200));
+        return;
+      }
+      const result = JSON.parse(text);
       if (result.success) {
         setDocumentFiles(result.data);
       }
     } catch (error) {
       console.error('Error fetching document files:', error);
     }
+  };
+
+  const handleViewFile = (file: DocumentFile) => {
+    if (!file.filePath) return;
+    window.open(file.filePath, '_blank');
+  };
+
+  const handleDownloadFile = (file: DocumentFile) => {
+    if (!file.filePath) return;
+    const link = document.createElement('a');
+    link.href = file.filePath;
+    link.download = file.fileName || 'document';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   };
 
   // Helper function to convert file to base64
@@ -233,7 +265,26 @@ export default function DynamicDocumentTypeManager() {
         },
       });
 
-      const result = await response.json();
+      if (!response.ok) {
+        const errText = await response.text().catch(() => 'Unknown error');
+        console.error('Upload failed:', errText);
+        try {
+          const errJson = JSON.parse(errText);
+          toast.error(errJson.message || 'Failed to upload document');
+        } catch {
+          toast.error(errText || 'Failed to upload document');
+        }
+        return;
+      }
+
+      const contentType = response.headers.get('content-type') || '';
+      const text = await response.text();
+      if (!contentType.includes('application/json')) {
+        console.error('Upload non-JSON response:', text.slice(0, 200));
+        toast.error('Upload returned invalid response');
+        return;
+      }
+      const result = JSON.parse(text);
 
       if (result.success) {
         toast.success('Document uploaded successfully');
@@ -509,10 +560,10 @@ export default function DynamicDocumentTypeManager() {
                               </div>
                             </div>
                             <div className="flex items-center gap-1">
-                              <Button variant="ghost" size="sm" title="View file">
+                              <Button variant="ghost" size="sm" title="View file" onClick={() => handleViewFile(file)}>
                                 <Eye className="h-3 w-3" />
                               </Button>
-                              <Button variant="ghost" size="sm" title="Download file">
+                              <Button variant="ghost" size="sm" title="Download file" onClick={() => handleDownloadFile(file)}>
                                 <Download className="h-3 w-3" />
                               </Button>
                               <Button 
