@@ -303,4 +303,31 @@
   .rtl [data-slot='sidebar-inset']:not(.peer-data-\[state\=collapsed\]) {
     margin-right: 16rem !important;
   }
+
+  /* H2S Card Print Styles */
+  @media print {
+    @page {
+      size: 85.6mm 53.98mm;
+      margin: 0;
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+    }
+    
+    .h2s-card-front,
+    .h2s-card-back {
+      page-break-after: always;
+      width: 85.6mm;
+      height: 53.98mm;
+      margin: 0;
+      padding: 4mm;
+      box-sizing: border-box;
+    }
+    
+    .no-print {
+      display: none !important;
+    }
+  }
 }

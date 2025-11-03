@@ -11,6 +11,12 @@ export async function middleware(request: NextRequest) {
     console.log('🔍 Middleware triggered for path:', pathname);
   }
 
+  // Allow static files from public folder (images, fonts, etc.)
+  const staticFileExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.webp', '.pdf', '.css', '.js', '.woff', '.woff2', '.ttf', '.eot'];
+  if (staticFileExtensions.some(ext => pathname.endsWith(ext))) {
+    return NextResponse.next();
+  }
+
   // Define public routes that should bypass middleware completely
   const publicRoutes = [
     '/login',

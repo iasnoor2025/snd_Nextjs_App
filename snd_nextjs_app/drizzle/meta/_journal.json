@@ -232,6 +232,13 @@
       "when": 1761548811934,
       "tag": "0032_silly_sphinx",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1762154031906,
+      "tag": "0033_reflective_chamber",
+      "breakpoints": true
     }
   ]
 }

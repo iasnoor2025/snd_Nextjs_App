@@ -1149,6 +1149,12 @@ export const employeeTraining = pgTable(
     status: text().default('planned').notNull(),
     certificate: text(),
     notes: text(),
+    // H2S card specific fields
+    cardNumber: text('card_number'), // e.g., "SND-0408"
+    expiryDate: date('expiry_date'),
+    trainerName: text('trainer_name'),
+    trainerSignature: text('trainer_signature'), // URL to signature image
+    qrCodeUrl: text('qr_code_url'), // URL to QR code image
     createdAt: date('created_at')
       .default(sql`CURRENT_DATE`)
       .notNull(),

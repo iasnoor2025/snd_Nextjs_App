@@ -15,10 +15,12 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useRBAC } from '@/lib/rbac/rbac-context';
-import { AlertTriangle, Plus, Search, Filter, FileText, Shield, AlertCircle } from 'lucide-react';
+import { AlertTriangle, Plus, Search, Filter, FileText, Shield, AlertCircle, CreditCard } from 'lucide-react';
 import ApiService from '@/lib/api-service';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
+import { H2SCardManagement } from '@/components/h2s-card/H2SCardManagement';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface SafetyIncident {
   id: number;
@@ -49,6 +51,7 @@ export default function SafetyManagementPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [severityFilter, setSeverityFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [activeTab, setActiveTab] = useState('incidents');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -187,6 +190,20 @@ export default function SafetyManagementPage() {
           </div>
         </div>
 
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="incidents" className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              Safety Incidents
+            </TabsTrigger>
+            <TabsTrigger value="h2s-cards" className="flex items-center gap-2">
+              <CreditCard className="h-4 w-4" />
+              H2S Certification Cards
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="incidents" className="space-y-6">
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
@@ -444,6 +461,12 @@ export default function SafetyManagementPage() {
             </form>
           </DialogContent>
         </Dialog>
+          </TabsContent>
+
+          <TabsContent value="h2s-cards" className="space-y-6">
+            <H2SCardManagement />
+          </TabsContent>
+        </Tabs>
       </div>
     </ProtectedRoute>
   );

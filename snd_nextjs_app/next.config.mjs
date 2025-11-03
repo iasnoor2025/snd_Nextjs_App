@@ -109,6 +109,8 @@ const nextConfig = {
     ],
     // Enable image optimization for better performance
     unoptimized: false,
+    // Allow loading images from public folder
+    loader: 'default',
   },
 
   // Environment variables - ensure ERPNext variables are available in production
