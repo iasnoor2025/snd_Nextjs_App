@@ -2216,12 +2216,13 @@ export default function EmployeeShowPage() {
                                       size="sm"
                                       variant="outline"
                                       className="text-blue-600 hover:bg-blue-50 hover:text-blue-700"
-                                      onClick={() =>
+                                      onClick={() => {
+                                        const locale = params?.locale || 'en';
                                         window.open(
-                                          `/modules/employee-management/${employeeId}/advances/${advance.id}/receipt`,
+                                          `/${locale}/modules/employee-management/${employeeId}/advances/${advance.id}/receipt`,
                                           '_blank'
-                                        )
-                                      }
+                                        );
+                                      }}
                                     >
                                       <FileText className="h-4 w-4" />
                                     </Button>
