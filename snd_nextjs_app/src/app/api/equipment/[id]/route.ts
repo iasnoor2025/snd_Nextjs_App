@@ -46,6 +46,8 @@ export async function GET(
         insurance_expiry_date: equipment.insuranceExpiryDate,
         tuv_card: equipment.tuvCard,
         tuv_card_expiry_date: equipment.tuvCardExpiryDate,
+        gps_install_date: equipment.gpsInstallDate,
+        gps_expiry_date: equipment.gpsExpiryDate,
         category_id: equipment.categoryId,
         assigned_to: equipment.assignedTo,
       })

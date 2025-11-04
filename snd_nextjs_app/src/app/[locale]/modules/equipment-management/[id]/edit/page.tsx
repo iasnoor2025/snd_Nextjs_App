@@ -47,6 +47,8 @@ interface Equipment {
   insurance_expiry_date?: string;
   tuv_card?: string;
   tuv_card_expiry_date?: string;
+  gps_install_date?: string;
+  gps_expiry_date?: string;
 }
 
 interface EquipmentCategory {
@@ -88,6 +90,8 @@ export default function EquipmentEditPage() {
     insurance_expiry_date: '',
     tuv_card: '',
     tuv_card_expiry_date: '',
+    gps_install_date: '',
+    gps_expiry_date: '',
   });
 
   const equipmentId = params.id as string;
@@ -133,6 +137,8 @@ export default function EquipmentEditPage() {
           insurance_expiry_date: response.data.insurance_expiry_date || '',
           tuv_card: response.data.tuv_card || '',
           tuv_card_expiry_date: response.data.tuv_card_expiry_date || '',
+          gps_install_date: response.data.gps_install_date || '',
+          gps_expiry_date: response.data.gps_expiry_date || '',
         });
       } else {
         toast.error(t('equipment.messages.loadingError'));
@@ -193,6 +199,8 @@ export default function EquipmentEditPage() {
         insurance_expiry_date: formData.insurance_expiry_date,
         tuv_card: formData.tuv_card,
         tuv_card_expiry_date: formData.tuv_card_expiry_date,
+        gps_install_date: formData.gps_install_date,
+        gps_expiry_date: formData.gps_expiry_date,
       };
 
       console.log('Sending update data:', updateData);
@@ -521,6 +529,36 @@ export default function EquipmentEditPage() {
                       type="date"
                       value={formData.tuv_card_expiry_date}
                       onChange={e => handleInputChange('tuv_card_expiry_date', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* GPS Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('equipment.fields.gpsInfo')}</CardTitle>
+                <CardDescription>{t('equipment.messages.gpsDescription')}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="gps_install_date">{t('equipment.fields.gpsInstallDate')}</Label>
+                    <Input
+                      id="gps_install_date"
+                      type="date"
+                      value={formData.gps_install_date}
+                      onChange={e => handleInputChange('gps_install_date', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="gps_expiry_date">{t('equipment.fields.gpsExpiryDate')}</Label>
+                    <Input
+                      id="gps_expiry_date"
+                      type="date"
+                      value={formData.gps_expiry_date}
+                      onChange={e => handleInputChange('gps_expiry_date', e.target.value)}
                     />
                   </div>
                 </div>

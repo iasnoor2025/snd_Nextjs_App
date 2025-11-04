@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { employeeAssignments } from '@/lib/drizzle/schema';
 import { eq, and, ne } from 'drizzle-orm';
-import { getServerSession } from 'next-auth/next';
+import { getServerSession } from '@/lib/auth';
 
 
 // POST: Manually complete assignments for testing

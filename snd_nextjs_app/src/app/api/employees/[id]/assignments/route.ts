@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { employeeAssignments, projects, rentals } from '@/lib/drizzle/schema';
 import { CentralAssignmentService } from '@/lib/services/central-assignment-service';
 import { eq, desc, and, ne, lt } from 'drizzle-orm';
-import { getServerSession } from 'next-auth/next';
+import { getServerSession } from '@/lib/auth';
 import { AssignmentService } from '@/lib/services/assignment-service';
 
 // GET: Fetch assignments for a specific employee

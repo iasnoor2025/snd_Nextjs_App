@@ -1898,6 +1898,8 @@ export const equipment = pgTable(
     insuranceExpiryDate: date('insurance_expiry_date'),
     tuvCard: text('tuv_card'),
     tuvCardExpiryDate: date('tuv_card_expiry_date'),
+    gpsInstallDate: date('gps_install_date'),
+    gpsExpiryDate: date('gps_expiry_date'),
   },
   table => [
     uniqueIndex('equipment_door_number_key').using(

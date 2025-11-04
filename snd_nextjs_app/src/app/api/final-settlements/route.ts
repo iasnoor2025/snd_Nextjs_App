@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { finalSettlements, employees, users } from '@/lib/drizzle/schema';
 import { eq, desc, and, like, or } from 'drizzle-orm';
-import { getServerSession } from 'next-auth/next';
+import { getServerSession } from '@/lib/auth';
 
 
 // GET: Fetch all final settlements with filtering and pagination

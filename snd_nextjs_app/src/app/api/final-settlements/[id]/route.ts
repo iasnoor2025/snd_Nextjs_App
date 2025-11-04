@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { finalSettlements, employees, employeeLeaves, employeeAssignments } from '@/lib/drizzle/schema';
 import { CentralAssignmentService } from '@/lib/services/central-assignment-service';
 import { eq, and, or, lte, gte, like } from 'drizzle-orm';
-import { getServerSession } from 'next-auth/next';
+import { getServerSession } from '@/lib/auth';
 
 
 // GET: Fetch a specific final settlement by ID

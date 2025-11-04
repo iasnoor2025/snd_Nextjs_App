@@ -52,6 +52,8 @@ interface EquipmentFormData {
   insurance_expiry_date: string;
   tuvCard: string;
   tuv_card_expiry_date: string;
+  gps_install_date: string;
+  gps_expiry_date: string;
 }
 
 interface EquipmentCategory {
@@ -95,6 +97,8 @@ export default function AddEquipmentModal({
     insurance_expiry_date: '',
     tuvCard: '',
     tuv_card_expiry_date: '',
+    gps_install_date: '',
+    gps_expiry_date: '',
   });
 
   // Fetch categories when modal opens
@@ -152,6 +156,12 @@ export default function AddEquipmentModal({
         monthlyRate: formData.monthlyRate ? parseFloat(formData.monthlyRate) : undefined,
         istimara: formData.istimara.trim() || undefined,
         istimara_expiry_date: formData.istimara_expiry_date || undefined,
+        insurance: formData.insurance.trim() || undefined,
+        insurance_expiry_date: formData.insurance_expiry_date || undefined,
+        tuvCard: formData.tuvCard.trim() || undefined,
+        tuv_card_expiry_date: formData.tuv_card_expiry_date || undefined,
+        gps_install_date: formData.gps_install_date || undefined,
+        gps_expiry_date: formData.gps_expiry_date || undefined,
         erpnextId: formData.erpnextId.trim() || undefined,
       };
 
@@ -188,6 +198,12 @@ export default function AddEquipmentModal({
           erpnextId: '',
           istimara: '',
           istimara_expiry_date: '',
+          insurance: '',
+          insurance_expiry_date: '',
+          tuvCard: '',
+          tuv_card_expiry_date: '',
+          gps_install_date: '',
+          gps_expiry_date: '',
         });
       } else {
         toast.error(response.message || t('messages.createError'));
@@ -511,6 +527,33 @@ export default function AddEquipmentModal({
                   type="date"
                   value={formData.tuv_card_expiry_date}
                   onChange={e => handleInputChange('tuv_card_expiry_date', e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* GPS Information */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">{t('fields.gpsInfo')}</h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="gps_install_date">{t('fields.gpsInstallDate')}</Label>
+                <Input
+                  id="gps_install_date"
+                  type="date"
+                  value={formData.gps_install_date}
+                  onChange={e => handleInputChange('gps_install_date', e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="gps_expiry_date">{t('fields.gpsExpiryDate')}</Label>
+                <Input
+                  id="gps_expiry_date"
+                  type="date"
+                  value={formData.gps_expiry_date}
+                  onChange={e => handleInputChange('gps_expiry_date', e.target.value)}
                 />
               </div>
             </div>

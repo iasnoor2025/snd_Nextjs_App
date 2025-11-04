@@ -52,6 +52,8 @@ const getEquipmentHandler = async (request: NextRequest) => {
               insurance_expiry_date: equipmentTable.insuranceExpiryDate,
               tuv_card: equipmentTable.tuvCard,
               tuv_card_expiry_date: equipmentTable.tuvCardExpiryDate,
+              gps_install_date: equipmentTable.gpsInstallDate,
+              gps_expiry_date: equipmentTable.gpsExpiryDate,
               serial_number: equipmentTable.serialNumber,
               chassis_number: equipmentTable.chassisNumber,
               description: equipmentTable.description,
@@ -346,6 +348,8 @@ const createEquipmentHandler = async (request: NextRequest) => {
       insurance_expiry_date,
       tuvCard,
       tuv_card_expiry_date,
+      gps_install_date,
+      gps_expiry_date,
     } = body;
 
     // Auto-extract door number from equipment name if not provided
@@ -381,6 +385,12 @@ const createEquipmentHandler = async (request: NextRequest) => {
         tuvCard: tuvCard ?? null,
         tuvCardExpiryDate: tuv_card_expiry_date
           ? new Date(tuv_card_expiry_date).toISOString()
+          : null,
+        gpsInstallDate: gps_install_date
+          ? new Date(gps_install_date).toISOString()
+          : null,
+        gpsExpiryDate: gps_expiry_date
+          ? new Date(gps_expiry_date).toISOString()
           : null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -435,6 +445,8 @@ const updateEquipmentHandler = async (request: NextRequest) => {
       insurance_expiry_date,
       tuv_card,
       tuv_card_expiry_date,
+      gps_install_date,
+      gps_expiry_date,
     } = body;
 
     // Auto-extract door number from equipment name if not provided
@@ -470,6 +482,12 @@ const updateEquipmentHandler = async (request: NextRequest) => {
         tuvCard: tuv_card ?? null,
         tuvCardExpiryDate: tuv_card_expiry_date
           ? new Date(tuv_card_expiry_date).toISOString()
+          : null,
+        gpsInstallDate: gps_install_date
+          ? new Date(gps_install_date).toISOString()
+          : null,
+        gpsExpiryDate: gps_expiry_date
+          ? new Date(gps_expiry_date).toISOString()
           : null,
         updatedAt: new Date().toISOString(),
       })

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FinalSettlementService } from '@/lib/services/final-settlement-service';
-import { getServerSession } from 'next-auth/next';
+import { getServerSession } from '@/lib/auth';
 
 
 // POST: Generate preview for final settlement calculation

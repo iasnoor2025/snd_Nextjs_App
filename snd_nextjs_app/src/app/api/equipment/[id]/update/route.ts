@@ -83,6 +83,24 @@ export const PUT = withPermission(PermissionConfigs.equipment.update)(
     if (body.istimara_expiry_date !== undefined) {
       updateData.istimaraExpiryDate = body.istimara_expiry_date ? new Date(body.istimara_expiry_date) : null;
     }
+    if (body.insurance !== undefined) {
+      updateData.insurance = body.insurance;
+    }
+    if (body.insurance_expiry_date !== undefined) {
+      updateData.insuranceExpiryDate = body.insurance_expiry_date ? new Date(body.insurance_expiry_date) : null;
+    }
+    if (body.tuv_card !== undefined) {
+      updateData.tuvCard = body.tuv_card;
+    }
+    if (body.tuv_card_expiry_date !== undefined) {
+      updateData.tuvCardExpiryDate = body.tuv_card_expiry_date ? new Date(body.tuv_card_expiry_date) : null;
+    }
+    if (body.gps_install_date !== undefined) {
+      updateData.gpsInstallDate = body.gps_install_date ? new Date(body.gps_install_date) : null;
+    }
+    if (body.gps_expiry_date !== undefined) {
+      updateData.gpsExpiryDate = body.gps_expiry_date ? new Date(body.gps_expiry_date) : null;
+    }
 
     console.log('Updating equipment with data:', updateData);
     

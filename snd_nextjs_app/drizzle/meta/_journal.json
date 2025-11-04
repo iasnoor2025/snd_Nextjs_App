@@ -239,6 +239,13 @@
       "when": 1762154031906,
       "tag": "0033_reflective_chamber",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1762249911035,
+      "tag": "0034_add_gps_fields_to_equipment",
+      "breakpoints": true
     }
   ]
 }

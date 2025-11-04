@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { finalSettlements, employees, employeeLeaves, employeeAssignments } from '@/lib/drizzle/schema';
 import { eq, desc, and, or, lte, gte, like, ne } from 'drizzle-orm';
 import { FinalSettlementService } from '@/lib/services/final-settlement-service';
-import { getServerSession } from 'next-auth/next';
+import { getServerSession } from '@/lib/auth';
 import { AssignmentService } from '@/lib/services/assignment-service';
 import { CentralAssignmentService } from '@/lib/services/central-assignment-service';
 

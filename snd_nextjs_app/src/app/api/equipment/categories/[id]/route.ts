@@ -7,9 +7,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { sql } from 'drizzle-orm';
 
-export const GET = withPermission(PermissionConfigs.equipment.read)(async (_request: NextRequest, { params }: { params: { id: string } }) => {
+export const GET = withPermission(PermissionConfigs.equipment.read)(async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
-    const { id } = params;
+    const { id } = await params;
     const categoryId = parseInt(id);
 
     if (isNaN(categoryId)) {
@@ -45,9 +45,9 @@ export const GET = withPermission(PermissionConfigs.equipment.read)(async (_requ
   }
 });
 
-export const PUT = withPermission(PermissionConfigs.equipment.update)(async (request: NextRequest, { params }: { params: { id: string } }) => {
+export const PUT = withPermission(PermissionConfigs.equipment.update)(async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
-    const { id } = params;
+    const { id } = await params;
     const categoryId = parseInt(id);
     const body = await request.json();
     const { name, description, icon, color, isActive } = body;
@@ -122,9 +122,9 @@ export const PUT = withPermission(PermissionConfigs.equipment.update)(async (req
   }
 });
 
-export const DELETE = withPermission(PermissionConfigs.equipment.delete)(async (_request: NextRequest, { params }: { params: { id: string } }) => {
+export const DELETE = withPermission(PermissionConfigs.equipment.delete)(async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
-    const { id } = params;
+    const { id } = await params;
     const categoryId = parseInt(id);
 
     if (isNaN(categoryId)) {
