@@ -1,6 +1,6 @@
-import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
+import type { NextAuthConfig } from 'next-auth';
 // Switched from Prisma to Drizzle repository
 import bcrypt from 'bcryptjs';
 import { findUserByEmailWithRoles, upsertGoogleUser } from './repositories/user-repo';
@@ -8,8 +8,9 @@ import { findUserByEmailWithRoles, upsertGoogleUser } from './repositories/user-
 /**
  * NextAuth Configuration for Next.js 16
  * Compatible with Next.js 16 and React 19
+ * Uses Auth.js v5 (next-auth@5.0.0-beta.30)
  */
-export const authConfig: NextAuthOptions = {
+export const authConfig: NextAuthConfig = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -27,7 +28,10 @@ export const authConfig: NextAuthOptions = {
         }
 
         try {
-          const user = await findUserByEmailWithRoles(credentials.email);
+          const email = String(credentials.email);
+          const password = String(credentials.password);
+          
+          const user = await findUserByEmailWithRoles(email);
 
           if (!user) {
             // 
@@ -39,7 +43,7 @@ export const authConfig: NextAuthOptions = {
             return null;
           }
 
-          const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
+          const isPasswordValid = await bcrypt.compare(password, user.password);
 
           if (!isPasswordValid) {
             // 
@@ -50,7 +54,7 @@ export const authConfig: NextAuthOptions = {
           let role = 'USER';
 
           // Special case for admin@ias.com and ias.snd2024@gmail.com - ALWAYS SUPER_ADMIN
-          if (credentials.email === 'admin@ias.com' || credentials.email === 'ias.snd2024@gmail.com') {
+          if (email === 'admin@ias.com' || email === 'ias.snd2024@gmail.com') {
             role = 'SUPER_ADMIN';
             // 
           } else {
@@ -118,7 +122,7 @@ export const authConfig: NextAuthOptions = {
             isActive: user.isActive || true,
           };
 
-          console.log('🔍 Auth: Login successful - Email:', credentials.email, 'Role:', role);
+          console.log('🔍 Auth: Login successful - Email:', email, 'Role:', role);
 
           return userData;
         } catch (error) {
@@ -366,7 +370,8 @@ export const authConfig: NextAuthOptions = {
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET || 'fallback-secret-key-for-development',
+  secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET || 'fallback-secret-key-for-development',
+  trustHost: true, // Required for Auth.js v5 in production environments
 };
 
 // Alias for backward compatibility
