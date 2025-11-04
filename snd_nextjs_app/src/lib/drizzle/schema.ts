@@ -1900,6 +1900,8 @@ export const equipment = pgTable(
     tuvCardExpiryDate: date('tuv_card_expiry_date'),
     gpsInstallDate: date('gps_install_date'),
     gpsExpiryDate: date('gps_expiry_date'),
+    periodicExaminationDate: date('periodic_examination_date'),
+    periodicExaminationExpiryDate: date('periodic_examination_expiry_date'),
   },
   table => [
     uniqueIndex('equipment_door_number_key').using(

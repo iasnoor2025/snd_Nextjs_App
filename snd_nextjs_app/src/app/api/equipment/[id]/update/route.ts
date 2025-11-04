@@ -101,6 +101,12 @@ export const PUT = withPermission(PermissionConfigs.equipment.update)(
     if (body.gps_expiry_date !== undefined) {
       updateData.gpsExpiryDate = body.gps_expiry_date ? new Date(body.gps_expiry_date) : null;
     }
+    if (body.periodic_examination_date !== undefined) {
+      updateData.periodicExaminationDate = body.periodic_examination_date ? new Date(body.periodic_examination_date) : null;
+    }
+    if (body.periodic_examination_expiry_date !== undefined) {
+      updateData.periodicExaminationExpiryDate = body.periodic_examination_expiry_date ? new Date(body.periodic_examination_expiry_date) : null;
+    }
 
     console.log('Updating equipment with data:', updateData);
     

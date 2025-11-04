@@ -54,6 +54,8 @@ const getEquipmentHandler = async (request: NextRequest) => {
               tuv_card_expiry_date: equipmentTable.tuvCardExpiryDate,
               gps_install_date: equipmentTable.gpsInstallDate,
               gps_expiry_date: equipmentTable.gpsExpiryDate,
+              periodic_examination_date: equipmentTable.periodicExaminationDate,
+              periodic_examination_expiry_date: equipmentTable.periodicExaminationExpiryDate,
               serial_number: equipmentTable.serialNumber,
               chassis_number: equipmentTable.chassisNumber,
               description: equipmentTable.description,
@@ -350,6 +352,8 @@ const createEquipmentHandler = async (request: NextRequest) => {
       tuv_card_expiry_date,
       gps_install_date,
       gps_expiry_date,
+      periodic_examination_date,
+      periodic_examination_expiry_date,
     } = body;
 
     // Auto-extract door number from equipment name if not provided
@@ -391,6 +395,12 @@ const createEquipmentHandler = async (request: NextRequest) => {
           : null,
         gpsExpiryDate: gps_expiry_date
           ? new Date(gps_expiry_date).toISOString()
+          : null,
+        periodicExaminationDate: periodic_examination_date
+          ? new Date(periodic_examination_date).toISOString()
+          : null,
+        periodicExaminationExpiryDate: periodic_examination_expiry_date
+          ? new Date(periodic_examination_expiry_date).toISOString()
           : null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -447,6 +457,8 @@ const updateEquipmentHandler = async (request: NextRequest) => {
       tuv_card_expiry_date,
       gps_install_date,
       gps_expiry_date,
+      periodic_examination_date,
+      periodic_examination_expiry_date,
     } = body;
 
     // Auto-extract door number from equipment name if not provided
@@ -488,6 +500,12 @@ const updateEquipmentHandler = async (request: NextRequest) => {
           : null,
         gpsExpiryDate: gps_expiry_date
           ? new Date(gps_expiry_date).toISOString()
+          : null,
+        periodicExaminationDate: periodic_examination_date
+          ? new Date(periodic_examination_date).toISOString()
+          : null,
+        periodicExaminationExpiryDate: periodic_examination_expiry_date
+          ? new Date(periodic_examination_expiry_date).toISOString()
           : null,
         updatedAt: new Date().toISOString(),
       })

@@ -54,6 +54,8 @@ interface EquipmentFormData {
   tuv_card_expiry_date: string;
   gps_install_date: string;
   gps_expiry_date: string;
+  periodic_examination_date: string;
+  periodic_examination_expiry_date: string;
 }
 
 interface EquipmentCategory {
@@ -99,6 +101,8 @@ export default function AddEquipmentModal({
     tuv_card_expiry_date: '',
     gps_install_date: '',
     gps_expiry_date: '',
+    periodic_examination_date: '',
+    periodic_examination_expiry_date: '',
   });
 
   // Fetch categories when modal opens
@@ -162,6 +166,8 @@ export default function AddEquipmentModal({
         tuv_card_expiry_date: formData.tuv_card_expiry_date || undefined,
         gps_install_date: formData.gps_install_date || undefined,
         gps_expiry_date: formData.gps_expiry_date || undefined,
+        periodic_examination_date: formData.periodic_examination_date || undefined,
+        periodic_examination_expiry_date: formData.periodic_examination_expiry_date || undefined,
         erpnextId: formData.erpnextId.trim() || undefined,
       };
 
@@ -204,6 +210,8 @@ export default function AddEquipmentModal({
           tuv_card_expiry_date: '',
           gps_install_date: '',
           gps_expiry_date: '',
+          periodic_examination_date: '',
+          periodic_examination_expiry_date: '',
         });
       } else {
         toast.error(response.message || t('messages.createError'));
@@ -554,6 +562,33 @@ export default function AddEquipmentModal({
                   type="date"
                   value={formData.gps_expiry_date}
                   onChange={e => handleInputChange('gps_expiry_date', e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Periodic Examination Information */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">{t('fields.periodicExaminationInfo')}</h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="periodic_examination_date">{t('fields.periodicExaminationDate')}</Label>
+                <Input
+                  id="periodic_examination_date"
+                  type="date"
+                  value={formData.periodic_examination_date}
+                  onChange={e => handleInputChange('periodic_examination_date', e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="periodic_examination_expiry_date">{t('fields.periodicExaminationExpiryDate')}</Label>
+                <Input
+                  id="periodic_examination_expiry_date"
+                  type="date"
+                  value={formData.periodic_examination_expiry_date}
+                  onChange={e => handleInputChange('periodic_examination_expiry_date', e.target.value)}
                 />
               </div>
             </div>

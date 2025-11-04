@@ -49,6 +49,8 @@ interface Equipment {
   tuv_card_expiry_date?: string;
   gps_install_date?: string;
   gps_expiry_date?: string;
+  periodic_examination_date?: string;
+  periodic_examination_expiry_date?: string;
 }
 
 interface EquipmentCategory {
@@ -92,6 +94,8 @@ export default function EquipmentEditPage() {
     tuv_card_expiry_date: '',
     gps_install_date: '',
     gps_expiry_date: '',
+    periodic_examination_date: '',
+    periodic_examination_expiry_date: '',
   });
 
   const equipmentId = params.id as string;
@@ -139,6 +143,8 @@ export default function EquipmentEditPage() {
           tuv_card_expiry_date: response.data.tuv_card_expiry_date || '',
           gps_install_date: response.data.gps_install_date || '',
           gps_expiry_date: response.data.gps_expiry_date || '',
+          periodic_examination_date: response.data.periodic_examination_date || '',
+          periodic_examination_expiry_date: response.data.periodic_examination_expiry_date || '',
         });
       } else {
         toast.error(t('equipment.messages.loadingError'));
@@ -201,6 +207,8 @@ export default function EquipmentEditPage() {
         tuv_card_expiry_date: formData.tuv_card_expiry_date,
         gps_install_date: formData.gps_install_date,
         gps_expiry_date: formData.gps_expiry_date,
+        periodic_examination_date: formData.periodic_examination_date,
+        periodic_examination_expiry_date: formData.periodic_examination_expiry_date,
       };
 
       console.log('Sending update data:', updateData);
@@ -559,6 +567,36 @@ export default function EquipmentEditPage() {
                       type="date"
                       value={formData.gps_expiry_date}
                       onChange={e => handleInputChange('gps_expiry_date', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Periodic Examination Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('equipment.fields.periodicExaminationInfo')}</CardTitle>
+                <CardDescription>{t('equipment.messages.periodicExaminationDescription')}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="periodic_examination_date">{t('equipment.fields.periodicExaminationDate')}</Label>
+                    <Input
+                      id="periodic_examination_date"
+                      type="date"
+                      value={formData.periodic_examination_date}
+                      onChange={e => handleInputChange('periodic_examination_date', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="periodic_examination_expiry_date">{t('equipment.fields.periodicExaminationExpiryDate')}</Label>
+                    <Input
+                      id="periodic_examination_expiry_date"
+                      type="date"
+                      value={formData.periodic_examination_expiry_date}
+                      onChange={e => handleInputChange('periodic_examination_expiry_date', e.target.value)}
                     />
                   </div>
                 </div>

@@ -53,6 +53,8 @@ interface Equipment {
   tuv_card_expiry_date?: string;
   gps_install_date?: string;
   gps_expiry_date?: string;
+  periodic_examination_date?: string;
+  periodic_examination_expiry_date?: string;
   serial_number?: string;
   chassis_number?: string;
   description?: string;
@@ -463,6 +465,36 @@ export default function EquipmentShowPage() {
                   <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.gpsExpiryDate')}</Label>
                   <ExpiryDateDisplay
                     date={equipment.gps_expiry_date}
+                    showIcon={true}
+                    showPrefix={true}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Periodic Examination Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Hash className="h-5 w-5" />
+                <span>{t('equipment.fields.periodicExaminationInfo')}</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.periodicExaminationDate')}</Label>
+                  <p className="text-sm font-mono">
+                    {equipment.periodic_examination_date 
+                      ? new Date(equipment.periodic_examination_date).toLocaleDateString() 
+                      : t('equipment.messages.notSpecified')}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">{t('equipment.fields.periodicExaminationExpiryDate')}</Label>
+                  <ExpiryDateDisplay
+                    date={equipment.periodic_examination_expiry_date}
                     showIcon={true}
                     showPrefix={true}
                   />
