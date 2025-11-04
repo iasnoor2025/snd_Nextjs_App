@@ -1,8 +1,8 @@
-import { authConfig } from '@/lib/auth-config';
+
 import { db } from '@/lib/db';
 import { timesheets, employees } from '@/lib/drizzle/schema';
 import { and, eq, sql } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface TimesheetEntry {
@@ -247,7 +247,7 @@ export async function POST(request: NextRequest) {
     });
     
     if (!isTrustedGAS) {
-      const session = await getServerSession(authConfig);
+      const session = await getServerSession();
       if (!session?.user?.id) {
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
       }
@@ -428,7 +428,7 @@ export async function GET(request: NextRequest) {
     
     // Allow Google Apps Script requests without session authentication
     if (!isGoogleAppsScript) {
-      const session = await getServerSession(authConfig);
+      const session = await getServerSession();
       if (!session?.user?.id) {
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
       }

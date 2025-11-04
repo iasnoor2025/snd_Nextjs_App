@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authConfig } from '@/lib/auth-config';
+import { getServerSession } from '@/lib/auth';
 import { checkUserPermission } from './permission-service';
 import { eq } from 'drizzle-orm';
 
@@ -259,7 +258,7 @@ export async function checkApiPermission(
 ): Promise<{ authorized: boolean; user?: { id: string; email: string; name: string; role: string; isActive: boolean }; error?: string }> {
   try {
     // Get server session
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
     
     if (!session?.user?.id) {
       return {
@@ -359,8 +358,6 @@ export function withReadPermission(subject: Subject) {
   return withPermission({ action: 'read', subject });
 }
 
-
-
 /**
  * Simple permission check for API routes
  */
@@ -435,7 +432,7 @@ export function withRole(requiredRoles: string[]) {
   return function(handler: ApiHandler) {
     return async function(request: NextRequest, ...args: unknown[]): Promise<NextResponse> {
       try {
-        const session = await getServerSession(authConfig);
+        const session = await getServerSession();
         
         if (!session?.user) {
           return NextResponse.json(
@@ -476,7 +473,7 @@ export function withRole(requiredRoles: string[]) {
 export function withAuth(handler: ApiHandler) {
   return async function(request: NextRequest, ...args: unknown[]): Promise<NextResponse> {
     try {
-      const session = await getServerSession(authConfig);
+      const session = await getServerSession();
       
       if (!session?.user) {
         return NextResponse.json(
@@ -505,7 +502,7 @@ export function withAuth(handler: ApiHandler) {
 export function withEmployeeListPermission(handler: ApiHandler) {
   return async function(request: NextRequest, ...args: unknown[]): Promise<NextResponse> {
     try {
-      const session = await getServerSession(authConfig);
+      const session = await getServerSession();
       
       if (!session?.user) {
         return NextResponse.json(

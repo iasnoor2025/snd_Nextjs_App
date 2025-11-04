@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
+import { getServerSession } from '@/lib/auth';
+
 import { H2SCardService } from '@/lib/services/h2s-card-service';
 
 // GET /api/h2s-card/[id] - Get H2S card data by training record ID
@@ -9,7 +9,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -39,4 +39,5 @@ export async function GET(
     );
   }
 }
+
 

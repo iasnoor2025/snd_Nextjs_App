@@ -3,8 +3,8 @@ import { departments, designations, employees, payrollItems, payrolls, advancePa
 import { eq, and, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { createTranslatorFromRequest } from '@/lib/server-i18n';
-import { getServerSession } from 'next-auth';
-import { authConfig } from '@/lib/auth-config';
+import { getServerSession } from '@/lib/auth';
+
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   const { t } = createTranslatorFromRequest(request);
@@ -293,7 +293,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   
   try {
     // Check user session and permissions
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ success: false, message: t('common.error.unauthorized') }, { status: 401 });
     }

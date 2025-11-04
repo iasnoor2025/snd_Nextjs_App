@@ -1,8 +1,8 @@
-import { authConfig } from '@/lib/auth-config';
+
 import { db } from '@/lib/db';
 import { advancePayments, employees as employeesTable } from '@/lib/drizzle/schema';
 import { eq, isNull } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
@@ -17,7 +17,7 @@ export const preferredRegion = 'auto';
 export async function GET(_request: NextRequest) {
   try {
     // Get the current user session
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
 
     if (!session?.user?.id) {
       
@@ -109,7 +109,7 @@ export async function GET(_request: NextRequest) {
 export const POST = withPermission(PermissionConfigs.advance.create)(async (_request: NextRequest) => {
   try {
     // Get the current user session
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });

@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { employeeAssignments } from '@/lib/drizzle/schema';
 import { eq, and, ne } from 'drizzle-orm';
 import { getServerSession } from 'next-auth/next';
-import { authConfig } from '@/lib/auth-config';
+
 
 // POST: Manually complete assignments for testing
 export async function POST(
@@ -11,7 +11,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

@@ -1,10 +1,9 @@
-import { authConfig } from '@/lib/auth-config';
 import { db } from '@/lib/db';
 import { timesheets } from '@/lib/drizzle/schema';
 import { withPermission } from '@/lib/rbac/api-middleware';
 import { checkUserPermission } from '@/lib/rbac/permission-service';
 import { eq } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Multi-stage approval workflow stages
@@ -78,7 +77,7 @@ export const POST = async (_request: NextRequest, { params }: { params: { id: st
     }
 
     // Authentication check
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }

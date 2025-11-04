@@ -1,7 +1,7 @@
-import { authOptions } from '@/lib/auth-config';
+
 import { db } from '@/lib/drizzle';
 import { getRBACPermissions } from '@/lib/rbac/rbac-utils';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { 
   employees, 
@@ -16,7 +16,7 @@ import { eq, sql, count, and, isNotNull } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

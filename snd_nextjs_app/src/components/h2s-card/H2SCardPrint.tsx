@@ -15,7 +15,7 @@ export function H2SCardPrint({ cardData }: H2SCardPrintProps) {
   const printRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = useReactToPrint({
-    content: () => printRef.current,
+    contentRef: printRef,
     documentTitle: `H2S-Card-${cardData.cardNumber}`,
     pageStyle: `
       @page {

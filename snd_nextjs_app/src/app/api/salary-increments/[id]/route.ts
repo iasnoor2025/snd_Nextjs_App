@@ -1,14 +1,14 @@
-import { authOptions } from '@/lib/auth-config';
+
 import { db } from '@/lib/drizzle';
 import { employees, salaryIncrements, users } from '@/lib/drizzle/schema';
 import { checkPermission } from '@/lib/rbac/enhanced-permission-service';
 import { eq } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -138,7 +138,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -239,7 +239,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

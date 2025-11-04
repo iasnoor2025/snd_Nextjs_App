@@ -1,9 +1,9 @@
-import { authConfig } from '@/lib/auth-config';
+
 import { db } from '@/lib/drizzle';
 import { employeeAssignments } from '@/lib/drizzle/schema';
 import { withEmployeeListPermission } from '@/lib/rbac/api-middleware';
 import { and, eq, inArray } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 // POST /api/assignments/bulk-delete - Delete multiple assignments

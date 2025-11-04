@@ -1,14 +1,14 @@
-import { authConfig } from '@/lib/auth-config';
+
 import { db } from '@/lib/drizzle';
 import { employeeLeaves, employees } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 // POST /api/leave-requests - Create a new leave request
 export async function POST(_request: NextRequest) {
   try {
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });

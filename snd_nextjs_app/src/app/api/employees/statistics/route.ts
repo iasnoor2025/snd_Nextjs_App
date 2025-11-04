@@ -1,15 +1,15 @@
-import { authConfig } from '@/lib/auth-config';
+
 import { db } from '@/lib/db';
 import { employeeAssignments, employees, projectManpower, employeeLeaves } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { and, eq, inArray, sql, gte, lte } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
 const getEmployeeStatisticsHandler = async () => {
   try {
     // Get session to check user role
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
     const user = session?.user;
 
     // Get total employee count

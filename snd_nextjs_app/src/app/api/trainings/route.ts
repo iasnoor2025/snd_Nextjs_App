@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
+import { getServerSession } from '@/lib/auth';
 import { db } from '@/lib/drizzle';
 import { trainings } from '@/lib/drizzle/schema';
 import { and, ilike, eq, asc } from 'drizzle-orm';
@@ -9,7 +8,7 @@ import { sql } from 'drizzle-orm';
 // GET /api/trainings - Get all training programs
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -59,7 +58,7 @@ export async function GET(request: NextRequest) {
 // POST /api/trainings - Create a training program (idempotent by name)
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

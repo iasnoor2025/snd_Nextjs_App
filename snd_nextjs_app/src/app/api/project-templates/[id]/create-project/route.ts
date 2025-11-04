@@ -2,15 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { projectTemplates, projects, customers } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
+import { getServerSession } from '@/lib/auth';
+
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -72,12 +72,12 @@ export async function POST(
         name,
         description: description || selectedTemplate.description,
         customerId: customerId ? parseInt(customerId) : null,
-        startDate: startDate ? new Date(startDate) : null,
-        endDate: endDate ? new Date(endDate) : null,
+        startDate: startDate ? new Date(startDate).toISOString().split('T')[0] : null,
+        endDate: endDate ? new Date(endDate).toISOString().split('T')[0] : null,
         budget: budget || selectedTemplate.estimatedBudget,
         notes: notes || `Created from template: ${selectedTemplate.name}`,
         status: 'active',
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString().split('T')[0],
       })
       .returning();
 

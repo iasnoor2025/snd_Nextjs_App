@@ -1,4 +1,4 @@
-import { authOptions } from '@/lib/auth-config';
+
 import { db } from '@/lib/db';
 import {
   permissions as permissionsTable,
@@ -7,13 +7,13 @@ import {
 } from '@/lib/drizzle/schema';
 import { createUserFromSession, hasPermission } from '@/lib/rbac/custom-rbac';
 import { and, asc, eq, ilike, or, sql } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/permissions - List all permissions
 export async function GET(_request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -127,7 +127,7 @@ export async function GET(_request: NextRequest) {
 // POST /api/permissions - Create new permission
 export async function POST(_request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

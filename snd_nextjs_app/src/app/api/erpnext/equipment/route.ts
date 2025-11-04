@@ -2,8 +2,8 @@ import { db } from '@/lib/drizzle';
 import { equipment } from '@/lib/drizzle/schema';
 import { eq, or } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
+import { getServerSession } from '@/lib/auth';
+
 import { withPermission } from '@/lib/rbac/api-middleware';
 import { PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { autoExtractDoorNumber } from '@/lib/utils/equipment-utils';
@@ -51,7 +51,7 @@ async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
 export const GET = withPermission(PermissionConfigs.equipment.read)(async (_request: NextRequest) => {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -89,7 +89,7 @@ export const GET = withPermission(PermissionConfigs.equipment.read)(async (_requ
 export const POST = withPermission(PermissionConfigs.equipment.read)(async (_request: NextRequest) => {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

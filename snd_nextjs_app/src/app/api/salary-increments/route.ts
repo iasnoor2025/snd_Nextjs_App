@@ -208,7 +208,7 @@ const createSalaryIncrementHandler = async (request: NextRequest) => {
     // Get current user ID from session (this will be handled by the permission middleware)
     const { getServerSession } = await import('next-auth');
     const { authOptions } = await import('@/lib/auth-config');
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     const requestedBy = session?.user?.id;
 
     // Get current employee salary information if not provided

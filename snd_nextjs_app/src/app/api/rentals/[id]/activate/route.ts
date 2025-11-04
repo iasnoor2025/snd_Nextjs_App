@@ -3,8 +3,8 @@ import { rentals, rentalItems } from '@/lib/drizzle/schema';
 import { RentalService } from '@/lib/services/rental-service';
 import { eq, and } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
+import { getServerSession } from '@/lib/auth';
+
 
 // PUT /api/rentals/[id]/activate - Activate rental and sync all assignments
 export async function PUT(
@@ -12,7 +12,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

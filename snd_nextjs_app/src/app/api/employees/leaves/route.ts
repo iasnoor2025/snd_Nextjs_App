@@ -1,9 +1,9 @@
-import { authConfig } from '@/lib/auth-config';
+
 import { db } from '@/lib/db';
 import { employeeLeaves, employees as employeesTable } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { and, desc, eq, ilike, sql } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/employees/leaves - Get leave requests for the current employee
@@ -21,7 +21,7 @@ const getLeavesHandler = async (request: NextRequest) => {
     const filters: any[] = [];
 
     // Get session to check user role
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
     const user = session?.user;
 
     // For employee users, only show their own leave requests
@@ -141,7 +141,7 @@ const createLeaveHandler = async (request: NextRequest) => {
     const body = await request.json();
 
     // Get session to check user role
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
     const user = session?.user;
 
     // For employee users, ensure they can only create leave requests for themselves

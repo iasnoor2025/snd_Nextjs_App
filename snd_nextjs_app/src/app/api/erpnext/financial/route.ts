@@ -1,6 +1,6 @@
-import { authOptions } from '@/lib/auth-config';
+
 import { ERPNextFinancialService } from '@/lib/services/erpnext-financial-service';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { withPermission } from '@/lib/rbac/api-middleware';
 import { PermissionConfigs } from '@/lib/rbac/api-middleware';
@@ -8,7 +8,7 @@ import { PermissionConfigs } from '@/lib/rbac/api-middleware';
 export const GET = withPermission(PermissionConfigs.report.read)(async (_request: NextRequest) => {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

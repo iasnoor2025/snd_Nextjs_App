@@ -2,15 +2,15 @@ import { db } from '@/lib/db';
 import { equipment } from '@/lib/drizzle/schema';
 import { count, eq, or } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
+import { getServerSession } from '@/lib/auth';
+
 import { withPermission } from '@/lib/rbac/api-middleware';
 import { PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 export const POST = withPermission(PermissionConfigs.equipment.sync)(async () => {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

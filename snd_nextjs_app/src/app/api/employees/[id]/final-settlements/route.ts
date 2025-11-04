@@ -4,7 +4,6 @@ import { finalSettlements, employees, employeeLeaves, employeeAssignments } from
 import { eq, desc, and, or, lte, gte, like, ne } from 'drizzle-orm';
 import { FinalSettlementService } from '@/lib/services/final-settlement-service';
 import { getServerSession } from 'next-auth/next';
-import { authConfig } from '@/lib/auth-config';
 import { AssignmentService } from '@/lib/services/assignment-service';
 import { CentralAssignmentService } from '@/lib/services/central-assignment-service';
 
@@ -14,7 +13,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -91,7 +90,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -276,7 +275,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

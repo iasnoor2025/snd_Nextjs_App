@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authConfig } from '@/lib/auth-config';
+import { getServerSession } from '@/lib/auth';
+
 import { db } from '@/lib/drizzle';
 import { users, roles, permissions, roleHasPermissions, modelHasRoles } from '@/lib/drizzle/schema';
 import { eq, inArray } from 'drizzle-orm';
@@ -8,7 +8,7 @@ import { eq, inArray } from 'drizzle-orm';
 export async function GET(request: NextRequest) {
   try {
     // Get the current user's session
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
     
     if (!session?.user?.id) {
       console.log('❌ API: No valid session found');

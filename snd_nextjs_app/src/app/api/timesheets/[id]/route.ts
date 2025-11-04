@@ -1,4 +1,4 @@
-import { authOptions } from '@/lib/auth-config';
+
 import { db } from '@/lib/drizzle';
 import {
   employeeAssignments,
@@ -9,7 +9,7 @@ import {
   users,
 } from '@/lib/drizzle/schema';
 import { eq, sql } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -22,7 +22,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Invalid timesheet ID' }, { status: 400 });
     }
 
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -275,7 +275,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Invalid timesheet ID' }, { status: 400 });
     }
 
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -544,7 +544,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

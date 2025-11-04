@@ -10,8 +10,8 @@ import {
 } from '@/lib/drizzle/schema';
 import { and, eq, like } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
+import { getServerSession } from '@/lib/auth';
+
 import { withPermission } from '@/lib/rbac/api-middleware';
 import { PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { cacheService } from '@/lib/redis';
@@ -24,7 +24,7 @@ export const PUT = withPermission(PermissionConfigs.equipment.update)(
   ) => {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

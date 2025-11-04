@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { EquipmentStatusMonitor } from '@/lib/cron/equipment-status-monitor';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
+import { getServerSession } from '@/lib/auth';
+
 import { withPermission } from '@/lib/rbac/api-middleware';
 import { PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 export const POST = withPermission(PermissionConfigs.admin.manage)(async (request: NextRequest) => {
   try {
     // Check authentication and admin permissions
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -54,7 +54,7 @@ export const POST = withPermission(PermissionConfigs.admin.manage)(async (reques
 export const GET = withPermission(PermissionConfigs.admin.read)(async (request: NextRequest) => {
   try {
     // Check authentication and admin permissions
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

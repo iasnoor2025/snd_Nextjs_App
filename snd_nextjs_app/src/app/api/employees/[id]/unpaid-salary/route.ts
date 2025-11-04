@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FinalSettlementService } from '@/lib/services/final-settlement-service';
 import { getServerSession } from 'next-auth/next';
-import { authConfig } from '@/lib/auth-config';
+
 
 // Always compute on request; do not cache
 export const dynamic = 'force-dynamic';
@@ -12,7 +12,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

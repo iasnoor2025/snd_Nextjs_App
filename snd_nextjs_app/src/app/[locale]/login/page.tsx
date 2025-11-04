@@ -3,29 +3,18 @@
 import { LoginForm } from '@/components/login-form';
 import { GalleryVerticalEnd } from 'lucide-react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useI18n } from '@/hooks/use-i18n';
 
 export default function LoginPage() {
-  const [authError, setAuthError] = useState<string | null>(null);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   
-  // Safe i18n usage with fallback
+  // Hooks must be called unconditionally - never wrap in try-catch
   const { t } = useI18n();
-
-  // Safe NextAuth usage with error handling
-  let session: unknown, status: unknown;
-  try {
-    const authResult = useSession();
-    session = authResult.data;
-    status = authResult.status;
-  } catch {
-    setAuthError('Authentication system error');
-    status = 'error';
-  }
-
+  const { data: session, status } = useSession();
   const router = useRouter();
+  const params = useParams();
 
   // Redirect to home if already authenticated
   useEffect(() => {
@@ -33,19 +22,21 @@ export default function LoginPage() {
     if (status === 'error') return;
 
     if (session) {
-      // Redirect to home page (dashboard)
-      router.push('/');
+      // Get locale from params or default to 'en'
+      const locale = (params?.locale as string) || 'en';
+      // Redirect to locale-prefixed home page
+      window.location.href = `/${locale}`;
     }
-  }, [session, status, router]);
+  }, [session, status, params]);
 
   // Show error state if NextAuth fails completely
-  if (status === 'error' || authError) {
+  if (status === 'error') {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
         <div className="text-center">
           <div className="text-red-500 mb-4">⚠️ Authentication Error</div>
           <p className="text-muted-foreground mb-4">
-            {authError || 'Failed to initialize authentication system'}
+            Failed to initialize authentication system. Please refresh the page.
           </p>
           <button 
             onClick={() => window.location.reload()} 
@@ -83,23 +74,18 @@ export default function LoginPage() {
           {t('app_name')}
         </a>
         
-
-        
-        {/* Diagnostic button for production debugging */}
-        {process.env.NODE_ENV === 'production' && (
-          <button
-            onClick={() => setShowDiagnostics(!showDiagnostics)}
-            className="text-xs text-muted-foreground hover:text-foreground"
-          >
-            {showDiagnostics ? 'Hide' : 'Show'} Diagnostics
-          </button>
-        )}
+        {/* Diagnostic button for debugging */}
+        <button
+          onClick={() => setShowDiagnostics(!showDiagnostics)}
+          className="text-xs text-muted-foreground hover:text-foreground self-start"
+        >
+          {showDiagnostics ? 'Hide' : 'Show'} Diagnostics
+        </button>
         
         {showDiagnostics && (
-          <div className="text-xs text-left p-3 bg-gray-50 border border-gray-200 rounded-md">
+          <div className="text-xs text-left p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md">
             <p><strong>Environment:</strong> {process.env.NODE_ENV}</p>
             <p><strong>NEXTAUTH_URL:</strong> {process.env.NEXTAUTH_URL || 'Not set'}</p>
-            <p><strong>i18n Status:</strong> Working</p>
             <p><strong>Auth Status:</strong> {String(status)}</p>
             <p><strong>Session:</strong> {session ? 'Active' : 'None'}</p>
           </div>

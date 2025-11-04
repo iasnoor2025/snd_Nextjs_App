@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withPermission } from '@/lib/rbac/api-middleware';
-import { getServerSession } from 'next-auth';
-import { authConfig } from '@/lib/auth-config';
+import { getServerSession } from '@/lib/auth';
+
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { db } from '@/lib/drizzle';
@@ -16,7 +16,7 @@ const restoreSchema = z.object({
 export const POST = withPermission({ action: 'manage', subject: 'all' })(
   async (request: NextRequest, { params }: { params: { id: string } }) => {
     try {
-      const session = await getServerSession(authConfig);
+      const session = await getServerSession();
       if (!session?.user) {
         return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
       }

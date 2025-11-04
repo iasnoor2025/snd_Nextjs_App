@@ -3,8 +3,8 @@ import { equipmentDocuments, equipment } from '@/lib/drizzle/schema';
 import { and, eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
+import { getServerSession } from '@/lib/auth';
+
 import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { cacheService } from '@/lib/redis/cache-service';
 import { withPermission } from '@/lib/rbac/api-middleware';
@@ -22,7 +22,7 @@ export const DELETE = withPermission(PermissionConfigs['equipment-document'].del
   ) => {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

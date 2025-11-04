@@ -5,6 +5,10 @@ import GoogleProvider from 'next-auth/providers/google';
 import bcrypt from 'bcryptjs';
 import { findUserByEmailWithRoles, upsertGoogleUser } from './repositories/user-repo';
 
+/**
+ * NextAuth Configuration for Next.js 16
+ * Compatible with Next.js 16 and React 19
+ */
 export const authConfig: NextAuthOptions = {
   providers: [
     GoogleProvider({
@@ -139,9 +143,12 @@ export const authConfig: NextAuthOptions = {
         sameSite: 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
+        // Next.js 16 compatibility: ensure proper cookie handling
       },
     },
   },
+  // Next.js 16 compatibility: ensure proper adapter configuration
+  adapter: undefined, // Using JWT strategy, no adapter needed
   pages: {
     signIn: '/login',
     signOut: '/login',

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
@@ -19,6 +19,14 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const router = useRouter();
+  const params = useParams();
+  const searchParams = useSearchParams();
+  
+  // Get current locale from params or default to 'en'
+  const locale = (params?.locale as string) || 'en';
+  
+  // Get callback URL from query params or default to home
+  const callbackUrl = searchParams?.get('callbackUrl') || `/${locale}`;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,8 +43,27 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
         toast.error(t('auth.signin.invalidEmailOrPassword'));
       } else {
         toast.success(t('auth.signin.loginSuccessful'));
-        // Redirect to dashboard after successful login
-        router.push('/');
+        // Wait longer for session cookie to be set before redirecting
+        // This prevents redirect loops in middleware
+        setTimeout(() => {
+          // Parse callbackUrl - if it already has a locale prefix, use it as-is
+          // Otherwise, add the current locale prefix
+          let redirectTo = callbackUrl;
+          
+          // If callbackUrl is root or empty, default to locale home
+          if (redirectTo === '/' || redirectTo === '') {
+            redirectTo = `/${locale}`;
+          }
+          // If callbackUrl doesn't start with a locale, add it
+          else if (!redirectTo.startsWith('/en/') && !redirectTo.startsWith('/ar/')) {
+            // Remove leading slash if present
+            const pathWithoutSlash = redirectTo.startsWith('/') ? redirectTo.slice(1) : redirectTo;
+            redirectTo = `/${locale}/${pathWithoutSlash}`;
+          }
+          
+          // Use window.location.href for full page reload to ensure session is set
+          window.location.href = redirectTo;
+        }, 500); // Increased delay to 500ms to ensure cookie is set
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -50,20 +77,12 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
     setIsGoogleLoading(true);
     try {
       const result = await signIn('google', {
-        callbackUrl: '/',
-        redirect: false,
+        callbackUrl: callbackUrl || `/${locale}`,
+        redirect: true, // Let NextAuth handle the redirect for OAuth
       });
-
-      if (result?.error) {
-        toast.error(t('auth.signin.googleLoginFailed'));
-      } else {
-        toast.success(t('auth.signin.googleLoginSuccessful'));
-        router.push('/');
-      }
     } catch (error) {
       console.error('Google login error:', error);
       toast.error(t('auth.signin.googleLoginError'));
-    } finally {
       setIsGoogleLoading(false);
     }
   };

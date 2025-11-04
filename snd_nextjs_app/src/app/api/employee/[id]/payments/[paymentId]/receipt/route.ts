@@ -1,4 +1,4 @@
-import { authConfig } from '@/lib/auth-config';
+
 import { db } from '@/lib/drizzle';
 import {
   advancePaymentHistories,
@@ -8,7 +8,7 @@ import {
 } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { and, eq, isNull } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 const getEmployeePaymentReceiptHandler = async (
@@ -28,7 +28,7 @@ const getEmployeePaymentReceiptHandler = async (
     }
 
     // Get session to check user role
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
     const user = session?.user;
 
     // For employee users, ensure they can only access their own payment data

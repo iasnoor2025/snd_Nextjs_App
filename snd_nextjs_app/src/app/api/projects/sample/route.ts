@@ -49,12 +49,12 @@ export async function POST() {
         name: 'Colleen Bond',
         description: 'Large-scale construction project for commercial development in downtown area',
         customerId: customerId,
-        startDate: new Date('2024-01-01'),
-        endDate: new Date('2024-12-31'),
+        startDate: new Date('2024-01-01').toISOString().split('T')[0],
+        endDate: new Date('2024-12-31').toISOString().split('T')[0],
         status: 'planning',
         budget: '200000000.00', // 200 million SAR
         notes: 'This is a major construction project involving multiple phases including foundation, structural work, and finishing.',
-        updatedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString().split('T')[0],
       })
       .returning();
 
@@ -105,12 +105,12 @@ export async function POST() {
           description: task.description,
           status: task.status,
           priority: task.priority,
-          startDate: task.startDate,
-          dueDate: task.dueDate,
+          startDate: task.startDate.toISOString().split('T')[0],
+          dueDate: task.dueDate.toISOString().split('T')[0],
           completionPercentage: task.completionPercentage,
-          estimatedHours: task.estimatedHours,
-          actualHours: task.actualHours,
-          updatedAt: new Date(),
+          estimatedHours: task.estimatedHours?.toString() || null,
+          actualHours: task.actualHours?.toString() || null,
+          updatedAt: new Date().toISOString().split('T')[0],
         });
     }
 
@@ -158,14 +158,14 @@ export async function POST() {
           projectId: newProject.id,
           workerName: manpower.workerName,
           jobTitle: manpower.jobTitle,
-          dailyRate: manpower.dailyRate,
-          startDate: manpower.startDate,
-          endDate: manpower.endDate,
+          dailyRate: manpower.dailyRate.toString(),
+          startDate: manpower.startDate.toISOString().split('T')[0],
+          endDate: manpower.endDate.toISOString().split('T')[0],
           totalDays: manpower.totalDays,
           actualDays: manpower.actualDays,
           status: manpower.status,
           notes: manpower.notes,
-          updatedAt: new Date(),
+          updatedAt: new Date().toISOString().split('T')[0],
         });
     }
 

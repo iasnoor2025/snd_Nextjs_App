@@ -1,8 +1,8 @@
-import { authOptions } from '@/lib/auth-config';
+
 import { db } from '@/lib/drizzle';
 import { employeeDocuments } from '@/lib/drizzle/schema';
 import { and, eq } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { cacheService } from '@/lib/redis/cache-service';
@@ -16,7 +16,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; documentId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

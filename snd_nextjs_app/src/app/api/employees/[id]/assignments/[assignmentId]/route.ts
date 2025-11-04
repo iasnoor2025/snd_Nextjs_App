@@ -1,4 +1,3 @@
-import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/db';
 import {
   employeeAssignments,
@@ -7,7 +6,7 @@ import {
   rentals,
 } from '@/lib/drizzle/schema';
 import { and, eq } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { AssignmentService } from '@/lib/services/assignment-service';
 
@@ -16,7 +15,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string; assignmentId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -147,7 +146,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; assignmentId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

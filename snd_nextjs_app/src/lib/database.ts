@@ -1,6 +1,6 @@
 // Legacy database file - use @/lib/drizzle instead
 import { db } from '@/lib/drizzle';
-import { customers, equipment, rentalItems, rentals, users } from '@/lib/drizzle/schema';
+import { customers, equipment, rentalItems, rentals, users, roles } from '@/lib/drizzle/schema';
 import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
 import bcrypt from 'bcryptjs';
@@ -739,12 +739,25 @@ export class DatabaseService {
       const saltRounds = 12;
       const hashedPassword = await bcrypt.hash(data.password, saltRounds);
 
+      // Look up role ID from roles table
+      let roleId = 1; // Default role ID
+      if (data.role) {
+        const roleRows = await db
+          .select({ id: roles.id })
+          .from(roles)
+          .where(eq(roles.name, data.role))
+          .limit(1);
+        if (roleRows[0]) {
+          roleId = roleRows[0].id;
+        }
+      }
+
       const userRows = await db
         .insert(users)
         .values({
           email: data.email,
           name: data.name || 'Unknown User',
-          roleId: data.role || 'USER',
+          roleId: roleId,
           password: hashedPassword,
           isActive: true,
           createdAt: new Date().toISOString().split('T')[0],
@@ -772,7 +785,17 @@ export class DatabaseService {
 
       if (data.email !== undefined) updateData.email = data.email;
       if (data.name !== undefined) updateData.name = data.name;
-      if (data.role !== undefined) updateData.roleId = data.role;
+      if (data.role !== undefined) {
+        // Look up role ID from roles table
+        const roleRows = await db
+          .select({ id: roles.id })
+          .from(roles)
+          .where(eq(roles.name, data.role))
+          .limit(1);
+        if (roleRows[0]) {
+          updateData.roleId = roleRows[0].id;
+        }
+      }
 
       updateData.updatedAt = new Date().toISOString().split('T')[0];
 

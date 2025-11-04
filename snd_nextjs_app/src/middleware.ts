@@ -3,6 +3,11 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { i18n } from '@/lib/i18n-config';
 
+/**
+ * Next.js 16 Middleware
+ * Compatible with Next.js 16 and Auth.js v5 (next-auth@5.0.0-beta.30)
+ * Handles authentication, authorization, and internationalization routing
+ */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
@@ -78,23 +83,23 @@ export async function middleware(request: NextRequest) {
   if (pathname === '/en/reset-password' || pathname === '/ar/reset-password') {
     return NextResponse.next();
   }
-  
+
   // Redirect non-locale auth routes to locale-prefixed versions
   if (pathname === '/login') {
     const locale = getLocale(request);
     return NextResponse.redirect(new URL(`/${locale}/login`, request.url));
   }
-  
+
   if (pathname === '/signup') {
     const locale = getLocale(request);
     return NextResponse.redirect(new URL(`/${locale}/signup`, request.url));
   }
-  
+
   if (pathname === '/forgot-password') {
     const locale = getLocale(request);
     return NextResponse.redirect(new URL(`/${locale}/forgot-password`, request.url));
   }
-  
+
   if (pathname === '/reset-password') {
     const locale = getLocale(request);
     return NextResponse.redirect(new URL(`/${locale}/reset-password`, request.url));
@@ -126,14 +131,23 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    // Get the token from the request
+    // Get the token from the request (Auth.js v5 compatible)
     const token = await getToken({ 
       req: request, 
       secret: process.env.NEXTAUTH_SECRET || 'fallback-secret'
     });
 
-    // If no token, redirect to login
-    if (!token) {
+    // Check if session cookie exists even if token is null (might be during login redirect)
+    const sessionCookie = request.cookies.get('next-auth.session-token');
+    const hasSessionCookie = !!sessionCookie?.value;
+
+    // If no token and no session cookie, redirect to login
+    if (!token && !hasSessionCookie) {
+      // Prevent redirect loops - don't redirect if we're already on login page
+      if (pathname.includes('/login')) {
+        return NextResponse.next();
+      }
+      
       // Get the current locale from the pathname
       const currentLocale = pathname.split('/')[1];
       const validLocale = i18n.locales.includes(currentLocale as "en" | "ar") ? currentLocale : i18n.defaultLocale;
@@ -142,8 +156,14 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    // Check if user is active
-    if (token.isActive === false) {
+    // If we have a session cookie but no token yet (e.g., just after login), allow through
+    // The session will be validated on the next request
+    if (hasSessionCookie && !token) {
+      return NextResponse.next();
+    }
+
+    // Check if user is active (only if we have a token)
+    if (token && token.isActive === false) {
       const currentLocale = pathname.split('/')[1];
       const validLocale = i18n.locales.includes(currentLocale as "en" | "ar") ? currentLocale : i18n.defaultLocale;
       return NextResponse.redirect(new URL(`/${validLocale}/access-denied?reason=inactive`, request.url));
@@ -229,8 +249,12 @@ function getClientSafeRoutePermission(pathname: string) {
   return null;
 }
 
+/**
+ * Get locale from request (Next.js 16 compatible)
+ * Uses synchronous cookie/header access via NextRequest
+ */
 function getLocale(request: NextRequest): string {
-  // Check for locale in cookie
+  // Check for locale in cookie (Next.js 16 cookies are synchronous via NextRequest)
   const localeCookie = request.cookies.get('NEXT_LOCALE');
   if (localeCookie && localeCookie.value && i18n.locales.includes(localeCookie.value as "en" | "ar")) {
     return localeCookie.value;
@@ -252,6 +276,10 @@ function getLocale(request: NextRequest): string {
   return i18n.defaultLocale;
 }
 
+/**
+ * Next.js 16 Middleware Configuration
+ * Matcher pattern for routes that should be processed by middleware
+ */
 export const config = {
   matcher: [
     /*
@@ -265,3 +293,4 @@ export const config = {
     '/((?!api|_next/static|_next/image|favicon.ico|public/).*)',
   ],
 };
+

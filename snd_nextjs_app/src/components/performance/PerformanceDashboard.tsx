@@ -1,7 +1,7 @@
 'use client';
 
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { usePerformance } from '@/hooks/use-performance';
 import { Activity, BarChart3, Cpu, HardDrive, Network, Server, Thermometer, CheckCircle, AlertTriangle, Gauge, Zap, TrendingUp, Clock } from 'lucide-react';
@@ -189,7 +189,7 @@ export function PerformanceDashboard() {
             {/* Memory Usage */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <Memory className="h-4 w-4" />
+                <HardDrive className="h-4 w-4" />
                 <span className="text-sm font-medium">Memory Usage</span>
               </div>
               <div className="text-2xl font-bold">

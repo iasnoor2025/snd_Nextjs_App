@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { projectFuel, projects, equipment, employees } from '@/lib/drizzle/schema';
 import { eq, and, desc } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
+import { getServerSession } from '@/lib/auth';
+
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -129,16 +129,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       .values({
         projectId: parseInt(projectId),
         fuelType,
-        quantity: parseFloat(quantity),
-        unitPrice: parseFloat(unitPrice),
-        totalCost,
+        quantity: parseFloat(quantity).toString(),
+        unitPrice: parseFloat(unitPrice).toString(),
+        totalCost: totalCost.toString(),
         supplier,
-        purchaseDate: new Date(),
+        purchaseDate: new Date().toISOString().split('T')[0],
         equipmentId: equipmentId ? parseInt(equipmentId) : null,
         operatorId: operatorId ? parseInt(operatorId) : null,
         usageNotes,
         status: 'purchased',
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString().split('T')[0],
       })
       .returning();
 
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -225,15 +225,15 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       .update(projectFuel)
       .set({
         fuelType,
-        quantity: parseFloat(quantity),
-        unitPrice: parseFloat(unitPrice),
-        totalCost,
+        quantity: parseFloat(quantity).toString(),
+        unitPrice: parseFloat(unitPrice).toString(),
+        totalCost: totalCost.toString(),
         supplier,
         equipmentId: equipmentId ? parseInt(equipmentId) : null,
         operatorId: operatorId ? parseInt(operatorId) : null,
         usageNotes,
         status: status || 'purchased',
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString().split('T')[0],
       })
       .where(eq(projectFuel.id, parseInt(fuelId)))
       .returning();
@@ -251,7 +251,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

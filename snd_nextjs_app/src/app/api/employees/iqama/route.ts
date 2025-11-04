@@ -1,13 +1,13 @@
-import { authOptions } from '@/lib/auth-config';
+
 import { DashboardService } from '@/lib/services/dashboard-service';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 export const GET = withPermission(PermissionConfigs.employee.read)(async (_request: NextRequest) => {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

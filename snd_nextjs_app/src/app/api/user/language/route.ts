@@ -1,5 +1,5 @@
-import { authOptions } from '@/lib/auth-config';
-import { getServerSession } from 'next-auth';
+
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users } from '@/lib/drizzle/schema';
@@ -8,7 +8,7 @@ import { eq } from 'drizzle-orm';
 export async function GET() {
   try {
     // Get the user session
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
 
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -61,7 +61,7 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
   try {
     // Get the user session
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
 
     if (!session?.user?.id) {
       return NextResponse.json(

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
+import { getServerSession } from '@/lib/auth';
 import { H2SCardService } from '@/lib/services/h2s-card-service';
 import { H2SCardPDFService } from '@/lib/services/h2s-card-pdf-service';
 import { db } from '@/lib/drizzle';
@@ -15,7 +14,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string; trainingId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

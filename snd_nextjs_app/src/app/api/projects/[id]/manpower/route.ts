@@ -3,12 +3,12 @@ import { db } from '@/lib/drizzle';
 import { projectManpower, projects, employees, employeeAssignments } from '@/lib/drizzle/schema';
 import { CentralAssignmentService } from '@/lib/services/central-assignment-service';
 import { eq, and, desc, asc, like } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
+import { getServerSession } from '@/lib/auth';
+
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -122,14 +122,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         employeeId: employeeId ? parseInt(employeeId) : null,
         workerName: workerName || null,
         jobTitle,
-        dailyRate: parseFloat(dailyRate),
-        startDate: new Date(startDate),
-        endDate: endDate ? new Date(endDate) : null,
+        dailyRate: parseFloat(dailyRate).toString(),
+        startDate: new Date(startDate).toISOString().split('T')[0],
+        endDate: endDate ? new Date(endDate).toISOString().split('T')[0] : null,
         totalDays: totalDays ? parseInt(totalDays) : null,
         status: 'active',
         notes,
         assignedBy: session.user.id ? parseInt(session.user.id) : null,
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString().split('T')[0],
       })
       .returning();
 

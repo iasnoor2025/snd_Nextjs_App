@@ -2,13 +2,13 @@ import { db } from '@/lib/drizzle';
 import { payrollItems, payrolls } from '@/lib/drizzle/schema';
 import { and, eq, inArray } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authConfig } from '@/lib/auth-config';
+import { getServerSession } from '@/lib/auth';
+
 
 export async function POST(_request: NextRequest) {
   try {
     // Check user session and permissions
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },

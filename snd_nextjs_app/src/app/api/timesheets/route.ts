@@ -1,9 +1,9 @@
-import { authConfig } from '@/lib/auth-config';
+
 import { db } from '@/lib/drizzle';
 import { employees, timesheets as timesheetsTable } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { and, desc, eq, ilike, or, sql } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/timesheets - List timesheets with employee data filtering
@@ -101,7 +101,7 @@ const getTimesheetsHandler = async (request: NextRequest) => {
     const filters: any[] = [];
 
     // Get session to check user role
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
     const user = session?.user;
 
     // Use role-based access control instead of national_id

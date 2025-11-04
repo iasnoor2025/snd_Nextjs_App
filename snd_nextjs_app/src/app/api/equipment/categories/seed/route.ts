@@ -1,13 +1,13 @@
-import { authOptions } from '@/lib/auth-config';
+
 import { db } from '@/lib/drizzle';
 import { equipmentCategories } from '@/lib/drizzle/schema';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(_request: NextRequest) {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

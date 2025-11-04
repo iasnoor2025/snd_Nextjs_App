@@ -2,12 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { projectMilestones, projects } from '@/lib/drizzle/schema';
 import { eq, and, desc, asc } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
+import { getServerSession } from '@/lib/auth';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -49,7 +48,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -96,10 +95,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         projectId: parseInt(projectId),
         name,
         description,
-        dueDate: new Date(dueDate),
+        dueDate: new Date(dueDate).toISOString().split('T')[0],
         status,
         order,
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString().split('T')[0],
       })
       .returning();
 

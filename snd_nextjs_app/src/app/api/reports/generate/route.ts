@@ -1,13 +1,13 @@
-import { authOptions } from '@/lib/auth-config';
+
 import { db } from '@/lib/db';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 // TODO: This route still uses ORM-like aggregations; for now, disable DB updates to prevent crashes.
 import { getRBACPermissions } from '@/lib/rbac/rbac-utils';
 
 export async function POST(_request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

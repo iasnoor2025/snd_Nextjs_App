@@ -1,9 +1,8 @@
-import { authConfig } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
 import { employeeAssignments, employees, projects, users } from '@/lib/drizzle/schema';
 import { withEmployeeListPermission } from '@/lib/rbac/api-middleware';
 import { and, desc, eq, ilike, inArray, or, sql, lt } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { AssignmentService } from '@/lib/services/assignment-service';
 
@@ -23,7 +22,7 @@ const getAssignmentsHandler = async (
     const skip = (page - 1) * limit;
 
     // Get session to check user role
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
     const user = session?.user;
 
     // Build base filters array

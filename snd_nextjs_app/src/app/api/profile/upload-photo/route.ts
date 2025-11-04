@@ -1,6 +1,6 @@
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { authOptions } from '@/lib/auth-config';
+
 import { db } from '@/lib/drizzle';
 import { users } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       await db.update(users)
         .set({ 
           avatar: uploadResult.url,
-          updated_at: new Date()
+          updatedAt: new Date().toISOString().split('T')[0]
         })
         .where(eq(users.id, parseInt(session.user.id)));
 

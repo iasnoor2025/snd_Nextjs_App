@@ -1,5 +1,5 @@
-import { authOptions } from '@/lib/auth-config';
-import { getServerSession } from 'next-auth';
+
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { 
   cacheService, 
@@ -9,7 +9,7 @@ import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 export const GET = withPermission(PermissionConfigs.admin.read)(async () => {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -24,7 +24,7 @@ export const GET = withPermission(PermissionConfigs.admin.read)(async () => {
 
 export const DELETE = withPermission(PermissionConfigs.admin.delete)(async (request: NextRequest) => {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -46,7 +46,7 @@ export const DELETE = withPermission(PermissionConfigs.admin.delete)(async (requ
 
 export const POST = withPermission(PermissionConfigs.admin.create)(async (request: NextRequest) => {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

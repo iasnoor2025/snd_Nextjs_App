@@ -1,14 +1,14 @@
-import { authConfig } from '@/lib/auth-config';
+
 import { db } from '@/lib/db';
 import { departments, designations, employees, users } from '@/lib/drizzle/schema';
 import { and, eq, ne } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/user/nation-id - Check if user has nation ID
 export async function POST(_request: NextRequest) {
   try {
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
 
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -179,7 +179,7 @@ export async function POST(_request: NextRequest) {
 
 // PUT /api/user/nation-id - Update user's nation ID
 export async function PUT(_request: NextRequest) {
-  const session = await getServerSession(authConfig);
+  const session = await getServerSession();
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });

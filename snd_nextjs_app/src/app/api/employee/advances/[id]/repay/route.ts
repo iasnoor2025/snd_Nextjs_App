@@ -1,8 +1,8 @@
-import { authOptions } from '@/lib/auth-config';
+
 import { db } from '@/lib/db';
 import { advancePaymentHistories, advancePayments } from '@/lib/drizzle/schema';
 import { and, asc, eq, isNull } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Explicit route configuration for Next.js 15
@@ -17,7 +17,7 @@ export const preferredRegion = 'auto';
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
 
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

@@ -1,15 +1,15 @@
 import { db } from '@/lib/db';
 import { users as usersTable, roles as rolesTable, modelHasRoles as modelHasRolesTable, employees as employeesTable, departments, designations } from '@/lib/drizzle/schema';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextResponse } from 'next/server';
-import { authConfig } from '@/lib/auth-config';
+
 import { eq } from 'drizzle-orm';
 
 // GET /api/auth/me - Get current user's role
 export async function GET() {
   try {
     // Get the current session
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
     
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });

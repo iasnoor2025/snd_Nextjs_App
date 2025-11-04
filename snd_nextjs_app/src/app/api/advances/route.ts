@@ -1,9 +1,9 @@
-import { authConfig } from '@/lib/auth-config';
+
 import { db } from '@/lib/db';
 import { advancePayments, employees, users } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { and, desc, eq, isNull, like, or } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/advances - List employee advances with employee data filtering
@@ -21,7 +21,7 @@ const getAdvancesHandler = async (
     const skip = (page - 1) * limit;
 
     // Get session to check user role
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
     const user = session?.user;
 
     let employeeFilter: ReturnType<typeof eq> | null = null;

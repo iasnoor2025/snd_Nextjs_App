@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { projectMaterials, projects, employees } from '@/lib/drizzle/schema';
 import { eq, and, desc } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
+import { getServerSession } from '@/lib/auth';
+
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -135,14 +135,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         description,
         category,
         unit,
-        quantity: parseFloat(quantity),
-        unitPrice: parseFloat(unitPrice),
-        totalCost,
+        quantity: parseFloat(quantity).toString(),
+        unitPrice: parseFloat(unitPrice).toString(),
+        totalCost: totalCost.toString(),
         supplier,
-        orderDate: orderDate ? new Date(orderDate) : new Date(),
+        orderDate: orderDate ? new Date(orderDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
         status: 'ordered',
         notes,
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString().split('T')[0],
       })
       .returning();
 
@@ -162,7 +162,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -256,7 +256,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

@@ -1,8 +1,8 @@
-import { authOptions } from '@/lib/auth-config';
+
 import { db } from '@/lib/drizzle';
 import { equipmentCategories } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { sql } from 'drizzle-orm';

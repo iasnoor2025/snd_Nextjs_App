@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
+import { getServerSession } from '@/lib/auth';
 import { db } from '@/lib/drizzle';
 import { employeeTraining, employees, trainings } from '@/lib/drizzle/schema';
 import { eq, and, ilike, isNotNull, inArray, desc } from 'drizzle-orm';
@@ -8,7 +7,7 @@ import { eq, and, ilike, isNotNull, inArray, desc } from 'drizzle-orm';
 // GET /api/h2s-training-records - Get all completed H2S training records
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

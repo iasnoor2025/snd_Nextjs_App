@@ -20,7 +20,7 @@ const approveSalaryIncrementHandler = async (request: NextRequest, ...args: unkn
     // Get current user ID from session (this will be handled by the permission middleware)
     const { getServerSession } = await import('next-auth');
     const { authOptions } = await import('@/lib/auth-config');
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     const approvedBy = session?.user?.id;
 
     // Check if salary increment exists and can be approved

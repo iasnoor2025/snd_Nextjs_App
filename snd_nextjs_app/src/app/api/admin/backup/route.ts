@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withPermission, withRole } from '@/lib/rbac/api-middleware';
-import { getServerSession } from 'next-auth';
-import { authConfig } from '@/lib/auth-config';
+import { getServerSession } from '@/lib/auth';
+
 import { db } from '@/lib/drizzle';
 import { sql } from 'drizzle-orm';
 import { writeFile, mkdir } from 'fs/promises';
@@ -17,7 +17,7 @@ const backupSchema = z.object({
 export const POST = withRole(['SUPER_ADMIN'])(
   async (request: NextRequest) => {
     try {
-      const session = await getServerSession(authConfig);
+      const session = await getServerSession();
       if (!session?.user) {
         return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
       }

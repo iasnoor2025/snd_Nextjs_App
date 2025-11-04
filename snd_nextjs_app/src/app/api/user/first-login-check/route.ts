@@ -1,4 +1,4 @@
-import { authConfig } from '@/lib/auth-config';
+
 import { db } from '@/lib/db';
 import {
   departments as departmentsTable,
@@ -7,7 +7,7 @@ import {
   users as usersTable,
 } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/user/first-login-check - Check if this is first login and establish employee relationship
@@ -17,7 +17,7 @@ export async function GET(_request: NextRequest) {
 
 export async function POST(_request: NextRequest) {
   try {
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
 
     if (!session?.user?.id) {
       return NextResponse.json(

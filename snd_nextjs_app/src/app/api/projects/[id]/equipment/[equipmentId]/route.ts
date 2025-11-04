@@ -2,15 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { projectEquipment, projects } from '@/lib/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
+import { getServerSession } from '@/lib/auth';
+
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; equipmentId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -76,11 +76,11 @@ export async function PUT(
         ...(operatorId !== undefined && { operatorId: operatorId ? parseInt(operatorId) : null }),
         ...(startDate !== undefined && { startDate: new Date(startDate).toISOString().split('T')[0] }),
         ...(endDate !== undefined && { endDate: endDate ? new Date(endDate).toISOString().split('T')[0] : null }),
-        ...(hourlyRate !== undefined && { hourlyRate: parseFloat(hourlyRate) }),
-        ...(estimatedHours !== undefined && { estimatedHours: estimatedHours ? parseFloat(estimatedHours) : null }),
-        ...(actualHours !== undefined && { actualHours: actualHours ? parseFloat(actualHours) : null }),
-        ...(maintenanceCost !== undefined && { maintenanceCost: maintenanceCost ? parseFloat(maintenanceCost) : null }),
-        ...(fuelConsumption !== undefined && { fuelConsumption: fuelConsumption ? parseFloat(fuelConsumption) : null }),
+        ...(hourlyRate !== undefined && { hourlyRate: parseFloat(hourlyRate).toString() }),
+        ...(estimatedHours !== undefined && { estimatedHours: estimatedHours ? parseFloat(estimatedHours).toString() : null }),
+        ...(actualHours !== undefined && { actualHours: actualHours ? parseFloat(actualHours).toString() : null }),
+        ...(maintenanceCost !== undefined && { maintenanceCost: maintenanceCost ? parseFloat(maintenanceCost).toString() : null }),
+        ...(fuelConsumption !== undefined && { fuelConsumption: fuelConsumption ? parseFloat(fuelConsumption).toString() : null }),
         ...(status !== undefined && { status }),
         ...(notes !== undefined && { notes }),
         updatedAt: new Date().toISOString().split('T')[0],
@@ -104,7 +104,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; equipmentId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -156,7 +156,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string; equipmentId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

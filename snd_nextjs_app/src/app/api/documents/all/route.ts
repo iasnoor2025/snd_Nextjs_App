@@ -1,8 +1,8 @@
-import { authOptions } from '@/lib/auth-config';
+
 import { db } from '@/lib/drizzle';
 import { employeeDocuments, employees, equipment, equipmentDocuments } from '@/lib/drizzle/schema';
 import { desc, eq, ilike, or, sql, inArray } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface Document {
@@ -33,7 +33,7 @@ interface Document {
 
 export async function GET(_request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

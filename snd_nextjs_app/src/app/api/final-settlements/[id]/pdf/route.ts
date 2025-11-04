@@ -4,7 +4,7 @@ import { finalSettlements } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { FinalSettlementPDFService, SettlementPDFData } from '@/lib/services/final-settlement-pdf-service';
 import { getServerSession } from 'next-auth/next';
-import { authConfig } from '@/lib/auth-config';
+
 
 // GET: Generate and download PDF for a specific final settlement
 export async function GET(
@@ -12,7 +12,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -120,7 +120,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

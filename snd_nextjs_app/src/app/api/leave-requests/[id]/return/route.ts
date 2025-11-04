@@ -1,8 +1,8 @@
-import { authConfig } from '@/lib/auth-config';
+
 import { db } from '@/lib/drizzle';
 import { employeeLeaves, employees } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
@@ -17,7 +17,7 @@ export const PUT = withPermission(PermissionConfigs.leave.update)(async (request
       return NextResponse.json({ error: 'Leave request ID is required' }, { status: 400 });
     }
     
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
     const body = await request.json();
 
     if (!session?.user?.id) {

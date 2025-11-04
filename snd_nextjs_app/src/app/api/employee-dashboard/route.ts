@@ -1,4 +1,4 @@
-import { authConfig } from '@/lib/auth-config';
+
 import { db } from '@/lib/db';
 import {
   advancePayments,
@@ -16,14 +16,14 @@ import {
   roleHasPermissions,
 } from '@/lib/drizzle/schema';
 import { and, desc, eq, gte } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkUserPermission } from '@/lib/rbac/permission-service';
 
 export async function GET(_request: NextRequest) {
   try {
     // Get the current user session
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
 
     if (!session?.user?.id) {
       console.log('❌ No session or user ID found');

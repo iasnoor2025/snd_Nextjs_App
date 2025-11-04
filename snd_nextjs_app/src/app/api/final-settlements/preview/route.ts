@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FinalSettlementService } from '@/lib/services/final-settlement-service';
 import { getServerSession } from 'next-auth/next';
-import { authConfig } from '@/lib/auth-config';
+
 
 // POST: Generate preview for final settlement calculation
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

@@ -3,8 +3,7 @@ import { equipment } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { NextRequest } from 'next/server';
-import { authOptions } from '@/lib/auth-config';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from '@/lib/auth';
 import { withPermission } from '@/lib/rbac/api-middleware';
 import { PermissionConfigs } from '@/lib/rbac/api-middleware';
 
@@ -14,7 +13,7 @@ export async function GET(
 ) {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -82,7 +81,7 @@ export const PUT = withPermission(PermissionConfigs.equipment.update)(
   ) => {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

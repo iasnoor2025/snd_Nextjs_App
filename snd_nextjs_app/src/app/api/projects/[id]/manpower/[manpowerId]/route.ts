@@ -2,15 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { projectManpower, projects, employees } from '@/lib/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
+import { getServerSession } from '@/lib/auth';
+
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; manpowerId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -72,7 +72,7 @@ export async function PUT(
       .set({
         ...(employeeId !== undefined && { employeeId: employeeId ? parseInt(employeeId) : null }),
         ...(jobTitle !== undefined && { jobTitle }),
-        ...(dailyRate !== undefined && { dailyRate: parseFloat(dailyRate) }),
+        ...(dailyRate !== undefined && { dailyRate: parseFloat(dailyRate).toString() }),
         ...(startDate !== undefined && { startDate: startDate ? new Date(startDate).toISOString().split('T')[0] : undefined }),
         ...(endDate !== undefined && { endDate: endDate ? new Date(endDate).toISOString().split('T')[0] : null }),
         ...(totalDays !== undefined && { totalDays: totalDays ? parseInt(totalDays) : null }),
@@ -128,7 +128,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; manpowerId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -180,7 +180,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string; manpowerId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

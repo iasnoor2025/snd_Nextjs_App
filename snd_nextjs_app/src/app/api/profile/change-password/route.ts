@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authConfig } from '@/lib/auth-config';
+import { getServerSession } from '@/lib/auth';
+
 import { db } from '@/lib/drizzle';
 import { users } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
@@ -10,7 +10,7 @@ import { checkUserPermission } from '@/lib/rbac/permission-service';
 export async function POST(request: NextRequest) {
   try {
     // Get the current user session
-    const session = await getServerSession(authConfig);
+    const session = await getServerSession();
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });

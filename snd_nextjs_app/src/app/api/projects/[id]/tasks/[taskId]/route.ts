@@ -2,15 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { projectTasks, projects } from '@/lib/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
+import { getServerSession } from '@/lib/auth';
+
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; taskId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -81,8 +81,8 @@ export async function PUT(
         ...(startDate !== undefined && { startDate: startDate ? new Date(startDate).toISOString().split('T')[0] : null }),
         ...(dueDate !== undefined && { dueDate: dueDate ? new Date(dueDate).toISOString().split('T')[0] : null }),
         ...(completionPercentage !== undefined && { completionPercentage: completionPercentage ? parseFloat(completionPercentage) : 0 }),
-        ...(estimatedHours !== undefined && { estimatedHours: estimatedHours ? parseFloat(estimatedHours) : null }),
-        ...(actualHours !== undefined && { actualHours: actualHours ? parseFloat(actualHours) : null }),
+        ...(estimatedHours !== undefined && { estimatedHours: estimatedHours ? parseFloat(estimatedHours).toString() : null }),
+        ...(actualHours !== undefined && { actualHours: actualHours ? parseFloat(actualHours).toString() : null }),
         ...(parentTaskId !== undefined && { parentTaskId: parentTaskId ? parseInt(parentTaskId) : null }),
         ...(order !== undefined && { order }),
         updatedAt: new Date().toISOString().split('T')[0],
@@ -106,7 +106,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; taskId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -158,7 +158,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string; taskId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
