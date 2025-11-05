@@ -11,6 +11,7 @@ import { useCallback, useEffect, useState, memo } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
+import PdfThumbnail from './PdfThumbnail';
 
 export interface DocumentItem {
   id: number;
@@ -622,6 +623,8 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
                                  </div>
                                </div>
                              </div>
+                           ) : fileType.toLowerCase().includes('pdf') ? (
+                             <PdfThumbnail url={docUrl} alt={fileName} className="w-full" />
                            ) : (
                                                            <div 
                                 className="w-full min-h-20 flex items-center justify-center rounded border border-gray-200 bg-gray-50"
@@ -642,25 +645,25 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
                              {fileName}
                            </h3>
                            
-                          {/* Badges for photo documents */}
-                          {isPhotoDocument(document) && (
-                            <div className="flex items-center justify-center gap-2 text-xs">
-                              <span className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1.5 rounded-full font-semibold shadow-md">
-                                {fileName.toLowerCase().includes('passport') ? t('employee.documents.employeePassport') : 
-                                 fileName.toLowerCase().includes('iqama') ? t('employee.documents.employeeIqama') : t('employee.documents.employeePhoto')}
-                              </span>
-                              {fileName.toLowerCase().includes('passport') && (
-                                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
-                                  {t('employee.documents.travelDocument')}
-                                </span>
-                              )}
-                              {fileName.toLowerCase().includes('iqama') && (
-                                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
-                                  {t('employee.documents.idCard')}
-                                </span>
-                              )}
-                            </div>
-                          )}
+                           {/* Badges for photo documents */}
+                           {isPhotoDocument(document) && (
+                             <div className="flex items-center justify-center gap-2 text-xs">
+                               <span className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1.5 rounded-full font-semibold shadow-md">
+                                 {fileName.toLowerCase().includes('passport') ? t('employee.documents.employeePassport') : 
+                                  fileName.toLowerCase().includes('iqama') ? t('employee.documents.employeeIqama') : t('employee.documents.employeePhoto')}
+                               </span>
+                               {fileName.toLowerCase().includes('passport') && (
+                                 <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
+                                   {t('employee.documents.travelDocument')}
+                                 </span>
+                               )}
+                               {fileName.toLowerCase().includes('iqama') && (
+                                 <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
+                                   {t('employee.documents.idCard')}
+                                 </span>
+                               )}
+                             </div>
+                           )}
                           {isEquipmentPhoto(document) && (
                             <div className="flex items-center justify-center gap-2 text-xs">
                               <span className="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-3 py-1.5 rounded-full font-semibold shadow-md">
