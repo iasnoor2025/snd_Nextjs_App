@@ -815,6 +815,11 @@ export default function UserManagementPage() {
 
   useEffect(() => {
     const fetchData = async () => {
+      // Skip fetch if data already exists
+      if (users.length > 0 && roles.length > 0 && permissions.length > 0) {
+        return;
+      }
+
       try {
         console.log('🚀 Starting user management data fetch...');
         setLoading(true);

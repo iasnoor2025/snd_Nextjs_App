@@ -319,7 +319,10 @@ export default function EmployeeShowPage() {
 
   useEffect(() => {
     if (employeeId && !isNaN(parseInt(employeeId))) {
-      fetchEmployeeData();
+      // Only fetch if employee data doesn't exist
+      if (!employee) {
+        fetchEmployeeData();
+      }
     }
   }, [employeeId]);
 

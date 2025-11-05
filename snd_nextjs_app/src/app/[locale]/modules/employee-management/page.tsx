@@ -182,6 +182,11 @@ export default function EmployeeManagementPage() {
 
   useEffect(() => {
     const loadData = async () => {
+      // Skip fetch if data already exists
+      if (employees.length > 0 && statistics.totalEmployees > 0) {
+        return;
+      }
+
       const isEmployeeUser = user?.role === 'EMPLOYEE';
 
       if (isEmployeeUser) {

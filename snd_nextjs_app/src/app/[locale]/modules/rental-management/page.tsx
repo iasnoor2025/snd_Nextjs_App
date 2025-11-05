@@ -502,8 +502,11 @@ export default function RentalManagementPage() {
   };
 
   useEffect(() => {
-    fetchRentals();
-    fetchCustomers();
+    // Only fetch if data doesn't exist
+    if (rentals.length === 0) {
+      fetchRentals();
+      fetchCustomers();
+    }
   }, []);
 
   // Trigger batch translation when rentals data changes

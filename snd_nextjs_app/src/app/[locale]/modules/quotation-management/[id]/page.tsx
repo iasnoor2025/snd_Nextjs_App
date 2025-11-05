@@ -130,25 +130,28 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
   const [loading, setLoading] = useState(true);
   const [error] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchQuotationData = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(`/api/quotations/${quotationId}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch quotation data');
-        }
-        const quotationData = await response.json();
-        setData(quotationData);
-      } catch {
-        // Fallback to mock data for development
-        setData(getMockData());
-      } finally {
-        setLoading(false);
+  const fetchQuotationData = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/quotations/${quotationId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch quotation data');
       }
-    };
+      const quotationData = await response.json();
+      setData(quotationData);
+    } catch {
+      // Fallback to mock data for development
+      setData(getMockData());
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchQuotationData();
+  useEffect(() => {
+    // Only fetch if data doesn't exist
+    if (!data) {
+      fetchQuotationData();
+    }
   }, [quotationId]);
 
   const getMockData = (): ApiResponse => {
@@ -304,7 +307,8 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
       }
 
       toast.success('Quotation approved successfully');
-      window.location.reload();
+      // Refresh quotation data instead of full page reload
+      await fetchQuotationData();
     } catch (error) {
       toast.error('Failed to approve quotation');
     }
@@ -325,7 +329,8 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
       }
 
       toast.success('Quotation rejected successfully');
-      window.location.reload();
+      // Refresh quotation data instead of full page reload
+      await fetchQuotationData();
     } catch (error) {
       toast.error('Failed to reject quotation');
     }
