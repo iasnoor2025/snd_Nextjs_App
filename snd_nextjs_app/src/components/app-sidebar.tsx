@@ -20,7 +20,6 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import * as React from 'react';
-// import { NotificationBell } from "@/components/notification-bell"
 import {
   Sidebar,
   SidebarContent,
@@ -35,6 +34,15 @@ import { useRBAC } from '@/lib/rbac/rbac-context';
 import { validateLocale } from '@/lib/locale-utils';
 import { useParams } from 'next/navigation';
 
+// Define menu item type
+type MenuItem = {
+  title: string;
+  url: string;
+  icon?: LucideIcon;
+  requiredRole?: string;
+  requiredPermission?: { action: string; subject: string };
+};
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { t, isRTL } = useI18n();
   const { canAccessRoute, user, hasPermission } = useRBAC();
@@ -46,11 +54,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     setLocale(currentLocale);
   }, [params?.locale]);
 
-
-  // Debug logging removed for cleaner console
-
-  // Define all possible menu items with their routes
-  const allMenuItems = [
+  // Memoize menu items definition to prevent recreation
+  const allMenuItems = React.useMemo<MenuItem[]>(() => [
     {
       title: t('sidebar.dashboard'),
       icon: LayoutDashboard,
@@ -76,7 +81,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       url: `/${locale}/modules/employee-management`,
       icon: Users,
     },
-
     {
       title: t('sidebar.equipmentManagement'),
       url: `/${locale}/modules/equipment-management`,
@@ -153,42 +157,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: Database,
       requiredPermission: { action: 'manage', subject: 'all' }
     },
-  ];
+  ], [t, locale]);
 
-  // const allSecondaryItems = [
+  const allDocumentItems: MenuItem[] = React.useMemo(() => [], []);
 
-
-  //   {
-  //     title: t('getHelp'),
-  //     url: '#',
-  //     icon: HelpCircle,
-  //   },
-  //   {
-  //     title: t('search'),
-  //     url: '#',
-  //     icon: Search,
-  //   },
-  // ];
-
-  // Define menu item type
-  type MenuItem = {
-    title: string;
-    url: string;
-    icon?: LucideIcon;
-    requiredRole?: string;
-    requiredPermission?: { action: string; subject: string };
-  };
-
-  const allDocumentItems: MenuItem[] = [
-  ];
-
-  // Filter menu items based on user permissions
-  const filterMenuItems = (items: MenuItem[]) => {
+  // Memoize filter function to prevent recreation
+  const filterMenuItems = React.useCallback((items: MenuItem[]) => {
     if (!user) return [];
 
-    // Debug logging for permission checking
-    // Filtering sidebar items
-    
     // Always show items without specific routes (like help, search)
     const essentialItems = items.filter(item => item.url === '#' || !item.url);
     
@@ -199,41 +175,30 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       
       // Check for specific permission requirements first
       if (item.requiredPermission) {
-        const hasRequiredPermission = hasPermission(item.requiredPermission.action, item.requiredPermission.subject);
-        return hasRequiredPermission;
+        return hasPermission(item.requiredPermission.action, item.requiredPermission.subject);
       }
       
       // Hide employee dashboard for non-EMPLOYEE users
       if (item.url === `/${locale}/employee-dashboard`) {
-        const hasEmployeePermission = hasPermission('read', 'mydashboard');  
-        // Employee Dashboard permission check
-        return hasEmployeePermission;
+        return hasPermission('read', 'mydashboard');
       }
       
       // For all other routes, check if user can access them
-      // Remove locale prefix for permission checking
       const routeWithoutLocale = item.url.replace(`/${locale}`, '');
-      const canAccess = canAccessRoute(routeWithoutLocale);
-              // Route access check
-      return canAccess;
+      return canAccessRoute(routeWithoutLocale);
     });
     
-    const result = [...essentialItems, ...routeItems];
-    // Sidebar items filtered
-    
-    return result;
-  };
+    return [...essentialItems, ...routeItems];
+  }, [user, locale, hasPermission, canAccessRoute]);
 
-  // Filter menu items based on permissions
-  const navMain = filterMenuItems(allMenuItems);
-  // const navSecondary = filterMenuItems(allSecondaryItems);
-  const documents = filterMenuItems(allDocumentItems);
+  // Memoize filtered menu items to prevent recalculation on every render
+  const navMain = React.useMemo(() => filterMenuItems(allMenuItems), [filterMenuItems, allMenuItems]);
+  const documents = React.useMemo(() => filterMenuItems(allDocumentItems), [filterMenuItems, allDocumentItems]);
 
-  const data = {
+  const data = React.useMemo(() => ({
     navMain,
-    // navSecondary,
     documents,
-  };
+  }), [navMain, documents]);
 
   return (
     <Sidebar
@@ -258,7 +223,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <NavMain items={data.navMain} />
         <NavDocuments items={data.documents} />
-        {/* <NavSecondary items={data.navSecondary} className="mt-auto" /> */}
       </SidebarContent>
       <SidebarFooter>
         <NavUser />

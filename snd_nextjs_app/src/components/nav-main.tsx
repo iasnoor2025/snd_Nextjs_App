@@ -4,6 +4,7 @@ import { type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useI18n } from '@/hooks/use-i18n';
+import { memo } from 'react';
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -12,7 +13,7 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 
-export function NavMain({
+export const NavMain = memo(function NavMain({
   items,
 }: {
   items: {
@@ -29,22 +30,13 @@ export function NavMain({
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
-
         <SidebarMenu>
           {items.map(item => {
-            // Special handling for dashboard to avoid conflicts with other routes
-            let isActive = false;
-            
-            // Check if this is the dashboard item (URL is just locale like /en or /ar)
+            // Calculate active state
             const isDashboard = item.url.match(/^\/[a-z]{2}$/);
-            
-            if (isDashboard) {
-              // Dashboard case - only match exact locale path
-              isActive = pathname === item.url;
-            } else {
-              // Other routes - match exact or starts with
-              isActive = pathname === item.url || pathname.startsWith(item.url + '/');
-            }
+            const isActive = isDashboard 
+              ? pathname === item.url 
+              : pathname === item.url || pathname.startsWith(item.url + '/');
             
             return (
               <SidebarMenuItem key={item.title}>
@@ -53,7 +45,7 @@ export function NavMain({
                   tooltip={item.title}
                   className={isActive ? 'bg-primary text-primary-foreground' : ''}
                 >
-                  <Link href={item.url}>
+                  <Link href={item.url} prefetch={true}>
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>
                   </Link>
@@ -65,4 +57,4 @@ export function NavMain({
       </SidebarGroupContent>
     </SidebarGroup>
   );
-}
+});

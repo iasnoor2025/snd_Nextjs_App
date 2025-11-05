@@ -100,7 +100,7 @@ export function NavDocuments({
                   tooltip={item.title}
                   className={isActive ? 'bg-primary text-primary-foreground' : ''}
                 >
-                  <Link href={item.url}>
+                  <Link href={item.url} prefetch={true}>
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>
                   </Link>

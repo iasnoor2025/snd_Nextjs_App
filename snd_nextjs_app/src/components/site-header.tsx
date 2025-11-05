@@ -15,76 +15,27 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useTranslation } from 'react-i18next';
 import { LogOut, RefreshCw, Settings, User } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
-import { useEffect, useState } from 'react';
 import { I18nErrorBoundary } from './i18n-error-boundary';
 import { LanguageSwitcher } from './language-switcher';
 import { NotificationBell } from './notification-bell';
 import { ThemeToggle } from './theme-toggle';
+import { useRBAC } from '@/lib/rbac/rbac-context';
 
 export function SiteHeader() {
   const { data: session, status } = useSession();
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === 'ar';
-  const [currentUserRole, setCurrentUserRole] = useState<string>('USER');
+  // Use RBAC context instead of fetching user role separately
+  const { user, refreshPermissions } = useRBAC();
+  const currentUserRole = user?.role || 'USER';
 
-  // Fetch current user's role from the database
-  useEffect(() => {
-    const fetchCurrentUserRole = async () => {
-      if (session?.user?.email) {
-        try {
-          // Add cache-busting timestamp to force fresh data
-          const timestamp = new Date().getTime();
-          const response = await fetch(`/api/auth/me?t=${timestamp}`, {
-            headers: {
-              'Cache-Control': 'no-cache',
-              'Pragma': 'no-cache',
-            },
-          });
-          if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.user) {
-              console.log('🔄 Updated user role from API:', data.user.role);
-              setCurrentUserRole(data.user.role);
-            }
-          }
-        } catch (error) {
-          console.error('Failed to fetch current user role:', error);
-        }
-      }
-    };
-
-    fetchCurrentUserRole();
-  }, [session?.user?.email]);
-
-  const refreshSession = async () => {
-    try {
-      // Force refresh user role
-      const timestamp = new Date().getTime();
-      const response = await fetch(`/api/auth/me?t=${timestamp}`, {
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache',
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.user) {
-          console.log('🔄 Manually refreshed user role:', data.user.role);
-          setCurrentUserRole(data.user.role);
-          return;
-        }
-      }
-    } catch (error) {
-      console.error('Failed to refresh session:', error);
-    }
-    
-    // Fallback: reload the page
-    window.location.reload();
-  };
-
-  // Check if user is an employee - use the fetched role instead of session role
+  // Check if user is an employee - use RBAC context role
   const isEmployee = currentUserRole === 'EMPLOYEE';
+
+  // Refresh session using RBAC context
+  const refreshSession = async () => {
+    await refreshPermissions();
+  };
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background">
