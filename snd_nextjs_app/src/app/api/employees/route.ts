@@ -592,129 +592,133 @@ const createEmployeeHandler = async (request: NextRequest) => {
     const employee = (inserted as any[])[0];
 
     // Attempt ERPNext sync using the service (returns ERPNext ID string or null)
+    // Run in background to avoid blocking the response
     const erpnextSyncService = ERPNextSyncService.getInstance();
-    let erpnextId: string | null = null;
-    
     if (erpnextSyncService.isAvailable()) {
-      erpnextId = await erpnextSyncService.syncNewEmployee(employee);
-      
-      // If sync was successful, update the local employee record with the ERPNext ID
-      if (erpnextId) {
-        await db
-          .update(employeesTable)
-          .set({ erpnextId })
-          .where(eq(employeesTable.id, employee.id));
-      }
-    }
-
-    // Generate employment contract automatically (non-critical, don't fail if this errors)
-    let contractGenerated = false;
-    try {
-      const { EmployeeContractPDFService } = await import('@/lib/services/employee-contract-pdf-service');
-      const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
-      
-      // Fetch department and designation for contract
-      const employeeWithDetails = await db
-        .select({
-          employee: employeesTable,
-          department: departments,
-          designation: designations,
-        })
-        .from(employeesTable)
-        .leftJoin(departments, eq(departments.id, employeesTable.departmentId))
-        .leftJoin(designations, eq(designations.id, employeesTable.designationId))
-        .where(eq(employeesTable.id, employee.id))
-        .limit(1);
-
-      if (employeeWithDetails[0]) {
-        const { employee: emp, department, designation } = employeeWithDetails[0];
-        const contractData = {
-          fileNumber: emp.fileNumber || '',
-          firstName: emp.firstName,
-          middleName: emp.middleName,
-          lastName: emp.lastName,
-          nationality: emp.nationality,
-          dateOfBirth: emp.dateOfBirth?.toString(),
-          iqamaNumber: emp.iqamaNumber,
-          passportNumber: emp.passportNumber,
-          address: emp.address,
-          city: emp.city,
-          phone: emp.phone,
-          email: emp.email,
-          designation: designation ? { name: designation.name } : null,
-          department: department ? { name: department.name } : null,
-          hireDate: emp.hireDate?.toString(),
-          contractHoursPerDay: emp.contractHoursPerDay || 8,
-          contractDaysPerMonth: emp.contractDaysPerMonth || 30,
-          basicSalary: emp.basicSalary || '0',
-          foodAllowance: emp.foodAllowance || '0',
-          housingAllowance: emp.housingAllowance || '0',
-          transportAllowance: emp.transportAllowance || '0',
-          companyName: 'Samhan Naser Al-Dosri Est.',
-          companyAddress: 'For Gen. Contracting & Rent. Equipments',
-        };
-
-        const pdfBlob = await EmployeeContractPDFService.generateContractPDF(contractData);
-        const pdfBuffer = Buffer.from(await pdfBlob.arrayBuffer());
-
-        // Save to S3 if configured
-        if (process.env.S3_ENDPOINT && process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
-          const s3Client = new S3Client({
-            endpoint: process.env.S3_ENDPOINT,
-            region: process.env.AWS_REGION || 'us-east-1',
-            credentials: {
-              accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-              secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-            },
-            forcePathStyle: true,
-          });
-
-          const fileName = `employment-contract-${emp.fileNumber || emp.id}-${Date.now()}.pdf`;
-          const path = `employee-${emp.fileNumber || emp.id}`;
-          const fullPath = `${path}/${fileName}`;
-
-          await s3Client.send(
-            new PutObjectCommand({
-              Bucket: 'employee-documents',
-              Key: fullPath,
-              Body: pdfBuffer,
-              ContentType: 'application/pdf',
-            })
-          );
-
-          const baseUrl = process.env.S3_ENDPOINT?.replace(/\/$/, '');
-          const secureUrl = baseUrl?.replace(/^http:\/\//, 'https://') || baseUrl;
-          const fileUrl = `${secureUrl}/employee-documents/${fullPath}`;
-
-          // Save document record
-          await db.insert(employeeDocuments).values({
-            employeeId: emp.id,
-            documentType: 'employment_contract',
-            filePath: fileUrl,
-            fileName,
-            fileSize: pdfBuffer.length,
-            mimeType: 'application/pdf',
-            description: 'Employment Contract - Saudi Labor Law',
-            createdAt: new Date().toISOString().split('T')[0],
-            updatedAt: new Date().toISOString().split('T')[0],
-          });
-
-          contractGenerated = true;
-          console.log('✅ Employment contract generated successfully for employee:', emp.fileNumber || emp.id);
+      (async () => {
+        try {
+          const erpnextId = await erpnextSyncService.syncNewEmployee(employee);
+          if (erpnextId) {
+            await db
+              .update(employeesTable)
+              .set({ erpnextId })
+              .where(eq(employeesTable.id, employee.id));
+          }
+        } catch (e) {
+          console.error('⚠️ ERPNext sync failed (non-critical):', e);
         }
-      }
-    } catch (contractError) {
-      console.error('⚠️ Failed to generate contract (non-critical):', contractError);
-      // Don't fail employee creation if contract generation fails
+      })();
     }
 
+    // Generate employment contract automatically (non-critical)
+    // Run in background to avoid blocking the response
+    (async () => {
+      try {
+        const { EmployeeContractPDFService } = await import('@/lib/services/employee-contract-pdf-service');
+        const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
+
+        // Fetch department and designation for contract
+        const employeeWithDetails = await db
+          .select({
+            employee: employeesTable,
+            department: departments,
+            designation: designations,
+          })
+          .from(employeesTable)
+          .leftJoin(departments, eq(departments.id, employeesTable.departmentId))
+          .leftJoin(designations, eq(designations.id, employeesTable.designationId))
+          .where(eq(employeesTable.id, employee.id))
+          .limit(1);
+
+        if (employeeWithDetails[0]) {
+          const { employee: emp, department, designation } = employeeWithDetails[0];
+          const contractData = {
+            fileNumber: emp.fileNumber || '',
+            firstName: emp.firstName,
+            middleName: emp.middleName,
+            lastName: emp.lastName,
+            nationality: emp.nationality,
+            dateOfBirth: emp.dateOfBirth?.toString(),
+            iqamaNumber: emp.iqamaNumber,
+            passportNumber: emp.passportNumber,
+            address: emp.address,
+            city: emp.city,
+            phone: emp.phone,
+            email: emp.email,
+            designation: designation ? { name: designation.name } : null,
+            department: department ? { name: department.name } : null,
+            hireDate: emp.hireDate?.toString(),
+            contractHoursPerDay: emp.contractHoursPerDay || 8,
+            contractDaysPerMonth: emp.contractDaysPerMonth || 30,
+            basicSalary: emp.basicSalary || '0',
+            foodAllowance: emp.foodAllowance || '0',
+            housingAllowance: emp.housingAllowance || '0',
+            transportAllowance: emp.transportAllowance || '0',
+            companyName: 'Samhan Naser Al-Dosri Est.',
+            companyAddress: 'For Gen. Contracting & Rent. Equipments',
+          };
+
+          const pdfBlob = await EmployeeContractPDFService.generateContractPDF(contractData);
+          const pdfBuffer = Buffer.from(await pdfBlob.arrayBuffer());
+
+          // Save to S3 if configured
+          if (process.env.S3_ENDPOINT && process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+            const s3Client = new S3Client({
+              endpoint: process.env.S3_ENDPOINT,
+              region: process.env.AWS_REGION || 'us-east-1',
+              credentials: {
+                accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+                secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+              },
+              forcePathStyle: true,
+            });
+
+            const fileName = `employment-contract-${emp.fileNumber || emp.id}-${Date.now()}.pdf`;
+            const path = `employee-${emp.fileNumber || emp.id}`;
+            const fullPath = `${path}/${fileName}`;
+
+            await s3Client.send(
+              new PutObjectCommand({
+                Bucket: 'employee-documents',
+                Key: fullPath,
+                Body: pdfBuffer,
+                ContentType: 'application/pdf',
+              })
+            );
+
+            const baseUrl = process.env.S3_ENDPOINT?.replace(/\/$/, '');
+            const secureUrl = baseUrl?.replace(/^http:\/\//, 'https://') || baseUrl;
+            const fileUrl = `${secureUrl}/employee-documents/${fullPath}`;
+
+            // Save document record
+            await db.insert(employeeDocuments).values({
+              employeeId: emp.id,
+              documentType: 'employment_contract',
+              filePath: fileUrl,
+              fileName,
+              fileSize: pdfBuffer.length,
+              mimeType: 'application/pdf',
+              description: 'Employment Contract - Saudi Labor Law',
+              createdAt: new Date().toISOString().split('T')[0],
+              updatedAt: new Date().toISOString().split('T')[0],
+            });
+
+            if (process.env.NODE_ENV === 'development') {
+              console.log('✅ Employment contract generated successfully for employee:', emp.fileNumber || emp.id);
+            }
+          }
+        }
+      } catch (contractError) {
+        console.error('⚠️ Failed to generate contract (non-critical):', contractError);
+      }
+    })();
+
+    // Respond immediately without waiting for background work
     return NextResponse.json(
       {
         success: true,
         message: 'Employee created successfully',
         employee,
-        erpnextSync: { success: Boolean(erpnextId), erpnextId },
-        contractGenerated,
       },
       { status: 201 }
     );

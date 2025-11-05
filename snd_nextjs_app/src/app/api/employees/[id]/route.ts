@@ -343,9 +343,11 @@ const updateEmployeeHandler = async (
     const updateDataRaw: Record<string, any> = body || {};
     const drizzleData: Record<string, any> = {};
 
-    // Debug logging
-    console.log('Update request body:', body);
-    console.log('Employee ID:', employeeId);
+    // Debug logging (development only)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Update request body:', body);
+      console.log('Employee ID:', employeeId);
+    }
 
     const dateFields = [
       'hire_date',
@@ -506,8 +508,10 @@ const updateEmployeeHandler = async (
       }
     }
 
-    // Debug logging
-    console.log('Drizzle update data:', drizzleData);
+    // Debug logging (development only)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Drizzle update data:', drizzleData);
+    }
 
     // Validate required fields before update
     if (drizzleData.firstName && typeof drizzleData.firstName !== 'string') {
@@ -556,16 +560,20 @@ const updateEmployeeHandler = async (
 
     const employeeWithDept = employeeWithRelations[0];
 
-    // Attempt ERPNext sync using the service
+    // Kick off ERPNext sync in background (non-blocking)
     const erpnextSyncService = ERPNextSyncService.getInstance();
-    let erpnextSyncResult = null;
-    
     if (erpnextSyncService.isAvailable()) {
-      erpnextSyncResult = await erpnextSyncService.syncUpdatedEmployee(
-        updatedEmployee,
-        employeeWithDept?.dept_name || undefined,
-        employeeWithDept?.desig_name || undefined
-      );
+      (async () => {
+        try {
+          await erpnextSyncService.syncUpdatedEmployee(
+            updatedEmployee,
+            employeeWithDept?.dept_name || undefined,
+            employeeWithDept?.desig_name || undefined
+          );
+        } catch (e) {
+          console.error('⚠️ ERPNext update sync failed (non-critical):', e);
+        }
+      })();
     }
 
     return NextResponse.json({
@@ -580,7 +588,6 @@ const updateEmployeeHandler = async (
           ? { id: updatedEmployee.designationId, name: employeeWithDept.desig_name }
           : null,
       },
-      erpnextSync: erpnextSyncResult,
     });
   } catch (error) {
     console.error('Error updating employee:', error);
