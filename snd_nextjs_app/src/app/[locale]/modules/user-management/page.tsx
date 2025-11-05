@@ -928,7 +928,11 @@ export default function UserManagementPage() {
                   Retry Loading Users
                 </Button>
                 <Button 
-                  onClick={() => window.location.reload()}
+                  onClick={() => {
+                    setError(null);
+                    setLoading(true);
+                    fetchUsers().finally(() => setLoading(false));
+                  }}
                   variant="default"
                 >
                   <RefreshCw className="h-4 w-4 mr-2" />

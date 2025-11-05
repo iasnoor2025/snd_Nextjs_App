@@ -187,7 +187,6 @@ export default function EquipmentAssignmentPage() {
       if (response.ok) {
         toast.success(t('equipment.messages.assignmentCompleted'));
         await fetchAssignments();
-        window.location.reload();
       } else {
         const error = await response.json();
         toast.error(error.error || t('equipment.messages.completeAssignmentError'));

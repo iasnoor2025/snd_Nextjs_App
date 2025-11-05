@@ -39,7 +39,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 // i18n refactor: All user-facing strings now use useTranslation('quotation')
 import { useI18n } from '@/hooks/use-i18n';
@@ -122,33 +122,33 @@ export default function QuotationManagementPage() {
   // Get allowed actions for quotation management
   const allowedActions = getAllowedActions('Quotation');
 
-  useEffect(() => {
-    const fetchQuotations = async () => {
-      try {
-        setLoading(true);
-        const params = new URLSearchParams({
-          page: currentPage.toString(),
-          ...(search && { search }),
-          ...(status !== 'all' && { status }),
-          ...(startDate && { start_date: startDate }),
-          ...(endDate && { end_date: endDate }),
-        });
+  const fetchQuotations = useCallback(async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        ...(search && { search }),
+        ...(status !== 'all' && { status }),
+        ...(startDate && { start_date: startDate }),
+        ...(endDate && { end_date: endDate }),
+      });
 
-        const response = await fetch(`/api/quotations?${params.toString()}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch quotations');
-        }
-        const data = await response.json();
-        setQuotations(data);
-      } catch (error) {
-        toast.error('Failed to load quotations');
-      } finally {
-        setLoading(false);
+      const response = await fetch(`/api/quotations?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch quotations');
       }
-    };
-
-    fetchQuotations();
+      const data = await response.json();
+      setQuotations(data);
+    } catch (error) {
+      toast.error('Failed to load quotations');
+    } finally {
+      setLoading(false);
+    }
   }, [search, status, startDate, endDate, currentPage]);
+
+  useEffect(() => {
+    fetchQuotations();
+  }, [fetchQuotations]);
 
   const handleDelete = async (id: number) => {
     try {
@@ -163,7 +163,7 @@ export default function QuotationManagementPage() {
 
       toast.success('Quotation deleted successfully');
       // Refresh the list
-      window.location.reload();
+      await fetchQuotations();
     } catch (error) {
       toast.error('Failed to delete quotation');
     }
@@ -198,7 +198,7 @@ export default function QuotationManagementPage() {
   };
 
   const handleRefresh = () => {
-    window.location.reload();
+    fetchQuotations();
   };
 
   const handleExport = () => {

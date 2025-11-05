@@ -112,38 +112,38 @@ function TimesheetDetailContent() {
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState('user');
 
-  useEffect(() => {
-    const fetchTimesheet = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(`/api/timesheets/${timesheetId}`);
+  const fetchTimesheet = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/timesheets/${timesheetId}`);
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch timesheet');
-        }
-
-        const data = await response.json();
-        setTimesheet(data.timesheet);
-
-        // Get user role (this would come from your auth context)
-        // For now, we'll set a default role
-        setUserRole('admin');
-      } catch (error) {
-        toast.error('Failed to load timesheet');
-        
-      } finally {
-        setLoading(false);
+      if (!response.ok) {
+        throw new Error('Failed to fetch timesheet');
       }
-    };
 
+      const data = await response.json();
+      setTimesheet(data.timesheet);
+
+      // Get user role (this would come from your auth context)
+      // For now, we'll set a default role
+      setUserRole('admin');
+    } catch (error) {
+      toast.error('Failed to load timesheet');
+      
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     if (timesheetId) {
       fetchTimesheet();
     }
   }, [timesheetId]);
 
-  const handleStatusChange = () => {
+  const handleStatusChange = async () => {
     // Refetch the timesheet to get updated status
-    window.location.reload();
+    await fetchTimesheet();
   };
 
   const getStatusBadge = (status: string) => {
