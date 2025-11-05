@@ -81,8 +81,7 @@ export function DashboardHeader({
         </div>
 
         {/* Quick Stats Overview */}
-        {(stats || loading) && (
-          <div className="mt-8 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-11 gap-4">
+        <div className="mt-8 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-11 gap-4">
             {/* Total Employees - Employee Management */}
             {(accessibleSections.includes('myTeam') || accessibleSections.length === 0 || !accessibleSections) && (
               <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
@@ -251,7 +250,6 @@ export function DashboardHeader({
               </div>
             )}
           </div>
-        )}
       </div>
     </div>
   );

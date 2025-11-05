@@ -562,7 +562,7 @@ export class DashboardService {
       const thirtyDaysFromNow = new Date();
       thirtyDaysFromNow.setDate(today.getDate() + 30);
 
-      
+      // Fetch equipment data with assigned driver/operator information using JOIN
       const equipmentData = await db
         .select({
           id: equipment.id,
@@ -576,11 +576,12 @@ export class DashboardService {
           serialNumber: equipment.serialNumber,
           categoryId: equipment.categoryId,
           assignedTo: equipment.assignedTo,
-          driverName: sql<string>`NULL`.as('driverName'),
-          driverFileNumber: sql<string>`NULL`.as('driverFileNumber'),
+          driverName: sql<string>`CONCAT(${employees.firstName}, ' ', COALESCE(${employees.middleName}, ''), ' ', ${employees.lastName})`.as('driverName'),
+          driverFileNumber: employees.fileNumber,
           department: sql<string>`NULL`.as('department'),
         })
         .from(equipment)
+        .leftJoin(employees, eq(equipment.assignedTo, employees.id))
         .limit(limit);
 
 
