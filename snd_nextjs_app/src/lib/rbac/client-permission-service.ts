@@ -7,6 +7,78 @@ export interface PermissionCheck {
   requiredPermissions?: string[];
 }
 
+// Cache TTL: 5 minutes
+const CACHE_TTL = 5 * 60 * 1000;
+
+// Cache keys
+const getSectionsCacheKey = (userId: string) => `accessible_sections_${userId}`;
+const getSectionsCacheTimestampKey = (userId: string) => `accessible_sections_timestamp_${userId}`;
+
+// In-memory cache for sections
+const sectionsCache = new Map<string, { sections: string[]; timestamp: number }>();
+
+/**
+ * Get cached accessible sections
+ */
+function getCachedAccessibleSections(userId: string): string[] | null {
+  // Check memory cache first
+  const memoryCache = sectionsCache.get(userId);
+  if (memoryCache) {
+    const now = Date.now();
+    if (now - memoryCache.timestamp < CACHE_TTL) {
+      return memoryCache.sections;
+    }
+  }
+
+  // Check localStorage
+  if (typeof window !== 'undefined') {
+    try {
+      const cached = localStorage.getItem(getSectionsCacheKey(userId));
+      const cachedTimestamp = localStorage.getItem(getSectionsCacheTimestampKey(userId));
+
+      if (cached && cachedTimestamp) {
+        const timestamp = parseInt(cachedTimestamp, 10);
+        const now = Date.now();
+
+        if (now - timestamp < CACHE_TTL) {
+          const sections = JSON.parse(cached);
+          // Store in memory cache
+          sectionsCache.set(userId, { sections, timestamp });
+          return sections;
+        } else {
+          // Cache expired, remove it
+          localStorage.removeItem(getSectionsCacheKey(userId));
+          localStorage.removeItem(getSectionsCacheTimestampKey(userId));
+        }
+      }
+    } catch (error) {
+      console.error('Error reading sections from cache:', error);
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Cache accessible sections
+ */
+function setCachedAccessibleSections(userId: string, sections: string[]): void {
+  const timestamp = Date.now();
+
+  // Store in memory cache
+  sectionsCache.set(userId, { sections, timestamp });
+
+  // Store in localStorage
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(getSectionsCacheKey(userId), JSON.stringify(sections));
+      localStorage.setItem(getSectionsCacheTimestampKey(userId), timestamp.toString());
+    } catch (error) {
+      console.error('Error caching sections:', error);
+    }
+  }
+}
+
 /**
  * Client-side permission checking using API calls
  * This version is safe to use in the browser
@@ -43,10 +115,20 @@ export async function checkUserPermissionClient(
 }
 
 /**
- * Get all accessible sections for a user via API
+ * Get all accessible sections for a user via API (with caching)
  */
-export async function getUserAccessibleSectionsClient(userId: string): Promise<string[]> {
+export async function getUserAccessibleSectionsClient(userId: string, forceRefresh = false): Promise<string[]> {
+  // Check cache first (unless forcing refresh)
+  if (!forceRefresh) {
+    const cached = getCachedAccessibleSections(userId);
+    if (cached) {
+      console.log('✅ Using cached accessible sections for user:', userId);
+      return cached;
+    }
+  }
+
   try {
+    // Fetch from API (without cache-busting to allow browser caching)
     const response = await fetch(`/api/permissions/sections/${userId}`, {
       method: 'GET',
       headers: {
@@ -55,16 +137,34 @@ export async function getUserAccessibleSectionsClient(userId: string): Promise<s
     });
 
     if (!response.ok) {
-      // Don't log console errors in production - just return empty array
-      // Accessible sections will show defaults
       return [];
     }
 
     const result = await response.json();
-    return result.sections || [];
+    const sections = result.sections || [];
+    
+    // Cache the result
+    setCachedAccessibleSections(userId, sections);
+    
+    return sections;
   } catch (error) {
     console.error('Error getting accessible sections:', error);
     return [];
+  }
+}
+
+/**
+ * Clear cached accessible sections
+ */
+export function clearAccessibleSectionsCache(userId: string): void {
+  sectionsCache.delete(userId);
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem(getSectionsCacheKey(userId));
+      localStorage.removeItem(getSectionsCacheTimestampKey(userId));
+    } catch (error) {
+      console.error('Error clearing sections cache:', error);
+    }
   }
 }
 

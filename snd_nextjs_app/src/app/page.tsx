@@ -183,6 +183,7 @@ export default function DashboardPage() {
     if (session?.user?.id && !sectionsLoaded) {
       const loadUserSections = async () => {
         try {
+          // Check cache first - getUserAccessibleSectionsClient now handles caching internally
           const accessibleSections = await getUserAccessibleSectionsClient(session.user.id);
           
           // Get saved preferences from localStorage - default to true for first-time users
