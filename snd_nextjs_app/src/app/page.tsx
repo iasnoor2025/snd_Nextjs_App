@@ -129,6 +129,7 @@ export default function DashboardPage() {
   const [selectedEquipment, setSelectedEquipment] = useState<EquipmentData | null>(null);
   const [selectedTimesheetForEdit, setSelectedTimesheetForEdit] = useState<TimesheetData | null>(null);
   const [selectedDocumentType, setSelectedDocumentType] = useState<'iqama' | 'passport' | 'drivingLicense' | 'spsp' | 'operatorLicense' | 'tuvCertification'>('iqama');
+  const [selectedEquipmentDocumentType, setSelectedEquipmentDocumentType] = useState<'istimara' | 'insurance' | 'tuv' | 'gps' | 'periodicExamination' | 'warranty'>('istimara');
 
   // State for form inputs
   const [newExpiryDate, setNewExpiryDate] = useState('');
@@ -1019,6 +1020,8 @@ export default function DashboardPage() {
                 equipmentData={equipmentData as any}
                 onUpdateEquipment={handleOpenEquipmentUpdateModal as any}
                 onHideSection={() => toggleSection('equipment')}
+                selectedDocumentType={selectedEquipmentDocumentType}
+                onDocumentTypeChange={setSelectedEquipmentDocumentType}
               />
             </EquipmentPermission>
           )}

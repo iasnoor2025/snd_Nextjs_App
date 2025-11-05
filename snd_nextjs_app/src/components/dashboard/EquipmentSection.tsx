@@ -6,6 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Table,
   TableBody,
   TableCell,
@@ -16,9 +23,9 @@ import {
 import { useI18n } from '@/hooks/use-i18n';
 import { PDFGenerator } from '@/lib/utils/pdf-generator';
 
-import { Download, Edit, Plus, Search, Wrench } from 'lucide-react';
+import { Download, Edit, Plus, Search, Wrench, FileText, Shield, Award, MapPin, ClipboardCheck, Package } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface EquipmentData {
   id: number;
@@ -32,21 +39,35 @@ interface EquipmentData {
   istimaraExpiry?: string;
   daysRemaining: number | null;
   istimara?: string;
+  insurance?: string;
+  insuranceExpiry?: string;
+  tuvCard?: string;
+  tuvCardExpiry?: string;
+  gpsExpiry?: string;
+  periodicExaminationExpiry?: string;
+  warrantyExpiry?: string;
   assignedTo?: number;
   driverName?: string;
   driverFileNumber?: string;
+  // Dynamic fields for document type switching
+  documentNumber?: string | null;
+  documentExpiry?: string | null;
 }
 
 interface EquipmentSectionProps {
   equipmentData: EquipmentData[];
   onUpdateEquipment: (equipment: EquipmentData) => void;
   onHideSection: () => void;
+  selectedDocumentType?: 'istimara' | 'insurance' | 'tuv' | 'gps' | 'periodicExamination' | 'warranty';
+  onDocumentTypeChange?: (type: 'istimara' | 'insurance' | 'tuv' | 'gps' | 'periodicExamination' | 'warranty') => void;
 }
 
 export function EquipmentSection({
   equipmentData,
   onUpdateEquipment,
   onHideSection,
+  selectedDocumentType = 'istimara',
+  onDocumentTypeChange,
 }: EquipmentSectionProps) {
   const router = useRouter();
   const { t } = useI18n();
@@ -57,13 +78,146 @@ export function EquipmentSection({
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
 
-  // Debug logging
+  // Document type configuration
+  const documentTypes = {
+    istimara: {
+      label: 'Istimara Management',
+      subtitle: 'Monitor and manage equipment Istimara status and expiry dates',
+      icon: FileText,
+      numberField: 'istimara',
+      expiryField: 'istimaraExpiry',
+      numberLabel: 'Istimara #',
+    },
+    insurance: {
+      label: 'Insurance Management',
+      subtitle: 'Monitor and manage equipment Insurance status and expiry dates',
+      icon: Shield,
+      numberField: 'insurance',
+      expiryField: 'insuranceExpiry',
+      numberLabel: 'Insurance #',
+    },
+    tuv: {
+      label: 'TUV Card Management',
+      subtitle: 'Monitor and manage equipment TUV Card status and expiry dates',
+      icon: Award,
+      numberField: 'tuvCard',
+      expiryField: 'tuvCardExpiry',
+      numberLabel: 'TUV #',
+    },
+    gps: {
+      label: 'GPS Management',
+      subtitle: 'Monitor and manage equipment GPS expiry dates',
+      icon: MapPin,
+      numberField: null, // GPS doesn't have a number field
+      expiryField: 'gpsExpiry',
+      numberLabel: 'GPS',
+    },
+    periodicExamination: {
+      label: 'Periodic Examination Management',
+      subtitle: 'Monitor and manage equipment Periodic Examination expiry dates',
+      icon: ClipboardCheck,
+      numberField: null, // Periodic Examination doesn't have a number field
+      expiryField: 'periodicExaminationExpiry',
+      numberLabel: 'Periodic Examination',
+    },
+    warranty: {
+      label: 'Warranty Management',
+      subtitle: 'Monitor and manage equipment Warranty expiry dates',
+      icon: Package,
+      numberField: null, // Warranty doesn't have a number field
+      expiryField: 'warrantyExpiry',
+      numberLabel: 'Warranty',
+    },
+  };
+
+  // Validate selectedDocumentType
+  const validDocumentTypes = ['istimara', 'insurance', 'tuv', 'gps', 'periodicExamination', 'warranty'];
+  const safeSelectedDocumentType = validDocumentTypes.includes(selectedDocumentType) ? selectedDocumentType : 'istimara';
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, driverFilter, typeFilter, search, safeSelectedDocumentType]);
 
   // Ensure equipmentData is always an array with robust type checking
   const safeEquipmentData = Array.isArray(equipmentData) ? equipmentData : [];
 
-  // Get expired equipment data for PDF generation
-  const expiredEquipmentData = safeEquipmentData.filter(item => item.status === 'expired');
+  // Filter and transform data based on selected document type
+  const getCurrentDocumentData = () => {
+    const docType = documentTypes[safeSelectedDocumentType];
+    if (!docType) return safeEquipmentData;
+    
+    const numberField = docType.numberField;
+    const expiryField = docType.expiryField;
+    
+    return safeEquipmentData.map(item => {
+      // Get document-specific data
+      const documentNumber = numberField ? (item[numberField as keyof EquipmentData] as string | null) : null;
+      const documentExpiry = item[expiryField as keyof EquipmentData] as string | null;
+      
+      // Calculate status based on expiry
+      const today = new Date();
+      let status: 'available' | 'expired' | 'expiring' | 'missing' = 'available';
+      let daysRemaining: number | null = null;
+
+      // For document types without number fields (GPS, Periodic Examination, Warranty),
+      // only check expiry date. For others, require both number and expiry.
+      if (numberField) {
+        // Document types with number fields (Istimara, Insurance, TUV)
+        if (!documentNumber || !documentExpiry) {
+          status = 'missing';
+        } else {
+          const expiryDate = new Date(documentExpiry);
+          const diffTime = expiryDate.getTime() - today.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+          if (diffDays < 0) {
+            status = 'expired';
+            daysRemaining = diffDays;
+          } else if (diffDays <= 30) {
+            status = 'expiring';
+            daysRemaining = diffDays;
+          } else {
+            status = 'available';
+            daysRemaining = diffDays;
+          }
+        }
+      } else {
+        // Document types without number fields (GPS, Periodic Examination, Warranty)
+        if (!documentExpiry) {
+          status = 'missing';
+        } else {
+          const expiryDate = new Date(documentExpiry);
+          const diffTime = expiryDate.getTime() - today.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+          if (diffDays < 0) {
+            status = 'expired';
+            daysRemaining = diffDays;
+          } else if (diffDays <= 30) {
+            status = 'expiring';
+            daysRemaining = diffDays;
+          } else {
+            status = 'available';
+            daysRemaining = diffDays;
+          }
+        }
+      }
+
+      return {
+        ...item,
+        documentNumber,
+        documentExpiry,
+        status,
+        daysRemaining,
+      };
+    });
+  };
+
+  const currentDocumentData = getCurrentDocumentData();
+
+  // Get expired equipment data for PDF generation based on current document type
+  const expiredEquipmentData = currentDocumentData.filter(item => item.status === 'expired');
 
   // Handle PDF download for expired equipment
   const handleDownloadExpiredPDF = async () => {
@@ -80,22 +234,55 @@ export function EquipmentSection({
   };
 
   // Filter and search logic
-  const filteredData = safeEquipmentData.filter(item => {
+  const filteredData = currentDocumentData.filter(item => {
+    const docType = documentTypes[safeSelectedDocumentType];
+    
+    // Status filtering - show all expired items when "expired" is selected
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
+    
     const matchesDriver = driverFilter === 'all' || 
       (driverFilter === 'assigned' && item.driverName) ||
       (driverFilter === 'unassigned' && !item.driverName);
+    
     const matchesType = typeFilter === 'all' || 
       (item.categoryName || item.category?.name || '').toUpperCase() === typeFilter;
+    
     const matchesSearch =
       !search ||
       item.equipmentName?.toLowerCase().includes(search.toLowerCase()) ||
       item.equipmentNumber?.toLowerCase().includes(search.toLowerCase()) ||
+      item.doorNumber?.toLowerCase().includes(search.toLowerCase()) ||
       item.manufacturer?.toLowerCase().includes(search.toLowerCase()) ||
       item.modelNumber?.toLowerCase().includes(search.toLowerCase()) ||
-      item.istimara?.toLowerCase().includes(search.toLowerCase()) ||
-      item.driverName?.toLowerCase().includes(search.toLowerCase());
+      (item.documentNumber && item.documentNumber.toLowerCase().includes(search.toLowerCase())) ||
+      item.driverName?.toLowerCase().includes(search.toLowerCase()) ||
+      item.driverFileNumber?.toLowerCase().includes(search.toLowerCase());
 
+    // Smart filtering based on document type
+    if (search) {
+      // When searching, show all matches regardless of document status
+      return matchesSearch;
+    }
+    
+    if (statusFilter === 'missing') {
+      // Show only equipment without this document type
+      const hasDocumentNumber = docType.numberField 
+        ? (item.documentNumber && item.documentNumber !== 'N/A' && item.documentNumber.trim() !== '')
+        : true; // For types without number fields, only check expiry
+      const hasExpiryDate = item.documentExpiry && item.documentExpiry.trim() !== '';
+      return !hasExpiryDate && item.status === 'missing';
+    }
+    
+    if (statusFilter === 'all') {
+      // Show only equipment that have this document type (excluding missing status)
+      const hasDocumentNumber = docType.numberField 
+        ? (item.documentNumber && item.documentNumber !== 'N/A' && item.documentNumber.trim() !== '')
+        : true; // For types without number fields, only check expiry
+      const hasExpiryDate = item.documentExpiry && item.documentExpiry.trim() !== '';
+      return hasExpiryDate; // For types without number fields, only expiry matters
+    }
+    
+    // For specific status filters (expired, expiring, available)
     return matchesStatus && matchesDriver && matchesType && matchesSearch;
   });
 
@@ -108,21 +295,71 @@ export function EquipmentSection({
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div>
+          <div className="flex-1">
             <CardTitle className="flex items-center gap-2">
-              <Wrench className="h-5 w-5" />
-              {t('equipment.istimara.title')}
-              {safeEquipmentData.filter(item => item.status === 'expired').length > 0 && (
+              {(() => {
+                const currentDocType = documentTypes[safeSelectedDocumentType];
+                const IconComponent = currentDocType?.icon || FileText;
+                return <IconComponent className="h-5 w-5" />;
+              })()}
+              {documentTypes[safeSelectedDocumentType]?.label || 'Equipment Document Management'}
+              {expiredEquipmentData.length > 0 && (
                 <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
-                  {safeEquipmentData.filter(item => item.status === 'expired').length}
+                  {expiredEquipmentData.length}
                 </span>
               )}
             </CardTitle>
             <CardDescription>
-              {t('equipment.istimara.description')}
+              {documentTypes[safeSelectedDocumentType]?.subtitle || 'Monitor and manage equipment document status and expiry dates'}
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium">Document Type:</label>
+              <Select value={safeSelectedDocumentType} onValueChange={(value: any) => onDocumentTypeChange?.(value)}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Select document type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="istimara">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Istimara
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="insurance">
+                    <div className="flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      Insurance
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="tuv">
+                    <div className="flex items-center gap-2">
+                      <Award className="h-4 w-4" />
+                      TUV Card
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="gps">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      GPS
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="periodicExamination">
+                    <div className="flex items-center gap-2">
+                      <ClipboardCheck className="h-4 w-4" />
+                      Periodic Examination
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="warranty">
+                    <div className="flex items-center gap-2">
+                      <Package className="h-4 w-4" />
+                      Warranty
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <PermissionBased action="manage" subject="Equipment">
               <Button
                 variant="outline"
@@ -177,10 +414,10 @@ export function EquipmentSection({
               className="h-10 px-3 text-sm border border-input rounded-md bg-background"
             >
               <option value="all">{t('equipment.istimara.allStatuses')}</option>
-              <option value="available">{t('equipment.istimara.status.available')}</option>
-              <option value="expiring">{t('equipment.istimara.status.expiring')}</option>
-              <option value="expired">{t('equipment.istimara.status.expired')}</option>
-              <option value="missing">{t('equipment.istimara.status.missing')}</option>
+              <option value="available">{t('equipment.istimara.available')}</option>
+              <option value="expiring">{t('equipment.istimara.expiringSoon')}</option>
+              <option value="expired">{t('equipment.istimara.expired')}</option>
+              <option value="missing">{t('equipment.istimara.missing')}</option>
             </select>
             <select
               value={driverFilter}
@@ -204,7 +441,7 @@ export function EquipmentSection({
               <option value="CRANE">Crane</option>
               <option value="GENERATOR">Generator</option>
             </select>
-            {(search || statusFilter !== 'all' || driverFilter !== 'all' || typeFilter !== 'all') && (
+            {(search || statusFilter !== 'all' || driverFilter !== 'all' || typeFilter !== 'all' || safeSelectedDocumentType !== 'istimara') && (
               <Button
                 variant="outline"
                 size="sm"
@@ -213,6 +450,7 @@ export function EquipmentSection({
                   setStatusFilter('all');
                   setDriverFilter('all');
                   setTypeFilter('all');
+                  onDocumentTypeChange?.('istimara');
                 }}
                 className="h-10"
               >
@@ -239,7 +477,7 @@ export function EquipmentSection({
                   <TableRow>
                     <TableHead>{t('equipment.istimara.tableHeaders.equipmentName')}</TableHead>
                     <TableHead>{t('equipment.istimara.tableHeaders.doorNumber') || 'Door #'}</TableHead>
-                    <TableHead>{t('equipment.istimara.tableHeaders.istimaraNumber')}</TableHead>
+                    <TableHead>{documentTypes[safeSelectedDocumentType]?.numberLabel || 'Document #'}</TableHead>
                     <TableHead>{t('equipment.istimara.tableHeaders.driverOperator')}</TableHead>
                     <TableHead>{t('equipment.istimara.tableHeaders.status')}</TableHead>
                     <TableHead>{t('equipment.istimara.tableHeaders.expiryDate')}</TableHead>
@@ -277,12 +515,18 @@ export function EquipmentSection({
                         )}
                       </TableCell>
                       <TableCell className="text-sm">
-                        {item.istimara ? (
-                          <span className="font-mono text-xs bg-muted px-2 py-1 rounded">
-                            {item.istimara}
-                          </span>
+                        {documentTypes[safeSelectedDocumentType]?.numberField ? (
+                          item.documentNumber ? (
+                            <span className="font-mono text-xs bg-muted px-2 py-1 rounded">
+                              {item.documentNumber}
+                            </span>
+                          ) : (
+                            <span className="text-red-600 text-xs">No {documentTypes[safeSelectedDocumentType]?.numberLabel || 'Document'}</span>
+                          )
                         ) : (
-                          <span className="text-red-600 text-xs">{t('equipment.istimara.noIstimara')}</span>
+                          <span className="text-muted-foreground text-xs">
+                            {documentTypes[safeSelectedDocumentType]?.numberLabel || 'N/A'}
+                          </span>
                         )}
                       </TableCell>
                       <TableCell className="text-sm">
@@ -318,13 +562,15 @@ export function EquipmentSection({
                             ? t('equipment.istimara.expired')
                             : item.status === 'expiring'
                               ? t('equipment.istimara.expiringSoon')
-                              : t('equipment.istimara.missing')}
+                              : item.status === 'missing'
+                                ? t('equipment.istimara.missing')
+                                : t('equipment.istimara.available')}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm">
-                        {item.istimaraExpiry ? (
+                        {item.documentExpiry ? (
                           <div>
-                            <div>{new Date(item.istimaraExpiry).toLocaleDateString()}</div>
+                            <div>{new Date(item.documentExpiry).toLocaleDateString()}</div>
                             {item.daysRemaining !== null && (
                               <div
                                 className={`text-xs ${
@@ -355,8 +601,8 @@ export function EquipmentSection({
                           className="h-8 w-8 p-0"
                           title={
                             item.status === 'missing'
-                              ? t('equipment.istimara.addIstimaraExpiryDate')
-                              : t('equipment.istimara.updateIstimaraExpiryDate')
+                              ? `Add ${documentTypes[safeSelectedDocumentType]?.label || 'Document'} expiry date`
+                              : `Update ${documentTypes[safeSelectedDocumentType]?.label || 'Document'} expiry date`
                           }
                         >
                           <Edit className="h-4 w-4" />
