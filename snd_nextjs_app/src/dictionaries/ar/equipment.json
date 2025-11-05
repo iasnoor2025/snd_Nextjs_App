@@ -82,7 +82,7 @@
     "uploadFile": "رفع ملف",
     "downloadFile": "تحميل ملف",
     "addManualAssignment": "إضافة مهمة يدوية",
-    "delete": "حذف"
+    "manageEquipment": "إدارة المعدات"
   },
   "fields": {
     "basicInfo": "المعلومات الأساسية",
@@ -279,7 +279,9 @@
     "previous": "السابق",
     "next": "التالي",
     "itemsPerPage": "عنصر في الصفحة",
-    "perPageText": "في الصفحة"
+    "perPageText": "في الصفحة",
+    "show": "عرض",
+    "perPage": "في الصفحة"
   },
   "assignmentHistory": {
     "title": "سجل المهام",
@@ -371,6 +373,7 @@
     "days": "أيام",
     "daysRemaining": "الأيام المتبقية",
     "daysLate": "الأيام المتأخرة",
+    "daysOverdue": "{{days}} أيام متأخرة",
     "istimaraExpiryDate": "تاريخ انتهاء الإستمارة",
     "status": "الحالة",
     "istimaraNumber": "رقم الإستمارة",
