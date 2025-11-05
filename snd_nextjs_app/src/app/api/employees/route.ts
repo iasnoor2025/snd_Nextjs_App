@@ -102,6 +102,8 @@ const getEmployeesHandler = async (request: NextRequest) => {
         iqama_number: employeesTable.iqamaNumber,
         iqama_expiry: employeesTable.iqamaExpiry,
         nationality: employeesTable.nationality,
+        spsp_license_number: employeesTable.spspLicenseNumber,
+        spsp_license_expiry: employeesTable.spspLicenseExpiry,
         hourly_rate: employeesTable.hourlyRate,
         overtime_rate_multiplier: employeesTable.overtimeRateMultiplier,
         overtime_fixed_rate: employeesTable.overtimeFixedRate,
@@ -319,6 +321,8 @@ const getEmployeesHandler = async (request: NextRequest) => {
         iqama_number: employee.iqama_number || null,
         iqama_expiry: employee.iqama_expiry || null,
         nationality: employee.nationality || null,
+        spsp_license_number: employee.spsp_license_number || null,
+        spsp_license_expiry: employee.spsp_license_expiry || null,
         basic_salary: employee.basic_salary ? Number(employee.basic_salary) : null,
         hourly_rate: employee.hourly_rate ? Number(employee.hourly_rate) : null,
         overtime_rate_multiplier: employee.overtime_rate_multiplier

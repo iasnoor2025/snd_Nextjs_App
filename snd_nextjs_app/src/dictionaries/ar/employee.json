@@ -557,6 +557,7 @@
       "fileNumber": "رقم الملف",
       "iqamaNumber": "رقم الإقامة",
       "nationality": "الجنسية",
+      "hasSPSP": "SPSP",
       "iqamaExpiry": "تاريخ انتهاء الإقامة",
       "passportExpiry": "تاريخ انتهاء جواز السفر",
       "drivingLicenseExpiry": "تاريخ انتهاء رخصة القيادة",

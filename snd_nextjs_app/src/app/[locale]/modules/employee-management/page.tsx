@@ -886,6 +886,12 @@ export default function EmployeeManagementPage() {
                     
                     <TableHead className={isRTL ? 'text-right' : 'text-left'}>
                       <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        {t('employee.table.headers.hasSPSP')}
+                      </div>
+                    </TableHead>
+                    
+                    <TableHead className={isRTL ? 'text-right' : 'text-left'}>
+                      <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
                         {t('employee.table.headers.currentAssignment')}
                       </div>
                     </TableHead>
@@ -907,7 +913,7 @@ export default function EmployeeManagementPage() {
                 <TableBody>
                   {currentEmployees.length === 0 ? (
                     <TableRow>
-                                             <TableCell colSpan={8} className="text-center py-8">
+                                             <TableCell colSpan={9} className="text-center py-8">
                         <div className="text-muted-foreground">
                           {user?.role === 'EMPLOYEE'
                             ? 'No employee record found for your account. Please contact your administrator.'
@@ -988,6 +994,18 @@ export default function EmployeeManagementPage() {
                         
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
                           {employee.nationality || t('employee.na')}
+                        </TableCell>
+                        
+                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>
+                          {employee.spsp_license_number ? (
+                            <Badge variant="default" className="bg-green-100 text-green-800 border-green-200 hover:bg-green-200">
+                              Yes
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="bg-gray-100 text-gray-600 border-gray-200">
+                              No
+                            </Badge>
+                          )}
                         </TableCell>
                         
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>

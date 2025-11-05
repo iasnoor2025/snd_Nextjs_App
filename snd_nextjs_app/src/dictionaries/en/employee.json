@@ -316,6 +316,7 @@
       "department": "Department",
       "iqamaNumber": "Iqama Number",
       "nationality": "Nationality",
+      "hasSPSP": "SPSP",
       "iqamaExpiry": "Iqama Expiry",
       "passportExpiry": "Passport Expiry",
       "drivingLicenseExpiry": "Driving License Expiry",
