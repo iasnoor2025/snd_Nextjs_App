@@ -124,6 +124,11 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
 
   useEffect(() => {
     const fetchCustomerData = async () => {
+      // Skip fetch if data already exists
+      if (customer && rentals.length > 0) {
+        return;
+      }
+
       try {
         setLoading(true);
         setError(null);
@@ -145,7 +150,7 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
         console.log('📊 Outstanding:', statsData.stats?.outstandingAmount);
 
         // Set customer from stats (fallback to fetching customer directly if needed)
-        if (statsData.stats) {
+        if (statsData.stats && !customer) {
           // We have the customer name, but we need to fetch full customer data
           const customerResponse = await fetch(`/api/customers/${customerId}`);
           if (customerResponse.ok) {
@@ -157,14 +162,14 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
         }
 
         // Set rentals from stats
-        if (statsData.rentals) {
+        if (statsData.rentals && rentals.length === 0) {
           setRentals(statsData.rentals);
-        } else {
+        } else if (!statsData.rentals) {
           setRentals([]);
         }
 
         // Create invoices array from rental invoices
-        if (statsData.stats.totalInvoices > 0) {
+        if (statsData.stats.totalInvoices > 0 && invoices.length === 0) {
           // Transform rentals into invoice-like objects for display
           const rentalInvoices = statsData.rentals
             .filter((rental: any) => rental.id)
@@ -178,7 +183,7 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
               updatedAt: rental.updatedAt,
             }));
           setInvoices(rentalInvoices);
-        } else {
+        } else if (statsData.stats.totalInvoices === 0 && invoices.length === 0) {
           setInvoices([]);
         }
       } catch (error) {

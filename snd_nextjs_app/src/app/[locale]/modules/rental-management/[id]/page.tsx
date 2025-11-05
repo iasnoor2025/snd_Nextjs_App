@@ -344,7 +344,8 @@ function UnifiedTimeline({ rental, t }: { rental: Rental | null; t: any }) {
         throw new Error(errorData.error || 'Failed to generate quotation');
       }
       toast.success('Quotation generated successfully');
-      window.location.reload();
+      // Refresh rental data instead of full page reload
+      await fetchRental();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to generate quotation');
     }
@@ -361,7 +362,8 @@ function UnifiedTimeline({ rental, t }: { rental: Rental | null; t: any }) {
         throw new Error(errorData.error || 'Failed to approve quotation');
       }
       toast.success('Quotation approved successfully');
-      window.location.reload();
+      // Refresh rental data instead of full page reload
+      await fetchRental();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to approve quotation');
     }
@@ -378,7 +380,8 @@ function UnifiedTimeline({ rental, t }: { rental: Rental | null; t: any }) {
         throw new Error(errorData.error || 'Failed to start mobilization');
       }
       toast.success('Mobilization started successfully');
-      window.location.reload();
+      // Refresh rental data instead of full page reload
+      await fetchRental();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to start mobilization');
     }
@@ -395,7 +398,8 @@ function UnifiedTimeline({ rental, t }: { rental: Rental | null; t: any }) {
         throw new Error(errorData.error || 'Failed to activate rental');
       }
       toast.success('Rental activated successfully');
-      window.location.reload();
+      // Refresh rental data instead of full page reload
+      await fetchRental();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to activate rental');
     }
@@ -412,7 +416,8 @@ function UnifiedTimeline({ rental, t }: { rental: Rental | null; t: any }) {
         throw new Error(errorData.error || 'Failed to complete rental');
       }
       toast.success('Rental completed successfully');
-      window.location.reload();
+      // Refresh rental data instead of full page reload
+      await fetchRental();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to complete rental');
     }
@@ -428,7 +433,8 @@ function UnifiedTimeline({ rental, t }: { rental: Rental | null; t: any }) {
         throw new Error(errorData.error || 'Failed to generate invoice');
       }
       toast.success('Invoice generated successfully');
-      window.location.reload();
+      // Refresh rental data instead of full page reload
+      await fetchRental();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to generate invoice');
     }

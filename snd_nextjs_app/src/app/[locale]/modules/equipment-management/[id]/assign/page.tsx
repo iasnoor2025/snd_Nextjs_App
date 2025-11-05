@@ -214,8 +214,8 @@ export default function EquipmentAssignmentPage() {
         toast.success(t('equipment.messages.assignmentUpdated'));
         setEditAssignmentDialogOpen(false);
         setAssignmentToEdit(null);
+        // Refresh assignments instead of full page reload
         await fetchAssignments();
-        window.location.reload();
       } else {
         const error = await response.json();
         toast.error(error.error || t('equipment.messages.updateAssignmentError'));
@@ -234,8 +234,8 @@ export default function EquipmentAssignmentPage() {
       toast.success(t('equipment.messages.assignmentDeletedSuccess'));
       setDeleteDialogOpen(false);
       setAssignmentToDelete(null);
-      // Refresh the page to show updated data
-      window.location.reload();
+      // Refresh assignments instead of full page reload
+      await fetchAssignments();
     } catch (error) {
       console.error('Error deleting assignment:', error);
       toast.error(t('equipment.messages.deleteAssignmentError'));
@@ -244,8 +244,13 @@ export default function EquipmentAssignmentPage() {
 
   useEffect(() => {
     if (equipmentId) {
-      fetchEquipment();
-      fetchAssignments();
+      // Only fetch if data doesn't exist
+      if (!equipment) {
+        fetchEquipment();
+      }
+      if (assignments.length === 0) {
+        fetchAssignments();
+      }
     }
   }, [equipmentId]);
 

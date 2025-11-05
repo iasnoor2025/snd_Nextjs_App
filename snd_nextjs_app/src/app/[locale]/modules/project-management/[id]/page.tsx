@@ -106,8 +106,35 @@ export default function ProjectDetailPage() {
       
       if (response.success) {
         toast.success('Sample project created successfully!');
-        // Refresh the page to load the new project data
-        window.location.reload();
+        // Refresh project data instead of full page reload
+        const fetchProjectData = async () => {
+          try {
+            setLoading(true);
+            setError(null);
+            const projectResponse = await ApiService.get<Project>(`/projects/${projectId}`);
+            setProject(projectResponse.data);
+            const [manpowerRes, equipmentRes, materialsRes, fuelRes, expensesRes] = await Promise.all([
+              ApiService.getProjectManpower(Number(projectId)),
+              ApiService.getProjectEquipment(Number(projectId)),
+              ApiService.getProjectMaterials(Number(projectId)),
+              ApiService.getProjectFuel(Number(projectId)),
+              ApiService.getProjectExpenses(Number(projectId)),
+            ]);
+            const allResources = [
+              ...(manpowerRes.data || []).map((r: any) => ({ ...r, type: 'manpower' })),
+              ...(equipmentRes.data || []).map((r: any) => ({ ...r, type: 'equipment' })),
+              ...(materialsRes.data || []).map((r: any) => ({ ...r, type: 'material' })),
+              ...(fuelRes.data || []).map((r: any) => ({ ...r, type: 'fuel' })),
+              ...(expensesRes.data || []).map((r: any) => ({ ...r, type: 'expense' })),
+            ];
+            setResources(allResources);
+          } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to load project details');
+          } finally {
+            setLoading(false);
+          }
+        };
+        await fetchProjectData();
       } else {
         throw new Error(response.error || 'Failed to create sample project');
       }
@@ -279,6 +306,11 @@ export default function ProjectDetailPage() {
 
   useEffect(() => {
     const fetchProjectData = async () => {
+      // Skip fetch if data already exists
+      if (project && resources.length > 0) {
+        return;
+      }
+
       try {
         setLoading(true);
 
@@ -356,7 +388,37 @@ export default function ProjectDetailPage() {
               <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
               <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Project</h2>
               <p className="text-gray-500 mb-4">{error}</p>
-              <Button onClick={() => window.location.reload()}>Retry</Button>
+              <Button onClick={() => {
+                // Refresh project data instead of full page reload
+                const fetchProjectData = async () => {
+                  try {
+                    setLoading(true);
+                    setError(null);
+                    const projectResponse = await ApiService.get<Project>(`/projects/${projectId}`);
+                    setProject(projectResponse.data);
+                    const [manpowerRes, equipmentRes, materialsRes, fuelRes, expensesRes] = await Promise.all([
+                      ApiService.getProjectManpower(Number(projectId)),
+                      ApiService.getProjectEquipment(Number(projectId)),
+                      ApiService.getProjectMaterials(Number(projectId)),
+                      ApiService.getProjectFuel(Number(projectId)),
+                      ApiService.getProjectExpenses(Number(projectId)),
+                    ]);
+                    const allResources = [
+                      ...(manpowerRes.data || []).map((r: any) => ({ ...r, type: 'manpower' })),
+                      ...(equipmentRes.data || []).map((r: any) => ({ ...r, type: 'equipment' })),
+                      ...(materialsRes.data || []).map((r: any) => ({ ...r, type: 'material' })),
+                      ...(fuelRes.data || []).map((r: any) => ({ ...r, type: 'fuel' })),
+                      ...(expensesRes.data || []).map((r: any) => ({ ...r, type: 'expense' })),
+                    ];
+                    setResources(allResources);
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : 'Failed to load project details');
+                  } finally {
+                    setLoading(false);
+                  }
+                };
+                fetchProjectData();
+              }}>Retry</Button>
             </div>
           </CardContent>
         </Card>
@@ -399,7 +461,37 @@ export default function ProjectDetailPage() {
                     Create New Project
                   </Link>
                 </Button>
-                <Button variant="outline" onClick={() => window.location.reload()}>
+                <Button variant="outline" onClick={() => {
+                  // Refresh project data instead of full page reload
+                  const fetchProjectData = async () => {
+                    try {
+                      setLoading(true);
+                      setError(null);
+                      const projectResponse = await ApiService.get<Project>(`/projects/${projectId}`);
+                      setProject(projectResponse.data);
+                      const [manpowerRes, equipmentRes, materialsRes, fuelRes, expensesRes] = await Promise.all([
+                        ApiService.getProjectManpower(Number(projectId)),
+                        ApiService.getProjectEquipment(Number(projectId)),
+                        ApiService.getProjectMaterials(Number(projectId)),
+                        ApiService.getProjectFuel(Number(projectId)),
+                        ApiService.getProjectExpenses(Number(projectId)),
+                      ]);
+                      const allResources = [
+                        ...(manpowerRes.data || []).map((r: any) => ({ ...r, type: 'manpower' })),
+                        ...(equipmentRes.data || []).map((r: any) => ({ ...r, type: 'equipment' })),
+                        ...(materialsRes.data || []).map((r: any) => ({ ...r, type: 'material' })),
+                        ...(fuelRes.data || []).map((r: any) => ({ ...r, type: 'fuel' })),
+                        ...(expensesRes.data || []).map((r: any) => ({ ...r, type: 'expense' })),
+                      ];
+                      setResources(allResources);
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : 'Failed to load project details');
+                    } finally {
+                      setLoading(false);
+                    }
+                  };
+                  fetchProjectData();
+                }}>
                   Retry
                 </Button>
               </div>

@@ -474,51 +474,57 @@ export default function DashboardPage() {
 
 
   // Initial data fetch - show dashboard immediately, fetch data in background
+  // Only fetch if data doesn't exist to prevent unnecessary refetches
   useEffect(() => {
     if (session) {
       // Show dashboard immediately with loading states
       // Fetch data in background without blocking UI
-      // Priority: Fetch equipment data immediately if section is visible
-      fetchDashboardData();
+      // Only fetch if data is empty or not loaded yet
+      if (!stats.totalEmployees && !stats.totalProjects && !stats.totalEquipment) {
+        fetchDashboardData();
+      }
       
       // If equipment section is visible, fetch equipment data immediately
-      if (sectionVisibility.equipment) {
+      if (sectionVisibility.equipment && equipmentData.length === 0) {
         fetchEquipmentData();
       }
     }
-  }, [session]);
+  }, [session, sectionVisibility.equipment]);
 
 
 
-  // Auto-refresh critical data every 30 seconds
+  // Auto-refresh critical data every 30 seconds - but only if data exists
+  // This prevents unnecessary refetches when page is already loaded
   useEffect(() => {
     if (!session) return;
     
     const interval = setInterval(() => {
-      // Only fetch data for sections user has permission to access
-      if (sectionVisibility.iqama) {
+      // Only refresh if data exists (already loaded) and sections are visible
+      // This prevents fetching on initial load - initial load is handled separately
+      if (sectionVisibility.iqama && iqamaData.length > 0) {
         fetchIqamaData();
       }
-      if (sectionVisibility.timesheets) {
+      if (sectionVisibility.timesheets && timesheetData.length > 0) {
         fetchTimesheetData();
       }
-      if (sectionVisibility.recentActivity) {
+      if (sectionVisibility.recentActivity && activities.length > 0) {
         fetchActivityData();
       }
-      if (sectionVisibility.equipment) {
+      if (sectionVisibility.equipment && equipmentData.length > 0) {
         fetchEquipmentData();
       }
     }, 30000); // Refresh every 30 seconds
     
     return () => clearInterval(interval);
-  }, [session, sectionVisibility]);
+  }, [session, sectionVisibility, iqamaData.length, timesheetData.length, activities.length, equipmentData.length]);
 
   // Fetch equipment data immediately when equipment section becomes visible
+  // Only fetch if data doesn't exist
   useEffect(() => {
     if (session && sectionVisibility.equipment && equipmentData.length === 0) {
       fetchEquipmentData();
     }
-  }, [session, sectionVisibility.equipment]);
+  }, [session, sectionVisibility.equipment, equipmentData.length]);
 
   // Handle refresh
   const handleRefresh = async () => {
