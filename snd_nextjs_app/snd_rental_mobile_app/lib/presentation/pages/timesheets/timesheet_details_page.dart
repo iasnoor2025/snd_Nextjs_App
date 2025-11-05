@@ -61,7 +61,7 @@ class TimesheetDetailsPage extends StatelessWidget {
                       children: [
                         Text(
                           'Timesheet #${timesheet.id}',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: AppTheme.fontSizeLg,
                             fontWeight: AppTheme.fontWeightBold,
                             color: AppTheme.foreground,
@@ -86,7 +86,7 @@ class TimesheetDetailsPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     'Employee Information',
                     style: TextStyle(
                       fontSize: AppTheme.fontSizeLg,
@@ -111,7 +111,7 @@ class TimesheetDetailsPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     'Time Information',
                     style: TextStyle(
                       fontSize: AppTheme.fontSizeLg,
@@ -175,7 +175,7 @@ class TimesheetDetailsPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Description',
                       style: TextStyle(
                         fontSize: AppTheme.fontSizeLg,
@@ -186,7 +186,7 @@ class TimesheetDetailsPage extends StatelessWidget {
                     const SizedBox(height: AppTheme.spacingMd),
                     Text(
                       timesheet.description!,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: AppTheme.fontSizeSm,
                         color: AppTheme.foreground,
                         height: 1.5,
@@ -204,7 +204,7 @@ class TimesheetDetailsPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Approval Information',
                       style: TextStyle(
                         fontSize: AppTheme.fontSizeLg,
@@ -233,7 +233,7 @@ class TimesheetDetailsPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     'Timestamps',
                     style: TextStyle(
                       fontSize: AppTheme.fontSizeLg,
@@ -302,7 +302,7 @@ class TimesheetDetailsPage extends StatelessWidget {
             width: 120,
             child: Text(
               label,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: AppTheme.fontSizeSm,
                 fontWeight: AppTheme.fontWeightMedium,
                 color: AppTheme.mutedForeground,
@@ -312,7 +312,7 @@ class TimesheetDetailsPage extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: AppTheme.fontSizeSm,
                 color: AppTheme.foreground,
               ),
@@ -341,7 +341,7 @@ class TimesheetDetailsPage extends StatelessWidget {
           const SizedBox(height: AppTheme.spacingXs),
           Text(
             label,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: AppTheme.fontSizeXs,
               color: AppTheme.mutedForeground,
             ),

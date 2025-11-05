@@ -122,7 +122,7 @@ class _QuotationListPageState extends State<QuotationListPage> {
                   child: ListTile(
                     leading: CircleAvatar(
                       backgroundColor: _getStatusColor(quotation.status),
-                      child: Icon(
+                      child: const Icon(
                         Icons.description,
                         color: Colors.white,
                       ),

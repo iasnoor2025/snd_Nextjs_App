@@ -99,9 +99,9 @@ class EmployeeDetailsPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     'Contact Information',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: AppTheme.fontSizeLg,
                       fontWeight: AppTheme.fontWeightBold,
                       color: AppTheme.foreground,
@@ -124,9 +124,9 @@ class EmployeeDetailsPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     'Employment Information',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: AppTheme.fontSizeLg,
                       fontWeight: AppTheme.fontWeightBold,
                       color: AppTheme.foreground,
@@ -150,9 +150,9 @@ class EmployeeDetailsPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     'Compensation',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: AppTheme.fontSizeLg,
                       fontWeight: AppTheme.fontWeightBold,
                       color: AppTheme.foreground,
@@ -175,9 +175,9 @@ class EmployeeDetailsPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     'Immigration Information',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: AppTheme.fontSizeLg,
                       fontWeight: AppTheme.fontWeightBold,
                       color: AppTheme.foreground,

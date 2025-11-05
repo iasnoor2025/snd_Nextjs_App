@@ -158,7 +158,7 @@ class _TimesheetListPageState extends State<TimesheetListPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.error_outline,
                           size: 64,
                           color: AppTheme.destructive,
@@ -166,7 +166,7 @@ class _TimesheetListPageState extends State<TimesheetListPage> {
                         const SizedBox(height: AppTheme.spacingMd),
                         Text(
                           provider.errorMessage ?? 'Unknown error',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: AppTheme.fontSizeSm,
                             color: AppTheme.mutedForeground,
                           ),
@@ -186,7 +186,7 @@ class _TimesheetListPageState extends State<TimesheetListPage> {
                 }
                 
                 if (provider.filteredTimesheets.isEmpty) {
-                  return Center(
+                  return const Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -195,7 +195,7 @@ class _TimesheetListPageState extends State<TimesheetListPage> {
                           size: 64,
                           color: AppTheme.mutedForeground,
                         ),
-                        const SizedBox(height: AppTheme.spacingMd),
+                        SizedBox(height: AppTheme.spacingMd),
                         Text(
                           'No timesheets found',
                           style: TextStyle(
@@ -204,7 +204,7 @@ class _TimesheetListPageState extends State<TimesheetListPage> {
                             color: AppTheme.mutedForeground,
                           ),
                         ),
-                        const SizedBox(height: AppTheme.spacingSm),
+                        SizedBox(height: AppTheme.spacingSm),
                         Text(
                           'Add your first timesheet to get started',
                           style: TextStyle(
@@ -300,7 +300,7 @@ class TimesheetCard extends StatelessWidget {
                   children: [
                     Text(
                       timesheet.employeeName,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: AppTheme.fontSizeSm,
                         fontWeight: AppTheme.fontWeightBold,
                         color: AppTheme.foreground,
@@ -309,7 +309,7 @@ class TimesheetCard extends StatelessWidget {
                     if (timesheet.projectName != null)
                       Text(
                         timesheet.projectName!,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: AppTheme.fontSizeSm,
                           color: AppTheme.mutedForeground,
                         ),
@@ -327,7 +327,7 @@ class TimesheetCard extends StatelessWidget {
           
           Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.calendar_today,
                 size: 16,
                 color: AppTheme.mutedForeground,
@@ -335,13 +335,13 @@ class TimesheetCard extends StatelessWidget {
               const SizedBox(width: AppTheme.spacingXs),
               Text(
                 timesheet.displayDate,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: AppTheme.fontSizeSm,
                   color: AppTheme.mutedForeground,
                 ),
               ),
               const Spacer(),
-              Icon(
+              const Icon(
                 Icons.access_time,
                 size: 16,
                 color: AppTheme.mutedForeground,
@@ -349,7 +349,7 @@ class TimesheetCard extends StatelessWidget {
               const SizedBox(width: AppTheme.spacingXs),
               Text(
                 timesheet.displayTotalHours,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: AppTheme.fontSizeSm,
                   fontWeight: AppTheme.fontWeightMedium,
                   color: AppTheme.foreground,
@@ -363,7 +363,7 @@ class TimesheetCard extends StatelessWidget {
               padding: const EdgeInsets.only(top: AppTheme.spacingSm),
               child: Text(
                 timesheet.description!,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: AppTheme.fontSizeSm,
                   color: AppTheme.mutedForeground,
                 ),

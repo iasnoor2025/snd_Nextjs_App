@@ -122,7 +122,7 @@ class _SafetyIncidentListPageState extends State<SafetyIncidentListPage> {
                   child: ListTile(
                     leading: CircleAvatar(
                       backgroundColor: _getSeverityColor(incident.severity),
-                      child: Icon(
+                      child: const Icon(
                         Icons.warning,
                         color: Colors.white,
                       ),

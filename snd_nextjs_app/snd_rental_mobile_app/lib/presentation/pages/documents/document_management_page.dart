@@ -152,7 +152,7 @@ class _DocumentManagementPageState extends State<DocumentManagementPage>
               Column(
                 children: [
                   DropdownButtonFormField<String>(
-                    value: _selectedCategory,
+                    initialValue: _selectedCategory,
                     decoration: const InputDecoration(
                       labelText: 'Category',
                       border: OutlineInputBorder(),
@@ -175,7 +175,7 @@ class _DocumentManagementPageState extends State<DocumentManagementPage>
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: _selectedFileType,
+                    initialValue: _selectedFileType,
                     decoration: const InputDecoration(
                       labelText: 'File Type',
                       border: OutlineInputBorder(),
@@ -220,28 +220,28 @@ class _DocumentManagementPageState extends State<DocumentManagementPage>
               }
 
               if (provider.filteredDocuments.isEmpty) {
-                return Center(
+                return const Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.folder_open,
                         size: 64,
                         color: AppTheme.mutedForeground,
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Text(
                         'No documents found',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                           color: AppTheme.mutedForeground,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Text(
                         'Upload documents for this employee',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           color: AppTheme.mutedForeground,
                         ),
@@ -390,7 +390,7 @@ class _DocumentManagementPageState extends State<DocumentManagementPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Upload Document',
                   style: TextStyle(
                     fontSize: AppTheme.fontSizeLg,
@@ -420,7 +420,7 @@ class _DocumentManagementPageState extends State<DocumentManagementPage>
                     color: AppTheme.muted.withValues(alpha:0.3),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Column(
+                  child: const Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
@@ -431,7 +431,7 @@ class _DocumentManagementPageState extends State<DocumentManagementPage>
                           color: AppTheme.foreground,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         'PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF',
                         style: TextStyle(
@@ -439,7 +439,7 @@ class _DocumentManagementPageState extends State<DocumentManagementPage>
                           color: AppTheme.mutedForeground,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Text(
                         'Maximum file size: 10 MB',
                         style: TextStyle(
@@ -467,7 +467,7 @@ class _DocumentManagementPageState extends State<DocumentManagementPage>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Recent Uploads',
                       style: TextStyle(
                         fontSize: AppTheme.fontSizeLg,
@@ -489,7 +489,7 @@ class _DocumentManagementPageState extends State<DocumentManagementPage>
                         ),
                         subtitle: Text(
                           '${document.fileSizeFormatted} • ${_formatDate(document.uploadedAt)}',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 12,
                             color: AppTheme.mutedForeground,
                           ),
@@ -748,10 +748,10 @@ class _DocumentManagementPageState extends State<DocumentManagementPage>
               children: [
                 const Icon(Icons.picture_as_pdf, color: Colors.white, size: 24),
                 const SizedBox(width: 8),
-                Expanded(
+                const Expanded(
                   child: Text(
                     'PDF Document',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -847,10 +847,10 @@ class _DocumentManagementPageState extends State<DocumentManagementPage>
               children: [
                 const Icon(Icons.image, color: Colors.white, size: 24),
                 const SizedBox(width: 8),
-                Expanded(
+                const Expanded(
                   child: Text(
                     'Image File',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -947,10 +947,10 @@ class _DocumentManagementPageState extends State<DocumentManagementPage>
               children: [
                 const Icon(Icons.description, color: Colors.white, size: 24),
                 const SizedBox(width: 8),
-                Expanded(
+                const Expanded(
                   child: Text(
                     'Document File',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -1065,10 +1065,10 @@ class _DocumentManagementPageState extends State<DocumentManagementPage>
               children: [
                 const Icon(Icons.insert_drive_file, color: Colors.white, size: 24),
                 const SizedBox(width: 8),
-                Expanded(
+                const Expanded(
                   child: Text(
                     'File',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -1117,7 +1117,7 @@ class _DocumentManagementPageState extends State<DocumentManagementPage>
                   const SizedBox(height: 8),
                   Text(
                     document.fileSizeFormatted,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 14,
                       color: AppTheme.mutedForeground,
                     ),
@@ -1260,9 +1260,9 @@ class _DocumentManagementPageState extends State<DocumentManagementPage>
             color: Colors.red[600],
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Text(
+          child: const Text(
             'PDF Document',
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -1642,7 +1642,7 @@ class _DocumentManagementPageState extends State<DocumentManagementPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Document Information',
             style: TextStyle(
               fontSize: 16,
@@ -1675,7 +1675,7 @@ class _DocumentManagementPageState extends State<DocumentManagementPage>
             width: 100,
             child: Text(
               label,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
                 color: AppTheme.mutedForeground,
                 fontWeight: FontWeight.w500,

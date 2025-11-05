@@ -1189,7 +1189,7 @@ class _EquipmentDetailsPageState extends State<EquipmentDetailsPage>
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Document uploaded successfully'),
           backgroundColor: Colors.green,
         ),
@@ -1255,7 +1255,7 @@ class _EquipmentDetailsPageState extends State<EquipmentDetailsPage>
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Document deleted successfully'),
           backgroundColor: Colors.green,
         ),

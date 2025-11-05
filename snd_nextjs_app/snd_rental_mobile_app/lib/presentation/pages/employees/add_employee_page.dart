@@ -124,9 +124,9 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Personal Information',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: AppTheme.fontSizeLg,
                         fontWeight: AppTheme.fontWeightBold,
                         color: AppTheme.foreground,
@@ -192,9 +192,9 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Employment Information',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: AppTheme.fontSizeLg,
                         fontWeight: AppTheme.fontWeightBold,
                         color: AppTheme.foreground,
@@ -225,7 +225,7 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
                     const SizedBox(height: AppTheme.spacingSm),
                     
                     DropdownButtonFormField<String>(
-                      value: _status,
+                      initialValue: _status,
                       decoration: InputDecoration(
                         labelText: 'Status',
                         border: OutlineInputBorder(
@@ -255,9 +255,9 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Compensation',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: AppTheme.fontSizeLg,
                         fontWeight: AppTheme.fontWeightBold,
                         color: AppTheme.foreground,
@@ -290,9 +290,9 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Immigration Information',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: AppTheme.fontSizeLg,
                         fontWeight: AppTheme.fontWeightBold,
                         color: AppTheme.foreground,
@@ -301,7 +301,7 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
                     const SizedBox(height: AppTheme.spacingMd),
                     
                     DropdownButtonFormField<String>(
-                      value: _nationality,
+                      initialValue: _nationality,
                       decoration: InputDecoration(
                         labelText: 'Nationality',
                         border: OutlineInputBorder(

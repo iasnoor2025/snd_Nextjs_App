@@ -303,8 +303,8 @@ class EmployeeProvider extends ChangeNotifier {
       _filteredEmployees = _filteredEmployees.where((employee) {
         final fullName = employee.fullName.toLowerCase();
         final email = employee.email?.toLowerCase() ?? '';
-        final employeeId = employee.employeeId?.toString() ?? '';
-        final fileNumber = employee.fileNumber?.toString() ?? '';
+        final employeeId = employee.employeeId.toString() ?? '';
+        final fileNumber = employee.fileNumber.toString() ?? '';
         final department = employee.department?.toLowerCase() ?? '';
         final designation = employee.designation?.toLowerCase() ?? '';
         final query = _searchQuery.toLowerCase();

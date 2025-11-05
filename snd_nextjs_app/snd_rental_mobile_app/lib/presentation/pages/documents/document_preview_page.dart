@@ -94,9 +94,9 @@ class _DocumentPreviewPageState extends State<DocumentPreviewPage> {
               color: AppTheme.destructive,
             ),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               'Error loading document',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: AppTheme.destructive,
@@ -174,7 +174,7 @@ class _DocumentPreviewPageState extends State<DocumentPreviewPage> {
                   const SizedBox(height: 8),
                   Text(
                     widget.document.fileSizeFormatted,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 14,
                       color: AppTheme.mutedForeground,
                     ),
@@ -245,7 +245,7 @@ class _DocumentPreviewPageState extends State<DocumentPreviewPage> {
                       const SizedBox(height: 8),
                       Text(
                         widget.document.fileSizeFormatted,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 14,
                           color: AppTheme.mutedForeground,
                         ),
@@ -296,7 +296,7 @@ class _DocumentPreviewPageState extends State<DocumentPreviewPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.insert_drive_file,
                     size: 80,
                     color: AppTheme.mutedForeground,
@@ -313,7 +313,7 @@ class _DocumentPreviewPageState extends State<DocumentPreviewPage> {
                   const SizedBox(height: 8),
                   Text(
                     widget.document.fileSizeFormatted,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 14,
                       color: AppTheme.mutedForeground,
                     ),
@@ -357,7 +357,7 @@ class _DocumentPreviewPageState extends State<DocumentPreviewPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Document Information',
             style: TextStyle(
               fontSize: 16,
@@ -390,7 +390,7 @@ class _DocumentPreviewPageState extends State<DocumentPreviewPage> {
             width: 100,
             child: Text(
               label,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
                 color: AppTheme.mutedForeground,
                 fontWeight: FontWeight.w500,

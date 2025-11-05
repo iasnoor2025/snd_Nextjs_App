@@ -107,7 +107,7 @@ class _AddTimesheetPageState extends State<AddTimesheetPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Date',
                       style: TextStyle(
                         fontSize: AppTheme.fontSizeLg,
@@ -138,14 +138,14 @@ class _AddTimesheetPageState extends State<AddTimesheetPage> {
                         ),
                         child: Row(
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.calendar_today,
                               color: AppTheme.mutedForeground,
                             ),
                             const SizedBox(width: AppTheme.spacingSm),
                             Text(
                               '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: AppTheme.fontSizeSm,
                                 color: AppTheme.foreground,
                               ),
@@ -165,7 +165,7 @@ class _AddTimesheetPageState extends State<AddTimesheetPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Hours Worked',
                       style: TextStyle(
                         fontSize: AppTheme.fontSizeLg,
@@ -199,7 +199,7 @@ class _AddTimesheetPageState extends State<AddTimesheetPage> {
                           ),
                           child: Text(
                             '${_hoursWorked.toStringAsFixed(1)}h',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: AppTheme.fontSizeLg,
                               fontWeight: AppTheme.fontWeightBold,
                               color: AppTheme.primary,
@@ -220,7 +220,7 @@ class _AddTimesheetPageState extends State<AddTimesheetPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Overtime Hours (Optional)',
                       style: TextStyle(
                         fontSize: AppTheme.fontSizeLg,
@@ -284,7 +284,7 @@ class _AddTimesheetPageState extends State<AddTimesheetPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         'Project (Optional)',
                         style: TextStyle(
                           fontSize: AppTheme.fontSizeLg,
@@ -294,24 +294,24 @@ class _AddTimesheetPageState extends State<AddTimesheetPage> {
                       ),
                       const SizedBox(height: AppTheme.spacingSm),
                       DropdownButtonFormField<String>(
-                        value: _selectedProjectId,
+                        initialValue: _selectedProjectId,
                         decoration: InputDecoration(
                           hintText: 'Select a project',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(AppTheme.radius),
                           ),
                         ),
-                        items: [
-                          const DropdownMenuItem(
+                        items: const [
+                          DropdownMenuItem(
                             value: null,
                             child: Text('No project'),
                           ),
                           // TODO: Load actual projects from provider
-                          const DropdownMenuItem(
+                          DropdownMenuItem(
                             value: 'project-1',
                             child: Text('Project Alpha'),
                           ),
-                          const DropdownMenuItem(
+                          DropdownMenuItem(
                             value: 'project-2',
                             child: Text('Project Beta'),
                           ),
@@ -333,7 +333,7 @@ class _AddTimesheetPageState extends State<AddTimesheetPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Description (Optional)',
                       style: TextStyle(
                         fontSize: AppTheme.fontSizeLg,
@@ -363,7 +363,7 @@ class _AddTimesheetPageState extends State<AddTimesheetPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Summary',
                       style: TextStyle(
                         fontSize: AppTheme.fontSizeLg,
@@ -442,14 +442,14 @@ class _AddTimesheetPageState extends State<AddTimesheetPage> {
             children: [
               Text(
                 label,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: AppTheme.fontSizeXs,
                   color: AppTheme.mutedForeground,
                 ),
               ),
               Text(
                 value,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: AppTheme.fontSizeSm,
                   fontWeight: AppTheme.fontWeightMedium,
                   color: AppTheme.foreground,
