@@ -998,9 +998,26 @@ export default function EmployeeManagementPage() {
                         
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
                           {employee.spsp_license_number ? (
-                            <Badge variant="default" className="bg-green-100 text-green-800 border-green-200 hover:bg-green-200">
-                              Yes
-                            </Badge>
+                            (() => {
+                              const expiryStatus = employee.spsp_license_expiry 
+                                ? getExpiryStatus(employee.spsp_license_expiry) 
+                                : null;
+                              const isExpired = expiryStatus?.status === 'expired';
+                              
+                              return (
+                                <Badge 
+                                  variant="default" 
+                                  className={
+                                    isExpired
+                                      ? 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200'
+                                      : 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
+                                  }
+                                >
+                                  Yes
+                                  {isExpired && <span className="ml-1 text-xs">⚠️</span>}
+                                </Badge>
+                              );
+                            })()
                           ) : (
                             <Badge variant="secondary" className="bg-gray-100 text-gray-600 border-gray-200">
                               No
