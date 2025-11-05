@@ -78,6 +78,7 @@ export function EquipmentSection({
   const [typeFilter, setTypeFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
+  const [categories, setCategories] = useState<Array<{ id: number; name: string }>>([]);
 
   // Document type configuration
   const documentTypes = {
@@ -142,6 +143,36 @@ export function EquipmentSection({
 
   // Ensure equipmentData is always an array with robust type checking
   const safeEquipmentData = Array.isArray(equipmentData) ? equipmentData : [];
+
+  // Fetch categories on mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('/api/equipment/categories');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && Array.isArray(data.data)) {
+            setCategories(data.data);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch equipment categories:', error);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // Get unique categories from equipment data (fallback if API fails)
+  const uniqueCategoriesFromData = Array.from(
+    new Set(
+      safeEquipmentData
+        .map(item => item.categoryName)
+        .filter((name): name is string => !!name)
+    )
+  ).map((name, index) => ({ id: index + 1000, name }));
+
+  // Use categories from API, fallback to unique categories from data
+  const availableCategories = categories.length > 0 ? categories : uniqueCategoriesFromData;
 
   // Filter and transform data based on selected document type
   const getCurrentDocumentData = () => {
@@ -217,8 +248,107 @@ export function EquipmentSection({
 
   const currentDocumentData = getCurrentDocumentData();
 
+  // Filter and search logic
+  const filteredData = currentDocumentData.filter(item => {
+    const docType = documentTypes[safeSelectedDocumentType];
+    
+    // Status filtering - show all expired items when "expired" is selected
+    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
+    
+    const matchesDriver = driverFilter === 'all' || 
+      (driverFilter === 'assigned' && item.driverName) ||
+      (driverFilter === 'unassigned' && !item.driverName);
+    
+    const matchesType = typeFilter === 'all' || 
+      (item.categoryName && item.categoryName.toUpperCase().trim() === typeFilter.toUpperCase().trim());
+    
+    const matchesSearch =
+      !search ||
+      item.equipmentName?.toLowerCase().includes(search.toLowerCase()) ||
+      item.equipmentNumber?.toLowerCase().includes(search.toLowerCase()) ||
+      item.doorNumber?.toLowerCase().includes(search.toLowerCase()) ||
+      item.manufacturer?.toLowerCase().includes(search.toLowerCase()) ||
+      item.modelNumber?.toLowerCase().includes(search.toLowerCase()) ||
+      (item.documentNumber && item.documentNumber.toLowerCase().includes(search.toLowerCase())) ||
+      item.driverName?.toLowerCase().includes(search.toLowerCase()) ||
+      item.driverFileNumber?.toLowerCase().includes(search.toLowerCase());
+
+    // Smart filtering based on document type
+    if (search) {
+      // When searching, show all matches regardless of document status, but still respect type filter
+      return matchesSearch && matchesType;
+    }
+    
+    if (statusFilter === 'missing') {
+      // Show only equipment without this document type
+      const hasDocumentNumber = docType.numberField 
+        ? (item.documentNumber && item.documentNumber !== 'N/A' && item.documentNumber.trim() !== '')
+        : true; // For types without number fields, only check expiry
+      const hasExpiryDate = item.documentExpiry && item.documentExpiry.trim() !== '';
+      return !hasExpiryDate && item.status === 'missing' && matchesType && matchesDriver;
+    }
+    
+    if (statusFilter === 'all') {
+      // Show only equipment that have this document type (excluding missing status)
+      const hasDocumentNumber = docType.numberField 
+        ? (item.documentNumber && item.documentNumber !== 'N/A' && item.documentNumber.trim() !== '')
+        : true; // For types without number fields, only check expiry
+      const hasExpiryDate = item.documentExpiry && item.documentExpiry.trim() !== '';
+      return hasExpiryDate && matchesType && matchesDriver; // Include type and driver filters
+    }
+    
+    // For specific status filters (expired, expiring, available)
+    return matchesStatus && matchesDriver && matchesType && matchesSearch;
+  });
+
+  // Calculate dynamic filter options based on data after applying other filters
+  // Status options based on current type and driver filters (excluding search)
+  const statusOptionsData = currentDocumentData.filter(item => {
+    const matchesDriver = driverFilter === 'all' || 
+      (driverFilter === 'assigned' && item.driverName) ||
+      (driverFilter === 'unassigned' && !item.driverName);
+    const matchesType = typeFilter === 'all' || 
+      (item.categoryName && item.categoryName.toUpperCase().trim() === typeFilter.toUpperCase().trim());
+    return matchesDriver && matchesType;
+  });
+  const dynamicAvailableStatuses = Array.from(
+    new Set(statusOptionsData.map(item => item.status).filter(Boolean))
+  ).sort();
+
+  // Type options based on current status and driver filters (excluding search)
+  const typeOptionsData = currentDocumentData.filter(item => {
+    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
+    const matchesDriver = driverFilter === 'all' || 
+      (driverFilter === 'assigned' && item.driverName) ||
+      (driverFilter === 'unassigned' && !item.driverName);
+    return matchesStatus && matchesDriver;
+  });
+  const dynamicAvailableTypes = Array.from(
+    new Set(
+      typeOptionsData
+        .map(item => item.categoryName)
+        .filter((name): name is string => !!name)
+    )
+  ).sort();
+
+  // Driver options based on current status and type filters (excluding search)
+  const driverOptionsData = currentDocumentData.filter(item => {
+    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
+    const matchesType = typeFilter === 'all' || 
+      (item.categoryName && item.categoryName.toUpperCase().trim() === typeFilter.toUpperCase().trim());
+    return matchesStatus && matchesType;
+  });
+  const dynamicDriverOptions = {
+    hasAssigned: driverOptionsData.some(item => item.driverName),
+    hasUnassigned: driverOptionsData.some(item => !item.driverName),
+  };
+
+  const totalPages = Math.ceil(filteredData.length / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginatedData = filteredData.slice(startIndex, startIndex + pageSize);
+
   // Get expired equipment data for PDF generation based on current document type
-  const expiredEquipmentData = currentDocumentData.filter(item => item.status === 'expired');
+  const expiredEquipmentData = filteredData.filter(item => item.status === 'expired');
 
   // Handle PDF download for expired equipment
   const handleDownloadExpiredPDF = async () => {
@@ -239,64 +369,6 @@ export function EquipmentSection({
       alert(t('equipment.istimara.pdfGenerationFailed'));
     }
   };
-
-  // Filter and search logic
-  const filteredData = currentDocumentData.filter(item => {
-    const docType = documentTypes[safeSelectedDocumentType];
-    
-    // Status filtering - show all expired items when "expired" is selected
-    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
-    
-    const matchesDriver = driverFilter === 'all' || 
-      (driverFilter === 'assigned' && item.driverName) ||
-      (driverFilter === 'unassigned' && !item.driverName);
-    
-    const matchesType = typeFilter === 'all' || 
-      (item.categoryName && item.categoryName.toUpperCase() === typeFilter);
-    
-    const matchesSearch =
-      !search ||
-      item.equipmentName?.toLowerCase().includes(search.toLowerCase()) ||
-      item.equipmentNumber?.toLowerCase().includes(search.toLowerCase()) ||
-      item.doorNumber?.toLowerCase().includes(search.toLowerCase()) ||
-      item.manufacturer?.toLowerCase().includes(search.toLowerCase()) ||
-      item.modelNumber?.toLowerCase().includes(search.toLowerCase()) ||
-      (item.documentNumber && item.documentNumber.toLowerCase().includes(search.toLowerCase())) ||
-      item.driverName?.toLowerCase().includes(search.toLowerCase()) ||
-      item.driverFileNumber?.toLowerCase().includes(search.toLowerCase());
-
-    // Smart filtering based on document type
-    if (search) {
-      // When searching, show all matches regardless of document status
-      return matchesSearch;
-    }
-    
-    if (statusFilter === 'missing') {
-      // Show only equipment without this document type
-      const hasDocumentNumber = docType.numberField 
-        ? (item.documentNumber && item.documentNumber !== 'N/A' && item.documentNumber.trim() !== '')
-        : true; // For types without number fields, only check expiry
-      const hasExpiryDate = item.documentExpiry && item.documentExpiry.trim() !== '';
-      return !hasExpiryDate && item.status === 'missing';
-    }
-    
-    if (statusFilter === 'all') {
-      // Show only equipment that have this document type (excluding missing status)
-      const hasDocumentNumber = docType.numberField 
-        ? (item.documentNumber && item.documentNumber !== 'N/A' && item.documentNumber.trim() !== '')
-        : true; // For types without number fields, only check expiry
-      const hasExpiryDate = item.documentExpiry && item.documentExpiry.trim() !== '';
-      return hasExpiryDate; // For types without number fields, only expiry matters
-    }
-    
-    // For specific status filters (expired, expiring, available)
-    return matchesStatus && matchesDriver && matchesType && matchesSearch;
-  });
-
-  const totalPages = Math.ceil(filteredData.length / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const paginatedData = filteredData.slice(startIndex, startIndex + pageSize);
-
 
   return (
     <Card>
@@ -421,10 +493,17 @@ export function EquipmentSection({
               className="h-10 px-3 text-sm border border-input rounded-md bg-background"
             >
               <option value="all">{t('equipment.istimara.allStatuses')}</option>
-              <option value="available">{t('equipment.istimara.available')}</option>
-              <option value="expiring">{t('equipment.istimara.expiringSoon')}</option>
-              <option value="expired">{t('equipment.istimara.expired')}</option>
-              <option value="missing">{t('equipment.istimara.missing')}</option>
+              {dynamicAvailableStatuses.map((status) => (
+                <option key={status} value={status}>
+                  {status === 'expired' 
+                    ? t('equipment.istimara.expired')
+                    : status === 'expiring'
+                    ? t('equipment.istimara.expiringSoon')
+                    : status === 'missing'
+                    ? t('equipment.istimara.missing')
+                    : t('equipment.istimara.available')}
+                </option>
+              ))}
             </select>
             <select
               value={driverFilter}
@@ -432,8 +511,12 @@ export function EquipmentSection({
               className="h-10 px-3 text-sm border border-input rounded-md bg-background"
             >
               <option value="all">{t('equipment.istimara.allDrivers')}</option>
-              <option value="assigned">{t('equipment.istimara.assigned')}</option>
-              <option value="unassigned">{t('equipment.istimara.unassigned')}</option>
+              {dynamicDriverOptions.hasAssigned && (
+                <option value="assigned">{t('equipment.istimara.assigned')}</option>
+              )}
+              {dynamicDriverOptions.hasUnassigned && (
+                <option value="unassigned">{t('equipment.istimara.unassigned')}</option>
+              )}
             </select>
             <select
               value={typeFilter}
@@ -441,12 +524,11 @@ export function EquipmentSection({
               className="h-10 px-3 text-sm border border-input rounded-md bg-background"
             >
               <option value="all">{t('equipment.istimara.allTypes')}</option>
-              <option value="DOZER">Dozer</option>
-              <option value="LOADER">Loader</option>
-              <option value="TRUCK">Truck</option>
-              <option value="EXCAVATOR">Excavator</option>
-              <option value="CRANE">Crane</option>
-              <option value="GENERATOR">Generator</option>
+              {dynamicAvailableTypes.map((type) => (
+                <option key={type} value={type.toUpperCase()}>
+                  {type}
+                </option>
+              ))}
             </select>
             {(search || statusFilter !== 'all' || driverFilter !== 'all' || typeFilter !== 'all' || safeSelectedDocumentType !== 'istimara') && (
               <Button
