@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Check, ChevronsUpDown, Search } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -67,7 +67,8 @@ export function SearchableSelect({
     const filtered = options.filter(option => {
       return searchFields.some(field => {
         const fieldValue = option[field];
-        return fieldValue?.toLowerCase().includes(searchValue.toLowerCase());
+        if (!fieldValue) return false;
+        return String(fieldValue).toLowerCase().includes(searchValue.toLowerCase());
       });
     });
     setFilteredOptions(filtered);
@@ -105,16 +106,13 @@ export function SearchableSelect({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-full p-0" align="start">
-          <Command>
-            <div className="flex items-center border-b px-3">
-              <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-              <CommandInput
-                placeholder={searchPlaceholder}
-                value={searchValue}
-                onValueChange={setSearchValue}
-                className="border-0 focus:ring-0"
-              />
-            </div>
+          <Command shouldFilter={false}>
+            <CommandInput
+              placeholder={searchPlaceholder}
+              value={searchValue}
+              onValueChange={setSearchValue}
+              className="border-0 focus:ring-0"
+            />
             <CommandList>
               {loading && (
                 <div className="p-4 text-center text-sm text-muted-foreground">
