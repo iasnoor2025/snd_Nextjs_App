@@ -226,7 +226,13 @@ export function EquipmentSection({
       return;
     }
     try {
-      await PDFGenerator.generateExpiredEquipmentReport(expiredEquipmentData);
+      const docType = documentTypes[safeSelectedDocumentType];
+      const documentLabel = docType?.label.replace(' Management', '') || 'Document';
+      await PDFGenerator.generateExpiredEquipmentReport(
+        expiredEquipmentData,
+        safeSelectedDocumentType,
+        documentLabel
+      );
     } catch (error) {
       console.error('Failed to generate PDF:', error);
       alert(t('equipment.istimara.pdfGenerationFailed'));
