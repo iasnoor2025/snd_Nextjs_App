@@ -12,6 +12,7 @@
     "add_equipment_description": "Add a new piece of equipment to your inventory",
     "sync_erpnext": "Sync ERPNext",
     "equipment_inventory": "Equipment Inventory",
+    "image": "Image",
     "name": "Name",
     "model": "Model",
     "manufacturer": "Manufacturer",

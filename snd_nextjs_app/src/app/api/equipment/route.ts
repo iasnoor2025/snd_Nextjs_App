@@ -4,11 +4,12 @@ import {
   equipmentRentalHistory,
   equipment as equipmentTable,
   equipmentMaintenance,
+  equipmentDocuments,
   projects,
   rentals,
 } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
-import { asc, eq, or, ilike, sql } from 'drizzle-orm';
+import { asc, eq, or, ilike, sql, desc, and, inArray } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
 import { autoExtractDoorNumber } from '@/lib/utils/equipment-utils';
@@ -207,6 +208,74 @@ const getEquipmentHandler = async (request: NextRequest) => {
               return acc;
             }, {} as Record<number, any[]>);
 
+            // Fetch equipment images/photos from documents
+            const equipmentIds = equipment.map(e => e.id);
+            const equipmentImages: Record<number, { url: string | null; isCard: boolean }> = {};
+            
+            if (equipmentIds.length > 0) {
+              // Fetch images/photos for each equipment, prioritizing photos
+              const imageDocuments = await db
+                .select({
+                  equipmentId: equipmentDocuments.equipmentId,
+                  filePath: equipmentDocuments.filePath,
+                  mimeType: equipmentDocuments.mimeType,
+                  documentType: equipmentDocuments.documentType,
+                  fileName: equipmentDocuments.fileName,
+                  createdAt: equipmentDocuments.createdAt,
+                })
+                .from(equipmentDocuments)
+                .where(
+                  and(
+                    inArray(equipmentDocuments.equipmentId, equipmentIds),
+                    or(
+                      ilike(equipmentDocuments.mimeType, 'image/%'),
+                      ilike(equipmentDocuments.documentType, '%photo%'),
+                      ilike(equipmentDocuments.documentType, '%picture%'),
+                      ilike(equipmentDocuments.documentType, '%image%')
+                    )
+                  )
+                )
+                .orderBy(desc(equipmentDocuments.createdAt));
+
+              // Sort documents: prioritize photos over istimara, then by newest first
+              const sortedDocs = imageDocuments.sort((a, b) => {
+                const aType = (a.documentType || '').toLowerCase();
+                const bType = (b.documentType || '').toLowerCase();
+                const aName = (a.fileName || '').toLowerCase();
+                const bName = (b.fileName || '').toLowerCase();
+                
+                const aIsPhoto = aType.includes('photo') || aName.includes('photo');
+                const bIsPhoto = bType.includes('photo') || bName.includes('photo');
+                
+                // Photos come first
+                if (aIsPhoto && !bIsPhoto) return -1;
+                if (!aIsPhoto && bIsPhoto) return 1;
+                
+                // If both are photos or both are documents, newest first
+                const aDate = new Date(a.createdAt || 0).getTime();
+                const bDate = new Date(b.createdAt || 0).getTime();
+                return bDate - aDate;
+              });
+
+              // Store the best image for each equipment (first = highest priority)
+              for (const doc of sortedDocs) {
+                if (!equipmentImages[doc.equipmentId]) {
+                  // Ensure HTTPS URL
+                  const imageUrl = doc.filePath?.replace(/^http:\/\//, 'https://') || null;
+                  const docType = (doc.documentType || '').toLowerCase();
+                  const fileName = (doc.fileName || '').toLowerCase();
+                  
+                  const isCard = docType.includes('istimara') ||
+                    docType.includes('license') ||
+                    docType.includes('card') ||
+                    fileName.includes('istimara') ||
+                    fileName.includes('license');
+                  
+                  equipmentImages[doc.equipmentId] = { url: imageUrl, isCard };
+                }
+              }
+            }
+
             // Merge equipment data with assignments and maintenance
             const equipmentWithAssignments = equipment.map((item) => {
               const assignments = assignmentsByEquipment[item.id] || [];
@@ -229,6 +298,8 @@ const getEquipmentHandler = async (request: NextRequest) => {
                 current_assignment: assignments[0] || null,
                 current_maintenance: maintenance[0] || null,
                 status,
+                image_url: equipmentImages[item.id]?.url || null,
+                image_is_card: equipmentImages[item.id]?.isCard || false,
               };
             });
 
@@ -255,6 +326,8 @@ const getEquipmentHandler = async (request: NextRequest) => {
               current_assignment: null,
               current_maintenance: null,
               status: 'available',
+              image_url: null,
+              image_is_card: false,
             }));
 
             return NextResponse.json({
@@ -306,6 +379,8 @@ const getEquipmentHandler = async (request: NextRequest) => {
           current_assignment: null,
           current_maintenance: null,
           status: 'available',
+          image_url: null,
+          image_is_card: false,
         })),
         total: equipment.length,
       });

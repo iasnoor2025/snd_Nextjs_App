@@ -90,6 +90,7 @@ export default function EquipmentDocumentUpload({
   };
 
   const documentTypeOptions = [
+    { label: '📸 Equipment Photo', value: 'equipment_photo' },
     { label: t('equipment.documents.userManual'), value: 'user_manual' },
     { label: t('equipment.documents.serviceManual'), value: 'service_manual' },
     { label: t('equipment.documents.maintenanceManual'), value: 'maintenance_manual' },

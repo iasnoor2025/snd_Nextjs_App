@@ -384,12 +384,28 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
   
   // Check if document is specifically a photo (employee photo, profile picture, etc.)
   const isPhotoDocument = (doc: DocumentItem) => {
-    return doc.document_type === 'photo' || 
-           doc.name.toLowerCase().includes('photo') || 
-           doc.name.toLowerCase().includes('picture') ||
-           doc.name.toLowerCase().includes('image') ||
-           doc.name.toLowerCase().includes('passport') ||
-           doc.name.toLowerCase().includes('iqama');
+    const docType = (doc.document_type || '').toLowerCase();
+    const name = doc.name.toLowerCase();
+    
+    // Check for employee-specific photo types
+    return docType === 'employee_photo' || 
+           docType === 'employee_iqama' ||
+           docType === 'employee_passport' ||
+           (docType.includes('photo') && !docType.includes('equipment')) ||
+           (name.includes('photo') && !name.includes('equipment')) ||
+           (name.includes('picture') && !name.includes('equipment')) ||
+           name.includes('passport') ||
+           name.includes('iqama');
+  };
+
+  // Check if document is an equipment photo
+  const isEquipmentPhoto = (doc: DocumentItem) => {
+    const docType = (doc.document_type || '').toLowerCase();
+    const name = doc.name.toLowerCase();
+    
+    return docType === 'equipment_photo' ||
+           (docType.includes('photo') && docType.includes('equipment')) ||
+           (name.includes('photo') && name.includes('equipment'));
   };
 
   // Check if document is likely landscape-oriented (ID cards, licenses, etc.)
@@ -626,25 +642,32 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
                              {fileName}
                            </h3>
                            
-                           {/* Badges for photo documents */}
-                           {isPhotoDocument(document) && (
-                             <div className="flex items-center justify-center gap-2 text-xs">
-                               <span className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1.5 rounded-full font-semibold shadow-md">
-                                 {fileName.toLowerCase().includes('passport') ? t('employee.documents.employeePassport') : 
-                                  fileName.toLowerCase().includes('iqama') ? t('employee.documents.employeeIqama') : t('employee.documents.employeePhoto')}
-                               </span>
-                               {fileName.toLowerCase().includes('passport') && (
-                                 <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
-                                   {t('employee.documents.travelDocument')}
-                                 </span>
-                               )}
-                               {fileName.toLowerCase().includes('iqama') && (
-                                 <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
-                                   {t('employee.documents.idCard')}
-                                 </span>
-                               )}
-                             </div>
-                           )}
+                          {/* Badges for photo documents */}
+                          {isPhotoDocument(document) && (
+                            <div className="flex items-center justify-center gap-2 text-xs">
+                              <span className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1.5 rounded-full font-semibold shadow-md">
+                                {fileName.toLowerCase().includes('passport') ? t('employee.documents.employeePassport') : 
+                                 fileName.toLowerCase().includes('iqama') ? t('employee.documents.employeeIqama') : t('employee.documents.employeePhoto')}
+                              </span>
+                              {fileName.toLowerCase().includes('passport') && (
+                                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
+                                  {t('employee.documents.travelDocument')}
+                                </span>
+                              )}
+                              {fileName.toLowerCase().includes('iqama') && (
+                                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
+                                  {t('employee.documents.idCard')}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          {isEquipmentPhoto(document) && (
+                            <div className="flex items-center justify-center gap-2 text-xs">
+                              <span className="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-3 py-1.5 rounded-full font-semibold shadow-md">
+                                Equipment Photo
+                              </span>
+                            </div>
+                          )}
                          </div>
                      </div>
 

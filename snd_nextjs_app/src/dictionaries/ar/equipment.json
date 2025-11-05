@@ -13,6 +13,7 @@
     "add_equipment_description": "إضافة قطعة معدات جديدة إلى المخزون",
     "sync_erpnext": "مزامنة ERPNext",
     "equipment_inventory": "مخزون المعدات",
+    "image": "الصورة",
     "name": "الاسم",
     "model": "الموديل",
     "manufacturer": "الشركة المصنعة",

@@ -28,6 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import ApiService from '@/lib/api-service';
 import {
   Database,
@@ -52,6 +53,7 @@ import {
   convertToArabicNumerals,
   getTranslatedName,
 } from '@/lib/translation-utils';
+import { cn } from '@/lib/utils';
 import {
   getEquipmentCategoryName,
   // getEquipmentCategoryIcon,
@@ -93,6 +95,8 @@ interface Equipment {
   chassis_number?: string;
   description?: string;
   door_number?: string;
+  image_url?: string | null;
+  image_is_card?: boolean;
   current_assignment?: {
     id: number;
     type: string;
@@ -722,6 +726,11 @@ export default function EquipmentManagementPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className={isRTL ? 'text-right' : 'text-left'}>
+                          <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                            {t('equipment.equipment_management.image') || 'Image'}
+                          </div>
+                        </TableHead>
                         <TableHead>{t('equipment.equipment_management.name')}</TableHead>
                         <TableHead>{t('equipment.equipment_management.door_number')}</TableHead>
                         <TableHead>{t('equipment.equipment_management.model')}</TableHead>
@@ -751,7 +760,7 @@ export default function EquipmentManagementPage() {
                     <TableBody>
                       {currentEquipment.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                             {equipment.length === 0 ? (
                               <div className="flex flex-col items-center space-y-2">
                                 <Package className="h-8 w-8 text-muted-foreground" />
@@ -768,6 +777,29 @@ export default function EquipmentManagementPage() {
                       ) : (
                         currentEquipment.map(item => (
                           <TableRow key={item.id}>
+                            <TableCell className={isRTL ? 'text-right' : 'text-left'}>
+                              <Avatar className="h-10 w-10">
+                                {item.image_url ? (
+                                  <AvatarImage 
+                                    src={item.image_url} 
+                                    alt={item.name || 'Equipment'}
+                                    className={cn('h-full w-full object-cover', item.image_is_card ? 'object-left' : 'object-center')}
+                                    style={item.image_is_card ? {
+                                      objectPosition: 'left center',
+                                      transform: 'scale(2.6) translateX(-10%)',
+                                      transformOrigin: 'left center'
+                                    } : undefined}
+                                  />
+                                ) : null}
+                                <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                  {item.name 
+                                    ? item.name.charAt(0).toUpperCase()
+                                    : item.door_number 
+                                      ? item.door_number.charAt(0).toUpperCase()
+                                      : 'E'}
+                                </AvatarFallback>
+                              </Avatar>
+                            </TableCell>
                             <TableCell className="font-medium">
                               <div className="flex items-center gap-2">
                                 <span className="text-lg">

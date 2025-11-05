@@ -97,10 +97,6 @@ const uploadDocumentsHandler = async (
   { params }: { params: { id: string } }
 ) => {
   try {
-    if (!params || !params.id) {
-      return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
-    }
-
     const { id } = params;
     const equipmentId = parseInt(id);
 
@@ -137,14 +133,18 @@ const uploadDocumentsHandler = async (
       'application/pdf',
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'image/jpeg',
       'image/jpg',
       'image/png',
+      'image/gif',
+      'image/webp',
     ];
 
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: 'Invalid file type. Only PDF, DOC, DOCX, JPG, and PNG files are allowed.' },
+        { error: 'Invalid file type. Only PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF, and WEBP files are allowed.' },
         { status: 400 }
       );
     }
