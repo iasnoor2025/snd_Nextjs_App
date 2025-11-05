@@ -293,7 +293,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
 
     // Fetch employee images/photos from documents
     const employeeIds = employeeRows.map(e => e.id as number);
-    const employeeImages: Record<number, string | null> = {};
+    const employeeImages: Record<number, { url: string | null; isCard: boolean }> = {};
     
     if (employeeIds.length > 0) {
       // Fetch the first image/photo document for each employee
@@ -303,6 +303,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
           filePath: employeeDocuments.filePath,
           mimeType: employeeDocuments.mimeType,
           documentType: employeeDocuments.documentType,
+          fileName: employeeDocuments.fileName,
         })
         .from(employeeDocuments)
         .where(
@@ -323,7 +324,18 @@ const getEmployeesHandler = async (request: NextRequest) => {
         if (!employeeImages[doc.employeeId]) {
           // Ensure HTTPS URL
           const imageUrl = doc.filePath?.replace(/^http:\/\//, 'https://') || null;
-          employeeImages[doc.employeeId] = imageUrl;
+          const docType = (doc.documentType || '').toLowerCase();
+          const fileName = (doc.fileName || '').toLowerCase();
+          const pathLower = (doc.filePath || '').toLowerCase();
+          // Heuristic to mark iqama/ID card images
+          const isCard =
+            docType.includes('iqama') ||
+            docType.includes('resident') ||
+            docType.includes('id') ||
+            fileName.includes('iqama') ||
+            fileName.includes('resident') ||
+            fileName.includes('id');
+          employeeImages[doc.employeeId] = { url: imageUrl, isCard };
         }
       }
     }
@@ -370,7 +382,8 @@ const getEmployeesHandler = async (request: NextRequest) => {
           : null,
         supervisor: employee.supervisor || null,
         current_location: currentAssignment?.location || null,
-        image_url: employeeImages[employee.id] || null,
+        image_url: employeeImages[employee.id]?.url || null,
+        image_is_card: employeeImages[employee.id]?.isCard || false,
         current_assignment: isAssignmentActive
           ? {
               id: currentAssignment.id,

@@ -88,6 +88,7 @@ interface Employee {
   is_external?: boolean;
   company_name?: string | null;
   image_url?: string | null;
+  image_is_card?: boolean;
   current_assignment?: {
     id: number;
     type: string;
@@ -947,6 +948,12 @@ export default function EmployeeManagementPage() {
                               <AvatarImage 
                                 src={employee.image_url} 
                                 alt={employee.full_name || 'Employee'}
+                                className={cn('h-full w-full object-cover', employee.image_is_card ? 'object-left' : 'object-center')}
+                                style={employee.image_is_card ? {
+                                  objectPosition: 'left center',
+                                  transform: 'scale(2.6) translateX(-10%)',
+                                  transformOrigin: 'left center'
+                                } : undefined}
                               />
                             ) : null}
                             <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
