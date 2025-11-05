@@ -122,7 +122,7 @@ export async function getUserAccessibleSectionsClient(userId: string, forceRefre
   if (!forceRefresh) {
     const cached = getCachedAccessibleSections(userId);
     if (cached) {
-      console.log('✅ Using cached accessible sections for user:', userId);
+      // Using cached sections - no log needed (silent cache hit)
       return cached;
     }
   }

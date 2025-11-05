@@ -5,12 +5,20 @@ import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { and, eq, inArray, sql, gte, lte } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
 import { NextResponse } from 'next/server';
+import { apiCache, createCacheKey } from '@/lib/api-cache';
 
 const getEmployeeStatisticsHandler = async () => {
   try {
     // Get session to check user role
     const session = await getServerSession();
     const user = session?.user;
+
+    // Check short-lived server cache first (reduces repeated heavy queries)
+    const cacheKey = createCacheKey('/api/employees/statistics');
+    const cached = apiCache.get(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
 
     // Get total employee count
     const totalEmployeesRows = await db.select({ count: sql<number>`count(*)` }).from(employees);
@@ -30,7 +38,9 @@ const getEmployeeStatisticsHandler = async () => {
     const employeeIds = allEmployees.map(emp => emp.id);
     
     if (employeeIds.length > 0) {
-      console.log('🔍 Found employee IDs:', employeeIds);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 Found employee IDs:', employeeIds);
+      }
       
       // Get all active assignments from employeeAssignments table
       const assignmentRows = await db
@@ -65,10 +75,10 @@ const getEmployeeStatisticsHandler = async () => {
           )
         );
 
-      console.log('🔍 Found assignment rows:', assignmentRows);
-      console.log('🔍 Found projectManpower rows:', projectManpowerRows);
-      console.log('🔍 Assignment rows count:', assignmentRows.length);
-      console.log('🔍 ProjectManpower rows count:', projectManpowerRows.length);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 Found assignment rows:', assignmentRows.length);
+        console.log('🔍 Found projectManpower rows:', projectManpowerRows.length);
+      }
 
       // Count unique employees with active assignments from both sources
       const employeesWithAssignments = new Set();
@@ -80,7 +90,10 @@ const getEmployeeStatisticsHandler = async () => {
           row.status === 'active' &&
           (!row.endDate || new Date(row.endDate) > new Date());
         
-        console.log('🔍 Assignment row:', row, 'isActive:', isAssignmentActive);
+        if (process.env.NODE_ENV === 'development') {
+          // Detailed row logging only in development
+          console.log('🔍 Assignment row:', row, 'isActive:', isAssignmentActive);
+        }
         
         if (isAssignmentActive) {
           employeesWithAssignments.add(row.employeeId);
@@ -94,7 +107,9 @@ const getEmployeeStatisticsHandler = async () => {
           row.status === 'active' &&
           (!row.endDate || new Date(row.endDate) > new Date());
         
-        console.log('🔍 ProjectManpower row:', row, 'isActive:', isAssignmentActive);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔍 ProjectManpower row:', row, 'isActive:', isAssignmentActive);
+        }
         
         if (isAssignmentActive) {
           employeesWithAssignments.add(row.employeeId);
@@ -102,12 +117,16 @@ const getEmployeeStatisticsHandler = async () => {
       });
       
       currentlyAssigned = employeesWithAssignments.size;
-      console.log('🔍 Employees with assignments set:', Array.from(employeesWithAssignments));
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 Employees with assignments set:', employeesWithAssignments.size);
+      }
     } else {
       currentlyAssigned = 0;
     }
     
-    console.log('🔍 Currently assigned count:', currentlyAssigned);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 Currently assigned count:', currentlyAssigned);
+    }
 
     // Count project assignments (from both employeeAssignments and projectManpower tables)
     let projectAssignments = 0;
@@ -166,10 +185,13 @@ const getEmployeeStatisticsHandler = async () => {
       });
       
       projectAssignments = employeesWithProjectAssignments.size;
-      console.log('🔍 Project assignments breakdown:');
-      console.log('🔍 - From employeeAssignments table:', assignmentRows.length);
-      console.log('🔍 - From projectManpower table:', projectManpowerRows.length);
-      console.log('🔍 - Total unique employees with project assignments:', projectAssignments);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 Project assignments breakdown:', {
+          fromEmployeeAssignments: assignmentRows.length,
+          fromProjectManpower: projectManpowerRows.length,
+          totalUnique: projectAssignments,
+        });
+      }
     } else {
       projectAssignments = 0;
     }
@@ -179,7 +201,9 @@ const getEmployeeStatisticsHandler = async () => {
     const rentalTypes = ['rental', 'rental_item'] as const;
     
     if (totalEmployees > 0) {
-      console.log('🔍 Checking rental assignments for all employees');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 Checking rental assignments for all employees');
+      }
       
       const assignmentRows = await db
         .select({
@@ -197,9 +221,10 @@ const getEmployeeStatisticsHandler = async () => {
           )
         );
 
-      console.log('🔍 Found rental assignment rows:', assignmentRows);
-      console.log('🔍 Rental assignment rows count:', assignmentRows.length);
-      console.log('🔍 Looking for types:', rentalTypes);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 Rental assignment rows count:', assignmentRows.length);
+        console.log('🔍 Looking for types:', rentalTypes);
+      }
 
       // Count unique employees with active rental assignments
       const employeesWithRentalAssignments = new Set();
@@ -208,7 +233,9 @@ const getEmployeeStatisticsHandler = async () => {
           row.status === 'active' &&
           (!row.endDate || new Date(row.endDate) > new Date());
         
-        console.log('🔍 Rental assignment row:', row, 'isActive:', isAssignmentActive);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔍 Rental assignment row:', row, 'isActive:', isAssignmentActive);
+        }
         
         if (isAssignmentActive) {
           employeesWithRentalAssignments.add(row.employeeId);
@@ -216,13 +243,17 @@ const getEmployeeStatisticsHandler = async () => {
       });
       
       rentalAssignments = employeesWithRentalAssignments.size;
-      console.log('🔍 Employees with rental assignments set:', Array.from(employeesWithRentalAssignments));
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 Employees with rental assignments count:', employeesWithRentalAssignments.size);
+      }
     } else {
       rentalAssignments = 0;
     }
     
-    console.log('🔍 Project assignments count:', projectAssignments);
-    console.log('🔍 Rental assignments count:', rentalAssignments);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 Project assignments count:', projectAssignments);
+      console.log('🔍 Rental assignments count:', rentalAssignments);
+    }
 
     // Count employees currently on leave
     let employeesOnLeave = 0;
@@ -255,7 +286,7 @@ const getEmployeeStatisticsHandler = async () => {
       console.log('🔍 Employees on leave count:', employeesOnLeave);
     }
 
-    return NextResponse.json({
+    const payload = {
       success: true,
       data: {
         totalEmployees,
@@ -265,7 +296,12 @@ const getEmployeeStatisticsHandler = async () => {
         employeesOnLeave,
       },
       message: 'Employee statistics retrieved successfully',
-    });
+    } as const;
+
+    // Store in cache for 30 seconds to reduce repeated heavy queries
+    apiCache.set(cacheKey, payload, 30000);
+
+    return NextResponse.json(payload);
   } catch (error) {
     console.error('🔍 Statistics API - Error:', error);
     return NextResponse.json(

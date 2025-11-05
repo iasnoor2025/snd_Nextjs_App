@@ -156,11 +156,10 @@ async function loadUserPermissions(userId: string, userRole: string, forceRefres
       const cachedRole = userPermissionsCache.get(userId)?.role || 
                         (typeof window !== 'undefined' ? localStorage.getItem(getCacheRoleKey(userId)) : null);
       if (cachedRole === userRole) {
-        console.log('✅ Using cached permissions for user:', userId);
+        // Using cached permissions - no log needed (silent cache hit)
         return cached;
       } else {
         // Role changed, clear cache
-        console.log('🔄 User role changed, clearing cache');
         clearUserPermissionsCache(userId);
       }
     }
@@ -178,7 +177,10 @@ async function loadUserPermissions(userId: string, userRole: string, forceRefres
       const data = await response.json();
       
       if (data.success && data.permissions) {
-        console.log('🔄 Loaded user permissions from API:', data.permissions.slice(0, 5), data.permissions.length > 5 ? '...' : '');
+        // Only log in development mode to reduce console noise
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔄 Loaded user permissions from API:', data.permissions.slice(0, 5), data.permissions.length > 5 ? '...' : '');
+        }
         setUserPermissionsInCache(userId, data.permissions, userRole);
         return data.permissions;
       }
@@ -330,36 +332,9 @@ export function RBACProvider({ children }: RBACProviderProps) {
     };
   }, [session, status]);
 
-  // Load user permissions when user changes - but only once per user
+  // Load user permissions when user changes - but only once per user and only if not cached
   useEffect(() => {
-    if (user) {
-      // Check if permissions are already cached
-      const cached = getUserPermissionsFromCache(user.id);
-      if (cached) {
-        // Verify role hasn't changed
-        const cachedRole = userPermissionsCache.get(user.id)?.role || 
-                          (typeof window !== 'undefined' ? localStorage.getItem(getCacheRoleKey(user.id)) : null);
-        if (cachedRole === user.role) {
-          // Permissions are cached and role hasn't changed, no need to fetch
-          return;
-        } else {
-          // Role changed, clear cache
-          clearUserPermissionsCache(user.id);
-        }
-      }
-
-      // Prevent duplicate fetches
-      if (!permissionsLoadingRef.current.has(user.id)) {
-        const loadPromise = loadUserPermissions(user.id, user.role, false).catch(() => {
-          // Silent error handling for production
-          return [];
-        }).finally(() => {
-          permissionsLoadingRef.current.delete(user.id);
-        });
-        
-        permissionsLoadingRef.current.set(user.id, loadPromise);
-      }
-    } else {
+    if (!user) {
       // Clear cache when user logs out
       if (typeof window !== 'undefined') {
         // Clear all permission caches
@@ -371,6 +346,36 @@ export function RBACProvider({ children }: RBACProviderProps) {
         });
         userPermissionsCache.clear();
       }
+      return;
+    }
+
+    // Check if permissions are already cached and valid
+    const cached = getUserPermissionsFromCache(user.id);
+    if (cached) {
+      // Verify role hasn't changed
+      const cachedRole = userPermissionsCache.get(user.id)?.role || 
+                        (typeof window !== 'undefined' ? localStorage.getItem(getCacheRoleKey(user.id)) : null);
+      if (cachedRole === user.role) {
+        // Permissions are cached, role matches, and cache is valid - skip loading entirely
+        return;
+      } else {
+        // Role changed, clear cache
+        clearUserPermissionsCache(user.id);
+      }
+    }
+
+    // Only fetch if:
+    // 1. Not already loading for this user
+    // 2. Cache is empty or expired
+    if (!permissionsLoadingRef.current.has(user.id)) {
+      const loadPromise = loadUserPermissions(user.id, user.role, false).catch(() => {
+        // Silent error handling for production
+        return [];
+      }).finally(() => {
+        permissionsLoadingRef.current.delete(user.id);
+      });
+      
+      permissionsLoadingRef.current.set(user.id, loadPromise);
     }
   }, [user?.id, user?.role]);
 

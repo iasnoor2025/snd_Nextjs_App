@@ -17,6 +17,53 @@ export interface PermissionCheck {
   requiredPermissions?: string[];
 }
 
+// Server-side permission cache
+const PERMISSION_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const permissionCache = new Map<string, { result: PermissionCheck; timestamp: number }>();
+
+// Cache key for permission checks
+function getPermissionCacheKey(userId: string, action: Action, subject: Subject): string {
+  return `perm:${userId}:${action}:${subject}`;
+}
+
+// Get cached permission check
+function getCachedPermissionCheck(userId: string, action: Action, subject: Subject): PermissionCheck | null {
+  const cacheKey = getPermissionCacheKey(userId, action, subject);
+  const cached = permissionCache.get(cacheKey);
+  
+  if (cached) {
+    const now = Date.now();
+    if (now - cached.timestamp < PERMISSION_CACHE_TTL) {
+      return cached.result;
+    } else {
+      // Cache expired
+      permissionCache.delete(cacheKey);
+    }
+  }
+  
+  return null;
+}
+
+// Set cached permission check
+function setCachedPermissionCheck(userId: string, action: Action, subject: Subject, result: PermissionCheck): void {
+  const cacheKey = getPermissionCacheKey(userId, action, subject);
+  permissionCache.set(cacheKey, {
+    result,
+    timestamp: Date.now(),
+  });
+}
+
+// Clear cache for a user (when permissions change)
+export function clearUserPermissionCache(userId: string): void {
+  const keysToDelete: string[] = [];
+  for (const key of permissionCache.keys()) {
+    if (key.startsWith(`perm:${userId}:`)) {
+      keysToDelete.push(key);
+    }
+  }
+  keysToDelete.forEach(key => permissionCache.delete(key));
+}
+
 export interface UserPermissions {
   userId: string;
   roleId: number;
@@ -29,24 +76,28 @@ export interface UserPermissions {
 /**
  * Check if a user has a specific permission
  * This function checks both direct user permissions and role-based permissions
+ * Uses server-side caching to avoid repeated database queries
  */
 export async function checkUserPermission(
   userId: string,
   action: Action,
   subject: Subject
 ): Promise<PermissionCheck> {
-  console.log(`🔐 Checking permission: ${action}.${subject} for user ${userId}`);
+  // Check cache first
+  const cached = getCachedPermissionCheck(userId, action, subject);
+  if (cached) {
+    // Silent cache hit - no logging
+    return cached;
+  }
+
   try {
-    // Fetch user role and permissions via Drizzle
-    console.log(`🔍 Fetching user data for ID: ${userId}`);
-    
-    // Debug: Check if userId can be parsed as integer
+    // Parse user ID
     const parsedUserId = parseInt(userId);
-    console.log(`🔢 Parsed user ID: ${parsedUserId} (original: ${userId}, type: ${typeof userId})`);
     
     if (isNaN(parsedUserId)) {
-      console.log(`❌ Invalid user ID: ${userId} cannot be parsed as integer`);
-      return { hasPermission: false, reason: 'Invalid user ID format' };
+      const result = { hasPermission: false, reason: 'Invalid user ID format' };
+      setCachedPermissionCheck(userId, action, subject, result);
+      return result;
     }
     
     // First, try to get user with direct roleId (from users table)
@@ -59,17 +110,18 @@ export async function checkUserPermission(
       .from(users)
       .where(eq(users.id, parsedUserId));
 
-    console.log(`📊 User rows found:`, userRows);
-
     if (userRows.length === 0 || !userRows[0]) {
-      console.log(`❌ User not found: ${userId}`);
-      return { hasPermission: false, reason: 'User not found' };
+      const result = { hasPermission: false, reason: 'User not found' };
+      setCachedPermissionCheck(userId, action, subject, result);
+      return result;
     }
 
     const user = userRows[0];
     const isActive = user.isActive;
     if (!isActive) {
-      return { hasPermission: false, reason: 'User account is inactive' };
+      const result = { hasPermission: false, reason: 'User account is inactive' };
+      setCachedPermissionCheck(userId, action, subject, result);
+      return result;
     }
 
     // Get role information - try direct roleId first, then modelHasRoles
@@ -105,8 +157,6 @@ export async function checkUserPermission(
       }
     }
 
-    console.log(`📊 Final role info:`, { roleId, roleName });
-
     // Direct user permissions
     const directPermRows = await db
       .select({ name: permissionsTable.name })
@@ -117,37 +167,40 @@ export async function checkUserPermission(
 
     // Get user's role
     if (!roleName || !roleId) {
-      return { hasPermission: false, reason: 'User has no assigned role' };
+      const result = { hasPermission: false, reason: 'User has no assigned role' };
+      setCachedPermissionCheck(userId, action, subject, result);
+      return result;
     }
 
     // Check direct user permissions first (these override role permissions)
     // directPermissions already computed
 
     // Check for wildcard permissions
-    console.log(`🔐 Direct permissions:`, directPermissions);
     if (directPermissions.includes('*') || directPermissions.includes('manage.all')) {
-      console.log(`✅ User has wildcard permission`);
-      return {
+      const result = {
         hasPermission: true,
         userRole: roleName,
       };
+      setCachedPermissionCheck(userId, action, subject, result);
+      return result;
     }
 
     // Check specific direct permissions
     const specificDirectPermission = `${action}.${subject}`;
     if (directPermissions.includes(specificDirectPermission)) {
-      return {
+      const result = {
         hasPermission: true,
         userRole: roleName,
       };
+      setCachedPermissionCheck(userId, action, subject, result);
+      return result;
     }
 
     // Check role permissions
-    console.log(`🔍 Fetching role permissions for role ID: ${roleId}`);
-    
     if (!roleId) {
-      console.log(`❌ No role ID found for user ${userId}`);
-      return { hasPermission: false, reason: 'User has no assigned role' };
+      const result = { hasPermission: false, reason: 'User has no assigned role' };
+      setCachedPermissionCheck(userId, action, subject, result);
+      return result;
     }
     
     const rolePermRows = await db
@@ -156,25 +209,26 @@ export async function checkUserPermission(
       .leftJoin(permissionsTable, eq(permissionsTable.id, roleHasPermissions.permissionId))
       .where(eq(roleHasPermissions.roleId, roleId));
     const rolePermissions = rolePermRows.map(r => r.name!).filter(Boolean);
-    console.log(`🔐 Role permissions:`, rolePermissions);
 
     // Check for wildcard permissions in role
     if (rolePermissions.includes('*') || rolePermissions.includes('manage.all')) {
-      return {
+      const result = {
         hasPermission: true,
         userRole: roleName,
       };
+      setCachedPermissionCheck(userId, action, subject, result);
+      return result;
     }
 
     // Check specific role permissions
     const specificRolePermission = `${action}.${subject}`;
-    console.log(`🔍 Checking for specific permission: ${specificRolePermission}`);
     if (rolePermissions.includes(specificRolePermission)) {
-      console.log(`✅ User has specific role permission: ${specificRolePermission}`);
-      return {
+      const result = {
         hasPermission: true,
         userRole: roleName,
       };
+      setCachedPermissionCheck(userId, action, subject, result);
+      return result;
     }
 
     // Check for broader permissions (e.g., if user has 'manage.employee', they can 'read.employee')
@@ -185,30 +239,33 @@ export async function checkUserPermission(
       return false;
     });
 
-    console.log(`🔍 Broader permissions found:`, broaderPermissions);
-
     if (broaderPermissions.length > 0) {
-      console.log(`✅ User has broader permission`);
-      return {
+      const result = {
         hasPermission: true,
         userRole: roleName,
       };
+      setCachedPermissionCheck(userId, action, subject, result);
+      return result;
     }
 
-    console.log(`❌ User does not have permission: ${action}.${subject}`);
-    return {
+    const result = {
       hasPermission: false,
       reason: `User does not have permission: ${action}.${subject}`,
       userRole: roleName,
       requiredPermissions: [specificRolePermission],
     };
+    setCachedPermissionCheck(userId, action, subject, result);
+    return result;
   } catch (error) {
-    console.error(`❌ Error checking permissions for user ${userId}:`, error);
+    // Only log errors, not normal permission checks
+    console.error(`Error checking permissions for user ${userId}:`, error);
     
-    return {
+    const result = {
       hasPermission: false,
       reason: 'Error checking permissions',
     };
+    // Don't cache errors
+    return result;
   }
 }
 
@@ -282,6 +339,9 @@ export async function assignPermissionsToRole(
         .values(permissionIds.map(pid => ({ roleId, permissionId: pid })));
     }
 
+    // Clear all permission caches since role permissions changed
+    permissionCache.clear();
+
     return { success: true, message: 'Permissions assigned successfully' };
   } catch (error) {
     console.error('Error assigning permissions:', error);
@@ -310,6 +370,9 @@ export async function assignPermissionsToUser(
         .insert(modelHasPermissions)
         .values(permissionIds.map(pid => ({ userId: parsedUserId, permissionId: pid })));
     }
+
+    // Clear cache for this user
+    clearUserPermissionCache(userId);
 
     return { success: true, message: 'Permissions assigned successfully' };
   } catch (error) {
