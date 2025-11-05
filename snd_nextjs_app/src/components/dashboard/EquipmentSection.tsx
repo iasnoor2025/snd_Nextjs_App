@@ -35,6 +35,7 @@ interface EquipmentData {
   manufacturer?: string;
   modelNumber?: string;
   categoryId?: number;
+  categoryName?: string;
   status: 'available' | 'expired' | 'expiring' | 'missing';
   istimaraExpiry?: string;
   daysRemaining: number | null;
@@ -251,7 +252,7 @@ export function EquipmentSection({
       (driverFilter === 'unassigned' && !item.driverName);
     
     const matchesType = typeFilter === 'all' || 
-      (item.categoryName || item.category?.name || '').toUpperCase() === typeFilter;
+      (item.categoryName && item.categoryName.toUpperCase() === typeFilter);
     
     const matchesSearch =
       !search ||

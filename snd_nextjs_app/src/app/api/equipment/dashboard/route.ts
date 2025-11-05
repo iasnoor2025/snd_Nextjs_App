@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/drizzle';
-import { equipment, employees } from '@/lib/drizzle/schema';
+import { equipment, employees, equipmentCategories } from '@/lib/drizzle/schema';
 import { eq, sql } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
@@ -46,12 +46,14 @@ export async function GET(_request: NextRequest) {
             modelNumber: equipment.modelNumber,
             serialNumber: equipment.serialNumber,
             categoryId: equipment.categoryId,
+            categoryName: equipmentCategories.name,
             assignedTo: equipment.assignedTo,
             driverName: sql<string>`CONCAT(employees.first_name, ' ', COALESCE(employees.middle_name, ''), ' ', employees.last_name)`.as('driverName'),
             driverFileNumber: employees.fileNumber,
           })
           .from(equipment)
           .leftJoin(employees, eq(equipment.assignedTo, employees.id))
+          .leftJoin(equipmentCategories, eq(equipment.categoryId, equipmentCategories.id))
           .limit(dataLimit);
 
         // Process the data with status logic
@@ -101,6 +103,7 @@ export async function GET(_request: NextRequest) {
             modelNumber: item.modelNumber,
             serialNumber: item.serialNumber,
             categoryId: item.categoryId,
+            categoryName: item.categoryName,
             assignedTo: item.assignedTo,
             driverName: item.driverName,
             driverFileNumber: item.driverFileNumber,
