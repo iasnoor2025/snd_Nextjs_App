@@ -296,7 +296,8 @@ const getEmployeesHandler = async (request: NextRequest) => {
     const employeeImages: Record<number, { url: string | null; isCard: boolean }> = {};
     
     if (employeeIds.length > 0) {
-      // Fetch the first image/photo document for each employee
+      // Fetch images/photos for each employee, prioritizing photos over iqama
+      // First, get all image documents ordered by priority and recency
       const imageDocuments = await db
         .select({
           employeeId: employeeDocuments.employeeId,
@@ -304,6 +305,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
           mimeType: employeeDocuments.mimeType,
           documentType: employeeDocuments.documentType,
           fileName: employeeDocuments.fileName,
+          createdAt: employeeDocuments.createdAt,
         })
         .from(employeeDocuments)
         .where(
@@ -317,24 +319,45 @@ const getEmployeesHandler = async (request: NextRequest) => {
             )
           )
         )
-        .orderBy(employeeDocuments.createdAt);
+        .orderBy(desc(employeeDocuments.createdAt));
 
-      // Store the first image for each employee
-      for (const doc of imageDocuments) {
+      // Sort documents: prioritize photos over iqama, then by newest first
+      const sortedDocs = imageDocuments.sort((a, b) => {
+        const aType = (a.documentType || '').toLowerCase();
+        const bType = (b.documentType || '').toLowerCase();
+        const aName = (a.fileName || '').toLowerCase();
+        const bName = (b.fileName || '').toLowerCase();
+        
+        const aIsPhoto = aType.includes('photo') || aName.includes('photo');
+        const bIsPhoto = bType.includes('photo') || bName.includes('photo');
+        const aIsIqama = aType.includes('iqama') || aName.includes('iqama');
+        const bIsIqama = bType.includes('iqama') || bName.includes('iqama');
+        
+        // Photos come first
+        if (aIsPhoto && !bIsPhoto) return -1;
+        if (!aIsPhoto && bIsPhoto) return 1;
+        
+        // If both are photos or both are iqama, newest first
+        const aDate = new Date(a.createdAt || 0).getTime();
+        const bDate = new Date(b.createdAt || 0).getTime();
+        return bDate - aDate;
+      });
+
+      // Store the best image for each employee (first = highest priority)
+      for (const doc of sortedDocs) {
         if (!employeeImages[doc.employeeId]) {
           // Ensure HTTPS URL
           const imageUrl = doc.filePath?.replace(/^http:\/\//, 'https://') || null;
           const docType = (doc.documentType || '').toLowerCase();
           const fileName = (doc.fileName || '').toLowerCase();
-          const pathLower = (doc.filePath || '').toLowerCase();
-          // Heuristic to mark iqama/ID card images
-          const isCard =
-            docType.includes('iqama') ||
+          
+          const isCard = docType.includes('iqama') ||
             docType.includes('resident') ||
             docType.includes('id') ||
             fileName.includes('iqama') ||
             fileName.includes('resident') ||
             fileName.includes('id');
+          
           employeeImages[doc.employeeId] = { url: imageUrl, isCard };
         }
       }

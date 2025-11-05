@@ -12,18 +12,14 @@ dotenvConfig({ path: '.env.local' });
 
 const uploadDocumentsHandler = async (
   request: NextRequest,
-  { params }: { params: { id: string } }
+  ctx: { params: Promise<{ id: string }> }
 ) => {
   let rawDocumentType = 'general';
   let employeeId = 0;
   let shouldOverwrite = false;
   
   try {
-    if (!params || !params.id) {
-      return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
-    }
-
-    const { id } = params;
+    const { id } = await ctx.params;
     employeeId = parseInt(id);
 
     if (!employeeId) {
@@ -45,24 +41,24 @@ const uploadDocumentsHandler = async (
     const fileNumber = employee.fileNumber || String(employeeId);
 
     const formData = await request.formData();
-    const file = formData.get('file') as File;
+    const maybeFile = formData.get('file');
+    if (!maybeFile || !(maybeFile instanceof File)) {
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    }
+    const file = maybeFile as File;
     rawDocumentType = (formData.get('document_type') as string) || 'general';
     const documentName = (formData.get('document_name') as string) || '';
     const description = formData.get('description') as string;
-    
+
     console.log(`📋 Upload request details:`, {
       employeeId,
       rawDocumentType,
       documentName,
       description,
-      fileName: file.name,
-      fileSize: file.size,
-      fileType: file.type
+      fileName: file?.name,
+      fileSize: file?.size,
+      fileType: file?.type
     });
-
-    if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
-    }
 
     // Helper function to check if a document type should overwrite existing ones
     // These document types are unique per employee and should replace old versions
@@ -97,9 +93,13 @@ const uploadDocumentsHandler = async (
       'application/pdf',
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'image/jpeg',
       'image/jpg',
       'image/png',
+      'image/gif',
+      'image/webp',
     ];
 
     if (!allowedTypes.includes(file.type)) {
@@ -333,6 +333,9 @@ const uploadDocumentsHandler = async (
       // Also invalidate any related caches
       await cacheService.delete(`employee:${employeeId}:*`, 'documents');
       console.log(`Invalidated all caches for employee ${employeeId}`);
+      
+      // Note: Employees list cache will refresh automatically within 30 seconds
+      // The improved query logic prioritizes photos over iqama images
       
       // Additional cache invalidation for better reliability
       console.log(`Completed cache invalidation for employee ${employeeId}`);
