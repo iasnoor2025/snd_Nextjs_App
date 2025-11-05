@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useI18n } from '@/hooks/use-i18n';
 import { PermissionContent } from '@/lib/rbac/rbac-components';
 import { useRBAC, usePermission } from '@/lib/rbac/rbac-context';
@@ -86,6 +87,7 @@ interface Employee {
   spsp_license_expiry?: string | null;
   is_external?: boolean;
   company_name?: string | null;
+  image_url?: string | null;
   current_assignment?: {
     id: number;
     type: string;
@@ -849,6 +851,11 @@ export default function EmployeeManagementPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className={isRTL ? 'text-right' : 'text-left'}>
+                      <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        {t('employee.table.headers.image') || 'Image'}
+                      </div>
+                    </TableHead>
                     <TableHead
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => handleSort('file_number')}
@@ -918,7 +925,7 @@ export default function EmployeeManagementPage() {
                 <TableBody>
                   {currentEmployees.length === 0 ? (
                     <TableRow>
-                                             <TableCell colSpan={9} className="text-center py-8">
+                                             <TableCell colSpan={10} className="text-center py-8">
                         <div className="text-muted-foreground">
                           {user?.role === 'EMPLOYEE'
                             ? 'No employee record found for your account. Please contact your administrator.'
@@ -934,6 +941,23 @@ export default function EmployeeManagementPage() {
                   ) : (
                     currentEmployees.map(employee => (
                       <TableRow key={employee.id}>
+                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>
+                          <Avatar className="h-10 w-10">
+                            {employee.image_url ? (
+                              <AvatarImage 
+                                src={employee.image_url} 
+                                alt={employee.full_name || 'Employee'}
+                              />
+                            ) : null}
+                            <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                              {employee.full_name 
+                                ? employee.full_name.charAt(0).toUpperCase()
+                                : employee.file_number 
+                                  ? employee.file_number.charAt(0).toUpperCase()
+                                  : 'E'}
+                            </AvatarFallback>
+                          </Avatar>
+                        </TableCell>
                                                  <TableCell className={`font-mono ${isRTL ? 'text-right' : 'text-left'}`}>
                            {convertToArabicNumerals(employee.file_number, isRTL) || t('employee.na')}
                          </TableCell>

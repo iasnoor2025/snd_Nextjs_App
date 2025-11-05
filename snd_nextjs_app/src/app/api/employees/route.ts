@@ -291,6 +291,43 @@ const getEmployeesHandler = async (request: NextRequest) => {
         }
     }
 
+    // Fetch employee images/photos from documents
+    const employeeIds = employeeRows.map(e => e.id as number);
+    const employeeImages: Record<number, string | null> = {};
+    
+    if (employeeIds.length > 0) {
+      // Fetch the first image/photo document for each employee
+      const imageDocuments = await db
+        .select({
+          employeeId: employeeDocuments.employeeId,
+          filePath: employeeDocuments.filePath,
+          mimeType: employeeDocuments.mimeType,
+          documentType: employeeDocuments.documentType,
+        })
+        .from(employeeDocuments)
+        .where(
+          and(
+            inArray(employeeDocuments.employeeId, employeeIds),
+            or(
+              ilike(employeeDocuments.mimeType, 'image/%'),
+              ilike(employeeDocuments.documentType, '%photo%'),
+              ilike(employeeDocuments.documentType, '%picture%'),
+              ilike(employeeDocuments.documentType, '%image%')
+            )
+          )
+        )
+        .orderBy(employeeDocuments.createdAt);
+
+      // Store the first image for each employee
+      for (const doc of imageDocuments) {
+        if (!employeeImages[doc.employeeId]) {
+          // Ensure HTTPS URL
+          const imageUrl = doc.filePath?.replace(/^http:\/\//, 'https://') || null;
+          employeeImages[doc.employeeId] = imageUrl;
+        }
+      }
+    }
+
     // Transform
     const transformedEmployees = employeeRows.map(employee => {
       const fullName = [employee.first_name, employee.middle_name, employee.last_name]
@@ -333,6 +370,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
           : null,
         supervisor: employee.supervisor || null,
         current_location: currentAssignment?.location || null,
+        image_url: employeeImages[employee.id] || null,
         current_assignment: isAssignmentActive
           ? {
               id: currentAssignment.id,

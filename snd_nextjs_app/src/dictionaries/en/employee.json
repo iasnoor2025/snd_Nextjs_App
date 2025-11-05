@@ -310,6 +310,7 @@
 
   "table": {
     "headers": {
+      "image": "Image",
       "fileNumber": "File #",
       "name": "Name",
       "email": "Email",
