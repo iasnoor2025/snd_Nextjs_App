@@ -556,6 +556,7 @@
       "actions": "الإجراءات",
       "fileNumber": "رقم الملف",
       "iqamaNumber": "رقم الإقامة",
+      "nationality": "الجنسية",
       "iqamaExpiry": "تاريخ انتهاء الإقامة",
       "passportExpiry": "تاريخ انتهاء جواز السفر",
       "drivingLicenseExpiry": "تاريخ انتهاء رخصة القيادة",

@@ -315,6 +315,7 @@
       "email": "Email",
       "department": "Department",
       "iqamaNumber": "Iqama Number",
+      "nationality": "Nationality",
       "iqamaExpiry": "Iqama Expiry",
       "passportExpiry": "Passport Expiry",
       "drivingLicenseExpiry": "Driving License Expiry",

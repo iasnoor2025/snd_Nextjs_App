@@ -874,6 +874,15 @@ export default function EmployeeManagementPage() {
                       </div>
                     </TableHead>
                     
+                    <TableHead
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => handleSort('nationality')}
+                    >
+                      <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        {t('employee.table.headers.nationality')}
+                        {getSortIcon('nationality')}
+                      </div>
+                    </TableHead>
                     
                     <TableHead className={isRTL ? 'text-right' : 'text-left'}>
                       <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -898,7 +907,7 @@ export default function EmployeeManagementPage() {
                 <TableBody>
                   {currentEmployees.length === 0 ? (
                     <TableRow>
-                                             <TableCell colSpan={7} className="text-center py-8">
+                                             <TableCell colSpan={8} className="text-center py-8">
                         <div className="text-muted-foreground">
                           {user?.role === 'EMPLOYEE'
                             ? 'No employee record found for your account. Please contact your administrator.'
@@ -977,6 +986,9 @@ export default function EmployeeManagementPage() {
                            )}
                          </TableCell>
                         
+                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>
+                          {employee.nationality || t('employee.na')}
+                        </TableCell>
                         
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
                           {employee.current_assignment ? (
