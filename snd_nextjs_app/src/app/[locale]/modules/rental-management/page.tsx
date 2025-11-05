@@ -774,54 +774,51 @@ export default function RentalManagementPage() {
               <DialogTitle>{t('rental.createNewRental')}</DialogTitle>
               <DialogDescription>{t('rental.createEquipmentRentalContract')}</DialogDescription>
             </DialogHeader>
-                        <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="rentalNumber" className={cn("text-sm font-medium", formErrors.rentalNumber && "text-red-500")}>
-                    {t('rental.fields.rentalNumber')} *
-                  </Label>
-                  <Input
-                    id="rentalNumber"
-                    value={formData.rentalNumber}
-                    onChange={e => {
-                      setFormData(prev => ({ ...prev, rentalNumber: e.target.value }));
-                      setFormErrors(prev => ({ ...prev, rentalNumber: '' }));
-                    }}
-                    className={cn(formErrors.rentalNumber && "border-red-500 focus:border-red-500")}
-                    readOnly
-                  />
-                  {formErrors.rentalNumber && (
-                    <p className="mt-1 text-sm text-red-500">{formErrors.rentalNumber}</p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="customerId" className={cn("text-sm font-medium", formErrors.customerId && "text-red-500")}>
-                    {t('rental.fields.customer')} *
-                  </Label>
-                  <SearchableSelect
-                    value={formData.customerId}
-                    onValueChange={value => {
-                      console.log('Selected customer:', value); // Debug log
-                      setFormData(prev => ({ ...prev, customerId: value }));
-                      setFormErrors(prev => ({ ...prev, customerId: '' }));
-                    }}
-                    options={customers.map(customer => ({
-                      value: customer.id.toString(),
-                      label: customer.name,
-                      email: customer.email,
-                      phone: customer.phone
-                    }))}
-                    placeholder={t('rental.fields.selectCustomer')}
-                    searchPlaceholder={t('rental.searchCustomers')}
-                    emptyMessage={t('rental.noCustomersFound')}
-                    required
-                    searchFields={['label', 'email', 'phone']}
-                    loading={loading}
-                    error={formErrors.customerId}
-                  />
-                </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="rentalNumber" className={cn("text-sm font-medium", formErrors.rentalNumber && "text-red-500")}>
+                  {t('rental.fields.rentalNumber')} *
+                </Label>
+                <Input
+                  id="rentalNumber"
+                  value={formData.rentalNumber}
+                  onChange={e => {
+                    setFormData(prev => ({ ...prev, rentalNumber: e.target.value }));
+                    setFormErrors(prev => ({ ...prev, rentalNumber: '' }));
+                  }}
+                  className={cn(formErrors.rentalNumber && "border-red-500 focus:border-red-500")}
+                  readOnly
+                />
+                {formErrors.rentalNumber && (
+                  <p className="mt-1 text-sm text-red-500">{formErrors.rentalNumber}</p>
+                )}
               </div>
-              
+              <div>
+                <Label htmlFor="customerId" className={cn("text-sm font-medium", formErrors.customerId && "text-red-500")}>
+                  {t('rental.fields.customer')} *
+                </Label>
+                <SearchableSelect
+                  value={formData.customerId}
+                  onValueChange={value => {
+                    console.log('Selected customer:', value); // Debug log
+                    setFormData(prev => ({ ...prev, customerId: value }));
+                    setFormErrors(prev => ({ ...prev, customerId: '' }));
+                  }}
+                  options={customers.map(customer => ({
+                    value: customer.id.toString(),
+                    label: customer.name,
+                    email: customer.email,
+                    phone: customer.phone
+                  }))}
+                  placeholder={t('rental.fields.selectCustomer')}
+                  searchPlaceholder={t('rental.searchCustomers')}
+                  emptyMessage={t('rental.noCustomersFound')}
+                  required
+                  searchFields={['label', 'email', 'phone']}
+                  loading={loading}
+                  error={formErrors.customerId}
+                />
+              </div>
               <div>
                 <Label htmlFor="startDate" className="text-sm font-medium">
                   {t('rental.fields.startDate')} ({t('rental.optional')})
@@ -837,7 +834,6 @@ export default function RentalManagementPage() {
                   {t('rental.startDateOptionalHint', { defaultValue: 'Leave empty if rental not started yet' })}
                 </p>
               </div>
-
               <div>
                 <Label htmlFor="expectedEndDate" className="text-sm font-medium">
                   {t('rental.fields.expectedEndDate')}
@@ -854,6 +850,18 @@ export default function RentalManagementPage() {
                 <p className="mt-1 text-sm text-muted-foreground">
                   {t('rental.expectedEndDateOptional')}
                 </p>
+              </div>
+              <div>
+                <Label htmlFor="supervisor" className="text-sm font-medium">
+                  {t('rental.fields.supervisor')}
+                </Label>
+                <EmployeeDropdown
+                  value={formData.supervisor}
+                  onValueChange={(value) => {
+                    setFormData(prev => ({ ...prev, supervisor: value }));
+                  }}
+                  placeholder={t('rental.fields.selectSupervisor')}
+                />
               </div>
             </div>
             <div>
