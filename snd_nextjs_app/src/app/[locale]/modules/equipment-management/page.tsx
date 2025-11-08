@@ -490,7 +490,27 @@ export default function EquipmentManagementPage() {
 
   // Calculate equipment statistics by grouping equipment by category
   const calculateEquipmentStats = () => {
-    return groupEquipmentByCategory(equipment, categories);
+    const stats: { [key: string]: { total: number; assigned: number; notAssigned: number } } = {};
+    
+    equipment.forEach(item => {
+      const categoryId = item.category_id;
+      const categoryName = getEquipmentCategoryName(categoryId || null, categories);
+      
+      if (!stats[categoryName]) {
+        stats[categoryName] = { total: 0, assigned: 0, notAssigned: 0 };
+      }
+      
+      stats[categoryName].total += 1;
+      
+      // Check if equipment is assigned (has active assignment)
+      if (item.current_assignment && item.current_assignment.status === 'active') {
+        stats[categoryName].assigned += 1;
+      } else {
+        stats[categoryName].notAssigned += 1;
+      }
+    });
+    
+    return stats;
   };
 
   const equipmentStats = calculateEquipmentStats();
@@ -531,35 +551,131 @@ export default function EquipmentManagementPage() {
         {Object.keys(equipmentStats).length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-3">
             {Object.entries(equipmentStats)
-              .sort(([,a], [,b]) => b - a) // Sort by count descending
-              .map(([equipmentType, count]) => (
-                <Card 
-                  key={equipmentType} 
-                  className={`hover:shadow-md transition-shadow cursor-pointer ${
-                    filterType === equipmentType ? 'ring-2 ring-primary' : ''
-                  }`}
-                  onClick={() => setFilterType(filterType === equipmentType ? 'all' : equipmentType)}
-                >
-                  <CardContent className="p-3">
-                    <div className="flex flex-col items-center text-center">
-                      <div className="text-2xl mb-1">
-                        {(() => {
-                          const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#F97316', '#84CC16', '#EC4899', '#14B8A6', '#F43F5E', '#6366F1'];
-                          const category = categories.find(cat => cat.name.toUpperCase() === equipmentType);
-                          const colorIndex = category ? categories.indexOf(category) % colors.length : 0;
-                          return <span style={{ color: colors[colorIndex] }}>●</span>;
-                        })()}
+              .sort(([,a], [,b]) => b.total - a.total) // Sort by total count descending
+              .map(([equipmentType, stats], index) => {
+                const colors = [
+                  { primary: '#3B82F6', secondary: '#60A5FA', gradient: 'from-blue-500/20 to-blue-600/10' },
+                  { primary: '#10B981', secondary: '#34D399', gradient: 'from-emerald-500/20 to-emerald-600/10' },
+                  { primary: '#F59E0B', secondary: '#FBBF24', gradient: 'from-amber-500/20 to-amber-600/10' },
+                  { primary: '#EF4444', secondary: '#F87171', gradient: 'from-red-500/20 to-red-600/10' },
+                  { primary: '#8B5CF6', secondary: '#A78BFA', gradient: 'from-purple-500/20 to-purple-600/10' },
+                  { primary: '#06B6D4', secondary: '#22D3EE', gradient: 'from-cyan-500/20 to-cyan-600/10' },
+                  { primary: '#F97316', secondary: '#FB923C', gradient: 'from-orange-500/20 to-orange-600/10' },
+                  { primary: '#84CC16', secondary: '#A3E635', gradient: 'from-lime-500/20 to-lime-600/10' },
+                  { primary: '#EC4899', secondary: '#F472B6', gradient: 'from-pink-500/20 to-pink-600/10' },
+                  { primary: '#14B8A6', secondary: '#2DD4BF', gradient: 'from-teal-500/20 to-teal-600/10' },
+                  { primary: '#F43F5E', secondary: '#FB7185', gradient: 'from-rose-500/20 to-rose-600/10' },
+                  { primary: '#6366F1', secondary: '#818CF8', gradient: 'from-indigo-500/20 to-indigo-600/10' },
+                ];
+                const category = categories.find(cat => cat.name.toUpperCase() === equipmentType);
+                const colorIndex = category ? categories.indexOf(category) % colors.length : index % colors.length;
+                const colorScheme = colors[colorIndex];
+                const isSelected = filterType === equipmentType;
+                const assignedPercentage = stats.total > 0 ? (stats.assigned / stats.total) * 100 : 0;
+                
+                return (
+                  <Card 
+                    key={equipmentType} 
+                    className={cn(
+                      "group relative overflow-hidden cursor-pointer transition-all duration-300",
+                      "hover:shadow-2xl hover:-translate-y-1",
+                      "border-2 backdrop-blur-sm",
+                      !isSelected && "border-border/50 bg-gradient-to-br from-background/95 to-background/80 hover:border-primary/30"
+                    )}
+                    style={isSelected ? {
+                      borderColor: `${colorScheme.primary}80`,
+                      background: `linear-gradient(135deg, ${colorScheme.primary}20, ${colorScheme.secondary}10)`,
+                      boxShadow: `0 0 0 2px ${colorScheme.primary}40, 0 4px 20px ${colorScheme.primary}20`,
+                    } : {}}
+                    onClick={() => setFilterType(filterType === equipmentType ? 'all' : equipmentType)}
+                  >
+                    {/* Animated background gradient */}
+                    <div 
+                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                      style={{
+                        background: `linear-gradient(135deg, ${colorScheme.primary}20, ${colorScheme.secondary}10)`,
+                      }}
+                    />
+                    
+                    {/* Glow effect */}
+                    <div 
+                      className="absolute -inset-0.5 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500"
+                      style={{
+                        background: `linear-gradient(135deg, ${colorScheme.primary}40, ${colorScheme.secondary}20)`,
+                      }}
+                    />
+                    
+                    <CardContent className="relative p-3">
+                      <div className="flex flex-col items-center text-center space-y-2">
+                        {/* Equipment Type */}
+                        <div className="space-y-0.5">
+                          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80 truncate w-full">
+                            {equipmentType}
+                          </p>
+                          
+                          {/* Total Count */}
+                          <p 
+                            className="text-xl font-bold bg-gradient-to-r bg-clip-text text-transparent"
+                            style={{
+                              backgroundImage: `linear-gradient(135deg, ${colorScheme.primary}, ${colorScheme.secondary})`,
+                            }}
+                          >
+                            {stats.total}
+                          </p>
+                        </div>
+                        
+                        {/* Stats with progress bar */}
+                        <div className="w-full space-y-1.5 pt-1.5 border-t border-border/50">
+                          {/* Assigned */}
+                          <div className="space-y-0.5">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground/70 font-medium text-[10px]">
+                                {t('equipment.equipment_management.assigned')}
+                              </span>
+                              <span 
+                                className="font-bold tabular-nums text-[10px]"
+                                style={{ color: colorScheme.primary }}
+                              >
+                                {stats.assigned}
+                              </span>
+                            </div>
+                            <div className="h-1 bg-muted/30 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full rounded-full transition-all duration-500 group-hover:shadow-md"
+                                style={{
+                                  width: `${assignedPercentage}%`,
+                                  background: `linear-gradient(90deg, ${colorScheme.primary}, ${colorScheme.secondary})`,
+                                  boxShadow: `0 0 6px ${colorScheme.primary}40`,
+                                }}
+                              />
+                            </div>
+                          </div>
+                          
+                          {/* Not Assigned */}
+                          <div className="space-y-0.5">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground/70 font-medium text-[10px]">
+                                {t('equipment.equipment_management.not_assigned')}
+                              </span>
+                              <span className="font-bold tabular-nums text-[10px] text-muted-foreground">
+                                {stats.notAssigned}
+                              </span>
+                            </div>
+                            <div className="h-1 bg-muted/30 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-gray-400 to-gray-500"
+                                style={{
+                                  width: `${stats.total > 0 ? (stats.notAssigned / stats.total) * 100 : 0}%`,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-xs font-medium text-muted-foreground mb-1 truncate w-full">
-                        {equipmentType}
-                      </p>
-                      <p className="text-xl font-bold text-primary">
-                        {count}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
           </div>
         )}
 
