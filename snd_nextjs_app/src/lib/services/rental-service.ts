@@ -8,7 +8,7 @@ import {
   rentalItems,
   rentals,
 } from '@/lib/drizzle/schema';
-import { and, desc, eq, gte, ilike, lte, or, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, ilike, isNull, lt, lte, ne, or, sql } from 'drizzle-orm';
 import { 
   cacheQueryResult, 
   generateCacheKey, 
@@ -872,7 +872,8 @@ export class RentalService {
       const operatorId = item.operatorId;
       
       // Clean up associated assignments before deleting the item
-      await this.cleanupRentalItemAssignments(rentalId, equipmentId, operatorId);
+      // Pass the item ID so we can check for other items with the same operator
+      await this.cleanupRentalItemAssignments(rentalId, equipmentId, operatorId, id);
       
       // Delete the rental item
       await db.delete(rentalItems).where(eq(rentalItems.id, id));
@@ -890,10 +891,52 @@ export class RentalService {
   }
 
   // Clean up employee and equipment assignments when a rental item is deleted
-  static async cleanupRentalItemAssignments(rentalId: number, equipmentId?: number | null, operatorId?: number | null) {
+  static async cleanupRentalItemAssignments(rentalId: number, equipmentId?: number | null, operatorId?: number | null, itemId?: number) {
     try {
+      // Get the rental item to find its start date for reactivating previous assignment
+      let itemStartDate: string | null = null;
+      if (itemId) {
+        const item = await this.getRentalItem(itemId);
+        if (item?.startDate) {
+          itemStartDate = item.startDate;
+        }
+      }
+
       // Clean up equipment assignments if equipmentId exists
       if (equipmentId) {
+        let shouldUpdateEquipmentStatus = false;
+        
+        // Find the most recent completed equipment assignment before this one
+        if (itemStartDate) {
+          const previousCompletedAssignment = await db
+            .select()
+            .from(equipmentRentalHistory)
+            .where(
+              and(
+                eq(equipmentRentalHistory.equipmentId, equipmentId),
+                eq(equipmentRentalHistory.status, 'completed'),
+                lt(equipmentRentalHistory.startDate, itemStartDate)
+              )
+            )
+            .orderBy(desc(equipmentRentalHistory.startDate))
+            .limit(1);
+
+          // Reactivate the previous completed assignment
+          if (previousCompletedAssignment.length > 0) {
+            await db
+              .update(equipmentRentalHistory)
+              .set({
+                status: 'active',
+                endDate: null,
+                updatedAt: new Date().toISOString(),
+              })
+              .where(eq(equipmentRentalHistory.id, previousCompletedAssignment[0].id));
+            console.log(`Reactivated previous equipment assignment ${previousCompletedAssignment[0].id} for equipment ${equipmentId}`);
+            shouldUpdateEquipmentStatus = true;
+          }
+        }
+
+        // Delete the current equipment assignment
         await db
           .delete(equipmentRentalHistory)
           .where(
@@ -902,18 +945,82 @@ export class RentalService {
               eq(equipmentRentalHistory.rentalId, rentalId)
             )
           );
+        console.log(`Deleted equipment assignment for equipment ${equipmentId} in rental ${rentalId}`);
+        shouldUpdateEquipmentStatus = true;
+        
+        // Update equipment status after all changes
+        if (shouldUpdateEquipmentStatus) {
+          const { EquipmentStatusService } = await import('@/lib/services/equipment-status-service');
+          await EquipmentStatusService.updateEquipmentStatusImmediately(equipmentId);
+        }
       }
 
       // Clean up employee assignments if operatorId exists
       if (operatorId) {
-        await db
-          .delete(employeeAssignments)
-          .where(
-            and(
-              eq(employeeAssignments.employeeId, operatorId),
-              eq(employeeAssignments.rentalId, rentalId)
-            )
-          );
+        // Check if there are other rental items in this rental with the same operator
+        // (excluding the item being deleted)
+        const whereConditions = [
+          eq(rentalItems.rentalId, rentalId),
+          eq(rentalItems.operatorId, operatorId),
+        ];
+        
+        // Exclude the current item if itemId is provided
+        if (itemId) {
+          whereConditions.push(ne(rentalItems.id, itemId));
+        }
+        
+        const otherItemsWithOperator = await db
+          .select({ id: rentalItems.id })
+          .from(rentalItems)
+          .where(and(...whereConditions));
+
+        // Delete employee assignment if no other items use this operator
+        // OR if we can't determine (itemId not provided), always delete to be safe
+        if (otherItemsWithOperator.length === 0 || !itemId) {
+          // Find the most recent completed employee assignment before this one
+          if (itemStartDate) {
+            const previousCompletedAssignment = await db
+              .select()
+              .from(employeeAssignments)
+              .where(
+                and(
+                  eq(employeeAssignments.employeeId, operatorId),
+                  eq(employeeAssignments.status, 'completed'),
+                  lt(employeeAssignments.startDate, itemStartDate)
+                )
+              )
+              .orderBy(desc(employeeAssignments.startDate))
+              .limit(1);
+
+            // Reactivate the previous completed assignment
+            if (previousCompletedAssignment.length > 0) {
+              await db
+                .update(employeeAssignments)
+                .set({
+                  status: 'active',
+                  endDate: null,
+                  updatedAt: new Date().toISOString().split('T')[0],
+                })
+                .where(eq(employeeAssignments.id, previousCompletedAssignment[0].id));
+              console.log(`Reactivated previous employee assignment ${previousCompletedAssignment[0].id} for operator ${operatorId}`);
+            }
+          }
+
+          // Delete the current employee assignment
+          await db
+            .delete(employeeAssignments)
+            .where(
+              and(
+                eq(employeeAssignments.employeeId, operatorId),
+                eq(employeeAssignments.rentalId, rentalId)
+              )
+            );
+          console.log(`Deleted employee assignment for operator ${operatorId} in rental ${rentalId}`);
+        } else {
+          console.log(`Kept employee assignment for operator ${operatorId} in rental ${rentalId} (${otherItemsWithOperator.length} other items still use this operator)`);
+        }
+      } else {
+        console.log(`No operatorId provided for rental ${rentalId}, skipping employee assignment cleanup`);
       }
 
       console.log(`Cleaned up assignments for rental ${rentalId}, equipment ${equipmentId}, operator ${operatorId}`);
