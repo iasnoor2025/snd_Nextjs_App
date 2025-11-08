@@ -540,12 +540,12 @@ export default function RentalManagementPage() {
     <ProtectedRoute requiredPermission={{ action: 'read', subject: 'Rental' }}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">{t('rental.dashboard.title')}</h1>
-            <p className="text-muted-foreground">{t('rental.dashboard.description')}</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">{t('rental.dashboard.title')}</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">{t('rental.dashboard.description')}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <PermissionContent action="export" subject="Rental">
               <Button variant="outline">
                 <Download className="h-4 w-4 mr-2" />

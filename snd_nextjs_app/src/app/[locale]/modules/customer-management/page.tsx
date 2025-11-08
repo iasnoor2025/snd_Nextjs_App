@@ -253,15 +253,15 @@ export default function CustomerManagementPage() {
     <ProtectedRoute>
       <div className="container mx-auto py-6 space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Users className="h-8 w-8 text-blue-600" />
+            <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+              <Users className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
               {t('customer.title')}
             </h1>
-            <p className="text-muted-foreground">{t('customer.description')}</p>
+            <p className="text-sm sm:text-base text-muted-foreground">{t('customer.description')}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             {hasPermission('create', 'Customer') && (
               <Button 
                 onClick={handleAddCustomer}

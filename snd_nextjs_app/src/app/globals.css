@@ -248,6 +248,25 @@
       min-width: 44px;
     }
     
+    /* Prevent button overflow on mobile */
+    .flex-wrap {
+      flex-wrap: wrap;
+    }
+    
+    /* Ensure buttons in flex containers wrap properly */
+    .flex > button,
+    .flex > a[role="button"],
+    .flex > [role="button"] {
+      flex-shrink: 1;
+      min-width: 0;
+    }
+    
+    /* Button groups should wrap on mobile */
+    .flex.items-center.gap-2 > button,
+    .flex.items-center.gap-2 > a[role="button"] {
+      flex: 0 1 auto;
+    }
+    
     /* RTL mobile specific fixes */
     .rtl [data-slot='sidebar-inset'] {
       @apply mr-0;

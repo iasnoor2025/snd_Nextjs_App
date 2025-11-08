@@ -704,11 +704,11 @@ export default function TimesheetManagementPage() {
   return (
     <ProtectedRoute requiredPermission={{ action: 'read', subject: 'Timesheet' }}>
       <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold">{t('timesheet.timesheet_management')}</h1>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold">{t('timesheet.timesheet_management')}</h1>
             {autoGenerating && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span>Auto-generating timesheets...</span>
                 {autoGenerationProgress && (
@@ -720,7 +720,7 @@ export default function TimesheetManagementPage() {
               </div>
             )}
           </div>
-          <div className="flex space-x-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <PermissionContent action="export" subject="Timesheet">
               <Button variant="outline" size="sm">
                 <Download className="h-4 w-4 mr-2" />

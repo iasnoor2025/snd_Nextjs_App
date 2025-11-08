@@ -532,21 +532,21 @@ export default function EmployeeManagementPage() {
         </div>
       ) : (
         <div className="space-y-6">
-        <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${isRTL ? 'sm:flex-row-reverse' : ''}`}>
           <div className={isRTL ? 'text-right' : 'text-left'}>
-            <h1 className="text-3xl font-bold">
+            <h1 className="text-2xl sm:text-3xl font-bold">
               {user?.role === 'EMPLOYEE'
                 ? t('employee.title') + ' - My Profile'
                 : t('employee.title')}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm sm:text-base text-muted-foreground">
               {user?.role === 'EMPLOYEE'
                 ? t('employee.subtitle') + ' - You are viewing your own employee record'
                 : t('employee.subtitle')}
             </p>
           </div>
 
-          <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <div className={`flex flex-wrap items-center gap-2 w-full sm:w-auto ${isRTL ? 'flex-row-reverse justify-end sm:justify-start' : 'justify-start sm:justify-end'}`}>
             <PermissionContent action="sync" subject="Employee">
               <Button
                 variant="outline"

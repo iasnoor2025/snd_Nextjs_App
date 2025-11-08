@@ -262,14 +262,14 @@ export default function MaintenanceManagementPage() {
   return (
     <ProtectedRoute>
       <div className="container mx-auto p-6 space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">{t('maintenance.title')}</h1>
-            <p className="text-muted-foreground">{t('maintenance.subtitle')}</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">{t('maintenance.title')}</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">{t('maintenance.subtitle')}</p>
           </div>
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="w-full sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" />
                 {t('maintenance.actions.scheduleMaintenance')} +
               </Button>

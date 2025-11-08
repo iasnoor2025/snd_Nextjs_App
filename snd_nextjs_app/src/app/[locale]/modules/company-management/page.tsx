@@ -234,17 +234,17 @@ export default function CompanyManagementPage() {
     <ProtectedRoute requiredPermission={{ action: 'manage', subject: 'Company' }}>
       <div className="w-full space-y-6">
         {/* Header Section */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center space-x-2">
-            <Building2 className="h-8 w-8 text-primary" />
+            <Building2 className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
             <div>
-              <h1 className="text-3xl font-bold">{t('company.title')}</h1>
-              <p className="text-muted-foreground">{t('company.description')}</p>
+              <h1 className="text-2xl sm:text-3xl font-bold">{t('company.title')}</h1>
+              <p className="text-sm sm:text-base text-muted-foreground">{t('company.description')}</p>
             </div>
           </div>
           <PermissionContent action="create" subject="Company">
             <Link href="/modules/company-management/create">
-              <Button size="lg">
+              <Button size="lg" className="w-full sm:w-auto">
                 <Plus className="h-5 w-5 mr-2" />
                 {t('company.actions.addCompany')}
               </Button>

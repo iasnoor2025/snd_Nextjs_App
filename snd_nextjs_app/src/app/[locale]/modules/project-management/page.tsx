@@ -317,12 +317,12 @@ export default function ProjectManagementPage() {
     <ProtectedRoute requiredPermission={{ action: 'read', subject: 'Project' }}>
       <div className="p-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold">{t('project.title')}</h1>
-            <p className="text-muted-foreground">{t('project.description')}</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">{t('project.title')}</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">{t('project.description')}</p>
           </div>
-          <div className="flex space-x-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <PermissionContent action="export" subject="Project">
               <Button variant="outline" size="sm" onClick={handleExport}>
                 <Download className="h-4 w-4 mr-2" />
