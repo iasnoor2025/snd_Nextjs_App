@@ -1,6 +1,6 @@
 import { db } from '@/lib/drizzle';
-import { equipment, equipmentMaintenance, equipmentRentalHistory } from '@/lib/drizzle/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { equipment, equipmentMaintenance, equipmentRentalHistory, rentalItems } from '@/lib/drizzle/schema';
+import { eq, and, sql, or } from 'drizzle-orm';
 
 export class EquipmentStatusService {
   /**
@@ -45,13 +45,40 @@ export class EquipmentStatusService {
         .limit(1);
 
       // Check for active rental/assignment records
+      // An assignment is active if:
+      // 1. equipmentRentalHistory.status = 'active' AND
+      // 2. For rental assignments, the rental item must also be active (not completed)
       const activeAssignments = await db
-        .select({ id: equipmentRentalHistory.id })
+        .select({ 
+          id: equipmentRentalHistory.id,
+          assignmentType: equipmentRentalHistory.assignmentType,
+          rentalId: equipmentRentalHistory.rentalId,
+        })
         .from(equipmentRentalHistory)
+        .leftJoin(
+          rentalItems,
+          and(
+            eq(rentalItems.rentalId, equipmentRentalHistory.rentalId),
+            eq(rentalItems.equipmentId, equipmentRentalHistory.equipmentId)
+          )
+        )
         .where(
           and(
             eq(equipmentRentalHistory.equipmentId, equipmentId),
-            eq(equipmentRentalHistory.status, 'active')
+            eq(equipmentRentalHistory.status, 'active'),
+            // For rental assignments, also check that rental item is not completed
+            or(
+              // Not a rental assignment
+              sql`${equipmentRentalHistory.assignmentType} != 'rental'`,
+              // Is a rental assignment but rental item doesn't exist (legacy data)
+              sql`${rentalItems.id} IS NULL`,
+              // Is a rental assignment and rental item exists but is active (not completed)
+              and(
+                sql`${rentalItems.id} IS NOT NULL`,
+                sql`${rentalItems.status} = 'active'`,
+                sql`${rentalItems.completedDate} IS NULL`
+              )
+            )
           )
         )
         .limit(1);

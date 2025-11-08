@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { rentals, rentalItems } from '@/lib/drizzle/schema';
 import { RentalService } from '@/lib/services/rental-service';
+import { EquipmentStatusService } from '@/lib/services/equipment-status-service';
 import { eq, and } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -45,6 +46,19 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
         updatedAt: completionDate,
       })
       .where(and(eq(rentalItems.rentalId, parseInt(id)), eq(rentalItems.status, 'active')));
+
+    // Update equipment status for all equipment in this rental
+    const completedItems = await db
+      .select({ equipmentId: rentalItems.equipmentId })
+      .from(rentalItems)
+      .where(eq(rentalItems.rentalId, parseInt(id)));
+
+    // Update status for each equipment
+    for (const item of completedItems) {
+      if (item.equipmentId) {
+        await EquipmentStatusService.updateEquipmentStatusImmediately(item.equipmentId);
+      }
+    }
 
     return NextResponse.json({
       message: 'Rental completed successfully',

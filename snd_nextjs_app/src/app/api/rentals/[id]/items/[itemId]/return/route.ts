@@ -1,4 +1,5 @@
 import { RentalService } from '@/lib/services/rental-service';
+import { EquipmentStatusService } from '@/lib/services/equipment-status-service';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(
@@ -60,6 +61,11 @@ export async function POST(
             eq(employeeAssignments.status, 'active')
           )
         );
+    }
+
+    // Update equipment status after returning the item
+    if (currentItem.equipmentId) {
+      await EquipmentStatusService.updateEquipmentStatusImmediately(currentItem.equipmentId);
     }
 
     return NextResponse.json({

@@ -276,6 +276,15 @@ export class CentralAssignmentService {
     const completionDate = endDate || new Date().toISOString().split('T')[0];
 
     if (type === 'equipment') {
+      // Get equipment ID before completing
+      const equipmentAssignment = await db
+        .select({ equipmentId: equipmentRentalHistory.equipmentId })
+        .from(equipmentRentalHistory)
+        .where(eq(equipmentRentalHistory.id, assignmentId))
+        .limit(1);
+
+      const equipmentId = equipmentAssignment[0]?.equipmentId;
+
       // Try to complete in all possible tables
       await Promise.all([
         db.update(equipmentRentalHistory)
@@ -290,6 +299,12 @@ export class CentralAssignmentService {
           .set({ status: 'completed', completedDate: completionDate, updatedAt: new Date().toISOString().split('T')[0] })
           .where(eq(rentalItems.id, assignmentId))
       ]);
+
+      // Update equipment status after completing assignment
+      if (equipmentId) {
+        const { EquipmentStatusService } = await import('@/lib/services/equipment-status-service');
+        await EquipmentStatusService.updateEquipmentStatusImmediately(equipmentId);
+      }
     } else {
       await db.update(employeeAssignments)
         .set({ status: 'completed', endDate: completionDate, updatedAt: new Date().toISOString().split('T')[0] })

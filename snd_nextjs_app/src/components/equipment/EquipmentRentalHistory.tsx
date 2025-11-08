@@ -89,6 +89,8 @@ interface AssignmentHistoryItem {
   rental_expected_end_date?: string;
   rental_actual_end_date?: string;
   rental_status?: string;
+  duration_days?: number;
+  operator_count?: number;
   created_at: string;
   updated_at: string;
 }
@@ -238,17 +240,13 @@ export default function EquipmentAssignmentHistory({
 
   const getCurrentAssignment = () => {
     return assignmentHistory.find(
-      assignment =>
-        assignment.status === 'active' &&
-        (assignment.rental_status === 'active' ||
-          assignment.rental_status === 'approved' ||
-          !assignment.rental_status)
+      assignment => assignment.status === 'active'
     );
   };
 
   const getCompletedAssignments = () => {
     return assignmentHistory.filter(
-      assignment => assignment.rental_status === 'completed' || assignment.status === 'completed'
+      assignment => assignment.status === 'completed'
     );
   };
 
@@ -257,6 +255,14 @@ export default function EquipmentAssignmentHistory({
       (total, assignment) => total + (Number(assignment.total_price) || 0),
       0
     );
+  };
+
+  // Format number with thousand separators
+  const formatNumber = (value: number): string => {
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
   };
 
   const fetchEmployees = async () => {
@@ -507,7 +513,7 @@ export default function EquipmentAssignmentHistory({
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium text-muted-foreground">{t('equipment.assignmentHistory.totalRevenue')}</span>
               </div>
-              <div className="text-2xl font-bold">SAR {totalRevenue.toFixed(2)}</div>
+              <div className="text-2xl font-bold">SAR {formatNumber(totalRevenue)}</div>
             </div>
 
             <div className="bg-muted p-4 rounded-lg">
@@ -547,8 +553,8 @@ export default function EquipmentAssignmentHistory({
                               ? `Project: ${getCurrentAssignment()?.project_name}`
                               : `Manual: ${getCurrentAssignment()?.employee_name}`}
                         </span>
-                        {getCurrentAssignment()?.rental_status &&
-                          getRentalStatusBadge(getCurrentAssignment()!.rental_status!)}
+                        {getCurrentAssignment()?.status &&
+                          getStatusBadge(getCurrentAssignment()!.status)}
                       </div>
                       <div className="text-sm text-muted-foreground">
                         {getCurrentAssignment()?.assignment_type === 'rental' &&
@@ -570,15 +576,30 @@ export default function EquipmentAssignmentHistory({
                               'MMM dd, yyyy'
                             )
                           : 'Not specified'}
+                        {getCurrentAssignment()?.duration_days && getCurrentAssignment()!.duration_days > 0 && (
+                          <span className="ml-2">
+                            ({getCurrentAssignment()!.duration_days} {getCurrentAssignment()!.duration_days === 1 ? 'day' : 'days'}
+                            {getCurrentAssignment()?.status === 'active' && ' ongoing'})
+                          </span>
+                        )}
                       </div>
+                      {getCurrentAssignment()?.assignment_type === 'rental' && getCurrentAssignment()?.operator_count !== undefined && (
+                        <div className="text-sm text-blue-600 font-medium">
+                          {getCurrentAssignment()!.operator_count === 0
+                            ? 'No operators assigned'
+                            : getCurrentAssignment()!.operator_count === 1
+                              ? '1 operator assigned'
+                              : `${getCurrentAssignment()!.operator_count} operators assigned`}
+                        </div>
+                      )}
                     </div>
                     <div className="text-right">
                       <div className="text-lg font-bold">
-                        SAR {(Number(getCurrentAssignment()!.total_price) || 0).toFixed(2)}
+                        SAR {formatNumber(Number(getCurrentAssignment()!.total_price) || 0)}
                       </div>
                       <div className="text-sm text-muted-foreground">
                         {getCurrentAssignment()!.quantity} × SAR{' '}
-                        {(Number(getCurrentAssignment()!.unit_price) || 0).toFixed(2)}{' '}
+                        {formatNumber(Number(getCurrentAssignment()!.unit_price) || 0)}{' '}
                         {getCurrentAssignment()!.rate_type}
                       </div>
                     </div>
@@ -731,16 +752,31 @@ export default function EquipmentAssignmentHistory({
                                 )}
                               </div>
                             )}
+                            {assignment.duration_days && assignment.duration_days > 0 && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                {assignment.duration_days} {assignment.duration_days === 1 ? 'day' : 'days'}
+                                {assignment.status === 'active' && ' (ongoing)'}
+                              </div>
+                            )}
+                            {assignment.assignment_type === 'rental' && assignment.operator_count !== undefined && (
+                              <div className="text-xs text-blue-600 mt-1 font-medium">
+                                {assignment.operator_count === 0
+                                  ? 'No operators'
+                                  : assignment.operator_count === 1
+                                    ? '1 operator'
+                                    : `${assignment.operator_count} operators`}
+                              </div>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div>
                             <div className="font-medium">
-                              SAR {(Number(assignment.total_price) || 0).toFixed(2)}
+                              SAR {formatNumber(Number(assignment.total_price) || 0)}
                             </div>
                             <div className="text-sm text-muted-foreground">
                               {assignment.quantity} × SAR{' '}
-                              {(Number(assignment.unit_price) || 0).toFixed(2)}{' '}
+                              {formatNumber(Number(assignment.unit_price) || 0)}{' '}
                               {getRateTypeBadge(assignment.rate_type)}
                             </div>
                           </div>
@@ -748,8 +784,6 @@ export default function EquipmentAssignmentHistory({
                         <TableCell>
                           <div className="space-y-1">
                             {getStatusBadge(assignment.status)}
-                            {assignment.rental_status &&
-                              getRentalStatusBadge(assignment.rental_status)}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -838,8 +872,6 @@ export default function EquipmentAssignmentHistory({
                   <Label className="text-sm font-medium text-muted-foreground">Status</Label>
                   <div className="flex space-x-2">
                     {getStatusBadge(selectedAssignment.status)}
-                    {selectedAssignment.rental_status &&
-                      getRentalStatusBadge(selectedAssignment.rental_status)}
                   </div>
                 </div>
               </div>
@@ -999,12 +1031,12 @@ export default function EquipmentAssignmentHistory({
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Unit Price</Label>
-                  <p>SAR {(Number(selectedAssignment.unit_price) || 0).toFixed(2)}</p>
+                  <p>SAR {formatNumber(Number(selectedAssignment.unit_price) || 0)}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Total Price</Label>
                   <p className="font-bold">
-                    SAR {(Number(selectedAssignment.total_price) || 0).toFixed(2)}
+                    SAR {formatNumber(Number(selectedAssignment.total_price) || 0)}
                   </p>
                 </div>
               </div>
