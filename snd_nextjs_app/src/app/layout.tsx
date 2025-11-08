@@ -16,6 +16,13 @@ export const metadata: Metadata = {
   description: 'SND Rental Management System',
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -24,6 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -38,7 +46,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="font-sans antialiased" suppressHydrationWarning>
+      <body className="font-sans antialiased touch-pan-y" suppressHydrationWarning>
         {children}
       </body>
     </html>

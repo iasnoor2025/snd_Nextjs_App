@@ -210,6 +210,53 @@
     [data-slot='sidebar-inset'] {
       @apply ml-0;
     }
+    
+    /* Mobile table overflow handling */
+    .table-container,
+    [data-slot="table-container"] {
+      @apply overflow-x-auto -mx-3 sm:-mx-4 md:-mx-6;
+    }
+    
+    .table-container table,
+    [data-slot="table-container"] table {
+      @apply min-w-full;
+    }
+    
+    /* Mobile-friendly scrolling */
+    body {
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Mobile form inputs - prevent zoom on focus */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="date"],
+    input[type="time"],
+    input[type="datetime-local"],
+    textarea,
+    select {
+      font-size: 16px;
+    }
+    
+    /* Mobile button touch targets */
+    button,
+    a[role="button"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    
+    /* RTL mobile specific fixes */
+    .rtl [data-slot='sidebar-inset'] {
+      @apply mr-0;
+    }
+    
+    .rtl .table-container,
+    .rtl [data-slot="table-container"] {
+      @apply -mx-3 sm:-mx-4 md:-mx-6;
+    }
   }
 
   /* Fix for content area width transitions */
@@ -237,6 +284,34 @@
   @media (max-width: 767px) {
     .rtl [data-slot='sidebar-inset'] {
       @apply ml-0 mr-0;
+    }
+    
+    /* RTL mobile table overflow handling */
+    .rtl .table-container {
+      @apply overflow-x-auto;
+    }
+    
+    .rtl [data-slot="table-container"] {
+      @apply -mx-3 sm:-mx-4 md:-mx-6;
+    }
+    
+    /* RTL mobile padding adjustments */
+    .rtl .main-content {
+      @apply p-3 sm:p-4 md:p-6;
+    }
+    
+    /* RTL mobile flex direction fixes */
+    .rtl .flex-row {
+      flex-direction: row-reverse;
+    }
+    
+    /* RTL mobile gap adjustments */
+    .rtl .gap-1 {
+      gap: 0.25rem;
+    }
+    
+    .rtl .gap-2 {
+      gap: 0.5rem;
     }
   }
 
@@ -291,17 +366,43 @@
   /* RTL SidebarInset Margin Override - Mirror LTR logic exactly */
   .rtl [data-slot='sidebar-inset'] {
     margin-left: 0 !important;
-    margin-right: 16rem;
   }
-
-  /* RTL collapsed state - same as LTR but with right margin */
-  .rtl [data-slot='sidebar-inset'].peer-data-\[state\=collapsed\] {
-    margin-right: 0 !important;
+  
+  /* Desktop RTL: When sidebar is expanded, add right margin */
+  @media (min-width: 768px) {
+    /* RTL: Default expanded state - add right margin */
+    .rtl [data-slot='sidebar-inset'] {
+      margin-right: 16rem !important;
+      margin-left: 0 !important;
+      transition: margin-right 200ms ease-linear !important;
+    }
+    
+    /* RTL collapsed state - remove right margin when sidebar is collapsed */
+    /* Using group selector to detect collapsed state from parent */
+    .rtl .group[data-state="collapsed"] ~ [data-slot='sidebar-inset'],
+    .rtl [data-state="collapsed"] ~ [data-slot='sidebar-inset'],
+    .rtl .peer[data-state="collapsed"] ~ [data-slot='sidebar-inset'] {
+      margin-right: 0 !important;
+    }
   }
-
-  /* RTL expanded state - same as LTR but with right margin */
-  .rtl [data-slot='sidebar-inset']:not(.peer-data-\[state\=collapsed\]) {
-    margin-right: 16rem !important;
+  
+  /* RTL mobile sidebar margin reset */
+  @media (max-width: 767px) {
+    .rtl [data-slot='sidebar-inset'] {
+      margin-right: 0 !important;
+    }
+    
+    /* RTL mobile toast positioning */
+    .rtl [data-sonner-toaster] {
+      left: 1rem !important;
+      right: auto !important;
+    }
+  }
+  
+  /* RTL desktop toast positioning */
+  .rtl [data-sonner-toaster] {
+    left: 1rem !important;
+    right: auto !important;
   }
 
   /* H2S Card Print Styles */

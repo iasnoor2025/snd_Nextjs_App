@@ -58,9 +58,9 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
   if (isEmployee) {
     return (
       <>
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-background flex flex-col">
           <SiteHeader />
-          <main className="flex-1 overflow-auto p-6 transition-all duration-200 ease-linear main-content w-full">
+          <main className="flex-1 overflow-auto p-3 sm:p-4 md:p-6 transition-all duration-200 ease-linear main-content w-full rtl:p-3 sm:rtl:p-4 md:rtl:p-6">
             <div className="w-full h-full max-w-none content-wrapper content-full-width">{children}</div>
           </main>
         </div>
@@ -95,7 +95,7 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
           <AppSidebar />
           <SidebarInset className="flex-1 flex flex-col min-w-0 overflow-hidden peer">
             <SiteHeader />
-            <main className="flex-1 overflow-auto p-6 transition-all duration-200 ease-linear main-content w-full">
+            <main className="flex-1 overflow-auto p-3 sm:p-4 md:p-6 transition-all duration-200 ease-linear main-content w-full">
               <div className="w-full h-full max-w-none content-wrapper content-full-width">{children}</div>
             </main>
           </SidebarInset>

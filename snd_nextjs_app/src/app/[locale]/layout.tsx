@@ -55,7 +55,7 @@ export default async function LocaleLayout({
         <Providers>
           <RBACInitializer />
           <ConditionalLayout>{children}</ConditionalLayout>
-          <Toaster position="top-right" richColors closeButton duration={4000} />
+          <Toaster position={isRTL ? "top-left" : "top-right"} richColors closeButton duration={4000} />
         </Providers>
       </ErrorBoundary>
     </div>

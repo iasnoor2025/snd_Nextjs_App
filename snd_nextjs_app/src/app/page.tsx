@@ -852,13 +852,13 @@ export default function DashboardPage() {
         />
 
         {/* Main Content */}
-        <div className="px-6 py-8 space-y-8">
+        <div className="px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8 space-y-4 sm:space-y-6 md:space-y-8 rtl:px-3 sm:rtl:px-4 md:rtl:px-6">
           {/* Section Controls */}
           <SectionControlsPermission>
-            <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/50">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg border bg-muted/50">
               <div>
-                <h3 className="text-lg font-semibold">{t('dashboard.dashboardSections')}</h3>
-                <div className="text-sm text-muted-foreground">
+                <h3 className="text-base sm:text-lg font-semibold">{t('dashboard.dashboardSections')}</h3>
+                <div className="text-xs sm:text-sm text-muted-foreground">
                   {!sectionsLoaded ? (
                     <span className="flex items-center gap-2">
                       <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
@@ -872,22 +872,23 @@ export default function DashboardPage() {
                   )}
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                 <ExportReportsPermission>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleDownloadCombinedExpiredPDF}
-                    disabled={
-                      iqamaData.filter(item => item.status === 'expired').length === 0 &&
-                      equipmentData.filter(item => item.status === 'expired').length === 0
-                    }
-                    className="flex items-center gap-2"
-                    title={t('dashboard.downloadAllExpiredPdfTitle', { count: iqamaData.filter(item => item.status === 'expired').length + equipmentData.filter(item => item.status === 'expired').length })}
-                  >
-                    <Download className="h-4 w-4" />
-                    {t('dashboard.downloadAllExpiredPdf', { count: iqamaData.filter(item => item.status === 'expired').length + equipmentData.filter(item => item.status === 'expired').length })}
-                  </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownloadCombinedExpiredPDF}
+                  disabled={
+                    iqamaData.filter(item => item.status === 'expired').length === 0 &&
+                    equipmentData.filter(item => item.status === 'expired').length === 0
+                  }
+                  className="flex items-center gap-2 text-xs sm:text-sm"
+                  title={t('dashboard.downloadAllExpiredPdfTitle', { count: iqamaData.filter(item => item.status === 'expired').length + equipmentData.filter(item => item.status === 'expired').length })}
+                >
+                  <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">{t('dashboard.downloadAllExpiredPdf', { count: iqamaData.filter(item => item.status === 'expired').length + equipmentData.filter(item => item.status === 'expired').length })}</span>
+                  <span className="sm:hidden">{t('dashboard.downloadAllExpiredPdf', { count: iqamaData.filter(item => item.status === 'expired').length + equipmentData.filter(item => item.status === 'expired').length }).split(' ')[0]}</span>
+                </Button>
                 </ExportReportsPermission>
                 <Button
                   variant="outline"
@@ -908,6 +909,7 @@ export default function DashboardPage() {
                     setSectionVisibility(newVisibility);
                     saveSectionVisibility(newVisibility);
                   }}
+                  className="text-xs sm:text-sm"
                 >
                   {t('dashboard.showAll')}
                 </Button>
@@ -930,6 +932,7 @@ export default function DashboardPage() {
                     setSectionVisibility(newVisibility);
                     saveSectionVisibility(newVisibility);
                   }}
+                  className="text-xs sm:text-sm"
                 >
                   {t('dashboard.hideAll')}
                 </Button>
@@ -952,6 +955,7 @@ export default function DashboardPage() {
                     setSectionVisibility(defaultVisibility);
                     saveSectionVisibility(defaultVisibility);
                   }}
+                  className="text-xs sm:text-sm"
                 >
                   {t('dashboard.resetToDefault')}
                 </Button>
@@ -1073,9 +1077,9 @@ export default function DashboardPage() {
           {/* Hidden Sections Summary */}
           {Object.values(sectionVisibility).some(visible => !visible) && (
             <SectionControlsPermission>
-              <div className="p-4 rounded-lg border bg-muted/50">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold">{t('dashboard.hiddenSections')}</h3>
+              <div className="p-3 sm:p-4 rounded-lg border bg-muted/50">
+                <div className="flex items-center justify-between mb-2 sm:mb-3">
+                  <h3 className="text-base sm:text-lg font-semibold">{t('dashboard.hiddenSections')}</h3>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {!sectionVisibility.iqama && (
@@ -1083,7 +1087,7 @@ export default function DashboardPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => toggleSection('iqama')}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 text-xs sm:text-sm"
                     >
                       {t('dashboard.showIqamaSection')}
                     </Button>
@@ -1093,7 +1097,7 @@ export default function DashboardPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => toggleSection('equipment')}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 text-xs sm:text-sm"
                     >
                       {t('dashboard.showEquipmentSection')}
                     </Button>
@@ -1103,7 +1107,7 @@ export default function DashboardPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => toggleSection('financial')}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 text-xs sm:text-sm"
                     >
                       {t('dashboard.showFinancialSection')}
                     </Button>
@@ -1113,7 +1117,7 @@ export default function DashboardPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => toggleSection('timesheets')}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 text-xs sm:text-sm"
                     >
                       {t('dashboard.showTimesheetsSection')}
                     </Button>
@@ -1123,7 +1127,7 @@ export default function DashboardPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => toggleSection('projectOverview')}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 text-xs sm:text-sm"
                     >
                       {t('dashboard.showProjectOverviewSection')}
                     </Button>
@@ -1133,7 +1137,7 @@ export default function DashboardPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => toggleSection('manualAssignments')}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 text-xs sm:text-sm"
                     >
                       {t('dashboard.showManualAssignments')}
                     </Button>
@@ -1143,7 +1147,7 @@ export default function DashboardPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => toggleSection('quickActions')}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 text-xs sm:text-sm"
                     >
                       {t('dashboard.showQuickActions')}
                     </Button>
@@ -1153,7 +1157,7 @@ export default function DashboardPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => toggleSection('recentActivity')}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 text-xs sm:text-sm"
                     >
                       {t('dashboard.showRecentActivity')}
                     </Button>
@@ -1163,7 +1167,7 @@ export default function DashboardPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => toggleSection('employeeAdvance')}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 text-xs sm:text-sm"
                     >
                       {t('dashboard.showEmployeeAdvanceSection')}
                     </Button>
@@ -1173,7 +1177,7 @@ export default function DashboardPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => toggleSection('myTeam')}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 text-xs sm:text-sm"
                     >
                       {t('dashboard.showMyTeamSection')}
                     </Button>

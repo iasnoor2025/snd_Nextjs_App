@@ -336,9 +336,9 @@ export function DataTable({ data: initialData }: { data: z.infer<typeof schema>[
       </div>
       <TabsContent
         value="outline"
-        className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6"
+        className="relative flex flex-col gap-4 overflow-auto px-2 sm:px-4 lg:px-6 rtl:px-2 sm:rtl:px-4 lg:rtl:px-6"
       >
-        <div className="overflow-hidden rounded-lg border">
+        <div className="overflow-x-auto rounded-lg border -mx-2 sm:mx-0 rtl:-mx-2 sm:rtl:mx-0">
           <Table>
             <TableHeader className="bg-muted sticky top-0 z-10">
               {table.getHeaderGroups().map(headerGroup => (

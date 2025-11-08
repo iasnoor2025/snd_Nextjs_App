@@ -179,7 +179,7 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden border-r"
+          className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden border-r rtl:border-r-0 rtl:border-l"
           style={
             {
               '--sidebar-width': SIDEBAR_WIDTH_MOBILE,
@@ -297,10 +297,12 @@ function SidebarInset({ className, ...props }: React.ComponentProps<'main'>) {
     <main
       data-slot="sidebar-inset"
       className={cn(
-        'bg-background relative flex w-full flex-1 flex-col transition-[margin-left] duration-200 ease-linear',
+        'bg-background relative flex w-full flex-1 flex-col transition-[margin-left,margin-right] duration-200 ease-linear',
         'md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2',
         'peer-data-[state=collapsed]:ml-0',
         'md:ml-64 md:peer-data-[state=collapsed]:ml-0',
+        // RTL margin transitions - override LTR margins
+        'rtl:!ml-0 rtl:transition-[margin-right] rtl:md:!ml-0 rtl:md:!mr-64 rtl:md:peer-data-[state=collapsed]:!mr-0 rtl:peer-data-[state=collapsed]:!mr-0',
         className
       )}
       {...props}
