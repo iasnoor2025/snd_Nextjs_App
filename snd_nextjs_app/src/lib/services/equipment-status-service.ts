@@ -68,11 +68,11 @@ export class EquipmentStatusService {
             eq(equipmentRentalHistory.status, 'active'),
             // For rental assignments, also check that rental item is not completed
             or(
-              // Not a rental assignment
+              // Not a rental assignment - use assignment status
               sql`${equipmentRentalHistory.assignmentType} != 'rental'`,
-              // Is a rental assignment but rental item doesn't exist (legacy data)
+              // Is a rental assignment but rental item doesn't exist (legacy data) - treat as active if assignment is active
               sql`${rentalItems.id} IS NULL`,
-              // Is a rental assignment and rental item exists but is active (not completed)
+              // Is a rental assignment and rental item exists - must be active (not completed)
               and(
                 sql`${rentalItems.id} IS NOT NULL`,
                 sql`${rentalItems.status} = 'active'`,

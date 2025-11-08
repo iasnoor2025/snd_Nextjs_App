@@ -842,6 +842,11 @@ export class RentalService {
     const updateData: any = { ...data };
     updateData.updatedAt = new Date().toISOString().split('T')[0];
 
+    // If status is being set to 'completed' and completedDate is not provided, set it
+    if (data.status === 'completed' && !data.completedDate) {
+      updateData.completedDate = new Date().toISOString().split('T')[0];
+    }
+
     await db.update(rentalItems).set(updateData).where(eq(rentalItems.id, id));
 
     // Get the rental ID to recalculate totals
@@ -1064,27 +1069,70 @@ export class RentalService {
       };
 
       const assignmentStatus = statusMap[newStatus] || 'active';
+      const completionDate = (newStatus === 'completed' || newStatus === 'cancelled') 
+        ? new Date().toISOString().split('T')[0] 
+        : null;
 
       // Update equipment assignments
+      const equipmentUpdateData: any = {
+        status: assignmentStatus,
+        updatedAt: new Date().toISOString(),
+      };
+      
+      // Set endDate if completing
+      if (completionDate) {
+        equipmentUpdateData.endDate = completionDate;
+      }
+
       await db
         .update(equipmentRentalHistory)
-        .set({
-          status: assignmentStatus,
-          updatedAt: new Date().toISOString(),
-        })
+        .set(equipmentUpdateData)
         .where(eq(equipmentRentalHistory.rentalId, rentalId));
 
       // Update employee assignments
+      const employeeUpdateData: any = {
+        status: assignmentStatus,
+        updatedAt: new Date().toISOString().split('T')[0],
+      };
+      
+      // Set endDate if completing
+      if (completionDate) {
+        employeeUpdateData.endDate = completionDate;
+      }
+
       await db
         .update(employeeAssignments)
-        .set({
-          status: assignmentStatus,
-          updatedAt: new Date().toISOString().split('T')[0],
-        })
+        .set(employeeUpdateData)
         .where(eq(employeeAssignments.rentalId, rentalId));
 
+      // Update rental items - IMPORTANT: Set completedDate when status is completed
+      if (completionDate) {
+        await db
+          .update(rentalItems)
+          .set({
+            status: assignmentStatus,
+            completedDate: completionDate,
+            updatedAt: completionDate,
+          })
+          .where(
+            and(
+              eq(rentalItems.rentalId, rentalId),
+              eq(rentalItems.status, 'active')
+            )
+          );
+      } else {
+        // For other status changes, just update status
+        await db
+          .update(rentalItems)
+          .set({
+            status: assignmentStatus,
+            updatedAt: new Date().toISOString().split('T')[0],
+          })
+          .where(eq(rentalItems.rentalId, rentalId));
+      }
+
     } catch (error) {
-      
+      console.error('Error updating assignment statuses:', error);
     }
   }
 

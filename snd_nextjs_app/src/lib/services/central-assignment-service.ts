@@ -276,14 +276,18 @@ export class CentralAssignmentService {
     const completionDate = endDate || new Date().toISOString().split('T')[0];
 
     if (type === 'equipment') {
-      // Get equipment ID before completing
+      // Get equipment assignment details before completing
       const equipmentAssignment = await db
-        .select({ equipmentId: equipmentRentalHistory.equipmentId })
+        .select({ 
+          equipmentId: equipmentRentalHistory.equipmentId,
+          rentalId: equipmentRentalHistory.rentalId
+        })
         .from(equipmentRentalHistory)
         .where(eq(equipmentRentalHistory.id, assignmentId))
         .limit(1);
 
       const equipmentId = equipmentAssignment[0]?.equipmentId;
+      const rentalId = equipmentAssignment[0]?.rentalId;
 
       // Try to complete in all possible tables
       await Promise.all([
@@ -294,11 +298,24 @@ export class CentralAssignmentService {
         db.update(projectEquipment)
           .set({ status: 'completed', endDate: completionDate, updatedAt: new Date().toISOString().split('T')[0] })
           .where(eq(projectEquipment.id, assignmentId)),
-        
-        db.update(rentalItems)
-          .set({ status: 'completed', completedDate: completionDate, updatedAt: new Date().toISOString().split('T')[0] })
-          .where(eq(rentalItems.id, assignmentId))
       ]);
+
+      // For rental items, update by rentalId and equipmentId (not by assignmentId)
+      if (rentalId && equipmentId) {
+        await db
+          .update(rentalItems)
+          .set({ 
+            status: 'completed', 
+            completedDate: completionDate, 
+            updatedAt: new Date().toISOString().split('T')[0] 
+          })
+          .where(
+            and(
+              eq(rentalItems.rentalId, rentalId),
+              eq(rentalItems.equipmentId, equipmentId)
+            )
+          );
+      }
 
       // Update equipment status after completing assignment
       if (equipmentId) {

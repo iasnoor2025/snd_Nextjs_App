@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { rentals, rentalItems } from '@/lib/drizzle/schema';
+import { rentals, rentalItems, equipmentRentalHistory, employeeAssignments } from '@/lib/drizzle/schema';
 import { RentalService } from '@/lib/services/rental-service';
 import { EquipmentStatusService } from '@/lib/services/equipment-status-service';
 import { eq, and } from 'drizzle-orm';
@@ -46,6 +46,36 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
         updatedAt: completionDate,
       })
       .where(and(eq(rentalItems.rentalId, parseInt(id)), eq(rentalItems.status, 'active')));
+
+    // Update equipment rental history assignments for this rental
+    await db
+      .update(equipmentRentalHistory)
+      .set({
+        status: 'completed',
+        endDate: completionDate,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(
+        and(
+          eq(equipmentRentalHistory.rentalId, parseInt(id)),
+          eq(equipmentRentalHistory.status, 'active')
+        )
+      );
+
+    // Update employee assignments for this rental
+    await db
+      .update(employeeAssignments)
+      .set({
+        status: 'completed',
+        endDate: completionDate,
+        updatedAt: completionDate,
+      })
+      .where(
+        and(
+          eq(employeeAssignments.rentalId, parseInt(id)),
+          eq(employeeAssignments.status, 'active')
+        )
+      );
 
     // Update equipment status for all equipment in this rental
     const completedItems = await db

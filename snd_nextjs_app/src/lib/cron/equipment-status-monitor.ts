@@ -1,6 +1,7 @@
 import { db } from '@/lib/drizzle';
-import { equipment, equipmentMaintenance, equipmentRentalHistory } from '@/lib/drizzle/schema';
+import { equipment, equipmentMaintenance, equipmentRentalHistory, rentalItems, rentals } from '@/lib/drizzle/schema';
 import { eq, sql } from 'drizzle-orm';
+import { EquipmentStatusService } from '@/lib/services/equipment-status-service';
 
 export interface EquipmentStatusIssue {
   equipmentId: number;
@@ -192,7 +193,79 @@ export class EquipmentStatusMonitor {
         console.log(`✅ Fixed ${equip.name} (${equip.erpnextId}) status to 'assigned'`);
       }
 
-      console.log(`🎉 Equipment status monitoring completed. Checked: ${totalChecked}, Fixed: ${fixedCount}`);
+      // 5. Backfill completedDate for rental items that are completed but missing completedDate
+      console.log('🔄 Backfilling completedDate for rental items...');
+      const completedItemsWithoutDate = await db
+        .select({
+          id: rentalItems.id,
+          rentalId: rentalItems.rentalId,
+          equipmentId: rentalItems.equipmentId,
+        })
+        .from(rentalItems)
+        .where(
+          sql`${rentalItems.status} = 'completed' AND ${rentalItems.completedDate} IS NULL`
+        );
+
+      let backfilledCount = 0;
+      for (const item of completedItemsWithoutDate) {
+        try {
+          // Try to get completion date from rental's actualEndDate
+          const rental = await db
+            .select({ actualEndDate: rentals.actualEndDate })
+            .from(rentals)
+            .where(eq(rentals.id, item.rentalId))
+            .limit(1);
+
+          // Try to get completion date from equipment assignment endDate
+          const assignment = await db
+            .select({ endDate: equipmentRentalHistory.endDate })
+            .from(equipmentRentalHistory)
+            .where(
+              sql`${equipmentRentalHistory.rentalId} = ${item.rentalId} 
+                  AND ${equipmentRentalHistory.equipmentId} = ${item.equipmentId} 
+                  AND ${equipmentRentalHistory.status} = 'completed'`
+            )
+            .limit(1);
+
+          // Use rental's actualEndDate, assignment's endDate, or current date
+          const completedDate = 
+            rental[0]?.actualEndDate || 
+            (assignment[0]?.endDate ? assignment[0].endDate.split('T')[0] : null) || 
+            new Date().toISOString().split('T')[0];
+
+          await db
+            .update(rentalItems)
+            .set({
+              completedDate: completedDate,
+              updatedAt: completedDate,
+            })
+            .where(eq(rentalItems.id, item.id));
+
+          backfilledCount++;
+        } catch (error) {
+          console.error(`Error backfilling completedDate for rental item ${item.id}:`, error);
+        }
+      }
+
+      if (backfilledCount > 0) {
+        console.log(`✅ Backfilled ${backfilledCount} rental items with completedDate`);
+        // After backfilling, re-check equipment statuses that might have been affected
+        const affectedEquipmentIds = new Set(
+          completedItemsWithoutDate.map(item => item.equipmentId).filter(id => id !== null)
+        );
+        
+        for (const equipmentId of affectedEquipmentIds) {
+          if (equipmentId) {
+            try {
+              await EquipmentStatusService.updateEquipmentStatusImmediately(equipmentId);
+            } catch (error) {
+              console.error(`Error updating equipment ${equipmentId} status after backfill:`, error);
+            }
+          }
+        }
+      }
+
+      console.log(`🎉 Equipment status monitoring completed. Checked: ${totalChecked}, Fixed: ${fixedCount}, Backfilled: ${backfilledCount}`);
 
       return {
         checked: totalChecked,

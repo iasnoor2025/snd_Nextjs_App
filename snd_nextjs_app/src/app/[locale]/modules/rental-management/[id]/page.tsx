@@ -49,6 +49,7 @@ import {
   ExternalLink,
   Eye,
   FileText,
+  HelpCircle,
   MoreHorizontal,
   Package,
   Plus,
@@ -72,6 +73,7 @@ import {
 import { useRentalItemConfirmation } from '@/hooks/use-rental-item-confirmation';
 import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
 import { EquipmentDropdown } from '@/components/ui/equipment-dropdown';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface RentalItem {
   id: string;
@@ -791,6 +793,11 @@ export default function RentalDetailPage() {
   });
 
   const [duplicateWarnings, setDuplicateWarnings] = useState<string[]>([]);
+  const [previousAssignmentWarnings, setPreviousAssignmentWarnings] = useState<string[]>([]);
+  const [loadingPreviousAssignments, setLoadingPreviousAssignments] = useState(false);
+  const [equipmentAssignmentWarnings, setEquipmentAssignmentWarnings] = useState<string[]>([]);
+  const [loadingEquipmentAssignments, setLoadingEquipmentAssignments] = useState(false);
+  const [operatorAssignmentsForTooltip, setOperatorAssignmentsForTooltip] = useState<any[]>([]);
 
   // Debug form data changes
   useEffect(() => {
@@ -871,6 +878,190 @@ export default function RentalDetailPage() {
 
     setDuplicateWarnings(warnings);
   }, [itemFormData.equipmentId, itemFormData.operatorId, itemFormData.startDate, rental?.rentalItems, isAddItemDialogOpen]);
+
+  // Check for previous assignments when operator is selected
+  useEffect(() => {
+    const checkPreviousAssignments = async () => {
+      if (!isAddItemDialogOpen || !itemFormData.operatorId) {
+        setPreviousAssignmentWarnings([]);
+        return;
+      }
+
+      setLoadingPreviousAssignments(true);
+      try {
+        const response = await fetch(`/api/employees/${itemFormData.operatorId}/previous-assignments`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch previous assignments');
+        }
+
+        const data = await response.json();
+        const warnings: string[] = [];
+
+        // If employee is supervisor/foreman, don't show warnings (can have multiple assignments)
+        if (data.isSupervisorOrForeman) {
+          setPreviousAssignmentWarnings([]);
+          setLoadingPreviousAssignments(false);
+          return;
+        }
+
+        if (data.assignments && data.assignments.length > 0) {
+          data.assignments.forEach((assignment: any) => {
+            // Skip if it's for the current rental
+            if (assignment.rentalId && rental?.id && assignment.rentalId.toString() === rental.id.toString()) {
+              return;
+            }
+
+            // Only show warnings for operator assignments, not supervisor
+            if (assignment.role !== 'operator') {
+              return;
+            }
+
+            const startDate = assignment.startDate 
+              ? new Date(assignment.startDate).toLocaleDateString() 
+              : 'unknown date';
+            const endDate = assignment.endDate 
+              ? new Date(assignment.endDate).toLocaleDateString() 
+              : 'ongoing';
+
+            if (assignment.rentalId && assignment.rentalNumber) {
+              const equipmentInfo = assignment.equipmentName 
+                ? ` for equipment "${assignment.equipmentName}"` 
+                : '';
+              warnings.push(
+                `Active assignment to Rental ${assignment.rentalNumber}${equipmentInfo} (Started: ${startDate}, ${assignment.endDate ? `Ends: ${endDate}` : 'Ongoing'})`
+              );
+            } else if (assignment.projectId) {
+              warnings.push(
+                `Active assignment to Project ID ${assignment.projectId} (Started: ${startDate}, ${assignment.endDate ? `Ends: ${endDate}` : 'Ongoing'})`
+              );
+            } else {
+              warnings.push(
+                `Active assignment (Started: ${startDate}, ${assignment.endDate ? `Ends: ${endDate}` : 'Ongoing'})`
+              );
+            }
+          });
+        }
+
+        setPreviousAssignmentWarnings(warnings);
+      } catch (error) {
+        console.error('Error checking previous assignments:', error);
+        setPreviousAssignmentWarnings([]);
+      } finally {
+        setLoadingPreviousAssignments(false);
+      }
+    };
+
+    checkPreviousAssignments();
+  }, [itemFormData.operatorId, isAddItemDialogOpen, rental?.id]);
+
+  // Check for previous equipment assignments when equipment is selected
+  useEffect(() => {
+    const checkEquipmentAssignments = async () => {
+      if (!isAddItemDialogOpen || !itemFormData.equipmentId) {
+        setEquipmentAssignmentWarnings([]);
+        return;
+      }
+
+      setLoadingEquipmentAssignments(true);
+      try {
+        const response = await fetch(`/api/equipment/${itemFormData.equipmentId}/previous-assignments`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch equipment assignments');
+        }
+
+        const data = await response.json();
+        const warnings: string[] = [];
+
+        if (data.assignments && data.assignments.length > 0) {
+          data.assignments.forEach((assignment: any) => {
+            // Skip if it's for the current rental
+            if (assignment.rentalId && rental?.id && assignment.rentalId.toString() === rental.id.toString()) {
+              return;
+            }
+
+            // Handle timestamp format (equipmentRentalHistory uses timestamps)
+            let startDateStr = 'unknown date';
+            let endDateStr = 'ongoing';
+            
+            if (assignment.startDate) {
+              try {
+                // Handle both timestamp strings and date strings
+                const dateStr = typeof assignment.startDate === 'string' 
+                  ? assignment.startDate.split('T')[0] 
+                  : assignment.startDate;
+                startDateStr = new Date(dateStr).toLocaleDateString();
+              } catch (e) {
+                startDateStr = String(assignment.startDate);
+              }
+            }
+            
+            if (assignment.endDate) {
+              try {
+                const dateStr = typeof assignment.endDate === 'string' 
+                  ? assignment.endDate.split('T')[0] 
+                  : assignment.endDate;
+                endDateStr = new Date(dateStr).toLocaleDateString();
+              } catch (e) {
+                endDateStr = String(assignment.endDate);
+              }
+            }
+
+            if (assignment.rentalId && assignment.rentalNumber) {
+              const operatorInfo = assignment.employeeFirstName && assignment.employeeLastName
+                ? ` with operator ${assignment.employeeFirstName} ${assignment.employeeLastName}`
+                : '';
+              warnings.push(
+                `Active assignment to Rental ${assignment.rentalNumber}${operatorInfo} (Started: ${startDateStr}, ${assignment.endDate ? `Ends: ${endDateStr}` : 'Ongoing'})`
+              );
+            } else if (assignment.projectId && assignment.projectName) {
+              const operatorInfo = assignment.employeeFirstName && assignment.employeeLastName
+                ? ` with operator ${assignment.employeeFirstName} ${assignment.employeeLastName}`
+                : '';
+              warnings.push(
+                `Active assignment to Project "${assignment.projectName}"${operatorInfo} (Started: ${startDateStr}, ${assignment.endDate ? `Ends: ${endDateStr}` : 'Ongoing'})`
+              );
+            } else {
+              warnings.push(
+                `Active assignment (Started: ${startDateStr}, ${assignment.endDate ? `Ends: ${endDateStr}` : 'Ongoing'})`
+              );
+            }
+          });
+        }
+
+        setEquipmentAssignmentWarnings(warnings);
+      } catch (error) {
+        console.error('Error checking equipment assignments:', error);
+        setEquipmentAssignmentWarnings([]);
+      } finally {
+        setLoadingEquipmentAssignments(false);
+      }
+    };
+
+    checkEquipmentAssignments();
+  }, [itemFormData.equipmentId, isAddItemDialogOpen, rental?.id]);
+
+  // Fetch operator assignments for tooltip display
+  useEffect(() => {
+    const fetchOperatorAssignmentsForTooltip = async () => {
+      if (!itemFormData.operatorId) {
+        setOperatorAssignmentsForTooltip([]);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/employees/${itemFormData.operatorId}/previous-assignments`);
+        if (response.ok) {
+          const data = await response.json();
+          setOperatorAssignmentsForTooltip(data.assignments || []);
+        }
+      } catch (error) {
+        console.error('Error fetching operator assignments for tooltip:', error);
+        setOperatorAssignmentsForTooltip([]);
+      }
+    };
+
+    fetchOperatorAssignmentsForTooltip();
+  }, [itemFormData.operatorId]);
 
   const [equipment, setEquipment] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
@@ -3786,19 +3977,93 @@ export default function RentalDetailPage() {
                     equipmentName: selectedEquipment?.name || '',
                     unitPrice: selectedEquipment?.dailyRate || selectedEquipment?.daily_rate || 0,
                   }));
+                  // Reset equipment assignment warnings when equipment changes
+                  setEquipmentAssignmentWarnings([]);
                 }}
                 placeholder={t('rental.selectEquipment')}
                 label={t('rental.equipment')}
                 required
               />
+              {loadingEquipmentAssignments && (
+                <div className="text-xs text-muted-foreground mt-1">Checking equipment assignments...</div>
+              )}
             </div>
             <div>
-              <EmployeeDropdown
-                value={itemFormData.operatorId}
-                onValueChange={value => setItemFormData(prev => ({ ...prev, operatorId: value }))}
-                placeholder={t('rental.selectOperator')}
-                label={t('rental.operator')}
-              />
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <EmployeeDropdown
+                    value={itemFormData.operatorId}
+                    onValueChange={value => {
+                      setItemFormData(prev => ({ ...prev, operatorId: value }));
+                      // Reset previous assignment warnings when operator changes
+                      setPreviousAssignmentWarnings([]);
+                    }}
+                    placeholder={t('rental.selectOperator')}
+                    label={t('rental.operator')}
+                  />
+                </div>
+                {itemFormData.operatorId && operatorAssignmentsForTooltip.length > 0 && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className="mt-6 text-orange-600 hover:text-orange-700"
+                        onClick={(e) => e.preventDefault()}
+                      >
+                        <HelpCircle className="h-4 w-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="max-w-xs">
+                      <div className="space-y-1">
+                        <p className="font-semibold text-xs mb-2">Active Assignments:</p>
+                        {operatorAssignmentsForTooltip
+                          .filter((assignment: any) => {
+                            // Skip current rental
+                            return !(assignment.rentalId && rental?.id && assignment.rentalId.toString() === rental.id.toString());
+                          })
+                          .slice(0, 5)
+                          .map((assignment: any, index: number) => {
+                            const startDate = assignment.startDate 
+                              ? new Date(assignment.startDate).toLocaleDateString() 
+                              : 'unknown';
+                            const equipmentInfo = assignment.equipmentName 
+                              ? ` - ${assignment.equipmentName}` 
+                              : '';
+                            const role = assignment.role || 'operator';
+                            const roleLabel = role === 'supervisor' ? 'Supervisor' : 'Operator';
+                            
+                            if (assignment.rentalNumber) {
+                              return (
+                                <p key={index} className="text-xs">
+                                  <span className="font-medium">{roleLabel}</span>: Rental {assignment.rentalNumber}{equipmentInfo} ({startDate})
+                                </p>
+                              );
+                            } else if (assignment.projectId) {
+                              return (
+                                <p key={index} className="text-xs">
+                                  <span className="font-medium">{roleLabel}</span>: Project {assignment.projectId} ({startDate})
+                                </p>
+                              );
+                            }
+                            return null;
+                          })}
+                        {operatorAssignmentsForTooltip.filter((a: any) => 
+                          !(a.rentalId && rental?.id && a.rentalId.toString() === rental.id.toString())
+                        ).length > 5 && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            +{operatorAssignmentsForTooltip.filter((a: any) => 
+                              !(a.rentalId && rental?.id && a.rentalId.toString() === rental.id.toString())
+                            ).length - 5} more
+                          </p>
+                        )}
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+              {loadingPreviousAssignments && (
+                <div className="text-xs text-muted-foreground mt-1">Checking previous assignments...</div>
+              )}
             </div>
             <div>
               <EmployeeDropdown
@@ -3916,6 +4181,52 @@ export default function RentalDetailPage() {
             </div>
           </div>
 
+          {/* Equipment Previous Assignment Warning */}
+          {equipmentAssignmentWarnings.length > 0 && (
+            <div className="rounded-md bg-orange-50 border border-orange-200 p-3 space-y-2">
+              <div className="flex items-start">
+                <AlertTriangle className="h-4 w-4 text-orange-600 mt-0.5 mr-2 flex-shrink-0" />
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-orange-800 mb-1">Equipment Active Assignments Detected</h4>
+                  <p className="text-xs text-orange-700 mb-2">
+                    This equipment has active assignments that may conflict with this new assignment:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-xs text-orange-700">
+                    {equipmentAssignmentWarnings.map((warning, index) => (
+                      <li key={index}>{warning}</li>
+                    ))}
+                  </ul>
+                  <p className="text-xs text-orange-600 mt-2">
+                    Please review the equipment's current assignments before proceeding.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Operator Previous Assignment Warning */}
+          {previousAssignmentWarnings.length > 0 && (
+            <div className="rounded-md bg-orange-50 border border-orange-200 p-3 space-y-2">
+              <div className="flex items-start">
+                <AlertTriangle className="h-4 w-4 text-orange-600 mt-0.5 mr-2 flex-shrink-0" />
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-orange-800 mb-1">Operator Active Assignments Detected</h4>
+                  <p className="text-xs text-orange-700 mb-2">
+                    This operator has active assignments that may conflict with this new assignment:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-xs text-orange-700">
+                    {previousAssignmentWarnings.map((warning, index) => (
+                      <li key={index}>{warning}</li>
+                    ))}
+                  </ul>
+                  <p className="text-xs text-orange-600 mt-2">
+                    Please review the operator's current assignments before proceeding.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Duplicate Warning */}
           {duplicateWarnings.length > 0 && (
             <div className="rounded-md bg-yellow-50 border border-yellow-200 p-3 space-y-2">
@@ -3940,11 +4251,16 @@ export default function RentalDetailPage() {
             <Button variant="outline" onClick={() => {
               setIsAddItemDialogOpen(false);
               setDuplicateWarnings([]);
+              setPreviousAssignmentWarnings([]);
+              setEquipmentAssignmentWarnings([]);
             }}>
               Cancel
             </Button>
-            <Button onClick={addRentalItem} variant={duplicateWarnings.length > 0 ? 'outline' : 'default'}>
-              {duplicateWarnings.length > 0 ? 'Add Anyway' : 'Add Item'}
+            <Button 
+              onClick={addRentalItem} 
+              variant={duplicateWarnings.length > 0 || previousAssignmentWarnings.length > 0 || equipmentAssignmentWarnings.length > 0 ? 'outline' : 'default'}
+            >
+              {duplicateWarnings.length > 0 || previousAssignmentWarnings.length > 0 || equipmentAssignmentWarnings.length > 0 ? 'Add Anyway' : 'Add Item'}
             </Button>
           </DialogFooter>
         </DialogContent>

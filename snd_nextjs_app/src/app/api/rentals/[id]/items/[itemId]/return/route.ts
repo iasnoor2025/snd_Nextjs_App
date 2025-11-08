@@ -41,6 +41,28 @@ export async function POST(
       rateType: currentItem.rateType || 'daily',
     });
 
+    // Update equipment rental history assignment
+    if (currentItem.equipmentId) {
+      const { db } = await import('@/lib/drizzle');
+      const { equipmentRentalHistory } = await import('@/lib/drizzle/schema');
+      const { eq, and } = await import('drizzle-orm');
+
+      await db
+        .update(equipmentRentalHistory)
+        .set({
+          status: 'completed',
+          endDate: returnDate,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(
+          and(
+            eq(equipmentRentalHistory.equipmentId, currentItem.equipmentId),
+            eq(equipmentRentalHistory.rentalId, currentItem.rentalId),
+            eq(equipmentRentalHistory.status, 'active')
+          )
+        );
+    }
+
     // Also update the operator assignment if exists
     if (currentItem.operatorId) {
       const { db } = await import('@/lib/drizzle');
