@@ -3386,6 +3386,45 @@ export default function RentalDetailPage() {
                     // Group rental items by month based on start date
                     const rentalItems = rental?.rentalItems || [];
                     
+                    // First, identify handover relationships across all items
+                    // A handover is when an item is completed and a new item with different operator starts for same equipment
+                    const handoverMap = new Map<number, number>(); // Maps completed item ID to new operator item ID
+                    const allItemsSorted = [...rentalItems].sort((a: any, b: any) => {
+                      const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
+                      const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
+                      return dateA - dateB;
+                    });
+                    
+                    for (let i = 0; i < allItemsSorted.length; i++) {
+                      const item = allItemsSorted[i];
+                      const itemEquipmentName = item.equipmentName?.startsWith('Equipment ') && item.equipmentId 
+                        ? (equipmentNames[item.equipmentId.toString()] || item.equipmentName)
+                        : item.equipmentName;
+                      
+                      if (item.status === 'completed' && item.completedDate) {
+                        // Look for a new item with different operator for same equipment that started after completion
+                        for (let j = i + 1; j < allItemsSorted.length; j++) {
+                          const nextItem = allItemsSorted[j];
+                          const nextEquipmentName = nextItem.equipmentName?.startsWith('Equipment ') && nextItem.equipmentId 
+                            ? (equipmentNames[nextItem.equipmentId.toString()] || nextItem.equipmentName)
+                            : nextItem.equipmentName;
+                          
+                          if (itemEquipmentName === nextEquipmentName && 
+                              item.operatorId !== nextItem.operatorId &&
+                              nextItem.startDate) {
+                            const completedDate = new Date(item.completedDate);
+                            const nextStartDate = new Date(nextItem.startDate);
+                            
+                            // New item started on or after completion
+                            if (nextStartDate >= completedDate) {
+                              handoverMap.set(item.id, nextItem.id);
+                              break; // Found handover, move to next item
+                            }
+                          }
+                        }
+                      }
+                    }
+                    
                     const monthlyData = rentalItems.reduce((acc: any, item: any) => {
                       const itemStartDate = item.startDate || rental?.startDate;
                       if (!itemStartDate) return acc;
@@ -3478,6 +3517,44 @@ export default function RentalDetailPage() {
                           } else if (item.status === 'completed' || item.status === 'removed') {
                             acc[monthKey].completedItems += 1;
                           }
+                          
+                          // If this item has a handover (completed and new operator started), 
+                          // only show the handover item in the month where the completion actually happened
+                          if (handoverMap.has(item.id) && item.status === 'completed' && item.completedDate) {
+                            const completedDate = item.completedDate ? new Date(item.completedDate) : null;
+                            
+                            // Only add handover item if the completion happened in THIS specific month
+                            if (completedDate && completedDate >= monthStart && completedDate <= monthEnd) {
+                              const handoverItemId = handoverMap.get(item.id);
+                              const handoverItem = rentalItems.find((ri: any) => ri.id === handoverItemId);
+                              
+                              if (handoverItem && !acc[monthKey].items.find((ri: any) => ri.id === handoverItemId)) {
+                                const handoverStartDate = handoverItem.startDate ? new Date(handoverItem.startDate) : null;
+                                
+                                if (handoverStartDate && handoverStartDate >= completedDate) {
+                                  // Calculate amount for handover item in this month (only if it started in this month)
+                                  if (handoverStartDate >= monthStart && handoverStartDate <= monthEnd) {
+                                    const handoverStartInMonth = handoverStartDate > monthStart ? handoverStartDate : monthStart;
+                                    const handoverEndInMonth = monthEnd;
+                                    if (handoverStartInMonth <= handoverEndInMonth) {
+                                      const handoverStartDay = handoverStartInMonth.getDate();
+                                      const handoverEndDay = handoverEndInMonth.getDate();
+                                      const handoverDays = handoverEndDay - handoverStartDay + 1;
+                                      const handoverAmount = (parseFloat(handoverItem.unitPrice || 0) || 0) * Math.max(handoverDays, 0);
+                                      acc[monthKey].totalAmount += handoverAmount;
+                                    }
+                                  }
+                                  
+                                  // Add handover item to this month's items to show continuity
+                                  acc[monthKey].items.push(handoverItem);
+                                  acc[monthKey].totalItems += 1;
+                                  if (handoverItem.status === 'active') {
+                                    acc[monthKey].activeItems += 1;
+                                  }
+                                }
+                              }
+                            }
+                          }
                         }
                         
                         // Move to next month
@@ -3523,23 +3600,50 @@ export default function RentalDetailPage() {
                               <CardContent className="p-2">
                                 <div className="overflow-x-auto">
                                   {(() => {
-                                    // Group items by supervisor
-                                    const groupedBySupervisor = monthData.items.reduce((acc: any, item: any) => {
-                                      const supervisorKey = item?.supervisorId 
-                                        ? (item?.supervisorFirstName && item?.supervisorLastName
-                                          ? `${item.supervisorFirstName} ${item.supervisorLastName}`
-                                          : `Employee ${item.supervisorId}`)
-                                        : 'No Supervisor';
+                                    // Remove duplicates (in case handover items were added)
+                                    const uniqueItems = monthData.items.filter((item: any, index: number, self: any[]) => 
+                                      index === self.findIndex((t: any) => t.id === item.id)
+                                    );
+                                    
+                                    // Group items by equipment to show handover continuity
+                                    const groupedByEquipment = uniqueItems.reduce((acc: any, item: any) => {
+                                      const equipmentName = item.equipmentName?.startsWith('Equipment ') && item.equipmentId 
+                                        ? (equipmentNames[item.equipmentId.toString()] || item.equipmentName)
+                                        : item.equipmentName;
+                                      const equipmentKey = equipmentName || 'Unknown Equipment';
                                       
-                                      if (!acc[supervisorKey]) {
-                                        acc[supervisorKey] = [];
+                                      if (!acc[equipmentKey]) {
+                                        acc[equipmentKey] = [];
                                       }
-                                      acc[supervisorKey].push(item);
+                                      acc[equipmentKey].push(item);
                                       return acc;
                                     }, {});
                                     
-                                    const supervisorKeys = Object.keys(groupedBySupervisor).sort();
-                                    const hasMultipleSupervisors = supervisorKeys.length > 1;
+                                    // Sort items within each equipment group by active status first, then by start date
+                                    Object.keys(groupedByEquipment).forEach(key => {
+                                      groupedByEquipment[key].sort((a: any, b: any) => {
+                                        // First sort by active status (active items first, then completed)
+                                        const aIsActive = a.status === 'active';
+                                        const bIsActive = b.status === 'active';
+                                        
+                                        if (aIsActive && !bIsActive) return -1; // Active comes first
+                                        if (!aIsActive && bIsActive) return 1; // Active comes first
+                                        
+                                        // If both have same status, sort by start date
+                                        const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
+                                        const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
+                                        if (dateA !== dateB) return dateA - dateB;
+                                        
+                                        return 0;
+                                      });
+                                    });
+                                    
+                                    // Flatten and sort equipment groups
+                                    const equipmentKeys = Object.keys(groupedByEquipment).sort();
+                                    const allItems: any[] = [];
+                                    equipmentKeys.forEach(key => {
+                                      allItems.push(...groupedByEquipment[key]);
+                                    });
                                     
                                     return (
                                   <Table>
@@ -3558,22 +3662,7 @@ export default function RentalDetailPage() {
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                          {supervisorKeys.map((supervisorKey, supervisorIndex) => {
-                                            const supervisorItems = groupedBySupervisor[supervisorKey];
-                                            let slNumber = supervisorIndex === 0 ? 1 : 
-                                              supervisorKeys.slice(0, supervisorIndex).reduce((sum: number, key: string) => 
-                                                sum + groupedBySupervisor[key].length, 1);
-                                            
-                                            return (
-                                              <React.Fragment key={`supervisor-${supervisorKey}-${supervisorIndex}`}>
-                                                {hasMultipleSupervisors && (
-                                                  <TableRow className="bg-muted/50">
-                                                    <TableCell colSpan={10} className="font-semibold text-sm py-2 px-2">
-                                                      Supervisor: {supervisorKey}
-                                                    </TableCell>
-                                                  </TableRow>
-                                                )}
-                                                {supervisorItems.map((item: any, itemIndex: number) => {
+                                          {allItems.map((item: any, itemIndex: number) => {
                                       const equipmentName = item.equipmentName?.startsWith('Equipment ') && item.equipmentId 
                                         ? (equipmentNames[item.equipmentId.toString()] || item.equipmentName)
                                         : item.equipmentName;
@@ -3593,6 +3682,28 @@ export default function RentalDetailPage() {
                                                   } else if (item?.supervisorId) {
                                                     supervisorName = `Employee ${item.supervisorId}`;
                                                   }
+                                      
+                                      // Check if this is a handover using the handoverMap
+                                      // A handover item is one that was started after a completed item with different operator
+                                      const isHandoverItem = Array.from(handoverMap.values()).includes(item.id);
+                                      
+                                      // Check if this is the completed item that has a handover
+                                      const isCompletedWithHandover = handoverMap.has(item.id);
+                                      
+                                      // Also check if previous item in list is the completed item for this handover
+                                      const isHandoverContinuation = itemIndex > 0 && (() => {
+                                        const prevItem = allItems[itemIndex - 1];
+                                        const prevEquipmentName = prevItem.equipmentName?.startsWith('Equipment ') && prevItem.equipmentId 
+                                          ? (equipmentNames[prevItem.equipmentId.toString()] || prevItem.equipmentName)
+                                          : prevItem.equipmentName;
+                                        
+                                        if (equipmentName !== prevEquipmentName) return false;
+                                        
+                                        // Check if previous item is the completed item that this item is a handover for
+                                        return handoverMap.has(prevItem.id) && handoverMap.get(prevItem.id) === item.id;
+                                      })();
+                                      
+                                      const showHandoverHighlight = isHandoverItem || isCompletedWithHandover || isHandoverContinuation;
                                       
                                       // Calculate duration for this specific month
                                       let durationText = 'N/A';
@@ -3660,6 +3771,7 @@ export default function RentalDetailPage() {
                                       }
                                       
                                         // Determine what start date to show for this month
+                                        // For handover items, always show the actual start date
                                         let displayStartDate = 'N/A';
                                         if (item.startDate && item.startDate !== '') {
                                           const itemStartDate = new Date(item.startDate);
@@ -3674,8 +3786,10 @@ export default function RentalDetailPage() {
                                           const reportMonthStart = new Date(reportYear, reportMonth, 1);
                                           reportMonthStart.setHours(0, 0, 0, 0);
                                           
-                                          // Check if the start date is on the first day of this month
-                                          if (itemStartDate.getTime() === reportMonthStart.getTime()) {
+                                          // For handover items, always show the actual start date if it's in this month
+                                          if (showHandoverHighlight && itemStartDate >= reportMonthStart && itemStartDate < new Date(reportYear, reportMonth + 1, 1)) {
+                                            displayStartDate = format(itemStartDate, 'MMM dd, yyyy');
+                                          } else if (itemStartDate.getTime() === reportMonthStart.getTime()) {
                                             // Started on 1st of this month - show the actual date
                                             displayStartDate = format(itemStartDate, 'MMM dd, yyyy');
                                           } else if (itemStartDate >= reportMonthStart && itemStartDate < new Date(reportYear, reportMonth + 1, 1)) {
@@ -3711,10 +3825,10 @@ export default function RentalDetailPage() {
                                           completedDateDisplay = format(completedDate, 'MMM dd, yyyy');
                                         }
                                       }
-
+                                      
                                       return (
-                                        <TableRow key={item.id} className="border-b">
-                                                      <TableCell className="w-10 text-center text-sm py-1 px-1">{slNumber + itemIndex}</TableCell>
+                                        <TableRow key={item.id} className={`border-b ${showHandoverHighlight ? 'bg-blue-50/50' : ''}`}>
+                                                      <TableCell className="w-10 text-center text-sm py-1 px-1">{itemIndex + 1}</TableCell>
                                           <TableCell className="font-medium text-sm py-1 px-2 min-w-[110px]">{equipmentName}</TableCell>
                                           <TableCell className="font-mono text-sm py-1 px-1 w-24">SAR {formatAmount(item.unitPrice)}</TableCell>
                                           <TableCell className="text-sm py-1 px-1 w-16">
@@ -3740,9 +3854,6 @@ export default function RentalDetailPage() {
                                         </TableRow>
                                                   );
                                                 })}
-                                              </React.Fragment>
-                                            );
-                                          })}
                                     </TableBody>
                                   </Table>
                                     );

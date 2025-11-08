@@ -248,38 +248,35 @@ function generateReportHTML(rental: any, rentalItems: any[], selectedMonth: stri
           <tbody>
     `;
     
-    // Group items by supervisor
-    const groupedBySupervisor = monthData.items.reduce((acc: any, item: any) => {
-      const supervisorKey = item?.supervisorId 
-        ? (item?.supervisorFirstName && item?.supervisorLastName
-          ? `${item.supervisorFirstName} ${item.supervisorLastName}`
-          : `Employee ${item.supervisorId}`)
-        : 'No Supervisor';
-      
-      if (!acc[supervisorKey]) {
-        acc[supervisorKey] = [];
+    // Group items by equipment to show handover continuity
+    const groupedByEquipment = monthData.items.reduce((acc: any, item: any) => {
+      const equipmentName = item.equipmentName || 'Unknown Equipment';
+      if (!acc[equipmentName]) {
+        acc[equipmentName] = [];
       }
-      acc[supervisorKey].push(item);
+      acc[equipmentName].push(item);
       return acc;
     }, {});
     
-    const supervisorKeys = Object.keys(groupedBySupervisor).sort();
-    const hasMultipleSupervisors = supervisorKeys.length > 1;
+    // Sort items within each equipment group by start date
+    Object.keys(groupedByEquipment).forEach(key => {
+      groupedByEquipment[key].sort((a: any, b: any) => {
+        const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
+        const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
+        return dateA - dateB;
+      });
+    });
+    
+    // Flatten and sort equipment groups
+    const equipmentKeys = Object.keys(groupedByEquipment).sort();
+    const allItems: any[] = [];
+    equipmentKeys.forEach(key => {
+      allItems.push(...groupedByEquipment[key]);
+    });
+    
     let globalIndex = 0;
     
-    supervisorKeys.forEach((supervisorKey) => {
-      const supervisorItems = groupedBySupervisor[supervisorKey];
-      
-      // Add supervisor header row if multiple supervisors
-      if (hasMultipleSupervisors) {
-        html += `
-          <tr style="background-color: #f2f2f2;">
-            <td colspan="10" style="font-weight: bold; padding: 6px;">Supervisor: ${supervisorKey}</td>
-          </tr>
-        `;
-      }
-      
-      supervisorItems.forEach((item: any) => {
+    allItems.forEach((item: any, itemIndex: number) => {
       const equipmentName = item.equipmentName || 'N/A';
       const operatorName = (item?.operatorFirstName && item?.operatorLastName) 
         ? `${item.operatorFirstName} ${item.operatorLastName}` 
@@ -289,6 +286,30 @@ function generateReportHTML(rental: any, rentalItems: any[], selectedMonth: stri
       const supervisorName = (item?.supervisorFirstName && item?.supervisorLastName)
         ? `${item.supervisorFirstName} ${item.supervisorLastName}`
         : (item?.supervisorId ? `Employee ${item.supervisorId}` : 'N/A');
+      
+      // Check if this is a handover (previous item was completed and this is a new operator for same equipment)
+      const isHandover = itemIndex > 0 && (() => {
+        const prevItem = allItems[itemIndex - 1];
+        const prevEquipmentName = prevItem.equipmentName || 'Unknown';
+        
+        if (equipmentName !== prevEquipmentName) return false;
+        
+        const prevOperatorId = prevItem?.operatorId;
+        const currentOperatorId = item?.operatorId;
+        
+        if (prevOperatorId === currentOperatorId) return false;
+        
+        const prevCompletedDate = prevItem.completedDate || (prevItem as any).completed_date;
+        const currentStartDate = item.startDate;
+        
+        if (!prevCompletedDate || !currentStartDate) return false;
+        
+        const completed = new Date(prevCompletedDate);
+        const started = new Date(currentStartDate);
+        
+        // Check if new item started on or after previous item completed
+        return started >= completed && prevItem.status === 'completed';
+      })();
       
       // Calculate duration and determine start date for this specific month
       let durationText = 'N/A';
@@ -313,7 +334,10 @@ function generateReportHTML(rental: any, rentalItems: any[], selectedMonth: stri
         monthEnd.setHours(23, 59, 59, 999);
         
         // Determine what start date to show for this month
-        if (itemStartDate.getTime() === monthStart.getTime()) {
+        // For handover items, always show the actual start date if it's in this month
+        if (isHandover && itemStartDate >= monthStart && itemStartDate < new Date(year, monthNum + 1, 1)) {
+          displayStartDate = format(itemStartDate, 'MMM dd, yyyy');
+        } else if (itemStartDate.getTime() === monthStart.getTime()) {
           // Started on 1st of this month
           displayStartDate = format(itemStartDate, 'MMM dd, yyyy');
         } else if (itemStartDate >= monthStart && itemStartDate < new Date(year, monthNum + 1, 1)) {
@@ -400,7 +424,7 @@ function generateReportHTML(rental: any, rentalItems: any[], selectedMonth: stri
 
       globalIndex++;
       html += `
-        <tr>
+        <tr${isHandover ? ' style="background-color: #e3f2fd;"' : ''}>
           <td class="sl-col">${globalIndex}</td>
           <td class="equipment-col">${equipmentName}</td>
           <td class="price-col">SAR ${parseFloat(item.unitPrice || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</td>
@@ -413,7 +437,6 @@ function generateReportHTML(rental: any, rentalItems: any[], selectedMonth: stri
           <td class="completed-col">${completedDateDisplay}</td>
         </tr>
       `;
-    });
     });
     
     html += `
