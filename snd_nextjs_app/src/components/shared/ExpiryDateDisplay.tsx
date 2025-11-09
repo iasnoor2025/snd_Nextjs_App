@@ -1,12 +1,20 @@
 'use client';
 
-import { getDaysUntilExpiry, isDateExpired, isDateExpiringSoon } from '@/lib/utils/date-utils';
+import { 
+  getDaysUntilExpiry, 
+  isDateExpired, 
+  isDateExpiringSoon,
+  formatArabicDate,
+  formatEnglishDate
+} from '@/lib/utils/date-utils';
 import { AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 
 interface ExpiryDateDisplayProps {
   date: string | Date | null | undefined;
   showIcon?: boolean;
   showPrefix?: boolean;
+  showArabicDate?: boolean;
+  showEnglishDate?: boolean;
   className?: string;
 }
 
@@ -14,6 +22,8 @@ export default function ExpiryDateDisplay({
   date,
   showIcon = true,
   showPrefix = true,
+  showArabicDate = true,
+  showEnglishDate = true,
   className = '',
 }: ExpiryDateDisplayProps) {
   if (!date) {
@@ -23,7 +33,8 @@ export default function ExpiryDateDisplay({
   const isExpired = isDateExpired(date);
   const isExpiringSoon = isDateExpiringSoon(date);
   const daysLeft = getDaysUntilExpiry(date);
-  const formattedDate = new Date(date).toLocaleDateString();
+  const arabicDate = formatArabicDate(date);
+  const englishDate = formatEnglishDate(date);
 
   let statusColor = '';
   let statusText = '';
@@ -46,11 +57,20 @@ export default function ExpiryDateDisplay({
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       {showIcon && <Icon className={`h-4 w-4 ${statusColor}`} />}
-      <div className="flex flex-col">
+      <div className="flex flex-col gap-1">
         {showPrefix && <span className={`text-xs font-medium ${statusColor}`}>{statusText}</span>}
-        <span className={`text-sm ${isExpired ? 'text-red-600 font-medium' : ''}`}>
-          {formattedDate}
-        </span>
+        <div className="flex flex-col gap-1">
+          {showArabicDate && (
+            <span className={`text-sm ${isExpired ? 'text-red-600 font-medium' : ''}`} dir="rtl">
+              {arabicDate}
+            </span>
+          )}
+          {showEnglishDate && (
+            <span className={`text-sm text-muted-foreground ${isExpired ? 'text-red-600 font-medium' : ''}`} dir="ltr">
+              {englishDate}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

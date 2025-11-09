@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import DualDateInput from '@/components/shared/DualDateInput';
 import {
   Select,
   SelectContent,
@@ -460,7 +461,7 @@ export default function EquipmentEditPage() {
                 <CardDescription>{t('equipment.messages.istimaraDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="istimara">{t('equipment.fields.istimaraNumber')}</Label>
                     <Input
@@ -470,15 +471,13 @@ export default function EquipmentEditPage() {
                       placeholder={t('equipment.fields.istimaraNumberPlaceholder')}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="istimara_expiry_date">{t('equipment.fields.istimaraExpiryDate')}</Label>
-                    <Input
-                      id="istimara_expiry_date"
-                      type="date"
-                      value={formData.istimara_expiry_date}
-                      onChange={e => handleInputChange('istimara_expiry_date', e.target.value)}
-                    />
-                  </div>
+                  <DualDateInput
+                    label={t('equipment.fields.istimaraExpiryDate')}
+                    value={formData.istimara_expiry_date}
+                    onChange={(value) => handleInputChange('istimara_expiry_date', value)}
+                    arabicLabel="تاريخ انتهاء الإستمارة (هجري)"
+                    englishLabel="Istimara Expiry Date (Gregorian)"
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -490,7 +489,7 @@ export default function EquipmentEditPage() {
                 <CardDescription>{t('equipment.messages.insuranceDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="insurance">{t('equipment.fields.insuranceNumber')}</Label>
                     <Input
@@ -500,15 +499,13 @@ export default function EquipmentEditPage() {
                       placeholder={t('equipment.fields.insuranceNumberPlaceholder')}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="insurance_expiry_date">{t('equipment.fields.insuranceExpiryDate')}</Label>
-                    <Input
-                      id="insurance_expiry_date"
-                      type="date"
-                      value={formData.insurance_expiry_date}
-                      onChange={e => handleInputChange('insurance_expiry_date', e.target.value)}
-                    />
-                  </div>
+                  <DualDateInput
+                    label={t('equipment.fields.insuranceExpiryDate')}
+                    value={formData.insurance_expiry_date}
+                    onChange={(value) => handleInputChange('insurance_expiry_date', value)}
+                    arabicLabel="تاريخ انتهاء التأمين (هجري)"
+                    englishLabel="Insurance Expiry Date (Gregorian)"
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -580,7 +577,7 @@ export default function EquipmentEditPage() {
                 <CardDescription>{t('equipment.messages.periodicExaminationDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="periodic_examination_date">{t('equipment.fields.periodicExaminationDate')}</Label>
                     <Input
@@ -590,15 +587,13 @@ export default function EquipmentEditPage() {
                       onChange={e => handleInputChange('periodic_examination_date', e.target.value)}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="periodic_examination_expiry_date">{t('equipment.fields.periodicExaminationExpiryDate')}</Label>
-                    <Input
-                      id="periodic_examination_expiry_date"
-                      type="date"
-                      value={formData.periodic_examination_expiry_date}
-                      onChange={e => handleInputChange('periodic_examination_expiry_date', e.target.value)}
-                    />
-                  </div>
+                  <DualDateInput
+                    label={t('equipment.fields.periodicExaminationExpiryDate')}
+                    value={formData.periodic_examination_expiry_date}
+                    onChange={(value) => handleInputChange('periodic_examination_expiry_date', value)}
+                    arabicLabel="تاريخ انتهاء الفحص الدوري (هجري)"
+                    englishLabel="Periodic Examination Expiry Date (Gregorian)"
+                  />
                 </div>
               </CardContent>
             </Card>

@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import DualDateInput from '@/components/shared/DualDateInput';
 import {
   Select,
   SelectContent,
@@ -463,7 +464,7 @@ export default function AddEquipmentModal({
           <div className="space-y-4">
             <h3 className="text-lg font-medium">{t('fields.istimaraInfo')}</h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="istimara">{t('fields.istimaraNumber')}</Label>
                 <Input
@@ -474,15 +475,13 @@ export default function AddEquipmentModal({
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="istimara_expiry_date">{t('fields.istimaraExpiryDate')}</Label>
-                <Input
-                  id="istimara_expiry_date"
-                  type="date"
-                  value={formData.istimara_expiry_date}
-                  onChange={e => handleInputChange('istimara_expiry_date', e.target.value)}
-                />
-              </div>
+              <DualDateInput
+                label={t('fields.istimaraExpiryDate')}
+                value={formData.istimara_expiry_date}
+                onChange={(value) => handleInputChange('istimara_expiry_date', value)}
+                arabicLabel="تاريخ انتهاء الإستمارة (هجري)"
+                englishLabel="Istimara Expiry Date (Gregorian)"
+              />
             </div>
           </div>
 
@@ -490,7 +489,7 @@ export default function AddEquipmentModal({
           <div className="space-y-4">
             <h3 className="text-lg font-medium">{t('fields.insuranceInfo')}</h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="insurance">{t('fields.insuranceNumber')}</Label>
                 <Input
@@ -501,15 +500,13 @@ export default function AddEquipmentModal({
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="insurance_expiry_date">{t('fields.insuranceExpiryDate')}</Label>
-                <Input
-                  id="insurance_expiry_date"
-                  type="date"
-                  value={formData.insurance_expiry_date}
-                  onChange={e => handleInputChange('insurance_expiry_date', e.target.value)}
-                />
-              </div>
+              <DualDateInput
+                label={t('fields.insuranceExpiryDate')}
+                value={formData.insurance_expiry_date}
+                onChange={(value) => handleInputChange('insurance_expiry_date', value)}
+                arabicLabel="تاريخ انتهاء التأمين (هجري)"
+                englishLabel="Insurance Expiry Date (Gregorian)"
+              />
             </div>
           </div>
 
@@ -571,7 +568,7 @@ export default function AddEquipmentModal({
           <div className="space-y-4">
             <h3 className="text-lg font-medium">{t('fields.periodicExaminationInfo')}</h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="periodic_examination_date">{t('fields.periodicExaminationDate')}</Label>
                 <Input
@@ -582,15 +579,13 @@ export default function AddEquipmentModal({
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="periodic_examination_expiry_date">{t('fields.periodicExaminationExpiryDate')}</Label>
-                <Input
-                  id="periodic_examination_expiry_date"
-                  type="date"
-                  value={formData.periodic_examination_expiry_date}
-                  onChange={e => handleInputChange('periodic_examination_expiry_date', e.target.value)}
-                />
-              </div>
+              <DualDateInput
+                label={t('fields.periodicExaminationExpiryDate')}
+                value={formData.periodic_examination_expiry_date}
+                onChange={(value) => handleInputChange('periodic_examination_expiry_date', value)}
+                arabicLabel="تاريخ انتهاء الفحص الدوري (هجري)"
+                englishLabel="Periodic Examination Expiry Date (Gregorian)"
+              />
             </div>
           </div>
 
