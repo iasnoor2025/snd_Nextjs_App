@@ -275,6 +275,64 @@ export class FinalSettlementService {
   }
 
   /**
+   * Get the actual number of days in a month for a given date
+   */
+  static getDaysInMonth(date: Date): number {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  }
+
+  /**
+   * Calculate vacation allowance based on actual days in each month
+   * If a month has 31 days, it counts 31 days; if 30, then 30, etc.
+   */
+  static calculateVacationAllowanceByMonthlyDays(
+    vacationStartDate: string,
+    vacationEndDate: string,
+    basicSalary: number
+  ): number {
+    const start = new Date(vacationStartDate);
+    const end = new Date(vacationEndDate);
+    let totalAllowance = 0;
+
+    // Iterate through each month that the vacation spans
+    let currentMonth = new Date(start.getFullYear(), start.getMonth(), 1);
+    const endMonth = new Date(end.getFullYear(), end.getMonth(), 1);
+    
+    while (currentMonth <= endMonth) {
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth();
+      
+      // Get the first and last day of the current month
+      const firstDayOfMonth = new Date(year, month, 1);
+      const lastDayOfMonth = new Date(year, month + 1, 0);
+      
+      // Calculate the actual number of days in this month
+      const daysInMonth = lastDayOfMonth.getDate();
+      
+      // Determine the start and end dates for vacation days in this month
+      const monthStart = start > firstDayOfMonth ? start : firstDayOfMonth;
+      const monthEnd = end < lastDayOfMonth ? end : lastDayOfMonth;
+      
+      // Calculate the number of vacation days in this month (inclusive)
+      const daysInThisMonth = Math.floor((monthEnd.getTime() - monthStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      
+      // Only calculate if there are days in this month
+      if (daysInThisMonth > 0) {
+        // Calculate daily rate based on actual days in this month
+        const dailyRate = basicSalary / daysInMonth;
+        
+        // Add allowance for this month
+        totalAllowance += dailyRate * daysInThisMonth;
+      }
+      
+      // Move to the first day of the next month
+      currentMonth = new Date(year, month + 1, 1);
+    }
+
+    return Math.round(totalAllowance * 100) / 100;
+  }
+
+  /**
    * Calculate vacation settlement for annual leave
    */
   static async generateVacationSettlementData(
@@ -363,11 +421,11 @@ export class FinalSettlementService {
         ? parseFloat(latestSalary[0]!.basicSalary) 
         : parseFloat(emp.basicSalary || '0');
 
-      // Calculate vacation allowance
-      // Use manual vacation allowance if provided, otherwise use current basic salary
+      // Calculate vacation allowance based on actual days in each month
+      // Use manual vacation allowance if provided, otherwise calculate based on monthly days
       const vacationAllowance = additionalData?.manualVacationAllowance && additionalData.manualVacationAllowance > 0
         ? additionalData.manualVacationAllowance
-        : currentBasicSalary;
+        : this.calculateVacationAllowanceByMonthlyDays(vacationStartDate, vacationEndDate, currentBasicSalary);
 
       // Calculate service details (for record keeping, but no end-of-service benefit for vacation)
       const serviceDetails = this.calculateServicePeriod(hireDate, vacationStart);
@@ -410,7 +468,10 @@ export class FinalSettlementService {
         overtimeAmount = additionalData.overtimeAmount;
       } else if (additionalData?.overtimeHours && additionalData.overtimeHours > 0) {
         // Calculate overtime based on hours and employee's overtime rate
-        const hourlyRate = parseFloat(employeeData.basicSalary?.toString() || '0') / 30 / 8; // Daily rate / 8 hours
+        // Use actual days in the month of vacation start date
+        const vacationStart = new Date(vacationStartDate);
+        const daysInMonth = this.getDaysInMonth(vacationStart);
+        const hourlyRate = parseFloat(employeeData.basicSalary?.toString() || '0') / daysInMonth / 8; // Daily rate / 8 hours
         const overtimeRate = parseFloat(employeeData.overtimeRateMultiplier?.toString() || '1.5');
         overtimeAmount = additionalData.overtimeHours * hourlyRate * overtimeRate;
       }
@@ -580,8 +641,10 @@ export class FinalSettlementService {
       const serviceDetails = this.calculateServicePeriod(hireDate, lastWorking);
 
       // Calculate vacation amount (assuming 21 days annual leave)
+      // Use actual days in the month of last working date
+      const daysInMonth = this.getDaysInMonth(lastWorking);
       const accruedVacationDays = additionalData?.accruedVacationDays || 0;
-      const dailyRate = currentBasicSalary / 30;
+      const dailyRate = currentBasicSalary / daysInMonth;
       const accruedVacationAmount = accruedVacationDays * dailyRate;
 
       // Calculate absent days and deduction
@@ -606,7 +669,9 @@ export class FinalSettlementService {
         overtimeAmount = additionalData.overtimeAmount;
       } else if (additionalData?.overtimeHours && additionalData.overtimeHours > 0) {
         // Calculate overtime based on hours and employee's overtime rate
-        const hourlyRate = parseFloat(employeeData.basicSalary?.toString() || '0') / 30 / 8; // Daily rate / 8 hours
+        // Use actual days in the month of last working date
+        const overtimeDaysInMonth = this.getDaysInMonth(lastWorking);
+        const hourlyRate = parseFloat(employeeData.basicSalary?.toString() || '0') / overtimeDaysInMonth / 8; // Daily rate / 8 hours
         const overtimeRate = parseFloat(employeeData.overtimeRateMultiplier?.toString() || '1.5');
         overtimeAmount = additionalData.overtimeHours * hourlyRate * overtimeRate;
       }
@@ -754,7 +819,14 @@ export class FinalSettlementService {
             ? (settlementData.vacationDetails?.vacationAllowance || 0).toString()
             : settlementData.endOfServiceBenefit.endOfServiceBenefit.toString(),
           benefitCalculationMethod: settlementData.endOfServiceBenefit.benefitCalculationMethod,
-          accruedVacationDays: Math.round(settlementData.finalCalculation.breakdown.accruedVacation / (parseFloat(settlementData.employee.basicSalary?.toString() || '0') / 30)),
+          accruedVacationDays: (() => {
+            // Calculate based on actual days in the month
+            const lastWorkingDate = settlementData.serviceDetails.lastWorkingDate;
+            const lastWorking = new Date(lastWorkingDate);
+            const daysInMonth = this.getDaysInMonth(lastWorking);
+            const dailyRate = parseFloat(settlementData.employee.basicSalary?.toString() || '0') / daysInMonth;
+            return dailyRate > 0 ? Math.round(settlementData.finalCalculation.breakdown.accruedVacation / dailyRate) : 0;
+          })(),
           accruedVacationAmount: settlementData.finalCalculation.breakdown.accruedVacation.toString(),
           otherBenefits: settlementData.finalCalculation.breakdown.otherBenefits.toString(),
           otherBenefitsDescription: additionalData?.otherBenefitsDescription || null,
@@ -861,6 +933,14 @@ export class FinalSettlementService {
       }
 
       // Get timesheets for the period
+      // Format dates directly from UTC values to avoid timezone shifts
+      const formatUTCDateForQuery = (date: Date): string => {
+        const year = date.getUTCFullYear();
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
       const timesheetData = await db
         .select({
           date: timesheets.date,
@@ -872,8 +952,8 @@ export class FinalSettlementService {
         .where(
           and(
             eq(timesheets.employeeId, employeeId),
-            gte(timesheets.date, new Date(periodStart.getUTCFullYear(), periodStart.getUTCMonth(), periodStart.getUTCDate()).toISOString().split('T')[0]),
-            lte(timesheets.date, new Date(periodEnd.getUTCFullYear(), periodEnd.getUTCMonth(), periodEnd.getUTCDate()).toISOString().split('T')[0])
+            gte(timesheets.date, formatUTCDateForQuery(periodStart)),
+            lte(timesheets.date, formatUTCDateForQuery(periodEnd))
           )
         )
         .orderBy(timesheets.date);
@@ -893,15 +973,23 @@ export class FinalSettlementService {
       const absentDates: string[] = [];
       const totalDaysInPeriod = Math.ceil((periodEnd.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
+      // Iterate through dates using UTC to avoid timezone shifts
       for (let day = 0; day < totalDaysInPeriod; day++) {
-        const currentDate = new Date(periodStart);
-        currentDate.setDate(periodStart.getDate() + day);
+        const currentDate = new Date(Date.UTC(
+          periodStart.getUTCFullYear(),
+          periodStart.getUTCMonth(),
+          periodStart.getUTCDate() + day
+        ));
         
         // Skip if date is beyond period end
         if (currentDate > periodEnd) break;
 
-        const dateString = new Date(currentDate.getUTCFullYear(), currentDate.getUTCMonth(), currentDate.getUTCDate()).toISOString().split('T')[0];
-        const dayOfWeek = currentDate.getDay();
+        // Format date string directly from UTC values
+        const year = currentDate.getUTCFullYear();
+        const month = String(currentDate.getUTCMonth() + 1).padStart(2, '0');
+        const dayStr = String(currentDate.getUTCDate()).padStart(2, '0');
+        const dateString = `${year}-${month}-${dayStr}`;
+        const dayOfWeek = currentDate.getUTCDay();
         const isFriday = dayOfWeek === 5; // Friday is day 5
 
         const dayData = timesheetMap.get(dateString);
@@ -914,13 +1002,21 @@ export class FinalSettlementService {
             continue;
           } else {
             // Friday has no hours - check if Thursday and Saturday are also absent
-            const thursdayDate = new Date(currentDate);
-            thursdayDate.setDate(currentDate.getDate() - 1);
-            const saturdayDate = new Date(currentDate);
-            saturdayDate.setDate(currentDate.getDate() + 1);
+            // Calculate Thursday and Saturday dates using UTC
+            const thursdayDate = new Date(Date.UTC(
+              currentDate.getUTCFullYear(),
+              currentDate.getUTCMonth(),
+              currentDate.getUTCDate() - 1
+            ));
+            const saturdayDate = new Date(Date.UTC(
+              currentDate.getUTCFullYear(),
+              currentDate.getUTCMonth(),
+              currentDate.getUTCDate() + 1
+            ));
 
-            const thursdayString = new Date(thursdayDate.getUTCFullYear(), thursdayDate.getUTCMonth(), thursdayDate.getUTCDate()).toISOString().split('T')[0];
-            const saturdayString = new Date(saturdayDate.getUTCFullYear(), saturdayDate.getUTCMonth(), saturdayDate.getUTCDate()).toISOString().split('T')[0];
+            // Format date strings directly from UTC values
+            const thursdayString = `${thursdayDate.getUTCFullYear()}-${String(thursdayDate.getUTCMonth() + 1).padStart(2, '0')}-${String(thursdayDate.getUTCDate()).padStart(2, '0')}`;
+            const saturdayString = `${saturdayDate.getUTCFullYear()}-${String(saturdayDate.getUTCMonth() + 1).padStart(2, '0')}-${String(saturdayDate.getUTCDate()).padStart(2, '0')}`;
 
             const thursdayData = timesheetMap.get(thursdayString);
             const saturdayData = timesheetMap.get(saturdayString);
@@ -943,17 +1039,51 @@ export class FinalSettlementService {
         }
       }
 
-      // Calculate daily rate and deduction
-      const dailyRate = currentBasicSalary / 30; // Standard 30-day month
-      const absentDeduction = absentDays * dailyRate;
+      // Calculate daily rate and deduction based on actual days in each month
+      // Group absent days by month and calculate deduction for each month separately
+      const absentDaysByMonth = new Map<string, number>();
+      
+      // Count absent days per month
+      for (const absentDate of absentDates) {
+        const date = new Date(absentDate);
+        const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
+        absentDaysByMonth.set(monthKey, (absentDaysByMonth.get(monthKey) || 0) + 1);
+      }
+      
+      // Calculate deduction for each month based on actual days in that month
+      let totalAbsentDeduction = 0;
+      let totalDailyRate = 0;
+      let monthCount = 0;
+      
+      for (const [monthKey, absentDaysInMonth] of absentDaysByMonth.entries()) {
+        const [year, month] = monthKey.split('-').map(Number);
+        const actualDaysInMonth = this.getDaysInMonth(new Date(year, month, 1));
+        const dailyRate = currentBasicSalary / actualDaysInMonth;
+        const monthDeduction = absentDaysInMonth * dailyRate;
+        totalAbsentDeduction += monthDeduction;
+        totalDailyRate += dailyRate;
+        monthCount++;
+      }
+      
+      // Calculate average daily rate for display purposes
+      const averageDailyRate = monthCount > 0 ? totalDailyRate / monthCount : (currentBasicSalary / 30);
+      const absentDeduction = Math.round(totalAbsentDeduction * 100) / 100;
+
+      // Format dates directly from UTC values to avoid timezone shifts
+      const formatUTCDate = (date: Date): string => {
+        const year = date.getUTCFullYear();
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
 
       return {
         absentDays,
         absentDeduction,
         calculationPeriod,
-        startDate: new Date(periodStart.getUTCFullYear(), periodStart.getUTCMonth(), periodStart.getUTCDate()).toISOString().split('T')[0],
-        endDate: new Date(periodEnd.getUTCFullYear(), periodEnd.getUTCMonth(), periodEnd.getUTCDate()).toISOString().split('T')[0],
-        dailyRate,
+        startDate: formatUTCDate(periodStart),
+        endDate: formatUTCDate(periodEnd),
+        dailyRate: averageDailyRate,
         calculationDetails: {
           totalDaysInPeriod,
           workingDaysInPeriod: totalDaysInPeriod - absentDays,

@@ -69,8 +69,8 @@ const createFormSchema = (settlementType: 'vacation' | 'exit') => {
     otherDeductionsDescription: z.string().optional(),
     // Absent calculation fields
     absentCalculationPeriod: z.enum(['last_month', 'unpaid_period', 'custom']).default('last_month'),
-    absentCalculationStartDate: z.string().optional(),
-    absentCalculationEndDate: z.string().optional(),
+    absentCalculationStartDate: z.string().default(''),
+    absentCalculationEndDate: z.string().default(''),
     manualAbsentDays: z.number().min(0).default(0), // Manual absent days override
     notes: z.string().optional(),
   };
@@ -433,7 +433,7 @@ export function CreateFinalSettlementDialog({
                               <FormItem>
                                 <FormLabel>Start Date</FormLabel>
                                 <FormControl>
-                                  <Input type="date" {...field} />
+                                  <Input type="date" {...field} value={field.value ?? ''} />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -447,7 +447,7 @@ export function CreateFinalSettlementDialog({
                               <FormItem>
                                 <FormLabel>End Date</FormLabel>
                                 <FormControl>
-                                  <Input type="date" {...field} />
+                                  <Input type="date" {...field} value={field.value ?? ''} />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -493,6 +493,7 @@ export function CreateFinalSettlementDialog({
                                 <Input 
                                   type="date" 
                                   {...field}
+                                  value={field.value ?? ''}
                                   onChange={(e) => {
                                     field.onChange(e);
                                     
@@ -534,6 +535,7 @@ export function CreateFinalSettlementDialog({
                                   max="12" 
                                   placeholder="e.g., 1.5 for 1.5 months"
                                   {...field}
+                                  value={field.value ?? ''}
                                   onChange={(e) => {
                                     const value = parseFloat(e.target.value) || 0;
                                     field.onChange(value);
@@ -572,7 +574,7 @@ export function CreateFinalSettlementDialog({
                             <FormItem>
                               <FormLabel>Vacation End Date</FormLabel>
                               <FormControl>
-                                <Input type="date" {...field} />
+                                <Input type="date" {...field} value={field.value ?? ''} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -586,7 +588,7 @@ export function CreateFinalSettlementDialog({
                             <FormItem>
                               <FormLabel>Expected Return Date</FormLabel>
                               <FormControl>
-                                <Input type="date" {...field} />
+                                <Input type="date" {...field} value={field.value ?? ''} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -626,7 +628,7 @@ export function CreateFinalSettlementDialog({
                             <FormItem>
                               <FormLabel>Last Working Date</FormLabel>
                               <FormControl>
-                                <Input type="date" {...field} />
+                                <Input type="date" {...field} value={field.value ?? ''} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
