@@ -7,7 +7,8 @@
     "description": "Manage equipment rentals and contracts",
     "filterTitle": "Filters",
     "showFilters": "Show Filters",
-    "noRentalsFound": "No rentals found"
+    "noRentalsFound": "No rentals found",
+    "totalRentals": "Total Rentals"
   },
   "rentalManagement": "Rental Management",
   "manageEquipmentRentals": "Manage equipment rentals and contracts",
@@ -121,7 +122,8 @@
     "description": "Manage equipment rentals and contracts",
     "filterTitle": "Filters",
     "showFilters": "Show Filters",
-    "noRentalsFound": "No rentals found"
+    "noRentalsFound": "No rentals found",
+    "totalRentals": "Total Rentals"
   },
   "table": {
     "headers": {
@@ -249,8 +251,16 @@
   "hourly": "Hourly",
   "inactive": "Inactive",
   "maintenance": "Maintenance",
-  "notStarted": "Not Started",
-  "current": "Current",
-  "upcoming": "Upcoming",
-  "status": "Status"
+    "notStarted": "Not Started",
+    "current": "Current",
+    "upcoming": "Upcoming",
+    "status": "Status"
+  },
+  "pagination": {
+    "itemsPerPage": "Items per page",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page",
+    "of": "of"
+  }
 }

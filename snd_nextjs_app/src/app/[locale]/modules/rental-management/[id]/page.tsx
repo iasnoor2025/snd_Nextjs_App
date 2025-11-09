@@ -746,6 +746,13 @@ function UnifiedTimeline({ rental, t }: { rental: Rental | null; t: any }) {
   );
 }
 
+// Helper function to get first two words of a name
+function getShortName(fullName: string): string {
+  if (!fullName) return '';
+  const words = fullName.trim().split(/\s+/);
+  return words.slice(0, 2).join(' ');
+}
+
 export default function RentalDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -2356,7 +2363,7 @@ export default function RentalDetailPage() {
                       <Label className="text-sm font-medium">{t('rental.fields.supervisor')}</Label>
                       <p className="text-sm text-muted-foreground">
                         {supervisorDetails ? (
-                          `${supervisorDetails.first_name} ${supervisorDetails.last_name} (File: ${supervisorDetails.file_number})`
+                          `${getShortName(`${supervisorDetails.first_name} ${supervisorDetails.last_name}`)} (File: ${supervisorDetails.file_number})`
                         ) : rental.supervisor ? (
                           `${t('rental.loading')} (ID: ${rental.supervisor})`
                         ) : (
@@ -2576,7 +2583,7 @@ export default function RentalDetailPage() {
                         // Supervisor name
                         let supervisorName = '-';
                         if (item?.supervisorId && (item as any).supervisorFirstName && (item as any).supervisorLastName) {
-                          supervisorName = `${(item as any).supervisorFirstName} ${(item as any).supervisorLastName}`;
+                          supervisorName = getShortName(`${(item as any).supervisorFirstName} ${(item as any).supervisorLastName}`);
                         } else if (item?.supervisorId) {
                           supervisorName = `Employee ${item.supervisorId}`;
                         }
@@ -3108,7 +3115,7 @@ export default function RentalDetailPage() {
                             const groupedBySupervisor = monthData.items.reduce((acc: any, item: any) => {
                               const supervisorKey = item?.supervisorId 
                                 ? (item?.supervisorFirstName && item?.supervisorLastName
-                                  ? `${item.supervisorFirstName} ${item.supervisorLastName}`
+                                  ? getShortName(`${item.supervisorFirstName} ${item.supervisorLastName}`)
                                   : `Employee ${item.supervisorId}`)
                                 : 'No Supervisor';
                               
@@ -3150,7 +3157,7 @@ export default function RentalDetailPage() {
                               // Get supervisor name
                               let supervisorName = 'N/A';
                               if (item?.supervisorId && item?.supervisorFirstName && item?.supervisorLastName) {
-                                supervisorName = `${item.supervisorFirstName} ${item.supervisorLastName}`;
+                                supervisorName = getShortName(`${item.supervisorFirstName} ${item.supervisorLastName}`);
                               } else if (item?.supervisorId) {
                                 supervisorName = `Employee ${item.supervisorId}`;
                               }
@@ -3678,7 +3685,7 @@ export default function RentalDetailPage() {
                                                   // Get supervisor name
                                                   let supervisorName = 'N/A';
                                                   if (item?.supervisorId && item?.supervisorFirstName && item?.supervisorLastName) {
-                                                    supervisorName = `${item.supervisorFirstName} ${item.supervisorLastName}`;
+                                                    supervisorName = getShortName(`${item.supervisorFirstName} ${item.supervisorLastName}`);
                                                   } else if (item?.supervisorId) {
                                                     supervisorName = `Employee ${item.supervisorId}`;
                                                   }

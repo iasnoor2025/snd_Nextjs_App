@@ -42,6 +42,8 @@ import { useRBAC } from '@/lib/rbac/rbac-context';
 import { format } from 'date-fns';
 import {
   CheckCircle,
+  ChevronLeft,
+  ChevronRight,
   DollarSign,
   Download,
   Edit,
@@ -127,6 +129,13 @@ interface Filters {
   endDate?: string;
   customerId?: string;
   paymentStatus?: string;
+}
+
+// Helper function to get first two words of a name
+function getShortName(fullName: string): string {
+  if (!fullName) return '';
+  const words = fullName.trim().split(/\s+/);
+  return words.slice(0, 2).join(' ');
 }
 
 export default function RentalManagementPage() {
@@ -483,12 +492,14 @@ export default function RentalManagementPage() {
 
   // Apply filters
   const applyFilters = () => {
+    setCurrentPage(1);
     fetchRentals();
   };
 
   // Clear filters
   const clearFilters = () => {
     setFilters({});
+    setCurrentPage(1);
     fetchRentals();
   };
 
@@ -658,9 +669,44 @@ export default function RentalManagementPage() {
             <CardDescription>{t('rental.dashboard.description')}</CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-sm text-muted-foreground">
+                {(() => {
+                  const translation = t('rental.dashboard.totalRentals');
+                  return translation === 'rental.dashboard.totalRentals' ? 'Total Rentals' : translation;
+                })()}: {(rentals || []).length}
+              </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="items-per-page" className="text-sm font-medium">
+                  {(() => {
+                    const translation = t('rental.pagination.itemsPerPage');
+                    return translation === 'rental.pagination.itemsPerPage' ? 'Items per page' : translation;
+                  })()}:
+                </Label>
+                <Select
+                  value={`${itemsPerPage}`}
+                  onValueChange={(value) => {
+                    setItemsPerPage(Number(value));
+                    setCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger id="items-per-page" className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[10, 20, 30, 50, 100].map((size) => (
+                      <SelectItem key={size} value={`${size}`}>
+                        {size}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-16">#</TableHead>
                   <TableHead>{t('rental.table.headers.rentalNumber')}</TableHead>
                   <TableHead>{t('rental.table.headers.customer')}</TableHead>
                   <TableHead>{t('rental.table.headers.supervisor')}</TableHead>
@@ -673,11 +719,21 @@ export default function RentalManagementPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(rentals || []).map(rental => (
-                  <TableRow key={rental.id}>
-                    <TableCell className="font-medium">
-                      {convertToArabicNumerals(rental.rentalNumber, isRTL)}
-                    </TableCell>
+                {(() => {
+                  const totalRentals = rentals || [];
+                  const totalPages = Math.ceil(totalRentals.length / itemsPerPage);
+                  const startIndex = (currentPage - 1) * itemsPerPage;
+                  const endIndex = startIndex + itemsPerPage;
+                  const paginatedRentals = totalRentals.slice(startIndex, endIndex);
+                  
+                  return paginatedRentals.map((rental, index) => (
+                    <TableRow key={rental.id}>
+                      <TableCell className="text-muted-foreground">
+                        {convertToArabicNumerals(String(startIndex + index + 1), isRTL)}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {convertToArabicNumerals(rental.rentalNumber, isRTL)}
+                      </TableCell>
                     <TableCell>
                       {getTranslatedName(
                         rental.customer?.name,
@@ -690,7 +746,7 @@ export default function RentalManagementPage() {
                       {rental.supervisor ? (
                         <span className="text-sm">
                           {rental.supervisor_details ? (
-                            `${rental.supervisor_details.name} (File: ${rental.supervisor_details.file_number})`
+                            `${getShortName(rental.supervisor_details.name)} (File: ${rental.supervisor_details.file_number})`
                           ) : (
                             `ID: ${rental.supervisor}`
                           )}
@@ -757,13 +813,131 @@ export default function RentalManagementPage() {
                         </PermissionContent>
                       </div>
                     </TableCell>
-                  </TableRow>
-                ))}
+                    </TableRow>
+                  ));
+                })()}
               </TableBody>
             </Table>
             {(rentals || []).length === 0 && (
               <div className="text-center py-8 text-muted-foreground">{t('rental.dashboard.noRentalsFound')}</div>
             )}
+            {(() => {
+              const totalRentals = rentals || [];
+              const totalPages = Math.ceil(totalRentals.length / itemsPerPage);
+              
+              if (totalPages <= 1) return null;
+              
+              return (
+                <div className={`flex items-center justify-center gap-2 mt-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    {isRTL ? (
+                      <>
+                        {(() => {
+                          const translation = t('rental.pagination.next');
+                          return translation === 'rental.pagination.next' ? 'Next' : translation;
+                        })()}
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </>
+                    ) : (
+                      <>
+                        <ChevronLeft className="h-4 w-4 mr-1" />
+                        {(() => {
+                          const translation = t('rental.pagination.previous');
+                          return translation === 'rental.pagination.previous' ? 'Previous' : translation;
+                        })()}
+                      </>
+                    )}
+                  </Button>
+
+                  <div className="flex items-center gap-1">
+                    {/* First page */}
+                    {currentPage > 2 && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(1)}
+                          className="w-8 h-8 p-0"
+                        >
+                          1
+                        </Button>
+                        {currentPage > 3 && <span className="px-2 text-muted-foreground">...</span>}
+                      </>
+                    )}
+
+                    {/* Current page and surrounding pages */}
+                    {(() => {
+                      const pages: number[] = [];
+                      const startPage = Math.max(1, currentPage - 1);
+                      const endPage = Math.min(totalPages, currentPage + 1);
+
+                      for (let page = startPage; page <= endPage; page++) {
+                        pages.push(page);
+                      }
+
+                      return pages.map(page => (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setCurrentPage(page)}
+                          className="w-8 h-8 p-0"
+                        >
+                          {page}
+                        </Button>
+                      ));
+                    })()}
+
+                    {/* Last page */}
+                    {currentPage < totalPages - 1 && (
+                      <>
+                        {currentPage < totalPages - 2 && (
+                          <span className="px-2 text-muted-foreground">...</span>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(totalPages)}
+                          className="w-8 h-8 p-0"
+                        >
+                          {totalPages}
+                        </Button>
+                      </>
+                    )}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    {isRTL ? (
+                      <>
+                        {(() => {
+                          const translation = t('rental.pagination.previous');
+                          return translation === 'rental.pagination.previous' ? 'Previous' : translation;
+                        })()}
+                        <ChevronLeft className="h-4 w-4 ml-1" />
+                      </>
+                    ) : (
+                      <>
+                        {(() => {
+                          const translation = t('rental.pagination.next');
+                          return translation === 'rental.pagination.next' ? 'Next' : translation;
+                        })()}
+                        <ChevronRight className="h-4 w-4 mr-1" />
+                      </>
+                    )}
+                  </Button>
+                </div>
+              );
+            })()}
           </CardContent>
         </Card>
 

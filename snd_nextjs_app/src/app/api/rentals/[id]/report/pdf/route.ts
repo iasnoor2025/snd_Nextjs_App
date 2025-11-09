@@ -66,6 +66,13 @@ export async function GET(
   }
 }
 
+// Helper function to get first two words of a name
+function getShortName(fullName: string): string {
+  if (!fullName) return '';
+  const words = fullName.trim().split(/\s+/);
+  return words.slice(0, 2).join(' ');
+}
+
 function generateReportHTML(rental: any, rentalItems: any[], selectedMonth: string | null): string {
   const monthlyData = rentalItems.reduce((acc: any, item: any) => {
     const itemStartDate = item.startDate || rental.startDate;
@@ -284,7 +291,7 @@ function generateReportHTML(rental: any, rentalItems: any[], selectedMonth: stri
       
       // Get supervisor name
       const supervisorName = (item?.supervisorFirstName && item?.supervisorLastName)
-        ? `${item.supervisorFirstName} ${item.supervisorLastName}`
+        ? getShortName(`${item.supervisorFirstName} ${item.supervisorLastName}`)
         : (item?.supervisorId ? `Employee ${item.supervisorId}` : 'N/A');
       
       // Check if this is a handover (previous item was completed and this is a new operator for same equipment)

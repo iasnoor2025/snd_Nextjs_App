@@ -7,7 +7,8 @@
     "description": "إدارة عقود الإيجار والمعدات",
     "filterTitle": "المرشحات",
     "showFilters": "إظهار المرشحات",
-    "noRentalsFound": "لم يتم العثور على إيجارات"
+    "noRentalsFound": "لم يتم العثور على إيجارات",
+    "totalRentals": "إجمالي الإيجارات"
   },
   "rentalManagement": "إدارة الإيجارات",
   "manageEquipmentRentals": "إدارة عقود الإيجار والمعدات",
@@ -119,7 +120,8 @@
     "description": "إدارة عقود الإيجار والمعدات",
     "filterTitle": "المرشحات",
     "showFilters": "إظهار المرشحات",
-    "noRentalsFound": "لم يتم العثور على إيجارات"
+    "noRentalsFound": "لم يتم العثور على إيجارات",
+    "totalRentals": "إجمالي الإيجارات"
   },
   "table": {
     "headers": {
@@ -246,9 +248,16 @@
   "monthly": "شهري",
   "hourly": "ساعي",
   "inactive": "غير نشط",
-      "maintenance": "صيانة",
-    "notStarted": "لم يبدأ بعد",
-    "current": "الحالي",
-    "upcoming": "قادم",
-    "status": "الحالة"
+  "maintenance": "صيانة",
+  "notStarted": "لم يبدأ بعد",
+  "current": "الحالي",
+  "upcoming": "قادم",
+  "status": "الحالة",
+  "pagination": {
+    "itemsPerPage": "عناصر في الصفحة",
+    "previous": "السابق",
+    "next": "التالي",
+    "page": "الصفحة",
+    "of": "من"
   }
+}
