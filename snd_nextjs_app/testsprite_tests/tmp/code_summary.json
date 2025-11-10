@@ -1,0 +1,369 @@
+{
+  "tech_stack": [
+    "TypeScript",
+    "Next.js 16",
+    "React 19",
+    "PostgreSQL",
+    "Drizzle ORM",
+    "NextAuth.js",
+    "Tailwind CSS",
+    "shadcn/ui",
+    "Redis",
+    "S3/MinIO",
+    "i18next",
+    "React Query",
+    "CASL",
+    "ERPNext Integration"
+  ],
+  "features": [
+    {
+      "name": "Authentication & Authorization",
+      "description": "User authentication with NextAuth.js, password reset, role-based access control (RBAC) with 400+ permissions, session management",
+      "files": [
+        "src/lib/auth.ts",
+        "src/lib/auth-config.ts",
+        "src/app/api/auth/[...nextauth]/route.ts",
+        "src/app/api/auth/signup/route.ts",
+        "src/app/api/auth/forgot-password/route.ts",
+        "src/app/api/auth/reset-password/route.ts",
+        "src/lib/rbac/ability.ts",
+        "src/lib/rbac/permissions.ts",
+        "src/components/protected-route.tsx",
+        "src/components/PermissionBased.tsx",
+        "src/components/RoleBased.tsx"
+      ]
+    },
+    {
+      "name": "Employee Management",
+      "description": "Complete HR system with employee CRUD operations, document management, skills tracking, training programs, performance reviews, assignments, advances, and payroll integration",
+      "files": [
+        "src/app/[locale]/modules/employee-management/page.tsx",
+        "src/app/[locale]/modules/employee-management/[id]/page.tsx",
+        "src/app/api/employees/route.ts",
+        "src/app/api/employees/[id]/route.ts",
+        "src/app/api/employee/documents/route.ts",
+        "src/app/api/employee/advances/route.ts",
+        "src/components/employee/EmployeeForm.tsx",
+        "src/components/employee/EmployeeList.tsx"
+      ]
+    },
+    {
+      "name": "Project Management",
+      "description": "Project lifecycle management with resource allocation, task management, budget tracking, planning, reports, and templates",
+      "files": [
+        "src/app/[locale]/modules/project-management/page.tsx",
+        "src/app/[locale]/modules/project-management/[id]/page.tsx",
+        "src/app/[locale]/modules/project-management/[id]/resources/page.tsx",
+        "src/app/api/projects/route.ts",
+        "src/app/api/projects/[id]/route.ts",
+        "src/components/project/ProjectForm.tsx",
+        "src/components/project/ProjectResources.tsx"
+      ]
+    },
+    {
+      "name": "Equipment Management",
+      "description": "Equipment inventory tracking, maintenance scheduling, status monitoring, assignments, categories, and QR code generation",
+      "files": [
+        "src/app/[locale]/modules/equipment-management/page.tsx",
+        "src/app/[locale]/modules/equipment-management/[id]/page.tsx",
+        "src/app/api/equipment/route.ts",
+        "src/app/api/equipment/[id]/route.ts",
+        "src/app/api/equipment/assignments/route.ts",
+        "src/components/equipment/EquipmentForm.tsx",
+        "src/lib/services/qrcode-service.ts"
+      ]
+    },
+    {
+      "name": "Rental Management",
+      "description": "Complete rental lifecycle management including agreements, equipment tracking, invoicing, payments, quotations, analytics, and ERPNext sync",
+      "files": [
+        "src/app/[locale]/modules/rental-management/page.tsx",
+        "src/app/[locale]/modules/rental-management/[id]/page.tsx",
+        "src/app/api/rentals/route.ts",
+        "src/app/api/rentals/[id]/route.ts",
+        "src/app/api/rentals/invoices/route.ts",
+        "src/lib/services/rental-service.ts",
+        "src/lib/services/rental-invoice-service.ts",
+        "src/lib/services/rental-payment-service.ts"
+      ]
+    },
+    {
+      "name": "Customer Management",
+      "description": "Customer profiles, credit limits, project associations, ERPNext synchronization, and financial data integration",
+      "files": [
+        "src/app/[locale]/modules/customer-management/page.tsx",
+        "src/app/[locale]/modules/customer-management/[id]/page.tsx",
+        "src/app/api/customers/route.ts",
+        "src/app/api/customers/[id]/route.ts",
+        "src/app/api/customers/sync/route.ts",
+        "src/components/customer/ERPNextSyncButton.tsx"
+      ]
+    },
+    {
+      "name": "Timesheet Management",
+      "description": "Time tracking with approval workflows, bulk submission, monthly views, payslip generation, and auto-generation",
+      "files": [
+        "src/app/[locale]/modules/timesheet-management/page.tsx",
+        "src/app/[locale]/modules/timesheet-management/[id]/page.tsx",
+        "src/app/api/timesheets/route.ts",
+        "src/app/api/timesheets/[id]/route.ts",
+        "src/app/api/timesheets/approve/route.ts",
+        "src/components/timesheet/TimesheetForm.tsx",
+        "src/lib/services/timesheet-auto-generator.ts"
+      ]
+    },
+    {
+      "name": "Payroll Management",
+      "description": "Salary calculations, advance payments, payslip generation, reports, settings, and salary increments",
+      "files": [
+        "src/app/[locale]/modules/payroll-management/page.tsx",
+        "src/app/[locale]/modules/payroll-management/[id]/page.tsx",
+        "src/app/api/payroll/route.ts",
+        "src/app/api/payroll/[id]/route.ts",
+        "src/app/api/payroll/payslip/route.ts",
+        "src/app/api/salary-increments/route.ts"
+      ]
+    },
+    {
+      "name": "Leave Management",
+      "description": "Leave request system with approval workflows, leave types, calendar integration, and employee leave tracking",
+      "files": [
+        "src/app/[locale]/modules/leave-management/page.tsx",
+        "src/app/[locale]/modules/leave-management/[id]/page.tsx",
+        "src/app/api/leave-requests/route.ts",
+        "src/app/api/leave-requests/[id]/route.ts",
+        "src/app/api/leave-requests/approve/route.ts"
+      ]
+    },
+    {
+      "name": "Quotation Management",
+      "description": "Quote generation, approval workflows, conversion to rentals, and quotation tracking",
+      "files": [
+        "src/app/[locale]/modules/quotation-management/page.tsx",
+        "src/app/[locale]/modules/quotation-management/[id]/page.tsx",
+        "src/app/api/quotations/route.ts",
+        "src/app/api/quotations/[id]/route.ts"
+      ]
+    },
+    {
+      "name": "Company Management",
+      "description": "Company profiles, document management with dynamic document types, compliance tracking",
+      "files": [
+        "src/app/[locale]/modules/company-management/page.tsx",
+        "src/app/[locale]/modules/company-management/[id]/page.tsx",
+        "src/app/api/companies/route.ts",
+        "src/app/api/companies/[id]/route.ts",
+        "src/components/company/CompanyDocumentManager.tsx",
+        "src/components/company/DynamicDocumentTypeManager.tsx"
+      ]
+    },
+    {
+      "name": "Document Management",
+      "description": "File uploads to S3/MinIO, document versioning, PDF combining, approval workflows, and document organization",
+      "files": [
+        "src/app/[locale]/modules/document-management/page.tsx",
+        "src/app/api/upload/route.ts",
+        "src/app/api/documents/combine-pdf/route.ts",
+        "src/app/api/documents/versions/route.ts",
+        "src/lib/services/document-combiner-service.ts",
+        "src/lib/minio/s3-client.ts"
+      ]
+    },
+    {
+      "name": "Safety Management",
+      "description": "Incident reporting, tracking, resolution workflows, and safety compliance",
+      "files": [
+        "src/app/[locale]/modules/safety-management/page.tsx",
+        "src/app/api/safety-incidents/route.ts"
+      ]
+    },
+    {
+      "name": "Maintenance Management",
+      "description": "Equipment maintenance scheduling, tracking, and maintenance history",
+      "files": [
+        "src/app/[locale]/modules/maintenance-management/page.tsx",
+        "src/app/api/maintenance/route.ts",
+        "src/app/api/maintenance/[id]/route.ts",
+        "src/components/maintenance/MaintenanceForm.tsx"
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "description": "Business intelligence dashboard with statistics, activity tracking, equipment status, timesheet overview, and IQama monitoring",
+      "files": [
+        "src/app/[locale]/page.tsx",
+        "src/app/api/dashboard/stats/route.ts",
+        "src/app/api/dashboard/activity/route.ts",
+        "src/app/api/dashboard/equipment/route.ts",
+        "src/components/dashboard/DashboardStats.tsx",
+        "src/lib/services/dashboard-service.ts"
+      ]
+    },
+    {
+      "name": "Notifications",
+      "description": "Real-time notifications using Server-Sent Events (SSE), notification bell, and notification management",
+      "files": [
+        "src/app/[locale]/modules/notifications/page.tsx",
+        "src/app/api/notifications/route.ts",
+        "src/app/api/sse/route.ts",
+        "src/components/notification-bell.tsx",
+        "src/contexts/notification-context.tsx",
+        "src/lib/services/notification-service.ts"
+      ]
+    },
+    {
+      "name": "ERPNext Integration",
+      "description": "Synchronization with ERPNext for customers, employees, equipment, invoices, payments, and financial data",
+      "files": [
+        "src/lib/erpnext-client.ts",
+        "src/app/api/erpnext/customers/route.ts",
+        "src/app/api/erpnext/employees/route.ts",
+        "src/app/api/erpnext/invoices/route.ts",
+        "src/lib/services/erpnext-sync-service.ts",
+        "src/lib/services/erpnext-financial-service.ts"
+      ]
+    },
+    {
+      "name": "H2S Card Management",
+      "description": "H2S training card generation, PDF creation, and training record management",
+      "files": [
+        "src/app/[locale]/h2s-card/page.tsx",
+        "src/app/api/h2s-card/[id]/route.ts",
+        "src/app/api/h2s-training-records/route.ts",
+        "src/components/h2s-card/H2SCardForm.tsx",
+        "src/lib/services/h2s-card-service.ts",
+        "src/lib/services/h2s-card-pdf-service.ts"
+      ]
+    },
+    {
+      "name": "Final Settlements",
+      "description": "Final settlement calculations, PDF generation, and settlement management",
+      "files": [
+        "src/app/api/final-settlements/route.ts",
+        "src/app/api/final-settlements/[id]/route.ts",
+        "src/components/final-settlements/FinalSettlementForm.tsx",
+        "src/lib/services/final-settlement-service.ts",
+        "src/lib/services/final-settlement-pdf-service.ts"
+      ]
+    },
+    {
+      "name": "Assignments Management",
+      "description": "Employee and equipment assignment tracking, approval workflows, and bulk operations",
+      "files": [
+        "src/app/[locale]/modules/assignments-management/page.tsx",
+        "src/app/api/assignments/route.ts",
+        "src/app/api/assignments/approve/route.ts",
+        "src/lib/services/assignment-service.ts",
+        "src/lib/services/central-assignment-service.ts"
+      ]
+    },
+    {
+      "name": "Location Management",
+      "description": "Saudi Arabia location management with comprehensive location data",
+      "files": [
+        "src/app/[locale]/modules/location-management/page.tsx",
+        "src/app/api/locations/route.ts",
+        "src/app/api/locations/[id]/route.ts"
+      ]
+    },
+    {
+      "name": "User Management",
+      "description": "User account management, role assignments, and user profile management",
+      "files": [
+        "src/app/[locale]/modules/user-management/page.tsx",
+        "src/app/api/users/route.ts",
+        "src/app/api/user/route.ts",
+        "src/app/api/profile/route.ts"
+      ]
+    },
+    {
+      "name": "Permissions & RBAC",
+      "description": "Role-based access control system with dynamic permissions, permission management UI, and permission caching",
+      "files": [
+        "src/app/[locale]/modules/permissions/page.tsx",
+        "src/app/api/permissions/route.ts",
+        "src/app/api/roles/route.ts",
+        "src/components/permission-management.tsx",
+        "src/lib/rbac/ability.ts",
+        "src/lib/rbac/permissions.ts",
+        "src/lib/rbac/cache.ts"
+      ]
+    },
+    {
+      "name": "Reporting",
+      "description": "Business reports generation, equipment reports (PDF/Excel), and custom report creation",
+      "files": [
+        "src/app/[locale]/modules/reporting/page.tsx",
+        "src/app/api/reports/route.ts",
+        "src/lib/services/equipment-report-pdf-service.ts",
+        "src/lib/services/equipment-report-excel-service.ts"
+      ]
+    },
+    {
+      "name": "Internationalization (i18n)",
+      "description": "Arabic and English language support with RTL layout, translation management, and language switching",
+      "files": [
+        "src/lib/i18n-config.ts",
+        "src/lib/i18n-browser.ts",
+        "src/lib/server-i18n.ts",
+        "src/components/language-switcher.tsx",
+        "src/components/i18n-provider.tsx",
+        "src/dictionaries/ar",
+        "src/dictionaries/en"
+      ]
+    },
+    {
+      "name": "Billing & Invoicing",
+      "description": "Automated monthly billing, invoice generation, invoice synchronization with ERPNext, and payment tracking",
+      "files": [
+        "src/app/api/billing/monthly/route.ts",
+        "src/app/api/billing/automated-monthly/route.ts",
+        "src/app/api/billing/sync-invoices/route.ts",
+        "src/lib/services/monthly-billing-service.ts",
+        "src/lib/services/automated-monthly-billing-service.ts"
+      ]
+    },
+    {
+      "name": "Cron Jobs & Automation",
+      "description": "Automated tasks including timesheet generation, employee status monitoring, equipment status monitoring",
+      "files": [
+        "src/app/api/cron/timesheets/route.ts",
+        "src/app/api/cron/employee-status/route.ts",
+        "src/app/api/cron/equipment-status-monitor/route.ts",
+        "src/lib/services/cron-service.ts"
+      ]
+    },
+    {
+      "name": "Data Tables & UI Components",
+      "description": "Reusable data tables with sorting, filtering, pagination, and shadcn/ui component library integration",
+      "files": [
+        "src/components/data-table.tsx",
+        "src/components/data-table-client.tsx",
+        "src/components/data-table-simple.tsx",
+        "src/components/ui"
+      ]
+    },
+    {
+      "name": "PDF Generation",
+      "description": "PDF generation for payslips, contracts, H2S cards, final settlements, and reports",
+      "files": [
+        "src/lib/services/pdf-generator-service.ts",
+        "src/lib/custom-pdf-generator.ts",
+        "src/lib/services/employee-contract-pdf-service.ts",
+        "src/lib/services/h2s-card-pdf-service.ts"
+      ]
+    },
+    {
+      "name": "Caching & Performance",
+      "description": "Redis caching for API responses, permission caching, performance monitoring, and optimization",
+      "files": [
+        "src/lib/redis/cache.ts",
+        "src/lib/api-cache.ts",
+        "src/lib/api-middleware-cache.ts",
+        "src/lib/rbac/cache.ts",
+        "src/hooks/use-performance-cache.ts"
+      ]
+    }
+  ]
+}
+

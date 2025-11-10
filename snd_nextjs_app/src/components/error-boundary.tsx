@@ -26,9 +26,16 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): State {
+    // Check if it's a chunk loading error
+    const isChunkError = 
+      error.message?.includes('ChunkLoadError') ||
+      error.message?.includes('Loading chunk') ||
+      error.message?.includes('Failed to fetch dynamically imported module') ||
+      error.name === 'ChunkLoadError';
+    
     return {
       hasError: true,
-      error,
+      error: isChunkError ? new Error('Failed to load application resources. Please refresh the page.') : error,
     };
   }
 
@@ -48,6 +55,12 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   handleReset = () => {
+    // For chunk loading errors, do a hard refresh
+    if (this.state.error?.message?.includes('Failed to load application resources')) {
+      window.location.reload();
+      return;
+    }
+    
     this.setState({
       hasError: false,
       error: null,

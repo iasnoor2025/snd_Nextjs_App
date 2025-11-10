@@ -135,8 +135,13 @@ export default function CreateCustomerPage() {
       // Wait a moment for cache invalidation, then redirect
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Redirect to customers list with cache bust
-      window.location.href = '/modules/customer-management?refresh=' + Date.now();
+      // Get current locale from pathname or default to 'en'
+      const currentPath = window.location.pathname;
+      const localeMatch = currentPath.match(/^\/(en|ar)\//);
+      const locale = localeMatch ? localeMatch[1] : 'en';
+      
+      // Redirect to customers list with locale prefix and cache bust
+      window.location.href = `/${locale}/modules/customer-management?refresh=${Date.now()}`;
     } catch (error) {
       console.error('Error creating customer:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to create customer');

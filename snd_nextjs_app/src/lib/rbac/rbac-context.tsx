@@ -171,25 +171,43 @@ async function loadUserPermissions(userId: string, userRole: string, forceRefres
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include', // Ensure cookies are sent
     });
     
-    if (response.ok) {
-      const data = await response.json();
-      
-      if (data.success && data.permissions) {
-        // Only log in development mode to reduce console noise
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🔄 Loaded user permissions from API:', data.permissions.slice(0, 5), data.permissions.length > 5 ? '...' : '');
-        }
-        setUserPermissionsInCache(userId, data.permissions, userRole);
-        return data.permissions;
+    if (!response.ok) {
+      // Log error details for debugging
+      if (process.env.NODE_ENV === 'development') {
+        console.error(`❌ Failed to load user permissions: ${response.status} ${response.statusText}`);
       }
+      // Return empty array if API call fails
+      return [];
+    }
+    
+    const data = await response.json();
+    
+    if (data.success && Array.isArray(data.permissions)) {
+      // Only log in development mode to reduce console noise
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔄 Loaded user permissions from API:', data.permissions.slice(0, 5), data.permissions.length > 5 ? '...' : '');
+      }
+      setUserPermissionsInCache(userId, data.permissions, userRole);
+      return data.permissions;
+    } else {
+      // Log if response format is unexpected
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('⚠️ Unexpected response format from user-permissions API:', data);
+      }
+      return [];
     }
   } catch (error) {
-    console.error('Failed to load user permissions:', error);
+    // Log error with more details
+    console.error('❌ Failed to load user permissions:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', error.message, error.stack);
+    }
+    // Return empty array on error to prevent app crash
+    return [];
   }
-  
-  return [];
 }
 
 // Client-side permission checking (permission-based system)

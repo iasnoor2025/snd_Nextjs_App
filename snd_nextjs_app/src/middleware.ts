@@ -67,6 +67,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Fix for /en/en or /ar/ar double locale issue - redirect to single locale
+  const pathParts = pathname.split('/').filter(Boolean);
+  if (pathParts.length >= 2 && pathParts[0] === pathParts[1] && i18n.locales.includes(pathParts[0] as "en" | "ar")) {
+    const locale = pathParts[0];
+    const restOfPath = pathParts.slice(2).join('/');
+    const redirectPath = restOfPath ? `/${locale}/${restOfPath}` : `/${locale}`;
+    return NextResponse.redirect(new URL(redirectPath, request.url));
+  }
+
   // Handle auth-related routes with locale prefixes
   if (pathname === '/en/login' || pathname === '/ar/login') {
     return NextResponse.next();

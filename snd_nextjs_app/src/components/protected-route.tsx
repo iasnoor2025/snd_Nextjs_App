@@ -17,6 +17,36 @@ interface ProtectedRouteProps {
   fallback?: React.ReactNode;
 }
 
+// Helper function to check if permissions are cached (same logic as rbac-context)
+function arePermissionsCached(userId: string): boolean {
+  if (typeof window === 'undefined') return false;
+  
+  try {
+    const cacheKey = `rbac_permissions_${userId}`;
+    const timestampKey = `rbac_permissions_timestamp_${userId}`;
+    const roleKey = `rbac_permissions_role_${userId}`;
+    
+    const cachedPermissions = localStorage.getItem(cacheKey);
+    const cachedTimestamp = localStorage.getItem(timestampKey);
+    const cachedRole = localStorage.getItem(roleKey);
+    
+    if (cachedPermissions && cachedTimestamp && cachedRole) {
+      const timestamp = parseInt(cachedTimestamp, 10);
+      const now = Date.now();
+      const PERMISSIONS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+      
+      // Check if cache is still valid
+      if (now - timestamp < PERMISSIONS_CACHE_TTL) {
+        return true;
+      }
+    }
+  } catch (error) {
+    // Ignore errors when checking cache
+  }
+  
+  return false;
+}
+
 export function ProtectedRoute({
   children,
   requiredRole,
@@ -39,14 +69,26 @@ export function ProtectedRoute({
     }
   }, [session, status, router, t]);
 
-  // Track when permissions are loaded
+  // Track when permissions are loaded - check cache immediately
   useEffect(() => {
     if (user && !isLoading) {
-      // Wait a bit for permissions to load from API
-      const timer = setTimeout(() => {
+      // Check if permissions are already cached
+      const cached = arePermissionsCached(user.id);
+      
+      if (cached) {
+        // Permissions are cached, mark as loaded immediately
         setPermissionsLoaded(true);
-      }, 500);
-      return () => clearTimeout(timer);
+      } else {
+        // Permissions not cached, wait a bit for API to load them
+        // But set a maximum timeout to prevent infinite loading
+        const timer = setTimeout(() => {
+          setPermissionsLoaded(true);
+        }, 1000); // Wait up to 1 second for permissions to load from API
+        return () => clearTimeout(timer);
+      }
+    } else if (!user) {
+      // If no user, reset permissions loaded state
+      setPermissionsLoaded(false);
     }
   }, [user, isLoading]);
 
@@ -90,6 +132,13 @@ export function ProtectedRoute({
 
   // Check permission-based access
   if (requiredPermission && user) {
+    // Strict check: if we require a permission, user must have it
+    // Don't allow access if permissions haven't loaded yet (for security)
+    if (!permissionsLoaded) {
+      // Still loading permissions, show loading state
+      return <RBACLoading message={t('common.rbac.loadingPermissions')} />;
+    }
+    
     if (!hasPermission(requiredPermission.action, requiredPermission.subject)) {
       return (
         <AccessDenied

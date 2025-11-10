@@ -153,8 +153,8 @@ export async function POST(
         }, { status: 400 });
       }
 
-        // Generate vacation settlement data
-        settlementData = await FinalSettlementService.generateVacationSettlementData(
+      // Generate vacation settlement data
+      settlementData = await FinalSettlementService.generateVacationSettlementData(
           employeeId,
           vacationStartDate,
           vacationEndDate,

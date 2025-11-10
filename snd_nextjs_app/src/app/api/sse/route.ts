@@ -62,7 +62,7 @@ export async function GET(_request: NextRequest) {
 
     return response;
   } catch (error) {
-    
+    console.error('SSE connection error:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
@@ -95,7 +95,7 @@ export async function POST(_request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    
+    console.error('SSE POST error:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

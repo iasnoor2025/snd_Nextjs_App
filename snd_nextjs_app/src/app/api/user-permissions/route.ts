@@ -18,7 +18,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const userId = parseInt(session.user.id);
+    // Handle both string and number user IDs
+    const userId = typeof session.user.id === 'string' 
+      ? (isNaN(parseInt(session.user.id)) ? null : parseInt(session.user.id))
+      : session.user.id;
+    
+    if (!userId || isNaN(userId)) {
+      console.log('❌ API: Invalid user ID format:', session.user.id);
+      return NextResponse.json(
+        { error: 'Invalid user ID format' },
+        { status: 400 }
+      );
+    }
+
     // Processing user ID
 
     // Get user's role ID from database

@@ -1,7 +1,7 @@
 
 import { db } from '@/lib/drizzle';
 import { employeeLeaves, employees } from '@/lib/drizzle/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and, gte, lte } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -51,6 +51,54 @@ export async function POST(_request: NextRequest) {
 
     if (!employee) {
       return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+    }
+
+    // Calculate leave balance validation
+    const daysRequested = parseInt(days);
+    if (isNaN(daysRequested) || daysRequested < 1) {
+      return NextResponse.json({ error: 'Invalid days requested' }, { status: 400 });
+    }
+
+    // Default annual leave balance is 21 days (Saudi labor law standard)
+    const DEFAULT_ANNUAL_LEAVE_BALANCE = 21;
+
+    // Get current year boundaries
+    const currentYear = new Date().getFullYear();
+    const yearStart = `${currentYear}-01-01`;
+    const yearEnd = `${currentYear}-12-31`;
+
+    // Calculate total approved leave days taken this year
+    const approvedLeavesThisYear = await db
+      .select({
+        days: employeeLeaves.days,
+      })
+      .from(employeeLeaves)
+      .where(
+        and(
+          eq(employeeLeaves.employeeId, parseInt(employee_id)),
+          eq(employeeLeaves.status, 'approved'),
+          gte(employeeLeaves.startDate, yearStart),
+          lte(employeeLeaves.startDate, yearEnd)
+        )
+      );
+
+    // Calculate total approved days
+    const totalApprovedDays = approvedLeavesThisYear
+      .map(l => parseInt(String(l.days)) || 0)
+      .reduce((sum, days) => sum + days, 0);
+
+    const availableBalance = DEFAULT_ANNUAL_LEAVE_BALANCE - totalApprovedDays;
+
+    // Check if requested days exceed available balance
+    if (daysRequested > availableBalance) {
+      return NextResponse.json(
+        {
+          error: `Insufficient leave balance. Available: ${availableBalance} days, Requested: ${daysRequested} days`,
+          availableBalance,
+          requestedDays: daysRequested,
+        },
+        { status: 400 }
+      );
     }
 
     // Create the leave request

@@ -163,16 +163,26 @@ function CreateTimesheetContent() {
         fetch('/api/rentals'),
       ]);
 
+      // Check if responses are ok before parsing
+      if (!employeesRes.ok || !projectsRes.ok || !rentalsRes.ok) {
+        throw new Error('Failed to fetch data');
+      }
+
       const employeesData = await employeesRes.json();
       const projectsData = await projectsRes.json();
       const rentalsData = await rentalsRes.json();
 
-      setEmployees(employeesData.data || []);
-      setProjects(projectsData.data || []);
-      setRentals(rentalsData.data || []);
+      // Ensure data is always an array, even if API returns unexpected format
+      setEmployees(Array.isArray(employeesData.data) ? employeesData.data : Array.isArray(employeesData) ? employeesData : []);
+      setProjects(Array.isArray(projectsData.data) ? projectsData.data : Array.isArray(projectsData) ? projectsData : []);
+      setRentals(Array.isArray(rentalsData.data) ? rentalsData.data : Array.isArray(rentalsData) ? rentalsData : []);
     } catch (error) {
-      
+      console.error('Failed to load timesheet data:', error);
       toast.error('Failed to load data');
+      // Ensure arrays are set to empty arrays on error
+      setEmployees([]);
+      setProjects([]);
+      setRentals([]);
     } finally {
       setLoading(false);
     }

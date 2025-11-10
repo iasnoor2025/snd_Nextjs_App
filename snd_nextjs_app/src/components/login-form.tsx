@@ -39,9 +39,17 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
         redirect: false,
       });
 
-      if (result?.error) {
+      // Check for errors - NextAuth returns error in result.error or result.ok === false
+      if (result?.error || !result?.ok) {
+        // Clear password field on error
+        setPassword('');
         toast.error(t('auth.signin.invalidEmailOrPassword'));
-      } else {
+        setIsLoading(false);
+        return; // Don't redirect on error
+      }
+
+      // Only proceed if there's no error and result is ok
+      if (result?.ok && !result?.error) {
         toast.success(t('auth.signin.loginSuccessful'));
         // Wait longer for session cookie to be set before redirecting
         // This prevents redirect loops in middleware
@@ -64,9 +72,14 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
           // Use window.location.href for full page reload to ensure session is set
           window.location.href = redirectTo;
         }, 500); // Increased delay to 500ms to ensure cookie is set
+      } else {
+        // Fallback: if result is unclear, show error
+        setPassword('');
+        toast.error(t('auth.signin.invalidEmailOrPassword'));
       }
     } catch (error) {
       console.error('Login error:', error);
+      setPassword('');
       toast.error(t('auth.signin.loginError'));
     } finally {
       setIsLoading(false);

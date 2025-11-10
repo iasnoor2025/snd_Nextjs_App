@@ -2,7 +2,7 @@
 import { db } from '@/lib/db';
 import { employeeLeaves, employees as employeesTable } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
-import { and, desc, eq, ilike, sql } from 'drizzle-orm';
+import { and, desc, eq, ilike, sql, gte, lte } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -165,6 +165,58 @@ const createLeaveHandler = async (request: NextRequest) => {
       }
     }
     // For ADMIN, MANAGER, SUPERVISOR, SUPER_ADMIN roles, they can create leave requests for any employee
+
+    // Validate leave balance
+    const daysRequested = parseInt(body.days_requested) || 0;
+    if (daysRequested < 1) {
+      return NextResponse.json(
+        { error: 'Invalid days requested. Must be at least 1 day.' },
+        { status: 400 }
+      );
+    }
+
+    // Default annual leave balance is 21 days (Saudi labor law standard)
+    const DEFAULT_ANNUAL_LEAVE_BALANCE = 21;
+
+    // Get current year boundaries
+    const currentYear = new Date().getFullYear();
+    const yearStart = `${currentYear}-01-01`;
+    const yearEnd = `${currentYear}-12-31`;
+
+    // Calculate total approved leave days taken this year
+    const approvedLeavesThisYear = await db
+      .select({
+        days: employeeLeaves.days,
+      })
+      .from(employeeLeaves)
+      .where(
+        and(
+          eq(employeeLeaves.employeeId, body.employee_id),
+          eq(employeeLeaves.status, 'approved'),
+          gte(employeeLeaves.startDate, yearStart),
+          lte(employeeLeaves.startDate, yearEnd)
+        )
+      );
+
+    // Calculate total approved days
+    const totalApprovedDays = approvedLeavesThisYear
+      .map(l => parseInt(String(l.days)) || 0)
+      .reduce((sum, days) => sum + days, 0);
+
+    const availableBalance = DEFAULT_ANNUAL_LEAVE_BALANCE - totalApprovedDays;
+
+    // Check if requested days exceed available balance
+    if (daysRequested > availableBalance) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Insufficient leave balance. Available: ${availableBalance} days, Requested: ${daysRequested} days`,
+          availableBalance,
+          requestedDays: daysRequested,
+        },
+        { status: 400 }
+      );
+    }
 
     const inserted = await db
       .insert(employeeLeaves)

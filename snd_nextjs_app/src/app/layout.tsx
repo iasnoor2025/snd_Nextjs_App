@@ -42,6 +42,30 @@ export default function RootLayout({
                   document.documentElement.classList.remove('dark')
                 }
               } catch (_) {}
+              
+              // Handle chunk loading errors globally
+              window.addEventListener('error', function(event) {
+                if (event.message && (
+                  event.message.includes('ChunkLoadError') ||
+                  event.message.includes('Loading chunk') ||
+                  event.message.includes('Failed to fetch dynamically imported module')
+                )) {
+                  console.warn('Chunk loading error detected, will retry on next navigation');
+                  // Don't reload immediately, let the error boundary handle it
+                }
+              });
+              
+              // Handle unhandled promise rejections for chunk loading
+              window.addEventListener('unhandledrejection', function(event) {
+                if (event.reason && (
+                  event.reason.message?.includes('ChunkLoadError') ||
+                  event.reason.message?.includes('Loading chunk') ||
+                  event.reason.message?.includes('Failed to fetch dynamically imported module')
+                )) {
+                  console.warn('Chunk loading promise rejection detected');
+                  event.preventDefault(); // Prevent default error handling
+                }
+              });
             `,
           }}
         />
