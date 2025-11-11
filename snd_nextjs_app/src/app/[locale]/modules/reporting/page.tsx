@@ -198,6 +198,7 @@ export default function ReportingDashboardPage() {
 
   // Fetch data when specific report types are selected
   React.useEffect(() => {
+    reportGeneratedRef.current = false; // Reset flag when report type changes
     if (selectedReport === 'customer_equipment') {
       fetchCustomersWithRentals();
       // Reset equipment filters when switching to customer equipment report
@@ -224,6 +225,45 @@ export default function ReportingDashboardPage() {
       setIncludeInactive(false);
     }
   }, [selectedReport]);
+
+  // Track if report was manually generated to avoid auto-trigger on initial load
+  const reportGeneratedRef = React.useRef(false);
+
+  // Auto-regenerate report when customer filter changes (only if report already exists)
+  React.useEffect(() => {
+    if (selectedReport === 'customer_equipment' && reportData && reportGeneratedRef.current) {
+      // Small delay to ensure state is updated
+      const timer = setTimeout(() => {
+        generateReport();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerFilter, selectedReport]);
+
+  // Auto-regenerate report when supervisor filter changes (only if report already exists)
+  React.useEffect(() => {
+    if (selectedReport === 'supervisor_equipment' && reportData && reportGeneratedRef.current) {
+      // Small delay to ensure state is updated
+      const timer = setTimeout(() => {
+        generateReport();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supervisorFilter, selectedReport]);
+
+  // Auto-regenerate report when status filter changes (only if report already exists)
+  React.useEffect(() => {
+    if ((selectedReport === 'supervisor_equipment' || selectedReport === 'equipment_by_category') && reportData && reportGeneratedRef.current) {
+      // Small delay to ensure state is updated
+      const timer = setTimeout(() => {
+        generateReport();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, selectedReport]);
 
   const generateReport = async () => {
       try {
@@ -273,6 +313,7 @@ export default function ReportingDashboardPage() {
       // Extract the actual report data from the API response
       const data = responseData.data || responseData;
       setReportData(data);
+      reportGeneratedRef.current = true; // Mark that report was generated
       
       // Dismiss loading toast and show success
       toast.dismiss(loadingToastId);
@@ -507,10 +548,16 @@ export default function ReportingDashboardPage() {
         break;
 
       case 'customer_equipment':
+        // Handle both array and object formats
+        let customerGroupsArray = data.customer_groups;
+        if (customerGroupsArray && !Array.isArray(customerGroupsArray)) {
+          // Convert object to array if needed
+          customerGroupsArray = Object.values(customerGroupsArray);
+        }
         
-        if (data.customer_groups && Array.isArray(data.customer_groups) && data.customer_groups.length > 0) {
-          console.log('First customer rentals:', data.customer_groups[0]?.rentals);
-          console.log('First customer rentals length:', data.customer_groups[0]?.rentals?.length);
+        if (customerGroupsArray && Array.isArray(customerGroupsArray) && customerGroupsArray.length > 0) {
+          console.log('First customer rentals:', customerGroupsArray[0]?.rentals);
+          console.log('First customer rentals length:', customerGroupsArray[0]?.rentals?.length);
           
           return (
             <div className="space-y-6">
@@ -533,7 +580,7 @@ export default function ReportingDashboardPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {data.customer_groups.map((customer: any, index: number) => {
+                      {customerGroupsArray.map((customer: any, index: number) => {
                         console.log(`Rendering customer ${index}:`, customer);
                         return (
                           <TableRow key={customer.customer_info?.id || index}>
@@ -577,14 +624,16 @@ export default function ReportingDashboardPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {data.customer_groups.map((customer: any, customerIndex: number) => {
+                      {customerGroupsArray.map((customer: any, customerIndex: number) => {
                         console.log(`Processing customer ${customerIndex} rentals:`, customer.rentals);
                         return customer.rentals?.map((rental: any, rentalIndex: number) => {
                           console.log(`Processing rental ${rentalIndex} equipment:`, rental.equipment);
                           return rental.equipment?.map((equipment: any, equipmentIndex: number) => {
                             console.log(`Rendering equipment ${equipmentIndex}:`, equipment);
+                            // Create unique key by including all indices to prevent duplicates
+                            const uniqueKey = `customer-${customer.customer_info?.id || customerIndex}-rental-${rental.id || rentalIndex}-equipment-${equipment.id || equipmentIndex}-idx-${customerIndex}-${rentalIndex}-${equipmentIndex}`;
                             return (
-                              <TableRow key={`${customer.customer_info?.id || customerIndex}-${rental.id || rentalIndex}-${equipment.id || equipmentIndex}`}>
+                              <TableRow key={uniqueKey}>
                                 <TableCell className="font-medium">{customer.customer_info?.name || 'N/A'}</TableCell>
                                 <TableCell>{rental.rental_number || 'N/A'}</TableCell>
                                 <TableCell>{equipment.name || 'N/A'}</TableCell>
@@ -620,24 +669,12 @@ export default function ReportingDashboardPage() {
             </div>
           );
         } else {
-          console.log('❌ No customer groups found, showing fallback message');
-          console.log('Customer groups value:', data.customer_groups);
-          console.log('Customer groups is array?', Array.isArray(data.customer_groups));
           return (
             <div className="text-center py-8">
               <p className="text-gray-500">No customer equipment data found.</p>
               <p className="text-sm text-gray-400 mt-2">
                 Make sure there are customers with rentals and equipment assigned.
               </p>
-              <div className="mt-4 p-4 bg-gray-100 rounded">
-                <p className="text-sm text-gray-600">Debug Info:</p>
-                <p className="text-xs text-gray-500">Data keys: {Object.keys(data).join(', ')}</p>
-                <p className="text-xs text-gray-500">Customer groups: {data.customer_groups ? 'exists' : 'null'}</p>
-                <p className="text-xs text-gray-500">Customer groups type: {typeof data.customer_groups}</p>
-                <p className="text-xs text-gray-500">Customer groups length: {data.customer_groups?.length}</p>
-                <p className="text-xs text-gray-500">Summary stats: {data.summary_stats ? 'exists' : 'null'}</p>
-                <p className="text-xs text-gray-500">Raw customer groups value: {JSON.stringify(data.customer_groups)}</p>
-              </div>
             </div>
           );
         }
@@ -1093,21 +1130,18 @@ export default function ReportingDashboardPage() {
                       disabled={loadingCustomers}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder={loadingCustomers ? "Loading customers..." : "Select customer"} />
+                        <SelectValue placeholder={loadingCustomers ? t('reporting.loading') : t('reporting.select_customer')} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Customers</SelectItem>
-                        {customersWithRentals.map((customer) => (
-                          <SelectItem key={customer.id} value={customer.id.toString()}>
-                            <div className="flex flex-col">
-                              <span className="font-medium">{customer.name}</span>
-                              <span className="text-sm text-gray-500">
-                                {customer.total_rentals} rental{customer.total_rentals !== 1 ? 's' : ''}
-                                {customer.active_rentals > 0 && ` (${customer.active_rentals} active)`}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
+                        {customersWithRentals.map((customer) => {
+                          const displayText = `${customer.name} (${customer.total_rentals} rental${customer.total_rentals !== 1 ? 's' : ''}${customer.active_rentals > 0 ? `, ${customer.active_rentals} active` : ''})`;
+                          return (
+                            <SelectItem key={customer.id} value={customer.id.toString()}>
+                              {displayText}
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </div>
@@ -1174,6 +1208,7 @@ export default function ReportingDashboardPage() {
                     <Select 
                       value={statusFilter} 
                       onValueChange={setStatusFilter}
+                      disabled={loading}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select status" />

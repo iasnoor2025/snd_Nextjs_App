@@ -33,8 +33,24 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('endDate');
 
 
+    // Build base conditions array
+    const baseConditions: any[] = [];
+
+    // Apply customer filter if provided
+    if (customerId) {
+      baseConditions.push(eq(customers.id, parseInt(customerId)));
+    }
+
+    // Apply date filters if provided
+    if (startDate) {
+      baseConditions.push(sql`${rentals.startDate} >= ${startDate}`);
+    }
+    if (endDate) {
+      baseConditions.push(sql`${rentals.startDate} <= ${endDate}`);
+    }
+
     // Build a simpler query - get customers with rentals and equipment
-    let customerEquipmentQuery = db
+    const customerEquipmentQuery = db
       .select({
         customer_id: customers.id,
         customer_name: customers.name,
@@ -59,26 +75,26 @@ export async function GET(request: NextRequest) {
       .from(customers)
       .innerJoin(rentals, eq(customers.id, rentals.customerId))
       .innerJoin(rentalItems, eq(rentals.id, rentalItems.rentalId)) // Changed to innerJoin to ensure we have equipment
-      .leftJoin(employees, eq(rentalItems.operatorId, employees.id));
-
-    // Apply customer filter if provided
-    if (customerId) {
-      customerEquipmentQuery = customerEquipmentQuery.where(eq(customers.id, parseInt(customerId)));
-    }
-
-    // Apply date filters if provided
-    if (startDate) {
-      customerEquipmentQuery = customerEquipmentQuery.where(sql`${rentals.startDate} >= ${startDate}`);
-    }
-    if (endDate) {
-      customerEquipmentQuery = customerEquipmentQuery.where(sql`${rentals.startDate} <= ${endDate}`);
-    }
+      .leftJoin(employees, eq(rentalItems.operatorId, employees.id))
+      .where(baseConditions.length > 0 ? and(...baseConditions) : undefined);
 
     const customerEquipmentData = await customerEquipmentQuery;
 
 
+    // Build summary stats conditions (same as main query)
+    const summaryConditions: any[] = [];
+    if (customerId) {
+      summaryConditions.push(eq(customers.id, parseInt(customerId)));
+    }
+    if (startDate) {
+      summaryConditions.push(sql`${rentals.startDate} >= ${startDate}`);
+    }
+    if (endDate) {
+      summaryConditions.push(sql`${rentals.startDate} <= ${endDate}`);
+    }
+
     // Get summary statistics
-    const summaryStats = await db
+    const summaryStatsQuery = db
       .select({
         total_customers: count(sql`DISTINCT ${customers.id}`),
         customers_with_rentals: count(sql`DISTINCT CASE WHEN ${rentals.id} IS NOT NULL THEN ${customers.id} END`),
@@ -95,6 +111,10 @@ export async function GET(request: NextRequest) {
       .leftJoin(equipment, eq(rentalItems.equipmentId, equipment.id))
       .leftJoin(equipmentCategories, eq(equipment.categoryId, equipmentCategories.id))
       .leftJoin(employees, eq(rentalItems.operatorId, employees.id));
+
+    const summaryStats = await (summaryConditions.length > 0 
+      ? summaryStatsQuery.where(and(...summaryConditions))
+      : summaryStatsQuery);
 
 
     // Create simple customer groups from raw data using reduce (simpler approach)
@@ -259,6 +279,11 @@ export async function GET(request: NextRequest) {
       finalCustomerGroups = Object.values(simpleGroups);
     }
 
+    // Ensure customer_groups is an array
+    const customerGroupsArray = Array.isArray(finalCustomerGroups) 
+      ? finalCustomerGroups 
+      : Object.values(customerGroups);
+
     const reportData = {
       summary_stats: summaryStats[0] || {
         total_customers: 0,
@@ -270,7 +295,7 @@ export async function GET(request: NextRequest) {
         total_rentals: 0,
         active_rentals: 0
       },
-      customer_groups: customerGroups,
+      customer_groups: customerGroupsArray,
       generated_at: new Date().toISOString(),
       parameters: { customerId, startDate, endDate }
     };
