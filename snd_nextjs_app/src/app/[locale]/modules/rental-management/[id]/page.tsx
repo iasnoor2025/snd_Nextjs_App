@@ -2639,7 +2639,7 @@ export default function RentalDetailPage() {
                             <TableCell className="font-medium">
                               {(() => {
                                 const name = item?.equipmentName?.startsWith('Equipment ') && item?.equipmentId 
-                                  ? (equipmentNames[item.equipmentId.toString()] || item.equipmentName)
+                                ? (equipmentNames[item.equipmentId.toString()] || item.equipmentName)
                                   : item?.equipmentName || 'N/A';
                                 const plate = (item as any)?.equipmentIstimara;
                                 return plate ? `${name} (${plate})` : name;

@@ -21,6 +21,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { PermissionContent } from '@/lib/rbac/rbac-components';
 import { ReportChart } from '@/components/report-chart';
 import { 
@@ -42,6 +48,8 @@ import { toast } from 'sonner';
 import React from 'react';
 import { EquipmentReportPDFService } from '@/lib/services/equipment-report-pdf-service';
 import { EquipmentReportExcelService } from '@/lib/services/equipment-report-excel-service';
+import { SupervisorEquipmentReportPDFService } from '@/lib/services/supervisor-equipment-report-pdf-service';
+import { SupervisorEquipmentReportExcelService } from '@/lib/services/supervisor-equipment-report-excel-service';
 
 interface ReportData {
   success: boolean;
@@ -93,6 +101,9 @@ export default function ReportingDashboardPage() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [includeInactive, setIncludeInactive] = useState(false);
+  const [supervisorFilter, setSupervisorFilter] = useState('all');
+  const [supervisorsWithEquipment, setSupervisorsWithEquipment] = useState<any[]>([]);
+  const [loadingSupervisors, setLoadingSupervisors] = useState(false);
 
   const reportTypes = [
     { id: 'overview', name: t('reporting.overview_report'), icon: Building },
@@ -108,7 +119,38 @@ export default function ReportingDashboardPage() {
     { id: 'rental_analytics', name: t('reporting.rental_analytics'), icon: Car },
     { id: 'customer_analytics', name: t('reporting.customer_analytics'), icon: Building },
     { id: 'customer_equipment', name: 'Customer Equipment Report', icon: Car },
+    { id: 'supervisor_equipment', name: 'Supervisor Equipment Report', icon: Users },
   ];
+
+  // Fetch supervisors with equipment when supervisor equipment report is selected
+  const fetchSupervisorsWithEquipment = async () => {
+    if (selectedReport !== 'supervisor_equipment') return;
+    
+    try {
+      setLoadingSupervisors(true);
+      // Fetch the report data to get supervisors
+      const response = await fetch('/api/reports/supervisor-equipment?status=all');
+      if (response.ok) {
+        const data = await response.json();
+        const supervisorGroups = data.data?.supervisor_groups || data.supervisor_groups || [];
+        // Extract unique supervisors
+        const supervisors = supervisorGroups.map((group: any) => ({
+          id: group.supervisor_id,
+          name: group.supervisor_name,
+          file_number: group.supervisor_file_number,
+        }));
+        setSupervisorsWithEquipment(supervisors);
+      } else {
+        console.error('Failed to fetch supervisors with equipment');
+        setSupervisorsWithEquipment([]);
+      }
+    } catch (error) {
+      console.error('Error fetching supervisors with equipment:', error);
+      setSupervisorsWithEquipment([]);
+    } finally {
+      setLoadingSupervisors(false);
+    }
+  };
 
   // Fetch customers with rentals when component mounts or when customer equipment report is selected
   const fetchCustomersWithRentals = async () => {
@@ -162,6 +204,14 @@ export default function ReportingDashboardPage() {
       setCategoryFilter('all');
       setStatusFilter('all');
       setIncludeInactive(false);
+      setSupervisorFilter('all');
+    } else if (selectedReport === 'supervisor_equipment') {
+      fetchSupervisorsWithEquipment();
+      // Reset filters when switching to supervisor equipment report
+      setCategoryFilter('all');
+      setStatusFilter('all');
+      setIncludeInactive(false);
+      setCustomerFilter('all');
     } else if (selectedReport === 'equipment_by_category') {
       fetchEquipmentCategories();
       // Reset customer filter when switching to equipment report
@@ -180,22 +230,29 @@ export default function ReportingDashboardPage() {
         setLoading(true);
       const loadingToastId = toast.loading(t('reporting.generating_comprehensive_report'));
 
-        const params = new URLSearchParams({
+        const paramsObj: any = {
         report_type: selectedReport,
         startDate: new Date(Date.now() - parseInt(dateRange) * 24 * 60 * 60 * 1000).toISOString(),
         endDate: new Date().toISOString(),
-        ...(departmentFilter !== 'all' && { departmentId: departmentFilter }),
-        ...(customerFilter !== 'all' && { customerId: customerFilter }),
-        ...(categoryFilter !== 'all' && { categoryId: categoryFilter }),
-        ...(statusFilter !== 'all' && { status: statusFilter }),
-        ...(includeInactive && { includeInactive: 'true' }),
-      });
+      };
+      
+      if (departmentFilter !== 'all') paramsObj.departmentId = departmentFilter;
+      if (customerFilter !== 'all') paramsObj.customerId = customerFilter;
+      if (categoryFilter !== 'all') paramsObj.categoryId = categoryFilter;
+      if (statusFilter !== 'all' && selectedReport === 'supervisor_equipment') paramsObj.status = statusFilter;
+      if (statusFilter !== 'all' && selectedReport === 'equipment_by_category') paramsObj.status = statusFilter;
+      if (supervisorFilter !== 'all' && selectedReport === 'supervisor_equipment') paramsObj.supervisorId = supervisorFilter;
+      if (includeInactive) paramsObj.includeInactive = 'true';
+      
+      const params = new URLSearchParams(paramsObj);
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
       const apiEndpoint = selectedReport === 'customer_equipment' 
         ? `/api/reports/customer-equipment?${params}`
+        : selectedReport === 'supervisor_equipment'
+        ? `/api/reports/supervisor-equipment?${params}`
         : selectedReport === 'equipment_by_category'
         ? `/api/reports/equipment?${params}`
         : `/api/reports/comprehensive?${params}`;
@@ -401,6 +458,17 @@ export default function ReportingDashboardPage() {
           );
         }
         break;
+      case 'supervisor_equipment':
+        const supervisorStats = data.data?.summary_stats || data.summary_stats;
+        if (supervisorStats) {
+          cards.push(
+            { title: 'Total Supervisors', value: supervisorStats.total_supervisors || 0, icon: Users, color: 'blue' },
+            { title: 'Total Equipment', value: supervisorStats.total_equipment || 0, icon: Car, color: 'purple' },
+            { title: 'Total Items', value: supervisorStats.total_items || 0, icon: Car, color: 'green' },
+            { title: 'Avg Equipment/Supervisor', value: supervisorStats.average_equipment_per_supervisor || 0, icon: TrendingUp, color: 'emerald' }
+          );
+        }
+        break;
     }
 
     return cards;
@@ -574,6 +642,154 @@ export default function ReportingDashboardPage() {
           );
         }
         break;
+      case 'supervisor_equipment':
+        const supervisorGroups = data.data?.supervisor_groups || data.supervisor_groups;
+        if (supervisorGroups && Array.isArray(supervisorGroups) && supervisorGroups.length > 0) {
+          return (
+            <div className="space-y-6">
+              {/* Supervisor Equipment Summary */}
+              <div className="bg-white rounded-lg shadow">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h3 className="text-lg font-medium text-gray-900">Supervisor Equipment Summary</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Supervisor</TableHead>
+                        <TableHead>File Number</TableHead>
+                        <TableHead>Equipment Count</TableHead>
+                        <TableHead>Total Items</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {supervisorGroups.map((supervisor: any, index: number) => (
+                        <TableRow key={supervisor.supervisor_id || index}>
+                          <TableCell className="font-medium">{supervisor.supervisor_name || 'N/A'}</TableCell>
+                          <TableCell>{supervisor.supervisor_file_number || 'N/A'}</TableCell>
+                          <TableCell>
+                            <Badge variant="default">{supervisor.equipment_count || 0}</Badge>
+                          </TableCell>
+                          <TableCell>{supervisor.total_items || 0}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+
+              {/* Detailed Equipment List by Supervisor */}
+              <div className="bg-white rounded-lg shadow">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h3 className="text-lg font-medium text-gray-900">Detailed Equipment List by Supervisor</h3>
+                </div>
+                <div className="space-y-6">
+                  {supervisorGroups.map((supervisor: any, supervisorIndex: number) => (
+                    <div key={supervisor.supervisor_id || supervisorIndex} className="border-b border-gray-200 pb-4 last:border-b-0">
+                      <div className="px-4 py-2 bg-gray-50 rounded-t">
+                        <h4 className="font-semibold text-gray-900">
+                          {supervisor.supervisor_name || 'N/A'}
+                          {supervisor.supervisor_file_number && ` (File: ${supervisor.supervisor_file_number})`}
+                          <span className="ml-2 text-sm font-normal text-gray-600">
+                            - {supervisor.equipment_count} Equipment
+                          </span>
+                        </h4>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="w-16">Serial #</TableHead>
+                              <TableHead>Equipment</TableHead>
+                              <TableHead>Customer Name</TableHead>
+                              <TableHead>Rental Number</TableHead>
+                              <TableHead>Rental Status</TableHead>
+                              <TableHead>Operator</TableHead>
+                              <TableHead>Item Status</TableHead>
+                              <TableHead>Start Date</TableHead>
+                              <TableHead>Completed Date</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {supervisor.equipment && supervisor.equipment.length > 0 ? (
+                              supervisor.equipment.map((equipment: any, equipmentIndex: number) => {
+                                // Calculate global serial number
+                                let globalSerial = 1;
+                                for (let i = 0; i < supervisorIndex; i++) {
+                                  if (supervisorGroups[i]?.equipment) {
+                                    globalSerial += supervisorGroups[i].equipment.length;
+                                  }
+                                }
+                                globalSerial += equipmentIndex;
+                                
+                                return (
+                                  <TableRow key={`${supervisor.supervisor_id}-${equipment.equipment_id}-${equipment.rental_id}-${equipmentIndex}`}>
+                                    <TableCell className="text-center font-medium">{globalSerial}</TableCell>
+                                    <TableCell className="font-medium">{equipment.display_name || equipment.equipment_name || 'N/A'}</TableCell>
+                                    <TableCell>
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <div className="truncate max-w-[200px]">
+                                              {equipment.customer_name || 'N/A'}
+                                            </div>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            <p>{equipment.customer_name || 'N/A'}</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    </TableCell>
+                                    <TableCell>{equipment.rental_number || 'N/A'}</TableCell>
+                                    <TableCell>
+                                      <Badge variant={equipment.rental_status === 'active' ? 'default' : 'secondary'}>
+                                        {equipment.rental_status || 'N/A'}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                      {equipment.operator_name ? (
+                                        <Badge variant="default">{equipment.operator_name}</Badge>
+                                      ) : (
+                                        <Badge variant="secondary">No Operator</Badge>
+                                      )}
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge variant={equipment.item_status === 'active' ? 'default' : 'secondary'}>
+                                        {equipment.item_status || 'N/A'}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell>{equipment.item_start_date || 'N/A'}</TableCell>
+                                    <TableCell>{equipment.item_completed_date || 'N/A'}</TableCell>
+                                  </TableRow>
+                                );
+                              })
+                            ) : (
+                              <TableRow>
+                                <TableCell colSpan={9} className="text-center text-gray-500 py-4">
+                                  No equipment assigned
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        } else {
+          return (
+            <div className="text-center py-8">
+              <p className="text-gray-500">No supervisor equipment data found.</p>
+              <p className="text-sm text-gray-400 mt-2">
+                Make sure there are rental items with supervisors assigned.
+              </p>
+            </div>
+          );
+        }
+        break;
       case 'equipment_by_category':
         if (data.equipment_by_category && Object.keys(data.equipment_by_category).length > 0) {
           return (
@@ -732,39 +948,67 @@ export default function ReportingDashboardPage() {
   };
 
   const downloadPDFReport = async () => {
-    if (!reportData || selectedReport !== 'equipment_by_category') return;
+    if (!reportData || (selectedReport !== 'equipment_by_category' && selectedReport !== 'supervisor_equipment')) return;
     
+    let loadingToastId: string | number | undefined;
     try {
-      const loadingToastId = toast.loading('Generating PDF report...');
+      loadingToastId = toast.loading('Generating PDF report...');
       
-      await EquipmentReportPDFService.downloadEquipmentReportPDF(
-        reportData,
-        `equipment-report-${new Date().toISOString().split('T')[0]}.pdf`
-      );
+      if (selectedReport === 'equipment_by_category') {
+        await EquipmentReportPDFService.downloadEquipmentReportPDF(
+          reportData,
+          `equipment-report-${new Date().toISOString().split('T')[0]}.pdf`
+        );
+      } else if (selectedReport === 'supervisor_equipment') {
+        await SupervisorEquipmentReportPDFService.downloadSupervisorEquipmentReportPDF(
+          reportData,
+          `supervisor-equipment-report-${new Date().toISOString().split('T')[0]}.pdf`
+        );
+      }
+      
+      // Small delay to ensure PDF generation completes
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       toast.dismiss(loadingToastId);
       toast.success('PDF report downloaded successfully');
     } catch (error) {
       console.error('Error generating PDF report:', error);
+      if (loadingToastId) {
+        toast.dismiss(loadingToastId);
+      }
       toast.error('Failed to generate PDF report');
     }
   };
 
   const downloadExcelReport = async () => {
-    if (!reportData || selectedReport !== 'equipment_by_category') return;
+    if (!reportData || (selectedReport !== 'equipment_by_category' && selectedReport !== 'supervisor_equipment')) return;
     
+    let loadingToastId: string | number | undefined;
     try {
-      const loadingToastId = toast.loading('Generating Excel report...');
+      loadingToastId = toast.loading('Generating Excel report...');
       
-      await EquipmentReportExcelService.downloadEquipmentReportExcel(
-        reportData,
-        `equipment-report-${new Date().toISOString().split('T')[0]}.xlsx`
-      );
+      if (selectedReport === 'equipment_by_category') {
+        await EquipmentReportExcelService.downloadEquipmentReportExcel(
+          reportData,
+          `equipment-report-${new Date().toISOString().split('T')[0]}.xlsx`
+        );
+      } else if (selectedReport === 'supervisor_equipment') {
+        await SupervisorEquipmentReportExcelService.downloadSupervisorEquipmentReportExcel(
+          reportData,
+          `supervisor-equipment-report-${new Date().toISOString().split('T')[0]}.xlsx`
+        );
+      }
+      
+      // Small delay to ensure Excel generation completes
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       toast.dismiss(loadingToastId);
       toast.success('Excel report downloaded successfully');
     } catch (error) {
       console.error('Error generating Excel report:', error);
+      if (loadingToastId) {
+        toast.dismiss(loadingToastId);
+      }
       toast.error('Failed to generate Excel report');
     }
   };
@@ -789,8 +1033,8 @@ export default function ReportingDashboardPage() {
               <CardDescription>{t('reporting.configure_parameters')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="space-y-2">
+              <div className="flex flex-wrap gap-4">
+                <div className="space-y-2 min-w-[200px]">
                   <Label htmlFor="report-type">{t('reporting.select_report_type')}</Label>
                   <Select value={selectedReport} onValueChange={setSelectedReport}>
                     <SelectTrigger>
@@ -809,7 +1053,7 @@ export default function ReportingDashboardPage() {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 min-w-[150px]">
                   <Label htmlFor="date-range">{t('reporting.date_range')}</Label>
                   <Select value={dateRange} onValueChange={setDateRange}>
                     <SelectTrigger>
@@ -824,7 +1068,7 @@ export default function ReportingDashboardPage() {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 min-w-[180px]">
                   <Label htmlFor="department-filter">{t('reporting.department_filter')}</Label>
                   <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
                     <SelectTrigger>
@@ -841,7 +1085,7 @@ export default function ReportingDashboardPage() {
 
                 {/* Customer Filter - Only show for customer equipment report */}
                 {selectedReport === 'customer_equipment' && (
-                  <div className="space-y-2">
+                  <div className="space-y-2 min-w-[250px]">
                     <Label htmlFor="customer-filter">{t('reporting.select_customer')}</Label>
                     <Select 
                       value={customerFilter} 
@@ -869,9 +1113,34 @@ export default function ReportingDashboardPage() {
                   </div>
                 )}
 
+                {/* Supervisor Filter - Only show for supervisor equipment report */}
+                {selectedReport === 'supervisor_equipment' && (
+                  <div className="space-y-2 min-w-[250px]">
+                    <Label htmlFor="supervisor-filter">Select Supervisor</Label>
+                    <Select 
+                      value={supervisorFilter} 
+                      onValueChange={setSupervisorFilter}
+                      disabled={loadingSupervisors}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={loadingSupervisors ? "Loading supervisors..." : "Select supervisor"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Supervisors</SelectItem>
+                        {supervisorsWithEquipment.map((supervisor) => (
+                          <SelectItem key={supervisor.id} value={supervisor.id.toString()}>
+                            {supervisor.name}
+                            {supervisor.file_number && ` (File: ${supervisor.file_number})`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
                 {/* Equipment Category Filter - Only show for equipment by category report */}
                 {selectedReport === 'equipment_by_category' && (
-                  <div className="space-y-2">
+                  <div className="space-y-2 min-w-[200px]">
                     <Label htmlFor="category-filter">Equipment Category</Label>
                     <Select 
                       value={categoryFilter} 
@@ -896,10 +1165,12 @@ export default function ReportingDashboardPage() {
                   </div>
                 )}
 
-                {/* Status Filter - Only show for equipment by category report */}
-                {selectedReport === 'equipment_by_category' && (
-                  <div className="space-y-2">
-                    <Label htmlFor="status-filter">Equipment Status</Label>
+                {/* Status Filter - Show for equipment by category and supervisor equipment reports */}
+                {(selectedReport === 'equipment_by_category' || selectedReport === 'supervisor_equipment') && (
+                  <div className="space-y-2 min-w-[150px]">
+                    <Label htmlFor="status-filter">
+                      {selectedReport === 'supervisor_equipment' ? 'Item Status' : 'Equipment Status'}
+                    </Label>
                     <Select 
                       value={statusFilter} 
                       onValueChange={setStatusFilter}
@@ -909,10 +1180,19 @@ export default function ReportingDashboardPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Statuses</SelectItem>
-                        <SelectItem value="available">Available</SelectItem>
-                        <SelectItem value="rented">Rented</SelectItem>
-                        <SelectItem value="maintenance">Maintenance</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
+                        {selectedReport === 'supervisor_equipment' ? (
+                          <>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="completed">Completed</SelectItem>
+                          </>
+                        ) : (
+                          <>
+                            <SelectItem value="available">Available</SelectItem>
+                            <SelectItem value="rented">Rented</SelectItem>
+                            <SelectItem value="maintenance">Maintenance</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                          </>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -944,7 +1224,7 @@ export default function ReportingDashboardPage() {
                       <Download className="h-4 w-4" />
                       {t('reporting.export_report')}
                     </Button>
-                    {selectedReport === 'equipment_by_category' && (
+                    {(selectedReport === 'equipment_by_category' || selectedReport === 'supervisor_equipment') && (
                       <>
                         <Button onClick={downloadPDFReport} variant="outline" className="flex items-center gap-2">
                           <Download className="h-4 w-4" />
