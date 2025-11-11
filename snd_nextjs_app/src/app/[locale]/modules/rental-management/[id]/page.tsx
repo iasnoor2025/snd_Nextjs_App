@@ -2637,9 +2637,13 @@ export default function RentalDetailPage() {
                           <TableRow key={item?.id}>
                             <TableCell className="w-12 text-center">{index + 1}</TableCell>
                             <TableCell className="font-medium">
-                              {item?.equipmentName?.startsWith('Equipment ') && item?.equipmentId 
-                                ? (equipmentNames[item.equipmentId.toString()] || item.equipmentName)
-                                : item?.equipmentName}
+                              {(() => {
+                                const name = item?.equipmentName?.startsWith('Equipment ') && item?.equipmentId 
+                                  ? (equipmentNames[item.equipmentId.toString()] || item.equipmentName)
+                                  : item?.equipmentName || 'N/A';
+                                const plate = (item as any)?.equipmentIstimara;
+                                return plate ? `${name} (${plate})` : name;
+                              })()}
                             </TableCell>
                                                          <TableCell className="font-mono">SAR {formatAmount(item?.unitPrice)}</TableCell>
                             <TableCell>
@@ -3143,9 +3147,11 @@ export default function RentalDetailPage() {
                               }
                               
                               supervisorItems.forEach((item: any) => {
-                              const equipmentName = item.equipmentName?.startsWith('Equipment ') && item.equipmentId 
+                              const baseName = item.equipmentName?.startsWith('Equipment ') && item.equipmentId 
                                 ? (equipmentNames[item.equipmentId.toString()] || item.equipmentName)
-                                : item.equipmentName;
+                                : item.equipmentName || 'N/A';
+                              const plate = item?.equipmentIstimara;
+                              const equipmentName = plate ? `${baseName} (${plate})` : baseName;
                               
                               let operatorName = 'N/A';
                               if (item?.operatorId && item?.operatorFirstName && item?.operatorLastName) {
@@ -3404,9 +3410,11 @@ export default function RentalDetailPage() {
                     
                     for (let i = 0; i < allItemsSorted.length; i++) {
                       const item = allItemsSorted[i];
-                      const itemEquipmentName = item.equipmentName?.startsWith('Equipment ') && item.equipmentId 
+                      const baseName = item.equipmentName?.startsWith('Equipment ') && item.equipmentId 
                         ? (equipmentNames[item.equipmentId.toString()] || item.equipmentName)
-                        : item.equipmentName;
+                        : item.equipmentName || 'N/A';
+                      const plate = item?.equipmentIstimara;
+                      const itemEquipmentName = plate ? `${baseName} (${plate})` : baseName;
                       
                       if (item.status === 'completed' && item.completedDate) {
                         // Look for a new item with different operator for same equipment that started after completion
@@ -3614,9 +3622,11 @@ export default function RentalDetailPage() {
                                     
                                     // Group items by equipment to show handover continuity
                                     const groupedByEquipment = uniqueItems.reduce((acc: any, item: any) => {
-                                      const equipmentName = item.equipmentName?.startsWith('Equipment ') && item.equipmentId 
+                                      const baseName = item.equipmentName?.startsWith('Equipment ') && item.equipmentId 
                                         ? (equipmentNames[item.equipmentId.toString()] || item.equipmentName)
-                                        : item.equipmentName;
+                                        : item.equipmentName || 'N/A';
+                                      const plate = item?.equipmentIstimara;
+                                      const equipmentName = plate ? `${baseName} (${plate})` : baseName;
                                       const equipmentKey = equipmentName || 'Unknown Equipment';
                                       
                                       if (!acc[equipmentKey]) {
@@ -3670,9 +3680,11 @@ export default function RentalDetailPage() {
                                     </TableHeader>
                                     <TableBody>
                                           {allItems.map((item: any, itemIndex: number) => {
-                                      const equipmentName = item.equipmentName?.startsWith('Equipment ') && item.equipmentId 
+                                      const baseName = item.equipmentName?.startsWith('Equipment ') && item.equipmentId 
                                         ? (equipmentNames[item.equipmentId.toString()] || item.equipmentName)
-                                        : item.equipmentName;
+                                        : item.equipmentName || 'N/A';
+                                      const plate = item?.equipmentIstimara;
+                                      const equipmentName = plate ? `${baseName} (${plate})` : baseName;
                                       
                                       // Get operator name directly from API response
                                       let operatorName = 'N/A';

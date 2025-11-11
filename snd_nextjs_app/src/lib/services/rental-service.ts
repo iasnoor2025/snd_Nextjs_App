@@ -765,6 +765,7 @@ export class RentalService {
         // Equipment fields
         equipmentModelNumber: equipment.modelNumber,
         equipmentCategoryId: equipment.categoryId,
+        equipmentIstimara: equipment.istimara,
         // Operator fields
         operatorFirstName: employees.firstName,
         operatorLastName: employees.lastName,
@@ -814,6 +815,7 @@ export class RentalService {
         // Equipment fields
         equipmentModelNumber: equipment.modelNumber,
         equipmentCategoryId: equipment.categoryId,
+        equipmentIstimara: equipment.istimara,
       })
       .from(rentalItems)
       .leftJoin(equipment, eq(rentalItems.equipmentId, equipment.id))

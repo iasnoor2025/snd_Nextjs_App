@@ -285,6 +285,10 @@ function generateReportHTML(rental: any, rentalItems: any[], selectedMonth: stri
     
     allItems.forEach((item: any, itemIndex: number) => {
       const equipmentName = item.equipmentName || 'N/A';
+      const equipmentPlate = item.equipmentIstimara || (item as any).equipment?.istimara || null;
+      const displayEquipmentName = equipmentPlate 
+        ? `${equipmentName} (${equipmentPlate})`
+        : equipmentName;
       const operatorName = (item?.operatorFirstName && item?.operatorLastName) 
         ? `${item.operatorFirstName} ${item.operatorLastName}` 
         : (item?.operatorId ? `Employee ${item.operatorId}` : 'N/A');
@@ -433,7 +437,7 @@ function generateReportHTML(rental: any, rentalItems: any[], selectedMonth: stri
       html += `
         <tr${isHandover ? ' style="background-color: #e3f2fd;"' : ''}>
           <td class="sl-col">${globalIndex}</td>
-          <td class="equipment-col">${equipmentName}</td>
+          <td class="equipment-col">${displayEquipmentName}</td>
           <td class="price-col">SAR ${parseFloat(item.unitPrice || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</td>
           <td class="rate-col">${item.rateType || 'daily'}</td>
           <td class="date-col">${displayStartDate}</td>
