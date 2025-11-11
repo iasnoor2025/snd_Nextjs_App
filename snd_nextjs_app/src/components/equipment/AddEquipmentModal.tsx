@@ -460,7 +460,7 @@ export default function AddEquipmentModal({
             </div>
           </div>
 
-          {/* Istimara Information */}
+          {/* Plate # Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">{t('fields.istimaraInfo')}</h3>
 
@@ -480,7 +480,7 @@ export default function AddEquipmentModal({
                 value={formData.istimara_expiry_date}
                 onChange={(value) => handleInputChange('istimara_expiry_date', value)}
                 arabicLabel="تاريخ انتهاء الإستمارة (هجري)"
-                englishLabel="Istimara Expiry Date (Gregorian)"
+                englishLabel="Plate # Expiry Date (Gregorian)"
               />
             </div>
           </div>

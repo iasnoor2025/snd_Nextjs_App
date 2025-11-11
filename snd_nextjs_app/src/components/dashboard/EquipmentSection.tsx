@@ -83,12 +83,12 @@ export function EquipmentSection({
   // Document type configuration
   const documentTypes = {
     istimara: {
-      label: 'Istimara Management',
-      subtitle: 'Monitor and manage equipment Istimara status and expiry dates',
+      label: 'Plate # Management',
+      subtitle: 'Monitor and manage equipment Plate # status and expiry dates',
       icon: FileText,
       numberField: 'istimara',
       expiryField: 'istimaraExpiry',
-      numberLabel: 'Istimara #',
+      numberLabel: 'Plate #',
     },
     insurance: {
       label: 'Insurance Management',
@@ -195,7 +195,7 @@ export function EquipmentSection({
       // For document types without number fields (GPS, Periodic Examination, Warranty),
       // only check expiry date. For others, require both number and expiry.
       if (numberField) {
-        // Document types with number fields (Istimara, Insurance, TUV)
+        // Document types with number fields (Plate #, Insurance, TUV)
         if (!documentNumber || !documentExpiry) {
           status = 'missing';
         } else {
@@ -403,7 +403,7 @@ export function EquipmentSection({
                   <SelectItem value="istimara">
                     <div className="flex items-center gap-2">
                       <FileText className="h-4 w-4" />
-                      Istimara
+                      Plate #
                     </div>
                   </SelectItem>
                   <SelectItem value="insurance">

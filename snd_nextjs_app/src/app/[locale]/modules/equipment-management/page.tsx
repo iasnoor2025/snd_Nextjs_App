@@ -381,7 +381,7 @@ export default function EquipmentManagementPage() {
     const matchesType = filterType === 'all' || 
       getEquipmentCategoryName(item.category_id || null, categories) === filterType;
 
-    // Istimara status filtering
+    // Plate # status filtering
     let matchesIstimara = true;
     if (filterIstimara !== 'all') {
       if (!item.istimara_expiry_date) {

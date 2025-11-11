@@ -241,10 +241,10 @@ export class PDFGenerator {
   static async generateExpiredEquipmentReport(
     expiredEquipmentData: EquipmentData[],
     documentType: string = 'istimara',
-    documentLabel: string = 'Istimara'
+    documentLabel: string = 'Plate #'
   ): Promise<void> {
     const documentTypeLabels: Record<string, string> = {
-      istimara: 'Istimara',
+      istimara: 'Plate #',
       insurance: 'Insurance',
       tuv: 'TUV Card',
       gps: 'GPS',

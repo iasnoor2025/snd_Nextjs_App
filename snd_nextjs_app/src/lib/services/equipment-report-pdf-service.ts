@@ -299,7 +299,7 @@ export class EquipmentReportPDFService {
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(8);
         doc.setFont('helvetica', 'bold');
-        const equipmentHeaders = ['Name', 'Door #', 'Istimara', 'Istimara Expiry Date', 'Status'];
+        const equipmentHeaders = ['Name', 'Door #', 'Plate #', 'Plate # Expiry Date', 'Status'];
         let equipmentXPos = 25;
         equipmentHeaders.forEach((header, index) => {
           doc.text(header, equipmentXPos, equipmentTableStartY + 4);

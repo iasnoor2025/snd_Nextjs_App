@@ -757,7 +757,7 @@ export default function DashboardPage() {
   const handleOpenEquipmentUpdateModal = (equipment: EquipmentData) => {
     setSelectedEquipment(equipment);
     setNewEquipmentExpiryDate(equipment.istimaraExpiry || '');
-    setNewEquipmentIstimara(''); // Reset Istimara input
+    setNewEquipmentIstimara(''); // Reset Plate # input
     setIsEquipmentUpdateModalOpen(true);
   };
 

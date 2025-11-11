@@ -465,8 +465,8 @@
   "dailyRate": "Daily Rate",
   "weeklyRate": "Weekly Rate",
   "monthlyRate": "Monthly Rate",
-  "istimaraNumber": "Istimara Number",
-  "istimaraExpiry": "Istimara Expiry Date",
-  "addIstimara": "Add Istimara",
-  "updateIstimara": "Update Istimara"
+  "istimaraNumber": "Plate #",
+  "istimaraExpiry": "Plate # Expiry Date",
+  "addIstimara": "Add Plate #",
+  "updateIstimara": "Update Plate #"
 }

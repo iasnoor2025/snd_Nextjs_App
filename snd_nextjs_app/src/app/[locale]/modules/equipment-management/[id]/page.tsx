@@ -365,7 +365,7 @@ export default function EquipmentShowPage() {
           </Card>
 
 
-          {/* Istimara Information */}
+          {/* Plate # Information */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">

@@ -454,7 +454,7 @@ export default function EquipmentEditPage() {
               </CardContent>
             </Card>
 
-            {/* Istimara Information */}
+            {/* Plate # Information */}
             <Card>
               <CardHeader>
                 <CardTitle>{t('equipment.fields.istimaraInfo')}</CardTitle>
@@ -476,7 +476,7 @@ export default function EquipmentEditPage() {
                     value={formData.istimara_expiry_date}
                     onChange={(value) => handleInputChange('istimara_expiry_date', value)}
                     arabicLabel="تاريخ انتهاء الإستمارة (هجري)"
-                    englishLabel="Istimara Expiry Date (Gregorian)"
+                    englishLabel="Plate # Expiry Date (Gregorian)"
                   />
                 </div>
               </CardContent>

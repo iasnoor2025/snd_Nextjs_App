@@ -12,7 +12,7 @@ export class EquipmentReportExcelService {
     // Equipment Details Sheet (only sheet needed)
     if (data.equipment_by_category && Object.keys(data.equipment_by_category).length > 0) {
       const equipmentHeaders = [
-        'Category', 'Name', 'Door #', 'Istimara', 'Istimara Expiry Date', 'Status'
+        'Category', 'Name', 'Door #', 'Plate #', 'Plate # Expiry Date', 'Status'
       ];
       
       const equipmentData = [equipmentHeaders];

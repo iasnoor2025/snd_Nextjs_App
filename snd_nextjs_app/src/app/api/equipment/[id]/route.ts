@@ -105,7 +105,7 @@ export const PUT = withPermission(PermissionConfigs.equipment.update)(
     if (!istimara_expiry_date) {
       return NextResponse.json({ 
         success: false, 
-        error: 'Istimara expiry date is required' 
+        error: 'Plate # expiry date is required' 
       }, { status: 400 });
     }
 
