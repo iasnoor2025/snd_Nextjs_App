@@ -34,6 +34,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { Textarea } from '@/components/ui/textarea';
 import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
 import { PermissionContent, RoleContent } from '@/lib/rbac/rbac-components';
@@ -718,30 +724,43 @@ export default function RentalManagementPage() {
                   <TableHead>{t('rental.table.headers.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {(() => {
-                  const totalRentals = rentals || [];
-                  const totalPages = Math.ceil(totalRentals.length / itemsPerPage);
-                  const startIndex = (currentPage - 1) * itemsPerPage;
-                  const endIndex = startIndex + itemsPerPage;
-                  const paginatedRentals = totalRentals.slice(startIndex, endIndex);
-                  
-                  return paginatedRentals.map((rental, index) => (
-                    <TableRow key={rental.id}>
-                      <TableCell className="text-muted-foreground">
-                        {convertToArabicNumerals(String(startIndex + index + 1), isRTL)}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {convertToArabicNumerals(rental.rentalNumber, isRTL)}
-                      </TableCell>
-                    <TableCell>
-                      {getTranslatedName(
+              <TooltipProvider>
+                <TableBody>
+                  {(() => {
+                    const totalRentals = rentals || [];
+                    const totalPages = Math.ceil(totalRentals.length / itemsPerPage);
+                    const startIndex = (currentPage - 1) * itemsPerPage;
+                    const endIndex = startIndex + itemsPerPage;
+                    const paginatedRentals = totalRentals.slice(startIndex, endIndex);
+                    
+                    return paginatedRentals.map((rental, index) => {
+                      const customerName = getTranslatedName(
                         rental.customer?.name,
                         isRTL,
                         translatedNames,
                         setTranslatedNames
-                      )}
-                    </TableCell>
+                      );
+                      
+                      return (
+                        <TableRow key={rental.id}>
+                          <TableCell className="text-muted-foreground">
+                            {convertToArabicNumerals(String(startIndex + index + 1), isRTL)}
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {convertToArabicNumerals(rental.rentalNumber, isRTL)}
+                          </TableCell>
+                          <TableCell className="max-w-[250px]">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="truncate">
+                                  {customerName}
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{customerName}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TableCell>
                     <TableCell>
                       {rental.supervisor ? (
                         <span className="text-sm">
@@ -813,10 +832,12 @@ export default function RentalManagementPage() {
                         </PermissionContent>
                       </div>
                     </TableCell>
-                    </TableRow>
-                  ));
-                })()}
-              </TableBody>
+                        </TableRow>
+                      );
+                    });
+                  })()}
+                </TableBody>
+              </TooltipProvider>
             </Table>
             {(rentals || []).length === 0 && (
               <div className="text-center py-8 text-muted-foreground">{t('rental.dashboard.noRentalsFound')}</div>
