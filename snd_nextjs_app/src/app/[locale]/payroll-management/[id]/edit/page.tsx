@@ -93,10 +93,10 @@ export default function EditPayrollPage() {
   const router = useRouter();
   const payrollId = params.id as string;
 
+  const locale = params?.locale as string || 'en';
   const [payroll, setPayroll] = useState<Payroll | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [formData, setFormData] = useState({
-  const locale = params?.locale as string || 'en';
     base_salary: '',
     overtime_amount: '',
     bonus_amount: '',

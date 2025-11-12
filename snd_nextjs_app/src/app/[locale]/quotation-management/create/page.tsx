@@ -413,7 +413,7 @@ export default function CreateQuotationPage() {
                             <Select
                               value={item.equipment_id.toString()}
                               onValueChange={value =>
-                                updateQuotationItem(index, `equipment_id', parseInt(value))
+                                updateQuotationItem(index, 'equipment_id', parseInt(value))
                               }
                             >
                               <SelectTrigger>

@@ -131,7 +131,7 @@ export default function CreatePayrollPage() {
                   <Label htmlFor="employee">Employee</Label>
                   <Select
                     value={formData.employee_id}
-                    onValueChange={value => handleInputChange(`employee_id', value)}
+                    onValueChange={value => handleInputChange('employee_id', value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select an employee" />
