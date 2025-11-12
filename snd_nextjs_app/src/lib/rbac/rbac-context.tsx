@@ -215,13 +215,16 @@ function hasPermissionClient(user: User, action: Action, subject: Subject): bool
   // For ALL roles (including SUPER_ADMIN), check against cached permissions
   const userPermissions = getUserPermissionsFromCache(user.id);
   
-  // If no permissions loaded yet, allow access temporarily to prevent flash of access denied
-  // This happens on page refresh before permissions are loaded
+  // If no permissions loaded yet, this should not happen if isLoading is working correctly
+  // But as a safety measure, we'll check if permissions are being loaded
+  // If they're not loaded and not loading, deny access (except SUPER_ADMIN)
   if (!userPermissions) {
     // For SUPER_ADMIN, allow access immediately while permissions load
     if (user.role === 'SUPER_ADMIN') {
       return true;
     }
+    // For other users, if permissions aren't loaded, deny access
+    // The loading state should prevent this from being called prematurely
     return false;
   }
   
@@ -415,13 +418,27 @@ export function RBACProvider({ children }: RBACProviderProps) {
     // Start loading permissions
     setPermissionsLoading(true);
     const loadPromise = loadUserPermissions(user.id, user.role, false)
+      .then((permissions) => {
+        // Ensure permissions are cached before marking as loaded
+        // Double-check that permissions are actually in cache
+        const cached = getUserPermissionsFromCache(user.id);
+        if (!cached && permissions.length === 0) {
+          // Permissions failed to load, but we'll still mark as loaded to prevent infinite loading
+          // The permission check will handle the denial
+        }
+        return permissions;
+      })
       .catch(() => {
         // Silent error handling for production
         return [];
       })
       .finally(() => {
         permissionsLoadingRef.current.delete(user.id);
-        setPermissionsLoading(false);
+        // Use setTimeout to ensure state updates are processed
+        // This prevents race conditions where React hasn't updated yet
+        setTimeout(() => {
+          setPermissionsLoading(false);
+        }, 0);
       });
     
     permissionsLoadingRef.current.set(user.id, loadPromise);
