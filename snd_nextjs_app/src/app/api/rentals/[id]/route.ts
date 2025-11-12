@@ -69,6 +69,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       hasTimesheet: body.hasTimesheet || false,
       hasOperators: body.hasOperators || false,
       supervisor: body.supervisor || null,
+      area: body.area || null,
       notes: body.notes || '',
     };
 

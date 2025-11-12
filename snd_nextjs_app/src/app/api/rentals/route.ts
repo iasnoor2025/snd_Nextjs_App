@@ -12,6 +12,7 @@ const getRentalsHandler = async (request: NextRequest) => {
     const paymentStatus = searchParams.get('paymentStatus');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
+    const area = searchParams.get('area');
 
     const filters: any = {};
     if (search) filters.search = search;
@@ -20,6 +21,7 @@ const getRentalsHandler = async (request: NextRequest) => {
     if (paymentStatus && paymentStatus !== 'all') filters.paymentStatus = paymentStatus;
     if (startDate) filters.startDate = startDate;
     if (endDate) filters.endDate = endDate;
+    if (area) filters.area = area;
 
     const rentals = await RentalService.getRentals(filters);
     return NextResponse.json(rentals);
@@ -65,6 +67,7 @@ const createRentalHandler = async (request: NextRequest) => {
       tax: parseFloat(body.tax) || 0,
       finalAmount: parseFloat(body.finalAmount) || 0,
       supervisor: body.supervisor || null,
+      area: body.area || null,
       notes: body.notes || '',
       rentalItems: body.rentalItems || [],
     };

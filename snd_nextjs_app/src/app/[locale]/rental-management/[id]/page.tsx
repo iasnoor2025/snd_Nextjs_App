@@ -1901,6 +1901,7 @@ export default function RentalDetailPage() {
       startDate: rental.startDate.split('T')[0],
       expectedEndDate: rental.expectedEndDate ? rental.expectedEndDate.split('T')[0] : '',
       supervisor: rental.supervisor || '',
+      area: rental.area || '',
       notes: rental.notes || '',
     });
     setIsEditDialogOpen(true);
@@ -2371,7 +2372,12 @@ export default function RentalDetailPage() {
                           t('rental.notAssigned')
                         )}
                       </p>
-
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Area</Label>
+                      <p className="text-sm text-muted-foreground">
+                        {rental.area || t('rental.notAssigned')}
+                      </p>
                     </div>
                   </div>
 
@@ -4067,6 +4073,15 @@ export default function RentalDetailPage() {
                   setFormData(prev => ({ ...prev, supervisor: value }));
                 }}
                 placeholder={t('rental.fields.selectSupervisor')}
+              />
+            </div>
+            <div>
+              <Label htmlFor="editArea">Area</Label>
+              <Input
+                id="editArea"
+                value={formData.area}
+                onChange={e => setFormData(prev => ({ ...prev, area: e.target.value }))}
+                placeholder="Enter area/location"
               />
             </div>
           </div>

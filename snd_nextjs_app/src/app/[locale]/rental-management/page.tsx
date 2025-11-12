@@ -173,6 +173,7 @@ export default function RentalManagementPage() {
     startDate: '',
     expectedEndDate: '',
     supervisor: '',
+    area: '',
     notes: '',
     rentalItems: [] as RentalItem[],
     subtotal: 0,
@@ -412,6 +413,7 @@ export default function RentalManagementPage() {
             ? new Date(formData.expectedEndDate).toISOString()
             : null,
           supervisor: formData.supervisor || null,
+          area: formData.area || null,
           notes: formData.notes || '',
           ...financials,
         }),
@@ -459,6 +461,7 @@ export default function RentalManagementPage() {
       startDate: '',
       expectedEndDate: '',
       supervisor: '',
+      area: '',
       notes: '',
       rentalItems: [],
       subtotal: 0,
@@ -486,6 +489,7 @@ export default function RentalManagementPage() {
           ? rental.expectedEndDate.split('T')[0]
           : rental.expectedEndDate || '',
       supervisor: rental.supervisor || '',
+      area: rental.area || '',
       notes: rental.notes || '',
       rentalItems: rental.rentalItems || [],
       subtotal: rental.subtotal,
@@ -641,6 +645,15 @@ export default function RentalManagementPage() {
                   </Select>
                 </div>
                 <div>
+                  <Label htmlFor="area">Area</Label>
+                  <Input
+                    id="area"
+                    placeholder="Filter by area"
+                    value={filters.area || ''}
+                    onChange={e => setFilters(prev => ({ ...prev, area: e.target.value }))}
+                  />
+                </div>
+                <div>
                   <Label htmlFor="customer">{t('rental.customer')}</Label>
                   <Select
                     value={filters.customerId || ''}
@@ -717,6 +730,7 @@ export default function RentalManagementPage() {
                   <TableHead className="w-16">#</TableHead>
                   <TableHead>{t('rental.table.headers.rentalNumber')}</TableHead>
                   <TableHead>{t('rental.table.headers.customer')}</TableHead>
+                  <TableHead>Area</TableHead>
                   <TableHead>{t('rental.table.headers.supervisor')}</TableHead>
                   <TableHead>{t('rental.table.headers.startDate')}</TableHead>
                   <TableHead>{t('rental.table.headers.endDate')}</TableHead>
@@ -762,6 +776,15 @@ export default function RentalManagementPage() {
                                 <p>{customerName}</p>
                               </TooltipContent>
                             </Tooltip>
+                          </TableCell>
+                          <TableCell>
+                            {rental.area ? (
+                              <span className="text-sm">{rental.area}</span>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">
+                                {t('rental.na')}
+                              </span>
+                            )}
                           </TableCell>
                     <TableCell>
                       {rental.supervisor ? (
@@ -1177,6 +1200,15 @@ export default function RentalManagementPage() {
                     setFormData(prev => ({ ...prev, supervisor: value }));
                   }}
                   placeholder={t('rental.fields.selectSupervisor')}
+                />
+              </div>
+              <div>
+                <Label htmlFor="editArea">Area</Label>
+                <Input
+                  id="editArea"
+                  value={formData.area}
+                  onChange={e => setFormData(prev => ({ ...prev, area: e.target.value }))}
+                  placeholder="Enter area/location"
                 />
               </div>
             </div>

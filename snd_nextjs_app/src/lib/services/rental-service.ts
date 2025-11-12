@@ -25,6 +25,7 @@ export class RentalService {
     paymentStatus?: string;
     startDate?: string;
     endDate?: string;
+    area?: string;
   }) {
     // Generate cache key based on filters
     const cacheKey = generateCacheKey('rentals', 'list', filters || {});
@@ -38,7 +39,8 @@ export class RentalService {
           conditions.push(
             or(
               ilike(rentals.rentalNumber, `%${filters.search}%`),
-              ilike(customers.name, `%${filters.search}%`)
+              ilike(customers.name, `%${filters.search}%`),
+              ilike(rentals.area, `%${filters.search}%`)
             )
           );
         }
@@ -61,6 +63,10 @@ export class RentalService {
 
         if (filters?.endDate) {
           conditions.push(lte(rentals.expectedEndDate, filters.endDate));
+        }
+
+        if (filters?.area) {
+          conditions.push(ilike(rentals.area, `%${filters.area}%`));
         }
 
         const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -95,6 +101,7 @@ export class RentalService {
             hasTimesheet: rentals.hasTimesheet,
             hasOperators: rentals.hasOperators,
             supervisor: rentals.supervisor,
+            area: rentals.area,
             completedBy: rentals.completedBy,
             completedAt: rentals.completedAt,
             approvedBy: rentals.approvedBy,
@@ -305,6 +312,7 @@ export class RentalService {
         hasTimesheet: rentals.hasTimesheet,
         hasOperators: rentals.hasOperators,
         supervisor: rentals.supervisor,
+        area: rentals.area,
         completedBy: rentals.completedBy,
         completedAt: rentals.completedAt,
         approvedBy: rentals.approvedBy,
@@ -391,6 +399,7 @@ export class RentalService {
     tax?: number;
     finalAmount?: number;
     supervisor?: string | null;
+    area?: string | null;
     notes?: string;
     rentalItems?: any[];
   }) {
@@ -434,6 +443,7 @@ export class RentalService {
         finalAmount: (rentalData.finalAmount || 0).toString(),
         quotationId: generatedQuotationId,
         supervisor: rentalData.supervisor || null,
+        area: rentalData.area || null,
         notes: rentalData.notes || '',
         updatedAt: new Date().toISOString().split('T')[0],
         // Workflow timestamps so timeline shows earlier steps as completed
@@ -496,6 +506,7 @@ export class RentalService {
       hasTimesheet?: boolean;
       hasOperators?: boolean;
       supervisor?: string;
+      area?: string | null;
       notes?: string;
       rentalItems?: any[];
       approvedAt?: string;

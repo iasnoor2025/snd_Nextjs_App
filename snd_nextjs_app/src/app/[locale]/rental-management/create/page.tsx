@@ -85,6 +85,7 @@ interface RentalFormData {
   status: string;
   paymentStatus: string;
   supervisor: string;
+  area: string;
   notes: string;
   rentalItems: RentalItem[];
   subtotal: number;
@@ -114,6 +115,7 @@ export default function CreateRentalPage() {
     status: 'pending',
     paymentStatus: 'pending',
     supervisor: '',
+    area: '',
     notes: '',
     rentalItems: [],
     subtotal: 0,
@@ -333,6 +335,7 @@ export default function CreateRentalPage() {
           status: formData.status,
           paymentStatus: formData.paymentStatus,
           supervisor: formData.supervisor || null,
+          area: formData.area || null,
           notes: formData.notes,
           rentalItems: formData.rentalItems,
           subtotal: formData.subtotal,
@@ -510,6 +513,15 @@ export default function CreateRentalPage() {
                     setFormData(prev => ({ ...prev, supervisor: value }));
                   }}
                   placeholder="Select supervisor"
+                />
+              </div>
+              <div>
+                <Label htmlFor="area">Area</Label>
+                <Input
+                  id="area"
+                  value={formData.area}
+                  onChange={e => setFormData(prev => ({ ...prev, area: e.target.value }))}
+                  placeholder="Enter area/location"
                 />
               </div>
             </div>

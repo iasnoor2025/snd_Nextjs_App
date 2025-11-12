@@ -688,6 +688,7 @@ export const rentals = pgTable(
     lastInvoiceAmount: numeric('last_invoice_amount', { precision: 12, scale: 2 }),
     locationId: integer('location_id'),
     supervisor: text('supervisor'),
+    area: text('area'),
     createdAt: date('created_at')
       .default(sql`CURRENT_DATE`)
       .notNull(),
