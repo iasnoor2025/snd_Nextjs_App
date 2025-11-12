@@ -349,6 +349,7 @@ export function getRolePriorityClient(roleName: string): number {
 export function RBACProvider({ children }: RBACProviderProps) {
   const { data: session, status } = useSession();
   const permissionsLoadingRef = useRef<Map<string, Promise<string[]>>>(new Map());
+  const [permissionsLoading, setPermissionsLoading] = React.useState(false);
 
   const user: User | null = useMemo(() => {
     if (status === 'loading') {
@@ -382,6 +383,7 @@ export function RBACProvider({ children }: RBACProviderProps) {
         });
         userPermissionsCache.clear();
       }
+      setPermissionsLoading(false);
       return;
     }
 
@@ -393,6 +395,7 @@ export function RBACProvider({ children }: RBACProviderProps) {
                         (typeof window !== 'undefined' ? localStorage.getItem(getCacheRoleKey(user.id)) : null);
       if (cachedRole === user.role) {
         // Permissions are cached, role matches, and cache is valid - skip loading entirely
+        setPermissionsLoading(false);
         return;
       } else {
         // Role changed, clear cache
@@ -400,24 +403,38 @@ export function RBACProvider({ children }: RBACProviderProps) {
       }
     }
 
-    // Only fetch if:
-    // 1. Not already loading for this user
-    // 2. Cache is empty or expired
-    if (!permissionsLoadingRef.current.has(user.id)) {
-      const loadPromise = loadUserPermissions(user.id, user.role, false).catch(() => {
+    // Check if permissions are already being loaded
+    const existingPromise = permissionsLoadingRef.current.get(user.id);
+    if (existingPromise) {
+      // Already loading, ensure loading state is true
+      // The existing promise will set it to false when done
+      setPermissionsLoading(true);
+      return;
+    }
+
+    // Start loading permissions
+    setPermissionsLoading(true);
+    const loadPromise = loadUserPermissions(user.id, user.role, false)
+      .catch(() => {
         // Silent error handling for production
         return [];
-      }).finally(() => {
+      })
+      .finally(() => {
         permissionsLoadingRef.current.delete(user.id);
+        setPermissionsLoading(false);
       });
-      
-      permissionsLoadingRef.current.set(user.id, loadPromise);
-    }
+    
+    permissionsLoadingRef.current.set(user.id, loadPromise);
   }, [user?.id, user?.role]);
 
   const refreshPermissions = async () => {
     if (user) {
-      await loadUserPermissions(user.id, user.role, true);
+      setPermissionsLoading(true);
+      try {
+        await loadUserPermissions(user.id, user.role, true);
+      } finally {
+        setPermissionsLoading(false);
+      }
     }
   };
 
@@ -436,10 +453,10 @@ export function RBACProvider({ children }: RBACProviderProps) {
         if (!user) return false;
         return canAccessRouteClient(user, route);
       },
-      isLoading: status === 'loading',
+      isLoading: status === 'loading' || permissionsLoading,
       refreshPermissions,
     }),
-    [user, status]
+    [user, status, permissionsLoading]
   );
 
   return <RBACContext.Provider value={contextValue}>{children}</RBACContext.Provider>;
