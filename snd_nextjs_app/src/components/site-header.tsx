@@ -21,6 +21,7 @@ import { NotificationBell } from './notification-bell';
 import { ThemeToggle } from './theme-toggle';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { cn } from '@/lib/utils';
+import { useEffect, useState } from 'react';
 
 export function SiteHeader() {
   const { data: session, status } = useSession();
@@ -29,9 +30,77 @@ export function SiteHeader() {
   // Use RBAC context instead of fetching user role separately
   const { user, refreshPermissions } = useRBAC();
   const currentUserRole = user?.role || 'USER';
+  const [roleDisplayName, setRoleDisplayName] = useState<string>(currentUserRole);
 
   // Check if user is an employee - use RBAC context role
   const isEmployee = currentUserRole === 'EMPLOYEE';
+
+  // Fetch role name from database
+  useEffect(() => {
+    const fetchRoleName = async () => {
+      if (!user?.id) {
+        return;
+      }
+
+      try {
+        // First, get the user's actual role from the database via /api/auth/me
+        const userResponse = await fetch('/api/auth/me');
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          const actualRole = userData.user?.role;
+          
+          if (actualRole) {
+            // Now fetch all roles to get the original casing
+            const rolesResponse = await fetch('/api/roles');
+            if (rolesResponse.ok) {
+              const roles = await rolesResponse.json();
+              // Find role by name (case-insensitive)
+              const role = roles.find((r: { name: string }) => 
+                r.name.toUpperCase() === actualRole.toUpperCase()
+              );
+              if (role?.name) {
+                // Use the actual role name from database (preserves original casing like "workshop")
+                setRoleDisplayName(role.name);
+                return;
+              }
+            }
+            
+            // If role not found in roles list, format the role name nicely
+            setRoleDisplayName(
+              actualRole
+                .split('_')
+                .map(word => word.charAt(0) + word.slice(1).toLowerCase())
+                .join(' ')
+            );
+          } else {
+            // Fallback to current role
+            setRoleDisplayName(currentUserRole);
+          }
+        } else {
+          // Fallback: try to find role in roles list using currentUserRole
+          const rolesResponse = await fetch('/api/roles');
+          if (rolesResponse.ok) {
+            const roles = await rolesResponse.json();
+            const role = roles.find((r: { name: string }) => 
+              r.name.toUpperCase() === currentUserRole.toUpperCase()
+            );
+            if (role?.name) {
+              setRoleDisplayName(role.name);
+            } else {
+              setRoleDisplayName(currentUserRole);
+            }
+          } else {
+            setRoleDisplayName(currentUserRole);
+          }
+        }
+      } catch (error) {
+        // Fallback to current role on error
+        setRoleDisplayName(currentUserRole);
+      }
+    };
+
+    fetchRoleName();
+  }, [user?.id, currentUserRole]);
 
   // Refresh session using RBAC context
   const refreshSession = async () => {
@@ -75,7 +144,7 @@ export function SiteHeader() {
             }
             className="hidden sm:inline-flex text-xs"
           >
-            {currentUserRole}
+            {roleDisplayName}
           </Badge>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
