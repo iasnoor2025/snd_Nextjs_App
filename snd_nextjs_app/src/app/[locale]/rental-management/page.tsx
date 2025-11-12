@@ -1083,6 +1083,18 @@ export default function RentalManagementPage() {
                   placeholder={t('rental.fields.selectSupervisor')}
                 />
               </div>
+              <div>
+                <Label htmlFor="area" className="text-sm font-medium">
+                  Area
+                </Label>
+                <Input
+                  id="area"
+                  value={formData.area}
+                  onChange={e => setFormData(prev => ({ ...prev, area: e.target.value }))}
+                  placeholder="Enter area/location"
+                  className="w-full"
+                />
+              </div>
             </div>
             <div>
               <Label htmlFor="notes">{t('rental.fields.notes')}</Label>
