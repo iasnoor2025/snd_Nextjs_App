@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter , useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,35 +27,35 @@ const navItems: NavItem[] = [
     title: 'Employee Directory',
     description: 'View and manage employee information and profiles',
     icon: <Users className="h-6 w-6" />,
-    href: '/modules/employee-management',
+    href: '/${locale}/employee-management',
     color: 'bg-gradient-to-r from-green-500 to-emerald-500'
   },
   {
     title: 'Documents',
     description: 'Manage employee documents and file uploads',
     icon: <FileText className="h-6 w-6" />,
-    href: '/modules/document-management',
+    href: '/${locale}/document-management',
     color: 'bg-gradient-to-r from-indigo-500 to-blue-500'
   },
   {
     title: 'Leave Management',
     description: 'Track employee leave requests and approvals',
     icon: <Calendar className="h-6 w-6" />,
-    href: '/modules/leave-management',
+    href: '/${locale}/leave-management',
     color: 'bg-gradient-to-r from-red-500 to-pink-500'
   },
   {
     title: 'Analytics',
     description: 'View employee performance metrics and reports',
     icon: <TrendingUp className="h-6 w-6" />,
-    href: '/modules/analytics',
+    href: '/${locale}/analytics',
     color: 'bg-gradient-to-r from-teal-500 to-green-500'
   },
   {
     title: 'Settings',
     description: 'Configure system settings and preferences',
     icon: <Settings className="h-6 w-6" />,
-    href: '/modules/settings',
+    href: '/${locale}/settings',
     color: 'bg-gradient-to-r from-gray-500 to-slate-500'
   }
 ];
@@ -64,6 +64,9 @@ export default function EmployeeManagementNav() {
   const router = useRouter();
   const [hoveredItem, setHoveredItem] = useState<number | null>(null);
 
+  const params = useParams();
+  const locale = params?.locale as string || 'en';
+  
   const handleItemClick = (href: string) => {
     router.push(href);
   };

@@ -52,6 +52,7 @@ import {
   User,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useTranslations } from '@/hooks/use-translations';
@@ -102,6 +103,8 @@ interface EquipmentAssignmentHistoryProps {
 export default function EquipmentAssignmentHistory({
   equipmentId,
 }: EquipmentAssignmentHistoryProps) {
+  const params = useParams();
+  const locale = params?.locale as string || 'en';
   const { t } = useTranslations();
   const [assignmentHistory, setAssignmentHistory] = useState<AssignmentHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -677,14 +680,14 @@ export default function EquipmentAssignmentHistory({
                         <TableCell className="font-medium">
                           {assignment.assignment_type === 'rental' ? (
                             <Link
-                              href={`/modules/rental-management/${assignment.rental_id}`}
+                              href={`/${locale}/rental-management/${assignment.rental_id}`}
                               className="hover:underline text-blue-600"
                             >
                               {assignment.rental_number}
                             </Link>
                           ) : assignment.assignment_type === 'project' ? (
                             <Link
-                              href={`/modules/project-management/${assignment.project_id}`}
+                              href={`/${locale}/project-management/${assignment.project_id}`}
                               className="hover:underline text-green-600"
                             >
                               Project #{assignment.project_id}

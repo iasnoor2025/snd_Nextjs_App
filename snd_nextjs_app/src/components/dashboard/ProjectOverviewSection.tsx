@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Calendar, Users, TrendingUp, Eye, Target, Plus } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter , useParams } from 'next/navigation';
 import { ActiveProject } from '@/lib/services/dashboard-service';
 import { useI18n } from '@/hooks/use-i18n';
 
@@ -21,6 +21,8 @@ export default function ProjectOverviewSection({
   onUpdateProject,
   onHideSection,
 }: ProjectOverviewSectionProps) {
+  const params = useParams();
+  const locale = params?.locale as string || 'en';
   const router = useRouter();
   const { t } = useI18n();
   const [statusFilter, setStatusFilter] = useState('all');
@@ -282,7 +284,7 @@ export default function ProjectOverviewSection({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => router.push(`/modules/project-management/${project.id}`)}
+                        onClick={() => router.push(`/${locale}/project-management/${project.id}`)}
                         className="flex-1"
                       >
                         <TrendingUp className="h-4 w-4 mr-2" />
@@ -309,7 +311,7 @@ export default function ProjectOverviewSection({
                     : 'Get started by creating your first project.'}
                 </p>
                 <Button
-                  onClick={() => router.push('/modules/project-management')}
+                  onClick={() => router.push(`/${locale}/project-management`)}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
                   <Plus className="h-4 w-4 mr-2" />

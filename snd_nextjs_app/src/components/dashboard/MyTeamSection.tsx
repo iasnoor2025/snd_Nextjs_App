@@ -8,6 +8,7 @@ import { Eye, Users, Table } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { useI18n } from '@/hooks/use-i18n';
 
 interface TeamMember {
@@ -37,6 +38,8 @@ interface MyTeamSectionProps {
 }
 
 export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
+  const params = useParams();
+  const locale = params?.locale as string || 'en';
   const { data: session } = useSession();
   const { t } = useI18n();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -350,7 +353,7 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
                         asChild
                         className="flex items-center gap-2"
                       >
-                        <Link href={`/modules/employee-management/${member.id}`}>
+                        <Link href={`/${locale}/employee-management/${member.id}`}>
                           <Eye className="h-4 w-4" />
                           {t('dashboard.myTeam.actions.view')}
                         </Link>

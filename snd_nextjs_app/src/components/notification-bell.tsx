@@ -15,8 +15,11 @@ import { formatDistanceToNow } from 'date-fns';
 import { Bell, Check, ExternalLink } from 'lucide-react';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useParams } from 'next/navigation';
 
 export const NotificationBell: React.FC = () => {
+  const params = useParams();
+  const locale = params?.locale as string || 'en';
   const [isOpen, setIsOpen] = useState(false);
   const { t } = useTranslation('notifications');
   const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll, loading } =
@@ -171,7 +174,7 @@ export const NotificationBell: React.FC = () => {
               className="text-center text-sm text-blue-600 hover:text-blue-700 cursor-pointer"
               onClick={() => {
                 setIsOpen(false);
-                window.location.href = '/modules/notifications';
+                window.location.href = '/${locale}/notifications';
               }}
             >
               {t('viewAllNotifications')}

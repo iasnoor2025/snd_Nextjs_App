@@ -222,6 +222,26 @@ function getClientSafeRoutePermission(pathname: string) {
   const routePermissions: Record<string, { action: string; subject: string; roles: string[] }> = {
     '/dashboard': { action: 'read', subject: 'Settings', roles: [] },
     '/employee-dashboard': { action: 'read', subject: 'Employee', roles: [] },
+    '/employee-management': { action: 'read', subject: 'Employee', roles: [] },
+    '/customer-management': { action: 'read', subject: 'Customer', roles: [] },
+    '/equipment-management': { action: 'read', subject: 'Equipment', roles: [] },
+    '/maintenance-management': { action: 'read', subject: 'Maintenance', roles: [] },
+    '/company-management': { action: 'read', subject: 'Company', roles: [] },
+    '/rental-management': { action: 'read', subject: 'Rental', roles: [] },
+    '/quotation-management': { action: 'read', subject: 'Quotation', roles: [] },
+    '/payroll-management': { action: 'read', subject: 'Payroll', roles: [] },
+    '/timesheet-management': { action: 'read', subject: 'Timesheet', roles: [] },
+    '/project-management': { action: 'read', subject: 'Project', roles: [] },
+    '/leave-management': { action: 'read', subject: 'Leave', roles: [] },
+    '/location-management': { action: 'read', subject: 'Settings', roles: [] },
+    '/user-management': { action: 'read', subject: 'User', roles: [] },
+    '/safety-management': { action: 'read', subject: 'Safety', roles: [] },
+    '/salary-increments': { action: 'read', subject: 'SalaryIncrement', roles: [] },
+    '/reporting': { action: 'read', subject: 'Report', roles: [] },
+    '/document-management': { action: 'read', subject: 'Document', roles: [] },
+    '/admin': { action: 'read', subject: 'Settings', roles: [] },
+    '/reports': { action: 'read', subject: 'Report', roles: [] },
+    // Keep old /modules/ routes for backward compatibility during migration
     '/modules/employee-management': { action: 'read', subject: 'Employee', roles: [] },
     '/modules/customer-management': { action: 'read', subject: 'Customer', roles: [] },
     '/modules/equipment-management': { action: 'read', subject: 'Equipment', roles: [] },
@@ -239,8 +259,6 @@ function getClientSafeRoutePermission(pathname: string) {
     '/modules/salary-increments': { action: 'read', subject: 'SalaryIncrement', roles: [] },
     '/modules/reporting': { action: 'read', subject: 'Report', roles: [] },
     '/modules/document-management': { action: 'read', subject: 'Document', roles: [] },
-    '/admin': { action: 'read', subject: 'Settings', roles: [] },
-    '/reports': { action: 'read', subject: 'Report', roles: [] },
   };
   
   // Check for exact match first
@@ -248,7 +266,7 @@ function getClientSafeRoutePermission(pathname: string) {
     return routePermissions[pathname];
   }
   
-  // Check for sub-routes (e.g., /en/modules/timesheet-management/bulk-submit should match /modules/timesheet-management)
+  // Check for sub-routes (e.g., /en/timesheet-management/bulk-submit should match /timesheet-management)
   for (const [route, permission] of Object.entries(routePermissions)) {
     if (pathname.includes(route)) {
       return permission;

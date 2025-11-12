@@ -12,6 +12,7 @@ import {
 import { CreditCard, FileText, Loader2, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useParams } from 'next/navigation';
 
 interface Payment {
   id: number;
@@ -49,6 +50,8 @@ interface PaymentHistoryProps {
 }
 
 export default function PaymentHistory({ employeeId }: PaymentHistoryProps) {
+  const params = useParams();
+  const locale = params?.locale as string || 'en';
   const { t } = require('react-i18next').useTranslation('employee');
   const [payments, setPayments] = useState<Payment[]>([]);
   const [activeAdvances, setActiveAdvances] = useState<ActiveAdvance[]>([]);
@@ -235,7 +238,7 @@ export default function PaymentHistory({ employeeId }: PaymentHistoryProps) {
                           className="h-8 w-8 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
                           onClick={() =>
                             window.open(
-                              `/modules/employee-management/${employeeId}/payments/${p.id}/receipt`,
+                              `/${locale}/employee-management/${employeeId}/payments/${p.id}/receipt`,
                               '_blank'
                             )
                           }

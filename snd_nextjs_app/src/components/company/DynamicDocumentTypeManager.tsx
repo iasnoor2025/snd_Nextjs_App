@@ -26,6 +26,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 
 interface DocumentType {
   id: number;
@@ -84,6 +85,8 @@ const CATEGORIES = [
 ];
 
 export default function DynamicDocumentTypeManager({ companyId }: { companyId?: number }) {
+  const params = useParams();
+  const locale = params?.locale as string || 'en';
   const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([]);
   const [documentFiles, setDocumentFiles] = useState<DocumentFile[]>([]);
   const [loading, setLoading] = useState(false);
@@ -489,7 +492,7 @@ export default function DynamicDocumentTypeManager({ companyId }: { companyId?: 
           </div>
         </div>
         <div className="flex gap-2">
-          <Link href="/modules/company-management">
+          <Link href={`/${locale}/company-management`}>
             <Button variant="outline" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back

@@ -24,7 +24,7 @@ import { useI18n } from '@/hooks/use-i18n';
 import { PDFGenerator } from '@/lib/utils/pdf-generator';
 
 import { Download, Edit, Plus, Search, Wrench, FileText, Shield, Award, MapPin, ClipboardCheck, Package } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 
 interface EquipmentData {
@@ -71,6 +71,8 @@ export function EquipmentSection({
   onDocumentTypeChange,
 }: EquipmentSectionProps) {
   const router = useRouter();
+  const params = useParams();
+  const locale = params?.locale as string || 'en';
   const { t } = useI18n();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -454,7 +456,7 @@ export function EquipmentSection({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => router.push('/modules/equipment-management')}
+                onClick={() => router.push(`/${locale}/equipment-management`)}
                 className="flex items-center gap-2"
               >
                 <Plus className="h-4 w-4" />

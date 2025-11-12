@@ -5,15 +5,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useNotificationContext } from '@/contexts/notification-context';
 import { notify } from '@/lib/services/notification-service';
 import React from 'react';
+import { useParams } from 'next/navigation';
 
 export const NotificationDemo: React.FC = () => {
+  const params = useParams();
+  const locale = params?.locale as string || 'en';
   const { showSuccess, showError } = useNotificationContext();
 
   const handleSuccessNotification = () => {
     notify.success(
       'Success!',
       'This is a success notification with an action button.',
-      '/modules/employee-management'
+      '/${locale}/employee-management'
     );
   };
 

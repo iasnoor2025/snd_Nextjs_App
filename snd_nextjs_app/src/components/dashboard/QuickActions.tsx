@@ -18,7 +18,7 @@ import {
   BookOpen,
   Star,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 
 interface QuickActionsProps {
   onHideSection: () => void;
@@ -26,6 +26,8 @@ interface QuickActionsProps {
 
 export function QuickActions({ onHideSection }: QuickActionsProps) {
   const router = useRouter();
+  const params = useParams();
+  const locale = params?.locale as string || 'en';
   const { t } = useI18n();
 
   return (
@@ -49,7 +51,7 @@ export function QuickActions({ onHideSection }: QuickActionsProps) {
             variant="default"
             size="sm"
             className="h-16 p-2 flex flex-col items-center justify-center space-y-1 min-w-[80px]"
-            onClick={() => router.push('/modules/user-management')}
+            onClick={() => router.push(`/${locale}/user-management`)}
           >
             <Users className="h-4 w-4" />
             <div className="text-center">
@@ -65,7 +67,7 @@ export function QuickActions({ onHideSection }: QuickActionsProps) {
             variant="secondary"
             size="sm"
             className="h-16 p-2 flex flex-col items-center justify-center space-y-1 min-w-[80px]"
-            onClick={() => router.push('/modules/analytics')}
+            onClick={() => router.push(`/${locale}/analytics`)}
           >
             <BarChart3 className="h-4 w-4" />
             <div className="text-center">
@@ -81,7 +83,7 @@ export function QuickActions({ onHideSection }: QuickActionsProps) {
             variant="outline"
             size="sm"
             className="h-16 p-2 flex flex-col items-center justify-center space-y-1 min-w-[80px]"
-            onClick={() => router.push('/modules/payroll-management')}
+            onClick={() => router.push(`/${locale}/payroll-management`)}
           >
             <DollarSign className="h-4 w-4" />
             <div className="text-center">
@@ -97,7 +99,7 @@ export function QuickActions({ onHideSection }: QuickActionsProps) {
             variant="ghost"
             size="sm"
             className="h-16 p-2 flex flex-col items-center justify-center space-y-1 min-w-[80px]"
-            onClick={() => router.push('/modules/settings')}
+            onClick={() => router.push(`/${locale}/settings`)}
           >
             <Settings className="h-4 w-4" />
             <div className="text-center">
@@ -113,7 +115,7 @@ export function QuickActions({ onHideSection }: QuickActionsProps) {
             variant="default"
             size="sm"
             className="h-16 p-2 flex flex-col items-center justify-center space-y-1 min-w-[80px]"
-            onClick={() => router.push('/modules/equipment-management')}
+            onClick={() => router.push(`/${locale}/equipment-management`)}
           >
             <Wrench className="h-4 w-4" />
             <div className="text-center">
@@ -129,7 +131,7 @@ export function QuickActions({ onHideSection }: QuickActionsProps) {
             variant="secondary"
             size="sm"
             className="h-16 p-2 flex flex-col items-center justify-center space-y-1 min-w-[80px]"
-            onClick={() => router.push('/modules/rental-management')}
+            onClick={() => router.push(`/${locale}/rental-management`)}
           >
             <Truck className="h-4 w-4" />
             <div className="text-center">
@@ -145,7 +147,7 @@ export function QuickActions({ onHideSection }: QuickActionsProps) {
             variant="outline"
             size="sm"
             className="h-16 p-2 flex flex-col items-center justify-center space-y-1 min-w-[80px]"
-            onClick={() => router.push('/modules/document-management')}
+            onClick={() => router.push(`/${locale}/document-management`)}
           >
             <FileText className="h-4 w-4" />
             <div className="text-center">
@@ -161,7 +163,7 @@ export function QuickActions({ onHideSection }: QuickActionsProps) {
             variant="ghost"
             size="sm"
             className="h-16 p-2 flex flex-col items-center justify-center space-y-1 min-w-[80px]"
-            onClick={() => router.push('/modules/project-management')}
+            onClick={() => router.push(`/${locale}/project-management`)}
           >
             <Building2 className="h-4 w-4" />
             <div className="text-center">
@@ -178,7 +180,7 @@ export function QuickActions({ onHideSection }: QuickActionsProps) {
             variant="default"
             size="sm"
             className="h-16 p-2 flex flex-col items-center justify-center space-y-1 min-w-[80px]"
-            onClick={() => router.push('/modules/employee-management')}
+            onClick={() => router.push(`/${locale}/employee-management`)}
           >
             <Users className="h-4 w-4" />
             <div className="text-center">

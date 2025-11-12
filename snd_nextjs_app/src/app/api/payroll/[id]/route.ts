@@ -6,11 +6,12 @@ import { createTranslatorFromRequest } from '@/lib/server-i18n';
 import { getServerSession } from '@/lib/auth';
 
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { t } = createTranslatorFromRequest(request);
   
   try {
-    const id = parseInt(params.id);
+    const { id: idParam } = await params;
+    const id = parseInt(idParam);
 
     if (isNaN(id)) {
       return NextResponse.json({ success: false, error: t('common.error.invalidId') }, { status: 400 });
@@ -169,11 +170,12 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { t } = createTranslatorFromRequest(request);
   
   try {
-    const id = parseInt(params.id);
+    const { id: idParam } = await params;
+    const id = parseInt(idParam);
 
     if (isNaN(id)) {
       return NextResponse.json({ success: false, message: t('common.error.invalidId') }, { status: 400 });
@@ -288,7 +290,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { t } = createTranslatorFromRequest(request);
   
   try {
@@ -298,7 +300,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       return NextResponse.json({ success: false, message: t('common.error.unauthorized') }, { status: 401 });
     }
 
-    const id = parseInt(params.id);
+    const { id: idParam } = await params;
+    const id = parseInt(idParam);
 
     if (isNaN(id)) {
       return NextResponse.json({ success: false, message: t('common.error.invalidId') }, { status: 400 });

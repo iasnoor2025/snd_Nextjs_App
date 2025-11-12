@@ -7,6 +7,7 @@ import { FileText, Loader2, Shield } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 
 export interface CompanyDocument {
   id: number;
@@ -76,6 +77,8 @@ export default function CompanyDocumentManager({
   companyName,
   onDocumentsChange 
 }: CompanyDocumentManagerProps) {
+  const params = useParams();
+  const locale = params?.locale as string || 'en';
   const [documents, setDocuments] = useState<CompanyDocument[]>([]);
   const [documentTypes, setDocumentTypes] = useState<DocumentType[]>(DEFAULT_DOCUMENT_TYPES);
   const [loading, setLoading] = useState(false);
@@ -175,7 +178,7 @@ export default function CompanyDocumentManager({
                </CardDescription>
              </div>
              <div className="flex gap-2">
-               <Link href="/modules/company-management/document-types">
+               <Link href={`/${locale}/company-management/document-types`}>
                  <Button variant="outline" size="sm">
                    <Shield className="h-4 w-4 mr-2" />
                    Manage Document Types

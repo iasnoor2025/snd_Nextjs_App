@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { Loader2, Save, Calendar, User, ArrowLeft } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter , useParams } from 'next/navigation';
 
 interface TimesheetData {
   date: string;
@@ -21,6 +21,8 @@ interface BulkTimesheetFormProps {
 }
 
 export default function BulkTimesheetForm({ className }: BulkTimesheetFormProps) {
+  const params = useParams();
+  const locale = params?.locale as string || 'en';
   const router = useRouter();
   const [empCode, setEmpCode] = useState('');
   const [month, setMonth] = useState('');
@@ -218,7 +220,7 @@ export default function BulkTimesheetForm({ className }: BulkTimesheetFormProps)
           </div>
           <Button
             variant="outline"
-            onClick={() => router.push('/modules/timesheet-management')}
+            onClick={() => router.push(`/${locale}/timesheet-management`)}
             className="flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />

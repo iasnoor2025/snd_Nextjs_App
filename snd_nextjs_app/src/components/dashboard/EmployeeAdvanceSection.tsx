@@ -11,6 +11,7 @@ import { useI18n } from '@/hooks/use-i18n';
 import { CreditCard, DollarSign, Eye, History, Loader2, Plus, Trash2, User, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useParams } from 'next/navigation';
 
 interface AdvanceData {
   id: number;
@@ -40,6 +41,8 @@ interface EmployeeAdvanceSectionProps {
 }
 
 export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanceSectionProps) {
+  const params = useParams();
+  const locale = params?.locale as string || 'en';
   const { t } = useI18n();
   const [advances, setAdvances] = useState<AdvanceData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -509,7 +512,7 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
                               variant="outline"
                                                              onClick={() => {
                                  // Navigate to employee details page
-                                 window.open(`/modules/employee-management/${advance.employee_id}`, '_blank');
+                                 window.open(`/${locale}/employee-management/${advance.employee_id}`, '_blank');
                                }}
                             >
                               <Eye className="h-4 w-4" />
