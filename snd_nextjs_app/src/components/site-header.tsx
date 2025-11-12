@@ -35,6 +35,47 @@ export function SiteHeader() {
   // Check if user is an employee - use RBAC context role
   const isEmployee = currentUserRole === 'EMPLOYEE';
 
+  // Get badge color and variant based on role
+  const getRoleBadgeStyle = (role: string) => {
+    const roleUpper = role.toUpperCase();
+    
+    // Use a hash-like function to assign consistent colors based on role name
+    // This ensures the same role always gets the same color
+    const roleColors: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string }> = {
+      'SUPER_ADMIN': { variant: 'destructive', className: 'bg-red-600 text-white border-red-700' },
+      'ADMIN': { variant: 'default', className: 'bg-blue-600 text-white border-blue-700' },
+      'MANAGER': { variant: 'default', className: 'bg-purple-600 text-white border-purple-700' },
+      'SUPERVISOR': { variant: 'outline', className: 'bg-orange-100 text-orange-800 border-orange-300' },
+      'OPERATOR': { variant: 'secondary', className: 'bg-green-100 text-green-800 border-green-300' },
+      'EMPLOYEE': { variant: 'default', className: 'bg-gray-100 text-gray-800 border-gray-300' },
+      'USER': { variant: 'outline', className: 'bg-slate-100 text-slate-700 border-slate-300' },
+    };
+
+    // Check for exact match first
+    if (roleColors[roleUpper]) {
+      return roleColors[roleUpper];
+    }
+
+    // For custom roles (like "workshop"), assign colors based on role name hash
+    // This ensures consistent colors for the same role
+    const roleHash = role.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const colorOptions = [
+      { variant: 'default' as const, className: 'bg-indigo-100 text-indigo-800 border-indigo-300' },
+      { variant: 'default' as const, className: 'bg-teal-100 text-teal-800 border-teal-300' },
+      { variant: 'default' as const, className: 'bg-pink-100 text-pink-800 border-pink-300' },
+      { variant: 'default' as const, className: 'bg-cyan-100 text-cyan-800 border-cyan-300' },
+      { variant: 'default' as const, className: 'bg-amber-100 text-amber-800 border-amber-300' },
+      { variant: 'default' as const, className: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
+      { variant: 'default' as const, className: 'bg-violet-100 text-violet-800 border-violet-300' },
+      { variant: 'default' as const, className: 'bg-rose-100 text-rose-800 border-rose-300' },
+    ];
+    
+    const selectedColor = colorOptions[roleHash % colorOptions.length];
+    return selectedColor;
+  };
+
+  const badgeStyle = getRoleBadgeStyle(roleDisplayName);
+
   // Fetch role name from database
   useEffect(() => {
     const fetchRoleName = async () => {
@@ -127,22 +168,11 @@ export function SiteHeader() {
             <RefreshCw className="h-4 w-4" />
           </Button>
           <Badge
-            variant={
-              currentUserRole === 'SUPER_ADMIN'
-                ? 'destructive'
-                : currentUserRole === 'ADMIN'
-                  ? 'default'
-                  : currentUserRole === 'MANAGER'
-                    ? 'secondary'
-                    : currentUserRole === 'SUPERVISOR'
-                      ? 'outline'
-                    : currentUserRole === 'OPERATOR'
-                      ? 'secondary'
-                    : currentUserRole === 'EMPLOYEE'
-                      ? 'default'
-                      : 'secondary'
-            }
-            className="hidden sm:inline-flex text-xs"
+            variant={badgeStyle.variant}
+            className={cn(
+              "hidden sm:inline-flex text-xs font-medium",
+              badgeStyle.className
+            )}
           >
             {roleDisplayName}
           </Badge>
