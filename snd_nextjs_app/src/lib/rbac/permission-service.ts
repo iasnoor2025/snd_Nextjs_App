@@ -18,7 +18,7 @@ export interface PermissionCheck {
 }
 
 // Server-side permission cache
-const PERMISSION_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const PERMISSION_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours (permissions rarely change)
 const permissionCache = new Map<string, { result: PermissionCheck; timestamp: number }>();
 
 // Cache key for permission checks

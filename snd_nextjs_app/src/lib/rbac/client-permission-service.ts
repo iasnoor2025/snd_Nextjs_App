@@ -7,8 +7,8 @@ export interface PermissionCheck {
   requiredPermissions?: string[];
 }
 
-// Cache TTL: 5 minutes
-const CACHE_TTL = 5 * 60 * 1000;
+// Cache TTL: 24 hours (permissions rarely change during a session)
+const CACHE_TTL = 24 * 60 * 60 * 1000;
 
 // Cache keys
 const getSectionsCacheKey = (userId: string) => `accessible_sections_${userId}`;

@@ -50,8 +50,8 @@ const DYNAMIC_FALLBACK_PERMISSIONS: Record<string, string[]> = {
   SUPER_ADMIN: ['*', 'manage.all'],
 };
 
-// Cache TTL: 5 minutes in milliseconds
-const PERMISSIONS_CACHE_TTL = 5 * 60 * 1000;
+// Cache TTL: 24 hours in milliseconds (permissions rarely change during a session)
+const PERMISSIONS_CACHE_TTL = 24 * 60 * 60 * 1000;
 
 // Cache key for localStorage
 const getCacheKey = (userId: string) => `rbac_permissions_${userId}`;
