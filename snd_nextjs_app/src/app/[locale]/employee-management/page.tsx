@@ -428,7 +428,8 @@ export default function EmployeeManagementPage() {
       const matchesSearch =
         (employee.file_number?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
         (employee.full_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (employee.email?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+        (employee.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (employee.iqama_number?.toLowerCase() || '').includes(searchTerm.toLowerCase());
 
       const matchesStatus = statusFilter === 'all' || employee.status === statusFilter;
       const matchesDepartment =

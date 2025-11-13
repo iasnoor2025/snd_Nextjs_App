@@ -14,7 +14,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Search by first name, last name, or file number
+    // Search by first name, last name, file number, or iqama number
     const employees = await db
       .select({
         id: employeesTable.id,
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       })
       .from(employeesTable)
       .where(
-        sql`first_name ILIKE ${`%${searchTerm}%`} OR last_name ILIKE ${`%${searchTerm}%`} OR file_number ILIKE ${`%${searchTerm}%`}`
+        sql`first_name ILIKE ${`%${searchTerm}%`} OR last_name ILIKE ${`%${searchTerm}%`} OR file_number ILIKE ${`%${searchTerm}%`} OR iqama_number ILIKE ${`%${searchTerm}%`}`
       )
       .limit(20);
 

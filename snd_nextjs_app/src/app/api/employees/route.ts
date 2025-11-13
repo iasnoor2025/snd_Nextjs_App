@@ -62,7 +62,8 @@ const getEmployeesHandler = async (request: NextRequest) => {
           ilike(employeesTable.firstName, s),
           ilike(employeesTable.lastName, s),
           ilike(employeesTable.fileNumber, s),
-          ilike(employeesTable.email, s)
+          ilike(employeesTable.email, s),
+          ilike(employeesTable.iqamaNumber, s)
         )
       );
     }

@@ -173,6 +173,9 @@ export function EmployeeDropdown({
       // Check file number
       if (employee.file_number?.toLowerCase().includes(searchLower)) return true;
       
+      // Check iqama number
+      if (employee.iqama_number?.toLowerCase().includes(searchLower)) return true;
+      
       // Check email
       if (employee.email?.toLowerCase().includes(searchLower)) return true;
       
