@@ -22,51 +22,69 @@ async function translateText(text: string, targetLang: 'en' | 'ar'): Promise<str
   }
 
   try {
-    // Option 1: Use LibreTranslate (free, open-source, self-hosted or public instance)
-    // Public instance: https://libretranslate.com (rate limited)
-    const libreTranslateUrl = process.env.LIBRETRANSLATE_URL || 'https://libretranslate.com/translate';
-    
-    const response = await fetch(libreTranslateUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        q: text,
-        source: sourceLang,
-        target: targetLang,
-        format: 'text',
-      }),
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      return data.translatedText || text;
-    }
-
-    // Fallback: If LibreTranslate fails, try Google Translate (requires API key)
+    // Option 1: Use Google Translate API (if API key is provided)
     if (process.env.GOOGLE_TRANSLATE_API_KEY) {
-      const googleResponse = await fetch(
-        `https://translation.googleapis.com/language/translate/v2?key=${process.env.GOOGLE_TRANSLATE_API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            q: text,
-            source: sourceLang,
-            target: targetLang,
-          }),
+      try {
+        const googleResponse = await fetch(
+          `https://translation.googleapis.com/language/translate/v2?key=${process.env.GOOGLE_TRANSLATE_API_KEY}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              q: text,
+              source: sourceLang,
+              target: targetLang,
+            }),
+          }
+        );
+        
+        if (googleResponse.ok) {
+          const googleData = await googleResponse.json();
+          if (googleData.data?.translations?.[0]?.translatedText) {
+            return googleData.data.translations[0].translatedText;
+          }
+        } else {
+          const errorData = await googleResponse.json().catch(() => ({}));
+          console.error('Google Translate API error:', googleResponse.status, errorData);
         }
-      );
-      
-      if (googleResponse.ok) {
-        const googleData = await googleResponse.json();
-        return googleData.data.translations[0].translatedText;
+      } catch (googleError) {
+        console.error('Google Translate API request failed:', googleError);
       }
     }
 
+    // Option 2: Use LibreTranslate (free, open-source, self-hosted or public instance)
+    // Public instance: https://libretranslate.com (rate limited, may not work)
+    const libreTranslateUrl = process.env.LIBRETRANSLATE_URL || 'https://libretranslate.com/translate';
+    
+    try {
+      const response = await fetch(libreTranslateUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          q: text,
+          source: sourceLang,
+          target: targetLang,
+          format: 'text',
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.translatedText) {
+          return data.translatedText;
+        }
+      } else {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error('LibreTranslate API error:', response.status, errorText);
+      }
+    } catch (libreError) {
+      console.error('LibreTranslate request failed:', libreError);
+    }
+
     // If all translation services fail, return original text
-    console.warn('Translation service unavailable, returning original text');
+    console.warn('Translation service unavailable. To enable translation, set GOOGLE_TRANSLATE_API_KEY or LIBRETRANSLATE_URL in .env.local');
     return text;
   } catch (error) {
     console.error('Translation error:', error);
@@ -87,8 +105,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Valid target language (en/ar) is required' }, { status: 400 });
     }
 
-    const translated = await translateText(text, targetLang);
     const detectedLang = detectLanguage(text);
+    
+    // If already in target language, return as-is
+    if (detectedLang === targetLang) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          originalText: text,
+          translatedText: text,
+          sourceLanguage: detectedLang,
+          targetLanguage: targetLang,
+          note: 'Text is already in target language',
+        },
+      });
+    }
+
+    const translated = await translateText(text, targetLang);
+    const wasTranslated = translated !== text;
 
     return NextResponse.json({
       success: true,
@@ -97,6 +131,10 @@ export async function POST(request: NextRequest) {
         translatedText: translated,
         sourceLanguage: detectedLang,
         targetLanguage: targetLang,
+        wasTranslated,
+        note: wasTranslated 
+          ? 'Translation successful' 
+          : 'Translation service not configured. Please set GOOGLE_TRANSLATE_API_KEY or LIBRETRANSLATE_URL in .env.local',
       },
     });
   } catch (error) {

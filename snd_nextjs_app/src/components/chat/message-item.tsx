@@ -74,8 +74,14 @@ export const MessageItem: React.FC<MessageItemProps> = ({
         setIsTranslating(true);
         translateText(message.content, userLang)
           .then(translated => {
-            setTranslatedContent(translated);
-            setCachedTranslation(cacheKey, translated);
+            // Only set translation if it's different from original (translation actually happened)
+            if (translated && translated !== message.content) {
+              setTranslatedContent(translated);
+              setCachedTranslation(cacheKey, translated);
+            } else {
+              // Translation service not available or returned original text
+              setTranslatedContent(null);
+            }
           })
           .catch(error => {
             console.error('Translation error:', error);
