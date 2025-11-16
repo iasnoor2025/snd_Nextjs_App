@@ -73,12 +73,33 @@ export async function GET(
       .innerJoin(users, eq(users.id, conversationParticipants.userId))
       .where(eq(conversationParticipants.conversationId, parseInt(id)));
 
+    // Helper to convert database timestamp to ISO string
+    const toISO = (ts: any): string | null => {
+      if (!ts) return null;
+      try {
+        if (typeof ts === 'string' && (ts.includes('Z') || ts.includes('+') || ts.includes('T'))) {
+          return new Date(ts).toISOString();
+        }
+        if (typeof ts === 'string') {
+          return new Date(ts + (ts.includes('Z') || ts.includes('+') ? '' : 'Z')).toISOString();
+        }
+        return new Date(ts).toISOString();
+      } catch (e) {
+        console.error('Error converting timestamp:', ts, e);
+        return new Date().toISOString();
+      }
+    };
+
     return NextResponse.json({
       success: true,
       data: {
-        ...conversation,
+        id: conversation.id,
+        type: conversation.type,
+        name: conversation.name,
         participants,
-        isMuted: participant[0].isMuted,
+        isMuted: participant[0]?.isMuted || false,
+        updatedAt: toISO(conversation.updatedAt),
+        lastMessageAt: toISO(conversation.lastMessageAt),
       },
     });
   } catch (error) {

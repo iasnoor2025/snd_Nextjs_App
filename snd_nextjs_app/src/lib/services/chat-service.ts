@@ -147,6 +147,24 @@ export class ChatService {
     });
   }
 
+  // Mark all messages in a conversation as read
+  static async markConversationAsRead(conversationId: number): Promise<void> {
+    await ApiService.post(`/chat/conversations/${conversationId}/mark-read`, undefined, {
+      errorMessage: 'Failed to mark conversation as read',
+    });
+  }
+
+  // Send typing indicator
+  static async sendTypingIndicator(conversationId: number, isTyping: boolean): Promise<void> {
+    await ApiService.post(
+      `/chat/conversations/${conversationId}/typing`,
+      { isTyping },
+      {
+        errorMessage: 'Failed to send typing indicator',
+      }
+    );
+  }
+
   // Search users
   static async searchUsers(search?: string, limit?: number): Promise<ChatUser[]> {
     const response = await ApiService.get(

@@ -3,9 +3,12 @@ import { getServerSession } from '@/lib/auth';
 import { getDb } from '@/lib/drizzle';
 import { notifications } from '@/lib/drizzle/schema';
 import { and, eq, sql } from 'drizzle-orm';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST({ params }: { params: Promise<{ id: string }> }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const session = await getServerSession();
 

@@ -17,10 +17,12 @@ interface ChatContextType {
   editMessage: (messageId: number, content: string) => Promise<void>;
   deleteMessage: (messageId: number, conversationId: number) => Promise<void>;
   markAsRead: (messageId: number) => Promise<void>;
+  markConversationAsRead: (conversationId: number) => Promise<void>;
   searchUsers: (search: string) => Promise<ChatUser[]>;
   createConversation: (participantIds: number[], type?: 'direct' | 'group', name?: string) => Promise<number>;
   typingUsers: Map<number, Set<number>>; // conversationId -> Set of userIds
-  setTyping: (conversationId: number, isTyping: boolean) => void;
+  typingUsersInfo: Map<number, Map<number, { name: string; avatar?: string | null }>>; // conversationId -> userId -> userInfo
+  setTyping: (conversationId: number, isTyping: boolean) => Promise<void>;
   onlineUsers: Set<number>; // Set of online user IDs
   isUserOnline: (userId: number) => boolean;
   muteConversation: (conversationId: number, muted: boolean) => Promise<void>;
@@ -50,8 +52,10 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [typingUsers, setTypingUsers] = useState<Map<number, Set<number>>>(new Map());
+  const [typingUsersInfo, setTypingUsersInfo] = useState<Map<number, Map<number, { name: string; avatar?: string | null }>>>(new Map()); // conversationId -> userId -> userInfo
   const [onlineUsers, setOnlineUsers] = useState<Set<number>>(new Set());
   const typingTimeoutRef = useRef<Map<number, NodeJS.Timeout>>(new Map());
+  const currentUserIdRef = useRef<number | null>(null);
 
   // Fetch conversations
   const fetchConversations = useCallback(async () => {
@@ -74,6 +78,11 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
 
   // Select conversation and load messages
   const selectConversation = useCallback(async (conversationId: number) => {
+    // Prevent multiple simultaneous calls for the same conversation
+    if (currentConversation?.id === conversationId && loading) {
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -82,8 +91,19 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       const conversation = await ChatService.getConversation(conversationId);
       setCurrentConversation(conversation);
 
-      // Load messages if not already loaded
-      if (!messages.has(conversationId)) {
+      // Load messages if not already loaded (using functional update to check current state)
+      let shouldLoadMessages = false;
+      setMessages(prev => {
+        if (prev.has(conversationId)) {
+          shouldLoadMessages = false;
+          return prev; // Already loaded
+        }
+        shouldLoadMessages = true;
+        return prev;
+      });
+
+      // Load messages if needed
+      if (shouldLoadMessages) {
         const { messages: conversationMessages } = await ChatService.getMessages(conversationId);
         setMessages(prev => {
           const newMap = new Map(prev);
@@ -91,13 +111,37 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
           return newMap;
         });
       }
+
+      // Mark all messages in this conversation as read (and related notifications)
+      try {
+        await ChatService.markConversationAsRead(conversationId);
+        
+        // Update local state - mark all messages as read
+        setMessages(prev => {
+          const newMap = new Map(prev);
+          const conversationMessages = newMap.get(conversationId) || [];
+          const updated = conversationMessages.map(msg => ({ ...msg, isRead: true }));
+          newMap.set(conversationId, updated);
+          return newMap;
+        });
+
+        // Update conversation unread count
+        setConversations(prev =>
+          prev.map(conv =>
+            conv.id === conversationId ? { ...conv, unreadCount: 0 } : conv
+          )
+        );
+      } catch (err) {
+        console.error('Failed to mark conversation as read:', err);
+        // Don't fail the whole operation if marking as read fails
+      }
     } catch (err) {
       setError('Failed to load conversation');
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [messages]);
+  }, [currentConversation?.id, loading]);
 
   // Send message
   const sendMessage = useCallback(
@@ -238,6 +282,31 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     }
   }, []);
 
+  // Mark all messages in a conversation as read
+  const markConversationAsRead = useCallback(async (conversationId: number) => {
+    try {
+      await ChatService.markConversationAsRead(conversationId);
+
+      // Update local state - mark all messages as read
+      setMessages(prev => {
+        const newMap = new Map(prev);
+        const conversationMessages = newMap.get(conversationId) || [];
+        const updated = conversationMessages.map(msg => ({ ...msg, isRead: true }));
+        newMap.set(conversationId, updated);
+        return newMap;
+      });
+
+      // Update conversation unread count
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.id === conversationId ? { ...conv, unreadCount: 0 } : conv
+        )
+      );
+    } catch (err) {
+      console.error('Failed to mark conversation as read:', err);
+    }
+  }, []);
+
   // Search users
   const searchUsers = useCallback(async (search: string): Promise<ChatUser[]> => {
     try {
@@ -273,8 +342,16 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   );
 
   // Set typing indicator
-  const setTyping = useCallback((conversationId: number, isTyping: boolean) => {
+  const setTyping = useCallback(async (conversationId: number, isTyping: boolean) => {
     if (!session?.user?.email) return;
+
+    // Broadcast typing event to other users via API
+    try {
+      await ChatService.sendTypingIndicator(conversationId, isTyping);
+    } catch (err) {
+      console.error('Failed to send typing indicator:', err);
+      // Continue with local state update even if API call fails
+    }
 
     // Clear existing timeout
     const existingTimeout = typingTimeoutRef.current.get(conversationId);
@@ -282,45 +359,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       clearTimeout(existingTimeout);
     }
 
-    if (isTyping) {
-      // Set typing for 3 seconds
-      const timeout = setTimeout(() => {
-        setTypingUsers(prev => {
-          const newMap = new Map(prev);
-          const users = newMap.get(conversationId) || new Set();
-          users.delete(0); // Remove current user (we'll use proper user ID later)
-          if (users.size === 0) {
-            newMap.delete(conversationId);
-          } else {
-            newMap.set(conversationId, users);
-          }
-          return newMap;
-        });
-        typingTimeoutRef.current.delete(conversationId);
-      }, 3000);
-
-      typingTimeoutRef.current.set(conversationId, timeout);
-
-      setTypingUsers(prev => {
-        const newMap = new Map(prev);
-        const users = newMap.get(conversationId) || new Set();
-        users.add(0); // Temporary, will use proper user ID
-        newMap.set(conversationId, users);
-        return newMap;
-      });
-    } else {
-      setTypingUsers(prev => {
-        const newMap = new Map(prev);
-        const users = newMap.get(conversationId) || new Set();
-        users.delete(0);
-        if (users.size === 0) {
-          newMap.delete(conversationId);
-        } else {
-          newMap.set(conversationId, users);
-        }
-        return newMap;
-      });
-    }
+    // Note: We don't add current user to typingUsers - only other users' typing indicators are shown
+    // The API will broadcast to other users, and we'll receive their typing events via SSE
   }, [session]);
 
   // Listen to SSE chat events
@@ -343,6 +383,92 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
                 newSet.delete(Number(userId));
               }
               return newSet;
+            });
+          }
+          return;
+        }
+
+        // Handle typing indicator
+        if (data.type === 'chat:typing' && data.data) {
+          const { conversationId, userId, userName, isTyping } = data.data;
+          const currentUserId = currentUserIdRef.current;
+
+          // Don't show typing indicator for current user
+          if (currentUserId && userId === currentUserId) {
+            return;
+          }
+
+          if (isTyping) {
+            // Add typing user
+            setTypingUsers(prev => {
+              const newMap = new Map(prev);
+              const users = newMap.get(conversationId) || new Set();
+              users.add(userId);
+              newMap.set(conversationId, users);
+              return newMap;
+            });
+
+            // Store user info
+            setTypingUsersInfo(prev => {
+              const newMap = new Map(prev);
+              const usersInfo = newMap.get(conversationId) || new Map();
+              usersInfo.set(userId, { name: userName || 'Someone', avatar: null });
+              newMap.set(conversationId, usersInfo);
+              return newMap;
+            });
+
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+              setTypingUsers(prev => {
+                const newMap = new Map(prev);
+                const users = newMap.get(conversationId) || new Set();
+                users.delete(userId);
+                if (users.size === 0) {
+                  newMap.delete(conversationId);
+                } else {
+                  newMap.set(conversationId, users);
+                }
+                return newMap;
+              });
+              setTypingUsersInfo(prev => {
+                const newMap = new Map(prev);
+                const usersInfo = newMap.get(conversationId);
+                if (usersInfo) {
+                  usersInfo.delete(userId);
+                  if (usersInfo.size === 0) {
+                    newMap.delete(conversationId);
+                  } else {
+                    newMap.set(conversationId, usersInfo);
+                  }
+                }
+                return newMap;
+              });
+            }, 3000);
+          } else {
+            // Remove typing user
+            setTypingUsers(prev => {
+              const newMap = new Map(prev);
+              const users = newMap.get(conversationId) || new Set();
+              users.delete(userId);
+              if (users.size === 0) {
+                newMap.delete(conversationId);
+              } else {
+                newMap.set(conversationId, users);
+              }
+              return newMap;
+            });
+            setTypingUsersInfo(prev => {
+              const newMap = new Map(prev);
+              const usersInfo = newMap.get(conversationId);
+              if (usersInfo) {
+                usersInfo.delete(userId);
+                if (usersInfo.size === 0) {
+                  newMap.delete(conversationId);
+                } else {
+                  newMap.set(conversationId, usersInfo);
+                }
+              }
+              return newMap;
             });
           }
           return;
@@ -466,6 +592,18 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     }
   }, [currentConversation]);
 
+  // Get current user ID from conversations
+  useEffect(() => {
+    if (session?.user?.email && conversations.length > 0 && !currentUserIdRef.current) {
+      // Get user ID from first conversation's participants
+      const firstConv = conversations[0];
+      const currentUserParticipant = firstConv.participants.find(p => p.email === session.user.email);
+      if (currentUserParticipant) {
+        currentUserIdRef.current = currentUserParticipant.id;
+      }
+    }
+  }, [conversations, session?.user?.email]);
+
   // Fetch conversations on mount
   useEffect(() => {
     if (session?.user?.email) {
@@ -488,9 +626,11 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         editMessage,
         deleteMessage,
         markAsRead,
+        markConversationAsRead,
         searchUsers,
         createConversation,
         typingUsers,
+        typingUsersInfo,
         setTyping,
         onlineUsers,
         isUserOnline,

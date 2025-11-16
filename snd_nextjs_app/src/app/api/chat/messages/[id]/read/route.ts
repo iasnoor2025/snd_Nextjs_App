@@ -1,6 +1,6 @@
 import { getServerSession } from '@/lib/auth';
 import { getDb } from '@/lib/drizzle';
-import { messageReads, messages, users, conversationParticipants } from '@/lib/drizzle/schema';
+import { messageReads, messages, users, conversationParticipants, notifications } from '@/lib/drizzle/schema';
 import { and, eq, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -99,6 +99,54 @@ export async function POST(
           eq(conversationParticipants.userId, currentUserId)
         )
       );
+
+    // Mark chat notifications for this specific message as read
+    try {
+      // First get all unread notifications for this user
+      const allNotifications = await db
+        .select()
+        .from(notifications)
+        .where(
+          and(
+            eq(notifications.userEmail, session.user.email),
+            eq(notifications.read, false)
+          )
+        );
+
+      // Filter for chat notifications matching this message
+      const chatNotifications = allNotifications.filter(notif => {
+        try {
+          const data = typeof notif.data === 'string' ? JSON.parse(notif.data) : notif.data;
+          return data?.type === 'chat' && data?.messageId === parseInt(id);
+        } catch {
+          return false;
+        }
+      });
+
+      // Mark matching notifications as read
+      if (chatNotifications.length > 0) {
+        const notificationIds = chatNotifications.map(n => n.id);
+        // Update each notification individually to avoid SQL array issues
+        for (const notifId of notificationIds) {
+          await db
+            .update(notifications)
+            .set({
+              read: true,
+              readAt: sql`CURRENT_TIMESTAMP`,
+              updatedAt: sql`CURRENT_TIMESTAMP`,
+            })
+            .where(
+              and(
+                eq(notifications.id, notifId),
+                eq(notifications.userEmail, session.user.email)
+              )
+            );
+        }
+      }
+    } catch (error) {
+      // Don't fail the request if notification update fails
+      console.error('Error marking notification as read:', error);
+    }
 
     return NextResponse.json({
       success: true,

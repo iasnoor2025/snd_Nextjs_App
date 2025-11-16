@@ -74,9 +74,19 @@ class ApiService {
       let data;
       try {
         const responseText = await response.text();
+        // Check if response is HTML (error page)
+        if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
+          console.error('Received HTML instead of JSON:', responseText.substring(0, 200));
+          throw new Error(`Server returned HTML error page. Status: ${response.status}`);
+        }
         data = responseText ? JSON.parse(responseText) : {};
       } catch (parseError) {
         console.error('Failed to parse response:', parseError);
+        // If it's a JSON parse error and we have response text, include it in the error
+        if (parseError instanceof SyntaxError) {
+          const responseText = await response.clone().text();
+          console.error('Response text:', responseText.substring(0, 500));
+        }
         data = {};
       }
 

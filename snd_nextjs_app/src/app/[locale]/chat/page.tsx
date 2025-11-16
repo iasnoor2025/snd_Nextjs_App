@@ -8,18 +8,19 @@ import React, { useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 function ChatContent() {
-  const { selectConversation } = useChat();
+  const { selectConversation, currentConversation } = useChat();
   const searchParams = useSearchParams();
   const conversationId = searchParams.get('conversation');
 
   useEffect(() => {
     if (conversationId) {
       const id = parseInt(conversationId);
-      if (!isNaN(id)) {
+      if (!isNaN(id) && currentConversation?.id !== id) {
         selectConversation(id);
       }
     }
-  }, [conversationId, selectConversation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId]); // selectConversation intentionally excluded to prevent infinite loop
 
   return (
     <div className="flex h-[calc(100vh-4rem)]">

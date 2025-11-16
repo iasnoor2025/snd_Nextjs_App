@@ -2,10 +2,12 @@
 
 import { ChatMessage } from '@/lib/services/chat-service';
 import { formatDistanceToNow } from 'date-fns';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useSession } from 'next-auth/react';
+import { useParams } from 'next/navigation';
+import { translateText, detectLanguage, getCachedTranslation, setCachedTranslation, getTranslationCacheKey } from '@/lib/services/translation-service';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,7 +25,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { MoreVertical, Trash2 } from 'lucide-react';
+import { MoreVertical, Trash2, Languages } from 'lucide-react';
 import { useChat } from '@/contexts/chat-context';
 
 interface MessageItemProps {
@@ -41,9 +43,52 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 }) => {
   const { data: session } = useSession();
   const { deleteMessage } = useChat();
+  const params = useParams();
+  const locale = (params?.locale as string) || 'en';
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [translatedContent, setTranslatedContent] = useState<string | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [showOriginal, setShowOriginal] = useState(false);
   const isOwn = message.sender.email === session?.user?.email;
+
+  // Auto-translate message if it's in a different language than user's locale
+  useEffect(() => {
+    if (message.isDeleted || message.messageType !== 'text' || !message.content) {
+      return;
+    }
+
+    const messageLang = detectLanguage(message.content);
+    const userLang = locale as 'en' | 'ar';
+
+    // Only translate if message is in different language and not from current user
+    if (messageLang !== userLang && !isOwn) {
+      // Check cache first
+      const cacheKey = getTranslationCacheKey(message.content, userLang);
+      const cached = getCachedTranslation(cacheKey);
+      
+      if (cached) {
+        setTranslatedContent(cached);
+      } else {
+        // Translate message
+        setIsTranslating(true);
+        translateText(message.content, userLang)
+          .then(translated => {
+            setTranslatedContent(translated);
+            setCachedTranslation(cacheKey, translated);
+          })
+          .catch(error => {
+            console.error('Translation error:', error);
+            setTranslatedContent(null);
+          })
+          .finally(() => {
+            setIsTranslating(false);
+          });
+      }
+    } else {
+      setTranslatedContent(null);
+    }
+  }, [message.content, message.isDeleted, message.messageType, locale, isOwn]);
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -153,7 +198,41 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                 />
               </a>
               {message.content && (
-                <p className="text-sm whitespace-pre-wrap break-words mt-2">{message.content}</p>
+                <div className="mt-2">
+                  {translatedContent && !showOriginal ? (
+                    <div>
+                      <p className="text-sm whitespace-pre-wrap break-words">{translatedContent}</p>
+                      <button
+                        onClick={() => setShowOriginal(true)}
+                        className="text-xs opacity-70 mt-1 hover:opacity-100 flex items-center gap-1"
+                        type="button"
+                      >
+                        <Languages className="h-3 w-3" />
+                        <span>Show original</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                      {translatedContent && showOriginal && (
+                        <button
+                          onClick={() => setShowOriginal(false)}
+                          className="text-xs opacity-70 mt-1 hover:opacity-100 flex items-center gap-1"
+                          type="button"
+                        >
+                          <Languages className="h-3 w-3" />
+                          <span>Show translation</span>
+                        </button>
+                      )}
+                      {isTranslating && (
+                        <p className="text-xs opacity-70 mt-1 flex items-center gap-1">
+                          <Languages className="h-3 w-3 animate-pulse" />
+                          <span>Translating...</span>
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           ) : message.messageType === 'file' && message.fileUrl ? (
@@ -172,11 +251,79 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                 )}
               </a>
               {message.content && (
-                <p className="text-sm whitespace-pre-wrap break-words mt-2">{message.content}</p>
+                <div className="mt-2">
+                  {translatedContent && !showOriginal ? (
+                    <div>
+                      <p className="text-sm whitespace-pre-wrap break-words">{translatedContent}</p>
+                      <button
+                        onClick={() => setShowOriginal(true)}
+                        className="text-xs opacity-70 mt-1 hover:opacity-100 flex items-center gap-1"
+                        type="button"
+                      >
+                        <Languages className="h-3 w-3" />
+                        <span>Show original</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                      {translatedContent && showOriginal && (
+                        <button
+                          onClick={() => setShowOriginal(false)}
+                          className="text-xs opacity-70 mt-1 hover:opacity-100 flex items-center gap-1"
+                          type="button"
+                        >
+                          <Languages className="h-3 w-3" />
+                          <span>Show translation</span>
+                        </button>
+                      )}
+                      {isTranslating && (
+                        <p className="text-xs opacity-70 mt-1 flex items-center gap-1">
+                          <Languages className="h-3 w-3 animate-pulse" />
+                          <span>Translating...</span>
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           ) : (
-            <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+            <div>
+              {translatedContent && !showOriginal ? (
+                <div>
+                  <p className="text-sm whitespace-pre-wrap break-words">{translatedContent}</p>
+                  <button
+                    onClick={() => setShowOriginal(true)}
+                    className="text-xs opacity-70 mt-1 hover:opacity-100 flex items-center gap-1"
+                    type="button"
+                  >
+                    <Languages className="h-3 w-3" />
+                    <span>Show original</span>
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                  {translatedContent && showOriginal && (
+                    <button
+                      onClick={() => setShowOriginal(false)}
+                      className="text-xs opacity-70 mt-1 hover:opacity-100 flex items-center gap-1"
+                      type="button"
+                    >
+                      <Languages className="h-3 w-3" />
+                      <span>Show translation</span>
+                    </button>
+                  )}
+                  {isTranslating && (
+                    <p className="text-xs opacity-70 mt-1 flex items-center gap-1">
+                      <Languages className="h-3 w-3 animate-pulse" />
+                      <span>Translating...</span>
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           )}
           {message.isEdited && !message.isDeleted && (
             <p className="text-xs opacity-70 mt-1">(edited)</p>
