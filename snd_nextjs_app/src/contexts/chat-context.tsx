@@ -350,6 +350,22 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     // The API will broadcast to other users, and we'll receive their typing events via SSE
   }, [session]);
 
+  // Fetch initial online status
+  const fetchOnlineStatus = useCallback(async () => {
+    try {
+      const response = await fetch('/api/chat/users/online');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && Array.isArray(result.data)) {
+          const onlineIds = new Set(result.data.map((u: any) => Number(u.id)));
+          setOnlineUsers(onlineIds);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch online status:', err);
+    }
+  }, []);
+
   // Listen to SSE chat events
   useEffect(() => {
     if (!isConnected) return;
@@ -362,12 +378,13 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         if (data.type === 'user:online' || data.type === 'user:offline') {
           const userId = data.data?.userId;
           if (userId) {
+            const userIdNum = Number(userId);
             setOnlineUsers(prev => {
               const newSet = new Set(prev);
               if (data.type === 'user:online') {
-                newSet.add(Number(userId));
+                newSet.add(userIdNum);
               } else {
-                newSet.delete(Number(userId));
+                newSet.delete(userIdNum);
               }
               return newSet;
             });
@@ -504,26 +521,26 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     // Listen for chat events
     window.addEventListener('chat-event', handleChatEvent as EventListener);
 
+    // Refresh online status when SSE connects
+    if (isConnected) {
+      fetchOnlineStatus();
+    }
+
     return () => {
       window.removeEventListener('chat-event', handleChatEvent as EventListener);
     };
-  }, [isConnected, currentConversation]);
+  }, [isConnected, currentConversation, fetchOnlineStatus]);
 
-  // Fetch initial online status
-  const fetchOnlineStatus = useCallback(async () => {
-    try {
-      const response = await fetch('/api/chat/users/online');
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && Array.isArray(result.data)) {
-          const onlineIds = new Set(result.data.map((u: any) => u.id));
-          setOnlineUsers(onlineIds);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to fetch online status:', err);
-    }
-  }, []);
+  // Periodically refresh online status (every 30 seconds)
+  useEffect(() => {
+    if (!isConnected) return;
+
+    const interval = setInterval(() => {
+      fetchOnlineStatus();
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [isConnected, fetchOnlineStatus]);
 
   // Check if user is online
   const isUserOnline = useCallback((userId: number): boolean => {

@@ -9,7 +9,7 @@ import { useSession } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 
 export const MessageList: React.FC<{ conversationId: number }> = ({ conversationId }) => {
-  const { messages, currentConversation, typingUsers, typingUsersInfo } = useChat();
+  const { messages, currentConversation, typingUsers, typingUsersInfo, loading } = useChat();
   const { data: session } = useSession();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const conversationMessages = messages.get(conversationId) || [];
@@ -21,12 +21,40 @@ export const MessageList: React.FC<{ conversationId: number }> = ({ conversation
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [conversationMessages.length]);
 
-  if (conversationMessages.length === 0) {
+  // Show loading state
+  if (loading && conversationMessages.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="text-center text-muted-foreground">
-          <p className="text-sm">No messages yet</p>
-          <p className="text-xs mt-2">Start the conversation!</p>
+          <div className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
+          <p className="text-sm mt-2">Loading messages...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show empty state
+  if (conversationMessages.length === 0) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="text-center text-muted-foreground max-w-sm">
+          <div className="mb-4">
+            <svg
+              className="mx-auto h-12 w-12 text-muted-foreground/50"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+              />
+            </svg>
+          </div>
+          <p className="text-base font-medium text-foreground mb-1">No messages yet</p>
+          <p className="text-sm">Start the conversation by sending a message below!</p>
         </div>
       </div>
     );
