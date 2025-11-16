@@ -282,6 +282,27 @@ export async function POST(request: NextRequest) {
       }))
     );
 
+    // Broadcast new conversation event to all participants via SSE
+    try {
+      const { sendEventToUsers } = await import('@/lib/sse-utils');
+      sendEventToUsers(
+        allParticipantIds,
+        {
+          type: 'chat:conversation_created',
+          data: {
+            conversationId: newConversation.id,
+            type: newConversation.type,
+            name: newConversation.name,
+          },
+          timestamp: new Date().toISOString(),
+          id: `conversation-${newConversation.id}-${Date.now()}`,
+        }
+      );
+    } catch (error) {
+      console.error('Error broadcasting new conversation:', error);
+      // Don't fail the request if SSE broadcast fails
+    }
+
     return NextResponse.json({
       success: true,
       data: { id: newConversation.id },

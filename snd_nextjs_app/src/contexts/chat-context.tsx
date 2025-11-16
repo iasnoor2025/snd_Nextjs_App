@@ -371,6 +371,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     if (!isConnected) return;
 
     const handleChatEvent = (event: CustomEvent) => {
+      console.log('Chat event received:', event.detail.type, event.detail);
       try {
         const data = event.detail;
         
@@ -475,6 +476,14 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
               return newMap;
             });
           }
+          return;
+        }
+
+        // Handle new conversation created
+        if (data.type === 'chat:conversation_created' && data.data) {
+          const { conversationId } = data.data;
+          // Refresh conversations list to include the new conversation
+          fetchConversations();
           return;
         }
         
@@ -615,6 +624,17 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       fetchOnlineStatus();
     }
   }, [session, fetchConversations, fetchOnlineStatus]);
+
+  // Periodically refresh conversations list (every 60 seconds) to catch new conversations
+  useEffect(() => {
+    if (!session?.user?.email || !isConnected) return;
+
+    const interval = setInterval(() => {
+      fetchConversations();
+    }, 60000); // Refresh every 60 seconds
+
+    return () => clearInterval(interval);
+  }, [session, isConnected, fetchConversations]);
 
   return (
     <ChatContext.Provider

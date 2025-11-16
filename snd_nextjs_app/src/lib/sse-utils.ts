@@ -23,6 +23,7 @@ export type SSEEventType =
   | 'chat:message_deleted'
   | 'chat:typing'
   | 'chat:read_receipt'
+  | 'chat:conversation_created'
   | 'user:online'
   | 'user:offline';
 
