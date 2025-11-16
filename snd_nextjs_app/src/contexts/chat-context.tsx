@@ -371,9 +371,9 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     if (!isConnected) return;
 
     const handleChatEvent = (event: CustomEvent) => {
-      console.log('Chat event received:', event.detail.type, event.detail);
       try {
         const data = event.detail;
+        console.log('Chat event received:', data.type, data);
         
         // Handle online/offline status
         if (data.type === 'user:online' || data.type === 'user:offline') {
@@ -491,13 +491,18 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
           const message: ChatMessage = data.data.message;
           const conversationId = data.data.conversationId;
 
+          console.log('Received chat message via SSE:', message.id, conversationId, message.content?.substring(0, 50));
+
           // Add message to local state
           setMessages(prev => {
             const newMap = new Map(prev);
             const existing = newMap.get(conversationId) || [];
             // Check if message already exists
             if (!existing.find(m => m.id === message.id)) {
+              console.log('Adding new message to state:', message.id);
               newMap.set(conversationId, [...existing, message]);
+            } else {
+              console.log('Message already exists, skipping:', message.id);
             }
             return newMap;
           });
@@ -510,7 +515,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
                     ...conv,
                     lastMessage: {
                       id: message.id,
-                      content: message.content,
+                      content: message.content || (message.messageType === 'image' ? '📷 Image' : message.fileName || 'File'),
                       createdAt: message.createdAt,
                       senderId: message.senderId,
                     },

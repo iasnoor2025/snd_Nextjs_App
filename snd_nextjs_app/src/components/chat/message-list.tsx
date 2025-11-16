@@ -70,12 +70,15 @@ export const MessageList: React.FC<{ conversationId: number }> = ({ conversation
           new Date(message.createdAt).getTime() - new Date(prevMessage.createdAt).getTime() >
             5 * 60 * 1000; // 5 minutes
 
+        // Determine if message is from current user
+        const isOwnMessage = message.sender.email === session?.user?.email;
+
         return (
           <MessageItem
             key={message.id}
             message={message}
             showAvatar={showAvatar}
-            isOwnMessage={false} // Will be determined by current user
+            isOwnMessage={isOwnMessage}
             conversationId={conversationId}
           />
         );

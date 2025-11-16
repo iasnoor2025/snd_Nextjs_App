@@ -191,10 +191,18 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                 className="block rounded-lg overflow-hidden max-w-sm"
               >
                 <img
-                  src={message.fileUrl}
+                  src={message.fileUrl.startsWith('/api/chat/media/') || message.fileUrl.startsWith('http') ? message.fileUrl : `/api/chat/media/${message.fileUrl}`}
                   alt={message.fileName || 'Image'}
                   className="max-w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
                   loading="lazy"
+                  onError={(e) => {
+                    console.error('Image load error:', message.fileUrl);
+                    // Fallback: try direct URL if proxy fails
+                    if (message.fileUrl && !message.fileUrl.startsWith('http')) {
+                      const target = e.target as HTMLImageElement;
+                      target.src = message.fileUrl;
+                    }
+                  }}
                 />
               </a>
               {message.content && (
