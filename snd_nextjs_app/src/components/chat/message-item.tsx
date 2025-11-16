@@ -87,6 +87,29 @@ export const MessageItem: React.FC<MessageItemProps> = ({
           </p>
         )}
         <div className={cn('flex items-start gap-2', isOwn && 'flex-row-reverse')}>
+          {isOwn && !message.isDeleted && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => setDeleteDialogOpen(true)}
+                  disabled={isDeleting}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span>Delete</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <div
             className={cn(
               'rounded-lg px-3 py-2 relative group',
@@ -148,33 +171,51 @@ export const MessageItem: React.FC<MessageItemProps> = ({
             <p className="text-xs opacity-70 mt-1">(edited)</p>
           )}
         </div>
-        {isOwn && !message.isDeleted && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align={isOwn ? 'end' : 'start'}>
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={() => setDeleteDialogOpen(true)}
-                disabled={isDeleting}
-              >
-                <Trash2 className="h-4 w-4" />
-                <span>Delete</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
         {!isOwn && <div className="w-6" />}
         </div>
         <p className="text-xs text-muted-foreground mt-1 px-2">
-          {formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}
+          {(() => {
+            if (message.isDeleted && message.deletedAt) {
+              const deletedAt = new Date(message.deletedAt);
+              const now = new Date();
+              const diffInSeconds = Math.floor((now.getTime() - deletedAt.getTime()) / 1000);
+              if (diffInSeconds < 60) {
+                return 'Deleted just now';
+              }
+              return `Deleted ${formatDistanceToNow(deletedAt, { addSuffix: true })}`;
+            }
+            
+            // Parse timestamp - handle both ISO strings and database timestamp formats
+            let createdAt: Date;
+            try {
+              const timestamp = message.createdAt;
+              // If timestamp doesn't have timezone info, assume it's UTC
+              if (typeof timestamp === 'string' && !timestamp.includes('Z') && !timestamp.includes('+') && !timestamp.includes('-', 10)) {
+                // Database timestamp without timezone - append Z to treat as UTC
+                createdAt = new Date(timestamp + 'Z');
+              } else {
+                createdAt = new Date(timestamp);
+              }
+            } catch (e) {
+              console.error('Error parsing timestamp:', message.createdAt, e);
+              createdAt = new Date();
+            }
+            
+            const now = new Date();
+            const diffInSeconds = Math.floor((now.getTime() - createdAt.getTime()) / 1000);
+            
+            // Show "just now" for messages less than 1 minute old
+            if (diffInSeconds < 60 && diffInSeconds >= 0) {
+              return 'just now';
+            }
+            
+            // If timestamp is in the future (timezone issue), show relative time anyway
+            if (diffInSeconds < 0) {
+              return formatDistanceToNow(createdAt, { addSuffix: true });
+            }
+            
+            return formatDistanceToNow(createdAt, { addSuffix: true });
+          })()}
           {message.isRead && isOwn && !message.isDeleted && ' • Read'}
         </p>
       </div>

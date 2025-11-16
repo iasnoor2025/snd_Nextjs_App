@@ -84,6 +84,8 @@ export async function GET(
         fileSize: messages.fileSize,
         replyToId: messages.replyToId,
         isEdited: messages.isEdited,
+        isDeleted: messages.isDeleted,
+        deletedAt: messages.deletedAt,
         createdAt: messages.createdAt,
         updatedAt: messages.updatedAt,
         sender: {
@@ -107,10 +109,42 @@ export async function GET(
     // Reverse to show oldest first
     const reversedMessages = messagesList.reverse();
 
+    // Ensure all timestamps are in ISO format (UTC)
+    const formattedMessages = reversedMessages.map(msg => {
+      // Helper to convert database timestamp to ISO string
+      const toISO = (ts: any): string | null => {
+        if (!ts) return null;
+        try {
+          // If it's already an ISO string, return it
+          if (typeof ts === 'string' && (ts.includes('Z') || ts.includes('+') || ts.includes('T'))) {
+            return new Date(ts).toISOString();
+          }
+          // If it's a database timestamp string without timezone, treat as UTC
+          if (typeof ts === 'string') {
+            // PostgreSQL timestamp format: "2025-11-16 07:38:30.123"
+            // Append 'Z' to treat as UTC
+            return new Date(ts + (ts.includes('Z') || ts.includes('+') ? '' : 'Z')).toISOString();
+          }
+          // If it's a Date object or number
+          return new Date(ts).toISOString();
+        } catch (e) {
+          console.error('Error converting timestamp:', ts, e);
+          return new Date().toISOString();
+        }
+      };
+
+      return {
+        ...msg,
+        createdAt: toISO(msg.createdAt) || new Date().toISOString(),
+        updatedAt: toISO(msg.updatedAt) || new Date().toISOString(),
+        deletedAt: toISO(msg.deletedAt),
+      };
+    });
+
     return NextResponse.json({
       success: true,
       data: {
-        messages: reversedMessages,
+        messages: formattedMessages,
         pagination: {
           hasMore: messagesList.length === perPage,
           nextCursor: messagesList.length > 0 ? messagesList[messagesList.length - 1].id : null,
@@ -180,7 +214,8 @@ export async function POST(
       return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
     }
 
-    // Create message
+    // Create message with explicit ISO timestamp
+    const now = new Date().toISOString();
     const [newMessage] = await db
       .insert(messages)
       .values({
@@ -192,7 +227,8 @@ export async function POST(
         fileName,
         fileSize,
         replyToId: replyToId ? parseInt(replyToId) : null,
-        updatedAt: sql`CURRENT_TIMESTAMP`,
+        createdAt: now,
+        updatedAt: now,
       })
       .returning();
 
@@ -247,13 +283,19 @@ export async function POST(
       // Don't fail the request if SSE broadcast fails
     }
 
+    // Ensure timestamps are in ISO format (already set above, but ensure consistency)
+    const formattedMessage = {
+      ...newMessage,
+      createdAt: newMessage.createdAt ? (typeof newMessage.createdAt === 'string' ? newMessage.createdAt : new Date(newMessage.createdAt).toISOString()) : now,
+      updatedAt: newMessage.updatedAt ? (typeof newMessage.updatedAt === 'string' ? newMessage.updatedAt : new Date(newMessage.updatedAt).toISOString()) : now,
+      deletedAt: newMessage.deletedAt ? (typeof newMessage.deletedAt === 'string' ? newMessage.deletedAt : new Date(newMessage.deletedAt).toISOString()) : null,
+      sender,
+      isRead: false,
+    };
+
     return NextResponse.json({
       success: true,
-      data: {
-        ...newMessage,
-        sender,
-        isRead: false,
-      },
+      data: formattedMessage,
     });
   } catch (error) {
     console.error('Error creating message:', error);

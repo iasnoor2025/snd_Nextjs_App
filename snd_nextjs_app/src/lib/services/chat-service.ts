@@ -18,6 +18,8 @@ export interface ChatMessage {
   fileSize?: number | null;
   replyToId?: number | null;
   isEdited: boolean;
+  isDeleted: boolean;
+  deletedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   sender: ChatUser;
@@ -130,10 +132,11 @@ export class ChatService {
   }
 
   // Delete a message
-  static async deleteMessage(messageId: number): Promise<void> {
-    await ApiService.delete(`/chat/messages/${messageId}`, {
+  static async deleteMessage(messageId: number): Promise<{ deletedAt: string }> {
+    const response = await ApiService.delete(`/chat/messages/${messageId}`, {
       errorMessage: 'Failed to delete message',
     });
+    return response.data;
   }
 
   // Mark message as read

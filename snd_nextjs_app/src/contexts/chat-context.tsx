@@ -174,7 +174,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   // Delete message
   const deleteMessage = useCallback(async (messageId: number, conversationId: number) => {
     try {
-      await ChatService.deleteMessage(messageId);
+      const response = await ChatService.deleteMessage(messageId);
+      const deletedAt = response?.deletedAt || new Date().toISOString();
 
       // Update message in local state to mark as deleted
       setMessages(prev => {
@@ -182,7 +183,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         const conversationMessages = newMap.get(conversationId) || [];
         const updated = conversationMessages.map(msg =>
           msg.id === messageId
-            ? { ...msg, isDeleted: true, content: 'This message was deleted.', deletedAt: new Date().toISOString() }
+            ? { ...msg, isDeleted: true, content: 'This message was deleted.', deletedAt }
             : msg
         );
         newMap.set(conversationId, updated);
