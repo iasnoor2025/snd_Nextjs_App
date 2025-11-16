@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useNotificationContext } from '@/contexts/notification-context';
-import { notify } from '@/lib/services/notification-service';
+import { notify } from '@/lib/services/notification-client';
 import React from 'react';
 import { useParams } from 'next/navigation';
 

@@ -1,4 +1,7 @@
-import { NotificationService } from './notification-service';
+'use server';
+
+import { NotificationService } from './notification-client';
+import { NotificationServerService } from './notification-server';
 
 /**
  * Helper functions to integrate approval notifications into your existing approval workflows
@@ -33,7 +36,7 @@ export class ApprovalNotificationHelper {
   ) {
     try {
       // Create notification in database
-      await NotificationService.createTimesheetApprovalNotification(
+      await NotificationServerService.createTimesheetApprovalNotification(
         managerEmail,
         employeeName,
         week,
@@ -64,7 +67,7 @@ export class ApprovalNotificationHelper {
   ) {
     try {
       // Create notification in database
-      await NotificationService.createLeaveApprovalNotification(
+      await NotificationServerService.createLeaveApprovalNotification(
         managerEmail,
         employeeName,
         leaveType,
@@ -96,7 +99,7 @@ export class ApprovalNotificationHelper {
   ) {
     try {
       // Create notification in database
-      await NotificationService.createAdvanceApprovalNotification(
+      await NotificationServerService.createAdvanceApprovalNotification(
         managerEmail,
         employeeName,
         amount,
@@ -127,7 +130,7 @@ export class ApprovalNotificationHelper {
   ) {
     try {
       // Create notification in database
-      await NotificationService.createEquipmentApprovalNotification(
+      await NotificationServerService.createEquipmentApprovalNotification(
         managerEmail,
         employeeName,
         equipmentType,
@@ -157,7 +160,7 @@ export class ApprovalNotificationHelper {
   ) {
     try {
       // Create notification in database
-      await NotificationService.createBulkApprovalNotification(
+      await NotificationServerService.createBulkApprovalNotification(
         managerEmail,
         itemType,
         count,

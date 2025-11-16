@@ -116,6 +116,28 @@ export async function GET(request: NextRequest) {
           displayName = otherParticipant?.name || otherParticipant?.email || 'Unknown';
         }
 
+        // Helper to convert database timestamp to ISO string
+        const toISO = (ts: any): string | null => {
+          if (!ts) return null;
+          try {
+            // If it's already an ISO string, return it
+            if (typeof ts === 'string' && (ts.includes('Z') || ts.includes('+') || ts.includes('T'))) {
+              return new Date(ts).toISOString();
+            }
+            // If it's a database timestamp string without timezone, treat as UTC
+            if (typeof ts === 'string') {
+              // PostgreSQL timestamp format: "2025-11-16 07:38:30.123"
+              // Append 'Z' to treat as UTC
+              return new Date(ts + (ts.includes('Z') || ts.includes('+') ? '' : 'Z')).toISOString();
+            }
+            // If it's a Date object or number
+            return new Date(ts).toISOString();
+          } catch (e) {
+            console.error('Error converting timestamp:', ts, e);
+            return new Date().toISOString();
+          }
+        };
+
         return {
           id: conv.id,
           type: conv.type,
@@ -125,13 +147,13 @@ export async function GET(request: NextRequest) {
             ? {
                 id: lastMessage.id,
                 content: lastMessage.content,
-                createdAt: lastMessage.createdAt,
+                createdAt: toISO(lastMessage.createdAt) || new Date().toISOString(),
                 senderId: lastMessage.senderId,
               }
             : null,
           unreadCount: Number(unreadMessages[0]?.count) || 0,
-          updatedAt: conv.updatedAt,
-          lastMessageAt: conv.lastMessageAt,
+          updatedAt: toISO(conv.updatedAt),
+          lastMessageAt: toISO(conv.lastMessageAt),
         };
       })
     );

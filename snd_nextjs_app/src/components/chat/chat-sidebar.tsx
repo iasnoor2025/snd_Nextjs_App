@@ -114,13 +114,48 @@ export const ChatSidebar: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
                         <p className="text-sm font-medium truncate">{displayName}</p>
-                        {conversation.lastMessage && (
-                          <span className="text-xs text-muted-foreground ml-2">
-                            {formatDistanceToNow(new Date(conversation.lastMessage.createdAt), {
-                              addSuffix: true,
-                            })}
-                          </span>
-                        )}
+                        {conversation.lastMessage && (() => {
+                          // Parse timestamp - handle timezone issues
+                          let createdAt: Date;
+                          try {
+                            const timestamp = conversation.lastMessage.createdAt;
+                            if (!timestamp) {
+                              createdAt = new Date();
+                            } else if (typeof timestamp === 'string') {
+                              // If it's already an ISO string with timezone, use it directly
+                              if (timestamp.includes('Z') || timestamp.includes('+') || timestamp.includes('T')) {
+                                createdAt = new Date(timestamp);
+                              } else {
+                                // Database timestamp without timezone - treat as UTC
+                                createdAt = new Date(timestamp + 'Z');
+                              }
+                            } else {
+                              createdAt = new Date(timestamp);
+                            }
+                            
+                            // Validate the date
+                            if (isNaN(createdAt.getTime())) {
+                              createdAt = new Date();
+                            }
+                          } catch (e) {
+                            console.error('Error parsing timestamp:', conversation.lastMessage.createdAt, e);
+                            createdAt = new Date();
+                          }
+                          
+                          const now = new Date();
+                          const diffInSeconds = Math.floor((now.getTime() - createdAt.getTime()) / 1000);
+                          
+                          // Show "just now" for messages less than 1 minute old
+                          if (diffInSeconds >= 0 && diffInSeconds < 60) {
+                            return <span className="text-xs text-muted-foreground ml-2">just now</span>;
+                          }
+                          
+                          return (
+                            <span className="text-xs text-muted-foreground ml-2">
+                              {formatDistanceToNow(createdAt, { addSuffix: true })}
+                            </span>
+                          );
+                        })()}
                       </div>
                       <div className="flex items-center justify-between">
                         <p className="text-xs text-muted-foreground truncate">

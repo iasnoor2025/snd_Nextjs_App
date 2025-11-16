@@ -78,8 +78,25 @@ const nextConfig = {
 
   // Webpack configuration for compatibility and performance
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
-    // Optimize bundle splitting only for client-side
+    // Exclude server-only packages from client bundle
     if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        dns: false,
+        child_process: false,
+      };
+
+      // Exclude pg and related packages from client bundle
+      config.externals = config.externals || [];
+      config.externals.push({
+        'pg': 'commonjs pg',
+        'pg-native': 'commonjs pg-native',
+        'drizzle-orm/node-postgres': 'commonjs drizzle-orm/node-postgres',
+      });
+
       config.optimization.splitChunks = {
         chunks: 'all',
         cacheGroups: {
