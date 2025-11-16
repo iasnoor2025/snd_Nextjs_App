@@ -22,7 +22,9 @@ export type SSEEventType =
   | 'chat:message_edited'
   | 'chat:message_deleted'
   | 'chat:typing'
-  | 'chat:read_receipt';
+  | 'chat:read_receipt'
+  | 'user:online'
+  | 'user:offline';
 
 export interface SSEEvent {
   type: SSEEventType;
@@ -63,16 +65,38 @@ export function sendEventToClient(controller: ReadableStreamDefaultController, e
   }
 }
 
+// Get online user IDs
+export function getOnlineUserIds(): (string | number)[] {
+  return Array.from(userConnections.keys());
+}
+
+// Check if user is online
+export function isUserOnline(userId: string | number): boolean {
+  return userConnections.has(userId) && userConnections.get(userId)!.size > 0;
+}
+
 // Register user connection
 export function registerUserConnection(
   userId: string | number,
   controller: ReadableStreamDefaultController
 ) {
+  const wasOffline = !isUserOnline(userId);
+  
   if (!userConnections.has(userId)) {
     userConnections.set(userId, new Set());
   }
   userConnections.get(userId)!.add(controller);
   connections.add(controller);
+
+  // Broadcast online status if user just came online
+  if (wasOffline) {
+    broadcastEvent({
+      type: 'user:online',
+      data: { userId },
+      timestamp: new Date().toISOString(),
+      id: `user-online-${userId}-${Date.now()}`,
+    });
+  }
 }
 
 // Unregister user connection
@@ -81,10 +105,22 @@ export function unregisterUserConnection(
   controller: ReadableStreamDefaultController
 ) {
   const userConns = userConnections.get(userId);
+  const wasOnline = isUserOnline(userId);
+  
   if (userConns) {
     userConns.delete(controller);
     if (userConns.size === 0) {
       userConnections.delete(userId);
+      
+      // Broadcast offline status if user just went offline
+      if (wasOnline) {
+        broadcastEvent({
+          type: 'user:offline',
+          data: { userId },
+          timestamp: new Date().toISOString(),
+          id: `user-offline-${userId}-${Date.now()}`,
+        });
+      }
     }
   }
   connections.delete(controller);

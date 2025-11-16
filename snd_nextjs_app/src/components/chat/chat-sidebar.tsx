@@ -13,7 +13,7 @@ import { useSession } from 'next-auth/react';
 import { NewConversationDialog } from './new-conversation-dialog';
 
 export const ChatSidebar: React.FC = () => {
-  const { conversations, currentConversation, selectConversation, loading, error } = useChat();
+  const { conversations, currentConversation, selectConversation, loading, error, isUserOnline } = useChat();
   const { data: session } = useSession();
   const [search, setSearch] = useState('');
   const [newConversationOpen, setNewConversationOpen] = useState(false);
@@ -78,10 +78,19 @@ export const ChatSidebar: React.FC = () => {
                 ) || conversation.participants[0];
               }
 
+              // Capitalize first letter of each word in the name
+              const capitalizeName = (name: string): string => {
+                if (!name) return name;
+                return name
+                  .split(' ')
+                  .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                  .join(' ');
+              };
+
               const displayName =
                 conversation.type === 'direct'
-                  ? otherParticipant?.name || otherParticipant?.email || 'Unknown'
-                  : conversation.name || 'Group Chat';
+                  ? capitalizeName(otherParticipant?.name || otherParticipant?.email || 'Unknown')
+                  : capitalizeName(conversation.name || 'Group Chat');
 
               const displayAvatar =
                 conversation.type === 'direct'
@@ -100,17 +109,28 @@ export const ChatSidebar: React.FC = () => {
                   )}
                 >
                   <div className="flex items-start gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={displayAvatar || undefined} />
-                      <AvatarFallback>
-                        {displayName
-                          .split(' ')
-                          .map(n => n[0])
-                          .join('')
-                          .toUpperCase()
-                          .slice(0, 2)}
-                      </AvatarFallback>
-                    </Avatar>
+                    <div className="relative">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={displayAvatar || undefined} />
+                        <AvatarFallback>
+                          {displayName
+                            .split(' ')
+                            .map(n => n[0])
+                            .join('')
+                            .toUpperCase()
+                            .slice(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
+                      {conversation.type === 'direct' && otherParticipant && (
+                        <div
+                          className={cn(
+                            'absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background',
+                            isUserOnline(otherParticipant.id) ? 'bg-green-500' : 'bg-gray-400'
+                          )}
+                          title={isUserOnline(otherParticipant.id) ? 'Online' : 'Offline'}
+                        />
+                      )}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
                         <p className="text-sm font-medium truncate">{displayName}</p>

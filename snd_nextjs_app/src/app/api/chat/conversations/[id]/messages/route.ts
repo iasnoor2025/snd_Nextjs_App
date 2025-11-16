@@ -7,6 +7,7 @@ import {
   messageReads,
   users,
 } from '@/lib/drizzle/schema';
+import { NotificationServerService } from '@/lib/services/notification-server';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -258,6 +259,54 @@ export async function POST(
       .select({ userId: conversationParticipants.userId })
       .from(conversationParticipants)
       .where(eq(conversationParticipants.conversationId, parseInt(id)));
+
+    // Get participant emails for notifications
+    const participantEmails = await db
+      .select({ email: users.email, userId: users.id })
+      .from(conversationParticipants)
+      .innerJoin(users, eq(users.id, conversationParticipants.userId))
+      .where(eq(conversationParticipants.conversationId, parseInt(id)));
+
+    // Create notifications for all participants except the sender
+    const senderName = sender.name || sender.email || 'Someone';
+    const messageContent = newMessage.content || (newMessage.fileUrl ? (newMessage.fileName || 'Sent an image') : 'Sent a message');
+
+    for (const participant of participantEmails) {
+      // Don't notify the sender
+      if (participant.userId !== currentUserId) {
+        try {
+          await NotificationServerService.createChatNotification(
+            participant.email,
+            senderName,
+            messageContent,
+            parseInt(id),
+            newMessage.id
+          );
+
+          // Also send notification via SSE
+          const { sendEventToUsers } = await import('@/lib/sse-utils');
+          sendEventToUsers(
+            [participant.userId],
+            {
+              type: 'system_notification',
+              data: {
+                type: 'chat',
+                title: `New message from ${senderName}`,
+                message: messageContent.length > 50 ? messageContent.substring(0, 50) + '...' : messageContent,
+                actionUrl: `/chat?conversation=${parseInt(id)}`,
+                conversationId: parseInt(id),
+                messageId: newMessage.id,
+              },
+              timestamp: new Date().toISOString(),
+              id: `chat-notification-${newMessage.id}-${participant.userId}`,
+            }
+          );
+        } catch (error) {
+          console.error(`Error creating notification for ${participant.email}:`, error);
+          // Don't fail the request if notification creation fails
+        }
+      }
+    }
 
     // Broadcast chat message event via SSE
     try {

@@ -109,6 +109,18 @@ export async function GET(request: NextRequest) {
             )
           );
 
+        // Get current user's participant info to check mute status
+        const currentUserParticipant = await db
+          .select({ isMuted: conversationParticipants.isMuted })
+          .from(conversationParticipants)
+          .where(
+            and(
+              eq(conversationParticipants.conversationId, conv.id),
+              eq(conversationParticipants.userId, currentUserId)
+            )
+          )
+          .limit(1);
+
         // For direct messages, get the other participant's name
         let displayName = conv.name;
         if (conv.type === 'direct' && participants.length === 2) {
@@ -154,6 +166,7 @@ export async function GET(request: NextRequest) {
           unreadCount: Number(unreadMessages[0]?.count) || 0,
           updatedAt: toISO(conv.updatedAt),
           lastMessageAt: toISO(conv.lastMessageAt),
+          isMuted: currentUserParticipant[0]?.isMuted || false,
         };
       })
     );

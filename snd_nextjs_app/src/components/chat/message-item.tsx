@@ -81,11 +81,22 @@ export const MessageItem: React.FC<MessageItemProps> = ({
       )}
       {showAvatar && isOwn && <div className="w-8" />}
       <div className={cn('flex flex-col max-w-[70%]', isOwn && 'items-end')}>
-        {showAvatar && (
-          <p className={cn('text-xs text-muted-foreground mb-1 px-2', isOwn && 'text-right')}>
-            {message.sender.name || message.sender.email}
-          </p>
-        )}
+        {showAvatar && (() => {
+          // Capitalize first letter of each word in the name
+          const capitalizeName = (name: string): string => {
+            if (!name) return name;
+            return name
+              .split(' ')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+              .join(' ');
+          };
+          const senderName = capitalizeName(message.sender.name || message.sender.email || 'Unknown');
+          return (
+            <p className={cn('text-xs text-muted-foreground mb-1 px-2', isOwn && 'text-right')}>
+              {senderName}
+            </p>
+          );
+        })()}
         <div className={cn('flex items-start gap-2', isOwn && 'flex-row-reverse')}>
           {isOwn && !message.isDeleted && (
             <DropdownMenu>

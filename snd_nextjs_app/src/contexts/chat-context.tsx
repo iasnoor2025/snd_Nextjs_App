@@ -21,6 +21,10 @@ interface ChatContextType {
   createConversation: (participantIds: number[], type?: 'direct' | 'group', name?: string) => Promise<number>;
   typingUsers: Map<number, Set<number>>; // conversationId -> Set of userIds
   setTyping: (conversationId: number, isTyping: boolean) => void;
+  onlineUsers: Set<number>; // Set of online user IDs
+  isUserOnline: (userId: number) => boolean;
+  muteConversation: (conversationId: number, muted: boolean) => Promise<void>;
+  deleteConversation: (conversationId: number) => Promise<void>;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -46,6 +50,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [typingUsers, setTypingUsers] = useState<Map<number, Set<number>>>(new Map());
+  const [onlineUsers, setOnlineUsers] = useState<Set<number>>(new Set());
   const typingTimeoutRef = useRef<Map<number, NodeJS.Timeout>>(new Map());
 
   // Fetch conversations
@@ -325,6 +330,24 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     const handleChatEvent = (event: CustomEvent) => {
       try {
         const data = event.detail;
+        
+        // Handle online/offline status
+        if (data.type === 'user:online' || data.type === 'user:offline') {
+          const userId = data.data?.userId;
+          if (userId) {
+            setOnlineUsers(prev => {
+              const newSet = new Set(prev);
+              if (data.type === 'user:online') {
+                newSet.add(Number(userId));
+              } else {
+                newSet.delete(Number(userId));
+              }
+              return newSet;
+            });
+          }
+          return;
+        }
+        
         if (data.type === 'chat:message' && data.data?.message) {
           const message: ChatMessage = data.data.message;
           const conversationId = data.data.conversationId;
@@ -373,12 +396,83 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     };
   }, [isConnected, currentConversation]);
 
+  // Fetch initial online status
+  const fetchOnlineStatus = useCallback(async () => {
+    try {
+      const response = await fetch('/api/chat/users/online');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && Array.isArray(result.data)) {
+          const onlineIds = new Set(result.data.map((u: any) => u.id));
+          setOnlineUsers(onlineIds);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch online status:', err);
+    }
+  }, []);
+
+  // Check if user is online
+  const isUserOnline = useCallback((userId: number): boolean => {
+    return onlineUsers.has(userId);
+  }, [onlineUsers]);
+
+  // Mute/unmute conversation
+  const muteConversation = useCallback(async (conversationId: number, muted: boolean) => {
+    try {
+      await ChatService.muteConversation(conversationId, muted);
+      
+      // Update conversation in local state
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.id === conversationId ? { ...conv, isMuted: muted } : conv
+        )
+      );
+
+      // Update current conversation if it's the one being muted
+      if (currentConversation?.id === conversationId) {
+        setCurrentConversation(prev => prev ? { ...prev, isMuted: muted } : null);
+      }
+    } catch (err) {
+      setError(`Failed to ${muted ? 'mute' : 'unmute'} conversation`);
+      console.error(err);
+      throw err;
+    }
+  }, [currentConversation]);
+
+  // Delete conversation
+  const deleteConversation = useCallback(async (conversationId: number) => {
+    try {
+      await ChatService.deleteConversation(conversationId);
+      
+      // Remove conversation from local state
+      setConversations(prev => prev.filter(conv => conv.id !== conversationId));
+      
+      // Clear current conversation if it's the one being deleted
+      if (currentConversation?.id === conversationId) {
+        setCurrentConversation(null);
+      }
+
+      // Remove messages for this conversation
+      setMessages(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(conversationId);
+        return newMap;
+      });
+    } catch (err) {
+      setError('Failed to delete conversation');
+      console.error(err);
+      throw err;
+    }
+  }, [currentConversation]);
+
   // Fetch conversations on mount
   useEffect(() => {
     if (session?.user?.email) {
       fetchConversations();
+      fetchOnlineStatus();
     }
-  }, [session, fetchConversations]);
+  }, [session, fetchConversations, fetchOnlineStatus]);
 
   return (
     <ChatContext.Provider
@@ -398,6 +492,10 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         createConversation,
         typingUsers,
         setTyping,
+        onlineUsers,
+        isUserOnline,
+        muteConversation,
+        deleteConversation,
       }}
     >
       {children}

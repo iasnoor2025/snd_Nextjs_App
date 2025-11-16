@@ -40,6 +40,7 @@ export interface ChatConversation {
   unreadCount: number;
   updatedAt: string;
   lastMessageAt?: string | null;
+  isMuted?: boolean;
 }
 
 export interface CreateConversationRequest {
@@ -156,6 +157,25 @@ export class ChatService {
       }
     );
     return response.data || [];
+  }
+
+  // Mute/unmute conversation
+  static async muteConversation(conversationId: number, muted: boolean): Promise<{ isMuted: boolean }> {
+    const response = await ApiService.post(
+      `/chat/conversations/${conversationId}/mute`,
+      { muted },
+      {
+        errorMessage: `Failed to ${muted ? 'mute' : 'unmute'} conversation`,
+      }
+    );
+    return response.data;
+  }
+
+  // Delete conversation (remove user from conversation)
+  static async deleteConversation(conversationId: number): Promise<void> {
+    await ApiService.delete(`/chat/conversations/${conversationId}`, {
+      errorMessage: 'Failed to delete conversation',
+    });
   }
 }
 

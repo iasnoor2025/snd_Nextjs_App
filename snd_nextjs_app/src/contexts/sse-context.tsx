@@ -104,6 +104,8 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
       case 'chat:message_deleted':
       case 'chat:typing':
       case 'chat:read_receipt':
+      case 'user:online':
+      case 'user:offline':
         // Dispatch chat events to window for chat context to listen
         window.dispatchEvent(
           new CustomEvent('chat-event', {

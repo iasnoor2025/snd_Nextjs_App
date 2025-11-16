@@ -1,4 +1,8 @@
-'use server';
+/**
+ * Notification Server Service
+ * This file is used in API routes, not as a server action.
+ * Do not add 'use server' directive to this file.
+ */
 
 import { getDb } from '@/lib/drizzle';
 import { notifications, users } from '@/lib/drizzle/schema';
@@ -74,6 +78,77 @@ export class NotificationServerService {
       };
     } catch (error) {
       console.error('Error creating approval notification:', error);
+      throw error;
+    }
+  }
+
+  // Create chat message notification
+  static async createChatNotification(
+    recipientEmail: string,
+    senderName: string,
+    messageContent: string,
+    conversationId: number,
+    messageId: number
+  ) {
+    try {
+      const db = getDb();
+      if (!db) {
+        throw new Error('Database connection failed');
+      }
+
+      // Try to get userId from email
+      let userId: number | null = null;
+      try {
+        const userResult = await db.select({ id: users.id }).from(users).where(eq(users.email, recipientEmail)).limit(1);
+        if (userResult.length > 0) {
+          userId = userResult[0].id;
+        }
+      } catch (error) {
+        console.warn('Could not find user by email for notification:', recipientEmail);
+      }
+
+      // Truncate message content for notification title
+      const truncatedContent = messageContent.length > 50 ? messageContent.substring(0, 50) + '...' : messageContent;
+
+      const result = await db
+        .insert(notifications)
+        .values({
+          userId: userId,
+          type: 'info',
+          title: `New message from ${senderName}`,
+          message: truncatedContent,
+          data: {
+            type: 'chat',
+            conversationId,
+            messageId,
+            senderName,
+          },
+          actionUrl: `/en/chat?conversation=${conversationId}`,
+          priority: 'medium',
+          userEmail: recipientEmail,
+          read: false,
+          updatedAt: sql`CURRENT_TIMESTAMP`,
+        })
+        .returning();
+
+      if (result.length === 0) {
+        throw new Error('Failed to create chat notification');
+      }
+
+      return {
+        id: String(result[0].id),
+        type: result[0].type as 'info' | 'success' | 'warning' | 'error',
+        title: result[0].title,
+        message: result[0].message,
+        data: result[0].data || {},
+        actionUrl: result[0].actionUrl || undefined,
+        priority: result[0].priority as 'low' | 'medium' | 'high',
+        userEmail: result[0].userEmail,
+        timestamp: new Date(result[0].createdAt),
+        read: result[0].read,
+      };
+    } catch (error) {
+      console.error('Error creating chat notification:', error);
       throw error;
     }
   }
