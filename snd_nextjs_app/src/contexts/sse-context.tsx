@@ -99,6 +99,18 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
       case 'customer_update':
         handleCustomerUpdate(data.payload);
         break;
+      case 'chat:message':
+      case 'chat:message_edited':
+      case 'chat:message_deleted':
+      case 'chat:typing':
+      case 'chat:read_receipt':
+        // Dispatch chat events to window for chat context to listen
+        window.dispatchEvent(
+          new CustomEvent('chat-event', {
+            detail: data,
+          })
+        );
+        break;
       default:
         // Handle unknown message types
         break;

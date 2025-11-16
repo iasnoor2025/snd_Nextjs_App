@@ -13,6 +13,7 @@ import {
   Layers,
   LayoutDashboard,
   MapPin,
+  MessageSquare,
   User,
   Users,
   Wrench,
@@ -145,6 +146,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: t('sidebar.documentManagement'),
       url: `/${locale}/document-management`,
       icon: FileText,
+    },
+    {
+      title: t('sidebar.chat'),
+      url: `/${locale}/chat`,
+      icon: MessageSquare,
     },
     {
       title: t('sidebar.userManagement'),

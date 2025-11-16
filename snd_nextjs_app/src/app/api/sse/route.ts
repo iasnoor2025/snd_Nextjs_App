@@ -1,5 +1,9 @@
 
 import { getServerSession } from '@/lib/auth';
+import { getDb } from '@/lib/drizzle';
+import { users } from '@/lib/drizzle/schema';
+import { registerUserConnection, unregisterUserConnection } from '@/lib/sse-utils';
+import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(_request: NextRequest) {
@@ -10,16 +14,35 @@ export async function GET(_request: NextRequest) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
+    // Get user ID from database
+    const db = getDb();
+    let userId: number | null = null;
+    if (db && session.user.email) {
+      const userResult = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.email, session.user.email))
+        .limit(1);
+      if (userResult.length > 0) {
+        userId = userResult[0].id;
+      }
+    }
+
     // Set SSE headers
     const response = new NextResponse(
       new ReadableStream({
         start(controller) {
+          // Register user connection
+          if (userId) {
+            registerUserConnection(userId, controller);
+          }
+
           // Send initial connection message
           const initialMessage = {
             type: 'connection',
             payload: {
               message: 'SSE connection established',
-              userId: session.user.id,
+              userId: userId || session.user.id,
               timestamp: new Date().toISOString(),
             },
           };
@@ -45,6 +68,9 @@ export async function GET(_request: NextRequest) {
           // Cleanup on close
           _request.signal.addEventListener('abort', () => {
             clearInterval(heartbeat);
+            if (userId) {
+              unregisterUserConnection(userId, controller);
+            }
             controller.close();
           });
         },

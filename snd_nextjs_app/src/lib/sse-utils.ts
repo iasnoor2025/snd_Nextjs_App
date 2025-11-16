@@ -3,6 +3,9 @@ import { ReadableStreamDefaultController } from 'stream/web';
 // Store active connections
 export const connections = new Set<ReadableStreamDefaultController>();
 
+// Store user-specific connections (userId -> Set of controllers)
+export const userConnections = new Map<string | number, Set<ReadableStreamDefaultController>>();
+
 // Event types for the rental management system
 export type SSEEventType =
   | 'rental_status_updated'
@@ -14,7 +17,12 @@ export type SSEEventType =
   | 'payroll_processed'
   | 'leave_request_updated'
   | 'system_notification'
-  | 'sync_progress';
+  | 'sync_progress'
+  | 'chat:message'
+  | 'chat:message_edited'
+  | 'chat:message_deleted'
+  | 'chat:typing'
+  | 'chat:read_receipt';
 
 export interface SSEEvent {
   type: SSEEventType;
@@ -53,4 +61,60 @@ export function sendEventToClient(controller: ReadableStreamDefaultController, e
   } catch (error) {
     
   }
+}
+
+// Register user connection
+export function registerUserConnection(
+  userId: string | number,
+  controller: ReadableStreamDefaultController
+) {
+  if (!userConnections.has(userId)) {
+    userConnections.set(userId, new Set());
+  }
+  userConnections.get(userId)!.add(controller);
+  connections.add(controller);
+}
+
+// Unregister user connection
+export function unregisterUserConnection(
+  userId: string | number,
+  controller: ReadableStreamDefaultController
+) {
+  const userConns = userConnections.get(userId);
+  if (userConns) {
+    userConns.delete(controller);
+    if (userConns.size === 0) {
+      userConnections.delete(userId);
+    }
+  }
+  connections.delete(controller);
+}
+
+// Send event to specific user(s)
+export function sendEventToUsers(userIds: (string | number)[], event: SSEEvent) {
+  const eventString =
+    `id: ${event.id || Date.now()}\n` +
+    `event: ${event.type}\n` +
+    `data: ${JSON.stringify(event)}\n` +
+    `retry: 3000\n\n`;
+
+  const sentTo = new Set<ReadableStreamDefaultController>();
+
+  userIds.forEach(userId => {
+    const userConns = userConnections.get(userId);
+    if (userConns) {
+      userConns.forEach(controller => {
+        if (!sentTo.has(controller)) {
+          try {
+            controller.enqueue(new TextEncoder().encode(eventString));
+            sentTo.add(controller);
+          } catch (error) {
+            // Connection closed, remove it
+            userConns.delete(controller);
+            connections.delete(controller);
+          }
+        }
+      });
+    }
+  });
 }

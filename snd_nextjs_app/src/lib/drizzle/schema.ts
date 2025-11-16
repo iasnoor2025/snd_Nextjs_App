@@ -1735,6 +1735,145 @@ export const notifications = pgTable(
   ]
 );
 
+export const conversations = pgTable(
+  'conversations',
+  {
+    id: serial().primaryKey().notNull(),
+    type: text().default('direct').notNull(), // 'direct' or 'group'
+    name: text(), // For group chats
+    createdBy: integer('created_by').references(() => users.id),
+    createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { precision: 3, mode: 'string' }).notNull(),
+    lastMessageAt: timestamp('last_message_at', { precision: 3, mode: 'string' }),
+  },
+  table => [
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'conversations_created_by_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+  ]
+);
+
+export const conversationParticipants = pgTable(
+  'conversation_participants',
+  {
+    id: serial().primaryKey().notNull(),
+    conversationId: integer('conversation_id')
+      .notNull()
+      .references(() => conversations.id, { onDelete: 'cascade' }),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    joinedAt: timestamp('joined_at', { precision: 3, mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    lastReadAt: timestamp('last_read_at', { precision: 3, mode: 'string' }),
+    isMuted: boolean('is_muted').default(false).notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.conversationId],
+      foreignColumns: [conversations.id],
+      name: 'conversation_participants_conversation_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('cascade'),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: 'conversation_participants_user_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('cascade'),
+  ]
+);
+
+export const messages = pgTable(
+  'messages',
+  {
+    id: serial().primaryKey().notNull(),
+    conversationId: integer('conversation_id')
+      .notNull()
+      .references(() => conversations.id, { onDelete: 'cascade' }),
+    senderId: integer('sender_id')
+      .notNull()
+      .references(() => users.id),
+    content: text().notNull(),
+    messageType: text('message_type').default('text').notNull(), // 'text', 'image', 'file', 'system'
+    fileUrl: text('file_url'),
+    fileName: text('file_name'),
+    fileSize: integer('file_size'),
+    replyToId: integer('reply_to_id').references(() => messages.id),
+    isEdited: boolean('is_edited').default(false).notNull(),
+    isDeleted: boolean('is_deleted').default(false).notNull(),
+    deletedAt: timestamp('deleted_at', { precision: 3, mode: 'string' }),
+    createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { precision: 3, mode: 'string' }).notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.conversationId],
+      foreignColumns: [conversations.id],
+      name: 'messages_conversation_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('cascade'),
+    foreignKey({
+      columns: [table.senderId],
+      foreignColumns: [users.id],
+      name: 'messages_sender_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('restrict'),
+    foreignKey({
+      columns: [table.replyToId],
+      foreignColumns: [messages.id],
+      name: 'messages_reply_to_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+  ]
+);
+
+export const messageReads = pgTable(
+  'message_reads',
+  {
+    id: serial().primaryKey().notNull(),
+    messageId: integer('message_id')
+      .notNull()
+      .references(() => messages.id, { onDelete: 'cascade' }),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    readAt: timestamp('read_at', { precision: 3, mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.messageId],
+      foreignColumns: [messages.id],
+      name: 'message_reads_message_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('cascade'),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: 'message_reads_user_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('cascade'),
+  ]
+);
+
 export const timeEntries = pgTable(
   'time_entries',
   {

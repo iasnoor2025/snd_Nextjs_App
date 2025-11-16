@@ -260,6 +260,13 @@
       "when": 1763277099982,
       "tag": "0036_chief_harrier",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1763277524325,
+      "tag": "0037_flawless_hercules",
+      "breakpoints": true
     }
   ]
 }
