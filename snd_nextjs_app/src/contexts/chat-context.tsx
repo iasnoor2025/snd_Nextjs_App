@@ -91,26 +91,13 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       const conversation = await ChatService.getConversation(conversationId);
       setCurrentConversation(conversation);
 
-      // Load messages if not already loaded (using functional update to check current state)
-      let shouldLoadMessages = false;
+      // Always load messages (they might have been updated)
+      const { messages: conversationMessages } = await ChatService.getMessages(conversationId);
       setMessages(prev => {
-        if (prev.has(conversationId)) {
-          shouldLoadMessages = false;
-          return prev; // Already loaded
-        }
-        shouldLoadMessages = true;
-        return prev;
+        const newMap = new Map(prev);
+        newMap.set(conversationId, conversationMessages);
+        return newMap;
       });
-
-      // Load messages if needed
-      if (shouldLoadMessages) {
-        const { messages: conversationMessages } = await ChatService.getMessages(conversationId);
-        setMessages(prev => {
-          const newMap = new Map(prev);
-          newMap.set(conversationId, conversationMessages);
-          return newMap;
-        });
-      }
 
       // Mark all messages in this conversation as read (and related notifications)
       try {
