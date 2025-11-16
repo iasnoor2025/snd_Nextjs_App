@@ -257,7 +257,7 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
   const stats = getStatistics();
 
   return (
-    <Card className="shadow-sm border border-gray-200 bg-white rounded-lg">
+    <Card className="shadow-sm">
       <CardHeader className="bg-muted/50 rounded-t-lg p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -306,7 +306,7 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
       <CardContent className="p-6">
         {/* Statistics Cards */}
         <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3 lg:grid-cols-6">
-          <div className="rounded-lg border bg-white p-4 shadow-sm">
+          <div className="rounded-lg border bg-card p-4 shadow-sm">
             <div className="flex items-center gap-2">
               <CreditCard className="h-4 w-4 text-primary" />
                              <span className="text-sm font-medium text-muted-foreground">{t('dashboard.employeeAdvance.statistics.totalAdvances')}</span>
@@ -314,49 +314,49 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
             <p className="text-2xl font-bold text-primary">{stats.totalAdvances}</p>
           </div>
 
-          <div className="rounded-lg border bg-white p-4 shadow-sm">
+          <div className="rounded-lg border bg-card p-4 shadow-sm">
             <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-yellow-600" />
+              <Clock className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
                              <span className="text-sm font-medium text-muted-foreground">{t('dashboard.employeeAdvance.statistics.pending')}</span>
             </div>
-            <p className="text-2xl font-bold text-yellow-600">{stats.pendingAdvances}</p>
+            <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-500">{stats.pendingAdvances}</p>
           </div>
 
-          <div className="rounded-lg border bg-white p-4 shadow-sm">
+          <div className="rounded-lg border bg-card p-4 shadow-sm">
             <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600" />
+              <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-500" />
                              <span className="text-sm font-medium text-muted-foreground">{t('dashboard.employeeAdvance.statistics.approved')}</span>
             </div>
-            <p className="text-2xl font-bold text-green-600">{stats.approvedAdvances}</p>
+            <p className="text-2xl font-bold text-green-600 dark:text-green-500">{stats.approvedAdvances}</p>
           </div>
 
-          <div className="rounded-lg border bg-white p-4 shadow-sm">
+          <div className="rounded-lg border bg-card p-4 shadow-sm">
             <div className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-blue-600" />
+              <DollarSign className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                              <span className="text-sm font-medium text-muted-foreground">{t('dashboard.employeeAdvance.statistics.totalAmount')}</span>
             </div>
-            <p className="text-2xl font-bold text-blue-600">SAR {stats.totalAmount.toFixed(2)}</p>
+            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">SAR {stats.totalAmount.toFixed(2)}</p>
           </div>
 
-          <div className="rounded-lg border bg-white p-4 shadow-sm">
+          <div className="rounded-lg border bg-card p-4 shadow-sm">
             <div className="flex items-center gap-2">
-              <CreditCard className="h-4 w-4 text-green-600" />
+              <CreditCard className="h-4 w-4 text-green-600 dark:text-green-500" />
                              <span className="text-sm font-medium text-muted-foreground">{t('dashboard.employeeAdvance.statistics.totalRepaid')}</span>
             </div>
-            <p className="text-2xl font-bold text-green-600">SAR {stats.totalRepaid.toFixed(2)}</p>
+            <p className="text-2xl font-bold text-green-600 dark:text-green-500">SAR {stats.totalRepaid.toFixed(2)}</p>
           </div>
 
-          <div className="rounded-lg border bg-white p-4 shadow-sm">
+          <div className="rounded-lg border bg-card p-4 shadow-sm">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-red-600" />
+              <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
                              <span className="text-sm font-medium text-muted-foreground">{t('dashboard.employeeAdvance.statistics.outstanding')}</span>
             </div>
-            <p className="text-2xl font-bold text-red-600">SAR {stats.outstandingBalance.toFixed(2)}</p>
+            <p className="text-2xl font-bold text-red-600 dark:text-red-400">SAR {stats.outstandingBalance.toFixed(2)}</p>
           </div>
         </div>
 
         {/* Advances Table */}
-        <Card className="mt-6 shadow-sm border border-gray-200 bg-white rounded-lg">
+        <Card className="mt-6 shadow-sm">
           <CardHeader className="bg-muted/50 rounded-t-lg p-4">
             <div className="flex items-center gap-2">
               <History className="h-5 w-5 text-primary" />
@@ -365,33 +365,33 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
+              <table className="min-w-full divide-y divide-border">
                 <thead className="bg-muted/50">
                   <tr>
-                                         <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                         <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
                        {t('dashboard.employeeAdvance.table.employee')}
                      </th>
-                                                              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                                              <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
                         {t('dashboard.employeeAdvance.table.amount')}
                       </th>
-                                                               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                                               <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
                         {t('dashboard.employeeAdvance.table.currentBalance')}
                       </th>
-                                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                          <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
                          {t('dashboard.employeeAdvance.table.reason')}
                        </th>
-                                         <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                         <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
                        {t('dashboard.employeeAdvance.table.date')}
                      </th>
-                                         <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                         <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
                        {t('dashboard.employeeAdvance.table.status')}
                      </th>
-                                         <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                         <th className="px-6 py-3 text-right text-xs font-medium text-foreground uppercase tracking-wider">
                        {t('dashboard.employeeAdvance.table.actions')}
                      </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-100">
+                <tbody className="bg-background divide-y divide-border">
                   {loading ? (
                                        <tr>
                      <td colSpan={6} className="px-6 py-8 text-center">
@@ -414,7 +414,7 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
                           <div className="flex items-center gap-2">
                             <User className="h-4 w-4 text-muted-foreground" />
                             <div>
-                                                             <div className="font-medium text-gray-900">
+                                                             <div className="font-medium text-foreground">
                                  {advance.employee?.first_name} {advance.employee?.last_name}
                                </div>
                                <div className="text-sm text-muted-foreground">
@@ -426,11 +426,11 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
                                                  <td className="px-6 py-4 whitespace-nowrap font-medium text-primary">
                            SAR {Number(advance.amount).toFixed(2)}
                          </td>
-                                                   <td className="px-6 py-4 whitespace-nowrap font-medium text-blue-600">
+                                                   <td className="px-6 py-4 whitespace-nowrap font-medium text-blue-600 dark:text-blue-400">
                             SAR {(Number(advance.amount) - Number(advance.repaidAmount || 0)).toFixed(2)}
                           </td>
-                         <td className="px-6 py-4 max-w-[200px] truncate">{advance.reason}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                         <td className="px-6 py-4 max-w-[200px] truncate text-foreground">{advance.reason}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-foreground">
                           {new Date(advance.createdAt).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -450,16 +450,16 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
                             }
                             className={
                               advance.status === 'approved'
-                                ? 'bg-green-100 text-green-800'
+                                ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
                                 : advance.status === 'pending'
-                                  ? 'bg-yellow-100 text-yellow-800'
+                                  ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
                                   : advance.status === 'rejected'
-                                    ? 'bg-red-100 text-red-800'
+                                    ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
                                     : advance.status === 'partially_repaid'
-                                      ? 'bg-blue-100 text-blue-800'
+                                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
                                       : advance.status === 'fully_repaid'
-                                        ? 'bg-green-100 text-green-800'
-                                        : 'bg-gray-100 text-gray-800'
+                                        ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                                        : 'bg-muted text-muted-foreground'
                             }
                           >
                             {advance.status.replace('_', ' ')}
@@ -522,7 +522,7 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
                             <Button
                               size="sm"
                               variant="outline"
-                              className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                              className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-700 dark:hover:text-red-300"
                               onClick={() => handleDeleteAdvance(advance.id)}
                             >
                               <Trash2 className="h-4 w-4" />
