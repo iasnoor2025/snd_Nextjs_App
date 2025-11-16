@@ -186,7 +186,7 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             <span className="ml-2">{t('dashboard.myTeam.loadingTeamMembers')}</span>
           </div>
         </CardContent>
@@ -206,7 +206,7 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <p className="text-red-600 mb-4">{error}</p>
+            <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
             <Button onClick={fetchTeamMembers} variant="outline">
               {t('dashboard.myTeam.actions.tryAgain')}
             </Button>
@@ -256,45 +256,45 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
       <CardContent>
         {teamMembers.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+            <Users className="h-12 w-12 mx-auto mb-4 text-gray-400 dark:text-gray-500" />
             <p className="text-lg font-medium">{t('dashboard.myTeam.noTeamMembers')}</p>
             <p className="text-sm">{t('dashboard.myTeam.noTeamMembersDescription')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-200">
-              <thead className="bg-gray-50">
+            <table className="w-full border-collapse border border-border">
+              <thead className="bg-muted/50">
                 <tr>
-                  <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
+                  <th className="border border-border px-4 py-3 text-left text-sm font-medium text-foreground">
                     {t('dashboard.myTeam.tableHeaders.fileNumber')}
                   </th>
-                  <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
+                  <th className="border border-border px-4 py-3 text-left text-sm font-medium text-foreground">
                     {t('dashboard.myTeam.tableHeaders.employee')}
                   </th>
-                  <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
+                  <th className="border border-border px-4 py-3 text-left text-sm font-medium text-foreground">
                     {t('dashboard.myTeam.tableHeaders.designation')}
                   </th>
-                  <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
+                  <th className="border border-border px-4 py-3 text-left text-sm font-medium text-foreground">
                     {t('dashboard.myTeam.tableHeaders.status')}
                   </th>
-                  <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
+                  <th className="border border-border px-4 py-3 text-left text-sm font-medium text-foreground">
                     {t('dashboard.myTeam.tableHeaders.currentAssignment')}
                   </th>
-                  <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
+                  <th className="border border-border px-4 py-3 text-left text-sm font-medium text-foreground">
                     {t('dashboard.myTeam.tableHeaders.timesheetStatus')}
                   </th>
-                  <th className="border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-700">
+                  <th className="border border-border px-4 py-3 text-left text-sm font-medium text-foreground">
                     {t('dashboard.myTeam.tableHeaders.actions')}
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-background divide-y divide-border">
                 {teamMembers.map((member) => (
-                  <tr key={member.id} className="hover:bg-gray-50">
-                    <td className="border border-gray-200 px-4 py-3 text-sm text-gray-900">
+                  <tr key={member.id} className="hover:bg-muted/20">
+                    <td className="border border-border px-4 py-3 text-sm text-foreground">
                       {member.file_number}
                     </td>
-                    <td className="border border-gray-200 px-4 py-3">
+                    <td className="border border-border px-4 py-3">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
                           <AvatarFallback className="bg-primary/10 text-primary text-xs">
@@ -303,21 +303,21 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <div className="font-medium text-gray-900" title={`${member.first_name} ${member.last_name}`}>
+                          <div className="font-medium text-foreground" title={`${member.first_name} ${member.last_name}`}>
                             {formatEmployeeName(member.first_name, member.last_name)}
 
                           </div>
-                          <div className="text-sm text-gray-500">{member.email}</div>
+                          <div className="text-sm text-muted-foreground">{member.email}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="border border-gray-200 px-4 py-3 text-sm text-gray-900">
+                    <td className="border border-border px-4 py-3 text-sm text-foreground">
                       {member.designation?.name || 'N/A'}
                     </td>
-                    <td className="border border-gray-200 px-4 py-3">
+                    <td className="border border-border px-4 py-3">
                       {getStatusBadge(member.status)}
                     </td>
-                    <td className="border border-gray-200 px-4 py-3 text-sm text-gray-900">
+                    <td className="border border-border px-4 py-3 text-sm text-foreground">
                       {member.current_assignment ? (
                         <div className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
@@ -327,7 +327,7 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
                                member.current_assignment.type === 'project' ? t('dashboard.myTeam.assignment.project') : 
                                member.current_assignment.type}
                             </div>
-                            <div className="text-gray-600">
+                            <div className="text-muted-foreground">
                               {member.current_assignment.type === 'rental' ? 
                                 (member.current_assignment.rental?.rental_number || t('dashboard.myTeam.assignment.rentalAssignment')) :
                                 member.current_assignment.type === 'project' ? 
@@ -338,15 +338,15 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                          <span className="text-gray-500">{t('dashboard.myTeam.assignment.notAssigned')}</span>
+                          <div className="w-2 h-2 bg-muted-foreground/50 rounded-full"></div>
+                          <span className="text-muted-foreground">{t('dashboard.myTeam.assignment.notAssigned')}</span>
                         </div>
                       )}
                     </td>
-                    <td className="border border-gray-200 px-4 py-3">
+                    <td className="border border-border px-4 py-3">
                       {getTimesheetStatusBadge(member.timesheet_status, member.last_timesheet_date)}
                     </td>
-                    <td className="border border-gray-200 px-4 py-3">
+                    <td className="border border-border px-4 py-3">
                       <Button
                         variant="outline"
                         size="sm"

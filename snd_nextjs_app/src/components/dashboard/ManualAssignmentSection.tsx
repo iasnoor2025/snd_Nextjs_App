@@ -956,33 +956,33 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                             <div className="overflow-x-auto">
                                 <table className="w-full border-collapse">
                                     <thead>
-                                        <tr className="border-b bg-muted/50">
-                                            <th className="text-left p-3 font-medium text-sm">{t('dashboard.manualAssignments.tableHeaders.fileNumber')}</th>
-                                            <th className="text-left p-3 font-medium text-sm">{t('dashboard.manualAssignments.tableHeaders.employeeName')}</th>
+                                        <tr className="border-b border-border bg-muted/50">
+                                            <th className="text-left p-3 font-medium text-sm text-foreground">{t('dashboard.manualAssignments.tableHeaders.fileNumber')}</th>
+                                            <th className="text-left p-3 font-medium text-sm text-foreground">{t('dashboard.manualAssignments.tableHeaders.employeeName')}</th>
                                             {!showAllEmployees && (
                                                 <>
-                                                    <th className="text-left p-3 font-medium text-sm">{t('dashboard.manualAssignments.tableHeaders.assignment')}</th>
-                                                    <th className="text-left p-3 font-medium text-sm">{t('dashboard.manualAssignments.tableHeaders.type')}</th>
-                                                    <th className="text-left p-3 font-medium text-sm">{t('dashboard.manualAssignments.tableHeaders.location')}</th>
-                                                    <th className="text-left p-3 font-medium text-sm">{t('dashboard.manualAssignments.tableHeaders.startDate')}</th>
-                                                    <th className="text-left p-3 font-medium text-sm">{t('dashboard.manualAssignments.tableHeaders.endDate')}</th>
-                                                    <th className="text-left p-3 font-medium text-sm">{t('dashboard.manualAssignments.tableHeaders.status')}</th>
+                                                    <th className="text-left p-3 font-medium text-sm text-foreground">{t('dashboard.manualAssignments.tableHeaders.assignment')}</th>
+                                                    <th className="text-left p-3 font-medium text-sm text-foreground">{t('dashboard.manualAssignments.tableHeaders.type')}</th>
+                                                    <th className="text-left p-3 font-medium text-sm text-foreground">{t('dashboard.manualAssignments.tableHeaders.location')}</th>
+                                                    <th className="text-left p-3 font-medium text-sm text-foreground">{t('dashboard.manualAssignments.tableHeaders.startDate')}</th>
+                                                    <th className="text-left p-3 font-medium text-sm text-foreground">{t('dashboard.manualAssignments.tableHeaders.endDate')}</th>
+                                                    <th className="text-left p-3 font-medium text-sm text-foreground">{t('dashboard.manualAssignments.tableHeaders.status')}</th>
                                                 </>
                                             )}
-                                            <th className="text-left p-3 font-medium text-sm">{t('dashboard.manualAssignments.tableHeaders.actions')}</th>
+                                            <th className="text-left p-3 font-medium text-sm text-foreground">{t('dashboard.manualAssignments.tableHeaders.actions')}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {showAllEmployees ? (
                                             // Show paginated employees when searching
                                             getCurrentPageEmployees().map(employee => (
-                                                    <tr key={employee.id} className="border-b hover:bg-muted/20">
-                                                        <td className="p-3 text-sm">
+                                                    <tr key={employee.id} className="border-b border-border hover:bg-muted/20">
+                                                        <td className="p-3 text-sm text-foreground">
                                                             <span className="font-mono bg-muted px-2 py-1 rounded text-xs">
                                                                 {employee.fileNumber || 'N/A'}
                                                             </span>
                                                         </td>
-                                                        <td className="p-3 text-sm">
+                                                        <td className="p-3 text-sm text-foreground">
                                                             <span className="font-medium">{employee.name}</span>
                                                         </td>
                                                         <td className="p-3 text-sm">
@@ -1018,13 +1018,13 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                                         ) : (
                                             // Show paginated assignments
                                             getCurrentPageAssignments().map(assignment => (
-                                                <tr key={assignment.id} className="border-b hover:bg-muted/20">
-                                                    <td className="p-3 text-sm">
+                                                <tr key={assignment.id} className="border-b border-border hover:bg-muted/20">
+                                                    <td className="p-3 text-sm text-foreground">
                                                         <span className="font-mono bg-muted px-2 py-1 rounded text-xs">
                                                             {assignment.employee?.fileNumber || 'N/A'}
                                                         </span>
                                                     </td>
-                                                    <td className="p-3 text-sm">
+                                                    <td className="p-3 text-sm text-foreground">
                                                         {allowAllEmployees && assignment.employee ? (
                                                             <span className="font-medium">{assignment.employee.name}</span>
                                                         ) : assignment.employee_id ? (
@@ -1033,7 +1033,7 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                                                             <span className="text-muted-foreground">Current User</span>
                                                         )}
                                                     </td>
-                                                    <td className="p-3 text-sm">
+                                                    <td className="p-3 text-sm text-foreground">
                                                         <div className="font-medium">{assignment.name || 'Unnamed Assignment'}</div>
                                                         {assignment.notes && (
                                                             <div className="text-xs text-muted-foreground mt-1">
@@ -1041,19 +1041,19 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                                                             </div>
                                                         )}
                                                     </td>
-                                                    <td className="p-3 text-sm">
+                                                    <td className="p-3 text-sm text-foreground">
                                                         {getTypeBadge(assignment.type) || <span className="text-muted-foreground">Unknown</span>}
                                                     </td>
-                                                    <td className="p-3 text-sm">
+                                                    <td className="p-3 text-sm text-foreground">
                                                         {assignment.location || 'Not specified'}
                                                     </td>
-                                                    <td className="p-3 text-sm">
+                                                    <td className="p-3 text-sm text-foreground">
                                                         {assignment.start_date ? formatDate(assignment.start_date) : 'Not set'}
                                                     </td>
-                                                    <td className="p-3 text-sm">
+                                                    <td className="p-3 text-sm text-foreground">
                                                         {assignment.end_date ? formatDate(assignment.end_date) : 'Ongoing'}
                                                     </td>
-                                                    <td className="p-3 text-sm">
+                                                    <td className="p-3 text-sm text-foreground">
                                                         {getStatusBadge(assignment.status) || <span className="text-muted-foreground">Unknown</span>}
                                                     </td>
                                                     <td className="p-3 text-sm">
