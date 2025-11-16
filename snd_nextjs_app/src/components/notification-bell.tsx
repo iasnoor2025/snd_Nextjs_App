@@ -174,7 +174,7 @@ export const NotificationBell: React.FC = () => {
               className="text-center text-sm text-blue-600 hover:text-blue-700 cursor-pointer"
               onClick={() => {
                 setIsOpen(false);
-                window.location.href = '/${locale}/notifications';
+                window.location.href = `/${locale}/notifications`;
               }}
             >
               {t('viewAllNotifications')}

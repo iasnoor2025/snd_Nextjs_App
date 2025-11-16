@@ -1,5 +1,8 @@
 
 import { getServerSession } from '@/lib/auth';
+import { getDb } from '@/lib/drizzle';
+import { notifications } from '@/lib/drizzle/schema';
+import { and, eq, sql } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
 export async function POST() {
@@ -10,19 +13,32 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // In a real application, you would update all notifications for this user in the database
-    // For now, we'll just return a success response
+    const db = getDb();
+    if (!db) {
+      return NextResponse.json({ error: 'Database connection failed' }, { status: 500 });
+    }
+
+    // Update all unread notifications for this user
+    const result = await db
+      .update(notifications)
+      .set({
+        read: true,
+        readAt: sql`CURRENT_TIMESTAMP`,
+        updatedAt: sql`CURRENT_TIMESTAMP`,
+      })
+      .where(and(eq(notifications.userEmail, session.user.email), eq(notifications.read, false)))
+      .returning();
 
     return NextResponse.json({
       success: true,
       message: 'All notifications marked as read',
       data: {
         user_email: session.user.email,
-        marked_count: 0, // In a real app, this would be the actual count
+        marked_count: result.length,
       },
     });
   } catch (error) {
-    
+    console.error('Error marking all notifications as read:', error);
     return NextResponse.json(
       { error: 'Failed to mark all notifications as read' },
       { status: 500 }

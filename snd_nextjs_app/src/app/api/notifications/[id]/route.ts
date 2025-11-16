@@ -1,5 +1,8 @@
 
 import { getServerSession } from '@/lib/auth';
+import { getDb } from '@/lib/drizzle';
+import { notifications } from '@/lib/drizzle/schema';
+import { and, eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
 export async function DELETE({ params }: { params: Promise<{ id: string }> }) {
@@ -16,8 +19,20 @@ export async function DELETE({ params }: { params: Promise<{ id: string }> }) {
       return NextResponse.json({ error: 'Notification ID is required' }, { status: 400 });
     }
 
-    // In a real application, you would delete the notification from the database
-    // For now, we'll just return a success response
+    const db = getDb();
+    if (!db) {
+      return NextResponse.json({ error: 'Database connection failed' }, { status: 500 });
+    }
+
+    // Delete the notification
+    const result = await db
+      .delete(notifications)
+      .where(and(eq(notifications.id, parseInt(id)), eq(notifications.userEmail, session.user.email)))
+      .returning();
+
+    if (result.length === 0) {
+      return NextResponse.json({ error: 'Notification not found' }, { status: 404 });
+    }
 
     return NextResponse.json({
       success: true,
@@ -28,7 +43,7 @@ export async function DELETE({ params }: { params: Promise<{ id: string }> }) {
       },
     });
   } catch (error) {
-    
+    console.error('Error deleting notification:', error);
     return NextResponse.json({ error: 'Failed to delete notification' }, { status: 500 });
   }
 }

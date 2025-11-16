@@ -1705,6 +1705,36 @@ export const users = pgTable(
   ]
 );
 
+export const notifications = pgTable(
+  'notifications',
+  {
+    id: serial().primaryKey().notNull(),
+    userId: integer('user_id'),
+    userEmail: text('user_email').notNull(),
+    type: text().default('info').notNull(), // info, success, warning, error
+    title: text().notNull(),
+    message: text().notNull(),
+    data: jsonb(),
+    actionUrl: text('action_url'),
+    priority: text().default('medium').notNull(), // low, medium, high
+    read: boolean().default(false).notNull(),
+    readAt: timestamp('read_at', { precision: 3, mode: 'string' }),
+    createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { precision: 3, mode: 'string' }).notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: 'notifications_user_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('cascade'),
+  ]
+);
+
 export const timeEntries = pgTable(
   'time_entries',
   {

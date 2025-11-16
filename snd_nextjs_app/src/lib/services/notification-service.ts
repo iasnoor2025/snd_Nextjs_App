@@ -1,5 +1,7 @@
+import { getDb } from '@/lib/drizzle';
+import { notifications, users } from '@/lib/drizzle/schema';
+import { eq, sql } from 'drizzle-orm';
 import { toast } from 'sonner';
-// import { notifications } from '@/lib/drizzle/schema';
 
 export interface NotificationOptions {
   title: string;
@@ -145,34 +147,57 @@ export class NotificationService {
     priority?: 'low' | 'medium' | 'high';
   }) {
     try {
-      // Notifications table doesn't exist in schema - commenting out database operation
-      // const result = await db.insert(notifications).values({
-      //   type: 'info',
-      //   title: data.title,
-      //   message: data.message,
-      //   data: data.data || {},
-      //   actionUrl: data.actionUrl,
-      //   priority: data.priority || 'medium',
-      //   userEmail: data.userEmail,
-      //   timestamp: new Date(),
-      //   read: false,
-      // }).returning();
+      const db = getDb();
+      if (!db) {
+        throw new Error('Database connection failed');
+      }
 
-      // Return a mock result for now
+      // Try to get userId from email
+      let userId: number | null = null;
+      try {
+        const userResult = await db.select({ id: users.id }).from(users).where(eq(users.email, data.userEmail)).limit(1);
+        if (userResult.length > 0) {
+          userId = userResult[0].id;
+        }
+      } catch (error) {
+        // If user lookup fails, continue without userId
+        console.warn('Could not find user by email for notification:', data.userEmail);
+      }
+
+      const result = await db
+        .insert(notifications)
+        .values({
+          userId: userId,
+          type: 'info',
+          title: data.title,
+          message: data.message,
+          data: data.data || {},
+          actionUrl: data.actionUrl,
+          priority: data.priority || 'medium',
+          userEmail: data.userEmail,
+          read: false,
+          updatedAt: sql`CURRENT_TIMESTAMP`,
+        })
+        .returning();
+
+      if (result.length === 0) {
+        throw new Error('Failed to create notification');
+      }
+
       return {
-        id: Date.now(),
-        type: 'info',
-        title: data.title,
-        message: data.message,
-        data: data.data || {},
-        actionUrl: data.actionUrl,
-        priority: data.priority || 'medium',
-        userEmail: data.userEmail,
-        timestamp: new Date(),
-        read: false,
+        id: String(result[0].id),
+        type: result[0].type as 'info' | 'success' | 'warning' | 'error',
+        title: result[0].title,
+        message: result[0].message,
+        data: result[0].data || {},
+        actionUrl: result[0].actionUrl || undefined,
+        priority: result[0].priority as 'low' | 'medium' | 'high',
+        userEmail: result[0].userEmail,
+        timestamp: new Date(result[0].createdAt),
+        read: result[0].read,
       };
     } catch (error) {
-      
+      console.error('Error creating approval notification:', error);
       throw error;
     }
   }

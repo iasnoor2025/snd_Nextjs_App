@@ -253,6 +253,13 @@
       "when": 1762252124355,
       "tag": "0035_add_periodic_examination_fields_to_equipment",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1763277099982,
+      "tag": "0036_chief_harrier",
+      "breakpoints": true
     }
   ]
 }
