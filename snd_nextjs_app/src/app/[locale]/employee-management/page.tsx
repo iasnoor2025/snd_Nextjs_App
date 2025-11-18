@@ -141,6 +141,7 @@ export default function EmployeeManagementPage() {
     projectAssignments: 0,
     rentalAssignments: 0,
     employeesOnLeave: 0,
+    externalEmployees: 0,
   });
 
 
@@ -258,6 +259,7 @@ export default function EmployeeManagementPage() {
             projectAssignments: ownEmployee.current_assignment?.type === 'project' ? 1 : 0,
             rentalAssignments: ownEmployee.current_assignment?.type === 'rental' ? 1 : 0,
             employeesOnLeave: 0, // Employee users can't see leave statistics
+            externalEmployees: ownEmployee.is_external ? 1 : 0,
           });
         } else {
           setStatistics({
@@ -266,6 +268,7 @@ export default function EmployeeManagementPage() {
             projectAssignments: 0,
             rentalAssignments: 0,
             employeesOnLeave: 0,
+            externalEmployees: 0,
           });
         }
       } else {
@@ -287,6 +290,7 @@ export default function EmployeeManagementPage() {
             rentalAssignments: employees.filter(emp => emp.current_assignment?.type === 'rental')
               .length,
             employeesOnLeave: 0, // Fallback doesn't calculate leave count
+            externalEmployees: employees.filter(emp => emp.is_external === true).length,
           });
         }
       }
@@ -301,6 +305,7 @@ export default function EmployeeManagementPage() {
         rentalAssignments: employees.filter(emp => emp.current_assignment?.type === 'rental')
           .length,
         employeesOnLeave: 0, // Fallback doesn't calculate leave count
+        externalEmployees: employees.filter(emp => emp.is_external === true).length,
       });
     }
   };
@@ -582,7 +587,7 @@ export default function EmployeeManagementPage() {
         </div>
 
         {/* Assignment Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -658,6 +663,22 @@ export default function EmployeeManagementPage() {
                 </div>
                 <div className="h-8 w-8 bg-yellow-100 rounded-full flex items-center justify-center">
                   <span className="text-yellow-600 text-sm">🏖️</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {t('employee.statistics.externalEmployees')}
+                  </p>
+                  <p className="text-2xl font-bold">{statistics.externalEmployees}</p>
+                </div>
+                <div className="h-8 w-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                  <span className="text-indigo-600 text-sm">🌐</span>
                 </div>
               </div>
             </CardContent>

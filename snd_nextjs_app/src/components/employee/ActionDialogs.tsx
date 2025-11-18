@@ -242,11 +242,11 @@ export default function ActionDialogs({
   };
 
   return (
-    <>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
       {/* Leave Request Dialog */}
       <Dialog open={leaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2">
+          <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2 w-full">
             <CalendarDays className="h-6 w-6 text-blue-600" />
             <span className="text-sm font-medium">{t('leave_request')}</span>
             <span className="text-xs text-muted-foreground">{t('leave_request_desc')}</span>
@@ -317,7 +317,7 @@ export default function ActionDialogs({
       {/* Advance Request Dialog */}
       <Dialog open={advanceDialogOpen} onOpenChange={setAdvanceDialogOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2">
+          <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2 w-full">
             <DollarSign className="h-6 w-6 text-green-600" />
             <span className="text-sm font-medium">{t('advance_request')}</span>
             <span className="text-xs text-muted-foreground">{t('advance_request_desc')}</span>
@@ -363,7 +363,7 @@ export default function ActionDialogs({
       {/* Timesheet Dialog */}
       <Dialog open={timesheetDialogOpen} onOpenChange={setTimesheetDialogOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2">
+          <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2 w-full">
             <Clock className="h-6 w-6 text-orange-600" />
             <span className="text-sm font-medium">{t('submit_timesheet')}</span>
             <span className="text-xs text-muted-foreground">{t('submit_timesheet_desc')}</span>
@@ -456,7 +456,7 @@ export default function ActionDialogs({
       {/* Document Upload Dialog */}
       <Dialog open={documentDialogOpen} onOpenChange={setDocumentDialogOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2">
+          <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2 w-full">
             <Upload className="h-6 w-6 text-purple-600" />
             <span className="text-sm font-medium">{t('upload_document')}</span>
             <span className="text-xs text-muted-foreground">{t('upload_document_desc')}</span>
@@ -517,8 +517,6 @@ export default function ActionDialogs({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-
-    </>
+    </div>
   );
 }

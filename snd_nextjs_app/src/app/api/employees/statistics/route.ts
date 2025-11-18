@@ -286,6 +286,13 @@ const getEmployeeStatisticsHandler = async () => {
       console.log('🔍 Employees on leave count:', employeesOnLeave);
     }
 
+    // Count external employees
+    const externalEmployeesRows = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(employees)
+      .where(eq(employees.isExternal, true));
+    const externalEmployees = Number((externalEmployeesRows as { count: number }[])[0]?.count ?? 0);
+
     const payload = {
       success: true,
       data: {
@@ -294,6 +301,7 @@ const getEmployeeStatisticsHandler = async () => {
         projectAssignments,
         rentalAssignments,
         employeesOnLeave,
+        externalEmployees,
       },
       message: 'Employee statistics retrieved successfully',
     } as const;

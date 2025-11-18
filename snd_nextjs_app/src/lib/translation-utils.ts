@@ -29,11 +29,12 @@ export function useDateFormat() {
  * Format currency according to the current locale
  */
 export function useCurrencyFormat() {
-  const { t } = useI18n();
+  const { isRTL } = useI18n();
 
   return (amount: number, currency = 'SAR', options?: Intl.NumberFormatOptions) => {
-    const locale = 'ar-SA'; // Use SAR currency locale
-    return new Intl.NumberFormat(locale, {
+    // Use 'en-US' for English locale, 'ar-SA' for Arabic locale
+    const formatLocale = isRTL ? 'ar-SA' : 'en-US';
+    return new Intl.NumberFormat(formatLocale, {
       style: 'currency',
       currency,
       ...options,

@@ -491,7 +491,8 @@
     "currentlyAssigned": "Currently Assigned",
     "projectAssignments": "Project Assignments",
     "rentalAssignments": "Rental Assignments",
-    "employeesOnLeave": "Employees on Leave"
+    "employeesOnLeave": "Employees on Leave",
+    "externalEmployees": "External Employees"
   },
 
   "sync": {

@@ -604,7 +604,8 @@
     "currentlyAssigned": "معين حالياً",
     "projectAssignments": "تعيينات المشاريع",
     "rentalAssignments": "تعيينات الإيجار",
-    "employeesOnLeave": "الموظفون في إجازة"
+    "employeesOnLeave": "الموظفون في إجازة",
+    "externalEmployees": "الموظفون الخارجيون"
   },
 
   "assignment": {
