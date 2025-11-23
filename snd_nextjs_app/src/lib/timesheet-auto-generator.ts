@@ -183,23 +183,19 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
         // Use assignment start date directly (no 3-month calculation)
         const effectiveStart = start;
 
-        // Log assignment details for debugging
-        console.log(`Processing assignment ${assignment.id}:`, {
-          employeeId,
-          startDate: effectiveStart.toDateString(),
-          effectiveEnd: effectiveEnd.toDateString(),
-        });
+        // Assignment details logged only when processing starts (in development mode)
 
         // Generate timesheets for each day in the period
         const currentDate = new Date(effectiveStart);
         let assignmentCreated = 0;
+        let assignmentSkipped = 0;
         let loopCount = 0;
         const maxLoopCount = 1000; // Safety check to prevent infinite loops
 
-        console.log(`Starting timesheet generation for assignment ${assignment.id}:`);
-        console.log(`  - Start date: ${effectiveStart.toDateString()}`);
-        console.log(`  - End date: ${effectiveEnd.toDateString()}`);
-        console.log(`  - Current date: ${currentDate.toDateString()}`);
+        // Only log assignment start in development mode
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`Processing assignment ${assignment.id} (employee ${employeeId}): ${effectiveStart.toDateString()} to ${effectiveEnd.toDateString()}`);
+        }
 
         while (currentDate <= effectiveEnd && loopCount < maxLoopCount) {
           loopCount++;
@@ -211,8 +207,6 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
             const day = String(currentDate.getDate()).padStart(2, '0');
             const dateString = `${year}-${month}-${day}`;
 
-            console.log(`  - Processing date: ${dateString} (loop ${loopCount})`);
-
             // Check for existing timesheet using raw SQL to avoid timezone issues
             const existingTimesheets = await db.execute(sql`
               SELECT id, employee_id, date, status 
@@ -222,11 +216,9 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
                 AND deleted_at IS NULL
             `);
 
-            console.log(`  - Existing timesheets found: ${existingTimesheets.rows?.length || 0}`);
-
             if (existingTimesheets.rows && existingTimesheets.rows.length > 0) {
-              // Skip if timesheet already exists
-              console.log(`  - Skipping ${dateString} - timesheet already exists`);
+              // Skip if timesheet already exists (no logging for skipped dates)
+              assignmentSkipped++;
               currentDate.setDate(currentDate.getDate() + 1);
               continue;
             }
@@ -265,9 +257,13 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
                 )
               `);
 
-
               created++;
               assignmentCreated++;
+              
+              // Only log when a timesheet is actually created
+              if (process.env.NODE_ENV === 'development') {
+                console.log(`  ✓ Created timesheet for ${dateString} (assignment ${assignment.id})`);
+              }
             } catch (insertError) {
               console.error(`Error creating timesheet for ${dateString}:`, insertError);
 
@@ -317,6 +313,11 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
           errors.push(
             `Assignment ${assignment.id}: Loop limit exceeded (${maxLoopCount}), possible infinite loop detected`
           );
+        }
+
+        // Log summary for assignment (only in development)
+        if (process.env.NODE_ENV === 'development' && (assignmentCreated > 0 || assignmentSkipped > 0)) {
+          console.log(`  Assignment ${assignment.id} complete: ${assignmentCreated} created, ${assignmentSkipped} skipped`);
         }
 
       } catch (assignmentError) {

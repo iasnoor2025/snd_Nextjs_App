@@ -37,7 +37,7 @@ import { format } from 'date-fns';
 import { BarChart3, Check, Edit, Eye, Filter, Play, Plus, Trash2, X } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRouter , useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
 import { useRBAC } from '@/lib/rbac/rbac-context';
@@ -74,18 +74,7 @@ export default function SalaryIncrementsPage() {
   const { hasPermission } = useRBAC();
   const { redirectToLogin } = useLoginRedirect();
 
-  useEffect(() => {
-    if (status === 'loading') return;
-
-    if (!session) {
-      redirectToLogin(true);
-      return;
-    }
-
-    loadData();
-  }, [filters, session, status, redirectToLogin]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -126,7 +115,19 @@ export default function SalaryIncrementsPage() {
     } finally {
       setLoading(false);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters]);
+
+  useEffect(() => {
+    if (status === 'loading') return;
+
+    if (!session) {
+      redirectToLogin(true);
+      return;
+    }
+
+    loadData();
+  }, [filters, session, status, loadData]);
 
   const handleFilterChange = (key: keyof SalaryIncrementFilters, value: any) => {
     setFilters(prev => ({

@@ -4,16 +4,16 @@ import { NextResponse } from 'next/server';
 import { i18n } from '@/lib/i18n-config';
 
 /**
- * Next.js 16 Middleware
+ * Next.js 16 Proxy
  * Compatible with Next.js 16 and Auth.js v5 (next-auth@5.0.0-beta.30)
  * Handles authentication, authorization, and internationalization routing
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
   // Only log in development
   if (process.env.NODE_ENV === 'development') {
-    console.log('🔍 Middleware triggered for path:', pathname);
+    console.log('🔍 Proxy triggered for path:', pathname);
   }
 
   // Allow static files from public folder (images, fonts, etc.)
@@ -22,7 +22,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Define public routes that should bypass middleware completely
+  // Define public routes that should bypass proxy completely
   const publicRoutes = [
     '/login',
     '/signup', 
@@ -114,7 +114,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(`/${locale}/reset-password`, request.url));
   }
 
-  // Check if it's an API route that should bypass middleware
+  // Check if it's an API route that should bypass proxy
   // Bypass ALL API routes - they handle their own auth and don't need locale prefixes
   if (pathname.startsWith('/api/')) {
     return NextResponse.next();
@@ -204,10 +204,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
 
   } catch (error) {
-    console.error('🔒 Middleware error:', error);
+    console.error('🔒 Proxy error:', error);
     
     // On error, allow access but log the issue
-    // This prevents the app from being completely broken due to middleware errors
+    // This prevents the app from being completely broken due to proxy errors
     return NextResponse.next();
   }
 }
@@ -304,8 +304,8 @@ function getLocale(request: NextRequest): string {
 }
 
 /**
- * Next.js 16 Middleware Configuration
- * Matcher pattern for routes that should be processed by middleware
+ * Next.js 16 Proxy Configuration
+ * Matcher pattern for routes that should be processed by proxy
  */
 export const config = {
   matcher: [
