@@ -22,11 +22,13 @@ import { useSession } from 'next-auth/react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useLoginRedirect } from '@/hooks/use-login-redirect';
 
 export default function EditSalaryIncrementPage() {
   const router = useRouter();
   const params = useParams();
   const { data: session, status } = useSession();
+  const { redirectToLogin } = useLoginRedirect();
   const locale = params?.locale as string || 'en';
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -50,12 +52,12 @@ export default function EditSalaryIncrementPage() {
     if (status === 'loading') return;
 
     if (!session) {
-      router.push('/login');
+      redirectToLogin(true);
       return;
     }
 
     loadIncrement();
-  }, [session, status, router]);
+  }, [session, status, redirectToLogin]);
 
   const loadIncrement = async () => {
     try {

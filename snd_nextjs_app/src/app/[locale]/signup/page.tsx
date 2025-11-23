@@ -12,9 +12,11 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/hooks/use-i18n';
+import { useLoginRedirect } from '@/hooks/use-login-redirect';
 
 export default function SignUpPage() {
   const { t } = useI18n();
+  const { redirectToLogin } = useLoginRedirect();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -95,7 +97,7 @@ export default function SignUpPage() {
       toast.success(t('auth.messages.accountCreatedSuccessfully'));
       
       // Redirect to login page
-      router.push('/login');
+      redirectToLogin(false);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : t('auth.messages.failedToCreateAccountRetry');
       toast.error(errorMessage);
@@ -257,7 +259,7 @@ export default function SignUpPage() {
               <p className="text-sm text-muted-foreground">
                 {t('auth.signup.alreadyHaveAccount')}{' '}
                 <button
-                  onClick={() => router.push('/login')}
+                  onClick={() => redirectToLogin(false)}
                   className="text-primary hover:underline font-medium"
                 >
                   {t('auth.signup.signIn')}

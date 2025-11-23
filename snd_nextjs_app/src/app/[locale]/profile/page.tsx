@@ -17,11 +17,13 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Eye, EyeOff, Lock, User, Save, X } from 'lucide-react';
+import { useLoginRedirect } from '@/hooks/use-login-redirect';
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { user, hasPermission, getAllowedActions } = useRBAC();
+  const { redirectToLogin } = useLoginRedirect();
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -114,10 +116,10 @@ export default function ProfilePage() {
   useEffect(() => {
     if (status === 'loading') return;
     if (!session) {
-      router.push('/login');
+      redirectToLogin(true);
       return;
     }
-  }, [session, status, router]);
+  }, [session, status, redirectToLogin]);
 
   // Fetch profile data when component mounts
   useEffect(() => {

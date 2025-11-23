@@ -41,6 +41,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
 import { useRBAC } from '@/lib/rbac/rbac-context';
+import { useLoginRedirect } from '@/hooks/use-login-redirect';
 
 export default function SalaryIncrementsPage() {
   const params = useParams();
@@ -71,17 +72,18 @@ export default function SalaryIncrementsPage() {
   const { data: session, status } = useSession();
   const { t } = useI18n();
   const { hasPermission } = useRBAC();
+  const { redirectToLogin } = useLoginRedirect();
 
   useEffect(() => {
     if (status === 'loading') return;
 
     if (!session) {
-      router.push('/login');
+      redirectToLogin(true);
       return;
     }
 
     loadData();
-  }, [filters, session, status, router]);
+  }, [filters, session, status, redirectToLogin]);
 
   const loadData = async () => {
     try {
@@ -102,7 +104,7 @@ export default function SalaryIncrementsPage() {
       // Check if it's an authentication error
       if (error instanceof Error && error.message.includes('401')) {
         toast.error(t('common.salaryIncrements.pleaseLogIn'));
-        router.push('/login');
+        redirectToLogin(true);
         return;
       }
 

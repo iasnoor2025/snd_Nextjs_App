@@ -8,6 +8,7 @@ import { GalleryVerticalEnd } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, Suspense } from 'react';
 import { toast } from 'sonner';
+import { useLoginRedirect } from '@/hooks/use-login-redirect';
 
 function ResetPasswordContent() {
   const [password, setPassword] = useState('');
@@ -16,6 +17,7 @@ function ResetPasswordContent() {
   const [isValidToken, setIsValidToken] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const router = useRouter();
+  const { redirectToLogin } = useLoginRedirect();
   const searchParams = useSearchParams();
 
   const token = searchParams.get('token');
@@ -85,7 +87,7 @@ function ResetPasswordContent() {
       }
       
       toast.success('Password reset successfully! You can now sign in with your new password.');
-      router.push('/login');
+      redirectToLogin(false);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to reset password. Please try again.';
       toast.error(errorMessage);
@@ -166,7 +168,7 @@ function ResetPasswordContent() {
               <p className="text-sm text-muted-foreground">
                 Remember your password?{' '}
                 <button
-                  onClick={() => router.push('/login')}
+                  onClick={() => redirectToLogin(false)}
                   className="text-primary hover:underline font-medium"
                 >
                   Sign in

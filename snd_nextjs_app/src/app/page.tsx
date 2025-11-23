@@ -77,12 +77,14 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo, useCallback, memo } from 'react';
 import { getUserAccessibleSectionsClient } from '@/lib/rbac/client-permission-service';
+import { useLoginRedirect } from '@/hooks/use-login-redirect';
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { t } = useI18n();
   const { hasPermission } = useRBAC();
+  const { redirectToLogin } = useLoginRedirect();
 
   // State for dashboard data - initialize with default values to prevent empty cards
   const [stats, setStats] = useState<any>({
@@ -173,10 +175,10 @@ export default function DashboardPage() {
   useEffect(() => {
     if (status === 'loading') return;
     if (!session) {
-      router.push('/login');
+      redirectToLogin(true);
       return;
     }
-  }, [session, status, router]);
+  }, [session, status, redirectToLogin]);
 
   // Set section visibility based on user permissions and saved preferences
   useEffect(() => {

@@ -19,7 +19,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { NationalityDropdown } from '@/components/shared/NationalityDropdown';
 import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
 import { SearchableSelect } from '@/components/ui/searchable-select';
-import { ArrowLeft, Calendar, Edit, IdCard, MapPin, Phone, Plus, Save, User } from 'lucide-react';
+import { ArrowLeft, Calendar, Edit, IdCard, MapPin, Phone, Plus, Save, User, Scan } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -98,6 +98,7 @@ export default function EditEmployeePage() {
   const { t } = useI18n(); 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [extractingNationality, setExtractingNationality] = useState(false);
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [designations, setDesignations] = useState<Designation[]>([]);
@@ -344,6 +345,56 @@ export default function EditEmployeePage() {
     // Use actual total days in current month
     const currentMonthDays = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
     return Math.round((basicSalary / (currentMonthDays * contractHours)) * 100) / 100;
+  };
+
+  const handleExtractNationality = async () => {
+    if (!params.id) return;
+
+    try {
+      setExtractingNationality(true);
+      const toastId = toast.loading('Extracting nationality from Iqama... This may take 10-30 seconds');
+      
+      const response = await fetch(`/api/employees/${params.id}/extract-nationality`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success(`Nationality extracted: ${result.employee.nationality}`, { id: toastId });
+        // Update form data with extracted nationality
+        setFormData(prev => ({
+          ...prev,
+          nationality: result.employee.nationality,
+        }));
+        // Refresh employee data
+        if (params.id) {
+          const empResponse = await fetch(`/api/employees/${params.id}`);
+          const empResult = await empResponse.json();
+          if (empResult.success && empResult.employee) {
+            setEmployee(empResult.employee);
+          }
+        }
+      } else {
+        if (response.status === 408) {
+          toast.error('Processing timeout. Please set nationality manually or try with a clearer image.', { id: toastId });
+        } else {
+          toast.error(result.message || result.error || 'Failed to extract nationality. Please set it manually.', { id: toastId });
+        }
+      }
+    } catch (error) {
+      console.error('Error extracting nationality:', error);
+      if (error instanceof Error && error.message.includes('timeout')) {
+        toast.error('Processing took too long. Please set nationality manually.');
+      } else {
+        toast.error('Failed to extract nationality from Iqama. Please set it manually.');
+      }
+    } finally {
+      setExtractingNationality(false);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -674,7 +725,29 @@ export default function EditEmployeePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="nationality">{t('employee.fields.nationality')}</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="nationality">{t('employee.fields.nationality')}</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleExtractNationality}
+                          disabled={extractingNationality}
+                          className="h-8"
+                        >
+                          <Scan className="h-4 w-4 mr-1" />
+                          {extractingNationality ? 'Extracting...' : 'Extract from Iqama'}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Extract nationality from uploaded Iqama image</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <NationalityDropdown
                   value={formData.nationality || ''}
                   onValueChange={(value) => handleInputChange('nationality', value)}

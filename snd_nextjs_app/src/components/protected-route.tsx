@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
+import { useLoginRedirect } from '@/hooks/use-login-redirect';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -28,15 +29,17 @@ export function ProtectedRoute({
   const router = useRouter();
   const { data: session, status } = useSession();
   const { t } = useI18n();
+  const { redirectToLogin } = useLoginRedirect();
 
   useEffect(() => {
     if (status === 'loading') return;
 
     if (!session) {
       toast.error(t('common.rbac.pleaseSignIn'));
-      router.push('/login');
+      // Use full reload for session expiry to ensure clean state
+      redirectToLogin(true);
     }
-  }, [session, status, router, t]);
+  }, [session, status, router, t, redirectToLogin]);
 
   // Show loading while checking authentication and permissions
   // isLoading now includes both session loading and permission loading

@@ -37,6 +37,7 @@ import { toast } from 'sonner';
 import { ProtectedRoute } from '@/components/protected-route';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { useCurrencyFormat } from '@/lib/translation-utils';
+import { useLoginRedirect } from '@/hooks/use-login-redirect';
 
 interface EmployeeDashboardData {
   employee: {
@@ -162,6 +163,7 @@ export default function EmployeeDashboard() {
   const { t } = useI18n();
   const { hasPermission } = useRBAC();
   const formatCurrency = useCurrencyFormat();
+  const { redirectToLogin } = useLoginRedirect();
   const [dashboardData, setDashboardData] = useState<EmployeeDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [documentDialogOpen, setDocumentDialogOpen] = useState(false);
@@ -173,7 +175,7 @@ export default function EmployeeDashboard() {
   useEffect(() => {
     if (status === 'loading') return;
     if (!session) {
-      router.push('/login');
+      redirectToLogin(true);
       return;
     }
     if (status === 'authenticated' && session?.user) {

@@ -26,6 +26,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter , useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useLoginRedirect } from '@/hooks/use-login-redirect';
 
 interface Employee {
   id: number;
@@ -84,15 +85,16 @@ export default function CreateSalaryIncrementPage() {
 
   const router = useRouter();
   const { data: session, status } = useSession();
+  const { redirectToLogin } = useLoginRedirect();
 
   useEffect(() => {
     if (status === 'loading') return;
 
     if (!session) {
-      router.push('/login');
+      redirectToLogin(true);
       return;
     }
-  }, [session, status, router]);
+  }, [session, status, redirectToLogin]);
 
   useEffect(() => {
     if (selectedEmployee) {

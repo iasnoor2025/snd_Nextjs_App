@@ -13,9 +13,11 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
+import { useLoginRedirect } from '@/hooks/use-login-redirect';
 
 export default function ForgotPasswordPage() {
   const { t } = useI18n();
+  const { redirectToLogin } = useLoginRedirect();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -91,7 +93,7 @@ export default function ForgotPasswordPage() {
                 </Button>
                 
                 <Button 
-                  onClick={() => router.push('/login')} 
+                  onClick={() => redirectToLogin(false)} 
                   className="w-full"
                 >
                   {t('auth.forgotPassword.backToLogin')}
@@ -150,7 +152,7 @@ export default function ForgotPasswordPage() {
               <p className="text-sm text-muted-foreground">
                 {t('auth.forgotPassword.rememberPassword')}{' '}
                 <button
-                  onClick={() => router.push('/login')}
+                  onClick={() => redirectToLogin(false)}
                   className="text-primary hover:underline font-medium"
                 >
                   {t('auth.signin.signIn')}
