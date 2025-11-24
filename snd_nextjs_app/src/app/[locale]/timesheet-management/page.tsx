@@ -62,7 +62,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { JSX, useEffect, useMemo, useRef, useState } from 'react';
 
 import { toast } from 'sonner';
 
