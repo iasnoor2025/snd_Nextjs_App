@@ -1,4 +1,3 @@
-
 import { db } from '@/lib/db';
 import { timesheets } from '@/lib/drizzle/schema';
 import { withPermission } from '@/lib/rbac/api-middleware';
@@ -7,11 +6,11 @@ import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 // POST /api/timesheets/[id]/mark-absent - Mark employee as absent
-export const POST = withPermission(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+export const POST = withPermission({ action: 'update', subject: 'Timesheet' })(
+  async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     try {
-
-      const timesheetId = parseInt(params.id);
+      const { id } = await params;
+      const timesheetId = parseInt(id);
       if (isNaN(timesheetId)) {
         return NextResponse.json({ error: 'Invalid timesheet ID' }, { status: 400 });
       }
@@ -70,7 +69,7 @@ export const POST = withPermission(
           },
         });
       } catch (error) {
-        
+
         return NextResponse.json(
           {
             error: `Failed to mark employee as absent: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -79,7 +78,7 @@ export const POST = withPermission(
         );
       }
     } catch (error) {
-      
+
       return NextResponse.json(
         {
           error: 'Internal server error',
@@ -87,6 +86,5 @@ export const POST = withPermission(
         { status: 500 }
       );
     }
-  },
-  { action: 'update', subject: 'Timesheet' }
+  }
 );
