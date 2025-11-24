@@ -69,6 +69,7 @@ export async function GET(request: NextRequest) {
         operator_id: rentalItems.operatorId,
         operator_first_name: operatorEmp.firstName,
         operator_last_name: operatorEmp.lastName,
+        operator_file_number: operatorEmp.fileNumber,
         item_status: rentalItems.status,
         item_start_date: rentalItems.startDate,
         item_completed_date: rentalItems.completedDate,
@@ -120,6 +121,7 @@ export async function GET(request: NextRequest) {
             operator_name: item.operator_first_name && item.operator_last_name
               ? `${item.operator_first_name} ${item.operator_last_name}`
               : item.operator_id ? `Employee ${item.operator_id}` : null,
+            operator_file_number: item.operator_file_number || null,
             item_status: item.item_status,
             item_start_date: item.item_start_date,
             item_completed_date: item.item_completed_date,

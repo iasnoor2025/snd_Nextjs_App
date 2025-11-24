@@ -792,9 +792,12 @@ export default function ReportingDashboardPage() {
                                     </TableCell>
                                     <TableCell>
                                       {equipment.operator_name ? (
-                                        <Badge variant="default">{equipment.operator_name}</Badge>
+                                        <span>
+                                          {equipment.operator_name}
+                                          {equipment.operator_file_number && ` (${equipment.operator_file_number})`}
+                                        </span>
                                       ) : (
-                                        <Badge variant="secondary">No Operator</Badge>
+                                        <span className="text-muted-foreground">No Operator</span>
                                       )}
                                     </TableCell>
                                     <TableCell>

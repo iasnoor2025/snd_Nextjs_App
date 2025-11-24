@@ -18,6 +18,7 @@ export interface SupervisorEquipmentReportData {
       customer_name: string | null;
       operator_id: number | null;
       operator_name: string | null;
+      operator_file_number: string | null;
       item_status: string;
       item_start_date: string | null;
       item_completed_date: string | null;
@@ -190,7 +191,9 @@ export class SupervisorEquipmentReportPDFService {
               equipment.customer_name || 'N/A',
               equipment.rental_number || 'N/A',
               equipment.rental_status || 'N/A',
-              equipment.operator_name || 'No Operator',
+              equipment.operator_name 
+                ? `${equipment.operator_name}${equipment.operator_file_number ? ` (${equipment.operator_file_number})` : ''}`
+                : 'No Operator',
               equipment.item_status || 'N/A',
               equipment.item_start_date ? new Date(equipment.item_start_date).toLocaleDateString() : 'N/A'
             ];
