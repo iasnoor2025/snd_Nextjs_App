@@ -19,6 +19,7 @@
     "manufacturer": "الشركة المصنعة",
     "status": "الحالة",
     "current_assignment": "التعيين الحالي",
+    "company_label": "الشركة",
     "daily_rate": "المعدل اليومي",
     "erpnext_id": "معرف ERPNext",
     "istimara": "الاستمارة",

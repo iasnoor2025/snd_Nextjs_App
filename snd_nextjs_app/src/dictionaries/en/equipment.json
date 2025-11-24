@@ -18,6 +18,7 @@
     "manufacturer": "Manufacturer",
     "status": "Status",
     "current_assignment": "Current Assignment",
+    "company_label": "Company",
     "daily_rate": "Daily Rate",
     "erpnext_id": "ERPNext ID",
     "istimara": "Plate #",

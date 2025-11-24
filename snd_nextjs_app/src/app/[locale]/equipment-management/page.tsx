@@ -42,6 +42,7 @@ import {
 } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 // i18n refactor: All user-facing strings now use useTranslation('equipment')
 import AddEquipmentModal from '@/components/equipment/AddEquipmentModal';
@@ -114,6 +115,8 @@ interface Equipment {
     rental?: {
       id: number;
       rental_number: string;
+      customer_id?: number;
+      customer_name?: string;
       project?: {
         id: number;
         name: string;
@@ -127,6 +130,23 @@ interface Equipment {
     } | null;
   } | null;
 }
+
+const MAX_COMPANY_DISPLAY_LENGTH = 40;
+
+const getShortCompanyName = (name?: string | null): string | null => {
+  if (!name) return null;
+  const trimmed = name.trim();
+  if (!trimmed) return null;
+
+  const segments = trimmed.split(/[-–—|]/);
+  const primary = segments[0]?.trim() || trimmed;
+
+  if (primary.length <= MAX_COMPANY_DISPLAY_LENGTH) {
+    return primary;
+  }
+
+  return `${primary.slice(0, MAX_COMPANY_DISPLAY_LENGTH - 3).trim()}...`;
+};
 
 export default function EquipmentManagementPage() {
   const { t, isRTL } = useI18n();
@@ -979,65 +999,84 @@ export default function EquipmentManagementPage() {
                             </TableCell>
                             <TableCell>{getStatusBadge(item)}</TableCell>
                             <TableCell>
-                              {item.current_assignment ? (
-                                <div className="space-y-1">
-                                  <div className="text-sm font-medium">
-                                    {item.current_assignment.employee?.full_name ||
-                                      item.current_assignment.project?.name ||
-                                      item.current_assignment.rental?.rental_number ||
-                                      t('equipment.equipment_management.assigned')}
+                              {item.current_assignment ? (() => {
+                                const assignment = item.current_assignment;
+                                const rawCompanyName = assignment.rental?.customer_name;
+                                const companyName = getShortCompanyName(rawCompanyName);
+                                const mainText =
+                                  companyName ||
+                                  assignment.employee?.full_name ||
+                                  assignment.project?.name ||
+                                  assignment.rental?.rental_number ||
+                                  t('equipment.equipment_management.assigned');
+
+                                const subtitleItems: ReactNode[] = [];
+
+                                if (assignment.project?.name === mainText && assignment.employee?.full_name) {
+                                  subtitleItems.push(
+                                    <div key="employee-from-project" className="text-xs text-muted-foreground">
+                                      Employee: {assignment.employee.full_name}
+                                    </div>
+                                  );
+                                }
+
+                                if (assignment.employee?.full_name === mainText && assignment.rental?.rental_number) {
+                                  subtitleItems.push(
+                                    <div key="rental-from-employee" className="text-xs text-muted-foreground">
+                                      Rental: {assignment.rental.rental_number}
+                                    </div>
+                                  );
+                                }
+
+                                if (assignment.employee?.full_name === mainText && assignment.project?.name) {
+                                  subtitleItems.push(
+                                    <div key="project-from-employee" className="text-xs text-muted-foreground">
+                                      Project: {assignment.project.name}
+                                    </div>
+                                  );
+                                }
+
+                                if (assignment.rental?.rental_number === mainText && assignment.employee?.full_name) {
+                                  subtitleItems.push(
+                                    <div key="employee-from-rental" className="text-xs text-muted-foreground">
+                                      Employee: {assignment.employee.full_name}
+                                    </div>
+                                  );
+                                }
+
+                                if (assignment.rental?.rental_number === mainText && assignment.project?.name) {
+                                  subtitleItems.push(
+                                    <div key="project-from-rental" className="text-xs text-muted-foreground">
+                                      Project: {assignment.project.name}
+                                    </div>
+                                  );
+                                }
+
+                                if (companyName && assignment.rental?.customer_name && companyName !== mainText) {
+                                  subtitleItems.push(
+                                    <div key="company-name" className="text-xs text-muted-foreground" title={assignment.rental.customer_name}>
+                                      {companyName}
+                                    </div>
+                                  );
+                                }
+
+                                if (!mainText && assignment.name) {
+                                  subtitleItems.push(
+                                    <div key="assignment-name" className="text-xs text-muted-foreground">
+                                      {assignment.name}
+                                    </div>
+                                  );
+                                }
+
+                                return (
+                                  <div className="space-y-1">
+                                    <div className="text-sm font-medium" title={companyName ? rawCompanyName || undefined : undefined}>
+                                      {mainText}
+                                    </div>
+                                    {subtitleItems.length > 0 ? <>{subtitleItems}</> : null}
                                   </div>
-                                  {/* Only show subtitle if there's additional context beyond what's in main text */}
-                                  {(() => {
-                                    const mainText = item.current_assignment.employee?.full_name || 
-                                                    item.current_assignment.project?.name || 
-                                                    item.current_assignment.rental?.rental_number || 
-                                                    '';
-                                    
-                                    // Show employee name in subtitle if main text is project name
-                                    if (item.current_assignment.project?.name === mainText && 
-                                        item.current_assignment.employee?.full_name) {
-                                      return <div className="text-xs text-muted-foreground">
-                                        Employee: {item.current_assignment.employee.full_name}
-                                      </div>;
-                                    }
-                                    
-                                    // Show rental number in subtitle if main text is employee name
-                                    if (item.current_assignment.employee?.full_name === mainText && 
-                                        item.current_assignment.rental?.rental_number) {
-                                      return <div className="text-xs text-muted-foreground">
-                                        Rental: {item.current_assignment.rental.rental_number}
-                                      </div>;
-                                    }
-                                    
-                                    // Show project name in subtitle if main text is employee name and there's a project
-                                    if (item.current_assignment.employee?.full_name === mainText && 
-                                        item.current_assignment.project?.name) {
-                                      return <div className="text-xs text-muted-foreground">
-                                        Project: {item.current_assignment.project.name}
-                                      </div>;
-                                    }
-                                    
-                                    // Show employee name in subtitle if main text is rental number
-                                    if (item.current_assignment.rental?.rental_number === mainText && 
-                                        item.current_assignment.employee?.full_name) {
-                                      return <div className="text-xs text-muted-foreground">
-                                        Employee: {item.current_assignment.employee.full_name}
-                                      </div>;
-                                    }
-                                    
-                                    // Show project name in subtitle if main text is rental number
-                                    if (item.current_assignment.rental?.rental_number === mainText && 
-                                        item.current_assignment.project?.name) {
-                                      return <div className="text-xs text-muted-foreground">
-                                        Project: {item.current_assignment.project.name}
-                                      </div>;
-                                    }
-                                    
-                                    return null;
-                                  })()}
-                                </div>
-                              ) : (
+                                );
+                              })() : (
                                 <span className="text-muted-foreground">
                                   {t('equipment.equipment_management.no_assignment')}
                                 </span>

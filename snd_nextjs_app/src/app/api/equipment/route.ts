@@ -7,6 +7,7 @@ import {
   equipmentDocuments,
   projects,
   rentals,
+  customers,
 } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { asc, eq, or, ilike, sql, desc, and, inArray } from 'drizzle-orm';
@@ -133,6 +134,7 @@ const getEquipmentHandler = async (request: NextRequest) => {
                 rental_id: rentals.id,
                 rental_number: rentals.rentalNumber,
                 rental_customer_id: rentals.customerId,
+                rental_customer_name: customers.name,
                 assignment_type: equipmentRentalHistory.assignmentType,
                 assignment_date: equipmentRentalHistory.startDate,
                 return_date: equipmentRentalHistory.endDate,
@@ -144,6 +146,7 @@ const getEquipmentHandler = async (request: NextRequest) => {
               .leftJoin(employees, eq(equipmentRentalHistory.employeeId, employees.id))
               .leftJoin(projects, eq(equipmentRentalHistory.projectId, projects.id))
               .leftJoin(rentals, eq(equipmentRentalHistory.rentalId, rentals.id))
+              .leftJoin(customers, eq(rentals.customerId, customers.id))
               .where(eq(equipmentRentalHistory.status, 'active'));
 
             // Transform the flat data to nested objects expected by frontend
@@ -164,6 +167,7 @@ const getEquipmentHandler = async (request: NextRequest) => {
                 id: assignment.rental_id,
                 rental_number: assignment.rental_number,
                 customer_id: assignment.rental_customer_id,
+                customer_name: assignment.rental_customer_name,
               } : null,
               type: assignment.assignment_type,
               assignment_date: assignment.assignment_date,
