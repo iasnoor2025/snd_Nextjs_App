@@ -1029,7 +1029,7 @@ export default function EmployeeManagementPage() {
                               )}
                             </div>
                                                          <div className="text-sm text-muted-foreground">
-                               {employee.designation?.name || t('employee.na')}
+                                {employee.designation || employee.designation_details?.name || t('employee.na')}
                              </div>
                           </div>
                         </TableCell>
