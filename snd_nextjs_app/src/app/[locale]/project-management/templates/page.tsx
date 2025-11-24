@@ -179,7 +179,7 @@ export default function ProjectTemplatesPage() {
       const response = await ApiService.post(`/project-templates/${template.id}/create-project`, {
         name: `${template.name} - New Project`,
         description: template.description,
-        budget: template.estimatedBudget,
+        budget: template.estimated_budget,
       });
 
       if (response.success) {

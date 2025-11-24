@@ -64,6 +64,12 @@ interface Employee {
   position?: string;
 }
 
+interface Project {
+  id: string;
+  name: string;
+  budget?: number;
+}
+
 export default function CreateProjectPage() {
   const router = useRouter();
   const { t } = useI18n();

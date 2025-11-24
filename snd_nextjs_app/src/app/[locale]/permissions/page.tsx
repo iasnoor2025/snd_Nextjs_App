@@ -177,7 +177,7 @@ export default function PermissionsPage() {
           </div>
           <div className="flex gap-2">
             <div className="text-sm text-muted-foreground">
-              {t('permissions:stats.permissionsCount', { count: permissions.length })} • {t('permissions:stats.rolesCount', { count: roles.length })}
+              {t('permissions:stats.permissionsCount', { count: String(permissions.length) })} • {t('permissions:stats.rolesCount', { count: String(roles.length) })}
             </div>
           </div>
         </div>

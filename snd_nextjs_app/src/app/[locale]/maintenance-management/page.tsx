@@ -61,6 +61,8 @@ export default function MaintenanceManagementPage() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedMaintenance, setSelectedMaintenance] = useState<MaintenanceRecord | null>(null);
   const [formData, setFormData] = useState({
     equipment_id: '',
     type: 'corrective' as 'scheduled' | 'corrective' | 'emergency' | 'inspection',

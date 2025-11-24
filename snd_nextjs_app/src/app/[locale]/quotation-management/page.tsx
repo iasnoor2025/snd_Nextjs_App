@@ -258,7 +258,7 @@ export default function QuotationManagementPage() {
                         </TableCell>
                         <TableCell>
                           <div>
-                            <div className="font-medium">{quotation.customer.companyName || quotation.customer.name}</div>
+                            <div className="font-medium">{quotation.customer.companyName || 'N/A'}</div>
                             <div className="text-sm text-gray-500">
                               {quotation.customer.contactPerson}
                             </div>
@@ -373,12 +373,12 @@ export default function QuotationManagementPage() {
                   </CardDescription>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-500">
-                    {t('quotation_management.showing_quotations', {
-                      from: quotations?.from || 0,
-                      to: quotations?.to || 0,
-                      total: quotations?.total || 0,
-                    })}
+                    <span className="text-sm text-gray-500">
+                     {t('quotation_management.showing_quotations', {
+                       from: String(quotations?.from || 0),
+                       to: String(quotations?.to || 0),
+                       total: String(quotations?.total || 0),
+                     })}
                   </span>
                 </div>
               </div>
@@ -404,12 +404,12 @@ export default function QuotationManagementPage() {
                         {quotation.quotation_number}
                       </TableCell>
                       <TableCell>
-                        <div>
-                          <div className="font-medium">{quotation.customer.companyName || quotation.customer.name}</div>
-                          <div className="text-sm text-gray-500">
-                            {quotation.customer.contactPerson}
-                          </div>
-                        </div>
+                         <div>
+                           <div className="font-medium">{quotation.customer.companyName || 'N/A'}</div>
+                           <div className="text-sm text-gray-500">
+                             {quotation.customer.contactPerson}
+                           </div>
+                         </div>
                       </TableCell>
                       <TableCell>{getStatusBadge(quotation.status)}</TableCell>
                       <TableCell>
@@ -476,12 +476,12 @@ export default function QuotationManagementPage() {
               {/* Pagination */}
               {quotations && quotations.last_page > 1 && (
                 <div className="flex items-center justify-between mt-6">
-                  <div className="text-sm text-gray-500">
-                    {t('quotation_management.showing_results', {
-                      from: quotations.from,
-                      to: quotations.to,
-                      total: quotations.total,
-                    })}
+                    <div className="text-sm text-gray-500">
+                     {t('quotation_management.showing_results', {
+                       from: String(quotations.from),
+                       to: String(quotations.to),
+                       total: String(quotations.total),
+                     })}
                   </div>
                   <div className="flex items-center space-x-2">
                     <Button
@@ -494,8 +494,8 @@ export default function QuotationManagementPage() {
                     </Button>
                     <span className="text-sm">
                       {t('quotation_management.page_of', {
-                        current: quotations.current_page,
-                        total: quotations.last_page,
+                        current: String(quotations.current_page),
+                        total: String(quotations.last_page),
                       })}
                     </span>
                     <Button

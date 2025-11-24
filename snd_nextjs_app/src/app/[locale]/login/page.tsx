@@ -18,36 +18,13 @@ export default function LoginPage() {
 
   // Redirect to home if already authenticated
   useEffect(() => {
-    if (status === 'loading') return;
-    if (status === 'error') return;
-
-    if (session) {
+    if (status === 'authenticated' && session) {
       // Get locale from params or default to 'en'
       const locale = (params?.locale as string) || 'en';
       // Redirect to locale-prefixed home page
       window.location.href = `/${locale}`;
     }
   }, [session, status, params]);
-
-  // Show error state if NextAuth fails completely
-  if (status === 'error') {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
-        <div className="text-center">
-          <div className="text-red-500 mb-4">⚠️ Authentication Error</div>
-          <p className="text-muted-foreground mb-4">
-            Failed to initialize authentication system. Please refresh the page.
-          </p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-          >
-            Refresh Page
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   if (status === 'loading') {
     return (

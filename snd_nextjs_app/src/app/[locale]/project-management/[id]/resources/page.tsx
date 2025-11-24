@@ -190,7 +190,8 @@ export default function ProjectResourcesPage() {
 
       // Fetch project details
       const projectResponse = await ApiService.get<{ data: Project }>(`/projects/${projectId}`);
-      setProject(projectResponse.data);
+      const projectData = (projectResponse.data as any)?.data || projectResponse.data;
+      setProject(projectData as Project);
 
       // Fetch all resource types using new specific endpoints
       const [manpowerResponse, equipmentResponse, materialsResponse, fuelResponse, expensesResponse, tasksResponse] = await Promise.all([
@@ -389,6 +390,9 @@ export default function ProjectResourcesPage() {
           break;
         case 'expense':
           await ApiService.delete(`/projects/${projectId}/expenses/${deleteResource.id}`);
+          break;
+        case 'tasks':
+          await ApiService.delete(`/projects/${projectId}/tasks/${deleteResource.id}`);
           break;
         default:
           throw new Error(`Unknown resource type: ${deleteResource.type}`);
@@ -1438,7 +1442,18 @@ export default function ProjectResourcesPage() {
          open={taskDialogOpen}
          onOpenChange={setTaskDialogOpen}
          projectId={projectId}
-         initialData={editingResource}
+         initialData={editingResource && editingResource.type === 'tasks' ? {
+           id: editingResource.id,
+           title: editingResource.title || editingResource.name || '',
+           description: editingResource.description || '',
+           status: editingResource.status,
+           priority: editingResource.priority || 'medium',
+           due_date: editingResource.due_date || '',
+           completion_percentage: editingResource.completion_percentage || 0,
+           assigned_to_id: editingResource.assigned_to_id || 'none',
+           assigned_to: editingResource.assigned_to,
+           notes: editingResource.notes || '',
+         } : null}
          onSuccess={() => handleResourceSuccess('tasks')}
        />
 

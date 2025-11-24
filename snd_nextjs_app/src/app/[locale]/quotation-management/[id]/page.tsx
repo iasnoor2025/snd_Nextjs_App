@@ -127,6 +127,8 @@ interface ApiResponse {
 }
 
 function QuotationDetailClient({ quotationId }: { quotationId: string }) {
+  const params = useParams();
+  const locale = params?.locale as string || 'en';
   const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error] = useState<string | null>(null);

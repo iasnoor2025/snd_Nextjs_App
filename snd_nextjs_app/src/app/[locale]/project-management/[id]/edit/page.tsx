@@ -170,7 +170,7 @@ export default function EditProjectPage() {
       setLoading(true);
 
       // Fetch project details
-      const projectResponse = (await ApiService.getProject(projectId)) as any;
+      const projectResponse = (await ApiService.getProject(Number(projectId))) as any;
       if (projectResponse.success) {
         const projectData = projectResponse.data;
         console.log('Project data received:', projectData);

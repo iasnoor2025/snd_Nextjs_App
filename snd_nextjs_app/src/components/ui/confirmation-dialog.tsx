@@ -21,6 +21,7 @@ interface ConfirmationDialogProps {
   variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
   onConfirm: () => void;
   onCancel?: () => void;
+  loading?: boolean;
 }
 
 export function ConfirmationDialog({
@@ -33,6 +34,7 @@ export function ConfirmationDialog({
   variant = 'default',
   onConfirm,
   onCancel,
+  loading = false,
 }: ConfirmationDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -48,6 +50,7 @@ export function ConfirmationDialog({
               onOpenChange(false);
               onCancel?.();
             }}
+            disabled={loading}
           >
             {cancelText}
           </Button>
@@ -57,8 +60,9 @@ export function ConfirmationDialog({
               onConfirm();
               onOpenChange(false);
             }}
+            disabled={loading}
           >
-            {confirmText}
+            {loading ? 'Loading...' : confirmText}
           </Button>
         </DialogFooter>
       </DialogContent>

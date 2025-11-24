@@ -547,14 +547,14 @@ export default function LeaveManagementPage() {
                 <div className="text-sm text-gray-500">
                   {leaveRequests.total > 0
                                          ? t('leave.showing_results', {
-                         start: (leaveRequests.current_page - 1) * leaveRequests.per_page + 1,
-                         end: Math.min(
-                           leaveRequests.current_page * leaveRequests.per_page,
-                           leaveRequests.total
-                         ),
-                         total: leaveRequests.total,
-                       })
-                     : t('leave.no_results_found')}
+                        start: String((leaveRequests.current_page - 1) * leaveRequests.per_page + 1),
+                        end: String(Math.min(
+                          leaveRequests.current_page * leaveRequests.per_page,
+                          leaveRequests.total
+                        )),
+                        total: String(leaveRequests.total),
+                      })
+                    : t('leave.no_results_found')}
                 </div>
                 {leaveRequests.last_page > 1 && (
                   <div className="flex items-center gap-2">

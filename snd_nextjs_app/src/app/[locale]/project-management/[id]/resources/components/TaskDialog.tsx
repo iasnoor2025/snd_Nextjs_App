@@ -123,7 +123,7 @@ export default function TaskDialog({
   const loadEmployees = async () => {
     try {
       const response = await ApiService.get<{ data: Employee[] }>('/employees');
-      const employeesData = response.data || [];
+      const employeesData = Array.isArray(response.data) ? response.data : (response.data?.data || []);
       setEmployees(employeesData);
     } catch (error) {
       // API service already handles fallback to mock data

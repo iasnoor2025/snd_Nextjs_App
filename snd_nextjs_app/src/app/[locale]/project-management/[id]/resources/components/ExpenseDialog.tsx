@@ -52,7 +52,7 @@ const EXPENSE_CATEGORIES = [
   { value: 'meals', label: 'Meals' },
   { value: 'utilities', label: 'Utilities' },
   { value: 'office_supplies', label: 'Office Supplies' },
-  { value: 'safety', label: t('common.navigation.safety') },
+  { value: 'safety', label: 'Safety' },
   { value: 'permits', label: 'Permits' },
   { value: 'other', label: 'Other' },
 ];
@@ -156,7 +156,7 @@ export default function ExpenseDialog({
         await ApiService.put(`/projects/${projectId}/expenses?id=${initialData.id}`, submitData);
         toast.success('Expense updated successfully');
       } else {
-        await ApiService.createProjectExpense(projectId, submitData);
+        await ApiService.createProjectExpense(Number(projectId), submitData);
         toast.success('Expense added successfully');
       }
 

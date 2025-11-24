@@ -512,7 +512,7 @@ export default function ProfilePage() {
                        No profile information found. Use the form below to add your details.
                      </p>
                    )}
-                   {formData.needsNationalId && (
+                   {!formData.nationalId && (
                      <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
                        <div className="flex">
                          <div className="flex-shrink-0">
@@ -533,7 +533,7 @@ export default function ProfilePage() {
                        </div>
                      </div>
                    )}
-                   {formData.employeeLinked && formData.employeeSource === 'nationalId' && (
+                   {formData.nationalId && (
                      <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
                        <div className="flex">
                          <div className="flex-shrink-0">
@@ -900,7 +900,7 @@ export default function ProfilePage() {
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-gray-500">Last Login</Label>
                     <p className="text-sm text-gray-900">
-                      {session?.user?.lastLoginAt ? new Date(session.user.lastLoginAt).toLocaleDateString() : 'N/A'}
+                      N/A
                     </p>
                   </div>
                 </div>

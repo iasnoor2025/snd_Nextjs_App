@@ -87,6 +87,7 @@ interface RentalItem {
   operatorId?: string;
   status?: string;
   notes?: string;
+  startDate?: string;
 }
 
 interface Payment {
@@ -153,6 +154,7 @@ interface Rental {
   hasTimesheet: boolean;
   hasOperators: boolean;
   supervisor?: string;
+  area?: string;
   createdAt: string;
   updatedAt: string;
   rentalItems?: RentalItem[];
@@ -179,7 +181,7 @@ interface TimelineEvent {
 }
 
 // Workflow Timeline Component
-function UnifiedTimeline({ rental, t }: { rental: Rental | null; t: any }) {
+function UnifiedTimeline({ rental, t, fetchRental }: { rental: Rental | null; t: any; fetchRental: () => Promise<void> }) {
   const confirmation = useRentalItemConfirmation();
   
   const generateTimelineEvents = (): TimelineEvent[] => {
@@ -782,6 +784,7 @@ export default function RentalDetailPage() {
     startDate: '',
     expectedEndDate: '',
     supervisor: '',
+    area: '',
     notes: '',
   });
 
@@ -1078,6 +1081,155 @@ export default function RentalDetailPage() {
   const [activeTab, setActiveTab] = useState('details');
   const confirmation = useRentalItemConfirmation();
 
+  // Fetch equipment names for rental items (needed by fetchRental)
+  const fetchEquipmentNames = async (rentalItems: any[]) => {
+    const equipmentIds = rentalItems
+      .filter(item => item.equipmentId && item.equipmentName?.startsWith('Equipment '))
+      .map(item => item.equipmentId);
+    
+    if (equipmentIds.length === 0) return;
+    
+    try {
+      // Use the existing equipment data if available, otherwise fetch all equipment
+      let equipmentData = equipment;
+      if (equipmentData.length === 0) {
+        const response = await fetch('/api/equipment?limit=1000');
+        if (response.ok) {
+          const data = await response.json();
+          equipmentData = data.data || data.equipment || [];
+          setEquipment(equipmentData);
+        }
+      }
+      
+      // Map equipment IDs to names
+      const namesMap: {[key: string]: string} = {};
+      equipmentIds.forEach(id => {
+        const eq = equipmentData.find((e: any) => e.id?.toString() === id.toString());
+        if (eq) {
+          namesMap[id] = eq.name || `Equipment ${id}`;
+        }
+      });
+      
+      setEquipmentNames(prev => ({ ...prev, ...namesMap }));
+    } catch (error) {
+      console.error('Failed to fetch equipment names:', error);
+    }
+  };
+
+  // Fetch rental invoices (try database first, then ERPNext)
+  const fetchRentalInvoices = async () => {
+    try {
+      // Try local database approach first (now that migration is complete)
+      const response = await fetch(`/api/rentals/${rentalId}/invoices`);
+      if (response.ok) {
+        const invoices = await response.json();
+        setRentalInvoices(invoices);
+        return;
+      }
+    } catch (error) {
+      console.error('Failed to fetch rental invoices from database:', error);
+    }
+
+    // Fallback: Try ERPNext-only approach
+    try {
+      const response = await fetch(`/api/rentals/${rentalId}/invoices-erpnext`);
+      if (response.ok) {
+        const invoices = await response.json();
+        // Transform ERPNext invoices to match our UI format
+        const transformedInvoices = invoices.map((invoice: any, index: number) => ({
+          id: index + 1,
+          invoiceId: invoice.name,
+          amount: invoice.grand_total || invoice.total || '0',
+          status: invoice.status || 'pending',
+          dueDate: invoice.due_date,
+          invoiceDate: invoice.posting_date
+        }));
+        setRentalInvoices(transformedInvoices);
+        return;
+      }
+    } catch (error) {
+      console.error('Failed to fetch invoices from ERPNext:', error);
+    }
+
+    // Final fallback: Use invoices from rental
+    if (rental?.invoices && rental.invoices.length > 0) {
+      setRentalInvoices(rental.invoices.map((invoice, index) => ({
+        id: invoice.id || String(index + 1),
+        invoiceId: invoice.invoiceNumber || invoice.id,
+        amount: invoice.amount,
+        status: invoice.status,
+        dueDate: undefined,
+        invoiceDate: undefined
+      })));
+    } else {
+      setRentalInvoices([]);
+    }
+  };
+
+  // Fetch rental payments
+  const fetchRentalPayments = async () => {
+    try {
+      const response = await fetch(`/api/rentals/${rentalId}/payments`);
+      if (response.ok) {
+        const payments = await response.json();
+        setRentalPayments(payments);
+      } else {
+        setRentalPayments([]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch rental payments:', error);
+      setRentalPayments([]);
+    }
+  };
+
+  // Fetch rental details
+  const fetchRental = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/rentals/${rentalId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch rental');
+      }
+      let data = await response.json();
+
+      // Recalculate financial totals from rental items ONLY if no invoice exists
+      // Once an invoice is generated, use the amounts from the database (ERPNext amounts)
+      if ((!data.invoices || data.invoices.length === 0) && data.rentalItems && data.rentalItems.length > 0) {
+        const financials = calculateFinancials(data.rentalItems);
+        data = { ...data, ...financials };
+      }
+
+      setRental(data);
+      
+      console.log('Rental data received:', data);
+      console.log('Rental items:', data.rentalItems);
+      if (data.rentalItems) {
+        data.rentalItems.forEach((item, index) => {
+          console.log(`Frontend Item ${index + 1}:`, {
+            id: item.id,
+            equipmentName: item.equipmentName,
+            startDate: item.startDate,
+            status: item.status
+          });
+        });
+      }
+      
+      // Fetch rental invoices and payments
+      fetchRentalInvoices();
+      fetchRentalPayments();
+      
+      // Fetch equipment names for rental items that have fallback names
+      if (data.rentalItems && data.rentalItems.length > 0) {
+        fetchEquipmentNames(data.rentalItems);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      toast.error('Failed to fetch rental details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Helper function to convert Decimal to number
   const formatAmount = (amount: any): string => {
     if (amount === null || amount === undefined) return '0';
@@ -1243,72 +1395,6 @@ export default function RentalDetailPage() {
     }
   };
 
-  // Fetch rental invoices (try database first, then ERPNext)
-  const fetchRentalInvoices = async () => {
-    try {
-      // Try local database approach first (now that migration is complete)
-      const response = await fetch(`/api/rentals/${rentalId}/invoices`);
-      if (response.ok) {
-        const invoices = await response.json();
-        setRentalInvoices(invoices);
-        return;
-      }
-    } catch (error) {
-      console.error('Failed to fetch rental invoices from database:', error);
-    }
-
-    // Fallback: Try ERPNext-only approach
-    try {
-      const response = await fetch(`/api/rentals/${rentalId}/invoices-erpnext`);
-      if (response.ok) {
-        const invoices = await response.json();
-        // Transform ERPNext invoices to match our UI format
-        const transformedInvoices = invoices.map((invoice: any, index: number) => ({
-          id: index + 1,
-          invoiceId: invoice.name,
-          amount: invoice.grand_total || invoice.total || '0',
-          status: invoice.status || 'pending',
-          dueDate: invoice.due_date,
-          invoiceDate: invoice.posting_date
-        }));
-        setRentalInvoices(transformedInvoices);
-        return;
-      }
-    } catch (error) {
-      console.error('Failed to fetch invoices from ERPNext:', error);
-    }
-
-    // Final fallback: Use single invoice from rental
-    if (rental?.invoiceId) {
-      setRentalInvoices([{
-        id: 1,
-        invoiceId: rental.invoiceId,
-        amount: rental.totalAmount,
-        status: rental.paymentStatus,
-        dueDate: rental.paymentDueDate,
-        invoiceDate: rental.invoiceDate
-      }]);
-    } else {
-      setRentalInvoices([]);
-    }
-  };
-
-  // Fetch rental payments
-  const fetchRentalPayments = async () => {
-    try {
-      const response = await fetch(`/api/rentals/${rentalId}/payments`);
-      if (response.ok) {
-        const payments = await response.json();
-        setRentalPayments(payments);
-      } else {
-        setRentalPayments([]);
-      }
-    } catch (error) {
-      console.error('Failed to fetch rental payments:', error);
-      setRentalPayments([]);
-    }
-  };
-
   // Fetch ERPNext invoice amount
   const fetchErpnextInvoiceAmount = async (invoiceId: string) => {
     try {
@@ -1384,54 +1470,6 @@ export default function RentalDetailPage() {
     }
   };
 
-  // Fetch rental details
-  const fetchRental = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`/api/rentals/${rentalId}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch rental');
-      }
-      let data = await response.json();
-
-      // Recalculate financial totals from rental items ONLY if no invoice exists
-      // Once an invoice is generated, use the amounts from the database (ERPNext amounts)
-      if (!data.invoiceId && data.rentalItems && data.rentalItems.length > 0) {
-        const financials = calculateFinancials(data.rentalItems);
-        data = { ...data, ...financials };
-      }
-
-      setRental(data);
-      
-      console.log('Rental data received:', data);
-      console.log('Rental items:', data.rentalItems);
-      if (data.rentalItems) {
-        data.rentalItems.forEach((item, index) => {
-          console.log(`Frontend Item ${index + 1}:`, {
-            id: item.id,
-            equipmentName: item.equipmentName,
-            startDate: item.startDate,
-            status: item.status
-          });
-        });
-      }
-      
-      // Fetch rental invoices and payments
-      fetchRentalInvoices();
-      fetchRentalPayments();
-      
-      // Fetch equipment names for rental items that have fallback names
-      if (data.rentalItems && data.rentalItems.length > 0) {
-        fetchEquipmentNames(data.rentalItems);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      toast.error('Failed to fetch rental details');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Fetch only rental items (for updates without full refresh)
   const fetchRentalItems = async () => {
     if (!rental) return;
@@ -1449,7 +1487,7 @@ export default function RentalDetailPage() {
         
         // Recalculate financial totals from rental items ONLY if no invoice exists
         let updatedRental = { ...prev, rentalItems: items };
-        if (!prev.invoiceId && items && items.length > 0) {
+        if ((!prev.invoices || prev.invoices.length === 0) && items && items.length > 0) {
           const financials = calculateFinancials(items);
           updatedRental = { ...updatedRental, ...financials };
         }
@@ -1478,38 +1516,6 @@ export default function RentalDetailPage() {
       setEquipment(data.data || data.equipment || []);
     } catch (err) {
       
-    }
-  };
-
-  // Fetch equipment names for rental items
-  const fetchEquipmentNames = async (rentalItems: any[]) => {
-    const equipmentIds = rentalItems
-      .filter(item => item.equipmentId && item.equipmentName?.startsWith('Equipment '))
-      .map(item => item.equipmentId);
-    
-    if (equipmentIds.length === 0) return;
-    
-    try {
-      // Use the existing equipment data if available, otherwise fetch all equipment
-      let equipmentData = equipment;
-      if (equipmentData.length === 0) {
-        const response = await fetch('/api/equipment?limit=1000');
-        if (response.ok) {
-          const data = await response.json();
-          equipmentData = data.data || data.equipment || data || [];
-        }
-      }
-      
-      const nameMap: {[key: string]: string} = {};
-      equipmentData.forEach((eq: any) => {
-        if (equipmentIds.includes(eq.id)) {
-          nameMap[eq.id.toString()] = eq.name;
-        }
-      });
-      
-      setEquipmentNames(prev => ({ ...prev, ...nameMap }));
-    } catch (error) {
-      console.error('Failed to fetch equipment names:', error);
     }
   };
 
@@ -2464,7 +2470,7 @@ export default function RentalDetailPage() {
                       </Button>
                       <Button 
                         onClick={generateMonthlyInvoice}
-                        disabled={!rental || rental.invoiceId}
+                        disabled={!rental || (rental.invoices && rental.invoices.length > 0)}
                         className="flex items-center gap-2"
                       >
                         <Receipt className="w-4 h-4" />
@@ -2507,7 +2513,7 @@ export default function RentalDetailPage() {
               )}
               
               {/* Unified Timeline */}
-              <UnifiedTimeline rental={rental} t={t} />
+              <UnifiedTimeline rental={rental} t={t} fetchRental={fetchRental} />
             </TabsContent>
 
             <TabsContent value="items" className="space-y-6">
