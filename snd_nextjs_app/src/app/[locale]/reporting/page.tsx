@@ -739,7 +739,6 @@ export default function ReportingDashboardPage() {
                               <TableHead className="w-16">Serial #</TableHead>
                               <TableHead>Equipment</TableHead>
                               <TableHead>Customer Name</TableHead>
-                              <TableHead>Rental Number</TableHead>
                               <TableHead>Rental Status</TableHead>
                               <TableHead>Operator</TableHead>
                               <TableHead>Item Status</TableHead>
@@ -748,8 +747,17 @@ export default function ReportingDashboardPage() {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {supervisor.equipment && supervisor.equipment.length > 0 ? (
-                              supervisor.equipment.map((equipment: any, equipmentIndex: number) => {
+                            {Array.isArray(supervisor.equipment) && supervisor.equipment.length > 0 ? (
+                              [...supervisor.equipment]
+                                .sort((a: any, b: any) => {
+                                  const nameA = (a?.customer_name || '').toLowerCase();
+                                  const nameB = (b?.customer_name || '').toLowerCase();
+                                  if (!nameA && !nameB) return 0;
+                                  if (!nameA) return 1;
+                                  if (!nameB) return -1;
+                                  return nameA.localeCompare(nameB);
+                                })
+                                .map((equipment: any, equipmentIndex: number) => {
                                 // Calculate global serial number
                                 let globalSerial = 1;
                                 for (let i = 0; i < supervisorIndex; i++) {
@@ -777,7 +785,6 @@ export default function ReportingDashboardPage() {
                                         </Tooltip>
                                       </TooltipProvider>
                                     </TableCell>
-                                    <TableCell>{equipment.rental_number || 'N/A'}</TableCell>
                                     <TableCell>
                                       <Badge variant={equipment.rental_status === 'active' ? 'default' : 'secondary'}>
                                         {equipment.rental_status || 'N/A'}
@@ -802,7 +809,7 @@ export default function ReportingDashboardPage() {
                               })
                             ) : (
                               <TableRow>
-                                <TableCell colSpan={9} className="text-center text-gray-500 py-4">
+                                <TableCell colSpan={8} className="text-center text-gray-500 py-4">
                                   No equipment assigned
                                 </TableCell>
                               </TableRow>
