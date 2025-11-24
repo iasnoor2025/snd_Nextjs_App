@@ -130,7 +130,8 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
       }
 
       const data = await response.json();
-      if (!data.success || !data.data || data.data.length === 0) {
+      console.log('Timesheets API response:', data);
+      if (!data.data || data.data.length === 0) {
         toast.error(`No pending timesheet found for ${employeeName}`);
         return;
       }
@@ -183,15 +184,29 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
     const lastTimesheet = new Date(lastDate);
     const daysDiff = Math.floor((today.getTime() - lastTimesheet.getTime()) / (1000 * 60 * 60 * 24));
 
+    let dateText = '';
     if (daysDiff === 0) {
-      return <Badge variant="default">{t('dashboard.myTeam.timesheetStatus.today')}</Badge>;
+      dateText = t('dashboard.myTeam.timesheetStatus.today');
     } else if (daysDiff === 1) {
-      return <Badge variant="secondary">{t('dashboard.myTeam.timesheetStatus.yesterday')}</Badge>;
-    } else if (daysDiff <= 3) {
-      return <Badge variant="outline">{t('dashboard.myTeam.timesheetStatus.daysAgo', { days: daysDiff })}</Badge>;
+      dateText = t('dashboard.myTeam.timesheetStatus.yesterday');
     } else {
-      return <Badge variant="destructive">{t('dashboard.myTeam.timesheetStatus.daysAgo', { days: daysDiff })}</Badge>;
+      dateText = t('dashboard.myTeam.timesheetStatus.daysAgo', { days: daysDiff });
     }
+
+    // Show status with date
+    const statusConfig: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
+      'pending': { variant: 'outline', label: `Pending (${dateText})` },
+      'submitted': { variant: 'outline', label: `Submitted (${dateText})` },
+      'foreman_approved': { variant: 'secondary', label: `Foreman Approved (${dateText})` },
+      'incharge_approved': { variant: 'secondary', label: `Incharge Approved (${dateText})` },
+      'checking_approved': { variant: 'secondary', label: `Checking Approved (${dateText})` },
+      'approved': { variant: 'default', label: `Approved (${dateText})` },
+      'rejected': { variant: 'destructive', label: `Rejected (${dateText})` },
+      'absent': { variant: 'destructive', label: `Absent (${dateText})` },
+    };
+
+    const config = statusConfig[status] || { variant: 'outline' as const, label: `${status} (${dateText})` };
+    return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
   const formatEmployeeName = (firstName: string, lastName: string) => {
