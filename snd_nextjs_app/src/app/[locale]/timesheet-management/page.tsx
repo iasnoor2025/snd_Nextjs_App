@@ -67,6 +67,17 @@ import { JSX, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useParams } from 'next/navigation';
+
+function useDebouncedValue<T>(value: T, delay = 400) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 interface Timesheet {
   id: string;
   employeeId: string;
@@ -135,6 +146,7 @@ export default function TimesheetManagementPage() {
     percentage: number;
   } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 400);
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedTimesheets, setSelectedTimesheets] = useState<Set<string>>(new Set());
   const [translatedNames, setTranslatedNames] = useState<{ [key: string]: string }>({});
@@ -252,8 +264,8 @@ export default function TimesheetManagementPage() {
         page: currentPage.toString(),
       });
 
-      if (searchTerm) {
-        params.append('search', searchTerm);
+      if (debouncedSearchTerm) {
+        params.append('search', debouncedSearchTerm);
       }
       if (statusFilter && statusFilter !== 'all') {
         params.append('status', statusFilter);
@@ -289,7 +301,11 @@ export default function TimesheetManagementPage() {
 
   useEffect(() => {
     fetchTimesheets();
-  }, [currentPage, pageSize, searchTerm, statusFilter, assignmentFilter, month]); // Add dependencies
+  }, [currentPage, pageSize, debouncedSearchTerm, statusFilter, assignmentFilter, month]); // Add dependencies
+
+  useEffect(() => {
+    setCurrentPage(prev => (prev === 1 ? prev : 1));
+  }, [debouncedSearchTerm, statusFilter, assignmentFilter, month]);
 
   // Trigger batch translation when timesheets data changes
   useEffect(() => {
