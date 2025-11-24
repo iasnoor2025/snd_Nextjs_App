@@ -6,7 +6,10 @@ import { employeeAssignments, employees, projects, users } from '@/lib/drizzle/s
 import { eq } from 'drizzle-orm';
 
 // POST /api/assignments/approve - Approve assignment at specific stage
-export const POST = withPermission(
+export const POST = withPermission({
+  action: 'approve',
+  subject: 'Assignment',
+})(
   async (request: NextRequest) => {
     try {
       const { assignmentId, approvalStage } = await request.json();
@@ -111,9 +114,5 @@ export const POST = withPermission(
       
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
-  },
-  {
-    action: 'approve',
-    subject: 'Assignment',
   }
 );

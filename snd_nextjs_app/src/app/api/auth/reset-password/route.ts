@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
         and(
           eq(passwordResetTokens.email, email),
           eq(passwordResetTokens.token, tokenHash),
-          gt(passwordResetTokens.expiresAt, new Date())
+          gt(passwordResetTokens.expiresAt, new Date().toISOString())
         )
       )
       .limit(1);
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       .update(usersTable)
       .set({
         password: hashedPassword,
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString(),
       })
       .where(eq(usersTable.email, email));
 

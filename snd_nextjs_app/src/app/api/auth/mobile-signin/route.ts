@@ -83,6 +83,7 @@ export async function POST(request: NextRequest) {
         jti: `mobile-${user.id}-${Date.now()}`,
       },
       secret: process.env.NEXTAUTH_SECRET || 'fallback-secret-key-for-development',
+      salt: '',
     });
 
     // Create response with session cookie

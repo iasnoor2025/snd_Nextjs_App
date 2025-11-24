@@ -105,6 +105,7 @@ const permissionCategories = {
 export default function EditRolePage() {
   const params = useParams();
   const router = useRouter();
+  const locale = params?.locale as string || 'en';
   const [role, setRole] = useState<Role | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -154,6 +155,7 @@ export default function EditRolePage() {
       }
 
       toast.success('Role updated successfully');
+      const locale = params?.locale as string || 'en';
       router.push(`/${locale}/user-management/role/${roleId}`);
     } catch (err) {
       toast.error('Failed to update role');
@@ -163,10 +165,12 @@ export default function EditRolePage() {
   };
 
   const handleBack = () => {
+    const locale = params?.locale as string || 'en';
     router.push(`/${locale}/user-management/role/${roleId}`);
   };
 
   const handleCancel = () => {
+    const locale = params?.locale as string || 'en';
     router.push(`/${locale}/user-management/role/${roleId}`);
   };
 

@@ -6,7 +6,10 @@ import { advancePayments, employees, users } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 
 // POST /api/advances/approve - Approve advance at specific stage
-export const POST = withPermission(
+export const POST = withPermission({
+  action: 'approve',
+  subject: 'Advance',
+})(
   async (request: NextRequest) => {
     try {
       const { advanceId, approvalStage, notes } = await request.json();
@@ -164,9 +167,5 @@ export const POST = withPermission(
       
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
-  },
-  {
-    action: 'approve',
-    subject: 'Advance',
   }
 );

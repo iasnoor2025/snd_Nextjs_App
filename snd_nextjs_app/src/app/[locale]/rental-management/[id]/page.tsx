@@ -3576,7 +3576,7 @@ export default function RentalDetailPage() {
                                       const handoverStartDay = handoverStartInMonth.getDate();
                                       const handoverEndDay = handoverEndInMonth.getDate();
                                       const handoverDays = handoverEndDay - handoverStartDay + 1;
-                                      const handoverAmount = (parseFloat(handoverItem.unitPrice || 0) || 0) * Math.max(handoverDays, 0);
+                                      const handoverAmount = (Number(handoverItem.unitPrice) || 0) * Math.max(handoverDays, 0);
                                       acc[monthKey].totalAmount += handoverAmount;
                                     }
                                   }

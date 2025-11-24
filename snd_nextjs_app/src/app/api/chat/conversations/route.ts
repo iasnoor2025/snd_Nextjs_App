@@ -56,8 +56,7 @@ export async function GET(request: NextRequest) {
       .select()
       .from(conversations)
       .where(inArray(conversations.id, conversationIds))
-      .orderBy(desc(conversations.lastMessageAt))
-      .orderBy(desc(conversations.updatedAt));
+      .orderBy(desc(conversations.lastMessageAt), desc(conversations.updatedAt));
 
     // Get participants and last messages for each conversation
     const conversationsWithParticipants = await Promise.all(

@@ -55,8 +55,8 @@ export async function POST(request: NextRequest) {
         roleId: roleId,
         status: 1,
         isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: new Date().toISOString().split('T')[0],
+        updatedAt: new Date().toISOString().split('T')[0],
       })
       .returning({
         id: usersTable.id,

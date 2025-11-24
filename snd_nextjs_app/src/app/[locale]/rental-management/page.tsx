@@ -126,6 +126,12 @@ interface Rental {
   createdAt: string;
   updatedAt: string;
   rentalItems?: RentalItem[];
+  supervisor?: string;
+  area?: string;
+  supervisor_details?: {
+    name: string;
+    file_number: string;
+  };
 }
 
 interface Filters {
@@ -135,6 +141,7 @@ interface Filters {
   endDate?: string;
   customerId?: string;
   paymentStatus?: string;
+  area?: string;
 }
 
 // Helper function to get first two words of a name

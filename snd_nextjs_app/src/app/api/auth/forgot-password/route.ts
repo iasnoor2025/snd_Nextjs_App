@@ -46,8 +46,8 @@ export async function POST(request: NextRequest) {
     await db.insert(passwordResetTokens).values({
       email: user.email,
       token: resetTokenHash,
-      expiresAt: expiresAt,
-      createdAt: new Date(),
+      expiresAt: expiresAt.toISOString(),
+      createdAt: new Date().toISOString(),
     });
 
     // Send reset email

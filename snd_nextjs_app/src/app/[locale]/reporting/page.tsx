@@ -46,9 +46,9 @@ import { useState } from 'react';
 import { useI18n } from '@/hooks/use-i18n';
 import { toast } from 'sonner';
 import React from 'react';
-import { EquipmentReportPDFService } from '@/lib/services/equipment-report-pdf-service';
+import { EquipmentReportPDFService, EquipmentReportData } from '@/lib/services/equipment-report-pdf-service';
 import { EquipmentReportExcelService } from '@/lib/services/equipment-report-excel-service';
-import { SupervisorEquipmentReportPDFService } from '@/lib/services/supervisor-equipment-report-pdf-service';
+import { SupervisorEquipmentReportPDFService, SupervisorEquipmentReportData } from '@/lib/services/supervisor-equipment-report-pdf-service';
 import { SupervisorEquipmentReportExcelService } from '@/lib/services/supervisor-equipment-report-excel-service';
 
 interface ReportData {
@@ -1003,12 +1003,12 @@ export default function ReportingDashboardPage() {
       
       if (selectedReport === 'equipment_by_category') {
         await EquipmentReportPDFService.downloadEquipmentReportPDF(
-          reportData,
+          reportData as unknown as EquipmentReportData,
           `equipment-report-${new Date().toISOString().split('T')[0]}.pdf`
         );
       } else if (selectedReport === 'supervisor_equipment') {
         await SupervisorEquipmentReportPDFService.downloadSupervisorEquipmentReportPDF(
-          reportData,
+          reportData as unknown as SupervisorEquipmentReportData,
           `supervisor-equipment-report-${new Date().toISOString().split('T')[0]}.pdf`
         );
       }
@@ -1036,12 +1036,12 @@ export default function ReportingDashboardPage() {
       
       if (selectedReport === 'equipment_by_category') {
         await EquipmentReportExcelService.downloadEquipmentReportExcel(
-          reportData,
+          reportData as unknown as EquipmentReportData,
           `equipment-report-${new Date().toISOString().split('T')[0]}.xlsx`
         );
       } else if (selectedReport === 'supervisor_equipment') {
         await SupervisorEquipmentReportExcelService.downloadSupervisorEquipmentReportExcel(
-          reportData,
+          reportData as unknown as SupervisorEquipmentReportData,
           `supervisor-equipment-report-${new Date().toISOString().split('T')[0]}.xlsx`
         );
       }

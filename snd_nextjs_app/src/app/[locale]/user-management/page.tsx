@@ -74,6 +74,7 @@ interface Role {
   createdAt: string;
   updatedAt: string;
   userCount?: number;
+  priority?: number;
 }
 
 interface Permission {

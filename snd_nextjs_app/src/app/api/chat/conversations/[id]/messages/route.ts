@@ -217,7 +217,7 @@ export async function POST(
 
     // Create message with explicit ISO timestamp
     const now = new Date().toISOString();
-    const [newMessage] = await db
+    const newMessages = await db
       .insert(messages)
       .values({
         conversationId: parseInt(id),
@@ -232,6 +232,7 @@ export async function POST(
         updatedAt: now,
       })
       .returning();
+    const newMessage = newMessages[0];
 
     // Update conversation's lastMessageAt
     await db

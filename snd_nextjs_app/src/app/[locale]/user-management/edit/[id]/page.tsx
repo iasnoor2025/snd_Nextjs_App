@@ -43,9 +43,9 @@ export default function EditUserPage() {
   const [error, setError] = useState<string | null>(null);
 
   const userId = params.id as string;
+  const locale = params?.locale as string || 'en';
 
   useEffect(() => {
-  const locale = params?.locale as string || 'en';
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -95,6 +95,7 @@ export default function EditUserPage() {
       }
 
       toast.success('User updated successfully');
+      const locale = params?.locale as string || 'en';
       router.push(`/${locale}/user-management/${userId}`);
     } catch (err) {
       toast.error('Failed to update user');
@@ -104,10 +105,12 @@ export default function EditUserPage() {
   };
 
   const handleBack = () => {
+    const locale = params?.locale as string || 'en';
     router.push(`/${locale}/user-management/${userId}`);
   };
 
   const handleCancel = () => {
+    const locale = params?.locale as string || 'en';
     router.push(`/${locale}/user-management/${userId}`);
   };
 

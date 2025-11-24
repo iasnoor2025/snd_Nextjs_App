@@ -544,6 +544,7 @@ export const passwordResetTokens = pgTable('password_reset_tokens', {
   email: text().primaryKey().notNull(),
   token: text().notNull(),
   createdAt: date('created_at'),
+  expiresAt: date('expires_at'),
 });
 
 export const sessions = pgTable('sessions', {

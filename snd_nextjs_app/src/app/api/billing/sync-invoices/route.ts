@@ -172,7 +172,6 @@ export async function GET(_request: NextRequest) {
         invoiceDate: rentals.invoiceDate,
         paymentStatus: rentals.paymentStatus,
         outstandingAmount: rentals.outstandingAmount,
-        lastErpNextSync: rentals.lastErpNextSync
       })
       .from(rentals)
       .where(sql`${rentals.invoiceId} IS NOT NULL`);

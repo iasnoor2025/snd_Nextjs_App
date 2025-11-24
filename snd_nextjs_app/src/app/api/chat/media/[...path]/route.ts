@@ -60,7 +60,7 @@ export async function GET(
 
     const buffer = await response.Body.transformToByteArray();
 
-    return new NextResponse(buffer, {
+    return new NextResponse(Buffer.from(buffer), {
       headers: {
         'Content-Type': contentType,
         'Cache-Control': 'public, max-age=31536000, immutable',
