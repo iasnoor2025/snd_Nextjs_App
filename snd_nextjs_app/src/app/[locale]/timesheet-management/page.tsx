@@ -139,6 +139,7 @@ export default function TimesheetManagementPage() {
   const { user, hasPermission } = useRBAC();
   const [timesheets, setTimesheets] = useState<PaginatedResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tableRefreshing, setTableRefreshing] = useState(false);
   const [autoGenerating, setAutoGenerating] = useState(false);
   const [autoGenerationProgress, setAutoGenerationProgress] = useState<{
     current: number;
@@ -258,7 +259,12 @@ export default function TimesheetManagementPage() {
 
   const fetchTimesheets = async () => {
     try {
-      setLoading(true);
+      const shouldShowInitialLoader = !timesheets;
+      if (shouldShowInitialLoader) {
+        setLoading(true);
+      } else {
+        setTableRefreshing(true);
+      }
       const params = new URLSearchParams({
         limit: pageSize.toString(),
         page: currentPage.toString(),
@@ -296,6 +302,7 @@ export default function TimesheetManagementPage() {
       toast.error(t('timesheet.failed_to_fetch_timesheets'));
     } finally {
       setLoading(false);
+      setTableRefreshing(false);
     }
   };
 
@@ -748,9 +755,14 @@ export default function TimesheetManagementPage() {
             </PermissionContent>
 
             <PermissionContent action="sync" subject="Timesheet">
-              <Button variant="outline" size="sm" onClick={fetchTimesheets} disabled={loading}>
-                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                {loading ? 'Refreshing...' : t('timesheet.sync_timesheets')}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchTimesheets}
+                disabled={loading || tableRefreshing}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${tableRefreshing ? 'animate-spin' : ''}`} />
+                {tableRefreshing ? t('timesheet.loading_timesheets') : t('timesheet.sync_timesheets')}
               </Button>
             </PermissionContent>
 
@@ -882,6 +894,12 @@ export default function TimesheetManagementPage() {
         )}
 
         <div className="grid gap-4 mb-6">
+          {tableRefreshing && (
+            <div className="flex items-center text-sm text-muted-foreground gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>{t('timesheet.loading_timesheets')}</span>
+            </div>
+          )}
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
