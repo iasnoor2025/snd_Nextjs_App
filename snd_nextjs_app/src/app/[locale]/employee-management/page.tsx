@@ -62,9 +62,9 @@ interface Employee {
   last_name: string | null;
   full_name: string | null;
   email: string | null;
-  department: string | null;
+  department: { name: string } | string | null;
   department_details?: { name: string } | null;
-  designation: string | null;
+  designation: { name: string } | string | null;
   designation_details?: { name: string } | null;
   status: string | null;
   hire_date: string | null;
@@ -439,7 +439,8 @@ export default function EmployeeManagementPage() {
       const matchesStatus = statusFilter === 'all' || employee.status === statusFilter;
       const matchesDepartment =
         departmentFilter === 'all' ||
-        employee.department === departmentFilter ||
+        (typeof employee.department === 'string' && employee.department === departmentFilter) ||
+        (typeof employee.department === 'object' && employee.department?.name === departmentFilter) ||
         employee.department_details?.name === departmentFilter;
       const matchesAssignment =
         assignmentFilter === 'all' ||
@@ -1029,7 +1030,9 @@ export default function EmployeeManagementPage() {
                               )}
                             </div>
                                                          <div className="text-sm text-muted-foreground">
-                                {employee.designation || employee.designation_details?.name || t('employee.na')}
+                                {(typeof employee.designation === 'string' 
+                                  ? employee.designation 
+                                  : employee.designation?.name) || employee.designation_details?.name || t('employee.na')}
                              </div>
                           </div>
                         </TableCell>
