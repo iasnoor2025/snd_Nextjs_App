@@ -438,7 +438,9 @@ export default function EmployeeManagementPage() {
 
       const matchesStatus = statusFilter === 'all' || employee.status === statusFilter;
       const matchesDepartment =
-        departmentFilter === 'all' || employee.department?.name === departmentFilter;
+        departmentFilter === 'all' ||
+        employee.department === departmentFilter ||
+        employee.department_details?.name === departmentFilter;
       const matchesAssignment =
         assignmentFilter === 'all' ||
         (assignmentFilter === 'assigned' &&
