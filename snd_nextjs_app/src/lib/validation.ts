@@ -10,7 +10,7 @@ export interface ValidationResult {
  */
 export function validateEmail(email: string): ValidationResult {
   const errors: string[] = [];
-  
+
   if (!email || typeof email !== 'string') {
     errors.push('Email is required');
     return { isValid: false, errors };
@@ -32,7 +32,7 @@ export function validateEmail(email: string): ValidationResult {
  */
 export function validatePhone(phone: string): ValidationResult {
   const errors: string[] = [];
-  
+
   if (!phone || typeof phone !== 'string') {
     errors.push('Phone is required');
     return { isValid: false, errors };
@@ -40,7 +40,7 @@ export function validatePhone(phone: string): ValidationResult {
 
   // Remove common phone formatting characters
   const cleaned = phone.replace(/[\s\-\(\)\+]/g, '');
-  
+
   // Check if it contains only digits and is reasonable length
   if (!/^\d{7,15}$/.test(cleaned)) {
     errors.push('Invalid phone number format');
@@ -57,7 +57,7 @@ export function validatePhone(phone: string): ValidationResult {
  */
 export function validateRequired(value: any, fieldName: string): ValidationResult {
   const errors: string[] = [];
-  
+
   if (!value || (typeof value === 'string' && value.trim() === '')) {
     errors.push(`${fieldName} is required`);
   }
@@ -73,7 +73,7 @@ export function validateRequired(value: any, fieldName: string): ValidationResul
  */
 export function sanitizeString(input: string): string {
   if (typeof input !== 'string') return '';
-  
+
   return input
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/<[^>]*>/g, '')
@@ -90,15 +90,16 @@ export function validateAndSanitize<T extends Record<string, any>>(
   const errors: string[] = [];
   const sanitized = { ...data };
 
-  for (const [key, validateFn] of Object.entries(rules)) {
+  for (const [keyStr, validateFn] of Object.entries(rules)) {
+    const key = keyStr as keyof T;
     const result = validateFn(data[key]);
     if (!result.isValid) {
       errors.push(...result.errors);
     }
-    
+
     // Sanitize string values
     if (typeof sanitized[key] === 'string') {
-      sanitized[key] = sanitizeString(sanitized[key]) as T[keyof T];
+      sanitized[key] = sanitizeString(sanitized[key] as unknown as string) as unknown as T[keyof T];
     }
   }
 
@@ -114,7 +115,7 @@ export function validateAndSanitize<T extends Record<string, any>>(
  */
 export function validateId(id: string | undefined): ValidationResult {
   const errors: string[] = [];
-  
+
   if (!id) {
     errors.push('ID is required');
     return { isValid: false, errors };

@@ -251,11 +251,9 @@
   "hourly": "Hourly",
   "inactive": "Inactive",
   "maintenance": "Maintenance",
-    "notStarted": "Not Started",
-    "current": "Current",
-    "upcoming": "Upcoming",
-    "status": "Status"
-  },
+  "notStarted": "Not Started",
+  "current": "Current",
+  "upcoming": "Upcoming",
   "pagination": {
     "itemsPerPage": "Items per page",
     "previous": "Previous",

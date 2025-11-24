@@ -42,6 +42,12 @@ interface ERPNextInvoiceData {
   plc_conversion_rate?: number;
   company: string;
   doctype: string;
+  base_total?: number;
+  base_grand_total?: number;
+  base_total_taxes_and_charges?: number;
+  total_taxes_and_charges?: number;
+  base_rounded_total?: number;
+  rounded_total?: number;
 }
 
 export class ERPNextInvoiceService {
