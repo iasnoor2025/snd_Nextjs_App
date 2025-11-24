@@ -109,7 +109,7 @@ class ErrorBoundary extends React.Component<React.PropsWithChildren<object>, Err
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     
   }
 
