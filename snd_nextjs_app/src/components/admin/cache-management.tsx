@@ -246,156 +246,156 @@ export function CacheManagement() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Button
               onClick={() => clearUsersCache.mutate()}
-              disabled={clearUsersCache.isPending}
+              disabled={clearUsersCache.isLoading}
               variant="outline"
               className="w-full"
             >
               <Users className="h-4 w-4 mr-2" />
-              {clearUsersCache.isPending ? 'Clearing...' : 'Clear Users Cache'}
+              {clearUsersCache.isLoading ? 'Clearing...' : 'Clear Users Cache'}
             </Button>
             <Button
               onClick={() => clearEmployeesCache.mutate()}
-              disabled={clearEmployeesCache.isPending}
+              disabled={clearEmployeesCache.isLoading}
               variant="outline"
               className="w-full"
             >
               <User className="h-4 w-4 mr-2" />
-              {clearEmployeesCache.isPending ? 'Clearing...' : 'Clear Employees Cache'}
+              {clearEmployeesCache.isLoading ? 'Clearing...' : 'Clear Employees Cache'}
             </Button>
             <Button
               onClick={() => clearCustomersCache.mutate()}
-              disabled={clearCustomersCache.isPending}
+              disabled={clearCustomersCache.isLoading}
               variant="outline"
               className="w-full"
             >
               <Users className="h-4 w-4 mr-2" />
-              {clearCustomersCache.isPending ? 'Clearing...' : 'Clear Customers Cache'}
+              {clearCustomersCache.isLoading ? 'Clearing...' : 'Clear Customers Cache'}
             </Button>
             <Button
               onClick={() => clearEquipmentCache.mutate()}
-              disabled={clearEquipmentCache.isPending}
+              disabled={clearEquipmentCache.isLoading}
               variant="outline"
               className="w-full"
             >
               <Settings className="h-4 w-4 mr-2" />
-              {clearEquipmentCache.isPending ? 'Clearing...' : 'Clear Equipment Cache'}
+              {clearEquipmentCache.isLoading ? 'Clearing...' : 'Clear Equipment Cache'}
             </Button>
             <Button
               onClick={() => clearRentalsCache.mutate()}
-              disabled={clearRentalsCache.isPending}
+              disabled={clearRentalsCache.isLoading}
               variant="outline"
               className="w-full"
             >
               <Truck className="h-4 w-4 mr-2" />
-              {clearRentalsCache.isPending ? 'Clearing...' : 'Clear Rentals Cache'}
+              {clearRentalsCache.isLoading ? 'Clearing...' : 'Clear Rentals Cache'}
             </Button>
             <Button
               onClick={() => clearPayrollCache.mutate()}
-              disabled={clearPayrollCache.isPending}
+              disabled={clearPayrollCache.isLoading}
               variant="outline"
               className="w-full"
             >
               <DollarSign className="h-4 w-4 mr-2" />
-              {clearPayrollCache.isPending ? 'Clearing...' : 'Clear Payroll Cache'}
+              {clearPayrollCache.isLoading ? 'Clearing...' : 'Clear Payroll Cache'}
             </Button>
             <Button
               onClick={() => clearSkillsCache.mutate()}
-              disabled={clearSkillsCache.isPending}
+              disabled={clearSkillsCache.isLoading}
               variant="outline"
               className="w-full"
             >
               <Award className="h-4 w-4 mr-2" />
-              {clearSkillsCache.isPending ? 'Clearing...' : 'Clear Skills Cache'}
+              {clearSkillsCache.isLoading ? 'Clearing...' : 'Clear Skills Cache'}
             </Button>
             <Button
               onClick={() => clearTrainingsCache.mutate()}
-              disabled={clearTrainingsCache.isPending}
+              disabled={clearTrainingsCache.isLoading}
               variant="outline"
               className="w-full"
             >
               <GraduationCap className="h-4 w-4 mr-2" />
-              {clearTrainingsCache.isPending ? 'Clearing...' : 'Clear Trainings Cache'}
+              {clearTrainingsCache.isLoading ? 'Clearing...' : 'Clear Trainings Cache'}
             </Button>
             <Button
               onClick={() => clearLocationsCache.mutate()}
-              disabled={clearLocationsCache.isPending}
+              disabled={clearLocationsCache.isLoading}
               variant="outline"
               className="w-full"
             >
               <MapPin className="h-4 w-4 mr-2" />
-              {clearLocationsCache.isPending ? 'Clearing...' : 'Clear Locations Cache'}
+              {clearLocationsCache.isLoading ? 'Clearing...' : 'Clear Locations Cache'}
             </Button>
             <Button
               onClick={() => clearSettingsCache.mutate()}
-              disabled={clearSettingsCache.isPending}
+              disabled={clearSettingsCache.isLoading}
               variant="outline"
               className="w-full"
             >
               <Settings className="h-4 w-4 mr-2" />
-              {clearSettingsCache.isPending ? 'Clearing...' : 'Clear Settings Cache'}
+              {clearSettingsCache.isLoading ? 'Clearing...' : 'Clear Settings Cache'}
             </Button>
             <Button
               onClick={() => clearRolesCache.mutate()}
-              disabled={clearRolesCache.isPending}
+              disabled={clearRolesCache.isLoading}
               variant="outline"
               className="w-full"
             >
               <Shield className="h-4 w-4 mr-2" />
-              {clearRolesCache.isPending ? 'Clearing...' : 'Clear Roles Cache'}
+              {clearRolesCache.isLoading ? 'Clearing...' : 'Clear Roles Cache'}
             </Button>
             <Button
               onClick={() => clearPermissionsCache.mutate()}
-              disabled={clearPermissionsCache.isPending}
+              disabled={clearPermissionsCache.isLoading}
               variant="outline"
               className="w-full"
             >
               <Key className="h-4 w-4 mr-2" />
-              {clearPermissionsCache.isPending ? 'Clearing...' : 'Clear Permissions Cache'}
+              {clearPermissionsCache.isLoading ? 'Clearing...' : 'Clear Permissions Cache'}
             </Button>
             <Button
               onClick={() => clearAnalyticsCache.mutate()}
-              disabled={clearAnalyticsCache.isPending}
+              disabled={clearAnalyticsCache.isLoading}
               variant="outline"
               className="w-full"
             >
               <BarChart3 className="h-4 w-4 mr-2" />
-              {clearAnalyticsCache.isPending ? 'Clearing...' : 'Clear Analytics Cache'}
+              {clearAnalyticsCache.isLoading ? 'Clearing...' : 'Clear Analytics Cache'}
             </Button>
             <Button
               onClick={() => clearReportsCache.mutate()}
-              disabled={clearReportsCache.isPending}
+              disabled={clearReportsCache.isLoading}
               variant="outline"
               className="w-full"
             >
               <FileText className="h-4 w-4 mr-2" />
-              {clearReportsCache.isPending ? 'Clearing...' : 'Clear Reports Cache'}
+              {clearReportsCache.isLoading ? 'Clearing...' : 'Clear Reports Cache'}
             </Button>
             <Button
               onClick={() => clearQuotationsCache.mutate()}
-              disabled={clearQuotationsCache.isPending}
+              disabled={clearQuotationsCache.isLoading}
               variant="outline"
               className="w-full"
             >
               <FileText className="h-4 w-4 mr-2" />
-              {clearQuotationsCache.isPending ? 'Clearing...' : 'Clear Quotations Cache'}
+              {clearQuotationsCache.isLoading ? 'Clearing...' : 'Clear Quotations Cache'}
             </Button>
             <Button
               onClick={() => clearInvoicesCache.mutate()}
-              disabled={clearInvoicesCache.isPending}
+              disabled={clearInvoicesCache.isLoading}
               variant="outline"
               className="w-full"
             >
               <Receipt className="h-4 w-4 mr-2" />
-              {clearInvoicesCache.isPending ? 'Clearing...' : 'Clear Invoices Cache'}
+              {clearInvoicesCache.isLoading ? 'Clearing...' : 'Clear Invoices Cache'}
             </Button>
             <Button
               onClick={() => clearSystemCache.mutate()}
-              disabled={clearSystemCache.isPending}
+              disabled={clearSystemCache.isLoading}
               variant="outline"
               className="w-full"
             >
               <Server className="h-4 w-4 mr-2" />
-              {clearSystemCache.isPending ? 'Clearing...' : 'Clear System Cache'}
+              {clearSystemCache.isLoading ? 'Clearing...' : 'Clear System Cache'}
             </Button>
           </div>
         </CardContent>

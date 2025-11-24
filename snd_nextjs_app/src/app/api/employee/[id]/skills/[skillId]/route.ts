@@ -25,8 +25,8 @@ export async function PUT(
       .set({
         proficiencyLevel,
         certified: certified || false,
-        certificationDate: certificationDate ? new Date(certificationDate) : null,
-        updatedAt: new Date(),
+        certificationDate: certificationDate ? new Date(certificationDate).toISOString() : null,
+        updatedAt: new Date().toISOString(),
       })
       .where(and(
         eq(employeeSkill.employeeId, parseInt(employeeId)),

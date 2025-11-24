@@ -110,7 +110,7 @@ export class H2SCardService {
       if (qrCodeUrl) {
         await db
           .update(employeeTraining)
-          .set({ qrCodeUrl, updatedAt: new Date() })
+          .set({ qrCodeUrl, updatedAt: new Date().toISOString() })
           .where(eq(employeeTraining.id, training.id));
       }
     }
@@ -137,7 +137,7 @@ export class H2SCardService {
       cardNumber = `SND-${String(next).padStart(4, '0')}`;
       await db
         .update(employeeTraining)
-        .set({ cardNumber, updatedAt: new Date() })
+        .set({ cardNumber, updatedAt: new Date().toISOString() })
         .where(eq(employeeTraining.id, training.id));
     }
 

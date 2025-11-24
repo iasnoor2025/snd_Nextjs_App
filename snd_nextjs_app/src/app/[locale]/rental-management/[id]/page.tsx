@@ -85,9 +85,16 @@ interface RentalItem {
   days?: number;
   rateType: string;
   operatorId?: string;
+  operatorFirstName?: string;
+  operatorLastName?: string;
+  supervisorId?: string;
+  supervisorFirstName?: string;
+  supervisorLastName?: string;
   status?: string;
   notes?: string;
   startDate?: string;
+  equipmentIstimara?: string;
+  completedDate?: string;
 }
 
 interface Payment {
@@ -150,6 +157,7 @@ interface Rental {
   paymentStatus?: string;
   notes?: string;
   depositAmount: number;
+  outstandingAmount?: string;
   paymentTermsDays: number;
   hasTimesheet: boolean;
   hasOperators: boolean;
@@ -2493,10 +2501,10 @@ export default function RentalDetailPage() {
                         Sync All Invoices
                       </Button>
                     </div>
-                    {rental.invoiceId && (
+                    {rental.invoices && rental.invoices.length > 0 && (
                       <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
                         <p className="text-sm text-green-800">
-                          <strong>Invoice Generated:</strong> {rental.invoiceId}
+                          <strong>Invoice Generated:</strong> {rental.invoices[0]?.invoiceNumber || rental.invoices[0]?.id}
                         </p>
                         <p className="text-sm text-green-600">
                           Payment Status: {rental.paymentStatus}
@@ -3414,7 +3422,7 @@ export default function RentalDetailPage() {
                     
                     // First, identify handover relationships across all items
                     // A handover is when an item is completed and a new item with different operator starts for same equipment
-                    const handoverMap = new Map<number, number>(); // Maps completed item ID to new operator item ID
+                    const handoverMap = new Map<string, string>(); // Maps completed item ID to new operator item ID
                     const allItemsSorted = [...rentalItems].sort((a: any, b: any) => {
                       const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
                       const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;

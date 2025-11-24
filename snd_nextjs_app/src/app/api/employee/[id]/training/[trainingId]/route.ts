@@ -23,12 +23,12 @@ export async function PUT(
     const [updatedEmployeeTraining] = await db
       .update(employeeTraining)
       .set({
-        startDate: startDate ? new Date(startDate) : null,
-        endDate: endDate ? new Date(endDate) : null,
+        startDate: startDate ? new Date(startDate).toISOString() : null,
+        endDate: endDate ? new Date(endDate).toISOString() : null,
         status: status || 'planned',
         certificate,
         notes,
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString(),
       })
       .where(and(
         eq(employeeTraining.employeeId, parseInt(employeeId)),

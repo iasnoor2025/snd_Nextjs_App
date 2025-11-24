@@ -54,7 +54,7 @@ export const POST = async (request: NextRequest) => {
           .update(employees)
           .set({
             drivingLicenseNumber: employee.iqamaNumber,
-            updatedAt: new Date(),
+            updatedAt: new Date().toISOString(),
           })
           .where(sql`${employees.id} = ${employee.id}`);
 

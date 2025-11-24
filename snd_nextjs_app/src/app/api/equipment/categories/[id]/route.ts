@@ -103,7 +103,7 @@ export const PUT = withPermission(PermissionConfigs.equipment.update)(async (req
         icon: icon || null,
         color: color || null,
         isActive: isActive !== undefined ? isActive : true,
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString(),
       })
       .where(eq(equipmentCategories.id, categoryId))
       .returning();
@@ -150,15 +150,16 @@ export const DELETE = withPermission(PermissionConfigs.equipment.delete)(async (
 
     // Check if category is being used by any equipment
     const equipmentUsingCategory = await db
-      .select({ count: sql`count(*)` })
+      .select({ count: sql<number>`count(*)::int` })
       .from(sql`equipment`)
       .where(sql`category_id = ${categoryId}`);
 
-    if (equipmentUsingCategory[0].count > 0) {
+    const count = Number(equipmentUsingCategory[0]?.count || 0);
+    if (count > 0) {
       return NextResponse.json(
         { 
           success: false, 
-          message: `Cannot delete category. It is being used by ${equipmentUsingCategory[0].count} equipment items.` 
+          message: `Cannot delete category. It is being used by ${count} equipment items.` 
         },
         { status: 400 }
       );
