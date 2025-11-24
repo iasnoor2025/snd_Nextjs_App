@@ -30,13 +30,13 @@ const EMPLOYEES_CACHE_TTL = 30000; // 30 seconds
 const getEmployeesHandler = async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
-    
+
     // Check cache first (only for simple list requests)
     const cacheKey = searchParams.toString();
     const now = Date.now();
-    const hasFilters = searchParams.has('search') || searchParams.has('department') || 
-                      searchParams.has('status') || searchParams.has('supervisor');
-    
+    const hasFilters = searchParams.has('search') || searchParams.has('department') ||
+      searchParams.has('status') || searchParams.has('supervisor');
+
     // Return cached data if available and no filters applied
     if (!hasFilters && employeesCache && (now - employeesCacheTimestamp) < EMPLOYEES_CACHE_TTL) {
       console.log('📦 Serving employees from cache');
@@ -138,7 +138,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
     const total = Number((countRow as { count: number }[])[0]?.count ?? 0);
 
     // Update employee statuses based on current leave status
-    
+
     const statusUpdatePromises = employeeRows.map(employee =>
       updateEmployeeStatusBasedOnLeave(employee.id as number)
     );
@@ -151,7 +151,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
       // If this is a request for all employees (admin view), fetch assignments for all employees
       // Otherwise, only fetch for the current page
       const isAllEmployeesRequest = searchParams.get('all') === 'true';
-      
+
       let assignmentQuery;
       if (isAllEmployeesRequest) {
         // For admin view, get assignments for all employees to ensure statistics are accurate
@@ -215,87 +215,87 @@ const getEmployeesHandler = async (request: NextRequest) => {
           )
           .orderBy(desc(employeeAssignments.startDate));
       }
-      
-              const assignmentRows = await assignmentQuery;
-        
-        // Also fetch project assignments from projectManpower table
-        let projectAssignmentQuery;
-        if (isAllEmployeesRequest) {
-          projectAssignmentQuery = db
-            .select({
-              id: projectManpower.id,
-              employee_file_number: employeesTable.fileNumber,
-              type: sql<string>`'project'`,
-              name: sql<string>`'Project Assignment'`,
-              status: projectManpower.status,
-              start_date: projectManpower.startDate,
-              end_date: projectManpower.endDate,
-              location: sql<string>`NULL`,
-              notes: projectManpower.notes,
-              project_name: projects.name,
-              rental_number: sql<string>`NULL`,
-            })
-            .from(projectManpower)
-            .innerJoin(employeesTable, eq(employeesTable.id, projectManpower.employeeId))
-            .leftJoin(projects, eq(projects.id, projectManpower.projectId))
-            .where(
-              and(
-                eq(projectManpower.status, 'active'),
-                or(
-                  isNull(projectManpower.endDate),
-                  gte(projectManpower.endDate, new Date().toISOString().split('T')[0])
-                )
+
+      const assignmentRows = await assignmentQuery;
+
+      // Also fetch project assignments from projectManpower table
+      let projectAssignmentQuery;
+      if (isAllEmployeesRequest) {
+        projectAssignmentQuery = db
+          .select({
+            id: projectManpower.id,
+            employee_file_number: employeesTable.fileNumber,
+            type: sql<string>`'project'`,
+            name: sql<string>`'Project Assignment'`,
+            status: projectManpower.status,
+            start_date: projectManpower.startDate,
+            end_date: projectManpower.endDate,
+            location: sql<string>`NULL`,
+            notes: projectManpower.notes,
+            project_name: projects.name,
+            rental_number: sql<string>`NULL`,
+          })
+          .from(projectManpower)
+          .innerJoin(employeesTable, eq(employeesTable.id, projectManpower.employeeId))
+          .leftJoin(projects, eq(projects.id, projectManpower.projectId))
+          .where(
+            and(
+              eq(projectManpower.status, 'active'),
+              or(
+                isNull(projectManpower.endDate),
+                gte(projectManpower.endDate, new Date().toISOString().split('T')[0])
               )
             )
-            .orderBy(desc(projectManpower.startDate));
-        } else {
-          projectAssignmentQuery = db
-            .select({
-              id: projectManpower.id,
-              employee_file_number: employeesTable.fileNumber,
-              type: sql<string>`'project'`,
-              name: sql<string>`'Project Assignment'`,
-              status: projectManpower.status,
-              start_date: projectManpower.startDate,
-              end_date: projectManpower.endDate,
-              location: sql<string>`NULL`,
-              notes: projectManpower.notes,
-              project_name: projects.name,
-              rental_number: sql<string>`NULL`,
-            })
-            .from(projectManpower)
-            .innerJoin(employeesTable, eq(employeesTable.id, projectManpower.employeeId))
-            .leftJoin(projects, eq(projects.id, projectManpower.projectId))
-            .where(
-              and(
-                inArray(employeesTable.fileNumber, employeeFileNumbers),
-                eq(projectManpower.status, 'active'),
-                or(
-                  isNull(projectManpower.endDate),
-                  gte(projectManpower.endDate, new Date().toISOString().split('T')[0])
-                )
+          )
+          .orderBy(desc(projectManpower.startDate));
+      } else {
+        projectAssignmentQuery = db
+          .select({
+            id: projectManpower.id,
+            employee_file_number: employeesTable.fileNumber,
+            type: sql<string>`'project'`,
+            name: sql<string>`'Project Assignment'`,
+            status: projectManpower.status,
+            start_date: projectManpower.startDate,
+            end_date: projectManpower.endDate,
+            location: sql<string>`NULL`,
+            notes: projectManpower.notes,
+            project_name: projects.name,
+            rental_number: sql<string>`NULL`,
+          })
+          .from(projectManpower)
+          .innerJoin(employeesTable, eq(employeesTable.id, projectManpower.employeeId))
+          .leftJoin(projects, eq(projects.id, projectManpower.projectId))
+          .where(
+            and(
+              inArray(employeesTable.fileNumber, employeeFileNumbers),
+              eq(projectManpower.status, 'active'),
+              or(
+                isNull(projectManpower.endDate),
+                gte(projectManpower.endDate, new Date().toISOString().split('T')[0])
               )
             )
-            .orderBy(desc(projectManpower.startDate));
+          )
+          .orderBy(desc(projectManpower.startDate));
+      }
+
+      const projectAssignmentRows = await projectAssignmentQuery;
+
+      // Combine both assignment types
+      const allAssignments = [...assignmentRows, ...projectAssignmentRows];
+
+      for (const row of allAssignments) {
+        const empFileNumber = row.employee_file_number as string;
+        if (!latestAssignments[empFileNumber]) {
+          latestAssignments[empFileNumber] = row;
         }
-        
-        const projectAssignmentRows = await projectAssignmentQuery;
-        
-        // Combine both assignment types
-        const allAssignments = [...assignmentRows, ...projectAssignmentRows];
-        
-        for (const row of allAssignments) {
-          const empFileNumber = row.employee_file_number as string;
-          if (!latestAssignments[empFileNumber]) {
-            latestAssignments[empFileNumber] = row;
-          }
-        }
+      }
     }
 
     // Fetch employee images/photos from documents
     const employeeIds = employeeRows.map(e => e.id as number);
     const employeeImages: Record<number, { url: string | null; isCard: boolean }> = {};
-    
+
     if (employeeIds.length > 0) {
       // Fetch images/photos for each employee, prioritizing photos over iqama
       // First, get all image documents ordered by priority and recency
@@ -328,16 +328,16 @@ const getEmployeesHandler = async (request: NextRequest) => {
         const bType = (b.documentType || '').toLowerCase();
         const aName = (a.fileName || '').toLowerCase();
         const bName = (b.fileName || '').toLowerCase();
-        
+
         const aIsPhoto = aType.includes('photo') || aName.includes('photo');
         const bIsPhoto = bType.includes('photo') || bName.includes('photo');
         const aIsIqama = aType.includes('iqama') || aName.includes('iqama');
         const bIsIqama = bType.includes('iqama') || bName.includes('iqama');
-        
+
         // Photos come first
         if (aIsPhoto && !bIsPhoto) return -1;
         if (!aIsPhoto && bIsPhoto) return 1;
-        
+
         // If both are photos or both are iqama, newest first
         const aDate = new Date(a.createdAt || 0).getTime();
         const bDate = new Date(b.createdAt || 0).getTime();
@@ -351,15 +351,39 @@ const getEmployeesHandler = async (request: NextRequest) => {
           const imageUrl = doc.filePath?.replace(/^http:\/\//, 'https://') || null;
           const docType = (doc.documentType || '').toLowerCase();
           const fileName = (doc.fileName || '').toLowerCase();
-          
+
           const isCard = docType.includes('iqama') ||
             docType.includes('resident') ||
             docType.includes('id') ||
             fileName.includes('iqama') ||
             fileName.includes('resident') ||
             fileName.includes('id');
-          
+
           employeeImages[doc.employeeId] = { url: imageUrl, isCard };
+        }
+      }
+    }
+
+    // Fetch latest timesheet for each employee
+    const latestTimesheets: Record<number, { date: string; status: string }> = {};
+    if (employeeIds.length > 0) {
+      const timesheetRecords = await db
+        .select({
+          employeeId: timesheets.employeeId,
+          date: timesheets.date,
+          status: timesheets.status,
+        })
+        .from(timesheets)
+        .where(inArray(timesheets.employeeId, employeeIds))
+        .orderBy(desc(timesheets.date));
+
+      // Group by employee and get the latest timesheet
+      for (const record of timesheetRecords) {
+        if (!latestTimesheets[record.employeeId]) {
+          latestTimesheets[record.employeeId] = {
+            date: record.date,
+            status: record.status,
+          };
         }
       }
     }
@@ -410,38 +434,40 @@ const getEmployeesHandler = async (request: NextRequest) => {
         image_is_card: employeeImages[employee.id]?.isCard || false,
         current_assignment: isAssignmentActive
           ? {
-              id: currentAssignment.id,
-              type: currentAssignment.type,
-              name:
-                currentAssignment.name ||
-                currentAssignment.project_name ||
-                currentAssignment.rental_number ||
-                'Unnamed Assignment',
-              location: currentAssignment.location || null,
-              start_date: currentAssignment.start_date
-                ? new Date(currentAssignment.start_date as unknown as string).toISOString()
-                : null,
-              end_date: currentAssignment.end_date
-                ? new Date(currentAssignment.end_date as unknown as string).toISOString()
-                : null,
-              status: currentAssignment.status,
-              notes: currentAssignment.notes,
-              project: currentAssignment.project_name
-                ? { name: currentAssignment.project_name }
-                : null,
-              rental: currentAssignment.rental_number
-                ? { rental_number: currentAssignment.rental_number }
-                : null,
-            }
+            id: currentAssignment.id,
+            type: currentAssignment.type,
+            name:
+              currentAssignment.name ||
+              currentAssignment.project_name ||
+              currentAssignment.rental_number ||
+              'Unnamed Assignment',
+            location: currentAssignment.location || null,
+            start_date: currentAssignment.start_date
+              ? new Date(currentAssignment.start_date as unknown as string).toISOString()
+              : null,
+            end_date: currentAssignment.end_date
+              ? new Date(currentAssignment.end_date as unknown as string).toISOString()
+              : null,
+            status: currentAssignment.status,
+            notes: currentAssignment.notes,
+            project: currentAssignment.project_name
+              ? { name: currentAssignment.project_name }
+              : null,
+            rental: currentAssignment.rental_number
+              ? { rental_number: currentAssignment.rental_number }
+              : null,
+          }
           : null,
         user: employee.user_id
           ? {
-              id: employee.user_id,
-              name: employee.user_name,
-              email: employee.user_email,
-              isActive: employee.user_is_active,
-            }
+            id: employee.user_id,
+            name: employee.user_name,
+            email: employee.user_email,
+            isActive: employee.user_is_active,
+          }
           : null,
+        timesheet_status: latestTimesheets[employee.id]?.status || null,
+        last_timesheet_date: latestTimesheets[employee.id]?.date || null,
       };
     });
 
@@ -469,7 +495,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
   } catch (error) {
     console.error('Employees API - Error fetching employees:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
+
     // Check if error is due to missing columns (migration not run)
     if (errorMessage.includes('column') && (errorMessage.includes('is_external') || errorMessage.includes('company_name'))) {
       return NextResponse.json(
@@ -481,7 +507,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
         { status: 500 }
       );
     }
-    
+
     return NextResponse.json(
       {
         error: 'Internal server error',
@@ -807,7 +833,7 @@ const createEmployeeHandler = async (request: NextRequest) => {
         { status: 409 }
       );
     }
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: false,
       error: 'Internal server error'
     }, { status: 500 });

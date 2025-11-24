@@ -4,12 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Eye, Users, Table } from 'lucide-react';
+import { Eye, Users, Table, CheckCircle } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useI18n } from '@/hooks/use-i18n';
+import { toast } from 'sonner';
 
 interface TeamMember {
   id: number;
@@ -43,9 +44,10 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
   const { data: session } = useSession();
   const { t } = useI18n();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [currentEmployee, setCurrentEmployee] = useState<{ id: number; [key: string]: unknown } | null>(null);
+  const [currentEmployee, setCurrentEmployee] = useState<{ id: number;[key: string]: unknown } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [approvingId, setApprovingId] = useState<number | null>(null);
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -57,52 +59,52 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
     try {
       setLoading(true);
       setError(null);
-      
+
       console.log('Current user ID:', session?.user?.id);
       console.log('Current user ID type:', typeof session?.user?.id);
-      
+
       // First, find the employee record that matches the current user ID
       const employeeResponse = await fetch(`/api/employees?all=true`);
       if (!employeeResponse.ok) {
         throw new Error('Failed to fetch employees');
       }
-      
+
       const employeeData = await employeeResponse.json();
       console.log('All employees fetched:', employeeData.data?.length || 0);
-      
+
       if (!employeeData.success) {
         throw new Error('Failed to fetch employees');
       }
-      
+
       // Find the employee record where userId matches current user ID
-      const currentEmployee = employeeData.data?.find((emp: { user?: { id?: string | number }; [key: string]: unknown }) => 
+      const currentEmployee = employeeData.data?.find((emp: { user?: { id?: string | number };[key: string]: unknown }) =>
         emp.user?.id?.toString() === session?.user?.id?.toString()
       );
-      
+
       console.log('Current employee found:', currentEmployee);
-      
+
       if (!currentEmployee) {
         console.log('No employee record found for current user');
         setTeamMembers([]);
         setCurrentEmployee(null);
         return;
       }
-      
+
       // Set current employee in state
       setCurrentEmployee(currentEmployee);
-      
+
       console.log('Current employee ID:', currentEmployee.id);
       console.log('Fetching team members for supervisor:', currentEmployee.id);
-      
+
       // Now fetch employees where supervisor = current employee ID
       const response = await fetch(`/api/employees?supervisor=${currentEmployee.id}`);
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch team members');
       }
-      
+
       const data = await response.json();
-      
+
       console.log('MyTeam API Response:', data);
       if (data.success) {
         console.log('Team members found:', data.data?.length || 0);
@@ -117,6 +119,48 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
     }
   };
 
+  const handleApproveTimesheet = async (employeeId: number, employeeName: string) => {
+    try {
+      setApprovingId(employeeId);
+
+      // Fetch the latest pending timesheet for this employee
+      const response = await fetch(`/api/timesheets?employeeId=${employeeId}&status=pending&limit=1&sortBy=date&sortOrder=desc`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch timesheet');
+      }
+
+      const data = await response.json();
+      if (!data.success || !data.data || data.data.length === 0) {
+        toast.error(`No pending timesheet found for ${employeeName}`);
+        return;
+      }
+
+      const timesheet = data.data[0];
+
+      // Approve the timesheet
+      const approveResponse = await fetch(`/api/timesheets/${timesheet.id}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!approveResponse.ok) {
+        const errorData = await approveResponse.json();
+        throw new Error(errorData.error || 'Failed to approve timesheet');
+      }
+
+      toast.success(`Timesheet approved for ${employeeName}`);
+
+      // Refresh team members to update timesheet status
+      await fetchTeamMembers();
+    } catch (err) {
+      console.error('Error approving timesheet:', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to approve timesheet');
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       active: { variant: 'default' as const, label: t('dashboard.myTeam.status.active') },
@@ -124,9 +168,9 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
       terminated: { variant: 'destructive' as const, label: t('dashboard.myTeam.status.terminated') },
       on_leave: { variant: 'outline' as const, label: t('dashboard.myTeam.status.onLeave') },
     };
-    
+
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.active;
-    
+
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
@@ -134,11 +178,11 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
     if (!status || !lastDate) {
       return <Badge variant="outline">{t('dashboard.myTeam.timesheetStatus.noTimesheet')}</Badge>;
     }
-    
+
     const today = new Date();
     const lastTimesheet = new Date(lastDate);
     const daysDiff = Math.floor((today.getTime() - lastTimesheet.getTime()) / (1000 * 60 * 60 * 24));
-    
+
     if (daysDiff === 0) {
       return <Badge variant="default">{t('dashboard.myTeam.timesheetStatus.today')}</Badge>;
     } else if (daysDiff === 1) {
@@ -152,16 +196,16 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
 
   const formatEmployeeName = (firstName: string, lastName: string) => {
     if (!lastName) return firstName;
-    
+
     // Handle case where lastName might contain the full name
     let fullName = lastName;
     if (firstName && !lastName.includes(firstName)) {
       fullName = `${firstName} ${lastName}`;
     }
-    
+
     // Split the full name into parts and filter out empty parts
     const nameParts = fullName.trim().split(' ').filter(part => part.length > 0);
-    
+
     if (nameParts.length <= 2) {
       // If 2 or fewer parts, show the full name
       return fullName;
@@ -228,13 +272,13 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
             <CardDescription>
               {currentEmployee ? (
                 <>
-                  {teamMembers.length === 0 
-                    ? t('dashboard.myTeam.noEmployees', { id: currentEmployee.id }) 
-                    : t('dashboard.myTeam.employeesCount', { 
-                        count: teamMembers.length, 
-                        plural: teamMembers.length !== 1 ? 's' : '',
-                        id: currentEmployee.id 
-                      })
+                  {teamMembers.length === 0
+                    ? t('dashboard.myTeam.noEmployees', { id: currentEmployee.id })
+                    : t('dashboard.myTeam.employeesCount', {
+                      count: teamMembers.length,
+                      plural: teamMembers.length !== 1 ? 's' : '',
+                      id: currentEmployee.id
+                    })
                   }
                 </>
               ) : (
@@ -323,16 +367,16 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
                           <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                           <div className="text-xs">
                             <div className="font-medium">
-                              {member.current_assignment.type === 'rental' ? t('dashboard.myTeam.assignment.rentalSite') : 
-                               member.current_assignment.type === 'project' ? t('dashboard.myTeam.assignment.project') : 
-                               member.current_assignment.type}
+                              {member.current_assignment.type === 'rental' ? t('dashboard.myTeam.assignment.rentalSite') :
+                                member.current_assignment.type === 'project' ? t('dashboard.myTeam.assignment.project') :
+                                  member.current_assignment.type}
                             </div>
                             <div className="text-muted-foreground">
-                              {member.current_assignment.type === 'rental' ? 
+                              {member.current_assignment.type === 'rental' ?
                                 (member.current_assignment.rental?.rental_number || t('dashboard.myTeam.assignment.rentalAssignment')) :
-                                member.current_assignment.type === 'project' ? 
-                                (member.current_assignment.project?.name || member.current_assignment.name || t('dashboard.myTeam.assignment.projectAssignment')) :
-                                (member.current_assignment.name || t('dashboard.myTeam.assignment.unnamedAssignment'))}
+                                member.current_assignment.type === 'project' ?
+                                  (member.current_assignment.project?.name || member.current_assignment.name || t('dashboard.myTeam.assignment.projectAssignment')) :
+                                  (member.current_assignment.name || t('dashboard.myTeam.assignment.unnamedAssignment'))}
                             </div>
                           </div>
                         </div>
@@ -347,17 +391,31 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
                       {getTimesheetStatusBadge(member.timesheet_status, member.last_timesheet_date)}
                     </td>
                     <td className="border border-border px-4 py-3">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        asChild
-                        className="flex items-center gap-2"
-                      >
-                        <Link href={`/${locale}/employee-management/${member.id}`}>
-                          <Eye className="h-4 w-4" />
-                          {t('dashboard.myTeam.actions.view')}
-                        </Link>
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          asChild
+                          className="flex items-center gap-2"
+                        >
+                          <Link href={`/${locale}/employee-management/${member.id}`}>
+                            <Eye className="h-4 w-4" />
+                            {t('dashboard.myTeam.actions.view')}
+                          </Link>
+                        </Button>
+                        {member.timesheet_status === 'pending' && (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleApproveTimesheet(member.id, `${member.first_name} ${member.last_name}`)}
+                            disabled={approvingId === member.id}
+                            className="flex items-center gap-2"
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                            {approvingId === member.id ? 'Approving...' : 'Approve'}
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
