@@ -123,7 +123,7 @@ class ErrorBoundary extends React.Component<React.PropsWithChildren<object>, Err
     
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       return (
         <div className="flex items-center justify-center min-h-screen">
