@@ -1,0 +1,129 @@
+{
+  "title": "Permission Management",
+  "subtitle": "Manage role permissions with an organized, grouped interface",
+  "description": "Manage all permissions and roles in the system",
+  "actions": {
+    "createPermission": "Create Permission",
+    "editPermission": "Edit Permission",
+    "deletePermission": "Delete Permission",
+    "viewPermission": "View Permission",
+    "createRole": "Create Role",
+    "editRole": "Edit Role",
+    "deleteRole": "Delete Role",
+    "viewRole": "View Role",
+    "saveChanges": "Save Changes",
+    "savePermissions": "Save Permissions",
+    "cancel": "Cancel",
+    "backToPermissions": "Back to Permissions",
+    "save": "Save",
+    "update": "Update",
+    "delete": "Delete",
+    "search": "Search",
+    "filter": "Filter",
+    "refresh": "Refresh",
+    "export": "Export",
+    "import": "Import"
+  },
+  "fields": {
+    "name": "Name",
+    "namePlaceholder": "Permission name",
+    "guardName": "Guard Name",
+    "guardNamePlaceholder": "Guard name (e.g., web)",
+    "description": "Description",
+    "descriptionPlaceholder": "Permission description",
+    "roleName": "Role Name",
+    "roleNamePlaceholder": "Role name",
+    "permissions": "Permissions",
+    "assignedPermissions": "Assigned Permissions",
+    "availablePermissions": "Available Permissions",
+    "createdAt": "Created At",
+    "updatedAt": "Updated At"
+  },
+  "messages": {
+    "loading": "Loading permissions...",
+    "saving": "Saving...",
+    "createSuccess": "Permission created successfully",
+    "createError": "Failed to create permission",
+    "updateSuccess": "Permission updated successfully",
+    "updateError": "Failed to update permission",
+    "deleteSuccess": "Permission deleted successfully",
+    "deleteError": "Failed to delete permission",
+    "fetchError": "Error fetching permissions",
+    "validationError": "Please fill in all required fields",
+    "permissionNotFound": "Permission not found",
+    "roleNotFound": "Role not found",
+    "accessDenied": "Access denied. You don't have permission to manage permissions.",
+    "errorGeneral": "An error occurred during the operation",
+    "failedToLoad": "Failed to load permissions",
+    "failedToCreate": "Failed to create permission",
+    "failedToUpdate": "Failed to update permission",
+    "failedToDelete": "Failed to delete permission",
+    "saveChangesFor": "Save permission changes for {{role}}",
+    "permissionsUpdated": "Permissions updated successfully",
+    "permissionsUpdateFailed": "Failed to update permissions"
+  },
+  "validation": {
+    "required": "This field is required",
+    "nameRequired": "Name is required",
+    "guardNameRequired": "Guard name is required",
+    "roleNameRequired": "Role name is required",
+    "permissionsRequired": "At least one permission must be selected",
+    "invalidName": "Invalid name",
+    "nameAlreadyExists": "Name already exists"
+  },
+  "table": {
+    "headers": {
+      "name": "Name",
+      "guardName": "Guard Name",
+      "createdAt": "Created At",
+      "updatedAt": "Updated At",
+      "actions": "Actions"
+    }
+  },
+  "pagination": {
+    "showing": "Showing {{start}} to {{end}} of {{total}} permissions",
+    "page": "Page {{current}} of {{total}}",
+    "previous": "Previous",
+    "next": "Next",
+    "itemsPerPage": "Items per page"
+  },
+  "search": {
+    "placeholder": "Search permissions...",
+    "title": "Search and Filter",
+    "noResults": "No permissions found",
+    "resultCount": "Permissions ({{count}})"
+  },
+  "stats": {
+    "permissionsCount": "{{count}} permissions",
+    "rolesCount": "{{count}} roles",
+    "totalPermissions": "Total Permissions",
+    "totalRoles": "Total Roles",
+    "activePermissions": "Active Permissions",
+    "activeRoles": "Active Roles"
+  },
+  "filters": {
+    "guardName": "Guard Name",
+    "allGuards": "All Guards",
+    "applyFilters": "Apply Filters",
+    "clearFilters": "Clear Filters"
+  },
+  "groups": {
+    "employee": "Employees",
+    "customer": "Customers",
+    "company": "Companies",
+    "project": "Projects",
+    "rental": "Rentals",
+    "equipment": "Equipment",
+    "quotation": "Quotations",
+    "timesheet": "Timesheets",
+    "payroll": "Payroll",
+    "leave": "Leaves",
+    "document": "Documents",
+    "assignment": "Assignments",
+    "maintenance": "Maintenance",
+    "safety": "Safety",
+    "reporting": "Reporting",
+    "permissions": "Permissions",
+    "system": "System"
+  }
+}

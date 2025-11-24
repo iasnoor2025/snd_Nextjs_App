@@ -1,0 +1,27 @@
+{
+  "dashboard": "Dashboard",
+  "employeeDashboard": "My Dashboard",
+  "customerManagement": "Customer Management",
+  "companyManagement": "Company Management",
+  "employeeManagement": "Employee Management",
+
+  "equipmentManagement": "Equipment Management",
+  "maintenanceManagement": "Maintenance & Repairs",
+  "rentalManagement": "Rental Management",
+  "quotationManagement": "Quotation Management",
+  "timesheetManagement": "Timesheet Management",
+  "projectManagement": "Project Management",
+  "payrollManagement": "Payroll Management",
+  "salaryIncrements": "Salary Increments",
+  "leaveManagement": "Leave Management",
+  "safetyManagement": "Safety Management",
+  "locationManagement": "Location Management",
+  "reporting": "Reporting",
+  "documentManagement": "Document Management",
+  "chat": "Chat",
+    "userManagement": "User Management",
+  "getHelp": "Get Help",
+  "search": "Search",
+  "appTitle": "SND Rental",
+  "databaseBackup": "Database Backup"
+}

@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
-    ignoreBuildErrors: true, // Temporarily disable TypeScript validation
+    // ignoreBuildErrors: false,
   },
   // Performance optimizations
   experimental: {
@@ -16,7 +16,7 @@ const nextConfig = {
       'recharts'
     ],
   },
-  
+
   // Production optimizations
   ...(process.env.NODE_ENV === 'production' && {
     output: 'standalone',
@@ -37,7 +37,7 @@ const nextConfig = {
   // Bundle optimization - Enhanced for better performance
   compress: true,
   poweredByHeader: false,
-  
+
   // Image optimization - Enhanced for performance
   images: {
     formats: ['image/webp', 'image/avif'],
@@ -147,7 +147,7 @@ const nextConfig = {
         maxAssetSize: 512000, // 500KB
       };
     }
-    
+
     return config;
   },
 

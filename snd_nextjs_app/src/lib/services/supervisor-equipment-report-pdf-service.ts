@@ -39,9 +39,9 @@ export class SupervisorEquipmentReportPDFService {
     if (!data) {
       throw new Error('Supervisor equipment report data is required');
     }
-    
+
     const doc = new jsPDF('l', 'mm', 'a4'); // Landscape orientation
-    
+
     // Set document properties
     doc.setProperties({
       title: 'Supervisor Equipment Report',
@@ -113,11 +113,11 @@ export class SupervisorEquipmentReportPDFService {
     // Supervisor Groups
     if (data.supervisor_groups && data.supervisor_groups.length > 0) {
       let globalSerialNumber = 1; // Global serial number counter
-      
+
       data.supervisor_groups.forEach((supervisor, supervisorIndex) => {
         // Check if we need a new page (landscape height is 210mm, leave 10mm margin at bottom)
         if (yPosition > 200) {
-          doc.addPage('l', 'a4'); // Add landscape page
+          doc.addPage('a4', 'l'); // Add landscape page
           yPosition = 15;
         }
 
@@ -134,7 +134,7 @@ export class SupervisorEquipmentReportPDFService {
           const rowHeight = 5;
           const colWidths = [12, 60, 35, 30, 28, 35, 22, 25]; // Serial #, Equipment, Customer Name, Rental #, Rental Status, Operator, Item Status, Start Date (total: 247mm)
           const headers = ['Serial #', 'Equipment', 'Customer Name', 'Rental #', 'Rental Status', 'Operator', 'Item Status', 'Start Date'];
-          
+
           // Draw table header
           doc.setFillColor(52, 152, 219);
           doc.rect(margin, tableStartY, colWidths.reduce((a, b) => a + b, 0), rowHeight, 'F');
@@ -154,10 +154,10 @@ export class SupervisorEquipmentReportPDFService {
           let rowIndex = 0; // Track row index for this supervisor's table
           supervisor.equipment.forEach((equipment, index) => {
             let currentRowY = tableStartY + rowHeight + (rowIndex * rowHeight);
-            
+
             // Check if we need a new page for this row (landscape height is 210mm)
             if (currentRowY + rowHeight > 200) {
-              doc.addPage('l', 'a4'); // Add landscape page
+              doc.addPage('a4', 'l'); // Add landscape page
               yPosition = 15;
               tableStartY = yPosition;
               rowIndex = 0; // Reset row index for new page
@@ -211,7 +211,7 @@ export class SupervisorEquipmentReportPDFService {
               }
               xPos += colWidths[cellIndex];
             });
-            
+
             globalSerialNumber++; // Increment serial number
             rowIndex++; // Increment row index
           });
@@ -239,7 +239,7 @@ export class SupervisorEquipmentReportPDFService {
     try {
       // Extract data if wrapped in response structure
       const reportData: SupervisorEquipmentReportData = data.data || data;
-      
+
       const pdf = this.generateSupervisorEquipmentReportPDF(reportData);
       const pdfBlob = pdf.output('blob');
       const url = URL.createObjectURL(pdfBlob);

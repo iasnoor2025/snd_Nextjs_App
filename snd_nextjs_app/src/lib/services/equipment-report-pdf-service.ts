@@ -94,9 +94,9 @@ export class EquipmentReportPDFService {
     if (!data) {
       throw new Error('Equipment report data is required');
     }
-    
+
     const doc = new jsPDF('p', 'mm', 'a4');
-    
+
     // Set document properties
     doc.setProperties({
       title: 'Equipment Report by Category',
@@ -131,28 +131,28 @@ export class EquipmentReportPDFService {
     if (data.parameters && (data.parameters.categoryId || data.parameters.status || data.parameters.locationId)) {
       doc.text('Filters Applied:', 20, yPosition);
       yPosition += 5;
-      
+
       if (data.parameters.categoryId) {
         const category = data.category_stats?.find(c => c.categoryId.toString() === data.parameters.categoryId);
         doc.text(`Category: ${category?.categoryName || 'Unknown'}`, 25, yPosition);
         yPosition += 4;
       }
-      
+
       if (data.parameters.status) {
         doc.text(`Status: ${data.parameters.status}`, 25, yPosition);
         yPosition += 4;
       }
-      
+
       if (data.parameters.locationId) {
         doc.text(`Location: ${data.parameters.locationId}`, 25, yPosition);
         yPosition += 4;
       }
-      
+
       if (data.parameters.includeInactive) {
         doc.text('Include Inactive: Yes', 25, yPosition);
         yPosition += 4;
       }
-      
+
       yPosition += 5;
     }
 
@@ -163,7 +163,7 @@ export class EquipmentReportPDFService {
     yPosition += 10;
 
     // Summary table
-    const summaryStats = data.summary_stats || {};
+    const summaryStats = data.summary_stats || ({} as any);
     const summaryData = [
       ['Total Equipment', (summaryStats.totalEquipment || 0).toString()],
       ['Active Equipment', (summaryStats.activeEquipment || 0).toString()],
@@ -182,7 +182,7 @@ export class EquipmentReportPDFService {
     const rowHeight = 8;
     const col1Width = 60;
     const col2Width = 40;
-    
+
     // Draw table header
     doc.setFillColor(41, 128, 185);
     doc.rect(20, tableStartY, col1Width + col2Width, rowHeight, 'F');
@@ -191,7 +191,7 @@ export class EquipmentReportPDFService {
     doc.setFont('helvetica', 'bold');
     doc.text('Metric', 25, tableStartY + 5);
     doc.text('Value', 20 + col1Width + 5, tableStartY + 5);
-    
+
     // Draw table rows
     doc.setTextColor(0, 0, 0);
     doc.setFont('helvetica', 'normal');
@@ -201,10 +201,10 @@ export class EquipmentReportPDFService {
         doc.setFillColor(245, 245, 245);
         doc.rect(20, rowY, col1Width + col2Width, rowHeight, 'F');
       }
-      doc.text(row[0], 25, rowY + 5);
-      doc.text(row[1], 20 + col1Width + 5, rowY + 5);
+      doc.text(row[0] || '', 25, rowY + 5);
+      doc.text(row[1] || '', 20 + col1Width + 5, rowY + 5);
     });
-    
+
     yPosition = tableStartY + rowHeight + (summaryData.length * rowHeight) + 15;
 
     // Category Statistics
@@ -229,7 +229,7 @@ export class EquipmentReportPDFService {
       const categoryTableStartY = yPosition;
       const categoryRowHeight = 7;
       const categoryColWidths = [30, 15, 15, 20, 15, 20, 25, 25];
-      
+
       // Draw table header
       doc.setFillColor(41, 128, 185);
       doc.rect(20, categoryTableStartY, categoryColWidths.reduce((a, b) => a + b, 0), categoryRowHeight, 'F');
@@ -242,7 +242,7 @@ export class EquipmentReportPDFService {
         doc.text(header, xPos, categoryTableStartY + 4);
         xPos += categoryColWidths[index];
       });
-      
+
       // Draw table rows
       doc.setTextColor(0, 0, 0);
       doc.setFont('helvetica', 'normal');
@@ -258,73 +258,73 @@ export class EquipmentReportPDFService {
           xPos += categoryColWidths[cellIndex];
         });
       });
-      
+
       yPosition = categoryTableStartY + categoryRowHeight + (categoryData.length * categoryRowHeight) + 15;
     }
 
     // Equipment Details by Category
     if (data.equipment_by_category) {
       Object.values(data.equipment_by_category).forEach((category, categoryIndex) => {
-      // Check if we need a new page
-      if (yPosition > 250) {
-        doc.addPage();
-        yPosition = 20;
-      }
+        // Check if we need a new page
+        if (yPosition > 250) {
+          doc.addPage();
+          yPosition = 20;
+        }
 
-      // Category header
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      const categoryName = category.categoryName || 'Unknown Category';
-      const equipmentCount = category.equipment?.length || 0;
-      doc.text(`${categoryName} (${equipmentCount} items)`, 20, yPosition);
-      yPosition += 8;
-
-      if (category.equipment && category.equipment.length > 0) {
-        const equipmentData = category.equipment.map(equipment => [
-          equipment.name || 'N/A',
-          equipment.doorNumber || 'N/A',
-          equipment.istimara || 'N/A',
-          equipment.istimaraExpiryDate || 'N/A',
-          equipment.status || 'N/A'
-        ]);
-
-        // Draw equipment table manually
-        const equipmentTableStartY = yPosition;
-        const equipmentRowHeight = 6;
-        const equipmentColWidths = [40, 20, 30, 30, 20];
-        
-        // Draw table header
-        doc.setFillColor(52, 152, 219);
-        doc.rect(20, equipmentTableStartY, equipmentColWidths.reduce((a, b) => a + b, 0), equipmentRowHeight, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(8);
+        // Category header
+        doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
-        const equipmentHeaders = ['Name', 'Door #', 'Plate #', 'Plate # Expiry Date', 'Status'];
-        let equipmentXPos = 25;
-        equipmentHeaders.forEach((header, index) => {
-          doc.text(header, equipmentXPos, equipmentTableStartY + 4);
-          equipmentXPos += equipmentColWidths[index];
-        });
-        
-        // Draw table rows
-        doc.setTextColor(0, 0, 0);
-        doc.setFont('helvetica', 'normal');
-        equipmentData.forEach((row, index) => {
-          const rowY = equipmentTableStartY + equipmentRowHeight + (index * equipmentRowHeight);
-          if (index % 2 === 0) {
-            doc.setFillColor(245, 245, 245);
-            doc.rect(20, rowY, equipmentColWidths.reduce((a, b) => a + b, 0), equipmentRowHeight, 'F');
-          }
-          equipmentXPos = 25;
-          row.forEach((cell, cellIndex) => {
-            doc.text(cell, equipmentXPos, rowY + 4);
-            equipmentXPos += equipmentColWidths[cellIndex];
+        const categoryName = category.categoryName || 'Unknown Category';
+        const equipmentCount = category.equipment?.length || 0;
+        doc.text(`${categoryName} (${equipmentCount} items)`, 20, yPosition);
+        yPosition += 8;
+
+        if (category.equipment && category.equipment.length > 0) {
+          const equipmentData = category.equipment.map(equipment => [
+            equipment.name || 'N/A',
+            equipment.doorNumber || 'N/A',
+            equipment.istimara || 'N/A',
+            equipment.istimaraExpiryDate || 'N/A',
+            equipment.status || 'N/A'
+          ]);
+
+          // Draw equipment table manually
+          const equipmentTableStartY = yPosition;
+          const equipmentRowHeight = 6;
+          const equipmentColWidths = [40, 20, 30, 30, 20];
+
+          // Draw table header
+          doc.setFillColor(52, 152, 219);
+          doc.rect(20, equipmentTableStartY, equipmentColWidths.reduce((a, b) => a + b, 0), equipmentRowHeight, 'F');
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'bold');
+          const equipmentHeaders = ['Name', 'Door #', 'Plate #', 'Plate # Expiry Date', 'Status'];
+          let equipmentXPos = 25;
+          equipmentHeaders.forEach((header, index) => {
+            doc.text(header, equipmentXPos, equipmentTableStartY + 4);
+            equipmentXPos += equipmentColWidths[index];
           });
-        });
-        
-        yPosition = equipmentTableStartY + equipmentRowHeight + (equipmentData.length * equipmentRowHeight) + 10;
-      }
-    });
+
+          // Draw table rows
+          doc.setTextColor(0, 0, 0);
+          doc.setFont('helvetica', 'normal');
+          equipmentData.forEach((row, index) => {
+            const rowY = equipmentTableStartY + equipmentRowHeight + (index * equipmentRowHeight);
+            if (index % 2 === 0) {
+              doc.setFillColor(245, 245, 245);
+              doc.rect(20, rowY, equipmentColWidths.reduce((a, b) => a + b, 0), equipmentRowHeight, 'F');
+            }
+            equipmentXPos = 25;
+            row.forEach((cell, cellIndex) => {
+              doc.text(cell, equipmentXPos, rowY + 4);
+              equipmentXPos += equipmentColWidths[cellIndex];
+            });
+          });
+
+          yPosition = equipmentTableStartY + equipmentRowHeight + (equipmentData.length * equipmentRowHeight) + 10;
+        }
+      });
     }
 
     // Footer

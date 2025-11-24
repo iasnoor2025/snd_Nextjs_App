@@ -1,0 +1,815 @@
+[
+  {
+    "id": "TC001",
+    "title": "User Authentication Success",
+    "description": "Verify that a user can successfully authenticate with valid credentials and that the session is securely managed.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the login page"
+      },
+      {
+        "type": "action",
+        "description": "Enter valid username and password"
+      },
+      {
+        "type": "action",
+        "description": "Click the login button"
+      },
+      {
+        "type": "assertion",
+        "description": "User is logged in successfully and redirected to the dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the session cookie is set with secure attributes"
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "User Authentication Failure",
+    "description": "Verify that authentication fails with invalid credentials and an appropriate error message is shown.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the login page"
+      },
+      {
+        "type": "action",
+        "description": "Enter invalid username and/or password"
+      },
+      {
+        "type": "action",
+        "description": "Click the login button"
+      },
+      {
+        "type": "assertion",
+        "description": "Login fails and an error message is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "No session cookie is set"
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Role-based Access Control Enforcement",
+    "description": "Verify that users can only access pages and APIs allowed by their assigned roles and permissions.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login with a user assigned a limited set of permissions"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to access restricted UI components and API endpoints"
+      },
+      {
+        "type": "assertion",
+        "description": "Access to restricted features is denied"
+      },
+      {
+        "type": "assertion",
+        "description": "User interface does not show unauthorized elements"
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Employee CRUD Operations",
+    "description": "Verify creation, retrieval, update, and deletion of employee records including validation of mandatory fields.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to Employee Management module"
+      },
+      {
+        "type": "action",
+        "description": "Create a new employee with valid details"
+      },
+      {
+        "type": "assertion",
+        "description": "Employee record is saved and visible in the employee list"
+      },
+      {
+        "type": "action",
+        "description": "Edit the employee's profile information"
+      },
+      {
+        "type": "assertion",
+        "description": "Changes are saved and reflected accurately"
+      },
+      {
+        "type": "action",
+        "description": "Delete the employee record"
+      },
+      {
+        "type": "assertion",
+        "description": "Employee record is removed from the system"
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Employee Document Upload Validation",
+    "description": "Verify uploading employee documents validates file types, size limits, supports versioning, and approval workflows.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to an employee profile documents section"
+      },
+      {
+        "type": "action",
+        "description": "Upload valid document file within size limits"
+      },
+      {
+        "type": "assertion",
+        "description": "Document is uploaded successfully and versioned"
+      },
+      {
+        "type": "action",
+        "description": "Upload unsupported file type"
+      },
+      {
+        "type": "assertion",
+        "description": "Upload is rejected with appropriate error"
+      },
+      {
+        "type": "action",
+        "description": "Submit document for approval"
+      },
+      {
+        "type": "assertion",
+        "description": "Approval workflow is triggered and document status updated accordingly"
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Project Creation and Resource Allocation",
+    "description": "Validate creation of a project with associated resources and verify task and milestone management.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Open Project Management module"
+      },
+      {
+        "type": "action",
+        "description": "Create a new project with required details"
+      },
+      {
+        "type": "assertion",
+        "description": "Project appears in the projects list"
+      },
+      {
+        "type": "action",
+        "description": "Allocate resources (employees, equipment) to the project"
+      },
+      {
+        "type": "assertion",
+        "description": "Resources are linked to the project and visible"
+      },
+      {
+        "type": "action",
+        "description": "Add tasks and milestones to the project"
+      },
+      {
+        "type": "assertion",
+        "description": "Tasks and milestones appear under the project with correct details"
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Equipment Inventory Lifecycle",
+    "description": "Test equipment adding, maintenance scheduling, QR code generation, and rental status tracking.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to Equipment Management"
+      },
+      {
+        "type": "action",
+        "description": "Add new equipment with valid details"
+      },
+      {
+        "type": "assertion",
+        "description": "Equipment details are saved and listed"
+      },
+      {
+        "type": "action",
+        "description": "Generate QR code for the equipment"
+      },
+      {
+        "type": "assertion",
+        "description": "QR code is generated and scannable"
+      },
+      {
+        "type": "action",
+        "description": "Schedule maintenance for the equipment"
+      },
+      {
+        "type": "assertion",
+        "description": "Maintenance schedule is saved and retrievable"
+      },
+      {
+        "type": "action",
+        "description": "Update rental status to checked out and then checked in"
+      },
+      {
+        "type": "assertion",
+        "description": "Rental status updates are reflected correctly"
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Rental Agreement Lifecycle and Billing",
+    "description": "Verify creation, modification, invoicing, and payment tracking of rental agreements with ERPNext synchronization.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Create a new rental agreement with equipment and customer linkage"
+      },
+      {
+        "type": "assertion",
+        "description": "Rental agreement is saved and visible"
+      },
+      {
+        "type": "action",
+        "description": "Generate invoice for the rental agreement"
+      },
+      {
+        "type": "assertion",
+        "description": "Invoice is generated with correct billing details"
+      },
+      {
+        "type": "action",
+        "description": "Record payment against the invoice"
+      },
+      {
+        "type": "assertion",
+        "description": "Payment status is updated correctly"
+      },
+      {
+        "type": "action",
+        "description": "Trigger synchronization with ERPNext"
+      },
+      {
+        "type": "assertion",
+        "description": "Rental data and invoices are synchronized without errors"
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Customer Profile and Credit Limit Management",
+    "description": "Verify creation and update of customer profiles with credit limits and associated projects, and ERPNext financial data integration.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Add a new customer profile with credit limit and projects assigned"
+      },
+      {
+        "type": "assertion",
+        "description": "Customer is added and visible in the customer list"
+      },
+      {
+        "type": "action",
+        "description": "Update customer's credit limit"
+      },
+      {
+        "type": "assertion",
+        "description": "Credit limit updates are saved correctly"
+      },
+      {
+        "type": "action",
+        "description": "Trigger ERPNext synchronization for customer financial data"
+      },
+      {
+        "type": "assertion",
+        "description": "Financial data is synced and statuses reported accurately"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Timesheet Entry and Approval Workflow",
+    "description": "Validate timesheet entry by field workers, approval by managers, bulk operations, and payroll integration.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Field worker creates timesheet entries for tasks performed"
+      },
+      {
+        "type": "assertion",
+        "description": "Timesheet entries are saved and time tracked accurately"
+      },
+      {
+        "type": "action",
+        "description": "Submit timesheets for approval"
+      },
+      {
+        "type": "assertion",
+        "description": "Timesheets enter approval workflow"
+      },
+      {
+        "type": "action",
+        "description": "Manager approves or rejects timesheets"
+      },
+      {
+        "type": "assertion",
+        "description": "Timesheet statuses are updated accordingly"
+      },
+      {
+        "type": "action",
+        "description": "Verify timesheet data integration with payroll"
+      },
+      {
+        "type": "assertion",
+        "description": "Payroll reflects approved timesheet hours correctly"
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Payroll Salary Calculation and Payslip Generation",
+    "description": "Verify automated salary calculations including advances, increments, and generation of payslip PDFs for employees.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Input employee salary and advances for payroll processing"
+      },
+      {
+        "type": "action",
+        "description": "Trigger payroll calculation"
+      },
+      {
+        "type": "assertion",
+        "description": "Salaries are calculated correctly including deductions and advances"
+      },
+      {
+        "type": "action",
+        "description": "Generate payslip for an employee"
+      },
+      {
+        "type": "assertion",
+        "description": "Payslip PDF is generated with accurate salary details"
+      },
+      {
+        "type": "action",
+        "description": "Apply salary increment and validate recalculation"
+      },
+      {
+        "type": "assertion",
+        "description": "Payroll reflects updated salary"
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Leave Request and Approval",
+    "description": "Verify the leave request process including submission, approval workflow, leave calendar integration, and policy enforcement.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Employee submits a leave request with valid leave type"
+      },
+      {
+        "type": "assertion",
+        "description": "Leave request is saved and appears in pending status"
+      },
+      {
+        "type": "action",
+        "description": "Manager reviews and approves the leave request"
+      },
+      {
+        "type": "assertion",
+        "description": "Leave request status updates to approved"
+      },
+      {
+        "type": "action",
+        "description": "Verify leave is reflected on the shared leave calendar"
+      },
+      {
+        "type": "assertion",
+        "description": "Leave days are properly deducted based on policy"
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Quotation Generation and Conversion to Rental",
+    "description": "Validate the process to create quotations, route them through approval workflows, track versions, and convert approved quotes to rentals.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Create a new quotation with customer and equipment details"
+      },
+      {
+        "type": "assertion",
+        "description": "Quotation is saved and versioned"
+      },
+      {
+        "type": "action",
+        "description": "Send quotation for approval"
+      },
+      {
+        "type": "assertion",
+        "description": "Approval workflow is triggered and status updated"
+      },
+      {
+        "type": "action",
+        "description": "Convert approved quotation to rental agreement"
+      },
+      {
+        "type": "assertion",
+        "description": "Rental agreement is created with data from the quotation"
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Document Management with Version Control and Approval",
+    "description": "Verify document upload, application of version control, approval statuses, and secure storage access.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Upload a document to the company document repository"
+      },
+      {
+        "type": "assertion",
+        "description": "Document is uploaded successfully and versioned"
+      },
+      {
+        "type": "action",
+        "description": "Submit the document for approval"
+      },
+      {
+        "type": "assertion",
+        "description": "Document approval workflow is initiated and tracked"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to access the document file from S3-compatible storage URL"
+      },
+      {
+        "type": "assertion",
+        "description": "Document can be downloaded securely and access is permission controlled"
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Real-time Notifications Delivery",
+    "description": "Verify that real-time notifications via Server-Sent Events (SSE) are delivered to users without latency or loss.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Trigger a system event generating a notification"
+      },
+      {
+        "type": "assertion",
+        "description": "Notification is received by the subscribed user in real-time"
+      },
+      {
+        "type": "action",
+        "description": "Open the notification bell UI component"
+      },
+      {
+        "type": "assertion",
+        "description": "Notification appears correctly with relevant details and status"
+      }
+    ]
+  },
+  {
+    "id": "TC016",
+    "title": "Internationalization and RTL Layout",
+    "description": "Validate language switching between Arabic and English, confirming correct text translation and RTL layout for Arabic.",
+    "category": "ui",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Load the UI in English language"
+      },
+      {
+        "type": "assertion",
+        "description": "All UI elements display text in English"
+      },
+      {
+        "type": "action",
+        "description": "Switch the language to Arabic"
+      },
+      {
+        "type": "assertion",
+        "description": "UI text is translated to Arabic"
+      },
+      {
+        "type": "assertion",
+        "description": "The layout changes to RTL orientation consistently across all pages"
+      }
+    ]
+  },
+  {
+    "id": "TC017",
+    "title": "Automated Monthly Billing and Invoice Generation",
+    "description": "Verify that automated monthly billing runs generate accurate invoices which sync correctly with ERPNext financial records.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Trigger automated monthly billing job"
+      },
+      {
+        "type": "assertion",
+        "description": "Invoices are generated for all due rentals with correct amounts"
+      },
+      {
+        "type": "action",
+        "description": "Manually trigger synchronization with ERPNext"
+      },
+      {
+        "type": "assertion",
+        "description": "Billing invoices are correctly synced to ERPNext with no errors"
+      }
+    ]
+  },
+  {
+    "id": "TC018",
+    "title": "SQL Injection and Input Validation Security",
+    "description": "Test user inputs across the system for proper validation to prevent SQL injection and other injection attacks.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Attempt to enter SQL injection payloads into input fields across modules"
+      },
+      {
+        "type": "assertion",
+        "description": "Inputs are sanitized and no database errors or unauthorized data leakage occurs"
+      },
+      {
+        "type": "action",
+        "description": "Verify API input validation rejects malicious payloads"
+      },
+      {
+        "type": "assertion",
+        "description": "API responses contain appropriate error messages without sensitive information"
+      }
+    ]
+  },
+  {
+    "id": "TC019",
+    "title": "Performance Testing for Page Load and API Response",
+    "description": "Measure and validate that all key pages load within 3 seconds and API responses return within 500ms under normal load conditions.",
+    "category": "performance",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Load key UI pages (Dashboard, Employee Management, Rental Management) multiple times"
+      },
+      {
+        "type": "assertion",
+        "description": "Page load times are consistently under 3 seconds"
+      },
+      {
+        "type": "action",
+        "description": "Send API requests to key endpoints including authentication, employee CRUD, rental invoicing"
+      },
+      {
+        "type": "assertion",
+        "description": "API response times are consistently under 500ms"
+      }
+    ]
+  },
+  {
+    "id": "TC020",
+    "title": "Data Synchronization Accuracy with ERPNext",
+    "description": "Validate that customer, employee, invoice, and payment data synchronize accurately and completely with ERPNext without data loss or corruption.",
+    "category": "integration",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Modify customer and employee data in SND system"
+      },
+      {
+        "type": "action",
+        "description": "Trigger synchronization with ERPNext"
+      },
+      {
+        "type": "assertion",
+        "description": "Data changes are reflected correctly in ERPNext"
+      },
+      {
+        "type": "action",
+        "description": "Generate rental invoices and payments"
+      },
+      {
+        "type": "action",
+        "description": "Trigger synchronization for financial data"
+      },
+      {
+        "type": "assertion",
+        "description": "Invoices and payments reflect accurately on ERPNext with matching data"
+      }
+    ]
+  },
+  {
+    "id": "TC021",
+    "title": "Leave Policy Enforcement Edge Cases",
+    "description": "Test leave requests that exceed leave balances, overlap with holidays, or fall outside allowed types.",
+    "category": "error handling",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Submit leave request exceeding available leave balance"
+      },
+      {
+        "type": "assertion",
+        "description": "Request is rejected with appropriate message"
+      },
+      {
+        "type": "action",
+        "description": "Submit leave request overlapping defined holiday dates"
+      },
+      {
+        "type": "assertion",
+        "description": "System flags or handles overlap as per configured policy"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to submit leave with an unsupported leave type"
+      },
+      {
+        "type": "assertion",
+        "description": "Submission is rejected with validation error"
+      }
+    ]
+  },
+  {
+    "id": "TC022",
+    "title": "Rental Equipment Check-in/Check-out Validation",
+    "description": "Verify equipment status updates during check-out and check-in, ensuring rental history and maintenance schedules are updated accordingly.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Check out equipment to a rental agreement"
+      },
+      {
+        "type": "assertion",
+        "description": "Equipment status changes to rented and rental history logs check-out time"
+      },
+      {
+        "type": "action",
+        "description": "Check in equipment after rental period"
+      },
+      {
+        "type": "assertion",
+        "description": "Equipment status changes to available and check-in time recorded"
+      },
+      {
+        "type": "action",
+        "description": "Verify maintenance due flags update if needed post check-in"
+      },
+      {
+        "type": "assertion",
+        "description": "Maintenance scheduling reflects new status accurately"
+      }
+    ]
+  },
+  {
+    "id": "TC023",
+    "title": "Final Settlement Calculation and PDF Generation",
+    "description": "Test final settlement computations for departing employees and generation of settlement PDF documents.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Input employee data for final settlement calculation"
+      },
+      {
+        "type": "action",
+        "description": "Trigger final settlement calculation"
+      },
+      {
+        "type": "assertion",
+        "description": "Settlement amount is calculated correctly"
+      },
+      {
+        "type": "action",
+        "description": "Generate final settlement PDF"
+      },
+      {
+        "type": "assertion",
+        "description": "PDF contains accurate settlement details formatted correctly"
+      }
+    ]
+  },
+  {
+    "id": "TC024",
+    "title": "Safety Incident Reporting and Compliance Tracking",
+    "description": "Validate reporting of safety incidents, severity classification, investigation tracking, and compliance updates.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Report a new safety incident with required details"
+      },
+      {
+        "type": "assertion",
+        "description": "Incident is logged and visible in safety management dashboard"
+      },
+      {
+        "type": "action",
+        "description": "Classify incident severity and assign investigation tasks"
+      },
+      {
+        "type": "assertion",
+        "description": "Severity level and investigation status are updated correctly"
+      },
+      {
+        "type": "action",
+        "description": "Generate H2S training cards based on completed safety training"
+      },
+      {
+        "type": "assertion",
+        "description": "Cards are generated as PDFs with correct employee info"
+      }
+    ]
+  },
+  {
+    "id": "TC025",
+    "title": "Multi-device UI Accessibility and Responsiveness",
+    "description": "Verify that the bilingual user interface renders correctly and is responsive across desktop, tablet, and mobile devices.",
+    "category": "ui",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Access the system via desktop browser in English"
+      },
+      {
+        "type": "assertion",
+        "description": "UI displays correctly and all features function properly"
+      },
+      {
+        "type": "action",
+        "description": "Access the system using a tablet device browser in Arabic"
+      },
+      {
+        "type": "assertion",
+        "description": "UI respects RTL layout and remains fully usable"
+      },
+      {
+        "type": "action",
+        "description": "Access the system via mobile device browser"
+      },
+      {
+        "type": "assertion",
+        "description": "UI layout adapts fluidly with no content overlap or hidden elements"
+      }
+    ]
+  }
+]

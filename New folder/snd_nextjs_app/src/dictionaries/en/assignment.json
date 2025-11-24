@@ -1,0 +1,205 @@
+{
+  "title": "Assignment Management",
+  "subtitle": "Manage and track employee assignments to projects and equipment",
+  "description": "Manage all employee assignments and project allocations",
+  "create": {
+    "title": "Create New Assignment",
+    "description": "Create a new assignment for an employee",
+    "modalTitle": "Add New Assignment",
+    "modalDescription": "Create a new assignment for this employee",
+    "editModalTitle": "Edit Assignment",
+    "editModalDescription": "Update the employee assignment details"
+  },
+  "actions": {
+    "createAssignment": "Create Assignment",
+    "editAssignment": "Edit Assignment",
+    "deleteAssignment": "Delete Assignment",
+    "viewAssignment": "View Assignment",
+    "backToAssignments": "Back to Assignments",
+    "save": "Save",
+    "cancel": "Cancel",
+    "update": "Update",
+    "delete": "Delete",
+    "search": "Search",
+    "filter": "Filter",
+    "refresh": "Refresh",
+    "export": "Export",
+    "import": "Import",
+    "addNewAssignment": "Add New Assignment",
+    "updateAssignment": "Update Assignment"
+  },
+  "fields": {
+    "employee": "Employee",
+    "selectEmployee": "Select employee",
+    "project": "Project",
+    "selectProject": "Select project",
+    "equipment": "Equipment",
+    "selectEquipment": "Select equipment",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "status": "Status",
+    "role": "Role",
+    "rolePlaceholder": "Employee role in assignment",
+    "description": "Description",
+    "descriptionPlaceholder": "Assignment description",
+    "hoursPerDay": "Hours Per Day",
+    "rate": "Rate",
+    "ratePlaceholder": "Hourly rate",
+    "createdAt": "Created At",
+    "updatedAt": "Updated At",
+    "assignmentName": "Assignment Name",
+    "assignmentNamePlaceholder": "Enter assignment name",
+    "location": "Location",
+    "locationPlaceholder": "Enter location",
+    "notes": "Notes",
+    "notesPlaceholder": "Enter any additional notes",
+    "projectOptional": "Project (Optional)",
+    "selectProjectPlaceholder": "Select a project",
+    "noProject": "No Project",
+    "rentalOptional": "Rental (Optional)",
+    "selectRentalPlaceholder": "Select a rental",
+    "noRental": "No Rental"
+  },
+  "status": {
+    "active": "Active",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "pending": "Pending",
+    "on_hold": "On Hold"
+  },
+  "messages": {
+    "loading": "Loading assignments...",
+    "saving": "Saving...",
+    "createSuccess": "Assignment created successfully",
+    "createError": "Failed to create assignment",
+    "updateSuccess": "Assignment updated successfully",
+    "updateError": "Failed to update assignment",
+    "deleteSuccess": "Assignment deleted successfully",
+    "deleteError": "Failed to delete assignment",
+    "fetchError": "Error fetching assignments",
+    "validationError": "Please fill in all required fields",
+    "assignmentNotFound": "Assignment not found",
+    "accessDenied": "Access denied. You don't have permission to manage assignments.",
+    "errorGeneral": "An error occurred during the operation",
+    "failedToLoad": "Failed to load assignments",
+    "failedToCreate": "Failed to create assignment",
+    "failedToUpdate": "Failed to update assignment",
+    "failedToDelete": "Failed to delete assignment",
+    "loadingError": "Error loading assignments",
+    "saveError": "Error saving assignment"
+  },
+  "validation": {
+    "required": "This field is required",
+    "invalidDate": "Invalid date",
+    "invalidDateRange": "Invalid date range",
+    "employeeRequired": "Employee is required",
+    "projectRequired": "Project is required",
+    "startDateRequired": "Start date is required",
+    "endDateAfterStart": "End date must be after start date",
+    "invalidRate": "Invalid rate",
+    "invalidHours": "Invalid hours",
+    "assignmentNameRequired": "Assignment name and start date are required"
+  },
+  "table": {
+    "headers": {
+      "employee": "Employee",
+      "project": "Project",
+      "equipment": "Equipment",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "status": "Status",
+      "role": "Role",
+      "actions": "Actions"
+    }
+  },
+  "pagination": {
+    "showing": "Showing {{start}} to {{end}} of {{total}} assignments",
+    "page": "Page {{current}} of {{total}}",
+    "previous": "Previous",
+    "next": "Next",
+    "itemsPerPage": "Items per page"
+  },
+
+  "assignmentHistory": {
+    "title": "Assignment History",
+    "noHistory": "No Assignment History",
+    "noHistoryDescription": "This employee has no previous assignments."
+  },
+
+  "currentAssignment": {
+    "title": "Current Assignment",
+    "location": "Location",
+    "period": "Period",
+    "details": "Details",
+    "notes": "Notes",
+    "notSpecified": "Not specified"
+  },
+
+  "form": {
+    "assignmentName": "Assignment Name *",
+    "assignmentNamePlaceholder": "Enter assignment name",
+    "assignmentType": "Assignment Type",
+    "selectAssignmentType": "Select assignment type",
+    "location": "Location",
+    "locationPlaceholder": "Enter location",
+    "startDate": "Start Date *",
+    "endDate": "End Date",
+    "status": "Status",
+    "selectStatus": "Select status",
+    "notes": "Notes",
+    "notesPlaceholder": "Enter notes (optional)",
+    "editAssignment": "Edit Assignment",
+    "updateAssignmentDetails": "Update assignment details",
+    "deleteAssignment": "Delete Assignment",
+    "deleteConfirmation": "Are you sure you want to delete this assignment? This action cannot be undone.",
+    "creating": "Creating...",
+    "updating": "Updating...",
+    "deleting": "Deleting...",
+    "create": "Create",
+    "update": "Update",
+    "delete": "Delete",
+    "cancel": "Cancel"
+  },
+
+  "types": {
+    "manual": "Manual",
+    "project": "Project",
+    "rental": "Rental"
+  },
+
+  "table": {
+    "assignmentName": "Assignment Name",
+    "type": "Type",
+    "details": "Details",
+    "location": "Location",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "status": "Status",
+    "actions": "Actions"
+  },
+
+  "search": {
+    "placeholder": "Search assignments...",
+    "title": "Search and Filter",
+    "noResults": "No assignments found",
+    "resultCount": "Assignments ({{count}})"
+  },
+  "stats": {
+    "totalAssignments": "Total Assignments",
+    "activeAssignments": "Active Assignments",
+    "completedAssignments": "Completed Assignments",
+    "pendingAssignments": "Pending Assignments",
+    "totalEmployees": "Total Employees",
+    "totalProjects": "Total Projects"
+  },
+  "filters": {
+    "status": "Status",
+    "project": "Project",
+    "employee": "Employee",
+    "allStatus": "All Status",
+    "allProjects": "All Projects",
+    "allEmployees": "All Employees",
+    "applyFilters": "Apply Filters",
+    "clearFilters": "Clear Filters"
+  }
+}

@@ -39,7 +39,7 @@ export class RentalInvoiceService {
         WHERE rental_id = ${rentalId} 
         ORDER BY invoice_date DESC
       `);
-      
+
       // Transform the result to match expected format
       const invoices = result.rows.map((row: any) => ({
         id: row.id,
@@ -52,7 +52,7 @@ export class RentalInvoiceService {
         createdAt: row.created_at,
         updatedAt: row.updated_at
       }));
-      
+
       return invoices;
     } catch (error) {
       console.error('Error fetching rental invoices:', error);
@@ -77,7 +77,7 @@ export class RentalInvoiceService {
   static async updateInvoiceStatus(invoiceId: string, status: string) {
     try {
       const result = await db.update(rentalInvoices)
-        .set({ 
+        .set({
           status: status,
           updatedAt: new Date().toISOString().split('T')[0]
         })
@@ -96,7 +96,7 @@ export class RentalInvoiceService {
     try {
       await db.delete(rentalInvoices)
         .where(eq(rentalInvoices.invoiceId, invoiceId));
-      
+
       return true;
     } catch (error) {
       console.error('Error deleting invoice:', error);
@@ -118,35 +118,5 @@ export class RentalInvoiceService {
     }
   }
 
-  // Update invoice status
-  static async updateInvoiceStatus(invoiceId: string, status: string) {
-    try {
-      const result = await db.execute(sql`
-        UPDATE rental_invoices 
-        SET status = ${status}, updated_at = CURRENT_DATE
-        WHERE invoice_id = ${invoiceId}
-        RETURNING *
-      `);
 
-      return result.rows[0];
-    } catch (error) {
-      console.error('Error updating invoice status:', error);
-      throw error;
-    }
-  }
-
-  // Delete invoice
-  static async deleteInvoice(invoiceId: string) {
-    try {
-      await db.execute(sql`
-        DELETE FROM rental_invoices 
-        WHERE invoice_id = ${invoiceId}
-      `);
-      
-      return true;
-    } catch (error) {
-      console.error('Error deleting invoice:', error);
-      throw error;
-    }
-  }
 }

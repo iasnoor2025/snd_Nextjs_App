@@ -1,12 +1,13 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
+import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as schema from './schema';
 
 declare global {
-  // eslint-disable-next-line no-var
+
   var __drizzlePool: Pool | undefined;
-  // eslint-disable-next-line no-var
-  var __drizzleDb: ReturnType<typeof drizzle> | undefined;
+
+  var __drizzleDb: NodePgDatabase<typeof schema> | undefined;
 }
 
 function createPool(): Pool {
@@ -14,9 +15,9 @@ function createPool(): Pool {
     throw new Error('DATABASE_URL is not set');
   }
 
-if (global.__drizzlePool) {
-  return global.__drizzlePool;
-}
+  if (global.__drizzlePool) {
+    return global.__drizzlePool;
+  }
 
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -81,7 +82,9 @@ export const pool: Pool = new Proxy({} as Pool, {
   },
 });
 
-export const db = new Proxy({} as ReturnType<typeof drizzle>, {
+
+
+export const db = new Proxy({} as NodePgDatabase<typeof schema>, {
   get(_target, prop) {
     try {
       const dbInstance = getDb();

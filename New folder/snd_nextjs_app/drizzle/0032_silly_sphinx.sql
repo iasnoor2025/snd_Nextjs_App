@@ -1,0 +1,1 @@
+ALTER TABLE "company_document_types" ALTER COLUMN "updated_at" SET DEFAULT CURRENT_DATE;

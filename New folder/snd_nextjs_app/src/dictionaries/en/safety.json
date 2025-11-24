@@ -1,0 +1,131 @@
+{
+  "title": "Safety Management",
+  "subtitle": "Monitor and manage safety incidents and compliance",
+  "description": "Manage all safety incidents and reports",
+  "incidents": {
+    "title": "Safety Incidents",
+    "description": "Monitor and manage all reported safety incidents"
+  },
+  "actions": {
+    "createIncident": "Create Incident",
+    "editIncident": "Edit Incident",
+    "deleteIncident": "Delete Incident",
+    "viewIncident": "View Incident",
+    "reportIncident": "Report Incident",
+    "backToSafety": "Back to Safety",
+    "save": "Save",
+    "cancel": "Cancel",
+    "update": "Update",
+    "delete": "Delete",
+    "search": "Search",
+    "filter": "Filter",
+    "refresh": "Refresh",
+    "export": "Export",
+    "import": "Import"
+  },
+  "fields": {
+    "title": "Title",
+    "titlePlaceholder": "Incident title",
+    "description": "Description",
+    "descriptionPlaceholder": "Detailed incident description",
+    "severity": "Severity",
+    "status": "Status",
+    "reportedBy": "Reported By",
+    "assignedTo": "Assigned To",
+    "location": "Location",
+    "locationPlaceholder": "Incident location",
+    "incidentDate": "Incident Date",
+    "resolvedDate": "Resolved Date",
+    "resolution": "Resolution",
+    "resolutionPlaceholder": "Resolution details",
+    "cost": "Cost",
+    "costPlaceholder": "Estimated cost",
+    "createdAt": "Created At",
+    "updatedAt": "Updated At"
+  },
+  "severity": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "critical": "Critical"
+  },
+  "status": {
+    "open": "Open",
+    "investigating": "Investigating",
+    "resolved": "Resolved",
+    "closed": "Closed"
+  },
+  "messages": {
+    "loading": "Loading incidents...",
+    "saving": "Saving...",
+    "createSuccess": "Safety incident created successfully",
+    "createError": "Failed to create safety incident",
+    "updateSuccess": "Safety incident updated successfully",
+    "updateError": "Failed to update safety incident",
+    "deleteSuccess": "Safety incident deleted successfully",
+    "deleteError": "Failed to delete safety incident",
+    "fetchError": "Error fetching safety incidents",
+    "validationError": "Please fill in all required fields",
+    "incidentNotFound": "Incident not found",
+    "accessDenied": "Access denied. You don't have permission to manage safety.",
+    "errorGeneral": "An error occurred during the operation",
+    "failedToLoad": "Failed to load safety incidents",
+    "failedToCreate": "Failed to create safety incident",
+    "failedToUpdate": "Failed to update safety incident",
+    "failedToDelete": "Failed to delete safety incident"
+  },
+  "validation": {
+    "required": "This field is required",
+    "invalidDate": "Invalid date",
+    "invalidDateRange": "Invalid date range",
+    "titleRequired": "Title is required",
+    "descriptionRequired": "Description is required",
+    "severityRequired": "Severity is required",
+    "statusRequired": "Status is required",
+    "reportedByRequired": "Reported by is required",
+    "locationRequired": "Location is required",
+    "incidentDateRequired": "Incident date is required",
+    "invalidCost": "Invalid cost"
+  },
+  "table": {
+    "headers": {
+      "title": "Title",
+      "severity": "Severity",
+      "status": "Status",
+      "location": "Location",
+      "reportedBy": "Reported By",
+      "date": "Date",
+      "cost": "Cost",
+      "actions": "Actions"
+    }
+  },
+  "pagination": {
+    "showing": "Showing {{start}} to {{end}} of {{total}} incidents",
+    "page": "Page {{current}} of {{total}}",
+    "previous": "Previous",
+    "next": "Next",
+    "itemsPerPage": "Items per page"
+  },
+  "search": {
+    "placeholder": "Search incidents...",
+    "title": "Search and Filter",
+    "noResults": "No incidents found",
+    "resultCount": "Incidents ({{count}})"
+  },
+  "stats": {
+    "totalIncidents": "Total Incidents",
+    "openCases": "Open Cases",
+    "underInvestigation": "Under Investigation",
+    "criticalIssues": "Critical Issues",
+    "resolvedCases": "Resolved Cases",
+    "totalCost": "Total Cost"
+  },
+  "filters": {
+    "severityPlaceholder": "Filter by severity",
+    "statusPlaceholder": "Filter by status",
+    "allSeverities": "All Severities",
+    "allStatuses": "All Statuses",
+    "applyFilters": "Apply Filters",
+    "clearFilters": "Clear Filters"
+  }
+}

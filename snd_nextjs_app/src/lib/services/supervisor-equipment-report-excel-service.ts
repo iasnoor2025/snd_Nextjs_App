@@ -26,8 +26,8 @@ export class SupervisorEquipmentReportExcelService {
     // Supervisor Summary Sheet
     if (data.supervisor_groups && data.supervisor_groups.length > 0) {
       const supervisorSummaryHeaders = ['Supervisor', 'File Number', 'Equipment Count', 'Total Items'];
-      const supervisorSummaryData = [supervisorSummaryHeaders];
-      
+      const supervisorSummaryData: (string | number)[][] = [supervisorSummaryHeaders];
+
       data.supervisor_groups.forEach(supervisor => {
         supervisorSummaryData.push([
           supervisor.supervisor_name || 'N/A',
@@ -56,10 +56,10 @@ export class SupervisorEquipmentReportExcelService {
         'Start Date',
         'Completed Date'
       ];
-      
-      const equipmentData = [equipmentHeaders];
+
+      const equipmentData: (string | number)[][] = [equipmentHeaders];
       let serialNumber = 1;
-      
+
       data.supervisor_groups.forEach(supervisor => {
         if (supervisor.equipment && supervisor.equipment.length > 0) {
           supervisor.equipment.forEach(equipment => {
@@ -94,7 +94,7 @@ export class SupervisorEquipmentReportExcelService {
     try {
       // Extract data if wrapped in response structure
       const reportData: SupervisorEquipmentReportData = data.data || data;
-      
+
       const workbook = this.generateSupervisorEquipmentReportExcel(reportData);
       XLSX.writeFile(
         workbook,

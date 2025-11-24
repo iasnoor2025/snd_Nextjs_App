@@ -4,8 +4,8 @@
  * All methods are safe and non-breaking
  */
 
-import { ComponentType, Suspense, lazy, ReactNode } from 'react';
-import { ErrorBoundary } from '@/components/error-boundary';
+import React, { ComponentType, Suspense, lazy, ReactNode } from 'react';
+import ErrorBoundary from '@/components/error-boundary';
 
 interface LazyComponentOptions {
   fallback?: ReactNode;
@@ -96,16 +96,7 @@ export function createSafeLazyModule<T = any>(
  * Safe component-based lazy loading
  * Safe method for component-level code splitting
  */
-export function createSafeLazyComponent<T = any>(
-  importFn: () => Promise<{ default: ComponentType<T> }>,
-  options: LazyComponentOptions = {}
-) {
-  return createSafeLazyComponent(importFn, {
-    fallback: <div>Loading component...</div>,
-    errorFallback: <div>Error loading component</div>,
-    ...options
-  });
-}
+
 
 /**
  * Safe hook-based lazy loading
@@ -380,82 +371,82 @@ export const LazyLoadingUtils = {
   /**
    * Lazy load employee management components
    */
-  EmployeeManagement: createSafeLazyModule(
-    () => import('@/components/employee/EmployeeManagement'),
-    { fallback: <div>Loading employee management...</div> }
-  ),
+  // EmployeeManagement: createSafeLazyModule(
+  //   () => import('@/components/employee/EmployeeManagement'),
+  //   { fallback: <div>Loading employee management...</div> }
+  // ),
 
   /**
    * Lazy load equipment management components
    */
-  EquipmentManagement: createSafeLazyModule(
-    () => import('@/components/equipment/EquipmentManagement'),
-    { fallback: <div>Loading equipment management...</div> }
-  ),
+  // EquipmentManagement: createSafeLazyModule(
+  //   () => import('@/components/equipment/EquipmentManagement'),
+  //   { fallback: <div>Loading equipment management...</div> }
+  // ),
 
   /**
    * Lazy load project management components
    */
-  ProjectManagement: createSafeLazyModule(
-    () => import('@/components/project/ProjectManagement'),
-    { fallback: <div>Loading project management...</div> }
-  ),
+  // ProjectManagement: createSafeLazyModule(
+  //   () => import('@/components/project/ProjectManagement'),
+  //   { fallback: <div>Loading project management...</div> }
+  // ),
 
   /**
    * Lazy load rental management components
    */
-  RentalManagement: createSafeLazyModule(
-    () => import('@/components/rental/RentalManagement'),
-    { fallback: <div>Loading rental management...</div> }
-  ),
+  // RentalManagement: createSafeLazyModule(
+  //   () => import('@/components/rental/RentalManagement'),
+  //   { fallback: <div>Loading rental management...</div> }
+  // ),
 
   /**
    * Lazy load reporting components
    */
-  Reporting: createSafeLazyModule(
-    () => import('@/components/reporting/Reporting'),
-    { fallback: <div>Loading reporting...</div> }
-  ),
+  // Reporting: createSafeLazyModule(
+  //   () => import('@/components/reporting/Reporting'),
+  //   { fallback: <div>Loading reporting...</div> }
+  // ),
 
   /**
    * Lazy load dashboard components
    */
-  Dashboard: createSafeLazyModule(
-    () => import('@/components/dashboard/Dashboard'),
-    { fallback: <div>Loading dashboard...</div> }
-  ),
+  // Dashboard: createSafeLazyModule(
+  //   () => import('@/components/dashboard/Dashboard'),
+  //   { fallback: <div>Loading dashboard...</div> }
+  // ),
 
   /**
    * Lazy load performance components
    */
-  Performance: createSafeLazyModule(
-    () => import('@/components/performance/PerformanceDashboard'),
-    { fallback: <div>Loading performance dashboard...</div> }
-  ),
+  // Performance: createSafeLazyModule(
+  //   () => import('@/components/performance/PerformanceDashboard'),
+  //   { fallback: <div>Loading performance dashboard...</div> }
+  // ),
 
   /**
    * Lazy load chart components
    */
-  Charts: createSafeLazyModule(
-    () => import('@/components/charts/ChartComponents'),
-    { fallback: <div>Loading charts...</div> }
-  ),
+  // Charts: createSafeLazyModule(
+  //   () => import('@/components/charts/ChartComponents'),
+  //   { fallback: <div>Loading charts...</div> }
+  // ),
 
   /**
    * Lazy load form components
    */
-  Forms: createSafeLazyModule(
-    () => import('@/components/forms/FormComponents'),
-    { fallback: <div>Loading forms...</div> }
-  ),
+  // Forms: createSafeLazyModule(
+  //   () => import('@/components/forms/FormComponents'),
+  //   { fallback: <div>Loading forms...</div> }
+  // ),
 
   /**
    * Lazy load table components
    */
-  Tables: createSafeLazyModule(
-    () => import('@/components/tables/TableComponents'),
-    { fallback: <div>Loading tables...</div> }
-  )
+  // Tables: createSafeLazyModule(
+  //   () => import('@/components/tables/TableComponents'),
+  //   { fallback: <div>Loading tables...</div> }
+  // )
 };
 
 // Export for use in other files

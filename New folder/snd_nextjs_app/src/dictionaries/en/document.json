@@ -1,0 +1,173 @@
+{
+  "title": "Document Management",
+  "subtitle": "Organize and manage all company documents and files",
+  "description": "Manage all documents, files, and digital assets",
+  "create": {
+    "title": "Upload New Document",
+    "description": "Upload a new document to the system"
+  },
+  "actions": {
+    "createDocument": "Create Document",
+    "editDocument": "Edit Document",
+    "deleteDocument": "Delete Document",
+    "viewDocument": "View Document",
+    "uploadDocument": "Upload Document",
+    "downloadDocument": "Download Document",
+    "backToDocuments": "Back to Documents",
+    "save": "Save",
+    "cancel": "Cancel",
+    "update": "Update",
+    "delete": "Delete",
+    "search": "Search",
+    "filter": "Filter",
+    "refresh": "Refresh",
+    "export": "Export",
+    "import": "Import"
+  },
+  "fields": {
+    "title": "Title",
+    "titlePlaceholder": "Document title",
+    "description": "Description",
+    "descriptionPlaceholder": "Document description",
+    "file": "File",
+    "selectFile": "Select file",
+    "fileType": "File Type",
+    "fileSize": "File Size",
+    "category": "Category",
+    "selectCategory": "Select category",
+    "tags": "Tags",
+    "tagsPlaceholder": "Add tags separated by commas",
+    "status": "Status",
+    "uploadedBy": "Uploaded By",
+    "uploadedAt": "Uploaded At",
+    "lastModified": "Last Modified",
+    "version": "Version",
+    "accessLevel": "Access Level"
+  },
+  "fileTypes": {
+    "pdf": "PDF Document",
+    "doc": "Word Document",
+    "docx": "Word Document",
+    "xls": "Excel Spreadsheet",
+    "xlsx": "Excel Spreadsheet",
+    "ppt": "PowerPoint Presentation",
+    "pptx": "PowerPoint Presentation",
+    "txt": "Text File",
+    "jpg": "JPEG Image",
+    "jpeg": "JPEG Image",
+    "png": "PNG Image",
+    "gif": "GIF Image",
+    "zip": "ZIP Archive",
+    "rar": "RAR Archive",
+    "other": "Other"
+  },
+  "categories": {
+    "contracts": "Contracts",
+    "invoices": "Invoices",
+    "reports": "Reports",
+    "policies": "Policies",
+    "procedures": "Procedures",
+    "forms": "Forms",
+    "templates": "Templates",
+    "presentations": "Presentations",
+    "spreadsheets": "Spreadsheets",
+    "images": "Images",
+    "other": "Other"
+  },
+  "status": {
+    "active": "Active",
+    "archived": "Archived",
+    "draft": "Draft",
+    "review": "Under Review",
+    "approved": "Approved",
+    "rejected": "Rejected"
+  },
+  "accessLevel": {
+    "public": "Public",
+    "private": "Private",
+    "restricted": "Restricted",
+    "confidential": "Confidential"
+  },
+  "messages": {
+    "loading": "Loading documents...",
+    "saving": "Saving...",
+    "uploading": "Uploading...",
+    "createSuccess": "Document created successfully",
+    "createError": "Failed to create document",
+    "updateSuccess": "Document updated successfully",
+    "updateError": "Failed to update document",
+    "deleteSuccess": "Document deleted successfully",
+    "deleteError": "Failed to delete document",
+    "uploadSuccess": "Document uploaded successfully",
+    "uploadError": "Failed to upload document",
+    "downloadSuccess": "Document downloaded successfully",
+    "downloadError": "Failed to download document",
+    "fetchError": "Error fetching documents",
+    "validationError": "Please fill in all required fields",
+    "documentNotFound": "Document not found",
+    "accessDenied": "Access denied. You don't have permission to manage documents.",
+    "errorGeneral": "An error occurred during the operation",
+    "failedToLoad": "Failed to load documents",
+    "failedToCreate": "Failed to create document",
+    "failedToUpdate": "Failed to update document",
+    "failedToDelete": "Failed to delete document",
+    "fileTooLarge": "File is too large",
+    "invalidFileType": "Invalid file type",
+    "noFileSelected": "No file selected"
+  },
+  "validation": {
+    "required": "This field is required",
+    "titleRequired": "Title is required",
+    "fileRequired": "File is required",
+    "categoryRequired": "Category is required",
+    "invalidFileType": "Invalid file type",
+    "fileTooLarge": "File is too large (max {{size}}MB)",
+    "invalidTitle": "Invalid title",
+    "invalidDescription": "Invalid description"
+  },
+  "table": {
+    "headers": {
+      "title": "Title",
+      "category": "Category",
+      "fileType": "File Type",
+      "fileSize": "File Size",
+      "status": "Status",
+      "uploadedBy": "Uploaded By",
+      "uploadedAt": "Uploaded At",
+      "actions": "Actions"
+    }
+  },
+  "pagination": {
+    "showing": "Showing {{start}} to {{end}} of {{total}} documents",
+    "page": "Page {{current}} of {{total}}",
+    "previous": "Previous",
+    "next": "Next",
+    "itemsPerPage": "Items per page"
+  },
+  "search": {
+    "placeholder": "Search documents...",
+    "title": "Search and Filter",
+    "noResults": "No documents found",
+    "resultCount": "Documents ({{count}})"
+  },
+  "stats": {
+    "totalDocuments": "Total Documents",
+    "totalSize": "Total Size",
+    "recentUploads": "Recent Uploads",
+    "byCategory": "By Category",
+    "byType": "By Type",
+    "storageUsed": "Storage Used"
+  },
+  "filters": {
+    "category": "Category",
+    "fileType": "File Type",
+    "status": "Status",
+    "uploadedBy": "Uploaded By",
+    "dateRange": "Date Range",
+    "allCategories": "All Categories",
+    "allTypes": "All Types",
+    "allStatus": "All Status",
+    "applyFilters": "Apply Filters",
+    "clearFilters": "Clear Filters"
+  }
+}

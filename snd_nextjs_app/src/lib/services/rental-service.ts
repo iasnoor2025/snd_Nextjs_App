@@ -9,11 +9,11 @@ import {
   rentals,
 } from '@/lib/drizzle/schema';
 import { and, desc, eq, gte, ilike, isNull, lt, lte, ne, or, sql } from 'drizzle-orm';
-import { 
-  cacheQueryResult, 
-  generateCacheKey, 
-  CACHE_TAGS, 
-  CACHE_PREFIXES 
+import {
+  cacheQueryResult,
+  generateCacheKey,
+  CACHE_TAGS,
+  CACHE_PREFIXES
 } from '@/lib/redis';
 
 export class RentalService {
@@ -29,7 +29,7 @@ export class RentalService {
   }) {
     // Generate cache key based on filters
     const cacheKey = generateCacheKey('rentals', 'list', filters || {});
-    
+
     return cacheQueryResult(
       cacheKey,
       async () => {
@@ -132,7 +132,7 @@ export class RentalService {
           results.map(async rental => {
             try {
               const items = await this.getRentalItems(rental.id);
-              
+
               // Fetch supervisor details if supervisor exists
               let supervisorDetails = null;
               if (rental.supervisor && typeof rental.supervisor === 'string') {
@@ -147,7 +147,7 @@ export class RentalService {
                     .from(employees)
                     .where(eq(employees.id, parseInt(rental.supervisor)))
                     .limit(1);
-                  
+
                   if (supervisorRows.length > 0 && supervisorRows[0]) {
                     supervisorDetails = {
                       id: supervisorRows[0].id,
@@ -171,7 +171,7 @@ export class RentalService {
                         .from(employees)
                         .where(eq(employees.id, parseInt(rental.supervisor)))
                         .limit(1);
-                      
+
                       if (supervisorRows.length > 0 && supervisorRows[0]) {
                         supervisorDetails = {
                           id: supervisorRows[0].id,
@@ -190,11 +190,11 @@ export class RentalService {
                     rentalItems: [], // Add camelCase version for frontend compatibility
                     customer: rental.customerId
                       ? {
-                          id: rental.customerId,
-                          name: rental.customerName,
-                          email: rental.customerEmail,
-                          phone: rental.customerPhone,
-                        }
+                        id: rental.customerId,
+                        name: rental.customerName,
+                        email: rental.customerEmail,
+                        phone: rental.customerPhone,
+                      }
                       : null,
                     supervisor_details: supervisorDetails,
                   };
@@ -207,11 +207,11 @@ export class RentalService {
                 rentalItems: items || [], // Add camelCase version for frontend compatibility
                 customer: rental.customerName
                   ? {
-                      id: rental.customerId,
-                      name: rental.customerName,
-                      email: rental.customerEmail,
-                      phone: rental.customerPhone,
-                    }
+                    id: rental.customerId,
+                    name: rental.customerName,
+                    email: rental.customerEmail,
+                    phone: rental.customerPhone,
+                  }
                   : null,
                 supervisor_details: supervisorDetails,
               };
@@ -231,7 +231,7 @@ export class RentalService {
                     .from(employees)
                     .where(eq(employees.id, parseInt(rental.supervisor)))
                     .limit(1);
-                  
+
                   if (supervisorRows.length > 0 && supervisorRows[0]) {
                     supervisorDetails = {
                       id: supervisorRows[0].id,
@@ -250,11 +250,11 @@ export class RentalService {
                 rentalItems: [], // Add camelCase version for frontend compatibility
                 customer: rental.customerId
                   ? {
-                      id: rental.customerId,
-                      name: rental.customerName,
-                      email: rental.customerEmail,
-                      phone: rental.customerPhone,
-                    }
+                    id: rental.customerId,
+                    name: rental.customerName,
+                    email: rental.customerEmail,
+                    phone: rental.customerPhone,
+                  }
                   : null,
                 supervisor_details: supervisorDetails,
               };
@@ -363,23 +363,23 @@ export class RentalService {
       rentalItems: items, // Add camelCase version for frontend compatibility
       customer: customer
         ? {
-            id: customer.id,
-            name: customer.name || 'Unknown Customer',
-            email: customer.email || '',
-            phone: customer.phone || '',
-            company: customer.company || '',
-            address: customer.address || '',
-            vat: customer.vat || '',
-          }
+          id: customer.id,
+          name: customer.name || 'Unknown Customer',
+          email: customer.email || '',
+          phone: customer.phone || '',
+          company: customer.company || '',
+          address: customer.address || '',
+          vat: customer.vat || '',
+        }
         : {
-            id: rental.customerId,
-            name: 'Unknown Customer',
-            email: '',
-            phone: '',
-            company: '',
-            address: '',
-            vat: '',
-          },
+          id: rental.customerId,
+          name: 'Unknown Customer',
+          email: '',
+          phone: '',
+          company: '',
+          address: '',
+          vat: '',
+        },
     };
   }
 
@@ -459,7 +459,7 @@ export class RentalService {
     // Create rental items if provided
     if (itemsToCreate && itemsToCreate.length > 0) {
       await Promise.all(
-        itemsToCreate.map((item: any) => 
+        itemsToCreate.map((item: any) =>
           db.insert(rentalItems).values({
             rentalId: rental.id,
             equipmentId: item.equipmentId ? parseInt(item.equipmentId) : null,
@@ -643,7 +643,7 @@ export class RentalService {
         .returning();
 
       console.log(`Deleted ${deletedEmployeeAssignments.length} employee assignments and ${deletedEquipmentAssignments.length} equipment assignments for rental ${rentalId}`);
-      
+
       return {
         employeeAssignments: deletedEmployeeAssignments.length,
         equipmentAssignments: deletedEquipmentAssignments.length
@@ -732,8 +732,8 @@ export class RentalService {
         rentalId: data.rentalId,
         equipmentId: data.equipmentId,
         equipmentName: data.equipmentName,
-        unitPrice: data.unitPrice,
-        totalPrice: data.totalPrice,
+        unitPrice: data.unitPrice.toString(),
+        totalPrice: data.totalPrice.toString(),
         rateType: data.rateType || 'daily',
         operatorId: data.operatorId,
         supervisorId: data.supervisorId || null,
@@ -879,23 +879,23 @@ export class RentalService {
       if (!item) {
         return false;
       }
-      
+
       const rentalId = item.rentalId;
       const equipmentId = item.equipmentId;
       const operatorId = item.operatorId;
-      
+
       // Clean up associated assignments before deleting the item
       // Pass the item ID so we can check for other items with the same operator
       await this.cleanupRentalItemAssignments(rentalId, equipmentId, operatorId, id);
-      
+
       // Delete the rental item
       await db.delete(rentalItems).where(eq(rentalItems.id, id));
-      
+
       // Recalculate rental totals after deleting item
       if (rentalId) {
         await this.recalculateRentalTotals(rentalId);
       }
-      
+
       return true;
     } catch (error) {
       console.error('Error deleting rental item:', error);
@@ -918,7 +918,7 @@ export class RentalService {
       // Clean up equipment assignments if equipmentId exists
       if (equipmentId) {
         let shouldUpdateEquipmentStatus = false;
-        
+
         // Find the most recent completed equipment assignment before this one
         if (itemStartDate) {
           const previousCompletedAssignment = await db
@@ -960,7 +960,7 @@ export class RentalService {
           );
         console.log(`Deleted equipment assignment for equipment ${equipmentId} in rental ${rentalId}`);
         shouldUpdateEquipmentStatus = true;
-        
+
         // Update equipment status after all changes
         if (shouldUpdateEquipmentStatus) {
           const { EquipmentStatusService } = await import('@/lib/services/equipment-status-service');
@@ -976,12 +976,12 @@ export class RentalService {
           eq(rentalItems.rentalId, rentalId),
           eq(rentalItems.operatorId, operatorId),
         ];
-        
+
         // Exclude the current item if itemId is provided
         if (itemId) {
           whereConditions.push(ne(rentalItems.id, itemId));
         }
-        
+
         const otherItemsWithOperator = await db
           .select({ id: rentalItems.id })
           .from(rentalItems)
@@ -1049,14 +1049,14 @@ export class RentalService {
       // Get rental details
       const rental = await this.getRental(rentalId);
       if (!rental) {
-        
+
         return;
       }
 
       // Get rental items
       const items = await this.getRentalItems(rentalId);
       if (!items || items.length === 0) {
-        
+
         return;
       }
 
@@ -1150,7 +1150,7 @@ export class RentalService {
               })
               .where(eq(employeeAssignments.id, existingEmployeeAssignment[0]?.id));
           }
-            
+
           // Auto-assign rental supervisor to the employee if rental has a supervisor (regardless of new/update)
           if (rental.supervisor && item.operatorId) {
             try {
@@ -1162,7 +1162,7 @@ export class RentalService {
                   updatedAt: new Date().toISOString().split('T')[0],
                 })
                 .where(eq(employees.id, item.operatorId));
-              
+
               console.log(`Auto-assigned supervisor ${rental.supervisor} to employee ${item.operatorId} for rental ${rental.rentalNumber}`);
             } catch (supervisorError) {
               console.error('Failed to auto-assign supervisor to employee:', supervisorError);
@@ -1173,7 +1173,7 @@ export class RentalService {
       }
 
     } catch (error) {
-      
+
     }
   }
 
@@ -1189,8 +1189,8 @@ export class RentalService {
       };
 
       const assignmentStatus = statusMap[newStatus] || 'active';
-      const completionDate = (newStatus === 'completed' || newStatus === 'cancelled') 
-        ? new Date().toISOString().split('T')[0] 
+      const completionDate = (newStatus === 'completed' || newStatus === 'cancelled')
+        ? new Date().toISOString().split('T')[0]
         : null;
 
       // Update equipment assignments
@@ -1198,7 +1198,7 @@ export class RentalService {
         status: assignmentStatus,
         updatedAt: new Date().toISOString(),
       };
-      
+
       // Set endDate if completing
       if (completionDate) {
         equipmentUpdateData.endDate = completionDate;
@@ -1214,7 +1214,7 @@ export class RentalService {
         status: assignmentStatus,
         updatedAt: new Date().toISOString().split('T')[0],
       };
-      
+
       // Set endDate if completing
       if (completionDate) {
         employeeUpdateData.endDate = completionDate;
@@ -1265,8 +1265,8 @@ export class RentalService {
       if (!rental) return;
 
       const startDateStr = newStartDate ? newStartDate.toISOString().split('T')[0] : rental.startDate;
-      const endDateStr = newEndDate ? newEndDate.toISOString().split('T')[0] : 
-                        (newEndDate === null ? null : rental.expectedEndDate);
+      const endDateStr = newEndDate ? newEndDate.toISOString().split('T')[0] :
+        (newEndDate === null ? null : rental.expectedEndDate);
 
       // Update employee assignments
       const employeeUpdateData: any = { updatedAt: new Date().toISOString().split('T')[0] };
@@ -1304,29 +1304,29 @@ export class RentalService {
     try {
       const items = await this.getRentalItems(rentalId);
       const rental = await this.getRentalById(rentalId);
-      
+
       if (!rental) {
         throw new Error('Rental not found');
       }
-      
+
       let subtotal = 0;
-      
+
       // Update each rental item with calculated total and accumulate subtotal
       for (const item of items) {
         const itemTotal = this.calculateItemTotal(item, rental);
         subtotal += itemTotal;
-        
+
         // Update the rental item's totalPrice with the calculated amount
         await db.update(rentalItems).set({
           totalPrice: itemTotal.toString(),
           updatedAt: new Date().toISOString().split('T')[0],
         }).where(eq(rentalItems.id, item.id));
       }
-      
+
       const taxRate = 15; // Default 15% VAT for KSA
       const taxAmount = subtotal * (taxRate / 100);
       const totalAmount = subtotal + taxAmount;
-      
+
       // Update rental with calculated totals
       await db.update(rentals).set({
         subtotal: subtotal.toString(),
@@ -1336,7 +1336,7 @@ export class RentalService {
         finalAmount: totalAmount.toString(),
         updatedAt: new Date().toISOString().split('T')[0],
       }).where(eq(rentals.id, rentalId));
-      
+
       console.log('Recalculated rental totals:', {
         rentalId,
         subtotal,
@@ -1344,7 +1344,7 @@ export class RentalService {
         totalAmount,
         itemsUpdated: items.length
       });
-      
+
     } catch (error) {
       console.error('Error recalculating rental totals:', error);
     }
@@ -1354,15 +1354,15 @@ export class RentalService {
   static calculateItemTotal(item: any, rental: any): number {
     const { unitPrice, quantity = 1, rateType = 'daily', startDate: itemStartDate } = item;
     const basePrice = parseFloat(unitPrice?.toString() || '0') || 0;
-    
+
     // Calculate actual rental period
     // Use item's start date if available, otherwise use rental's start date
     const effectiveStartDate = itemStartDate || rental?.startDate;
-    
+
     if (effectiveStartDate) {
       const startDate = new Date(effectiveStartDate);
       let endDate: Date;
-      
+
       // Use actual end date if rental is completed, otherwise use today
       if (rental.status === 'completed' && rental.expectedEndDate) {
         endDate = new Date(rental.expectedEndDate);
@@ -1370,12 +1370,12 @@ export class RentalService {
         // For active rentals, calculate from start date to today
         endDate = new Date();
       }
-      
+
       // Ensure we don't go before the start date
       if (endDate < startDate) {
         endDate = startDate;
       }
-      
+
       if (rateType === 'hourly') {
         const hoursDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)));
         return basePrice * hoursDiff * quantity;
@@ -1391,7 +1391,7 @@ export class RentalService {
         return basePrice * daysDiff * quantity;
       }
     }
-    
+
     // Fallback to stored totalPrice if no start date available
     return parseFloat(item.totalPrice?.toString() || '0') || 0;
   }
@@ -1442,8 +1442,8 @@ export class RentalService {
           endDate: endDate?.toISOString() || null,
           status: 'active',
           notes: `Auto-created for rental assignment - Rental: ${rental?.rentalNumber || rentalId}`,
-          dailyRate: unitPrice,
-          totalAmount: totalPrice,
+          dailyRate: unitPrice.toString(),
+          totalAmount: totalPrice.toString(),
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         });
@@ -1495,7 +1495,7 @@ export class RentalService {
         WHERE invoice_id = ${invoiceId} 
         LIMIT 1
       `);
-      
+
       return result.rows[0] || null;
     } catch (error) {
       console.error('Error fetching rental by invoice ID:', error);
@@ -1514,7 +1514,7 @@ export class RentalService {
         WHERE payment_id = ${paymentId} 
         LIMIT 1
       `);
-      
+
       return result.rows[0] || null;
     } catch (error) {
       console.error('Error fetching rental by payment ID:', error);

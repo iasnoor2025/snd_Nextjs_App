@@ -1,0 +1,18 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:3000",
+  "loginUser": "test@test.com",
+  "loginPassword": "test123",
+  "executionArgs": {
+    "projectName": "snd_nextjs_app",
+    "projectPath": "D:\\Apps\\Mix-app\\snd_nextjs_app",
+    "testIds": [],
+    "additionalInstruction": "",
+    "envs": {
+      "API_KEY": "sk-user-mQc2eaTxxMeC-VznKCaUEd4kN0bJzyFylSuimt_TVcN8HqiTPRVp-TBK4loko2DqDO0eEDNFz4Or2va5iEtLAs3UFKLRLlInrD_Cf0zbSoXeNDQjpWX7eVSWEmJ6JK9uDow"
+    }
+  },
+  "proxy": "http://b3718a1f-3a3f-4812-a49a-1013705af841:g3goTaSEjj4tNmgPudx9Tn2uoc88Dnsu@tun.testsprite.com:8080"
+}

@@ -1,0 +1,208 @@
+{
+  "title": "إدارة الشركات",
+  "subtitle": "إدارة معلومات الشركات والوثائق القانونية",
+  "description": "إدارة قاعدة بيانات الشركات والوثائق المطلوبة بموجب القانون السعودي",
+  "createCompany": "إنشاء شركة",
+  "actions": {
+    "addCompany": "إضافة شركة",
+    "editCompany": "تعديل الشركة",
+    "deleteCompany": "حذف الشركة",
+    "viewCompany": "عرض الشركة",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "back": "رجوع",
+    "create": "إنشاء",
+    "update": "تحديث",
+    "delete": "حذف",
+    "search": "البحث",
+    "filter": "تصفية",
+    "refresh": "تحديث",
+    "export": "تصدير",
+    "import": "استيراد",
+    "edit": "تعديل"
+  },
+  "fields": {
+    "basicInfo": "المعلومات الأساسية",
+    "name": "اسم الشركة",
+    "address": "العنوان",
+    "email": "البريد الإلكتروني",
+    "phone": "الهاتف",
+    "website": "الموقع الإلكتروني",
+    "contactPerson": "الشخص المسؤول",
+    "contactPersonPhone": "هاتف الشخص المسؤول",
+    "contactPersonEmail": "البريد الإلكتروني للشخص المسؤول",
+    "companyType": "نوع الشركة",
+    "industry": "الصناعة",
+    "employeeCount": "عدد الموظفين",
+    "notes": "ملاحظات",
+    "isActive": "نشط"
+  },
+  "documents": {
+    "title": "الوثائق القانونية المطلوبة",
+    "commercialRegistration": "السجل التجاري",
+    "commercialRegistrationExpiry": "تاريخ انتهاء السجل التجاري",
+    "taxRegistration": "التسجيل الضريبي",
+    "taxRegistrationExpiry": "تاريخ انتهاء التسجيل الضريبي",
+    "municipalityLicense": "رخصة البلدية",
+    "municipalityLicenseExpiry": "تاريخ انتهاء رخصة البلدية",
+    "chamberOfCommerce": "غرفة التجارة",
+    "chamberOfCommerceExpiry": "تاريخ انتهاء غرفة التجارة",
+    "laborOfficeLicense": "رخصة مكتب العمل",
+    "laborOfficeLicenseExpiry": "تاريخ انتهاء رخصة مكتب العمل",
+    "gosiRegistration": "تسجيل التأمينات الاجتماعية",
+    "gosiRegistrationExpiry": "تاريخ انتهاء التأمينات الاجتماعية",
+    "saudiStandardsLicense": "رخصة الهيئة السعودية للمواصفات",
+    "saudiStandardsLicenseExpiry": "تاريخ انتهاء رخصة الهيئة السعودية للمواصفات",
+    "environmentalLicense": "الرخصة البيئية",
+    "environmentalLicenseExpiry": "تاريخ انتهاء الرخصة البيئية",
+    "zakatRegistration": "تسجيل الزكاة",
+    "zakatRegistrationExpiry": "تاريخ انتهاء تسجيل الزكاة",
+    "saudiArabiaVisa": "تأشيرة المملكة العربية السعودية",
+    "saudiArabiaVisaExpiry": "تاريخ انتهاء تأشيرة المملكة العربية السعودية",
+    "investmentLicense": "رخصة الاستثمار",
+    "investmentLicenseExpiry": "تاريخ انتهاء رخصة الاستثمار",
+    "importExportLicense": "رخصة الاستيراد والتصدير",
+    "importExportLicenseExpiry": "تاريخ انتهاء رخصة الاستيراد والتصدير",
+    "pharmaceuticalLicense": "الرخصة الصيدلانية",
+    "pharmaceuticalLicenseExpiry": "تاريخ انتهاء الرخصة الصيدلانية",
+    "foodSafetyLicense": "رخصة سلامة الغذاء",
+    "foodSafetyLicenseExpiry": "تاريخ انتهاء رخصة سلامة الغذاء",
+    "constructionLicense": "رخصة البناء",
+    "constructionLicenseExpiry": "تاريخ انتهاء رخصة البناء",
+    "transportationLicense": "رخصة النقل",
+    "transportationLicenseExpiry": "تاريخ انتهاء رخصة النقل",
+    "bankingLicense": "الرخصة المصرفية",
+    "bankingLicenseExpiry": "تاريخ انتهاء الرخصة المصرفية",
+    "insuranceLicense": "رخصة التأمين",
+    "insuranceLicenseExpiry": "تاريخ انتهاء رخصة التأمين",
+    "telecomLicense": "رخصة الاتصالات",
+    "telecomLicenseExpiry": "تاريخ انتهاء رخصة الاتصالات",
+    "energyLicense": "رخصة الطاقة",
+    "energyLicenseExpiry": "تاريخ انتهاء رخصة الطاقة",
+    "files": "الوثائق والملفات",
+    "logo": "الشعار",
+    "legalDocument": "الوثيقة القانونية"
+  },
+  "status": {
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "pending": "معلق",
+    "suspended": "معلق"
+  },
+  "messages": {
+    "loading": "جاري تحميل بيانات الشركة...",
+    "saving": "جاري حفظ الشركة...",
+    "loadingError": "خطأ في تحميل بيانات الشركة",
+    "saveSuccess": "تم حفظ الشركة بنجاح",
+    "saveError": "فشل في حفظ الشركة",
+    "deleteConfirm": "هل أنت متأكد من حذف هذه الشركة؟",
+    "deleteSuccess": "تم حذف الشركة بنجاح",
+    "deleteError": "فشل في حذف الشركة",
+    "validationError": "يرجى إدخال جميع الحقول المطلوبة",
+    "companyNotFound": "لم يتم العثور على الشركة",
+    "accessDenied": "الوصول مرفوض. ليس لديك صلاحية لإدارة الشركات.",
+    "errorGeneral": "حدث خطأ أثناء العملية"
+  },
+  "validation": {
+    "required": "هذا الحقل مطلوب",
+    "invalidEmail": "البريد الإلكتروني غير صحيح",
+    "invalidPhone": "رقم الهاتف غير صحيح",
+    "invalidDate": "التاريخ غير صحيح",
+    "nameRequired": "اسم الشركة مطلوب",
+    "addressRequired": "عنوان الشركة مطلوب",
+    "emailRequired": "البريد الإلكتروني مطلوب",
+    "phoneRequired": "رقم الهاتف مطلوب"
+  },
+  "pagination": {
+    "showing": "عرض {{start}} إلى {{end}} من {{total}} شركة",
+    "page": "الصفحة {{current}} من {{total}}",
+    "previous": "السابق",
+    "next": "التالي",
+    "itemsPerPage": "عنصر في الصفحة"
+  },
+  "stats": {
+    "totalCompanies": "إجمالي الشركات",
+    "compliant": "متوافق",
+    "nonCompliant": "غير متوافق",
+    "totalEmployees": "إجمالي الموظفين"
+  },
+  "filters": {
+    "complianceStatus": "حالة التوافق",
+    "allStatuses": "جميع الحالات",
+    "allIndustries": "جميع الصناعات",
+    "sortBy": "ترتيب حسب",
+    "sortPlaceholder": "ترتيب حسب..."
+  },
+  "status": {
+    "compliant": "متوافق",
+    "nonCompliant": "غير متوافق",
+    "expired": "منتهي الصلاحية",
+    "expiringSoon": "ينتهي قريباً"
+  },
+  "search": {
+    "title": "البحث والتصفية",
+    "label": "البحث في الشركات",
+    "placeholder": "البحث بالاسم أو البريد الإلكتروني أو العنوان...",
+    "noResults": "لم يتم العثور على شركات",
+    "resultCount": "الشركات ({{count}})"
+  },
+  "table": {
+    "title": "الشركات",
+    "headers": {
+      "company": "الشركة",
+      "contact": "جهة الاتصال",
+      "industry": "الصناعة",
+      "employees": "الموظفين",
+      "compliance": "التوافق",
+      "created": "تاريخ الإنشاء",
+      "actions": "الإجراءات"
+    }
+  },
+  "admin": {
+    "actions": "الإجراءات الإدارية",
+    "manageDocumentTypes": "إدارة أنواع الوثائق",
+    "exportCompanies": "تصدير الشركات",
+    "importCompanies": "استيراد الشركات",
+    "complianceReport": "تقرير التوافق"
+  },
+  "placeholders": {
+    "enterCompanyName": "أدخل اسم الشركة",
+    "enterEmail": "أدخل البريد الإلكتروني",
+    "enterPhone": "أدخل رقم الهاتف",
+    "enterAddress": "أدخل عنوان الشركة",
+    "primaryContactName": "اسم جهة الاتصال الرئيسية",
+    "contactPhoneNumber": "رقم هاتف جهة الاتصال",
+    "contactEmailAddress": "البريد الإلكتروني لجهة الاتصال",
+    "numberOfEmployees": "عدد الموظفين",
+    "commercialRegistrationNumber": "رقم السجل التجاري",
+    "taxRegistrationNumber": "رقم التسجيل الضريبي"
+  },
+  "validation": {
+    "nameRequired": "اسم الشركة مطلوب",
+    "commercialRegistrationRequired": "رقم السجل التجاري مطلوب بموجب القانون السعودي",
+    "taxRegistrationRequired": "رقم التسجيل الضريبي مطلوب بموجب القانون السعودي"
+  },
+  "messages": {
+    "noContactInfo": "لا توجد معلومات جهة اتصال متاحة",
+    "noDocumentsAvailable": "لا توجد وثائق قانونية سعودية مطلوبة متاحة",
+    "noDocumentsUploaded": "لم يتم رفع أي وثائق"
+  },
+  "timestamps": {
+    "title": "الطوابع الزمنية"
+  },
+  "messages": {
+    "loading": "جاري تحميل بيانات الشركة...",
+    "saving": "جاري حفظ الشركة...",
+    "loadingError": "خطأ في تحميل بيانات الشركة",
+    "saveSuccess": "تم حفظ الشركة بنجاح",
+    "saveError": "فشل في حفظ الشركة",
+    "deleteConfirm": "هل أنت متأكد من حذف هذه الشركة؟",
+    "deleteSuccess": "تم حذف الشركة بنجاح",
+    "deleteError": "فشل في حذف الشركة",
+    "companyNotFound": "لم يتم العثور على الشركة",
+    "noContactInfo": "لا توجد معلومات جهة اتصال متاحة",
+    "noDocumentsAvailable": "لا توجد وثائق قانونية سعودية مطلوبة متاحة",
+    "noDocumentsUploaded": "لم يتم رفع أي وثائق",
+    "updateInfo": "تحديث معلومات الشركة"
+  }
+}
