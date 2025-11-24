@@ -457,7 +457,7 @@ export default function EmployeeManagementPage() {
       const matchesExternal =
         externalFilter === 'all' ||
         (externalFilter === 'external' && employee.is_external === true) ||
-        (externalFilter === 'internal' && (!employee.is_external || employee.is_external === false));
+        (externalFilter === 'internal' && employee.is_external !== true);
 
       const matchesCompany =
         companyFilter === 'all' ||
