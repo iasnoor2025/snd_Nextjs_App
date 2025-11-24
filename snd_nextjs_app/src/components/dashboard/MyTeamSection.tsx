@@ -290,7 +290,7 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
                   {teamMembers.length === 0
                     ? t('dashboard.myTeam.noEmployees', { id: currentEmployee.id })
                     : t('dashboard.myTeam.employeesCount', {
-                      count: teamMembers.length,
+                      count: teamMembers.length, 
                       plural: teamMembers.length !== 1 ? 's' : '',
                       id: currentEmployee.id
                     })
