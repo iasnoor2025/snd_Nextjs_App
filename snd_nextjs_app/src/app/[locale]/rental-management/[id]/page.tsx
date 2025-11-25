@@ -763,6 +763,18 @@ function getShortName(fullName: string): string {
   return words.slice(0, 2).join(' ');
 }
 
+function getAssignmentRentalLabel(assignment: any): string {
+  const customerLabel = assignment.customerCompanyName || assignment.customerName;
+  if (customerLabel) {
+    const rentalSuffix = assignment.rentalNumber ? ` (Rental ${assignment.rentalNumber})` : '';
+    return `${customerLabel}${rentalSuffix}`;
+  }
+  if (assignment.rentalNumber) {
+    return `Rental ${assignment.rentalNumber}`;
+  }
+  return 'Rental assignment';
+}
+
 export default function RentalDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -946,8 +958,9 @@ export default function RentalDetailPage() {
               const equipmentInfo = assignment.equipmentName 
                 ? ` for equipment "${assignment.equipmentName}"` 
                 : '';
+              const assignmentLabel = getAssignmentRentalLabel(assignment);
               warnings.push(
-                `Active assignment to Rental ${assignment.rentalNumber}${equipmentInfo} (Started: ${startDate}, ${assignment.endDate ? `Ends: ${endDate}` : 'Ongoing'})`
+                `Active assignment to ${assignmentLabel}${equipmentInfo} (Started: ${startDate}, ${assignment.endDate ? `Ends: ${endDate}` : 'Ongoing'})`
               );
             } else if (assignment.projectId) {
               warnings.push(
@@ -1029,8 +1042,9 @@ export default function RentalDetailPage() {
               const operatorInfo = assignment.employeeFirstName && assignment.employeeLastName
                 ? ` with operator ${assignment.employeeFirstName} ${assignment.employeeLastName}`
                 : '';
+              const assignmentLabel = getAssignmentRentalLabel(assignment);
               warnings.push(
-                `Active assignment to Rental ${assignment.rentalNumber}${operatorInfo} (Started: ${startDateStr}, ${assignment.endDate ? `Ends: ${endDateStr}` : 'Ongoing'})`
+                `Active assignment to ${assignmentLabel}${operatorInfo} (Started: ${startDateStr}, ${assignment.endDate ? `Ends: ${endDateStr}` : 'Ongoing'})`
               );
             } else if (assignment.projectId && assignment.projectName) {
               const operatorInfo = assignment.employeeFirstName && assignment.employeeLastName

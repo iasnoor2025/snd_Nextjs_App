@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { employeeAssignments, rentals, rentalItems, equipment, employees, designations } from '@/lib/drizzle/schema';
+import { employeeAssignments, rentals, rentalItems, equipment, employees, designations, customers } from '@/lib/drizzle/schema';
 import { eq, and, or, isNull, gte, sql } from 'drizzle-orm';
 
 export async function GET(
@@ -59,11 +59,14 @@ export async function GET(
         type: employeeAssignments.type,
         rentalNumber: rentals.rentalNumber,
         rentalStatus: rentals.status,
+        customerName: customers.name,
+        customerCompanyName: customers.companyName,
         equipmentName: equipment.name,
         equipmentId: rentalItems.equipmentId,
       })
       .from(employeeAssignments)
       .leftJoin(rentals, eq(employeeAssignments.rentalId, rentals.id))
+      .leftJoin(customers, eq(rentals.customerId, customers.id))
       .leftJoin(
         rentalItems,
         and(
@@ -98,6 +101,7 @@ export async function GET(
       })
       .from(rentalItems)
       .leftJoin(rentals, eq(rentalItems.rentalId, rentals.id))
+      .leftJoin(customers, eq(rentals.customerId, customers.id))
       .leftJoin(equipment, eq(rentalItems.equipmentId, equipment.id))
       .where(
         and(
