@@ -576,11 +576,11 @@ function UnifiedTimeline({ rental, t, fetchRental }: { rental: Rental | null; t:
         }
         break;
     }
-    return null;
-  };
+  return null;
+};
 
-  return (
-    <Card>
+return (
+  <Card>
       <CardHeader>
         <CardTitle>{t('rental.rentalTimeline')}</CardTitle>
         <CardDescription>{t('rental.workflowTimeline')}</CardDescription>
@@ -1205,6 +1205,22 @@ export default function RentalDetailPage() {
       if ((!data.invoices || data.invoices.length === 0) && data.rentalItems && data.rentalItems.length > 0) {
         const financials = calculateFinancials(data.rentalItems);
         data = { ...data, ...financials };
+        
+        // Update the database with recalculated totals so listing page shows correct values
+        try {
+          await fetch(`/api/rentals/${rentalId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              subtotal: financials.subtotal,
+              taxAmount: financials.taxAmount,
+              totalAmount: financials.totalAmount,
+              finalAmount: financials.finalAmount,
+            }),
+          });
+        } catch (err) {
+          console.error('Failed to update rental totals:', err);
+        }
       }
 
       setRental(data);
@@ -1251,6 +1267,80 @@ export default function RentalDetailPage() {
     });
   };
 
+  const toNumericValue = (value: any): number => {
+    if (value === null || value === undefined || value === '') return 0;
+    const cleaned = typeof value === 'string' ? value.replace(/,/g, '') : value;
+    const parsed = typeof cleaned === 'number' ? cleaned : Number(cleaned);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  };
+
+  const calculateItemTotal = (item: RentalItem, rental?: Rental): number => {
+    if (!item) return 0;
+  
+    const storedTotalPrice = toNumericValue(item?.totalPrice);
+    const { unitPrice, quantity = 1, rateType = 'daily', startDate: itemStartDate } = item;
+    const basePrice = parseFloat(unitPrice?.toString() || '0') || 0;
+    const itemCompletedDate = item.completedDate || (item as any).completed_date;
+    const effectiveStartDate = itemStartDate || rental?.startDate;
+
+    if (effectiveStartDate) {
+      const startDate = new Date(effectiveStartDate);
+      let endDate: Date;
+
+      if (itemCompletedDate) {
+        endDate = new Date(itemCompletedDate);
+      } else if (rental?.status === 'completed' && rental?.expectedEndDate) {
+        endDate = new Date(rental.expectedEndDate);
+      } else {
+        endDate = new Date();
+      }
+
+      if (endDate < startDate) {
+        endDate = startDate;
+      }
+
+      if (rateType === 'hourly') {
+        const hoursDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)));
+        return basePrice * hoursDiff * quantity;
+      } else if (rateType === 'weekly') {
+        const weeksDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 7)));
+        return basePrice * weeksDiff * quantity;
+      } else if (rateType === 'monthly') {
+        const monthsDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
+        return basePrice * monthsDiff * quantity;
+      } else {
+        const daysDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+        return basePrice * daysDiff * quantity;
+      }
+    }
+  
+    return storedTotalPrice;
+  };
+
+  const calculateRentalDerivedTotals = (rental: Rental) => {
+    const itemDerivedTotal = (rental.rentalItems || []).reduce(
+      (sum, item) => sum + calculateItemTotal(item, rental),
+      0
+    );
+    const taxRate = rental?.tax ?? 15;
+    const derivedVatAmount =
+      itemDerivedTotal > 0
+        ? rental?.taxAmount && rental.taxAmount > 0
+          ? rental.taxAmount
+          : itemDerivedTotal * (taxRate / 100)
+        : 0;
+    const derivedTotalWithVat = itemDerivedTotal > 0 ? itemDerivedTotal + derivedVatAmount : 0;
+    const fallbackTotal = rental.totalAmount ?? rental.finalAmount ?? rental.subtotal ?? 0;
+    const actualTotalAmount = derivedTotalWithVat > 0 ? derivedTotalWithVat : fallbackTotal;
+
+    return {
+      itemDerivedTotal,
+      derivedVatAmount,
+      derivedTotalWithVat,
+      actualTotalAmount,
+    };
+  };
+
   // Calculate financial totals from rental items
   const calculateFinancials = (items: any[]) => {
     const subtotal = items.reduce((sum, item) => {
@@ -1271,54 +1361,6 @@ export default function RentalDetailPage() {
       tax: taxRate,
       finalAmount: totalAmount,
     };
-  };
-
-  // Calculate total price for a single rental item based on rate type and duration
-  const calculateItemTotal = (item: any): number => {
-    if (!item) return 0;
-    
-    const { unitPrice, quantity = 1, rateType = 'daily', startDate: itemStartDate } = item;
-    const basePrice = parseFloat(unitPrice?.toString() || '0') || 0;
-    
-    // Calculate actual rental period
-    // Use item's start date if available, otherwise use rental's start date
-    const effectiveStartDate = itemStartDate || rental?.startDate;
-    
-    if (effectiveStartDate) {
-      const startDate = new Date(effectiveStartDate);
-      let endDate: Date;
-      
-      // Use actual end date if rental is completed, otherwise use today
-      if (rental?.status === 'completed' && rental?.expectedEndDate) {
-        endDate = new Date(rental.expectedEndDate);
-      } else {
-        // For active rentals, calculate from start date to today
-        endDate = new Date();
-      }
-      
-      // Ensure we don't go before the start date
-      if (endDate < startDate) {
-        endDate = startDate;
-      }
-      
-      if (rateType === 'hourly') {
-        const hoursDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)));
-        return basePrice * hoursDiff * quantity;
-      } else if (rateType === 'weekly') {
-        const weeksDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 7)));
-        return basePrice * weeksDiff * quantity;
-      } else if (rateType === 'monthly') {
-        const monthsDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
-        return basePrice * monthsDiff * quantity;
-      } else {
-        // Daily rate - calculate days
-        const daysDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
-        return basePrice * daysDiff * quantity;
-      }
-    }
-    
-    // Fallback to stored totalPrice if no start date available
-    return parseFloat(item.totalPrice?.toString() || '0') || 0;
   };
 
   // Recalculate totals when rental items change
@@ -2221,6 +2263,38 @@ export default function RentalDetailPage() {
     );
   }
 
+  const displayedTotalAmount = rental?.totalAmount ?? rental?.finalAmount ?? rental?.subtotal ?? 0;
+  const invoiceTotalAmount = rentalInvoices.reduce(
+    (sum, invoice) => sum + toNumericValue(invoice?.amount),
+    0
+  );
+  const paymentTotalAmount = rentalPayments.reduce(
+    (sum, payment) => sum + toNumericValue(payment?.amount),
+    0
+  );
+  const itemDerivedTotal = (rental?.rentalItems || []).reduce(
+    (sum, item) => sum + calculateItemTotal(item),
+    0
+  );
+  const taxRate = rental?.tax ?? 15;
+  const derivedVatAmount =
+    itemDerivedTotal > 0
+      ? rental?.taxAmount && rental.taxAmount > 0
+        ? rental.taxAmount
+        : itemDerivedTotal * (taxRate / 100)
+      : 0;
+  const derivedTotalWithVat = itemDerivedTotal > 0 ? itemDerivedTotal + derivedVatAmount : 0;
+  const actualTotalAmount =
+    derivedTotalWithVat > 0
+      ? derivedTotalWithVat
+      : invoiceTotalAmount > 0
+        ? invoiceTotalAmount
+        : displayedTotalAmount;
+  const outstandingBalance = actualTotalAmount - paymentTotalAmount;
+  const outstandingLabel = outstandingBalance >= 0 ? 'Outstanding' : 'Overpaid';
+  const outstandingValue = Math.abs(outstandingBalance);
+  const outstandingClassName = outstandingBalance >= 0 ? 'text-destructive' : 'text-emerald-600';
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -2278,7 +2352,23 @@ export default function RentalDetailPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-                         <div className="text-2xl font-bold">SAR {formatAmount(rental.totalAmount)}</div>
+            <div className="text-2xl font-bold">SAR {formatAmount(actualTotalAmount)}</div>
+            {(invoiceTotalAmount > 0 || paymentTotalAmount > 0 || itemDerivedTotal > 0) && (
+              <div className="mt-1 text-xs text-muted-foreground space-x-3">
+                <span>Invoice Total: SAR {formatAmount(invoiceTotalAmount)}</span>
+                <span>Payments: SAR {formatAmount(paymentTotalAmount)}</span>
+                <span>Item Base: SAR {formatAmount(itemDerivedTotal)}</span>
+                {itemDerivedTotal > 0 && (
+                  <span>
+                    VAT ({taxRate}%): SAR {formatAmount(derivedVatAmount)}
+                  </span>
+                )}
+                <span>
+                  {outstandingLabel}:{' '}
+                  <span className={outstandingClassName}>SAR {formatAmount(outstandingValue)}</span>
+                </span>
+              </div>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -2619,16 +2709,19 @@ export default function RentalDetailPage() {
                         // Calculate duration based on actual rental period
                         let durationText = 'N/A';
                         const itemStartDate = (item?.startDate && item.startDate !== '') ? item.startDate : rental?.startDate;
+                        const itemCompletedDate = item.completedDate || (item as any).completed_date;
                         
                         if (itemStartDate) {
                           const startDate = new Date(itemStartDate);
                           let endDate: Date;
                           
-                          // Use actual end date if rental is completed, otherwise use today
-                          if (rental?.status === 'completed' && rental?.expectedEndDate) {
+                          // Use item-specific completion date first, otherwise fall back to rental expected end or today
+                          if (itemCompletedDate) {
+                            endDate = new Date(itemCompletedDate);
+                          } else if (rental?.status === 'completed' && rental?.expectedEndDate) {
                             endDate = new Date(rental.expectedEndDate);
                           } else {
-                            // For active rentals, calculate from start date to today
+                            // For active rentals or unspecified completion, calculate up to today
                             endDate = new Date();
                           }
                           

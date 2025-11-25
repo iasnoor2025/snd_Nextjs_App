@@ -201,8 +201,74 @@ export class RentalService {
                 }
               }
 
+              // Recalculate totals from items based on duration
+              let calculatedTotals = {
+                subtotal: rental.subtotal,
+                taxAmount: rental.taxAmount,
+                totalAmount: rental.totalAmount,
+                finalAmount: rental.finalAmount,
+              };
+              
+              if (items && items.length > 0) {
+                const subtotal = items.reduce((sum: number, item: any) => {
+                  // Calculate based on duration
+                  const unitPrice = parseFloat(item.unitPrice?.toString() || '0') || 0;
+                  const quantity = item.quantity || 1;
+                  const rateType = item.rateType || 'daily';
+                  const itemStartDate = item.startDate || rental.startDate;
+                  const itemCompletedDate = item.completedDate || item.completed_date;
+                  
+                  if (!itemStartDate) {
+                    return sum + (parseFloat(item.totalPrice?.toString() || '0') || 0);
+                  }
+                  
+                  const startDate = new Date(itemStartDate);
+                  let endDate: Date;
+                  
+                  if (itemCompletedDate) {
+                    endDate = new Date(itemCompletedDate);
+                  } else if (rental.status === 'completed' && rental.expectedEndDate) {
+                    endDate = new Date(rental.expectedEndDate);
+                  } else {
+                    endDate = new Date();
+                  }
+                  
+                  if (endDate < startDate) {
+                    endDate = startDate;
+                  }
+                  
+                  let itemTotal = 0;
+                  if (rateType === 'hourly') {
+                    const hours = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)));
+                    itemTotal = unitPrice * hours * quantity;
+                  } else if (rateType === 'weekly') {
+                    const weeks = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 7)));
+                    itemTotal = unitPrice * weeks * quantity;
+                  } else if (rateType === 'monthly') {
+                    const months = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
+                    itemTotal = unitPrice * months * quantity;
+                  } else {
+                    const days = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+                    itemTotal = unitPrice * days * quantity;
+                  }
+                  
+                  return sum + itemTotal;
+                }, 0);
+                
+                const taxRate = 15;
+                const taxAmount = subtotal * (taxRate / 100);
+                const totalAmount = subtotal + taxAmount;
+                calculatedTotals = {
+                  subtotal,
+                  taxAmount,
+                  totalAmount,
+                  finalAmount: totalAmount,
+                };
+              }
+
               return {
                 ...rental,
+                ...calculatedTotals,
                 rental_items: items || [],
                 rentalItems: items || [], // Add camelCase version for frontend compatibility
                 customer: rental.customerName
@@ -265,7 +331,7 @@ export class RentalService {
         return rentalsWithItems;
       },
       {
-        ttl: 300, // 5 minutes
+        ttl: 10, // 10 seconds - allow totals to refresh quickly
         tags: [CACHE_TAGS.RENTALS],
         prefix: CACHE_PREFIXES.RENTALS
       }

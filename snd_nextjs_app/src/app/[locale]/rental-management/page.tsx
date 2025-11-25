@@ -210,6 +210,80 @@ export default function RentalManagementPage() {
     });
   };
 
+  const toNumericValue = (value: any): number => {
+    if (value === null || value === undefined || value === '') return 0;
+    const cleaned = typeof value === 'string' ? value.replace(/,/g, '') : value;
+    const parsed = typeof cleaned === 'number' ? cleaned : Number(cleaned);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  };
+
+  const calculateItemTotal = (item: RentalItem, rental?: Rental): number => {
+    if (!item) return 0;
+
+    const storedTotalPrice = toNumericValue(item?.totalPrice);
+    const { unitPrice, quantity = 1, rateType = 'daily', startDate: itemStartDate } = item;
+    const basePrice = parseFloat(unitPrice?.toString() || '0') || 0;
+    const itemCompletedDate = item.completedDate || (item as any).completed_date;
+    const effectiveStartDate = itemStartDate || rental?.startDate;
+
+    if (effectiveStartDate) {
+      const startDate = new Date(effectiveStartDate);
+      let endDate: Date;
+
+      if (itemCompletedDate) {
+        endDate = new Date(itemCompletedDate);
+      } else if (rental?.status === 'completed' && rental?.expectedEndDate) {
+        endDate = new Date(rental.expectedEndDate);
+      } else {
+        endDate = new Date();
+      }
+
+      if (endDate < startDate) {
+        endDate = startDate;
+      }
+
+      if (rateType === 'hourly') {
+        const hoursDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)));
+        return basePrice * hoursDiff * quantity;
+      } else if (rateType === 'weekly') {
+        const weeksDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 7)));
+        return basePrice * weeksDiff * quantity;
+      } else if (rateType === 'monthly') {
+        const monthsDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
+        return basePrice * monthsDiff * quantity;
+      } else {
+        const daysDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+        return basePrice * daysDiff * quantity;
+      }
+    }
+
+    return storedTotalPrice;
+  };
+
+  const calculateRentalDerivedTotals = (rental: Rental) => {
+    const itemDerivedTotal = (rental.rentalItems || []).reduce(
+      (sum, item) => sum + calculateItemTotal(item, rental),
+      0
+    );
+    const taxRate = rental?.tax ?? 15;
+    const derivedVatAmount =
+      itemDerivedTotal > 0
+        ? rental?.taxAmount && rental.taxAmount > 0
+          ? rental.taxAmount
+          : itemDerivedTotal * (taxRate / 100)
+        : 0;
+    const derivedTotalWithVat = itemDerivedTotal > 0 ? itemDerivedTotal + derivedVatAmount : 0;
+    const fallbackTotal = rental.totalAmount ?? rental.finalAmount ?? rental.subtotal ?? 0;
+    const actualTotalAmount = derivedTotalWithVat > 0 ? derivedTotalWithVat : fallbackTotal;
+
+    return {
+      itemDerivedTotal,
+      derivedVatAmount,
+      derivedTotalWithVat,
+      actualTotalAmount,
+    };
+  };
+
   // Get status badge color
   const getStatusBadge = (status?: string) => {
     if (!status) {
@@ -251,7 +325,7 @@ export default function RentalManagementPage() {
   };
 
   // Fetch rentals with filters
-  const fetchRentals = async () => {
+  const fetchRentals = async (bustCache = false) => {
     try {
       setLoading(true);
       const queryParams = new URLSearchParams();
@@ -260,23 +334,22 @@ export default function RentalManagementPage() {
           if (value && value !== 'all') queryParams.append(key, value);
         });
       }
+      
+      // Add cache busting parameter to force fresh data
+      if (bustCache) {
+        queryParams.append('_t', Date.now().toString());
+      }
 
-      const response = await fetch(`/api/rentals?${queryParams.toString()}`);
+      const response = await fetch(`/api/rentals?${queryParams.toString()}`, {
+        cache: bustCache ? 'no-store' : 'default'
+      });
       if (!response.ok) {
         throw new Error(t('rental.messages.fetchError'));
       }
       const data = await response.json();
       
-      // Recalculate financial totals for each rental based on their items
-      const rentalsWithCalculatedTotals = (data || []).map((rental: any) => {
-        if (rental.rentalItems && rental.rentalItems.length > 0) {
-          const financials = calculateFinancials(rental.rentalItems);
-          return { ...rental, ...financials };
-        }
-        return rental;
-      });
-      
-      setRentals(rentalsWithCalculatedTotals);
+      // Use totals as-is from the database/API
+      setRentals(data || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('rental.messages.generalError'));
       toast.error(t('rental.messages.fetchError'));
