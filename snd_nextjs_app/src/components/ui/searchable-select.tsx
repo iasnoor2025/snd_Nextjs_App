@@ -57,21 +57,40 @@ export function SearchableSelect({
 
   const selectedOption = options.find(option => option.value === value);
 
+  const areOptionsEqual = (first: Option[], second: Option[]) => {
+    if (first.length !== second.length) return false;
+    return first.every((option, index) => {
+      const compareOption = second[index];
+      if (!compareOption) {
+        return false;
+      }
+      return (
+        option.value === compareOption.value &&
+        option.label === compareOption.label
+      );
+    });
+  };
+
   // Filter options based on search value
   useEffect(() => {
-    if (!searchValue.trim()) {
-      setFilteredOptions(options);
-      return;
-    }
+    const normalizedSearch = searchValue.trim();
+    const nextOptions =
+      !normalizedSearch
+        ? options
+        : options.filter(option =>
+            searchFields.some(field => {
+              const fieldValue = option[field];
+              if (!fieldValue) return false;
+              return String(fieldValue).toLowerCase().includes(normalizedSearch.toLowerCase());
+            })
+          );
 
-    const filtered = options.filter(option => {
-      return searchFields.some(field => {
-        const fieldValue = option[field];
-        if (!fieldValue) return false;
-        return String(fieldValue).toLowerCase().includes(searchValue.toLowerCase());
-      });
+    setFilteredOptions(prev => {
+      if (areOptionsEqual(prev, nextOptions)) {
+        return prev;
+      }
+      return nextOptions;
     });
-    setFilteredOptions(filtered);
   }, [searchValue, options, searchFields]);
 
   // Reset search when popover closes

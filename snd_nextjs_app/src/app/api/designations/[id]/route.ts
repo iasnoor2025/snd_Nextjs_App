@@ -255,10 +255,12 @@ export const PUT = withPermission(PermissionConfigs.designation.update)(
 );
 
 export const DELETE = withPermission(PermissionConfigs.designation.delete)(
-  async (_request: NextRequest, { params }: { params: { id: string } }) => {
+  async (request: NextRequest, context: { params?: { id?: string } }) => {
     try {
-      const { id } = params;
-      const designationId = parseInt(id);
+      const idFromParams = context?.params?.id;
+      const idFromUrl = request.url.split('/').pop();
+      const rawId = idFromParams ?? idFromUrl;
+      const designationId = parseInt(rawId ?? '', 10);
 
       if (isNaN(designationId)) {
         return NextResponse.json(

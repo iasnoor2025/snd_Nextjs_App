@@ -19,13 +19,14 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { NationalityDropdown } from '@/components/shared/NationalityDropdown';
 import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
 import { SearchableSelect } from '@/components/ui/searchable-select';
-import { ArrowLeft, Calendar, Edit, IdCard, MapPin, Phone, Plus, Save, User, Scan } from 'lucide-react';
+import { ArrowLeft, Calendar, Edit, IdCard, MapPin, Phone, Plus, Save, Trash2, User, Scan } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
 import { ExpiryStatusDisplay, getExpiryStatus } from '@/lib/utils/expiry-utils';
+import { useConfirmationDialog } from '@/components/providers/confirmation-provider';
 
 interface Employee {
   id: number;
@@ -96,6 +97,7 @@ export default function EditEmployeePage() {
   const locale = params?.locale as string || 'en';
   const router = useRouter();
   const { t } = useI18n(); 
+  const { confirm } = useConfirmationDialog();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [extractingNationality, setExtractingNationality] = useState(false);
@@ -118,6 +120,8 @@ export default function EditEmployeePage() {
   const [editingDesignation, setEditingDesignation] = useState<Designation | null>(null);
   const [updatingDepartment, setUpdatingDepartment] = useState(false);
   const [updatingDesignation, setUpdatingDesignation] = useState(false);
+  const [deletingDesignation, setDeletingDesignation] = useState(false);
+  const [deletingDepartment, setDeletingDepartment] = useState(false);
 
   const [formData, setFormData] = useState({
     first_name: '',
@@ -533,6 +537,128 @@ export default function EditEmployeePage() {
     }
   };
 
+  const handleDeleteDepartment = async () => {
+    if (!formData.department_id) {
+      toast.error(t('employee.messages.selectDepartmentToDelete'));
+      return;
+    }
+
+    const selectedDepartment = departments.find(
+      d => d.id.toString() === formData.department_id
+    );
+
+    if (!selectedDepartment) {
+      toast.error(t('employee.messages.selectDepartmentToDelete'));
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: t('employee.confirmDelete.department.title'),
+      description: t('employee.confirmDelete.department.description', {
+        name: selectedDepartment.name,
+      }),
+      confirmText: t('common.actions.delete'),
+      cancelText: t('employee.actions.cancel'),
+      variant: 'destructive',
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletingDepartment(true);
+
+      const response = await fetch(`/api/departments/${selectedDepartment.id}`, {
+        method: 'DELETE',
+      });
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success(t('common.messages.deleteSuccess'));
+        setDepartments(prev => prev.filter(d => d.id !== selectedDepartment.id));
+        setFormData(prev => ({
+          ...prev,
+          department_id:
+            prev.department_id === selectedDepartment.id.toString()
+              ? ''
+              : prev.department_id,
+        }));
+        setShowEditDepartment(false);
+        setEditingDepartment(null);
+      } else {
+        toast.error(result.message || t('employee.messages.departmentDeleteError'));
+      }
+    } catch (error) {
+      toast.error(t('employee.messages.departmentDeleteError'));
+    } finally {
+      setDeletingDepartment(false);
+    }
+  };
+
+  const handleDeleteDesignation = async () => {
+    if (!formData.designation_id) {
+      toast.error(t('employee.messages.selectDesignationToDelete'));
+      return;
+    }
+
+    const designationId = parseInt(formData.designation_id, 10);
+    if (Number.isNaN(designationId)) {
+      toast.error(t('employee.messages.designationDeleteError'));
+      return;
+    }
+
+    const selectedDesignation = designations.find(d => d.id === designationId);
+
+    if (!selectedDesignation) {
+      toast.error(t('employee.messages.selectDesignationToDelete'));
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: t('employee.confirmDelete.designation.title'),
+      description: t('employee.confirmDelete.designation.description', {
+        name: selectedDesignation.name,
+      }),
+      confirmText: t('common.actions.delete'),
+      cancelText: t('employee.actions.cancel'),
+      variant: 'destructive',
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletingDesignation(true);
+
+      const response = await fetch(`/api/designations/${designationId}`, {
+        method: 'DELETE',
+      });
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success(t('common.messages.deleteSuccess'));
+        setDesignations(prev => prev.filter(d => d.id !== selectedDesignation.id));
+        setFormData(prev => ({
+          ...prev,
+          designation_id:
+            prev.designation_id === selectedDesignation.id.toString()
+              ? ''
+              : prev.designation_id,
+        }));
+        setShowEditDesignation(false);
+        setEditingDesignation(null);
+      } else {
+        toast.error(result.message || t('employee.messages.designationDeleteError'));
+      }
+    } catch (error) {
+      toast.error(t('employee.messages.designationDeleteError'));
+    } finally {
+      setDeletingDesignation(false);
+    }
+  };
+
   // Edit department
   const handleEditDepartment = async () => {
     if (!editingDepartment || !editingDepartment.name.trim()) {
@@ -849,6 +975,20 @@ export default function EditEmployeePage() {
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDeleteDepartment}
+                    className="px-3"
+                    disabled={
+                      !formData.department_id ||
+                      formData.department_id === '' ||
+                      deletingDepartment
+                    }
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
               <div className="space-y-2">
@@ -901,6 +1041,16 @@ export default function EditEmployeePage() {
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDeleteDesignation}
+                  className="px-3"
+                  disabled={!formData.designation_id || formData.designation_id === '' || deletingDesignation}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
                 </div>
               </div>
             </div>

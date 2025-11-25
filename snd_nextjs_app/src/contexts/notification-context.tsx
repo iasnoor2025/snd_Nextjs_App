@@ -37,13 +37,24 @@ interface NotificationProviderProps {
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
   const { data: session, status } = useSession();
   const notificationUtils = useNotifications();
+  const userEmail = session?.user?.email;
+  const fetchedUserRef = React.useRef<string | null>(null);
 
-  // Only fetch notifications if user is authenticated
+  // Fetch notifications once per logged-in user, ignore transient loading states
   React.useEffect(() => {
-    if (status === 'authenticated' && session) {
+    if (status === 'authenticated' && userEmail) {
+      if (fetchedUserRef.current === userEmail) {
+        return;
+      }
+      fetchedUserRef.current = userEmail;
       notificationUtils.fetchNotifications();
+      return;
     }
-  }, [status, session, notificationUtils.fetchNotifications]);
+
+    if (status === 'unauthenticated') {
+      fetchedUserRef.current = null;
+    }
+  }, [status, userEmail, notificationUtils.fetchNotifications]);
 
   return (
     <NotificationContext.Provider value={notificationUtils}>

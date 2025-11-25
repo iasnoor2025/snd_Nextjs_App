@@ -91,6 +91,7 @@ export default function QuotationViewPage() {
   const [saveDialogOpen, setSaveDialogOpen] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
   const [saveNotes, setSaveNotes] = useState<string>('');
+  const [cursorFocusTrigger, setCursorFocusTrigger] = useState(0);
 
   // Terms visibility state
   const [showGeneralNotes, setShowGeneralNotes] = useState<boolean>(false);
@@ -106,6 +107,11 @@ export default function QuotationViewPage() {
     position: 0,
     textarea: null,
   });
+
+  const queueCursorRestore = (position: number, textarea: HTMLTextAreaElement) => {
+    cursorPositionRef.current = { position, textarea };
+    setCursorFocusTrigger((prev) => prev + 1);
+  };
 
   // Calculate total M&D cost
   const calculateTotalMDCost = () => {
@@ -152,12 +158,9 @@ export default function QuotationViewPage() {
               textBeforeCursor + '\n' + nextNumber + '. ' + companyName + ' provides ';
             setter(newText);
 
-            // Store cursor position for next render cycle
-            cursorPositionRef.current = {
-              position:
-                cursorPosition + (nextNumber.toString().length + 2) + companyName.length + 10,
-              textarea: textarea,
-            };
+            const nextPosition =
+              cursorPosition + (nextNumber.toString().length + 2) + companyName.length + 10;
+            queueCursorRestore(nextPosition, textarea);
             return;
           }
 
@@ -173,11 +176,7 @@ export default function QuotationViewPage() {
             const newText = textBeforeCursor + '\n• ' + companyName + ' provides ';
             setter(newText);
 
-            // Store cursor position for next render cycle
-            cursorPositionRef.current = {
-              position: cursorPosition + 3 + companyName.length + 10,
-              textarea: textarea,
-            };
+            queueCursorRestore(cursorPosition + 3 + companyName.length + 10, textarea);
             return;
           }
         }
@@ -189,14 +188,10 @@ export default function QuotationViewPage() {
           const currentNumber = parseInt(numberedMatch[1]);
           const nextNumber = currentNumber + 1;
 
-          const newText = textBeforeCursor + '\n' + nextNumber + '. ' + textAfterCursor;
-          setter(newText);
+        const newText = textBeforeCursor + '\n' + nextNumber + '. ' + textAfterCursor;
+        setter(newText);
 
-          // Store cursor position for next render cycle
-          cursorPositionRef.current = {
-            position: cursorPosition + (nextNumber.toString().length + 2),
-            textarea: textarea,
-          };
+        queueCursorRestore(cursorPosition + (nextNumber.toString().length + 2), textarea);
           return;
         }
 
@@ -213,11 +208,7 @@ export default function QuotationViewPage() {
           const newText = textBeforeCursor + '\n• ' + textAfterCursor;
           setter(newText);
 
-          // Store cursor position for next render cycle
-          cursorPositionRef.current = {
-            position: cursorPosition + 3,
-            textarea: textarea,
-          };
+          queueCursorRestore(cursorPosition + 3, textarea);
         } else {
           
           // Regular new line
@@ -263,7 +254,7 @@ export default function QuotationViewPage() {
         
       }
     }
-  });
+  }, [cursorFocusTrigger]);
 
   // Handle saving terms and conditions
   const handleSaveTerms = async () => {
