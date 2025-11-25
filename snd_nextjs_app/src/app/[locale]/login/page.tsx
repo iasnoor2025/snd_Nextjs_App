@@ -1,15 +1,13 @@
 'use client';
 
 import { LoginForm } from '@/components/login-form';
-import { GalleryVerticalEnd } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useI18n } from '@/hooks/use-i18n';
+import Image from 'next/image';
 
 export default function LoginPage() {
-  const [showDiagnostics, setShowDiagnostics] = useState(false);
-  
   // Hooks must be called unconditionally - never wrap in try-catch
   const { t } = useI18n();
   const { data: session, status } = useSession();
@@ -44,29 +42,19 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
       <div className="flex w-full max-w-sm flex-col gap-6">
-        <a href="/" className="flex items-center gap-2 self-center font-medium">
-          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <GalleryVerticalEnd className="size-4" />
+        <a href="/" className="flex items-center gap-3 self-center font-medium">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background">
+            <Image
+              src="/snd-logo.png"
+              alt={t('auth.app_name')}
+              width={36}
+              height={36}
+              className="h-8 w-8 object-contain"
+              priority
+            />
           </div>
-          {t('app_name')}
+          <span className="text-lg font-semibold tracking-tight">{t('auth.app_name')}</span>
         </a>
-        
-        {/* Diagnostic button for debugging */}
-        <button
-          onClick={() => setShowDiagnostics(!showDiagnostics)}
-          className="text-xs text-muted-foreground hover:text-foreground self-start"
-        >
-          {showDiagnostics ? 'Hide' : 'Show'} Diagnostics
-        </button>
-        
-        {showDiagnostics && (
-          <div className="text-xs text-left p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md">
-            <p><strong>Environment:</strong> {process.env.NODE_ENV}</p>
-            <p><strong>NEXTAUTH_URL:</strong> {process.env.NEXTAUTH_URL || 'Not set'}</p>
-            <p><strong>Auth Status:</strong> {String(status)}</p>
-            <p><strong>Session:</strong> {session ? 'Active' : 'None'}</p>
-          </div>
-        )}
         
         <LoginForm />
       </div>

@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { GalleryVerticalEnd } from 'lucide-react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -13,6 +12,7 @@ import { toast } from 'sonner';
 
 import { useI18n } from '@/hooks/use-i18n';
 import { useLoginRedirect } from '@/hooks/use-login-redirect';
+import Image from 'next/image';
 
 export default function SignUpPage() {
   const { t } = useI18n();
@@ -110,11 +110,18 @@ export default function SignUpPage() {
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
       <div className="flex w-full max-w-md flex-col gap-6">
         {/* Header */}
-        <a href="/" className="flex items-center gap-2 self-center font-medium">
-          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <GalleryVerticalEnd className="size-4" />
+        <a href="/" className="flex items-center gap-3 self-center font-medium">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background">
+            <Image
+              src="/snd-logo.png"
+              alt={t('auth.app_name')}
+              width={36}
+              height={36}
+              className="h-8 w-8 object-contain"
+              priority
+            />
           </div>
-          {t('auth.app_name')}
+          <span className="text-lg font-semibold tracking-tight">{t('auth.app_name')}</span>
         </a>
 
         {/* Sign Up Card */}
