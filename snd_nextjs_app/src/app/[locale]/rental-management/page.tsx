@@ -47,9 +47,12 @@ import { PermissionBased } from '@/components/PermissionBased';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { format } from 'date-fns';
 import {
+  ArrowUpDown,
   CheckCircle,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   DollarSign,
   Download,
   Edit,
@@ -67,7 +70,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 // i18n refactor: All user-facing strings now use useTranslation('rental')
 import { useI18n } from '@/hooks/use-i18n';
@@ -144,6 +147,25 @@ interface Filters {
   area?: string;
 }
 
+type SortableColumn =
+  | 'index'
+  | 'rentalNumber'
+  | 'customer'
+  | 'area'
+  | 'supervisor'
+  | 'startDate'
+  | 'endDate'
+  | 'status'
+  | 'paymentStatus'
+  | 'totalAmount';
+
+type SortDirection = 'asc' | 'desc';
+
+interface SortConfig {
+  column: SortableColumn;
+  direction: SortDirection;
+}
+
 // Helper function to get first two words of a name
 function getShortName(fullName: string): string {
   if (!fullName) return '';
@@ -193,6 +215,7 @@ export default function RentalManagementPage() {
   const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customerSearchTerm, setCustomerSearchTerm] = useState('');
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
 
   // Get allowed actions for rental management
   const allowedActions = getAllowedActions('Rental');
@@ -283,6 +306,95 @@ export default function RentalManagementPage() {
       actualTotalAmount,
     };
   };
+
+  const parseDateValue = (value?: string) => {
+    if (!value) return 0;
+    const timestamp = new Date(value).getTime();
+    return Number.isNaN(timestamp) ? 0 : timestamp;
+  };
+
+  const getSortableValue = (rental: Rental, column: SortableColumn): number | string => {
+    switch (column) {
+      case 'index':
+        return parseDateValue(rental.createdAt) || 0;
+      case 'rentalNumber':
+        return rental.rentalNumber || '';
+      case 'customer':
+        return rental.customer?.name || '';
+      case 'area':
+        return rental.area || '';
+      case 'supervisor':
+        return rental.supervisor_details?.name || rental.supervisor || '';
+      case 'startDate':
+        return parseDateValue(rental.startDate);
+      case 'endDate':
+        return parseDateValue(rental.expectedEndDate);
+      case 'status':
+        return rental.status || '';
+      case 'paymentStatus':
+        return rental.paymentStatus || '';
+      case 'totalAmount':
+        return toNumericValue(rental.totalAmount ?? rental.finalAmount ?? rental.subtotal ?? 0);
+      default:
+        return '';
+    }
+  };
+
+  const compareValues = (aValue: number | string, bValue: number | string, direction: SortDirection) => {
+    const multiplier = direction === 'asc' ? 1 : -1;
+
+    if (typeof aValue === 'number' && typeof bValue === 'number') {
+      const safeA = Number.isFinite(aValue) ? aValue : 0;
+      const safeB = Number.isFinite(bValue) ? bValue : 0;
+      return (safeA - safeB) * multiplier;
+    }
+
+    return String(aValue).localeCompare(String(bValue), undefined, { sensitivity: 'base' }) * multiplier;
+  };
+
+  const sortedRentals = useMemo(() => {
+    const items = rentals || [];
+    if (!sortConfig) return items;
+
+    return [...items].sort((a, b) => {
+      const aValue = getSortableValue(a, sortConfig.column);
+      const bValue = getSortableValue(b, sortConfig.column);
+      return compareValues(aValue, bValue, sortConfig.direction);
+    });
+  }, [rentals, sortConfig]);
+
+  const handleSort = (column: SortableColumn) => {
+    setSortConfig(prev => {
+      if (prev?.column === column) {
+        return { column, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { column, direction: 'asc' };
+    });
+    setCurrentPage(1);
+  };
+
+  const renderSortIcon = (column: SortableColumn) => {
+    if (!sortConfig || sortConfig.column !== column) {
+      return <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />;
+    }
+
+    return sortConfig.direction === 'asc' ? (
+      <ChevronUp className="h-3.5 w-3.5 text-primary" />
+    ) : (
+      <ChevronDown className="h-3.5 w-3.5 text-primary" />
+    );
+  };
+
+  const SortableHeader = ({ column, label }: { column: SortableColumn; label: string }) => (
+    <button
+      type="button"
+      onClick={() => handleSort(column)}
+      className="flex w-full items-center gap-1 text-left font-medium text-muted-foreground hover:text-primary focus-visible:outline-none"
+    >
+      <span>{label}</span>
+      {renderSortIcon(column)}
+    </button>
+  );
 
   // Get status badge color
   const getStatusBadge = (status?: string) => {
@@ -775,7 +887,7 @@ export default function RentalManagementPage() {
                 {(() => {
                   const translation = t('rental.dashboard.totalRentals');
                   return translation === 'rental.dashboard.totalRentals' ? 'Total Rentals' : translation;
-                })()}: {(rentals || []).length}
+                })()}: {sortedRentals.length}
               </div>
               <div className="flex items-center gap-2">
                 <Label htmlFor="items-per-page" className="text-sm font-medium">
@@ -807,23 +919,43 @@ export default function RentalManagementPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-16">#</TableHead>
-                  <TableHead>{t('rental.table.headers.rentalNumber')}</TableHead>
-                  <TableHead>{t('rental.table.headers.customer')}</TableHead>
-                  <TableHead>Area</TableHead>
-                  <TableHead>{t('rental.table.headers.supervisor')}</TableHead>
-                  <TableHead>{t('rental.table.headers.startDate')}</TableHead>
-                  <TableHead>{t('rental.table.headers.endDate')}</TableHead>
-                  <TableHead>{t('rental.table.headers.status')}</TableHead>
-                  <TableHead>{t('rental.table.headers.paymentStatus')}</TableHead>
-                  <TableHead>{t('rental.table.headers.totalAmount')}</TableHead>
+                  <TableHead className="w-16">
+                    <SortableHeader column="index" label="#" />
+                  </TableHead>
+                  <TableHead>
+                    <SortableHeader column="rentalNumber" label={t('rental.table.headers.rentalNumber')} />
+                  </TableHead>
+                  <TableHead>
+                    <SortableHeader column="customer" label={t('rental.table.headers.customer')} />
+                  </TableHead>
+                  <TableHead>
+                    <SortableHeader column="area" label="Area" />
+                  </TableHead>
+                  <TableHead>
+                    <SortableHeader column="supervisor" label={t('rental.table.headers.supervisor')} />
+                  </TableHead>
+                  <TableHead>
+                    <SortableHeader column="startDate" label={t('rental.table.headers.startDate')} />
+                  </TableHead>
+                  <TableHead>
+                    <SortableHeader column="endDate" label={t('rental.table.headers.endDate')} />
+                  </TableHead>
+                  <TableHead>
+                    <SortableHeader column="status" label={t('rental.table.headers.status')} />
+                  </TableHead>
+                  <TableHead>
+                    <SortableHeader column="paymentStatus" label={t('rental.table.headers.paymentStatus')} />
+                  </TableHead>
+                  <TableHead>
+                    <SortableHeader column="totalAmount" label={t('rental.table.headers.totalAmount')} />
+                  </TableHead>
                   <TableHead>{t('rental.table.headers.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TooltipProvider>
                 <TableBody>
                   {(() => {
-                    const totalRentals = rentals || [];
+                    const totalRentals = sortedRentals;
                     const totalPages = Math.ceil(totalRentals.length / itemsPerPage);
                     const startIndex = (currentPage - 1) * itemsPerPage;
                     const endIndex = startIndex + itemsPerPage;
@@ -944,11 +1076,11 @@ export default function RentalManagementPage() {
                 </TableBody>
               </TooltipProvider>
             </Table>
-            {(rentals || []).length === 0 && (
+            {sortedRentals.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">{t('rental.dashboard.noRentalsFound')}</div>
             )}
             {(() => {
-              const totalRentals = rentals || [];
+              const totalRentals = sortedRentals;
               const totalPages = Math.ceil(totalRentals.length / itemsPerPage);
               
               if (totalPages <= 1) return null;

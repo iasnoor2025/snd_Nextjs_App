@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,11 +38,14 @@ import {
   AlertCircle,
   AlertTriangle,
   ArrowLeft,
+  ArrowUpDown,
   Calendar,
   CalendarCheck,
   CheckCircle,
   CircleDashed,
   Clock,
+  ChevronDown,
+  ChevronUp,
   DollarSign,
   Download,
   Edit,
@@ -64,7 +67,6 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
 import { 
@@ -116,6 +118,30 @@ interface Invoice {
   status: string;
   dueDate: string;
   issuedDate: string;
+}
+
+type RentalItemSortableColumn =
+  | 'index'
+  | 'equipment'
+  | 'unitPrice'
+  | 'rateType'
+  | 'startDate'
+  | 'duration'
+  | 'totalPrice'
+  | 'operator'
+  | 'supervisor'
+  | 'status';
+
+type RentalItemSortDirection = 'asc' | 'desc';
+
+interface RentalItemSortConfig {
+  column: RentalItemSortableColumn;
+  direction: RentalItemSortDirection;
+}
+
+interface RentalItemWithIndex {
+  item: RentalItem;
+  originalIndex: number;
 }
 
 interface Customer {
@@ -829,6 +855,152 @@ export default function RentalDetailPage() {
   const [equipmentAssignmentWarnings, setEquipmentAssignmentWarnings] = useState<string[]>([]);
   const [loadingEquipmentAssignments, setLoadingEquipmentAssignments] = useState(false);
   const [operatorAssignmentsForTooltip, setOperatorAssignmentsForTooltip] = useState<any[]>([]);
+  const [rentalItemsSortConfig, setRentalItemsSortConfig] = useState<RentalItemSortConfig>({
+    column: 'equipment',
+    direction: 'asc',
+  });
+
+  const rentalItemsWithIndex = useMemo<RentalItemWithIndex[]>(() => {
+    return (rental?.rentalItems || [])
+      .map((item, originalIndex) => ({ item, originalIndex }))
+      .filter((entry): entry is RentalItemWithIndex => Boolean(entry.item));
+  }, [rental?.rentalItems]);
+
+  const getRentalItemDurationMeta = (item: RentalItem) => {
+    let label = 'N/A';
+    let durationMs = 0;
+    const itemStartDate = item?.startDate && item.startDate !== '' ? item.startDate : rental?.startDate;
+    const itemCompletedDate = item?.completedDate || (item as any).completed_date;
+
+    if (itemStartDate) {
+      const startDate = new Date(itemStartDate);
+      let endDate: Date;
+
+      if (itemCompletedDate) {
+        endDate = new Date(itemCompletedDate);
+      } else if (rental?.status === 'completed' && rental?.expectedEndDate) {
+        endDate = new Date(rental.expectedEndDate);
+      } else {
+        endDate = new Date();
+      }
+
+      if (endDate < startDate) {
+        endDate = startDate;
+      }
+
+      durationMs = Math.max(0, endDate.getTime() - startDate.getTime());
+      const rateType = item?.rateType || 'daily';
+
+      if (rateType === 'hourly') {
+        const hours = Math.max(1, Math.ceil(durationMs / (1000 * 60 * 60)));
+        label = `${hours} hours`;
+      } else if (rateType === 'weekly') {
+        const weeks = Math.max(1, Math.ceil(durationMs / (1000 * 60 * 60 * 24 * 7)));
+        label = `${weeks} weeks`;
+      } else if (rateType === 'monthly') {
+        const months = Math.max(1, Math.ceil(durationMs / (1000 * 60 * 60 * 24 * 30)));
+        label = `${months} months`;
+      } else {
+        const days = Math.max(1, Math.ceil(durationMs / (1000 * 60 * 60 * 24)));
+        label = `${days} days`;
+      }
+    }
+
+    return { label, durationMs };
+  };
+
+  const getRentalItemSortableValue = (entry: RentalItemWithIndex, column: RentalItemSortableColumn) => {
+    const item = entry.item;
+    switch (column) {
+      case 'index':
+        return entry.originalIndex;
+      case 'equipment':
+        return item?.equipmentName || '';
+      case 'unitPrice':
+        return toNumericValue(item?.unitPrice ?? 0);
+      case 'rateType':
+        return item?.rateType || '';
+      case 'startDate': {
+        const startDate = item?.startDate && item.startDate !== '' ? item.startDate : rental?.startDate;
+        return startDate ? new Date(startDate).getTime() : 0;
+      }
+      case 'duration':
+        return getRentalItemDurationMeta(item).durationMs;
+      case 'totalPrice':
+        return calculateItemTotal(item, rental || undefined);
+      case 'operator': {
+        const firstName = item?.operatorFirstName;
+        const lastName = item?.operatorLastName;
+        if (firstName || lastName) {
+          return `${firstName || ''} ${lastName || ''}`.trim();
+        }
+        return item?.operatorId ? `Operator ${item.operatorId}` : '';
+      }
+      case 'supervisor': {
+        const firstName = item?.supervisorFirstName;
+        const lastName = item?.supervisorLastName;
+        if (firstName || lastName) {
+          return `${firstName || ''} ${lastName || ''}`.trim();
+        }
+        return item?.supervisorId ? `Supervisor ${item.supervisorId}` : '';
+      }
+      case 'status':
+        return item?.status || '';
+      default:
+        return '';
+    }
+  };
+
+  const sortedRentalItems = useMemo(() => {
+    const items = [...rentalItemsWithIndex];
+    if (items.length === 0) return items;
+
+    const { column, direction } = rentalItemsSortConfig;
+    const multiplier = direction === 'asc' ? 1 : -1;
+
+    return items.sort((a, b) => {
+      const aValue = getRentalItemSortableValue(a, column);
+      const bValue = getRentalItemSortableValue(b, column);
+
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return (aValue - bValue) * multiplier;
+      }
+
+      return String(aValue).localeCompare(String(bValue), undefined, { sensitivity: 'base' }) * multiplier;
+    });
+  }, [rentalItemsWithIndex, rentalItemsSortConfig, rental]);
+
+  const handleRentalItemSort = (column: RentalItemSortableColumn) => {
+    setRentalItemsSortConfig(prev => {
+      if (prev.column === column) {
+        return { column, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { column, direction: 'asc' };
+    });
+  };
+
+  const renderRentalItemSortIcon = (column: RentalItemSortableColumn) => {
+    if (rentalItemsSortConfig.column !== column) {
+      return <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />;
+    }
+
+    return rentalItemsSortConfig.direction === 'asc' ? (
+      <ChevronUp className="h-3.5 w-3.5 text-primary" />
+    ) : (
+      <ChevronDown className="h-3.5 w-3.5 text-primary" />
+    );
+  };
+
+  const RentalItemSortableHeader = ({ column, label }: { column: RentalItemSortableColumn; label: string }) => (
+    <button
+      type="button"
+      onClick={() => handleRentalItemSort(column)}
+      className="flex w-full items-center gap-1 text-left font-medium text-muted-foreground hover:text-primary focus-visible:outline-none"
+    >
+      <span>{label}</span>
+      {renderRentalItemSortIcon(column)}
+    </button>
+  );
 
   // Debug form data changes
   useEffect(() => {
@@ -2663,30 +2835,41 @@ export default function RentalDetailPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Sl#</TableHead>
-                        <TableHead>{t('rental.equipment')}</TableHead>
-                        <TableHead>{t('rental.unitPrice')}</TableHead>
-                        <TableHead>{t('rental.rateType')}</TableHead>
-                        <TableHead>Start Date</TableHead>
-                        <TableHead>{t('rental.duration')}</TableHead>
-                        <TableHead>{t('rental.totalPrice')}</TableHead>
-                        <TableHead>{t('rental.operator')}</TableHead>
-                        <TableHead>{t('rental.fields.supervisor')}</TableHead>
-                        <TableHead>{t('rental.status')}</TableHead>
+                        <TableHead className="w-12">
+                          <RentalItemSortableHeader column="index" label="Sl#" />
+                        </TableHead>
+                        <TableHead>
+                          <RentalItemSortableHeader column="equipment" label={t('rental.equipment')} />
+                        </TableHead>
+                        <TableHead>
+                          <RentalItemSortableHeader column="unitPrice" label={t('rental.unitPrice')} />
+                        </TableHead>
+                        <TableHead>
+                          <RentalItemSortableHeader column="rateType" label={t('rental.rateType')} />
+                        </TableHead>
+                        <TableHead>
+                          <RentalItemSortableHeader column="startDate" label="Start Date" />
+                        </TableHead>
+                        <TableHead>
+                          <RentalItemSortableHeader column="duration" label={t('rental.duration')} />
+                        </TableHead>
+                        <TableHead>
+                          <RentalItemSortableHeader column="totalPrice" label={t('rental.totalPrice')} />
+                        </TableHead>
+                        <TableHead>
+                          <RentalItemSortableHeader column="operator" label={t('rental.operator')} />
+                        </TableHead>
+                        <TableHead>
+                          <RentalItemSortableHeader column="supervisor" label={t('rental.fields.supervisor')} />
+                        </TableHead>
+                        <TableHead>
+                          <RentalItemSortableHeader column="status" label={t('rental.status')} />
+                        </TableHead>
                         <TableHead>{t('rental.table.headers.actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {(rental.rentalItems
-                        ? [...rental.rentalItems]
-                            .filter(item => item != null)
-                            .sort((a: any, b: any) => {
-                              const nameA = (a?.equipmentName || '').toString();
-                              const nameB = (b?.equipmentName || '').toString();
-                              return nameA.localeCompare(nameB);
-                            })
-                        : []
-                      ).map((item, index) => {
+                      {sortedRentalItems.map(({ item }, index) => {
                         // Debug logging for rental item data
                         console.log('Rental item data:', {
                           itemId: item?.id,
@@ -2721,45 +2904,7 @@ export default function RentalDetailPage() {
                         });
 
                         // Calculate duration based on actual rental period
-                        let durationText = 'N/A';
-                        const itemStartDate = (item?.startDate && item.startDate !== '') ? item.startDate : rental?.startDate;
-                        const itemCompletedDate = item.completedDate || (item as any).completed_date;
-                        
-                        if (itemStartDate) {
-                          const startDate = new Date(itemStartDate);
-                          let endDate: Date;
-                          
-                          // Use item-specific completion date first, otherwise fall back to rental expected end or today
-                          if (itemCompletedDate) {
-                            endDate = new Date(itemCompletedDate);
-                          } else if (rental?.status === 'completed' && rental?.expectedEndDate) {
-                            endDate = new Date(rental.expectedEndDate);
-                          } else {
-                            // For active rentals or unspecified completion, calculate up to today
-                            endDate = new Date();
-                          }
-                          
-                          // Ensure we don't go before the start date
-                          if (endDate < startDate) {
-                            endDate = startDate;
-                          }
-                          
-                          const rateType = item?.rateType || 'daily';
-                          
-                          if (rateType === 'hourly') {
-                            const hours = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60));
-                            durationText = `${hours} hours`;
-                          } else if (rateType === 'weekly') {
-                            const weeks = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 7));
-                            durationText = `${weeks} weeks`;
-                          } else if (rateType === 'monthly') {
-                            const months = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
-                            durationText = `${months} months`;
-                          } else {
-                            const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-                            durationText = `${days} days`;
-                          }
-                        }
+                        const { label: durationText } = getRentalItemDurationMeta(item);
 
                         return (
                           <TableRow key={item?.id}>
@@ -2788,7 +2933,7 @@ export default function RentalDetailPage() {
                               }
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">{durationText}</TableCell>
-                                                         <TableCell className="font-mono font-semibold">SAR {formatAmount(calculateItemTotal(item))}</TableCell>
+                                                         <TableCell className="font-mono font-semibold">SAR {formatAmount(calculateItemTotal(item, rental || undefined))}</TableCell>
                             <TableCell className="text-sm">{operatorName}</TableCell>
                             <TableCell className="text-sm">{supervisorName}</TableCell>
                             <TableCell>
