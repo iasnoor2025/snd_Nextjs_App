@@ -112,6 +112,7 @@ export class SupervisorEquipmentReportPDFService {
             'المشغل',
             'حالة العنصر',
             'تاريخ البدء',
+            'تاريخ الإكمال',
           ],
           noEquipment: 'لا توجد معدات مرتبطة',
           noOperator: 'بدون مشغل',
@@ -139,6 +140,7 @@ export class SupervisorEquipmentReportPDFService {
             'Operator',
             'Item Status',
             'Start Date',
+            'Completed Date',
           ],
           noEquipment: 'No equipment assigned',
           noOperator: 'No Operator',
@@ -179,17 +181,34 @@ export class SupervisorEquipmentReportPDFService {
       ? SupervisorEquipmentReportPDFService.ARABIC_FONT_NAME
       : 'helvetica';
 
-    // Header
+    // Header - use appropriate font based on content
     doc.setFontSize(18);
-    doc.setFont(headerFont, 'bold');
+    const titleHasArabic = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(labels.reportTitle);
+    if (useArabicFont && titleHasArabic) {
+      doc.setFont(SupervisorEquipmentReportPDFService.ARABIC_FONT_NAME, 'bold');
+    } else {
+      doc.setFont('helvetica', 'bold');
+    }
     doc.text(labels.reportTitle, pageWidth / 2, yPosition, { align: 'center' });
     yPosition += 8;
 
-    // Company info
+    // Company info - use appropriate font based on content
     doc.setFontSize(10);
-    doc.setFont(headerFont, 'normal');
+    const companyHasArabic = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(labels.companyName);
+    if (useArabicFont && companyHasArabic) {
+      doc.setFont(SupervisorEquipmentReportPDFService.ARABIC_FONT_NAME, 'normal');
+    } else {
+      doc.setFont('helvetica', 'normal');
+    }
     doc.text(labels.companyName, pageWidth / 2, yPosition, { align: 'center' });
     yPosition += 4;
+    
+    const countryHasArabic = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(labels.country);
+    if (useArabicFont && countryHasArabic) {
+      doc.setFont(SupervisorEquipmentReportPDFService.ARABIC_FONT_NAME, 'normal');
+    } else {
+      doc.setFont('helvetica', 'normal');
+    }
     doc.text(labels.country, pageWidth / 2, yPosition, { align: 'center' });
     yPosition += 8;
 
@@ -307,7 +326,7 @@ export class SupervisorEquipmentReportPDFService {
           // Equipment table headers - optimized for landscape with serial # (removed rental columns)
           let tableStartY = yPosition;
           const rowHeight = 5;
-          const colWidths = [12, 70, 60, 50, 25, 30]; // Serial #, Equipment, Customer, Operator, Item Status, Start Date
+          const colWidths = [12, 60, 50, 45, 22, 28, 30]; // Serial #, Equipment, Customer, Operator, Item Status, Start Date, Completed Date
           const headers = labels.tableHeaders;
 
           // Draw table header
@@ -315,9 +334,15 @@ export class SupervisorEquipmentReportPDFService {
           doc.rect(margin, tableStartY, colWidths.reduce((a, b) => a + b, 0), rowHeight, 'F');
           doc.setTextColor(255, 255, 255);
           doc.setFontSize(7);
-          doc.setFont(headerFont, 'bold');
           let xPos = margin + 2;
           headers.forEach((header, index) => {
+            // Use appropriate font for each header
+            const headerHasArabic = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(header);
+            if (useArabicFont && headerHasArabic) {
+              doc.setFont(SupervisorEquipmentReportPDFService.ARABIC_FONT_NAME, 'bold');
+            } else {
+              doc.setFont('helvetica', 'bold');
+            }
             const textX = isRTL ? xPos + colWidths[index] - 4 : xPos;
             doc.text(header, textX, tableStartY + 3.5, { align: isRTL ? 'right' : 'left' });
             xPos += colWidths[index];
@@ -341,10 +366,16 @@ export class SupervisorEquipmentReportPDFService {
               doc.setFillColor(52, 152, 219);
               doc.rect(margin, yPosition, colWidths.reduce((a, b) => a + b, 0), rowHeight, 'F');
               doc.setTextColor(255, 255, 255);
-              doc.setFont(headerFont, 'bold');
               doc.setFontSize(7);
               xPos = margin + 2;
               headers.forEach((header, hIndex) => {
+                // Use appropriate font for each header
+                const headerHasArabic = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(header);
+                if (useArabicFont && headerHasArabic) {
+                  doc.setFont(SupervisorEquipmentReportPDFService.ARABIC_FONT_NAME, 'bold');
+                } else {
+                  doc.setFont('helvetica', 'bold');
+                }
                 const textX = isRTL ? xPos + colWidths[hIndex] - 4 : xPos;
                 doc.text(header, textX, yPosition + 3.5, { align: isRTL ? 'right' : 'left' });
                 xPos += colWidths[hIndex];
@@ -364,7 +395,7 @@ export class SupervisorEquipmentReportPDFService {
             const rowData = [
               formatNumber(globalSerialNumber),
               equipment.display_name || equipment.equipment_name || labels.notAvailable,
-              equipment.customer_name || labels.notAvailable,
+              SupervisorEquipmentReportPDFService.extractEnglishPart(equipment.customer_name) || labels.notAvailable,
               equipment.operator_name
                 ? `${equipment.operator_name}${
                     equipment.operator_file_number ? ` (${equipment.operator_file_number})` : ''
@@ -372,6 +403,7 @@ export class SupervisorEquipmentReportPDFService {
                 : labels.noOperator,
               equipment.item_status || labels.notAvailable,
               formatDate(equipment.item_start_date),
+              formatDate(equipment.item_completed_date),
             ];
 
             xPos = margin + 2;
@@ -540,6 +572,30 @@ export class SupervisorEquipmentReportPDFService {
       console.error('[SupervisorEquipmentReportPDFService] Failed to register Arabic font:', error);
       throw error; // Re-throw to help debug font issues
     }
+  }
+
+  private static extractEnglishPart(text: string | null | undefined): string {
+    if (!text) return '';
+    
+    // Check if text has both English and Arabic (separated by hyphen or other delimiter)
+    const arabicPattern = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+    const hasArabic = arabicPattern.test(text);
+    const hasEnglish = /[a-zA-Z]/.test(text);
+    
+    if (hasArabic && hasEnglish) {
+      // Split by common separators
+      const parts = text.split(/[-–—|]/);
+      
+      // Find the part with English (without Arabic)
+      for (const part of parts) {
+        const trimmedPart = part.trim();
+        if (/[a-zA-Z]/.test(trimmedPart) && !arabicPattern.test(trimmedPart)) {
+          return trimmedPart;
+        }
+      }
+    }
+    
+    return text;
   }
 
   private static reportHasArabicText(data: SupervisorEquipmentReportData): boolean {
