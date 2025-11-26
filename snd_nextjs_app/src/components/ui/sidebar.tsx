@@ -155,7 +155,40 @@ function Sidebar({
   variant?: 'sidebar' | 'floating' | 'inset';
   collapsible?: 'offcanvas' | 'icon' | 'none';
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+  const { isMobile, state, openMobile, setOpenMobile, open, setOpen } = useSidebar();
+  const [isHovering, setIsHovering] = React.useState(false);
+  const hoverTimeoutRef = React.useRef<NodeJS.Timeout>();
+
+  // Handle hover to show sidebar
+  const handleMouseEnter = React.useCallback(() => {
+    if (!isMobile && state === 'collapsed') {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+      setIsHovering(true);
+      setOpen(true);
+    }
+  }, [isMobile, state, setOpen]);
+
+  // Handle mouse leave to hide sidebar
+  const handleMouseLeave = React.useCallback(() => {
+    if (!isMobile && isHovering) {
+      // Add a small delay before hiding
+      hoverTimeoutRef.current = setTimeout(() => {
+        setIsHovering(false);
+        setOpen(false);
+      }, 300);
+    }
+  }, [isMobile, isHovering, setOpen]);
+
+  // Cleanup timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
 
   if (collapsible === 'none') {
     return (
@@ -206,6 +239,19 @@ function Sidebar({
       data-side={side}
       data-slot="sidebar"
     >
+      {/* Hover trigger area - shows when sidebar is collapsed */}
+      {state === 'collapsed' && (
+        <div
+          onMouseEnter={handleMouseEnter}
+          data-slot="sidebar-hover-trigger"
+          className={cn(
+            'fixed inset-y-0 z-40 w-4 transition-opacity duration-200',
+            side === 'left' ? 'left-0' : 'right-0',
+            'hover:bg-sidebar/10'
+          )}
+        />
+      )}
+
       {/* This is what handles the sidebar gap on desktop */}
       <div
         data-slot="sidebar-gap"
@@ -219,6 +265,7 @@ function Sidebar({
         )}
       />
       <div
+        onMouseLeave={handleMouseLeave}
         data-slot="sidebar-container"
         className={cn(
           'fixed inset-y-0 z-50 hidden h-svh w-64 transition-[left,right,width] duration-200 ease-linear md:flex',

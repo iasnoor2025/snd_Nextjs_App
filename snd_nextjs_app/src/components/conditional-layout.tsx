@@ -83,7 +83,7 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
   return (
     <>
       <SidebarProvider
-        defaultOpen={true}
+        defaultOpen={false}
         style={
           {
             '--sidebar-width': '16rem',
