@@ -138,6 +138,7 @@ export default function EmployeeManagementPage() {
   const [statistics, setStatistics] = useState({
     totalEmployees: 0,
     currentlyAssigned: 0,
+    unassignedActive: 0,
     projectAssignments: 0,
     rentalAssignments: 0,
     employeesOnLeave: 0,
@@ -590,7 +591,7 @@ export default function EmployeeManagementPage() {
         </div>
 
         {/* Assignment Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4 mb-6">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -618,6 +619,22 @@ export default function EmployeeManagementPage() {
                 </div>
                 <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
                   <span className="text-green-600 text-sm">📋</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {t('employee.statistics.unassignedActive')}
+                  </p>
+                  <p className="text-2xl font-bold">{statistics.unassignedActive}</p>
+                </div>
+                <div className="h-8 w-8 bg-slate-100 rounded-full flex items-center justify-center">
+                  <span className="text-slate-600 text-sm">◯</span>
                 </div>
               </div>
             </CardContent>

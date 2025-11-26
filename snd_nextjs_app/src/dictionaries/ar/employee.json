@@ -601,7 +601,9 @@
 
   "statistics": {
     "totalEmployees": "إجمالي الموظفين",
+    "activeEmployees": "الموظفون النشطون",
     "currentlyAssigned": "معين حالياً",
+    "unassignedActive": "نشط غير معين",
     "projectAssignments": "تعيينات المشاريع",
     "rentalAssignments": "تعيينات الإيجار",
     "employeesOnLeave": "الموظفون في إجازة",

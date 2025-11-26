@@ -488,7 +488,9 @@
 
   "statistics": {
     "totalEmployees": "Total Employees",
+    "activeEmployees": "Active Employees",
     "currentlyAssigned": "Currently Assigned",
+    "unassignedActive": "Unassigned Active",
     "projectAssignments": "Project Assignments",
     "rentalAssignments": "Rental Assignments",
     "employeesOnLeave": "Employees on Leave",

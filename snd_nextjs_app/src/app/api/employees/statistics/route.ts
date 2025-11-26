@@ -24,6 +24,13 @@ const getEmployeeStatisticsHandler = async () => {
     const totalEmployeesRows = await db.select({ count: sql<number>`count(*)` }).from(employees);
     const totalEmployees = Number((totalEmployeesRows as { count: number }[])[0]?.count ?? 0);
 
+    // Get active employee count (for calculating unassigned)
+    const activeEmployeesRows = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(employees)
+      .where(eq(employees.status, 'active'));
+    const activeEmployees = Number((activeEmployeesRows as { count: number }[])[0]?.count ?? 0);
+
     // Get employees with current assignments
     let currentlyAssigned = 0;
     
@@ -293,11 +300,16 @@ const getEmployeeStatisticsHandler = async () => {
       .where(eq(employees.isExternal, true));
     const externalEmployees = Number((externalEmployeesRows as { count: number }[])[0]?.count ?? 0);
 
+    // Calculate unassigned active employees
+    // Unassigned = Total - Currently Assigned - On Leave
+    const unassignedActive = totalEmployees - currentlyAssigned - employeesOnLeave;
+
     const payload = {
       success: true,
       data: {
         totalEmployees,
         currentlyAssigned,
+        unassignedActive,
         projectAssignments,
         rentalAssignments,
         employeesOnLeave,
