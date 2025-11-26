@@ -156,7 +156,6 @@ type SortableColumn =
   | 'startDate'
   | 'endDate'
   | 'status'
-  | 'paymentStatus'
   | 'totalAmount';
 
 type SortDirection = 'asc' | 'desc';
@@ -331,8 +330,6 @@ export default function RentalManagementPage() {
         return parseDateValue(rental.expectedEndDate);
       case 'status':
         return rental.status || '';
-      case 'paymentStatus':
-        return rental.paymentStatus || '';
       case 'totalAmount':
         return toNumericValue(rental.totalAmount ?? rental.finalAmount ?? rental.subtotal ?? 0);
       default:
@@ -411,26 +408,6 @@ export default function RentalManagementPage() {
         return <Badge variant="default">{t('rental.completed')}</Badge>;
       case 'cancelled':
         return <Badge variant="destructive">{t('rental.cancelled')}</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-
-  // Get payment status badge
-  const getPaymentStatusBadge = (status?: string) => {
-    if (!status) {
-      return <Badge variant="outline">{t('rental.unknown')}</Badge>;
-    }
-
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return <Badge variant="secondary">{t('rental.pending')}</Badge>;
-      case 'partial':
-        return <Badge variant="default">{t('rental.partial')}</Badge>;
-      case 'paid':
-        return <Badge variant="default">{t('rental.paid')}</Badge>;
-      case 'overdue':
-        return <Badge variant="destructive">{t('rental.overdue')}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -925,13 +902,13 @@ export default function RentalManagementPage() {
                   <TableHead>
                     <SortableHeader column="rentalNumber" label={t('rental.table.headers.rentalNumber')} />
                   </TableHead>
-                  <TableHead>
+                  <TableHead className="whitespace-normal">
                     <SortableHeader column="customer" label={t('rental.table.headers.customer')} />
                   </TableHead>
-                  <TableHead>
+                  <TableHead className="whitespace-normal">
                     <SortableHeader column="area" label="Area" />
                   </TableHead>
-                  <TableHead>
+                  <TableHead className="whitespace-normal">
                     <SortableHeader column="supervisor" label={t('rental.table.headers.supervisor')} />
                   </TableHead>
                   <TableHead>
@@ -940,11 +917,8 @@ export default function RentalManagementPage() {
                   <TableHead>
                     <SortableHeader column="endDate" label={t('rental.table.headers.endDate')} />
                   </TableHead>
-                  <TableHead>
+                  <TableHead className="whitespace-normal">
                     <SortableHeader column="status" label={t('rental.table.headers.status')} />
-                  </TableHead>
-                  <TableHead>
-                    <SortableHeader column="paymentStatus" label={t('rental.table.headers.paymentStatus')} />
                   </TableHead>
                   <TableHead>
                     <SortableHeader column="totalAmount" label={t('rental.table.headers.totalAmount')} />
@@ -977,7 +951,7 @@ export default function RentalManagementPage() {
                           <TableCell className="font-medium">
                             {convertToArabicNumerals(rental.rentalNumber, isRTL)}
                           </TableCell>
-                          <TableCell className="max-w-[250px]">
+                          <TableCell className="max-w-[230px] whitespace-normal break-words">
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <div className="truncate">
@@ -989,7 +963,7 @@ export default function RentalManagementPage() {
                               </TooltipContent>
                             </Tooltip>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="max-w-[160px] whitespace-normal break-words">
                             {rental.area ? (
                               <span className="text-sm">{rental.area}</span>
                             ) : (
@@ -998,7 +972,7 @@ export default function RentalManagementPage() {
                               </span>
                             )}
                           </TableCell>
-                    <TableCell>
+                    <TableCell className="max-w-[220px] whitespace-normal break-words">
                       {rental.supervisor ? (
                         <span className="text-sm">
                           {rental.supervisor_details ? (
@@ -1032,7 +1006,6 @@ export default function RentalManagementPage() {
                         : t('rental.na')}
                     </TableCell>
                     <TableCell>{getStatusBadge(rental.status)}</TableCell>
-                    <TableCell>{getPaymentStatusBadge(rental.paymentStatus)}</TableCell>
                     <TableCell className="font-mono">
                       SAR {convertToArabicNumerals(formatAmount(rental.totalAmount), isRTL)}
                     </TableCell>
