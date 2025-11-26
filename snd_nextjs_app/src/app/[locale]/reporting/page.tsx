@@ -284,8 +284,8 @@ export default function ReportingDashboardPage() {
       if (departmentFilter !== 'all') paramsObj.departmentId = departmentFilter;
       if (customerFilter !== 'all') paramsObj.customerId = customerFilter;
       if (categoryFilter !== 'all') paramsObj.categoryId = categoryFilter;
-      if (statusFilter !== 'all' && selectedReport === 'supervisor_equipment') paramsObj.status = statusFilter;
-      if (statusFilter !== 'all' && selectedReport === 'equipment_by_category') paramsObj.status = statusFilter;
+      if (selectedReport === 'supervisor_equipment') paramsObj.status = statusFilter;
+      if (selectedReport === 'equipment_by_category') paramsObj.status = statusFilter;
       if (supervisorFilter !== 'all' && selectedReport === 'supervisor_equipment') paramsObj.supervisorId = supervisorFilter;
       if (includeInactive) paramsObj.includeInactive = 'true';
       
