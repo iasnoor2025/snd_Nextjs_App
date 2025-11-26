@@ -43,6 +43,7 @@ import {
   Activity
 } from 'lucide-react';
 import { useState } from 'react';
+import { useParams } from 'next/navigation';
 import { useI18n } from '@/hooks/use-i18n';
 import { toast } from 'sonner';
 import React from 'react';
@@ -88,6 +89,10 @@ interface MetricCard {
 
 export default function ReportingDashboardPage() {
   const { t, isRTL } = useI18n();
+  const params = useParams();
+  const localeFromParams = (params?.locale as string) || 'en';
+  const isArabicLocale = localeFromParams === 'ar';
+  const pdfIsRTL = isRTL || isArabicLocale;
   const [selectedReport, setSelectedReport] = useState('overview');
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -1010,7 +1015,7 @@ export default function ReportingDashboardPage() {
         await SupervisorEquipmentReportPDFService.downloadSupervisorEquipmentReportPDF(
           reportData as unknown as SupervisorEquipmentReportData,
           `supervisor-equipment-report-${new Date().toISOString().split('T')[0]}.pdf`,
-          { isRTL }
+          { isRTL: pdfIsRTL }
         );
       }
       

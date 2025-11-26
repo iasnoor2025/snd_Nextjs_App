@@ -44,8 +44,8 @@ interface SupervisorEquipmentReportPDFOptions {
 export class SupervisorEquipmentReportPDFService {
   private static arabicFontCache: string | null = null;
   private static arabicFontPromise: Promise<string | null> | null = null;
-  private static readonly ARABIC_FONT_FILE = 'Cairo-Regular.ttf';
-  private static readonly ARABIC_FONT_NAME = 'Cairo';
+  private static readonly ARABIC_FONT_FILE = 'NotoSansArabic-Regular.ttf';
+  private static readonly ARABIC_FONT_NAME = 'NotoSansArabic';
 
   static generateSupervisorEquipmentReportPDF(
     data: SupervisorEquipmentReportData,
@@ -57,10 +57,22 @@ export class SupervisorEquipmentReportPDFService {
 
     const doc = new jsPDF('l', 'mm', 'a4'); // Landscape orientation
     const isRTL = options.isRTL ?? false;
+    
+    // Re-enable Arabic font with Noto Sans Arabic (better jsPDF compatibility)
+    const shouldUseArabicFont =
+      isRTL || SupervisorEquipmentReportPDFService.reportHasArabicText(data);
+    const hasArabicFontData = !!options.arabicFontData;
+    const useArabicFont = shouldUseArabicFont && hasArabicFontData;
 
-    if (isRTL) {
+    if (shouldUseArabicFont && !hasArabicFontData) {
+      console.warn(
+        '[SupervisorEquipmentReportPDFService] Arabic text detected but font data unavailable, falling back to default font'
+      );
+    }
+
+    if (useArabicFont) {
       this.applyArabicFont(doc, options.arabicFontData);
-      if (typeof (doc as any).setR2L === 'function') {
+      if (isRTL && typeof (doc as any).setR2L === 'function') {
         (doc as any).setR2L(true);
       }
     }
@@ -97,8 +109,6 @@ export class SupervisorEquipmentReportPDFService {
             'الرقم التسلسلي',
             'المعدة',
             'اسم العميل',
-            'رقم العقد',
-            'حالة العقد',
             'المشغل',
             'حالة العنصر',
             'تاريخ البدء',
@@ -126,8 +136,6 @@ export class SupervisorEquipmentReportPDFService {
             'Serial #',
             'Equipment',
             'Customer Name',
-            'Rental #',
-            'Rental Status',
             'Operator',
             'Item Status',
             'Start Date',
@@ -167,7 +175,9 @@ export class SupervisorEquipmentReportPDFService {
       return convertToArabicNumerals(value, isRTL);
     };
 
-    const headerFont = isRTL ? SupervisorEquipmentReportPDFService.ARABIC_FONT_NAME : 'helvetica';
+    const headerFont = useArabicFont
+      ? SupervisorEquipmentReportPDFService.ARABIC_FONT_NAME
+      : 'helvetica';
 
     // Header
     doc.setFontSize(18);
@@ -259,20 +269,45 @@ export class SupervisorEquipmentReportPDFService {
 
         // Supervisor Header
         doc.setFontSize(11);
-        doc.setFont(headerFont, 'bold');
         const supervisorTitle = `${supervisor.supervisor_name}${
           supervisor.supervisor_file_number
             ? ` (${labels.fileLabel}: ${convertToArabicNumerals(supervisor.supervisor_file_number, isRTL)})`
             : ''
         } - ${formatNumber(supervisor.equipment_count, '0')} ${labels.equipmentWord}`;
+        
+        // Use Arabic font for supervisor name if it contains Arabic
+        const titleHasArabic = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(supervisorTitle);
+        if (useArabicFont && titleHasArabic) {
+          doc.setFont(SupervisorEquipmentReportPDFService.ARABIC_FONT_NAME, 'bold');
+        } else {
+          doc.setFont('helvetica', 'bold');
+        }
+        
         doc.text(supervisorTitle, margin, yPosition);
         yPosition += 6;
 
         if (supervisor.equipment && supervisor.equipment.length > 0) {
-          // Equipment table headers - optimized for landscape with serial #
+          // Sort equipment by customer name first, then by equipment name
+          const sortedEquipment = [...supervisor.equipment].sort((a, b) => {
+            // Primary sort: Customer name
+            const customerA = (a.customer_name || '').toLowerCase();
+            const customerB = (b.customer_name || '').toLowerCase();
+            const customerCompare = customerA.localeCompare(customerB);
+            
+            if (customerCompare !== 0) {
+              return customerCompare;
+            }
+            
+            // Secondary sort: Equipment name
+            const equipmentA = (a.display_name || a.equipment_name || '').toLowerCase();
+            const equipmentB = (b.display_name || b.equipment_name || '').toLowerCase();
+            return equipmentA.localeCompare(equipmentB);
+          });
+          
+          // Equipment table headers - optimized for landscape with serial # (removed rental columns)
           let tableStartY = yPosition;
           const rowHeight = 5;
-          const colWidths = [12, 60, 35, 30, 28, 35, 22, 25]; // Total width: 247mm
+          const colWidths = [12, 70, 60, 50, 25, 30]; // Serial #, Equipment, Customer, Operator, Item Status, Start Date
           const headers = labels.tableHeaders;
 
           // Draw table header
@@ -293,7 +328,7 @@ export class SupervisorEquipmentReportPDFService {
           doc.setFont(headerFont, 'normal');
           doc.setFontSize(7);
           let rowIndex = 0; // Track row index for this supervisor's table
-          supervisor.equipment.forEach((equipment, index) => {
+          sortedEquipment.forEach((equipment, index) => {
             let currentRowY = tableStartY + rowHeight + (rowIndex * rowHeight);
 
             // Check if we need a new page for this row (landscape height is 210mm)
@@ -330,8 +365,6 @@ export class SupervisorEquipmentReportPDFService {
               formatNumber(globalSerialNumber),
               equipment.display_name || equipment.equipment_name || labels.notAvailable,
               equipment.customer_name || labels.notAvailable,
-              formatText(equipment.rental_number || labels.notAvailable),
-              formatText(equipment.rental_status || labels.notAvailable),
               equipment.operator_name
                 ? `${equipment.operator_name}${
                     equipment.operator_file_number ? ` (${equipment.operator_file_number})` : ''
@@ -343,12 +376,23 @@ export class SupervisorEquipmentReportPDFService {
 
             xPos = margin + 2;
             rowData.forEach((cell, cellIndex) => {
+              // Check if this specific cell has Arabic text
+              const cellText = String(cell);
+              const cellHasArabic = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(cellText);
+              
+              // Switch font based on cell content
+              if (useArabicFont && cellHasArabic) {
+                doc.setFont(SupervisorEquipmentReportPDFService.ARABIC_FONT_NAME, 'normal');
+              } else {
+                doc.setFont('helvetica', 'normal');
+              }
+              
               // Truncate long text
               const maxWidth = colWidths[cellIndex] - 3;
-              let cellText = String(cell);
-              if (doc.getTextWidth(cellText) > maxWidth) {
-                const splitText = doc.splitTextToSize(cellText, maxWidth);
-                cellText = `${splitText[0]}...`;
+              let displayText = cellText;
+              if (doc.getTextWidth(displayText) > maxWidth) {
+                const splitText = doc.splitTextToSize(displayText, maxWidth);
+                displayText = `${splitText[0]}...`;
               }
               const textX =
                 cellIndex === 0
@@ -358,7 +402,7 @@ export class SupervisorEquipmentReportPDFService {
                     : xPos;
               const align =
                 cellIndex === 0 ? 'center' : isRTL ? ('right' as const) : ('left' as const);
-              doc.text(cellText, textX, currentRowY + 3.5, { align });
+              doc.text(displayText, textX, currentRowY + 3.5, { align });
               xPos += colWidths[cellIndex];
             });
 
@@ -392,9 +436,13 @@ export class SupervisorEquipmentReportPDFService {
       const reportData: SupervisorEquipmentReportData = data.data || data;
 
       const isRTL = options?.isRTL ?? false;
-      const arabicFontData = isRTL ? await this.loadArabicFontData() : null;
+      const requiresArabicFont = isRTL || this.reportHasArabicText(reportData);
+      const arabicFontData = requiresArabicFont ? await this.loadArabicFontData() : null;
 
-      const pdf = this.generateSupervisorEquipmentReportPDF(reportData, { isRTL, arabicFontData });
+      const pdf = this.generateSupervisorEquipmentReportPDF(reportData, {
+        isRTL,
+        arabicFontData,
+      });
       const pdfBlob = pdf.output('blob');
       const url = URL.createObjectURL(pdfBlob);
       const link = document.createElement('a');
@@ -423,7 +471,12 @@ export class SupervisorEquipmentReportPDFService {
       return null;
     }
 
-    this.arabicFontPromise = fetch(`/fonts/${this.ARABIC_FONT_FILE}`)
+    const fontUrl =
+      typeof window !== 'undefined'
+        ? new URL(`/fonts/${this.ARABIC_FONT_FILE}`, window.location.origin).toString()
+        : `/fonts/${this.ARABIC_FONT_FILE}`;
+
+    this.arabicFontPromise = fetch(fontUrl)
       .then(response => {
         if (!response.ok) {
           throw new Error('Failed to fetch Arabic font');
@@ -447,17 +500,29 @@ export class SupervisorEquipmentReportPDFService {
   }
 
   private static arrayBufferToBase64(buffer: ArrayBuffer): string {
-    let binary = '';
     const bytes = new Uint8Array(buffer);
-    const len = bytes.byteLength;
-    for (let i = 0; i < len; i++) {
-      binary += String.fromCharCode(bytes[i]);
+    let binary = '';
+    const chunkSize = 0x8000; // 32KB chunks to avoid call stack limits
+
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, i + chunkSize);
+      let chunkStr = '';
+      for (let j = 0; j < chunk.length; j++) {
+        chunkStr += String.fromCharCode(chunk[j]);
+      }
+      binary += chunkStr;
     }
+
     return btoa(binary);
   }
 
   private static applyArabicFont(doc: jsPDF, fontData?: string | null) {
-    if (!fontData) return;
+    if (!fontData || typeof fontData !== 'string' || fontData.length === 0) {
+      console.warn(
+        '[SupervisorEquipmentReportPDFService] Arabic font data missing, falling back to default font'
+      );
+      return;
+    }
 
     const docAny = doc as any;
     if (docAny.__cairoFontApplied) {
@@ -465,11 +530,51 @@ export class SupervisorEquipmentReportPDFService {
       return;
     }
 
-    doc.addFileToVFS(this.ARABIC_FONT_FILE, fontData);
-    doc.addFont(this.ARABIC_FONT_FILE, this.ARABIC_FONT_NAME, 'normal');
-    doc.addFont(this.ARABIC_FONT_FILE, this.ARABIC_FONT_NAME, 'bold');
-    doc.setFont(this.ARABIC_FONT_NAME, 'normal');
-    docAny.__cairoFontApplied = true;
+    try {
+      doc.addFileToVFS(this.ARABIC_FONT_FILE, fontData);
+      // Use standard encoding for Noto Sans Arabic
+      doc.addFont(this.ARABIC_FONT_FILE, this.ARABIC_FONT_NAME, 'normal');
+      doc.setFont(this.ARABIC_FONT_NAME, 'normal');
+      docAny.__arabicFontApplied = true;
+    } catch (error) {
+      console.error('[SupervisorEquipmentReportPDFService] Failed to register Arabic font:', error);
+      throw error; // Re-throw to help debug font issues
+    }
+  }
+
+  private static reportHasArabicText(data: SupervisorEquipmentReportData): boolean {
+    const containsArabic = (value: string | null | undefined) => {
+      if (!value) return false;
+      return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(value);
+    };
+
+    if (containsArabic(data.summary_stats?.average_equipment_per_supervisor?.toString())) {
+      return true;
+    }
+
+    if (Array.isArray(data.supervisor_groups)) {
+      for (const group of data.supervisor_groups) {
+        if (
+          containsArabic(group.supervisor_name) ||
+          containsArabic(group.supervisor_file_number || '') ||
+          (Array.isArray(group.equipment) &&
+            group.equipment.some(
+              eq =>
+                containsArabic(eq.equipment_name) ||
+                containsArabic(eq.display_name) ||
+                containsArabic(eq.customer_name) ||
+                containsArabic(eq.rental_number) ||
+                containsArabic(eq.rental_status) ||
+                containsArabic(eq.operator_name) ||
+                containsArabic(eq.item_status)
+            ))
+        ) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 }
 
