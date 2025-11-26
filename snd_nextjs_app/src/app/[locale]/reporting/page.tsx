@@ -87,7 +87,7 @@ interface MetricCard {
 }
 
 export default function ReportingDashboardPage() {
-  const { t } = useI18n();
+  const { t, isRTL } = useI18n();
   const [selectedReport, setSelectedReport] = useState('overview');
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -1009,7 +1009,8 @@ export default function ReportingDashboardPage() {
       } else if (selectedReport === 'supervisor_equipment') {
         await SupervisorEquipmentReportPDFService.downloadSupervisorEquipmentReportPDF(
           reportData as unknown as SupervisorEquipmentReportData,
-          `supervisor-equipment-report-${new Date().toISOString().split('T')[0]}.pdf`
+          `supervisor-equipment-report-${new Date().toISOString().split('T')[0]}.pdf`,
+          { isRTL }
         );
       }
       

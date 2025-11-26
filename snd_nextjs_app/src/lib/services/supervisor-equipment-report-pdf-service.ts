@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import { convertToArabicNumerals } from '@/lib/translation-utils';
 
 export interface SupervisorEquipmentReportData {
   supervisor_groups: Array<{
@@ -35,18 +36,39 @@ export interface SupervisorEquipmentReportData {
   parameters?: any;
 }
 
+interface SupervisorEquipmentReportPDFOptions {
+  isRTL?: boolean;
+  arabicFontData?: string | null;
+}
+
 export class SupervisorEquipmentReportPDFService {
-  static generateSupervisorEquipmentReportPDF(data: SupervisorEquipmentReportData): jsPDF {
+  private static arabicFontCache: string | null = null;
+  private static arabicFontPromise: Promise<string | null> | null = null;
+  private static readonly ARABIC_FONT_FILE = 'Cairo-Regular.ttf';
+  private static readonly ARABIC_FONT_NAME = 'Cairo';
+
+  static generateSupervisorEquipmentReportPDF(
+    data: SupervisorEquipmentReportData,
+    options: SupervisorEquipmentReportPDFOptions = {}
+  ): jsPDF {
     if (!data) {
       throw new Error('Supervisor equipment report data is required');
     }
 
     const doc = new jsPDF('l', 'mm', 'a4'); // Landscape orientation
+    const isRTL = options.isRTL ?? false;
+
+    if (isRTL) {
+      this.applyArabicFont(doc, options.arabicFontData);
+      if (typeof (doc as any).setR2L === 'function') {
+        (doc as any).setR2L(true);
+      }
+    }
 
     // Set document properties
     doc.setProperties({
-      title: 'Supervisor Equipment Report',
-      subject: 'Supervisor Equipment Management Report',
+      title: isRTL ? 'تقرير معدات المشرفين' : 'Supervisor Equipment Report',
+      subject: isRTL ? 'تقرير إدارة معدات المشرفين' : 'Supervisor Equipment Management Report',
       author: 'SND Rental System',
       creator: 'SND Rental System',
     });
@@ -57,34 +79,139 @@ export class SupervisorEquipmentReportPDFService {
     const margin = 10;
     const contentWidth = pageWidth - (margin * 2);
 
+    const labels = isRTL
+      ? {
+          reportTitle: 'تقرير معدات المشرفين',
+          companyName: 'شركة إس إن دي لتأجير المعدات',
+          country: 'المملكة العربية السعودية',
+          generatedAt: 'تاريخ الإنشاء',
+          filters: 'عوامل التصفية:',
+          status: 'الحالة',
+          supervisor: 'المشرف',
+          summaryTitle: 'ملخص إحصائي',
+          totalSupervisors: 'إجمالي المشرفين',
+          totalEquipment: 'إجمالي المعدات',
+          totalItems: 'إجمالي العناصر',
+          averageEquipment: 'متوسط المعدات لكل مشرف',
+          tableHeaders: [
+            'الرقم التسلسلي',
+            'المعدة',
+            'اسم العميل',
+            'رقم العقد',
+            'حالة العقد',
+            'المشغل',
+            'حالة العنصر',
+            'تاريخ البدء',
+          ],
+          noEquipment: 'لا توجد معدات مرتبطة',
+          noOperator: 'بدون مشغل',
+          notAvailable: 'غير متوفر',
+          fileLabel: 'ملف',
+          equipmentWord: 'معدات',
+        }
+      : {
+          reportTitle: 'Supervisor Equipment Report',
+          companyName: 'SND Equipment Rental Company',
+          country: 'Kingdom of Saudi Arabia',
+          generatedAt: 'Generated',
+          filters: 'Filters:',
+          status: 'Status',
+          supervisor: 'Supervisor',
+          summaryTitle: 'Summary Statistics',
+          totalSupervisors: 'Total Supervisors',
+          totalEquipment: 'Total Equipment',
+          totalItems: 'Total Items',
+          averageEquipment: 'Average Equipment per Supervisor',
+          tableHeaders: [
+            'Serial #',
+            'Equipment',
+            'Customer Name',
+            'Rental #',
+            'Rental Status',
+            'Operator',
+            'Item Status',
+            'Start Date',
+          ],
+          noEquipment: 'No equipment assigned',
+          noOperator: 'No Operator',
+          notAvailable: 'N/A',
+          fileLabel: 'File',
+          equipmentWord: 'Equipment',
+        };
+
+    const formatNumber = (value: number | string | null | undefined, fallback?: string) => {
+      if (value === null || value === undefined || value === '') {
+        return fallback || labels.notAvailable;
+      }
+      return convertToArabicNumerals(String(value), isRTL);
+    };
+
+    const formatDate = (value: string | null) => {
+      if (!value) {
+        return labels.notAvailable;
+      }
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) {
+        return labels.notAvailable;
+      }
+      return isRTL
+        ? convertToArabicNumerals(
+            new Intl.DateTimeFormat('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(date),
+            true
+          )
+        : date.toLocaleDateString();
+    };
+
+    const formatText = (value: string | null | undefined) => {
+      if (!value) return labels.notAvailable;
+      return convertToArabicNumerals(value, isRTL);
+    };
+
+    const headerFont = isRTL ? SupervisorEquipmentReportPDFService.ARABIC_FONT_NAME : 'helvetica';
+
     // Header
     doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Supervisor Equipment Report', pageWidth / 2, yPosition, { align: 'center' });
+    doc.setFont(headerFont, 'bold');
+    doc.text(labels.reportTitle, pageWidth / 2, yPosition, { align: 'center' });
     yPosition += 8;
 
     // Company info
     doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text('SND Equipment Rental Company', pageWidth / 2, yPosition, { align: 'center' });
+    doc.setFont(headerFont, 'normal');
+    doc.text(labels.companyName, pageWidth / 2, yPosition, { align: 'center' });
     yPosition += 4;
-    doc.text('Kingdom of Saudi Arabia', pageWidth / 2, yPosition, { align: 'center' });
+    doc.text(labels.country, pageWidth / 2, yPosition, { align: 'center' });
     yPosition += 8;
 
     // Generation info
     doc.setFontSize(8);
     const generatedAt = data.generated_at || new Date().toISOString();
-    doc.text(`Generated: ${new Date(generatedAt).toLocaleString()}`, margin, yPosition);
+    const generatedLabel = `${labels.generatedAt}: ${
+      isRTL
+        ? convertToArabicNumerals(
+            new Intl.DateTimeFormat('ar-SA', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+            }).format(new Date(generatedAt)),
+            true
+          )
+        : new Date(generatedAt).toLocaleString()
+    }`;
+    doc.text(generatedLabel, margin, yPosition);
     yPosition += 4;
 
     // Parameters
     if (data.parameters) {
-      let paramText = 'Filters: ';
+      let paramText = `${labels.filters} `;
       if (data.parameters.status && data.parameters.status !== 'all') {
-        paramText += `Status: ${data.parameters.status}`;
+        paramText += `${labels.status}: ${data.parameters.status}`;
       }
       if (data.parameters.supervisorId && data.parameters.supervisorId !== 'all') {
-        paramText += ` | Supervisor: ${data.parameters.supervisorId}`;
+        const separator = paramText.trim().endsWith(':') ? '' : ' | ';
+        paramText += `${separator}${labels.supervisor}: ${data.parameters.supervisorId}`;
       }
       doc.text(paramText, margin, yPosition);
       yPosition += 4;
@@ -94,20 +221,28 @@ export class SupervisorEquipmentReportPDFService {
     if (data.summary_stats) {
       yPosition += 3;
       doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Summary Statistics', margin, yPosition);
+      doc.setFont(headerFont, 'bold');
+      doc.text(labels.summaryTitle, margin, yPosition);
       yPosition += 6;
 
       doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
+      doc.setFont(headerFont, 'normal');
       const stats = data.summary_stats;
-      doc.text(`Total Supervisors: ${stats.total_supervisors || 0}`, margin, yPosition);
+      doc.text(
+        `${labels.totalSupervisors}: ${formatNumber(stats.total_supervisors || 0)}`,
+        margin,
+        yPosition
+      );
       yPosition += 5;
-      doc.text(`Total Equipment: ${stats.total_equipment || 0}`, margin, yPosition);
+      doc.text(`${labels.totalEquipment}: ${formatNumber(stats.total_equipment || 0)}`, margin, yPosition);
       yPosition += 5;
-      doc.text(`Total Items: ${stats.total_items || 0}`, margin, yPosition);
+      doc.text(`${labels.totalItems}: ${formatNumber(stats.total_items || 0)}`, margin, yPosition);
       yPosition += 5;
-      doc.text(`Average Equipment per Supervisor: ${stats.average_equipment_per_supervisor || 0}`, margin, yPosition);
+      doc.text(
+        `${labels.averageEquipment}: ${formatNumber(stats.average_equipment_per_supervisor || 0)}`,
+        margin,
+        yPosition
+      );
       yPosition += 6;
     }
 
@@ -124,8 +259,12 @@ export class SupervisorEquipmentReportPDFService {
 
         // Supervisor Header
         doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
-        const supervisorTitle = `${supervisor.supervisor_name}${supervisor.supervisor_file_number ? ` (File: ${supervisor.supervisor_file_number})` : ''} - ${supervisor.equipment_count} Equipment`;
+        doc.setFont(headerFont, 'bold');
+        const supervisorTitle = `${supervisor.supervisor_name}${
+          supervisor.supervisor_file_number
+            ? ` (${labels.fileLabel}: ${convertToArabicNumerals(supervisor.supervisor_file_number, isRTL)})`
+            : ''
+        } - ${formatNumber(supervisor.equipment_count, '0')} ${labels.equipmentWord}`;
         doc.text(supervisorTitle, margin, yPosition);
         yPosition += 6;
 
@@ -133,24 +272,25 @@ export class SupervisorEquipmentReportPDFService {
           // Equipment table headers - optimized for landscape with serial #
           let tableStartY = yPosition;
           const rowHeight = 5;
-          const colWidths = [12, 60, 35, 30, 28, 35, 22, 25]; // Serial #, Equipment, Customer Name, Rental #, Rental Status, Operator, Item Status, Start Date (total: 247mm)
-          const headers = ['Serial #', 'Equipment', 'Customer Name', 'Rental #', 'Rental Status', 'Operator', 'Item Status', 'Start Date'];
+          const colWidths = [12, 60, 35, 30, 28, 35, 22, 25]; // Total width: 247mm
+          const headers = labels.tableHeaders;
 
           // Draw table header
           doc.setFillColor(52, 152, 219);
           doc.rect(margin, tableStartY, colWidths.reduce((a, b) => a + b, 0), rowHeight, 'F');
           doc.setTextColor(255, 255, 255);
           doc.setFontSize(7);
-          doc.setFont('helvetica', 'bold');
+          doc.setFont(headerFont, 'bold');
           let xPos = margin + 2;
           headers.forEach((header, index) => {
-            doc.text(header, xPos, tableStartY + 3.5);
+            const textX = isRTL ? xPos + colWidths[index] - 4 : xPos;
+            doc.text(header, textX, tableStartY + 3.5, { align: isRTL ? 'right' : 'left' });
             xPos += colWidths[index];
           });
 
           // Draw table rows
           doc.setTextColor(0, 0, 0);
-          doc.setFont('helvetica', 'normal');
+          doc.setFont(headerFont, 'normal');
           doc.setFontSize(7);
           let rowIndex = 0; // Track row index for this supervisor's table
           supervisor.equipment.forEach((equipment, index) => {
@@ -166,15 +306,16 @@ export class SupervisorEquipmentReportPDFService {
               doc.setFillColor(52, 152, 219);
               doc.rect(margin, yPosition, colWidths.reduce((a, b) => a + b, 0), rowHeight, 'F');
               doc.setTextColor(255, 255, 255);
-              doc.setFont('helvetica', 'bold');
+              doc.setFont(headerFont, 'bold');
               doc.setFontSize(7);
               xPos = margin + 2;
               headers.forEach((header, hIndex) => {
-                doc.text(header, xPos, yPosition + 3.5);
+                const textX = isRTL ? xPos + colWidths[hIndex] - 4 : xPos;
+                doc.text(header, textX, yPosition + 3.5, { align: isRTL ? 'right' : 'left' });
                 xPos += colWidths[hIndex];
               });
               doc.setTextColor(0, 0, 0);
-              doc.setFont('helvetica', 'normal');
+              doc.setFont(headerFont, 'normal');
               yPosition += rowHeight;
               currentRowY = tableStartY + rowHeight + (rowIndex * rowHeight);
             }
@@ -186,16 +327,18 @@ export class SupervisorEquipmentReportPDFService {
             }
 
             const rowData = [
-              globalSerialNumber.toString(), // Serial number
-              equipment.display_name || equipment.equipment_name || 'N/A',
-              equipment.customer_name || 'N/A',
-              equipment.rental_number || 'N/A',
-              equipment.rental_status || 'N/A',
-              equipment.operator_name 
-                ? `${equipment.operator_name}${equipment.operator_file_number ? ` (${equipment.operator_file_number})` : ''}`
-                : 'No Operator',
-              equipment.item_status || 'N/A',
-              equipment.item_start_date ? new Date(equipment.item_start_date).toLocaleDateString() : 'N/A'
+              formatNumber(globalSerialNumber),
+              equipment.display_name || equipment.equipment_name || labels.notAvailable,
+              equipment.customer_name || labels.notAvailable,
+              formatText(equipment.rental_number || labels.notAvailable),
+              formatText(equipment.rental_status || labels.notAvailable),
+              equipment.operator_name
+                ? `${equipment.operator_name}${
+                    equipment.operator_file_number ? ` (${equipment.operator_file_number})` : ''
+                  }`
+                : labels.noOperator,
+              equipment.item_status || labels.notAvailable,
+              formatDate(equipment.item_start_date),
             ];
 
             xPos = margin + 2;
@@ -203,15 +346,19 @@ export class SupervisorEquipmentReportPDFService {
               // Truncate long text
               const maxWidth = colWidths[cellIndex] - 3;
               let cellText = String(cell);
-              if (cellIndex === 0) {
-                // Serial number - center align
-                doc.text(cellText, xPos + (colWidths[cellIndex] / 2), currentRowY + 3.5, { align: 'center' });
-              } else if (doc.getTextWidth(cellText) > maxWidth) {
-                cellText = doc.splitTextToSize(cellText, maxWidth)[0] + '...';
-                doc.text(cellText, xPos, currentRowY + 3.5);
-              } else {
-                doc.text(cellText, xPos, currentRowY + 3.5);
+              if (doc.getTextWidth(cellText) > maxWidth) {
+                const splitText = doc.splitTextToSize(cellText, maxWidth);
+                cellText = `${splitText[0]}...`;
               }
+              const textX =
+                cellIndex === 0
+                  ? xPos + colWidths[cellIndex] / 2
+                  : isRTL
+                    ? xPos + colWidths[cellIndex] - 2
+                    : xPos;
+              const align =
+                cellIndex === 0 ? 'center' : isRTL ? ('right' as const) : ('left' as const);
+              doc.text(cellText, textX, currentRowY + 3.5, { align });
               xPos += colWidths[cellIndex];
             });
 
@@ -222,8 +369,8 @@ export class SupervisorEquipmentReportPDFService {
           yPosition = tableStartY + rowHeight + (rowIndex * rowHeight) + 5;
         } else {
           doc.setFontSize(8);
-          doc.setFont('helvetica', 'normal');
-          doc.text('No equipment assigned', margin, yPosition);
+          doc.setFont(headerFont, 'normal');
+          doc.text(labels.noEquipment, margin, yPosition);
           yPosition += 6;
         }
 
@@ -237,13 +384,17 @@ export class SupervisorEquipmentReportPDFService {
 
   static async downloadSupervisorEquipmentReportPDF(
     data: SupervisorEquipmentReportData | any,
-    filename?: string
+    filename?: string,
+    options?: { isRTL?: boolean }
   ): Promise<void> {
     try {
       // Extract data if wrapped in response structure
       const reportData: SupervisorEquipmentReportData = data.data || data;
 
-      const pdf = this.generateSupervisorEquipmentReportPDF(reportData);
+      const isRTL = options?.isRTL ?? false;
+      const arabicFontData = isRTL ? await this.loadArabicFontData() : null;
+
+      const pdf = this.generateSupervisorEquipmentReportPDF(reportData, { isRTL, arabicFontData });
       const pdfBlob = pdf.output('blob');
       const url = URL.createObjectURL(pdfBlob);
       const link = document.createElement('a');
@@ -257,6 +408,68 @@ export class SupervisorEquipmentReportPDFService {
       console.error('Error generating supervisor equipment PDF:', error);
       throw error;
     }
+  }
+
+  private static async loadArabicFontData(): Promise<string | null> {
+    if (this.arabicFontCache) {
+      return this.arabicFontCache;
+    }
+
+    if (this.arabicFontPromise) {
+      return this.arabicFontPromise;
+    }
+
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    this.arabicFontPromise = fetch(`/fonts/${this.ARABIC_FONT_FILE}`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to fetch Arabic font');
+        }
+        return response.arrayBuffer();
+      })
+      .then(buffer => {
+        const base64 = SupervisorEquipmentReportPDFService.arrayBufferToBase64(buffer);
+        this.arabicFontCache = base64;
+        return base64;
+      })
+      .catch(error => {
+        console.error('Failed to load Arabic font for PDF:', error);
+        return null;
+      })
+      .finally(() => {
+        this.arabicFontPromise = null;
+      });
+
+    return this.arabicFontPromise;
+  }
+
+  private static arrayBufferToBase64(buffer: ArrayBuffer): string {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+  }
+
+  private static applyArabicFont(doc: jsPDF, fontData?: string | null) {
+    if (!fontData) return;
+
+    const docAny = doc as any;
+    if (docAny.__cairoFontApplied) {
+      doc.setFont(this.ARABIC_FONT_NAME, 'normal');
+      return;
+    }
+
+    doc.addFileToVFS(this.ARABIC_FONT_FILE, fontData);
+    doc.addFont(this.ARABIC_FONT_FILE, this.ARABIC_FONT_NAME, 'normal');
+    doc.addFont(this.ARABIC_FONT_FILE, this.ARABIC_FONT_NAME, 'bold');
+    doc.setFont(this.ARABIC_FONT_NAME, 'normal');
+    docAny.__cairoFontApplied = true;
   }
 }
 
