@@ -122,7 +122,7 @@ export default function EmployeeManagementPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [designationFilter, setDesignationFilter] = useState('all');
   const [assignmentFilter, setAssignmentFilter] = useState('all');
   const [externalFilter, setExternalFilter] = useState('all');
   const [companyFilter, setCompanyFilter] = useState('all');
@@ -438,11 +438,13 @@ export default function EmployeeManagementPage() {
         (employee.iqama_number?.toLowerCase() || '').includes(searchTerm.toLowerCase());
 
       const matchesStatus = statusFilter === 'all' || employee.status === statusFilter;
-      const matchesDepartment =
-        departmentFilter === 'all' ||
-        (typeof employee.department === 'string' && employee.department === departmentFilter) ||
-        (typeof employee.department === 'object' && employee.department?.name === departmentFilter) ||
-        employee.department_details?.name === departmentFilter;
+
+      const matchesDesignation =
+        designationFilter === 'all' ||
+        (typeof employee.designation === 'string' && employee.designation === designationFilter) ||
+        (typeof employee.designation === 'object' && employee.designation?.name === designationFilter) ||
+        employee.designation_details?.name === designationFilter;
+
       const matchesAssignment =
         assignmentFilter === 'all' ||
         (assignmentFilter === 'assigned' &&
@@ -465,7 +467,14 @@ export default function EmployeeManagementPage() {
         companyFilter === 'all' ||
         (employee.company_name && employee.company_name === companyFilter);
 
-      return matchesSearch && matchesStatus && matchesDepartment && matchesAssignment && matchesExternal && matchesCompany;
+      return (
+        matchesSearch &&
+        matchesStatus &&
+        matchesDesignation &&
+        matchesAssignment &&
+        matchesExternal &&
+        matchesCompany
+      );
     });
 
     filtered.sort((a, b) => {
@@ -504,7 +513,7 @@ export default function EmployeeManagementPage() {
     employees,
     searchTerm,
     statusFilter,
-    departmentFilter,
+    designationFilter,
     assignmentFilter,
     externalFilter,
     companyFilter,
@@ -525,7 +534,7 @@ export default function EmployeeManagementPage() {
   }, [
     searchTerm,
     statusFilter,
-    departmentFilter,
+    designationFilter,
     assignmentFilter,
     externalFilter,
     companyFilter,
@@ -755,20 +764,38 @@ export default function EmployeeManagementPage() {
               </Select>
 
               <Select
-                value={departmentFilter}
+                value={designationFilter}
                 onValueChange={value => {
-                  setDepartmentFilter(value);
+                  setDesignationFilter(value);
                   setCurrentPage(1); // Reset to first page when filtering
                 }}
               >
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder={t('employee.filters.department')} />
+                <SelectTrigger className="w-auto min-w-[150px] max-w-[300px]">
+                  <SelectValue
+                    placeholder={t('employee.filters.designation') || 'Designation'}
+                  />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('employee.filters.all')}</SelectItem>
-                  <SelectItem value="HR">{t('employee.departments.hr')}</SelectItem>
-                  <SelectItem value="IT">{t('employee.departments.it')}</SelectItem>
-                  <SelectItem value="Finance">{t('employee.departments.finance')}</SelectItem>
+                <SelectContent className="max-w-[400px]">
+                  <SelectItem value="all">
+                    {t('employee.filters.all')}
+                  </SelectItem>
+                  {Array.from(
+                    new Set(
+                      employees
+                        .map(emp =>
+                          typeof emp.designation === 'string'
+                            ? emp.designation
+                            : emp.designation?.name ||
+                              emp.designation_details?.name ||
+                              ''
+                        )
+                        .filter(Boolean)
+                    )
+                  ).map(name => (
+                    <SelectItem key={name as string} value={name as string}>
+                      {name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
 
@@ -845,7 +872,7 @@ export default function EmployeeManagementPage() {
                          {/* Search Results Summary */}
              {(searchTerm ||
                statusFilter !== 'all' ||
-               departmentFilter !== 'all' ||
+               designationFilter !== 'all' ||
                assignmentFilter !== 'all' ||
                externalFilter !== 'all' ||
                companyFilter !== 'all') && (
@@ -861,15 +888,15 @@ export default function EmployeeManagementPage() {
                        summary += t('employee.searchResults.withSearchTerm', { searchTerm });
                      }
                      
-                     if (statusFilter !== 'all') {
-                       summary += t('employee.searchResults.withStatus', { statusFilter });
-                     }
-                     
-                     if (departmentFilter !== 'all') {
-                       summary += t('employee.searchResults.withDepartment', { departmentFilter });
-                     }
-                     
-                     if (assignmentFilter !== 'all') {
+                    if (statusFilter !== 'all') {
+                      summary += t('employee.searchResults.withStatus', { statusFilter });
+                    }
+
+                    if (designationFilter !== 'all') {
+                      summary += t('employee.searchResults.withDesignation', { designationFilter });
+                    }
+                    
+                    if (assignmentFilter !== 'all') {
                        if (assignmentFilter === 'assigned') {
                          summary += t('employee.searchResults.assigned');
                        } else {
@@ -977,7 +1004,7 @@ export default function EmployeeManagementPage() {
                             ? 'No employee record found for your account. Please contact your administrator.'
                             : searchTerm ||
                                 statusFilter !== 'all' ||
-                                departmentFilter !== 'all' ||
+                                designationFilter !== 'all' ||
                                 assignmentFilter !== 'all'
                               ? t('employee.messages.noEmployeesFilter')
                               : t('employee.messages.noEmployees')}
