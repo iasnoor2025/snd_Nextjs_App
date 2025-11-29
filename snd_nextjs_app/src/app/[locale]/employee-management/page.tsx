@@ -467,6 +467,18 @@ export default function EmployeeManagementPage() {
         companyFilter === 'all' ||
         (employee.company_name && employee.company_name === companyFilter);
 
+      // Hide "left" employees by default unless:
+      // 1. User is searching (by file number, name, email, or iqama)
+      // 2. User has explicitly filtered by "left" status
+      const hasActiveSearch = searchTerm.trim().length > 0;
+      const hasLeftStatusFilter = statusFilter === 'left';
+      const isLeftEmployee = employee.status === 'left';
+      
+      // If employee has "left" status, only show them if searching or filtering for "left"
+      if (isLeftEmployee && !hasActiveSearch && !hasLeftStatusFilter) {
+        return false;
+      }
+
       return (
         matchesSearch &&
         matchesStatus &&
