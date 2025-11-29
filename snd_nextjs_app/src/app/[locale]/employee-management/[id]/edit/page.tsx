@@ -918,6 +918,8 @@ export default function EditEmployeePage() {
                   <SelectContent>
                     <SelectItem value="active">{t('employee.status.active')}</SelectItem>
                     <SelectItem value="inactive">{t('employee.status.inactive')}</SelectItem>
+                    <SelectItem value="on_leave">{t('employee.status.onLeave')}</SelectItem>
+                    <SelectItem value="left">{t('employee.status.left')}</SelectItem>
                     <SelectItem value="terminated">{t('employee.status.terminated')}</SelectItem>
                   </SelectContent>
                 </Select>
