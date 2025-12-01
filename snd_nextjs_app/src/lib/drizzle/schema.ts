@@ -790,6 +790,38 @@ export const rentalPayments = pgTable('rental_payments', {
   uniqueIndex('rental_payments_payment_id_key').on(table.paymentId),
 ]);
 
+export const rentalTimesheetReceived = pgTable('rental_timesheet_received', {
+  id: serial().primaryKey().notNull(),
+  rentalId: integer('rental_id').notNull(),
+  rentalItemId: integer('rental_item_id'), // Track per item, null means entire month
+  month: text().notNull(), // Format: YYYY-MM
+  received: boolean().default(false).notNull(),
+  receivedBy: integer('received_by'),
+  receivedAt: timestamp('received_at', { precision: 3, mode: 'string' }),
+  createdAt: date('created_at')
+    .default(sql`CURRENT_DATE`)
+    .notNull(),
+  updatedAt: date('updated_at').notNull(),
+}, table => [
+  foreignKey({
+    columns: [table.rentalId],
+    foreignColumns: [rentals.id],
+  })
+    .onUpdate('cascade')
+    .onDelete('cascade'),
+  foreignKey({
+    columns: [table.receivedBy],
+    foreignColumns: [users.id],
+  })
+    .onUpdate('cascade')
+    .onDelete('set null'),
+  uniqueIndex('rental_timesheet_received_rental_item_month_key').on(
+    table.rentalId,
+    table.rentalItemId,
+    table.month
+  ),
+]);
+
 export const departments = pgTable('departments', {
   id: serial().primaryKey().notNull(),
   name: text().notNull(),

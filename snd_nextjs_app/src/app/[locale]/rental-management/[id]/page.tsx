@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -824,6 +825,8 @@ export default function RentalDetailPage() {
   const [manualPaymentId, setManualPaymentId] = useState('');
   const [rentalInvoices, setRentalInvoices] = useState<any[]>([]);
   const [rentalPayments, setRentalPayments] = useState<any[]>([]);
+  // Track timesheet received status per item per month: key format: `${monthKey}-${itemId}`
+  const [timesheetStatus, setTimesheetStatus] = useState<Record<string, boolean>>({});
   const [formData, setFormData] = useState({
     customerId: '',
     rentalNumber: '',
@@ -1432,11 +1435,81 @@ export default function RentalDetailPage() {
       if (data.rentalItems && data.rentalItems.length > 0) {
         fetchEquipmentNames(data.rentalItems);
       }
+      
+      // Fetch timesheet status for all months
+      fetchTimesheetStatusForMonths(data.rentalItems || [], data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       toast.error('Failed to fetch rental details');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch timesheet status for all months in the rental
+  const fetchTimesheetStatusForMonths = async (rentalItems: RentalItem[], rentalData?: any) => {
+    if (!rentalId || rentalItems.length === 0) return;
+
+    try {
+      // Get all unique months from rental items
+      const months = new Set<string>();
+      rentalItems.forEach((item: any) => {
+        const itemStartDate = item.startDate;
+        if (itemStartDate) {
+          const startDate = new Date(itemStartDate);
+          let endDate = new Date();
+          if (rentalData?.status === 'completed' && rentalData?.actualEndDate) {
+            endDate = new Date(rentalData.actualEndDate);
+          }
+          
+          const currentMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+          const endMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+          
+          while (currentMonth <= endMonth) {
+            const monthKey = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
+            months.add(monthKey);
+            currentMonth.setMonth(currentMonth.getMonth() + 1);
+          }
+        }
+      });
+
+      // Initialize timesheet status for all items in all months
+      const statusMap: Record<string, boolean> = {};
+      
+      // Fetch existing manual received status for each month
+      const statusPromises = Array.from(months).map(async (monthKey) => {
+        try {
+          const response = await fetch(`/api/rentals/${rentalId}/timesheet-status?month=${monthKey}`);
+          if (!response.ok) {
+            return { monthKey, itemStatuses: {} };
+          }
+          const data = await response.json();
+          return { 
+            monthKey, 
+            itemStatuses: data.itemStatuses || {},
+          manualReceived: data.manualReceived || false // For backward compatibility
+          };
+        } catch (error) {
+          console.error(`Error fetching timesheet status for ${monthKey}:`, error);
+          return { monthKey, itemStatuses: {} };
+        }
+      });
+
+      const results = await Promise.all(statusPromises);
+      // Set status for each item in each month
+      results.forEach(({ monthKey, itemStatuses, manualReceived }) => {
+        if (rentalItems.length > 0) {
+          rentalItems.forEach((item: any) => {
+            const itemKey = `${monthKey}-${item.id}`;
+            // Use item-specific status if available, otherwise use month-level status (for backward compatibility)
+            statusMap[itemKey] = itemStatuses[item.id?.toString()] ?? (manualReceived ? true : false);
+          });
+        }
+      });
+      
+      setTimesheetStatus(statusMap);
+    } catch (error) {
+      console.error('Error fetching timesheet status:', error);
     }
   };
 
@@ -3869,18 +3942,85 @@ export default function RentalDetailPage() {
                               <CardHeader className="pb-2 pt-2.5 px-3">
                                 <div className="flex justify-between items-center">
                                   <CardTitle className="text-lg font-semibold">{monthData.monthLabel}</CardTitle>
-                                  <div className="flex gap-3 text-xs">
-                                    <div className="flex flex-col">
-                                      <span className="text-muted-foreground text-[11px]">Items</span>
-                                      <span className="font-semibold text-sm">{monthData.totalItems}</span>
-                                    </div>
-                                    <div className="flex flex-col text-green-600">
-                                      <span className="text-muted-foreground text-[11px]">Active</span>
-                                      <span className="font-semibold text-sm">{monthData.activeItems}</span>
-                                    </div>
-                                    <div className="flex flex-col text-blue-600">
-                                      <span className="text-muted-foreground text-[11px]">Value</span>
-                                      <span className="font-semibold text-sm">SAR {formatAmount(monthData.totalAmount)}</span>
+                                  <div className="flex items-center gap-4">
+                                    {(() => {
+                                      // Get all items in this month
+                                      const monthItems = monthData.items.filter((item: any, index: number, self: any[]) => 
+                                        index === self.findIndex((t: any) => t.id === item.id)
+                                      );
+                                      
+                                      // Check how many items are checked
+                                      const checkedItems = monthItems.filter((item: any) => {
+                                        const itemKey = `${monthKey}-${item.id}`;
+                                        return timesheetStatus[itemKey] === true;
+                                      });
+                                      
+                                      const allChecked = monthItems.length > 0 && checkedItems.length === monthItems.length;
+                                      
+                                      return (
+                                        <div className="flex items-center gap-2">
+                                          <Checkbox 
+                                            id={`timesheet-header-${monthKey}`}
+                                            checked={allChecked}
+                                            onCheckedChange={async (checked) => {
+                                              try {
+                                                // Update all items in this month
+                                                const updates = monthItems.map(async (item: any) => {
+                                                  const itemKey = `${monthKey}-${item.id}`;
+                                                  const response = await fetch(`/api/rentals/${rentalId}/timesheet-status`, {
+                                                    method: 'PUT',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({
+                                                      month: monthKey,
+                                                      itemId: item.id,
+                                                      received: checked === true,
+                                                    }),
+                                                  });
+                                                  
+                                                  if (!response.ok) {
+                                                    throw new Error(`Failed to update timesheet status for item ${item.id}`);
+                                                  }
+                                                  
+                                                  return { itemKey, received: checked === true };
+                                                });
+                                                
+                                                const results = await Promise.all(updates);
+                                                
+                                                // Update local state for all items
+                                                setTimesheetStatus(prev => {
+                                                  const newState = { ...prev };
+                                                  results.forEach(({ itemKey, received }) => {
+                                                    newState[itemKey] = received;
+                                                  });
+                                                  return newState;
+                                                });
+                                                
+                                                toast.success(checked ? `All ${monthItems.length} timesheets marked as received for this month` : 'All timesheet received statuses cleared for this month');
+                                              } catch (error) {
+                                                console.error('Error updating timesheet status:', error);
+                                                toast.error('Failed to update timesheet received status');
+                                              }
+                                            }}
+                                          />
+                                          <Label htmlFor={`timesheet-header-${monthKey}`} className="text-sm font-normal cursor-pointer">
+                                            Received All Timesheet
+                                          </Label>
+                                        </div>
+                                      );
+                                    })()}
+                                    <div className="flex gap-3 text-xs">
+                                      <div className="flex flex-col">
+                                        <span className="text-muted-foreground text-[11px]">Items</span>
+                                        <span className="font-semibold text-sm">{monthData.totalItems}</span>
+                                      </div>
+                                      <div className="flex flex-col text-green-600">
+                                        <span className="text-muted-foreground text-[11px]">Active</span>
+                                        <span className="font-semibold text-sm">{monthData.activeItems}</span>
+                                      </div>
+                                      <div className="flex flex-col text-blue-600">
+                                        <span className="text-muted-foreground text-[11px]">Value</span>
+                                        <span className="font-semibold text-sm">SAR {formatAmount(monthData.totalAmount)}</span>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
@@ -3949,6 +4089,7 @@ export default function RentalDetailPage() {
                                         <TableHead className="text-sm py-1 px-1 w-20">Duration</TableHead>
                                         <TableHead className="text-sm py-1 px-1 w-28">Total</TableHead>
                                         <TableHead className="text-sm py-1 px-1 w-28">Completed Date</TableHead>
+                                        <TableHead className="text-sm py-1 px-1 w-20 text-center">Timesheet</TableHead>
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -4143,6 +4284,41 @@ export default function RentalDetailPage() {
                                             })()}
                                           </TableCell>
                                           <TableCell className="text-sm text-muted-foreground py-1 px-1 w-28">{completedDateDisplay}</TableCell>
+                                          <TableCell className="text-sm py-1 px-1 w-20 text-center">
+                                            <Checkbox 
+                                              checked={timesheetStatus[`${monthKey}-${item.id}`] || false} 
+                                              onCheckedChange={async (checked) => {
+                                                try {
+                                                  const response = await fetch(`/api/rentals/${rentalId}/timesheet-status`, {
+                                                    method: 'PUT',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({
+                                                      month: monthKey,
+                                                      itemId: item.id,
+                                                      received: checked === true,
+                                                    }),
+                                                  });
+                                                  
+                                                  if (!response.ok) {
+                                                    throw new Error('Failed to update timesheet received status');
+                                                  }
+                                                  
+                                                  // Update local state for this specific item
+                                                  const itemKey = `${monthKey}-${item.id}`;
+                                                  setTimesheetStatus(prev => ({
+                                                    ...prev,
+                                                    [itemKey]: checked === true,
+                                                  }));
+                                                  
+                                                  toast.success(checked ? 'Timesheet marked as received' : 'Timesheet marked as not received');
+                                                } catch (error) {
+                                                  console.error('Error updating timesheet status:', error);
+                                                  toast.error('Failed to update timesheet received status');
+                                                }
+                                              }}
+                                              className="mx-auto"
+                                            />
+                                          </TableCell>
                                         </TableRow>
                                                   );
                                                 })}
