@@ -16,7 +16,7 @@ export const NotificationDemo: React.FC = () => {
     notify.success(
       'Success!',
       'This is a success notification with an action button.',
-      '/${locale}/employee-management'
+      `/${locale}/employee-management`
     );
   };
 

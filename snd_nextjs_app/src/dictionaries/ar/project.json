@@ -98,7 +98,9 @@
     "validationError": "يرجى إدخال جميع الحقول المطلوبة",
     "projectNotFound": "لم يتم العثور على المشروع",
     "accessDenied": "الوصول مرفوض. ليس لديك صلاحية لإدارة المشاريع.",
-    "errorGeneral": "حدث خطأ أثناء العملية"
+    "errorGeneral": "حدث خطأ أثناء العملية",
+    "noCustomersFound": "لم يتم العثور على عملاء",
+    "noLocationsFound": "لم يتم العثور على مواقع"
   },
   "validation": {
     "required": "هذا الحقل مطلوب",
@@ -142,5 +144,63 @@
     "completedProjects": "المشاريع المكتملة",
     "totalBudget": "إجمالي الميزانية",
     "averageDuration": "متوسط المدة"
+  },
+  "status_options": {
+    "planning": "تخطيط",
+    "active": "نشط",
+    "in_progress": "قيد التنفيذ",
+    "completed": "مكتمل",
+    "on_hold": "معلق",
+    "cancelled": "ملغي"
+  },
+  "priority_options": {
+    "low": "منخفض",
+    "medium": "متوسط",
+    "high": "عالي",
+    "critical": "حرج"
+  },
+  "sections": {
+    "basicInformation": "المعلومات الأساسية",
+    "timelineAndStatus": "الجدول الزمني والحالة",
+    "budgetInformation": "معلومات الميزانية",
+    "projectPlanning": "تخطيط المشروع",
+    "projectPlanningDescription": "معلومات تخطيط المشروع التفصيلية",
+    "projectTeam": "فريق المشروع",
+    "projectTeamDescription": "تعيين أعضاء الفريق لأدوار محددة",
+    "projectDocuments": "مستندات المشروع",
+    "projectDocumentsDescription": "رفع مستندات المشروع ذات الصلة",
+    "additionalNotes": "ملاحظات إضافية",
+    "additionalNotesDescription": "أي معلومات إضافية حول المشروع"
+  },
+  "roles": {
+    "projectManager": "مدير المشروع",
+    "projectEngineer": "مهندس المشروع",
+    "projectForeman": "رئيس العمال",
+    "supervisor": "المشرف",
+    "selectManager": "اختر مدير",
+    "selectEngineer": "اختر مهندس",
+    "selectForeman": "اختر رئيس عمال",
+    "selectSupervisor": "اختر مشرف"
+  },
+  "statusLabels": {
+    "selectStatus": "اختر الحالة",
+    "selectPriority": "اختر الأولوية"
+  },
+  "documents": {
+    "uploadDocuments": "رفع المستندات",
+    "selectedFiles": "الملفات المحددة",
+    "remove": "إزالة",
+    "supportedFormats": "الصيغ المدعومة: PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG, PNG"
+  },
+  "notes": {
+    "placeholder": "أضف أي ملاحظات أو تعليقات إضافية"
+  },
+  "buttons": {
+    "createProject": "إنشاء مشروع",
+    "creatingProject": "جاري إنشاء المشروع...",
+    "cancel": "إلغاء"
+  },
+  "fields": {
+    "totalBudget": "إجمالي الميزانية"
   }
 }

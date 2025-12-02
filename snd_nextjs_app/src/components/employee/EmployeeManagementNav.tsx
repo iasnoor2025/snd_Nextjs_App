@@ -22,40 +22,40 @@ interface NavItem {
   color: string;
 }
 
-const navItems: NavItem[] = [
+const getNavItems = (locale: string): NavItem[] => [
   {
     title: 'Employee Directory',
     description: 'View and manage employee information and profiles',
     icon: <Users className="h-6 w-6" />,
-    href: '/${locale}/employee-management',
+    href: `/${locale}/employee-management`,
     color: 'bg-gradient-to-r from-green-500 to-emerald-500'
   },
   {
     title: 'Documents',
     description: 'Manage employee documents and file uploads',
     icon: <FileText className="h-6 w-6" />,
-    href: '/${locale}/document-management',
+    href: `/${locale}/document-management`,
     color: 'bg-gradient-to-r from-indigo-500 to-blue-500'
   },
   {
     title: 'Leave Management',
     description: 'Track employee leave requests and approvals',
     icon: <Calendar className="h-6 w-6" />,
-    href: '/${locale}/leave-management',
+    href: `/${locale}/leave-management`,
     color: 'bg-gradient-to-r from-red-500 to-pink-500'
   },
   {
     title: 'Analytics',
     description: 'View employee performance metrics and reports',
     icon: <TrendingUp className="h-6 w-6" />,
-    href: '/${locale}/analytics',
+    href: `/${locale}/analytics`,
     color: 'bg-gradient-to-r from-teal-500 to-green-500'
   },
   {
     title: 'Settings',
     description: 'Configure system settings and preferences',
     icon: <Settings className="h-6 w-6" />,
-    href: '/${locale}/settings',
+    href: `/${locale}/settings`,
     color: 'bg-gradient-to-r from-gray-500 to-slate-500'
   }
 ];
@@ -66,6 +66,7 @@ export default function EmployeeManagementNav() {
 
   const params = useParams();
   const locale = params?.locale as string || 'en';
+  const navItems = getNavItems(locale);
   
   const handleItemClick = (href: string) => {
     router.push(href);

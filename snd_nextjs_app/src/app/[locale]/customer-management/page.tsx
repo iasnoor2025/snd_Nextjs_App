@@ -220,7 +220,7 @@ export default function CustomerManagementPage() {
   const handleAddCustomer = () => {
     
     // Navigate to customer create page
-    window.location.href = '/${locale}/customer-management/create';
+    window.location.href = `/${locale}/customer-management/create`;
   };
 
   const handleExportCustomers = () => {

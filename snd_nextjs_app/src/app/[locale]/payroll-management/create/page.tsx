@@ -82,7 +82,7 @@ export default function CreatePayrollPage() {
       await new Promise(resolve => setTimeout(resolve, 2000));
       toast.success('Payroll created successfully');
       // Redirect to payroll list
-      window.location.href = '/${locale}/payroll-management';
+      window.location.href = `/${locale}/payroll-management`;
     } catch (error) {
       toast.error('Failed to create payroll');
     } finally {

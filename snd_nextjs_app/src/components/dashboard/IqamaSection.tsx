@@ -101,7 +101,7 @@ export function IqamaSection({
       expiryField: 'iqamaExpiry',
       numberLabel: 'Iqama #',
       buttonText: 'Manage Iqama',
-      managementRoute: '/${locale}/employee-management'
+      managementRoute: `/${locale}/employee-management`
     },
     passport: {
       label: 'Passport Management',
@@ -111,7 +111,7 @@ export function IqamaSection({
       expiryField: 'passportExpiry',
       numberLabel: 'Passport #',
       buttonText: 'Manage Passport',
-      managementRoute: '/${locale}/employee-management'
+      managementRoute: `/${locale}/employee-management`
     },
     drivingLicense: {
       label: 'Driving License Management',
@@ -121,7 +121,7 @@ export function IqamaSection({
       expiryField: 'drivingLicenseExpiry',
       numberLabel: 'License #',
       buttonText: 'Manage License',
-      managementRoute: '/${locale}/employee-management'
+      managementRoute: `/${locale}/employee-management`
     },
     spsp: {
       label: 'SPSP Management',
@@ -131,7 +131,7 @@ export function IqamaSection({
       expiryField: 'spspLicenseExpiry',
       numberLabel: 'SPSP #',
       buttonText: 'Manage SPSP',
-      managementRoute: '/${locale}/employee-management'
+      managementRoute: `/${locale}/employee-management`
     },
     operatorLicense: {
       label: 'Operator License Management',
@@ -141,7 +141,7 @@ export function IqamaSection({
       expiryField: 'operatorLicenseExpiry',
       numberLabel: 'Operator #',
       buttonText: 'Manage Operator License',
-      managementRoute: '/${locale}/employee-management'
+      managementRoute: `/${locale}/employee-management`
     },
     tuvCertification: {
       label: 'TUV Certification Management',
@@ -151,7 +151,7 @@ export function IqamaSection({
       expiryField: 'tuvCertificationExpiry',
       numberLabel: 'TUV #',
       buttonText: 'Manage TUV Certification',
-      managementRoute: '/${locale}/employee-management'
+      managementRoute: `/${locale}/employee-management`
     }
   };
 
@@ -357,7 +357,7 @@ export function IqamaSection({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => router.push(currentDocType?.managementRoute || '/${locale}/employee-management')}
+                onClick={() => router.push(currentDocType?.managementRoute || `/${locale}/employee-management`)}
                 className="flex items-center gap-2"
               >
                 <Edit className="h-4 w-4" />

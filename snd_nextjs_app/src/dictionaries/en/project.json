@@ -93,6 +93,7 @@
   "manage_projects_description": "Manage and track all your projects",
   "status_options": {
     "planning": "Planning",
+    "active": "Active",
     "in_progress": "In Progress",
     "completed": "Completed",
     "on_hold": "On Hold",
@@ -103,5 +104,110 @@
     "medium": "Medium",
     "low": "Low",
     "critical": "Critical"
+  },
+  "create": {
+    "title": "Create New Project",
+    "description": "Set up a new construction project with all necessary details",
+    "essentialDetails": "Essential project details and identification",
+    "timelineDescription": "Project timeline and current status",
+    "budgetDescription": "Project budget and financial details"
+  },
+  "fields": {
+    "name": "Project Name",
+    "description": "Description",
+    "descriptionPlaceholder": "Describe the project scope and objectives",
+    "client": "Client",
+    "selectClient": "Select a client",
+    "location": "Project Location",
+    "selectLocation": "Select a location",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "pickDate": "Pick a date",
+    "status": "Status",
+    "priority": "Priority",
+    "budget": "Budget",
+    "initialBudget": "Initial Budget",
+    "totalBudget": "Total Budget",
+    "notes": "Notes",
+    "objectives": "Project Objectives",
+    "objectivesPlaceholder": "Define project objectives",
+    "scope": "Project Scope",
+    "scopePlaceholder": "Define project scope",
+    "deliverables": "Deliverables",
+    "deliverablesPlaceholder": "List project deliverables",
+    "constraints": "Constraints",
+    "constraintsPlaceholder": "List project constraints",
+    "assumptions": "Assumptions",
+    "assumptionsPlaceholder": "List project assumptions",
+    "risks": "Initial Risks",
+    "risksPlaceholder": "Identify initial project risks"
+  },
+  "sections": {
+    "basicInformation": "Basic Information",
+    "timelineAndStatus": "Timeline & Status",
+    "budgetInformation": "Budget Information",
+    "projectPlanning": "Project Planning",
+    "projectPlanningDescription": "Detailed project planning information",
+    "projectTeam": "Project Team",
+    "projectTeamDescription": "Assign team members to specific roles",
+    "projectDocuments": "Project Documents",
+    "projectDocumentsDescription": "Upload relevant project documents",
+    "additionalNotes": "Additional Notes",
+    "additionalNotesDescription": "Any additional information about the project"
+  },
+  "roles": {
+    "projectManager": "Project Manager",
+    "projectEngineer": "Project Engineer",
+    "projectForeman": "Project Foreman",
+    "supervisor": "Supervisor",
+    "selectManager": "Select a manager",
+    "selectEngineer": "Select an engineer",
+    "selectForeman": "Select a foreman",
+    "selectSupervisor": "Select a supervisor"
+  },
+  "statusLabels": {
+    "selectStatus": "Select status",
+    "selectPriority": "Select priority"
+  },
+  "documents": {
+    "uploadDocuments": "Upload Documents",
+    "selectedFiles": "Selected Files",
+    "remove": "Remove",
+    "supportedFormats": "Supported formats: PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG, PNG"
+  },
+  "notes": {
+    "placeholder": "Add any additional notes or comments"
+  },
+  "buttons": {
+    "createProject": "Create Project",
+    "creatingProject": "Creating Project...",
+    "cancel": "Cancel"
+  },
+  "messages": {
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "createSuccess": "Project created successfully",
+    "createError": "Failed to create project",
+    "updateSuccess": "Project updated successfully",
+    "updateError": "Failed to update project",
+    "deleteSuccess": "Project deleted successfully",
+    "deleteError": "Failed to delete project",
+    "fetchError": "Error fetching project data",
+    "validationError": "Please fill in all required fields",
+    "projectNotFound": "Project not found",
+    "accessDenied": "Access denied. You don't have permission to manage projects.",
+    "errorGeneral": "An error occurred during the operation",
+    "noCustomersFound": "No customers found",
+    "noLocationsFound": "No locations found"
+  },
+  "validation": {
+    "required": "This field is required",
+    "invalidDate": "Invalid date",
+    "invalidDateRange": "Invalid date range",
+    "nameRequired": "Project name is required",
+    "clientRequired": "Client is required",
+    "startDateRequired": "Start date is required",
+    "endDateAfterStart": "End date must be after start date",
+    "budgetInvalid": "Invalid budget"
   }
 }
