@@ -3,6 +3,7 @@ import { salaryIncrements } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from '@/lib/auth';
 
 // POST /api/salary-increments/[id]/approve - Approve salary increment
 const approveSalaryIncrementHandler = async (request: NextRequest, ...args: unknown[]) => {
@@ -14,14 +15,26 @@ const approveSalaryIncrementHandler = async (request: NextRequest, ...args: unkn
       return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     }
 
-    const body = await request.json();
-    const { notes } = body;
+    // Parse request body (may be empty)
+    let notes: string | undefined;
+    try {
+      const contentType = request.headers.get('content-type');
+      if (contentType?.includes('application/json')) {
+        const body = await request.json().catch(() => ({}));
+        notes = body.notes;
+      }
+    } catch (error) {
+      // Body is optional, continue without notes
+      console.log('[APPROVE] Body parsing skipped:', error);
+    }
 
     // Get current user ID from session (this will be handled by the permission middleware)
-    const { getServerSession } = await import('next-auth');
-    const { authOptions } = await import('@/lib/auth-config');
     const session = await getServerSession();
     const approvedBy = session?.user?.id;
+
+    if (!approvedBy) {
+      return NextResponse.json({ error: 'User session not found' }, { status: 401 });
+    }
 
     // Check if salary increment exists and can be approved
     const existingIncrement = await db
@@ -43,33 +56,33 @@ const approveSalaryIncrementHandler = async (request: NextRequest, ...args: unkn
 
     // Only allow approval if status is pending
     if (increment.status !== 'pending') {
+      console.log('[APPROVE] Status check failed:', increment.status);
       return NextResponse.json(
-        { error: 'Salary increment cannot be approved in its current status' },
+        { 
+          success: false,
+          error: 'Salary increment cannot be approved in its current status',
+          details: `Current status: ${increment.status}. Only pending increments can be approved.`
+        },
         { status: 400 }
       );
     }
 
-    // Check if effective date is not in the past
-    const effectiveDate = new Date(increment.effective_date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Reset time to start of day for fair comparison
+    // Note: We allow past effective dates for retroactive salary increment approvals
+    // This is common in business scenarios where increments need to be applied retroactively
 
-    if (effectiveDate < today) {
-      return NextResponse.json(
-        { error: 'Cannot approve salary increment with effective date in the past' },
-        { status: 400 }
-      );
-    }
+    // Format dates to YYYY-MM-DD format for date type fields
+    const approvedAtFormatted = new Date().toISOString().split('T')[0];
+    const updatedAtFormatted = new Date().toISOString().split('T')[0];
 
     // Approve the salary increment
     const [approvedIncrement] = await db
       .update(salaryIncrements)
       .set({
         status: 'approved',
-        approvedBy: approvedBy ? parseInt(approvedBy) : null,
-        approvedAt: new Date().toISOString(),
+        approvedBy: parseInt(approvedBy),
+        approvedAt: approvedAtFormatted,
         notes: notes || undefined,
-        updatedAt: new Date().toISOString(),
+        updatedAt: updatedAtFormatted,
       })
       .where(eq(salaryIncrements.id, parseInt(id)))
       .returning();

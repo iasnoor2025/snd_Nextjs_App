@@ -91,7 +91,13 @@ class ApiService {
       }
 
       if (!response.ok) {
-        throw new Error(data.message || `HTTP ${response.status}`);
+        // Extract error message from various possible response formats
+        const errorMessage = data.message || data.error || data.details || `HTTP ${response.status}`;
+        const error = new Error(errorMessage);
+        // Attach full error data for better error handling
+        (error as any).response = data;
+        (error as any).status = response.status;
+        throw error;
       }
 
       // Show success toast if requested

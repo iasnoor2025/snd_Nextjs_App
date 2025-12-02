@@ -3,6 +3,7 @@ import { salaryIncrements } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from '@/lib/auth';
 
 // POST /api/salary-increments/[id]/reject - Reject salary increment
 const rejectSalaryIncrementHandler = async (request: NextRequest, ...args: unknown[]) => {
@@ -23,10 +24,12 @@ const rejectSalaryIncrementHandler = async (request: NextRequest, ...args: unkno
     }
 
     // Get current user ID from session (this will be handled by the permission middleware)
-    const { getServerSession } = await import('next-auth');
-    const { authOptions } = await import('@/lib/auth-config');
     const session = await getServerSession();
     const rejectedBy = session?.user?.id;
+
+    if (!rejectedBy) {
+      return NextResponse.json({ error: 'User session not found' }, { status: 401 });
+    }
 
     // Check if salary increment exists and can be rejected
     const existingIncrement = await db
@@ -52,16 +55,20 @@ const rejectSalaryIncrementHandler = async (request: NextRequest, ...args: unkno
       );
     }
 
+    // Format dates to YYYY-MM-DD format for date type fields
+    const rejectedAtFormatted = new Date().toISOString().split('T')[0];
+    const updatedAtFormatted = new Date().toISOString().split('T')[0];
+
     // Reject the salary increment
     const [rejectedIncrement] = await db
       .update(salaryIncrements)
       .set({
         status: 'rejected',
-        rejectedBy: rejectedBy ? parseInt(rejectedBy) : null,
-        rejectedAt: new Date().toISOString(),
+        rejectedBy: parseInt(rejectedBy),
+        rejectedAt: rejectedAtFormatted,
         rejectionReason: rejection_reason,
         notes: notes || undefined,
-        updatedAt: new Date().toISOString(),
+        updatedAt: updatedAtFormatted,
       })
       .where(eq(salaryIncrements.id, parseInt(id)))
       .returning();

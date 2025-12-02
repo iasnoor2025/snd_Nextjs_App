@@ -54,6 +54,9 @@ const applySalaryIncrementHandler = async (_request: NextRequest, ...args: unkno
       );
     }
 
+    // Format dates to YYYY-MM-DD format for date type fields
+    const updatedAtFormatted = new Date().toISOString().split('T')[0];
+
     // Start a transaction to update both salary increment and employee
     const result = await db.transaction(async tx => {
       // Update the salary increment status to applied
@@ -61,7 +64,7 @@ const applySalaryIncrementHandler = async (_request: NextRequest, ...args: unkno
         .update(salaryIncrements)
         .set({
           status: 'applied',
-          updatedAt: new Date().toISOString(),
+          updatedAt: updatedAtFormatted,
         })
         .where(eq(salaryIncrements.id, parseInt(id)))
         .returning();
@@ -74,7 +77,7 @@ const applySalaryIncrementHandler = async (_request: NextRequest, ...args: unkno
           foodAllowance: increment.new_food_allowance,
           housingAllowance: increment.new_housing_allowance,
           transportAllowance: increment.new_transport_allowance,
-          updatedAt: new Date().toISOString(),
+          updatedAt: updatedAtFormatted,
         })
         .where(eq(employees.id, increment.employee_id))
         .returning();

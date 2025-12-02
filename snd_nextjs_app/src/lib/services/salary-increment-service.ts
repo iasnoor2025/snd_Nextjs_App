@@ -32,6 +32,7 @@ export interface SalaryIncrement {
     first_name: string;
     last_name: string;
     employee_id: string;
+    file_number?: string;
   };
   requested_by_user?: {
     id: number;
@@ -72,12 +73,15 @@ export type UpdateSalaryIncrementData = Partial<CreateSalaryIncrementData>;
 
 export interface SalaryIncrementFilters {
   employee_id?: number;
+  file_number?: string;
   status?: string;
   increment_type?: string;
   effective_date_from?: string;
   effective_date_to?: string;
   page?: number;
   limit?: number;
+  sort_by?: string;
+  sort_order?: 'asc' | 'desc';
 }
 
 export interface SalaryIncrementResponse {

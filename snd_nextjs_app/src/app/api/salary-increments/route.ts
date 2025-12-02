@@ -1,7 +1,7 @@
 import { db } from '@/lib/drizzle';
 import { employees, salaryIncrements, users } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
-import { and, desc, eq, gte, isNull, lte, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, isNull, lte, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 
@@ -12,10 +12,13 @@ const getSalaryIncrementsHandler = async (_request: NextRequest) => {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '15');
     const employeeId = searchParams.get('employee_id');
+    const fileNumber = searchParams.get('file_number');
     const status = searchParams.get('status');
     const incrementType = searchParams.get('increment_type');
     const effectiveDateFrom = searchParams.get('effective_date_from');
     const effectiveDateTo = searchParams.get('effective_date_to');
+    const sortBy = searchParams.get('sort_by') || 'file_number';
+    const sortOrder = (searchParams.get('sort_order') || 'asc').toLowerCase() === 'desc' ? 'desc' : 'asc';
 
     const offset = (page - 1) * limit;
 
@@ -24,6 +27,10 @@ const getSalaryIncrementsHandler = async (_request: NextRequest) => {
 
     if (employeeId) {
       whereConditions.push(eq(salaryIncrements.employeeId, parseInt(employeeId)));
+    }
+
+    if (fileNumber) {
+      whereConditions.push(eq(employees.fileNumber, fileNumber));
     }
 
     if (status) {
@@ -49,6 +56,7 @@ const getSalaryIncrementsHandler = async (_request: NextRequest) => {
     const totalCountResult = await db
       .select({ count: sql<number>`count(*)` })
       .from(salaryIncrements)
+      .leftJoin(employees, eq(salaryIncrements.employeeId, employees.id))
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
 
     const total = totalCountResult[0]?.count || 0;
@@ -90,6 +98,7 @@ const getSalaryIncrementsHandler = async (_request: NextRequest) => {
         employeeLastName: employees.lastName,
         employeeEmail: employees.email,
         employeePhone: employees.phone,
+        employeeFileNumber: employees.fileNumber,
         employeeBasicSalary: employees.basicSalary,
         employeeFoodAllowance: employees.foodAllowance,
         employeeHousingAllowance: employees.housingAllowance,
@@ -102,7 +111,13 @@ const getSalaryIncrementsHandler = async (_request: NextRequest) => {
       .leftJoin(employees, eq(salaryIncrements.employeeId, employees.id))
       .leftJoin(users, eq(salaryIncrements.requestedBy, users.id))
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
-      .orderBy(desc(salaryIncrements.createdAt))
+      .orderBy(
+        sortBy === 'file_number'
+          ? sortOrder === 'asc'
+            ? asc(employees.fileNumber)
+            : desc(employees.fileNumber)
+          : desc(salaryIncrements.createdAt)
+      )
       .offset(offset)
       .limit(limit);
 
@@ -115,6 +130,7 @@ const getSalaryIncrementsHandler = async (_request: NextRequest) => {
         first_name: item.employeeFirstName || '',
         last_name: item.employeeLastName || '',
         employee_id: item.employeeId.toString(),
+        file_number: item.employeeFileNumber || '',
       },
       increment_type: item.incrementType,
       effective_date: item.effectiveDate,

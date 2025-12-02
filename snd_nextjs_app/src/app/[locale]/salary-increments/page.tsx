@@ -52,6 +52,8 @@ export default function SalaryIncrementsPage() {
   const [filters, setFilters] = useState<SalaryIncrementFilters>({
     page: 1,
     limit: 15,
+    sort_by: 'file_number',
+    sort_order: 'asc',
   });
   const [pagination, setPagination] = useState({
     page: 1,
@@ -147,9 +149,11 @@ export default function SalaryIncrementsPage() {
       toast.success('Salary increment approved successfully');
       setApprovalNotes('');
       loadData();
-    } catch (error) {
-      
-      toast.error('Failed to approve salary increment');
+    } catch (error: any) {
+      // Extract error message from error object or response
+      const errorMessage = error?.message || error?.response?.error || error?.response?.details || error?.response?.message || 'Failed to approve salary increment';
+      console.error('Error approving salary increment:', error);
+      toast.error(errorMessage);
     }
   };
 
@@ -199,28 +203,28 @@ export default function SalaryIncrementsPage() {
   };
 
   const canApprove = (increment: SalaryIncrement) => {
-    // Use permission-based check instead of hardcoded roles
-    return hasPermission('approve', 'SalaryIncrement');
+    // Only show approve button if user has permission AND status is pending
+    return hasPermission('approve', 'SalaryIncrement') && increment.status === 'pending';
   };
 
   const canReject = (increment: SalaryIncrement) => {
-    // Use permission-based check instead of hardcoded roles
-    return hasPermission('reject', 'SalaryIncrement');
+    // Only show reject button if user has permission AND status is pending
+    return hasPermission('reject', 'SalaryIncrement') && increment.status === 'pending';
   };
 
   const canApply = (increment: SalaryIncrement) => {
-    // Use permission-based check instead of hardcoded roles
-    return hasPermission('apply', 'SalaryIncrement');
+    // Only show apply button if user has permission AND status is approved (not yet applied)
+    return hasPermission('apply', 'SalaryIncrement') && increment.status === 'approved';
   };
 
   const canDelete = (increment: SalaryIncrement) => {
-    // Use permission-based check instead of hardcoded roles
-    return hasPermission('delete', 'SalaryIncrement');
+    // Allow delete if user has permission (can delete pending, approved, or rejected, but not applied)
+    return hasPermission('delete', 'SalaryIncrement') && increment.status !== 'applied';
   };
 
   const canEdit = (increment: SalaryIncrement) => {
-    // Use permission-based check instead of hardcoded roles
-    return hasPermission('update', 'SalaryIncrement');
+    // Only allow edit if user has permission AND status is pending (can't edit after approval)
+    return hasPermission('update', 'SalaryIncrement') && increment.status === 'pending';
   };
 
   // Show loading while checking authentication
@@ -363,7 +367,16 @@ export default function SalaryIncrementsPage() {
         </CardHeader>
         {showFilters && (
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <Label htmlFor="file_number">File #</Label>
+                <Input
+                  type="text"
+                  placeholder="Search by file number"
+                  value={filters.file_number || ''}
+                  onChange={e => handleFilterChange('file_number', e.target.value || undefined)}
+                />
+              </div>
               <div>
                 <Label htmlFor="status">Status</Label>
                 <Select
@@ -434,6 +447,7 @@ export default function SalaryIncrementsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>File #</TableHead>
                     <TableHead>Employee</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Current Salary</TableHead>
@@ -448,10 +462,10 @@ export default function SalaryIncrementsPage() {
                   {increments?.map(increment => (
                     <TableRow key={increment.id}>
                       <TableCell>
+                        {increment.employee?.file_number || '-'}
+                      </TableCell>
+                      <TableCell>
                         {increment.employee?.first_name} {increment.employee?.last_name}
-                        <div className="text-sm text-muted-foreground">
-                          {increment.employee?.employee_id}
-                        </div>
                       </TableCell>
                       <TableCell>
                         {salaryIncrementService.getIncrementTypeLabel(increment.increment_type)}
