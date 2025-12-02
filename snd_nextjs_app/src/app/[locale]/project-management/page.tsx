@@ -509,7 +509,7 @@ export default function ProjectManagementPage() {
                     <TableHead>{t('project.progress')}</TableHead>
                     <TableHead>{t('project.budget')}</TableHead>
                     <TableHead>{t('project.timeline')}</TableHead>
-                    <TableHead className="text-right">{t('project.actions')}</TableHead>
+                    <TableHead className="text-right">{t('project.actionsLabel')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

@@ -24,6 +24,7 @@
     "backToProject": "Back to Project",
     "editProject": "Edit Project"
   },
+  "actionsLabel": "Actions",
   "view": "View",
   "edit": "Edit",
   "delete": "Delete",
@@ -76,6 +77,8 @@
   "all_priorities": "All Priorities",
   "in_progress": "In Progress",
   "on_hold": "On Hold",
+  "completed": "Completed",
+  "cancelled": "Cancelled",
   "table_view": "Table View",
   "card_view": "Card View",
   "project_name": "Project Name",

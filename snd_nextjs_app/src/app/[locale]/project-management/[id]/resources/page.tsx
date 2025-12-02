@@ -99,11 +99,14 @@ interface ProjectResource {
   // Equipment specific fields
   equipment_id?: string;
   equipment_name?: string;
+  operator_id?: string;
   operator_name?: string;
   hourly_rate?: number;
   hours_worked?: number;
   usage_hours?: number;
   maintenance_cost?: number;
+  start_date?: string;
+  end_date?: string;
 
   // Material specific fields
   material_name?: string;
@@ -282,15 +285,23 @@ export default function ProjectResourcesPage() {
         // Equipment specific fields
         equipment_id: resource.equipmentId?.toString(),
         equipment_name: resource.equipmentName,
+        operator_id: resource.operatorId?.toString(),
         operator_name: resource.operatorName && resource.operatorLastName 
           ? `${resource.operatorName} ${resource.operatorLastName}`.trim()
           : resource.operatorWorkerName || undefined,
-        hourly_rate: resource.hourlyRate ? parseFloat(resource.hourlyRate) : undefined,
-        hours_worked: resource.hoursWorked ? parseFloat(resource.hoursWorked) : undefined,
+        hourly_rate: resource.hourlyRate !== undefined && resource.hourlyRate !== null 
+          ? parseFloat(resource.hourlyRate) 
+          : undefined,
+        hours_worked: resource.hoursWorked !== undefined && resource.hoursWorked !== null 
+          ? parseFloat(resource.hoursWorked) 
+          : undefined,
         usage_hours: resource.estimatedHours ? parseFloat(resource.estimatedHours) : undefined,
         maintenance_cost: resource.maintenanceCost
           ? parseFloat(resource.maintenanceCost)
           : undefined,
+        start_date: resource.startDate,
+        end_date: resource.endDate,
+        notes: resource.notes,
 
         // Material specific fields
         material_name: resource.name,
@@ -1138,9 +1149,20 @@ export default function ProjectResourcesPage() {
                               {/* Joining Date Column */}
                               <TableCell>
                                 <div className="text-sm">
-                                  {resource.start_date
-                                    ? new Date(resource.start_date).toLocaleDateString()
-                                    : '-'}
+                                  {(() => {
+                                    const startDate = resource.start_date || (resource as any).startDate;
+                                    if (startDate) {
+                                      try {
+                                        const date = new Date(startDate);
+                                        if (!isNaN(date.getTime())) {
+                                          return date.toLocaleDateString();
+                                        }
+                                      } catch (e) {
+                                        console.error('Invalid start date:', startDate, e);
+                                      }
+                                    }
+                                    return '-';
+                                  })()}
                                 </div>
                               </TableCell>
 
@@ -1166,18 +1188,40 @@ export default function ProjectResourcesPage() {
                               {/* Start Date Column */}
                               <TableCell>
                                 <div className="text-sm">
-                                  {resource.start_date
-                                    ? new Date(resource.start_date).toLocaleDateString()
-                                    : '-'}
+                                  {(() => {
+                                    const startDate = resource.start_date || (resource as any).startDate;
+                                    if (startDate) {
+                                      try {
+                                        const date = new Date(startDate);
+                                        if (!isNaN(date.getTime())) {
+                                          return date.toLocaleDateString();
+                                        }
+                                      } catch (e) {
+                                        console.error('Invalid start date:', startDate, e);
+                                      }
+                                    }
+                                    return '-';
+                                  })()}
                                 </div>
                               </TableCell>
 
                               {/* End Date Column */}
                               <TableCell>
                                 <div className="text-sm">
-                                  {resource.end_date
-                                    ? new Date(resource.end_date).toLocaleDateString()
-                                    : '-'}
+                                  {(() => {
+                                    const endDate = resource.end_date || (resource as any).endDate;
+                                    if (endDate) {
+                                      try {
+                                        const date = new Date(endDate);
+                                        if (!isNaN(date.getTime())) {
+                                          return date.toLocaleDateString();
+                                        }
+                                      } catch (e) {
+                                        console.error('Invalid end date:', endDate, e);
+                                      }
+                                    }
+                                    return '-';
+                                  })()}
                                 </div>
                               </TableCell>
 

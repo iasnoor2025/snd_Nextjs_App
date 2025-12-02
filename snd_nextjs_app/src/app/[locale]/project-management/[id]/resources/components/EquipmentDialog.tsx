@@ -12,9 +12,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { EquipmentDropdown } from '@/components/ui/equipment-dropdown';
 import ApiService from '@/lib/api-service';
 import { Wrench } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { toast } from 'sonner';
 
 interface Equipment {
@@ -62,6 +63,14 @@ export default function EquipmentDialog({
   const [manpowerResources, setManpowerResources] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingManpower, setLoadingManpower] = useState(false);
+  const [loadingEquipment, setLoadingEquipment] = useState(false);
+  const equipmentRef = useRef<Equipment[]>([]);
+  const hasInitialHourlyRate = useRef(false);
+  
+  // Keep ref in sync with state
+  useEffect(() => {
+    equipmentRef.current = equipment;
+  }, [equipment]);
   const [formData, setFormData] = useState<EquipmentResource>({
     equipment_id: '',
     equipment_name: '',
@@ -78,27 +87,66 @@ export default function EquipmentDialog({
     status: 'pending',
   });
 
-  // Load equipment when dialog opens
+  // Load equipment when dialog opens (for displaying selected equipment details)
   useEffect(() => {
     if (open) {
       console.log('Dialog opened, projectId:', projectId);
-      loadEquipment();
+      loadEquipmentForDetails();
       loadManpowerResources();
+      setIsInitialized(false); // Reset when dialog opens
+      hasInitialHourlyRate.current = false; // Reset when dialog opens
     }
   }, [open, projectId]);
 
   // Initialize form data when editing
   useEffect(() => {
     if (initialData) {
+      console.log('Initializing form data with:', initialData);
+      
+      // Helper function to format date for input field
+      const formatDateForInput = (dateValue: string | undefined | null): string => {
+        if (!dateValue) return '';
+        try {
+          const date = new Date(dateValue);
+          if (isNaN(date.getTime())) return '';
+          // Format as YYYY-MM-DD for input type="date"
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        } catch (e) {
+          console.error('Error formatting date:', dateValue, e);
+          return '';
+        }
+      };
+
+      // Helper function to safely convert to number
+      const toNumber = (value: any): number => {
+        if (value === undefined || value === null || value === '') return 0;
+        // Handle 0 as a valid value
+        if (value === 0) return 0;
+        const num = typeof value === 'string' ? parseFloat(value) : Number(value);
+        return isNaN(num) ? 0 : num;
+      };
+
       setFormData({
-        ...initialData,
-        start_date: initialData.start_date
-          ? new Date(initialData.start_date).toISOString().split('T')[0]
-          : '',
-        end_date: initialData.end_date
-          ? new Date(initialData.end_date).toISOString().split('T')[0]
-          : '',
+        equipment_id: initialData.equipment_id || '',
+        equipment_name: initialData.equipment_name || initialData.name || '',
+        name: initialData.name || initialData.equipment_name || '',
+        operator_id: initialData.operator_id || '',
+        operator_name: initialData.operator_name || '',
+        start_date: formatDateForInput(initialData.start_date || (initialData as any).startDate),
+        end_date: formatDateForInput(initialData.end_date || (initialData as any).endDate),
+        hourly_rate: initialData.hourly_rate ?? (initialData as any).hourlyRate ?? 0,
+        usage_hours: initialData.usage_hours ?? (initialData as any).usageHours ?? (initialData as any).estimatedHours ?? 0,
+        maintenance_cost: initialData.maintenance_cost ?? (initialData as any).maintenanceCost ?? 0,
+        total_cost: initialData.total_cost ?? (initialData as any).totalCost ?? 0,
+        notes: initialData.notes || '',
+        status: initialData.status || 'pending',
       });
+      // Mark that we have an initial hourly_rate from the database
+      hasInitialHourlyRate.current = !!(initialData.hourly_rate || (initialData as any).hourlyRate);
+      setIsInitialized(true);
     } else {
       setFormData({
         equipment_id: '',
@@ -118,32 +166,18 @@ export default function EquipmentDialog({
     }
   }, [initialData]);
 
-  const loadEquipment = async () => {
+  // Load equipment for displaying details (EquipmentDropdown handles its own loading)
+  const loadEquipmentForDetails = async () => {
     try {
+      setLoadingEquipment(true);
       // Use the correct API endpoint for equipment
       const response = await ApiService.get<Equipment[]>('/equipment');
       setEquipment(response.data || []);
     } catch (error) {
-      
-      // Use mock data if API fails
-      const mockEquipment = [
-        {
-          id: '1',
-          name: 'Excavator',
-          model_number: 'CAT-320',
-          daily_rate: 800,
-          status: 'available',
-        },
-        {
-          id: '2',
-          name: 'Bulldozer',
-          model_number: 'CAT-D6',
-          daily_rate: 600,
-          status: 'available',
-        },
-        { id: '3', name: 'Crane', model_number: 'LTM-1100', daily_rate: 1200, status: 'available' },
-      ];
-      setEquipment(mockEquipment);
+      console.error('Error loading equipment for details:', error);
+      setEquipment([]);
+    } finally {
+      setLoadingEquipment(false);
     }
   };
 
@@ -225,6 +259,84 @@ export default function EquipmentDialog({
     }
   }, [formData.start_date, formData.end_date, formData.hourly_rate, formData.maintenance_cost]);
 
+  // Track if we've initialized from initialData to prevent overwriting
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Load equipment details when equipment_id changes and update form data
+  // BUT don't overwrite hourly_rate if we're editing (it should come from initialData)
+  useEffect(() => {
+    const loadEquipmentDetails = async () => {
+      if (formData.equipment_id && !isInitialized) {
+        // Check if we already have this equipment in our list using ref
+        const existingEquipment = equipmentRef.current.find(
+          eq => eq.id === formData.equipment_id || eq.id.toString() === formData.equipment_id
+        );
+        
+        if (!existingEquipment) {
+          try {
+            const response = await ApiService.get(`/equipment/${formData.equipment_id}`);
+            if (response.data) {
+              const fetchedEquipment = response.data;
+              setEquipment(prev => [...prev, fetchedEquipment]);
+              
+              // Update form data with equipment details
+              // Only set hourly_rate if it's not already set (preserve existing value when editing)
+              setFormData(prev => {
+                // If we have an initial hourly_rate from the database, don't overwrite it
+                if (hasInitialHourlyRate.current) {
+                  const newData = { ...prev };
+                  newData.equipment_name = fetchedEquipment.name;
+                  newData.name = fetchedEquipment.name;
+                  // Don't change hourly_rate - keep the value from database
+                  return newData;
+                }
+                
+                const newData = { ...prev };
+                newData.equipment_name = fetchedEquipment.name;
+                newData.name = fetchedEquipment.name;
+                // Only calculate hourly rate from daily rate if hourly_rate is not already set
+                if (!prev.hourly_rate || prev.hourly_rate === 0) {
+                  const dailyRate = fetchedEquipment.daily_rate || fetchedEquipment.dailyRate || 0;
+                  const hourlyRate = dailyRate ? dailyRate / 8 : 0;
+                  newData.hourly_rate = hourlyRate;
+                }
+                return newData;
+              });
+            }
+          } catch (error) {
+            console.error('Error fetching equipment details:', error);
+          }
+        } else {
+          // Equipment already in list, update form data
+          // Only set hourly_rate if it's not already set (preserve existing value when editing)
+          setFormData(prev => {
+            // If we have an initial hourly_rate from the database, don't overwrite it
+            if (hasInitialHourlyRate.current) {
+              const newData = { ...prev };
+              newData.equipment_name = existingEquipment.name;
+              newData.name = existingEquipment.name;
+              // Don't change hourly_rate - keep the value from database
+              return newData;
+            }
+            
+            const newData = { ...prev };
+            newData.equipment_name = existingEquipment.name;
+            newData.name = existingEquipment.name;
+            // Only calculate hourly rate from daily rate if hourly_rate is not already set
+            if (!prev.hourly_rate || prev.hourly_rate === 0) {
+              const dailyRate = existingEquipment.daily_rate || (existingEquipment as any).dailyRate || 0;
+              const hourlyRate = dailyRate ? dailyRate / 8 : 0;
+              newData.hourly_rate = hourlyRate;
+            }
+            return newData;
+          });
+        }
+      }
+    };
+
+    loadEquipmentDetails();
+  }, [formData.equipment_id, isInitialized, initialData]);
+
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => {
       const newData = { ...prev, [field]: value };
@@ -232,14 +344,23 @@ export default function EquipmentDialog({
       // Handle equipment selection
       if (field === 'equipment_id') {
         if (value) {
-          const selectedEquipment = equipment.find(eq => eq.id === value);
+          // Try to find in local equipment list
+          const selectedEquipment = equipment.find(eq => eq.id === value || eq.id.toString() === value);
+          
           if (selectedEquipment) {
             newData.equipment_id = value;
             newData.equipment_name = selectedEquipment.name;
             newData.name = selectedEquipment.name; // Set name from equipment
             // Calculate hourly rate from daily rate (assuming 8-hour workday)
-            const hourlyRate = selectedEquipment.daily_rate ? selectedEquipment.daily_rate / 8 : 0;
+            const dailyRate = selectedEquipment.daily_rate || (selectedEquipment as any).dailyRate || 0;
+            const hourlyRate = dailyRate ? dailyRate / 8 : 0;
             newData.hourly_rate = hourlyRate;
+          } else {
+            // Equipment not in local list yet, will be loaded by useEffect
+            newData.equipment_id = value;
+            newData.equipment_name = '';
+            newData.name = '';
+            newData.hourly_rate = 0;
           }
         } else {
           newData.equipment_id = '';
@@ -365,22 +486,15 @@ export default function EquipmentDialog({
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Equipment Selection - First priority */}
           <div className="space-y-2">
-            <Label htmlFor="equipment_id">Select Equipment</Label>
-            <Select
-              value={formData.equipment_id || undefined}
+            <EquipmentDropdown
+              value={formData.equipment_id || ''}
               onValueChange={value => handleInputChange('equipment_id', value)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select equipment" />
-              </SelectTrigger>
-              <SelectContent>
-                {equipment.map(eq => (
-                  <SelectItem key={eq.id} value={eq.id}>
-                    {eq.name} {eq.door_number && `[${eq.door_number}]`} {eq.model_number && `(${eq.model_number})`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder="Select equipment"
+              label="Select Equipment"
+              required
+              loading={loadingEquipment}
+              onLoadingChange={setLoadingEquipment}
+            />
 
             {/* Show selected equipment details */}
             {formData.equipment_id && (
@@ -388,16 +502,18 @@ export default function EquipmentDialog({
                 <div className="text-sm font-medium text-gray-700">Selected Equipment</div>
                 <div className="text-sm text-gray-600 mt-1">
                   {formData.equipment_name}
-                  {equipment.find(eq => eq.id === formData.equipment_id)?.door_number && 
-                    ` [${equipment.find(eq => eq.id === formData.equipment_id)?.door_number}]`}
+                  {equipment.find(eq => eq.id === formData.equipment_id || eq.id.toString() === formData.equipment_id)?.door_number && 
+                    ` [${equipment.find(eq => eq.id === formData.equipment_id || eq.id.toString() === formData.equipment_id)?.door_number}]`}
                   {formData.equipment_name &&
-                    equipment.find(eq => eq.id === formData.equipment_id)?.model_number &&
-                    ` (${equipment.find(eq => eq.id === formData.equipment_id)?.model_number})`}
+                    equipment.find(eq => eq.id === formData.equipment_id || eq.id.toString() === formData.equipment_id)?.model_number &&
+                    ` (${equipment.find(eq => eq.id === formData.equipment_id || eq.id.toString() === formData.equipment_id)?.model_number})`}
                 </div>
-                {equipment.find(eq => eq.id === formData.equipment_id)?.daily_rate && (
+                {(equipment.find(eq => eq.id === formData.equipment_id || eq.id.toString() === formData.equipment_id)?.daily_rate ||
+                  (equipment.find(eq => eq.id === formData.equipment_id || eq.id.toString() === formData.equipment_id) as any)?.dailyRate) && (
                   <div className="text-sm text-gray-600 mt-1">
                     Daily Rate: SAR{' '}
-                    {equipment.find(eq => eq.id === formData.equipment_id)?.daily_rate}
+                    {equipment.find(eq => eq.id === formData.equipment_id || eq.id.toString() === formData.equipment_id)?.daily_rate ||
+                      (equipment.find(eq => eq.id === formData.equipment_id || eq.id.toString() === formData.equipment_id) as any)?.dailyRate}
                   </div>
                 )}
               </div>
@@ -489,8 +605,8 @@ export default function EquipmentDialog({
               <Input
                 id="hourly_rate"
                 type="number"
-                value={formData.hourly_rate || ''}
-                onChange={e => handleInputChange('hourly_rate', parseFloat(e.target.value))}
+                value={formData.hourly_rate !== undefined && formData.hourly_rate !== null ? formData.hourly_rate : ''}
+                onChange={e => handleInputChange('hourly_rate', parseFloat(e.target.value) || 0)}
                 placeholder="0.00"
                 step="0.01"
                 min="0"
@@ -501,8 +617,8 @@ export default function EquipmentDialog({
               <Input
                 id="usage_hours"
                 type="number"
-                value={formData.usage_hours || ''}
-                onChange={e => handleInputChange('usage_hours', parseFloat(e.target.value))}
+                value={formData.usage_hours !== undefined && formData.usage_hours !== null ? formData.usage_hours : ''}
+                onChange={e => handleInputChange('usage_hours', parseFloat(e.target.value) || 0)}
                 placeholder="0"
                 min="0"
                 step="0.5"
@@ -513,8 +629,8 @@ export default function EquipmentDialog({
               <Input
                 id="maintenance_cost"
                 type="number"
-                value={formData.maintenance_cost || ''}
-                onChange={e => handleInputChange('maintenance_cost', parseFloat(e.target.value))}
+                value={formData.maintenance_cost !== undefined && formData.maintenance_cost !== null ? formData.maintenance_cost : ''}
+                onChange={e => handleInputChange('maintenance_cost', parseFloat(e.target.value) || 0)}
                 placeholder="0.00"
                 step="0.01"
                 min="0"
@@ -528,7 +644,7 @@ export default function EquipmentDialog({
             <Input
               id="total_cost"
               type="number"
-              value={formData.total_cost || ''}
+              value={formData.total_cost !== undefined && formData.total_cost !== null ? formData.total_cost : ''}
               readOnly
               className="bg-muted font-semibold"
             />

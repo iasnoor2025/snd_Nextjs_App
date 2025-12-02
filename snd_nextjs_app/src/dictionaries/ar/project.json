@@ -30,6 +30,7 @@
     "export": "تصدير",
     "import": "استيراد"
   },
+  "actionsLabel": "الإجراءات",
   "fields": {
     "name": "اسم المشروع",
     "description": "وصف المشروع",
@@ -145,6 +146,9 @@
     "totalBudget": "إجمالي الميزانية",
     "averageDuration": "متوسط المدة"
   },
+  "completed": "مكتمل",
+  "cancelled": "ملغي",
+  "on_hold": "معلق",
   "status_options": {
     "planning": "تخطيط",
     "active": "نشط",
