@@ -248,16 +248,19 @@ export default function ProjectResourcesPage() {
 
         // Manpower specific fields
         employee_id: resource.employeeId?.toString(),
-        employee: resource.employee
+        employee: (resource.employeeFirstName || resource.employeeLastName)
           ? {
-              id: resource.employee.id.toString(),
-              first_name: resource.employee.first_name,
-              last_name: resource.employee.last_name,
-              full_name: `${resource.employee.first_name} ${resource.employee.last_name}`,
+              id: resource.employeeId?.toString() || '',
+              first_name: resource.employeeFirstName || '',
+              last_name: resource.employeeLastName || '',
+              full_name: `${resource.employeeFirstName || ''} ${resource.employeeLastName || ''}`.trim(),
             }
-          : undefined,
+          : resource.employee || undefined,
         // Handle both employee names (from JOIN) and worker names
-        employee_name: resource.employeeName || resource.workerName || `Employee ${resource.employeeId || 'Unknown'}`,
+        // Combine firstName and lastName if both exist, otherwise use workerName
+        employee_name: (resource.employeeFirstName && resource.employeeLastName)
+          ? `${resource.employeeFirstName} ${resource.employeeLastName}`.trim()
+          : resource.employeeFirstName || resource.employeeLastName || resource.employeeName || resource.workerName || `Employee ${resource.employeeId || 'Unknown'}`,
         employee_file_number: resource.employeeFileNumber || '-',
         worker_name: resource.workerName,
         job_title: resource.jobTitle,
@@ -1112,8 +1115,8 @@ export default function ProjectResourcesPage() {
                               <TableCell>
                                 <div className="flex items-center gap-2">
                                   <div className="font-medium">
-                                    {resource.employee_name
-                                      ? resource.employee_name
+                                    {resource.employee?.full_name || resource.employee_name
+                                      ? (resource.employee?.full_name || resource.employee_name)
                                       : resource.name || resource.title}
                                   </div>
                                   {resource.employee_id ? (

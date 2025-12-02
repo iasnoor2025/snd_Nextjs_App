@@ -39,7 +39,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         createdAt: projectManpower.createdAt,
         updatedAt: projectManpower.updatedAt,
         // Employee info from JOIN (only if employee_id exists)
-        employeeName: employees.lastName, // Use lastName since first_name doesn't exist in DB
+        employeeFirstName: employees.firstName,
         employeeLastName: employees.lastName,
         employeeFileNumber: employees.fileNumber,
       })
