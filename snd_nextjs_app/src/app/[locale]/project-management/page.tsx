@@ -567,8 +567,45 @@ export default function ProjectManagementPage() {
                         <div className="flex items-center space-x-2">
                           <Calendar className="h-3 w-3" />
                           <span className="text-sm">
-                            {new Date(project.start_date).toLocaleDateString()} -{' '}
-                            {new Date(project.end_date).toLocaleDateString()}
+                            {project.start_date 
+                              ? (() => {
+                                  // Parse date string as local date to avoid timezone issues
+                                  const dateStr = project.start_date.toString().split('T')[0];
+                                  const parts = dateStr.split('-');
+                                  if (parts.length === 3) {
+                                    const year = parseInt(parts[0], 10);
+                                    const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+                                    const day = parseInt(parts[2], 10);
+                                    const startDate = new Date(year, month, day);
+                                    return startDate.toLocaleDateString('en-US', { 
+                                      year: 'numeric', 
+                                      month: '2-digit', 
+                                      day: '2-digit' 
+                                    });
+                                  }
+                                  return project.start_date;
+                                })()
+                              : 'Not set'}{' '}
+                            -{' '}
+                            {project.end_date 
+                              ? (() => {
+                                  // Parse date string as local date to avoid timezone issues
+                                  const dateStr = project.end_date.toString().split('T')[0];
+                                  const parts = dateStr.split('-');
+                                  if (parts.length === 3) {
+                                    const year = parseInt(parts[0], 10);
+                                    const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+                                    const day = parseInt(parts[2], 10);
+                                    const endDate = new Date(year, month, day);
+                                    return endDate.toLocaleDateString('en-US', { 
+                                      year: 'numeric', 
+                                      month: '2-digit', 
+                                      day: '2-digit' 
+                                    });
+                                  }
+                                  return project.end_date;
+                                })()
+                              : 'Not set'}
                           </span>
                         </div>
                       </TableCell>
@@ -656,8 +693,25 @@ export default function ProjectManagementPage() {
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">{t('project.timeline')}</span>
                       <span className="font-medium">
-                        {new Date(project.start_date).toLocaleDateString()} -{' '}
-                        {new Date(project.end_date).toLocaleDateString()}
+                        {project.start_date 
+                          ? (() => {
+                              // Parse date string as local date to avoid timezone issues
+                              const dateStr = project.start_date.split('T')[0];
+                              const [year, month, day] = dateStr.split('-');
+                              const startDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                              return startDate.toLocaleDateString();
+                            })()
+                          : 'Not set'}{' '}
+                        -{' '}
+                        {project.end_date 
+                          ? (() => {
+                              // Parse date string as local date to avoid timezone issues
+                              const dateStr = project.end_date.split('T')[0];
+                              const [year, month, day] = dateStr.split('-');
+                              const endDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                              return endDate.toLocaleDateString();
+                            })()
+                          : 'Not set'}
                       </span>
                     </div>
                   </div>

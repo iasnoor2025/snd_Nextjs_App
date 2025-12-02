@@ -76,30 +76,41 @@ export default function ManpowerDialog({
   // No need to load employees here - handled by EmployeeDropdown component
 
   // Initialize form data when editing
+  // Helper function to parse date string as local date and format for input (YYYY-MM-DD)
+  const formatDateForInput = (dateString: string | undefined): string => {
+    if (!dateString) return '';
+    // Take just the date part (before T if present)
+    return dateString.split('T')[0];
+  };
+
   useEffect(() => {
     if (initialData) {
+      // Helper function to parse date string as local date (avoids timezone issues)
+      const parseLocalDate = (dateString: string | undefined): Date | null => {
+        if (!dateString) return null;
+        const dateStr = dateString.split('T')[0];
+        const [year, month, day] = dateStr.split('-').map(Number);
+        return new Date(year, month - 1, day);
+      };
+
       // Recalculate total_days from dates if both dates exist
       let calculatedTotalDays = initialData.total_days;
       if (initialData.start_date && initialData.end_date) {
-        const start = new Date(initialData.start_date);
-        const end = new Date(initialData.end_date);
-        start.setHours(0, 0, 0, 0);
-        end.setHours(0, 0, 0, 0);
-        const diffTime = end.getTime() - start.getTime();
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        calculatedTotalDays = diffDays + 1; // Inclusive of both start and end days
+        const start = parseLocalDate(initialData.start_date);
+        const end = parseLocalDate(initialData.end_date);
+        if (start && end) {
+          const diffTime = end.getTime() - start.getTime();
+          const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+          calculatedTotalDays = diffDays + 1; // Inclusive of both start and end days
+        }
       }
       
       setOriginalTotalDays(calculatedTotalDays || initialData.total_days);
       setOriginalEndDate(initialData.end_date);
       setFormData({
         ...initialData,
-        start_date: initialData.start_date
-          ? new Date(initialData.start_date).toISOString().split('T')[0]
-          : '',
-        end_date: initialData.end_date
-          ? new Date(initialData.end_date).toISOString().split('T')[0]
-          : '',
+        start_date: formatDateForInput(initialData.start_date),
+        end_date: formatDateForInput(initialData.end_date),
         total_days: calculatedTotalDays || initialData.total_days || 0,
       });
 
@@ -138,19 +149,25 @@ export default function ManpowerDialog({
 
   // Employee loading is now handled by the EmployeeDropdown component
 
+  // Helper function to parse date string as local date (avoids timezone issues)
+  const parseLocalDateString = (dateString: string): Date | null => {
+    if (!dateString) return null;
+    const dateStr = dateString.split('T')[0];
+    const [year, month, day] = dateStr.split('-').map(Number);
+    if (isNaN(year) || isNaN(month) || isNaN(day)) return null;
+    return new Date(year, month - 1, day);
+  };
+
   // Calculate total days when start/end dates change
   useEffect(() => {
     if (formData.start_date) {
-      const start = new Date(formData.start_date);
+      const start = parseLocalDateString(formData.start_date);
+      if (!start) return;
       
       // Only calculate if end date is provided
       if (formData.end_date) {
-        const end = new Date(formData.end_date);
-        
-        // Validate dates
-        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-          return;
-        }
+        const end = parseLocalDateString(formData.end_date);
+        if (!end) return;
         
         // Ensure end date is not before start date
         if (end < start) {
@@ -161,11 +178,6 @@ export default function ManpowerDialog({
           }));
           return;
         }
-        
-        // Calculate the difference in days
-        // Set time to midnight to avoid timezone issues
-        start.setHours(0, 0, 0, 0);
-        end.setHours(0, 0, 0, 0);
         
         const diffTime = end.getTime() - start.getTime();
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -181,7 +193,6 @@ export default function ManpowerDialog({
         // If no end date in form, calculate from start_date to today
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        start.setHours(0, 0, 0, 0);
         
         // If start date is in the future, default to 1 day
         if (start > today) {

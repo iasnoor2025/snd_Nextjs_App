@@ -148,9 +148,19 @@ export default function ProjectDetailPage() {
   };
 
   // Utility functions to eliminate duplication
+  // Helper function to parse date string as local date (avoids timezone issues)
+  const parseLocalDate = (dateString: string | undefined): Date | null => {
+    if (!dateString) return null;
+    const dateStr = dateString.split('T')[0];
+    const [year, month, day] = dateStr.split('-');
+    if (!year || !month || !day) return null;
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  };
+
   const formatDate = (dateString: string | undefined, format: 'full' | 'short' = 'full') => {
     if (!dateString) return 'Not set';
-    const date = new Date(dateString);
+    const date = parseLocalDate(dateString);
+    if (!date) return 'Not set';
     return format === 'short'
       ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
       : date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -159,8 +169,10 @@ export default function ProjectDetailPage() {
   const calculateProjectProgress = (project: Project) => {
     if (!project.start_date || !project.end_date) return 0;
     const today = new Date();
-    const endDate = new Date(project.end_date);
-    const startDate = new Date(project.start_date);
+    today.setHours(0, 0, 0, 0);
+    const endDate = parseLocalDate(project.end_date);
+    const startDate = parseLocalDate(project.start_date);
+    if (!endDate || !startDate) return 0;
     const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
     const daysElapsed = Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
     return totalDays > 0 ? Math.min(100, Math.round((daysElapsed / totalDays) * 100)) : 0;
@@ -169,14 +181,17 @@ export default function ProjectDetailPage() {
   const calculateDaysRemaining = (project: Project) => {
     if (!project.end_date) return 0;
     const today = new Date();
-    const endDate = new Date(project.end_date);
+    today.setHours(0, 0, 0, 0);
+    const endDate = parseLocalDate(project.end_date);
+    if (!endDate) return 0;
     return Math.max(0, Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
   };
 
   const calculateProjectDuration = (project: Project) => {
     if (!project.start_date || !project.end_date) return 'Not started';
-    const startDate = new Date(project.start_date);
-    const endDate = new Date(project.end_date);
+    const startDate = parseLocalDate(project.start_date);
+    const endDate = parseLocalDate(project.end_date);
+    if (!startDate || !endDate) return 'Not started';
     const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
     return `${days} days`;
   };
@@ -935,7 +950,12 @@ export default function ProjectDetailPage() {
                  <p className="text-base font-medium">
                    {project.start_date ? (
                      project.end_date ? (
-                       `${Math.ceil((new Date(project.end_date).getTime() - new Date(project.start_date).getTime()) / (1000 * 60 * 60 * 24))} days`
+                       `${(() => {
+                          const start = parseLocalDate(project.start_date);
+                          const end = parseLocalDate(project.end_date);
+                          if (!start || !end) return '0';
+                          return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+                        })()} days`
                      ) : (
                        <span className="text-blue-600">Ongoing</span>
                      )
@@ -1068,11 +1088,7 @@ export default function ProjectDetailPage() {
                 <div className="flex-1 rounded-lg bg-gray-50 p-4">
                   <div className="mb-2 flex justify-end">
                     <span className="text-xs text-gray-700">
-                      {new Date(project.end_date).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
+                      {formatDate(project.end_date, 'short')}
                     </span>
                   </div>
                   <div className="mb-2 flex items-center gap-2">
@@ -1154,14 +1170,14 @@ export default function ProjectDetailPage() {
                   <div>
                     <p className="text-sm font-medium">Start Date</p>
                     <p className="text-sm text-gray-600">
-                      {new Date(project.start_date).toLocaleDateString()}
+                      {formatDate(project.start_date)}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm font-medium">End Date</p>
                     <p className="text-sm text-gray-600">
                       {project.end_date
-                        ? new Date(project.end_date).toLocaleDateString()
+                        ? formatDate(project.end_date)
                         : 'Ongoing'}
                     </p>
                   </div>

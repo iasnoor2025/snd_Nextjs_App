@@ -112,15 +112,26 @@ const getProjectsHandler = async (request: NextRequest) => {
     const total = countRows.length;
     
     // Transform the data to match the frontend expectations
-    const enhancedRows = rows.map(project => ({
-      id: project.id,
-      name: project.name,
-      description: project.description || '',
-      client: project.customerName || 'No Client Assigned',
-      status: project.status,
-      priority: 'medium',
-      start_date: project.startDate ? project.startDate.toString() : '',
-      end_date: project.endDate ? project.endDate.toString() : '',
+    const enhancedRows = rows.map(project => {
+      // Format dates as YYYY-MM-DD to avoid timezone issues
+      // PostgreSQL date type returns string like "2025-12-01" - just use it directly
+      const formatDateString = (date: any): string => {
+        if (!date) return '';
+        // If it's already a string, just take the date part (before T if present)
+        const dateStr = String(date);
+        // Handle both "2025-12-01" and "2025-12-01T00:00:00.000Z" formats
+        return dateStr.split('T')[0];
+      };
+
+      return {
+        id: project.id,
+        name: project.name,
+        description: project.description || '',
+        client: project.customerName || 'No Client Assigned',
+        status: project.status,
+        priority: 'medium',
+        start_date: formatDateString(project.startDate),
+        end_date: formatDateString(project.endDate),
       budget: Number(project.budget) || 0,
       progress: 0,
       team_size: 0,
@@ -138,7 +149,8 @@ const getProjectsHandler = async (request: NextRequest) => {
       supervisor: project.supervisorId ? { id: project.supervisorId, name: employeeNames[project.supervisorId] || 'Unknown' } : null,
       created_at: project.createdAt ? project.createdAt.toString() : '',
       updated_at: project.updatedAt ? project.updatedAt.toString() : '',
-    }));
+      };
+    });
 
     return NextResponse.json({
       success: true,
@@ -216,8 +228,9 @@ const createProjectHandler = async (request: NextRequest) => {
         description: description ?? null,
         customerId: customer_id ? parseInt(customer_id) : null,
         locationId: location_id ? parseInt(location_id) : null,
-        startDate: start_date ? new Date(start_date).toISOString() : null,
-        endDate: end_date ? new Date(end_date).toISOString() : null,
+        // Store dates as YYYY-MM-DD strings to avoid timezone issues
+        startDate: start_date ? start_date.split('T')[0] : null,
+        endDate: end_date ? end_date.split('T')[0] : null,
         status: status || 'planning',
         budget: budget ? String(parseFloat(budget)) : null,
         // Project team roles
@@ -284,8 +297,9 @@ const updateProjectHandler = async (request: NextRequest) => {
         name,
         description: description ?? null,
         status,
-        startDate: start_date ? new Date(start_date).toISOString() : null,
-        endDate: end_date ? new Date(end_date).toISOString() : null,
+        // Store dates as YYYY-MM-DD strings to avoid timezone issues
+        startDate: start_date ? start_date.split('T')[0] : null,
+        endDate: end_date ? end_date.split('T')[0] : null,
         budget: budget ? String(parseFloat(budget)) : null,
         notes: body.notes ?? null,
       })

@@ -182,14 +182,22 @@ export default function EditProjectPage() {
         });
         setProject(projectData);
 
+        // Helper function to parse date string as local date (avoids timezone issues)
+        const parseLocalDate = (dateString: string | undefined): Date | undefined => {
+          if (!dateString) return undefined;
+          const dateStr = dateString.split('T')[0];
+          const [year, month, day] = dateStr.split('-').map(Number);
+          return new Date(year, month - 1, day);
+        };
+
         // Update form data with project data
         const initialFormData = {
           name: projectData.name || '',
           description: projectData.description || '',
           customer_id: projectData.customer_id?.toString() || '',
           location_id: projectData.location_id?.toString() || '',
-          start_date: projectData.start_date ? new Date(projectData.start_date) : undefined,
-          end_date: projectData.end_date ? new Date(projectData.end_date) : undefined,
+          start_date: parseLocalDate(projectData.start_date),
+          end_date: parseLocalDate(projectData.end_date),
           status: projectData.status || 'planning',
           priority: projectData.priority || 'medium',
           budget: projectData.budget?.toString() || '',
@@ -287,10 +295,19 @@ export default function EditProjectPage() {
     setSaving(true);
 
     try {
+      // Format dates as YYYY-MM-DD to avoid timezone issues
+      const formatDateForSubmit = (date: Date | undefined) => {
+        if (!date) return null;
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
       const submitData = {
         ...formData,
-        start_date: formData.start_date?.toISOString(),
-        end_date: formData.end_date?.toISOString(),
+        start_date: formatDateForSubmit(formData.start_date),
+        end_date: formatDateForSubmit(formData.end_date),
         budget: parseFloat(formData.budget) || 0,
         initial_budget: parseFloat(formData.initial_budget) || 0,
         // Project team roles

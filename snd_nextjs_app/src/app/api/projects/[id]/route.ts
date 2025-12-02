@@ -238,8 +238,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       client_contact: customer?.email || customer?.phone || 'No contact info',
       status: project.status,
       priority: 'medium',
-      start_date: project.startDate ? project.startDate.toString() : null,
-      end_date: project.endDate ? project.endDate.toString() : null,
+      // Return dates as YYYY-MM-DD strings to avoid timezone issues
+      start_date: project.startDate ? String(project.startDate).split('T')[0] : null,
+      end_date: project.endDate ? String(project.endDate).split('T')[0] : null,
       budget: Number(project.budget) || 0,
       progress: 0,
       // Project team roles
@@ -305,8 +306,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         customerId: body.customer_id ? parseInt(body.customer_id) : null,
         locationId: body.location_id ? parseInt(body.location_id) : null,
         status: body.status,
-        startDate: body.start_date ? body.start_date : null,
-        endDate: body.end_date ? body.end_date : null,
+        // Store dates as YYYY-MM-DD strings to avoid timezone issues
+        startDate: body.start_date ? body.start_date.split('T')[0] : null,
+        endDate: body.end_date ? body.end_date.split('T')[0] : null,
         budget: body.budget ? String(parseFloat(body.budget)) : null,
         // Project team roles
         projectManagerId: body.project_manager_id ? parseInt(body.project_manager_id) : null,

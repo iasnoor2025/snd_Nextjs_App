@@ -209,10 +209,19 @@ export default function CreateProjectPage() {
     try {
       setLoading(true);
 
+      // Format dates as YYYY-MM-DD to avoid timezone issues
+      const formatDateForSubmit = (date: Date | undefined) => {
+        if (!date) return null;
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
       const submitData = {
         ...formData,
-        start_date: formData.start_date?.toISOString(),
-        end_date: formData.end_date?.toISOString(),
+        start_date: formatDateForSubmit(formData.start_date),
+        end_date: formatDateForSubmit(formData.end_date),
         budget: parseFloat(formData.budget) || 0,
         initial_budget: parseFloat(formData.initial_budget) || 0,
         // Project team roles

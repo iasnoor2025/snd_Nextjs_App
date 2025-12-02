@@ -103,17 +103,12 @@ export default function EquipmentDialog({
     if (initialData) {
       console.log('Initializing form data with:', initialData);
       
-      // Helper function to format date for input field
+      // Helper function to format date for input field (avoids timezone issues)
       const formatDateForInput = (dateValue: string | undefined | null): string => {
         if (!dateValue) return '';
         try {
-          const date = new Date(dateValue);
-          if (isNaN(date.getTime())) return '';
-          // Format as YYYY-MM-DD for input type="date"
-          const year = date.getFullYear();
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          const day = String(date.getDate()).padStart(2, '0');
-          return `${year}-${month}-${day}`;
+          // Take just the date part (before T if present) to avoid timezone conversion
+          return dateValue.split('T')[0];
         } catch (e) {
           console.error('Error formatting date:', dateValue, e);
           return '';
