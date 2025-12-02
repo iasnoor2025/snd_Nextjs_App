@@ -7,22 +7,32 @@ import { NextRequest, NextResponse } from 'next/server';
  * API endpoint for fetching employees with expiring SPSP licenses
  * Used by n8n workflow to send WhatsApp notifications
  * 
+ * Authentication: Bearer token in Authorization header
  * Query params:
  * - days: Number of days to look ahead (default: 10)
  * - includeExpired: Include already expired licenses (default: false)
- * - apiKey: API key for n8n authentication (required for external calls)
  */
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    
-    // API Key authentication for n8n
-    const apiKey = searchParams.get('apiKey');
+    // Bearer token authentication from Authorization header
+    const authHeader = request.headers.get('authorization');
     const expectedApiKey = process.env.N8N_API_KEY;
     
-    if (expectedApiKey && apiKey !== expectedApiKey) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (expectedApiKey) {
+      // Extract Bearer token
+      const token = authHeader?.startsWith('Bearer ') 
+        ? authHeader.substring(7) 
+        : null;
+      
+      if (!token || token !== expectedApiKey) {
+        return NextResponse.json(
+          { error: 'Unauthorized', message: 'Invalid or missing authentication token' },
+          { status: 401 }
+        );
+      }
     }
+    
+    const { searchParams } = new URL(request.url);
 
     const daysParam = parseInt(searchParams.get('days') || '10', 10);
     const includeExpired = searchParams.get('includeExpired') === '1' || searchParams.get('includeExpired') === 'true';

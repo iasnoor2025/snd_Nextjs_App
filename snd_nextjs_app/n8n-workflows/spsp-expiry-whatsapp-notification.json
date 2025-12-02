@@ -31,12 +31,17 @@
               "value": "10"
             },
             {
-              "name": "apiKey",
-              "value": "={{ $env.N8N_API_KEY }}"
-            },
-            {
               "name": "limit",
               "value": "100"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.N8N_API_KEY }}"
             }
           ]
         },
