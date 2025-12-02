@@ -76,12 +76,31 @@ export default function ExpenseDialog({
     status: 'pending',
   });
 
+  // Helper function to parse date string as local date (avoids timezone issues)
+  const parseLocalDate = (dateString: string | undefined): Date | null => {
+    if (!dateString) return null;
+    const dateStr = dateString.split('T')[0];
+    const [year, month, day] = dateStr.split('-').map(Number);
+    if (isNaN(year) || isNaN(month) || isNaN(day)) return null;
+    return new Date(year, month - 1, day);
+  };
+
+  // Helper function to format date for input (YYYY-MM-DD)
+  const formatDateForInput = (date: Date | undefined): string => {
+    if (!date) return '';
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // Initialize form data when editing
   useEffect(() => {
     if (initialData) {
       setFormData({
         ...initialData,
-        date: initialData.date ? new Date(initialData.date).toISOString().split('T')[0] : '',
+        // Ensure date is in YYYY-MM-DD format
+        date: initialData.date ? initialData.date.split('T')[0] : '',
       });
     } else {
       setFormData({
@@ -251,15 +270,20 @@ export default function ExpenseDialog({
                         className="w-full justify-start text-left font-normal"
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.date ? format(new Date(formData.date), 'PPP') : 'Pick a date'}
+                        {formData.date 
+                          ? (() => {
+                              const date = parseLocalDate(formData.date);
+                              return date ? format(date, 'PPP') : formData.date;
+                            })()
+                          : 'Pick a date'}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
                       <Calendar
                         mode="single"
-                        selected={formData.date ? new Date(formData.date) : undefined}
+                        selected={formData.date ? parseLocalDate(formData.date) || undefined : undefined}
                         onSelect={date =>
-                          handleInputChange('date', date?.toISOString().split('T')[0] || '')
+                          handleInputChange('date', formatDateForInput(date))
                         }
                         initialFocus
                       />

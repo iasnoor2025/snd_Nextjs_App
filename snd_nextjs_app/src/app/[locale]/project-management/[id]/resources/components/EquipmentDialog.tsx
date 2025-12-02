@@ -237,11 +237,24 @@ export default function EquipmentDialog({
     setManpowerResources(mockManpower);
   };
 
+  // Helper function to parse date string as local date (avoids timezone issues)
+  const parseLocalDateString = (dateString: string): Date | null => {
+    if (!dateString) return null;
+    const dateStr = dateString.split('T')[0];
+    const [year, month, day] = dateStr.split('-').map(Number);
+    if (isNaN(year) || isNaN(month) || isNaN(day)) return null;
+    return new Date(year, month - 1, day);
+  };
+
   // Calculate usage hours when start/end dates change
   useEffect(() => {
     if (formData.start_date) {
-      const start = new Date(formData.start_date);
-      const end = formData.end_date ? new Date(formData.end_date) : new Date();
+      const start = parseLocalDateString(formData.start_date);
+      if (!start) return;
+      
+      const end = formData.end_date ? parseLocalDateString(formData.end_date) : new Date();
+      if (!end) return;
+      
       const diffTime = Math.abs(end.getTime() - start.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       const usageHours = diffDays * 10; // 10 hours per day

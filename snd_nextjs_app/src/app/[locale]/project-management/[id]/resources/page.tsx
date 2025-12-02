@@ -1391,13 +1391,13 @@ export default function ProjectResourcesPage() {
                   updated_at: resource.updated_at,
                 }))}
                 onEdit={task => {
-                  const resource = resources.find(r => r.id === task.id);
+                  const resource = resources.find(r => r.id === task.id && r.type === 'tasks');
                   if (resource) {
                     handleEditResource(resource);
                   }
                 }}
                 onDelete={task => {
-                  const resource = resources.find(r => r.id === task.id);
+                  const resource = resources.find(r => r.id === task.id && r.type === 'tasks');
                   if (resource) {
                     handleDeleteResource(resource);
                   }

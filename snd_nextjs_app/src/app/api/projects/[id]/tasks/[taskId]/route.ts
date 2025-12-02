@@ -78,8 +78,9 @@ export async function PUT(
         ...(status !== undefined && { status }),
         ...(priority !== undefined && { priority }),
         ...(assignedToId !== undefined && { assignedToId: assignedToId ? parseInt(assignedToId) : null }),
-        ...(startDate !== undefined && { startDate: startDate ? new Date(startDate).toISOString().split('T')[0] : null }),
-        ...(dueDate !== undefined && { dueDate: dueDate ? new Date(dueDate).toISOString().split('T')[0] : null }),
+        // Store dates as YYYY-MM-DD strings to avoid timezone issues
+        ...(startDate !== undefined && { startDate: startDate ? startDate.split('T')[0] : null }),
+        ...(dueDate !== undefined && { dueDate: dueDate ? dueDate.split('T')[0] : null }),
         ...(completionPercentage !== undefined && { completionPercentage: completionPercentage ? parseFloat(completionPercentage) : 0 }),
         ...(estimatedHours !== undefined && { estimatedHours: estimatedHours ? parseFloat(estimatedHours).toString() : null }),
         ...(actualHours !== undefined && { actualHours: actualHours ? parseFloat(actualHours).toString() : null }),

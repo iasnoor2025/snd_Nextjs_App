@@ -139,7 +139,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         unitPrice: parseFloat(unitPrice).toString(),
         totalCost: totalCost.toString(),
         supplier,
-        orderDate: orderDate ? new Date(orderDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        // Store dates as YYYY-MM-DD strings to avoid timezone issues
+        orderDate: orderDate ? orderDate.split('T')[0] : new Date().toISOString().split('T')[0],
         status: 'ordered',
         notes,
         updatedAt: new Date().toISOString().split('T')[0],
@@ -232,7 +233,8 @@ export async function PUT(
         ...(unitPrice !== undefined && { unitPrice: parseFloat(unitPrice) }),
         ...(totalCost !== undefined && { totalCost: parseFloat(totalCost) }),
         ...(supplier !== undefined && { supplier }),
-        ...(deliveryDate !== undefined && { deliveryDate: deliveryDate ? new Date(deliveryDate).toISOString().split('T')[0] : null }),
+        // Store dates as YYYY-MM-DD strings to avoid timezone issues
+        ...(deliveryDate !== undefined && { deliveryDate: deliveryDate ? deliveryDate.split('T')[0] : null }),
         ...(notes !== undefined && { notes }),
         ...(status !== undefined && { status }),
         updatedAt: new Date().toISOString().split('T')[0],

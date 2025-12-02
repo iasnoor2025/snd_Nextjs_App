@@ -90,14 +90,31 @@ export default function MaterialDialog({
     status: 'pending',
   });
 
+  // Helper function to parse date string as local date (avoids timezone issues)
+  const parseLocalDate = (dateString: string | undefined): Date | null => {
+    if (!dateString) return null;
+    const dateStr = dateString.split('T')[0];
+    const [year, month, day] = dateStr.split('-').map(Number);
+    if (isNaN(year) || isNaN(month) || isNaN(day)) return null;
+    return new Date(year, month - 1, day);
+  };
+
+  // Helper function to format date for input (YYYY-MM-DD)
+  const formatDateForInput = (date: Date | undefined): string => {
+    if (!date) return '';
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // Initialize form data when editing
   useEffect(() => {
     if (initialData) {
       setFormData({
         ...initialData,
-        date_used: initialData.date_used
-          ? new Date(initialData.date_used).toISOString().split('T')[0]
-          : '',
+        // Ensure date_used is in YYYY-MM-DD format
+        date_used: initialData.date_used ? initialData.date_used.split('T')[0] : '',
       });
     } else {
       setFormData({
@@ -303,15 +320,20 @@ export default function MaterialDialog({
               <PopoverTrigger asChild>
                 <Button variant="outline" className="w-full justify-start text-left font-normal">
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.date_used ? format(new Date(formData.date_used), 'PPP') : 'Pick a date'}
+                  {formData.date_used 
+                    ? (() => {
+                        const date = parseLocalDate(formData.date_used);
+                        return date ? format(date, 'PPP') : formData.date_used;
+                      })()
+                    : 'Pick a date'}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
                 <Calendar
                   mode="single"
-                  selected={formData.date_used ? new Date(formData.date_used) : undefined}
+                  selected={formData.date_used ? parseLocalDate(formData.date_used) || undefined : undefined}
                   onSelect={date =>
-                    handleInputChange('date_used', date?.toISOString().split('T')[0] || '')
+                    handleInputChange('date_used', formatDateForInput(date))
                   }
                   initialFocus
                 />

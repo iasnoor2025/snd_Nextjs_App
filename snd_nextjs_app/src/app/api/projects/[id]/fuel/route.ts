@@ -113,6 +113,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       equipmentId,
       operatorId,
       usageNotes,
+      purchaseDate,
     } = body;
 
     // Validation
@@ -133,7 +134,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         unitPrice: parseFloat(unitPrice).toString(),
         totalCost: totalCost.toString(),
         supplier,
-        purchaseDate: new Date().toISOString().split('T')[0],
+        // Store dates as YYYY-MM-DD strings to avoid timezone issues
+        purchaseDate: purchaseDate ? purchaseDate.split('T')[0] : new Date().toISOString().split('T')[0],
         equipmentId: equipmentId ? parseInt(equipmentId) : null,
         operatorId: operatorId ? parseInt(operatorId) : null,
         usageNotes,
@@ -210,6 +212,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       operatorId,
       usageNotes,
       status,
+      purchaseDate,
     } = body;
 
     // Validation
@@ -229,6 +232,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         unitPrice: parseFloat(unitPrice).toString(),
         totalCost: totalCost.toString(),
         supplier,
+        // Store dates as YYYY-MM-DD strings to avoid timezone issues
+        ...(purchaseDate !== undefined && { purchaseDate: purchaseDate ? purchaseDate.split('T')[0] : null }),
         equipmentId: equipmentId ? parseInt(equipmentId) : null,
         operatorId: operatorId ? parseInt(operatorId) : null,
         usageNotes,

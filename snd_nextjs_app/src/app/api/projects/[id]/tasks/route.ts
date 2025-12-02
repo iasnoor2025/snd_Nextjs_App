@@ -66,9 +66,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       .where(and(...whereConditions))
       .orderBy(asc(projectTasks.order), desc(projectTasks.createdAt));
 
+    // Format dates as YYYY-MM-DD strings to avoid timezone issues
+    const formattedTasks = tasks.map(task => ({
+      ...task,
+      startDate: task.startDate ? String(task.startDate).split('T')[0] : null,
+      dueDate: task.dueDate ? String(task.dueDate).split('T')[0] : null,
+    }));
+
     return NextResponse.json({ 
       success: true,
-      data: tasks 
+      data: formattedTasks 
     });
   } catch (error) {
     console.error('Error fetching project tasks:', error);
@@ -130,8 +137,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         status,
         priority,
         assignedToId: assignedToId ? parseInt(assignedToId) : null,
-        startDate: startDate ? new Date(startDate).toISOString().split('T')[0] : null,
-        dueDate: dueDate ? new Date(dueDate).toISOString().split('T')[0] : null,
+        // Store dates as YYYY-MM-DD strings to avoid timezone issues
+        startDate: startDate ? startDate.split('T')[0] : null,
+        dueDate: dueDate ? dueDate.split('T')[0] : null,
         estimatedHours: estimatedHours ? parseFloat(estimatedHours).toString() : null,
         parentTaskId: parentTaskId ? parseInt(parentTaskId) : null,
         order,

@@ -145,7 +145,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         description,
         category,
         amount: amountValue.toString(),
-        expenseDate: new Date(expenseDate).toISOString().split('T')[0],
+        // Store dates as YYYY-MM-DD strings to avoid timezone issues
+        expenseDate: expenseDate ? expenseDate.split('T')[0] : null,
         receiptNumber: receiptNumber || '',
         paymentMethod: paymentMethod || 'cash',
         vendor: vendor || '',
@@ -258,7 +259,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         description,
         category,
         amount: amountValue.toString(),
-        expenseDate: new Date(expenseDate).toISOString().split('T')[0],
+        // Store dates as YYYY-MM-DD strings to avoid timezone issues
+        expenseDate: expenseDate ? expenseDate.split('T')[0] : null,
         receiptNumber,
         approvedBy: approvedBy ? parseInt(approvedBy) : null,
         status: status || 'pending',

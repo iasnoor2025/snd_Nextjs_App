@@ -21,19 +21,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
 import ApiService from '@/lib/api-service';
 import { format } from 'date-fns';
 import { CalendarIcon, Target } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-
-interface Employee {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email?: string;
-  position?: string;
-}
 
 interface TaskResource {
   id?: string;
@@ -79,7 +72,6 @@ export default function TaskDialog({
   initialData,
   onSuccess,
 }: TaskDialogProps) {
-  const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<TaskResource>({
     title: '',
@@ -92,19 +84,31 @@ export default function TaskDialog({
     notes: '',
   });
 
-  // Load employees when dialog opens
-  useEffect(() => {
-    if (open) {
-      loadEmployees();
-    }
-  }, [open]);
+  // Helper function to parse date string as local date (avoids timezone issues)
+  const parseLocalDate = (dateString: string | undefined): Date | null => {
+    if (!dateString) return null;
+    const dateStr = dateString.split('T')[0];
+    const [year, month, day] = dateStr.split('-').map(Number);
+    if (isNaN(year) || isNaN(month) || isNaN(day)) return null;
+    return new Date(year, month - 1, day);
+  };
+
+  // Helper function to format date for input (YYYY-MM-DD)
+  const formatDateForInput = (date: Date | undefined): string => {
+    if (!date) return '';
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
   // Initialize form data when editing
   useEffect(() => {
     if (initialData) {
       setFormData({
         ...initialData,
-        due_date: initialData.due_date || '',
+        // Ensure due_date is in YYYY-MM-DD format
+        due_date: initialData.due_date ? initialData.due_date.split('T')[0] : '',
       });
     } else {
       setFormData({
@@ -119,17 +123,6 @@ export default function TaskDialog({
       });
     }
   }, [initialData]);
-
-  const loadEmployees = async () => {
-    try {
-      const response = await ApiService.get<{ data: Employee[] }>('/employees');
-      const employeesData = Array.isArray(response.data) ? response.data : (response.data?.data || []);
-      setEmployees(employeesData);
-    } catch (error) {
-      // API service already handles fallback to mock data
-      setEmployees([]);
-    }
-  };
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
@@ -298,15 +291,20 @@ export default function TaskDialog({
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start text-left font-normal">
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.due_date ? format(new Date(formData.due_date), 'PPP') : 'Pick a date'}
+                    {formData.due_date 
+                      ? (() => {
+                          const date = parseLocalDate(formData.due_date);
+                          return date ? format(date, 'PPP') : formData.due_date;
+                        })()
+                      : 'Pick a date'}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
                   <Calendar
                     mode="single"
-                    selected={formData.due_date ? new Date(formData.due_date) : undefined}
+                    selected={formData.due_date ? parseLocalDate(formData.due_date) || undefined : undefined}
                     onSelect={date =>
-                      handleInputChange('due_date', date?.toISOString().split('T')[0] || '')
+                      handleInputChange('due_date', formatDateForInput(date))
                     }
                     initialFocus
                   />
@@ -337,22 +335,11 @@ export default function TaskDialog({
           {/* Assign To */}
           <div className="space-y-2">
             <Label htmlFor="assigned_to_id">Assign To</Label>
-            <Select
-              value={formData.assigned_to_id || 'none'}
-              onValueChange={value => handleInputChange('assigned_to_id', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select employee" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Not Assigned</SelectItem>
-                {employees.map(employee => (
-                  <SelectItem key={employee.id} value={employee.id}>
-                    {employee.first_name} {employee.last_name} - {employee.position}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <EmployeeDropdown
+              value={formData.assigned_to_id === 'none' ? '' : formData.assigned_to_id}
+              onValueChange={value => handleInputChange('assigned_to_id', value || 'none')}
+              placeholder="Select employee to assign"
+            />
           </div>
 
           {/* Notes */}
