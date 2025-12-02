@@ -55,6 +55,8 @@ export default function ManpowerDialog({
 }: ManpowerDialogProps) {
   const [loading, setLoading] = useState(false);
   const [useEmployee, setUseEmployee] = useState(initialData?.employee_id ? true : false);
+  const [originalTotalDays, setOriginalTotalDays] = useState<number | undefined>(initialData?.total_days);
+  const [originalEndDate, setOriginalEndDate] = useState<string | undefined>(initialData?.end_date);
   const [formData, setFormData] = useState<ManpowerResource>({
     employee_id: '',
     employee_name: '',
@@ -76,6 +78,20 @@ export default function ManpowerDialog({
   // Initialize form data when editing
   useEffect(() => {
     if (initialData) {
+      // Recalculate total_days from dates if both dates exist
+      let calculatedTotalDays = initialData.total_days;
+      if (initialData.start_date && initialData.end_date) {
+        const start = new Date(initialData.start_date);
+        const end = new Date(initialData.end_date);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
+        const diffTime = end.getTime() - start.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        calculatedTotalDays = diffDays + 1; // Inclusive of both start and end days
+      }
+      
+      setOriginalTotalDays(calculatedTotalDays || initialData.total_days);
+      setOriginalEndDate(initialData.end_date);
       setFormData({
         ...initialData,
         start_date: initialData.start_date
@@ -84,6 +100,7 @@ export default function ManpowerDialog({
         end_date: initialData.end_date
           ? new Date(initialData.end_date).toISOString().split('T')[0]
           : '',
+        total_days: calculatedTotalDays || initialData.total_days || 0,
       });
 
       // Auto-detect if this is an employee or worker based on available data
@@ -125,17 +142,77 @@ export default function ManpowerDialog({
   useEffect(() => {
     if (formData.start_date) {
       const start = new Date(formData.start_date);
-      const end = formData.end_date ? new Date(formData.end_date) : new Date();
-      const diffTime = Math.abs(end.getTime() - start.getTime());
-      const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      
+      // Only calculate if end date is provided
+      if (formData.end_date) {
+        const end = new Date(formData.end_date);
+        
+        // Validate dates
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+          return;
+        }
+        
+        // Ensure end date is not before start date
+        if (end < start) {
+          setFormData(prev => ({
+            ...prev,
+            total_days: 0,
+            total_cost: 0,
+          }));
+          return;
+        }
+        
+        // Calculate the difference in days
+        // Set time to midnight to avoid timezone issues
+        start.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
+        
+        const diffTime = end.getTime() - start.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        // Add 1 to include both start and end days (inclusive)
+        const totalDays = diffDays + 1;
 
+        setFormData(prev => ({
+          ...prev,
+          total_days: totalDays,
+          total_cost: (prev.daily_rate || 0) * totalDays,
+        }));
+      } else {
+        // If no end date in form, calculate from start_date to today
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        start.setHours(0, 0, 0, 0);
+        
+        // If start date is in the future, default to 1 day
+        if (start > today) {
+          setFormData(prev => ({
+            ...prev,
+            total_days: 1,
+            total_cost: (prev.daily_rate || 0) * 1,
+          }));
+          return;
+        }
+        
+        // Calculate days from start_date to today
+        const diffTime = today.getTime() - start.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const totalDays = diffDays + 1; // Include both start and end days (inclusive)
+        
+        setFormData(prev => ({
+          ...prev,
+          total_days: totalDays,
+          total_cost: (prev.daily_rate || 0) * totalDays,
+        }));
+      }
+    } else {
+      // If no start date, reset total days and cost
       setFormData(prev => ({
         ...prev,
-        total_days: totalDays,
-        total_cost: (prev.daily_rate || 0) * totalDays,
+        total_days: 0,
+        total_cost: 0,
       }));
     }
-  }, [formData.start_date, formData.end_date, formData.daily_rate]);
+  }, [formData.start_date, formData.end_date, formData.daily_rate, originalTotalDays, originalEndDate]);
 
   const handleInputChange = async (field: string, value: any) => {
     setFormData(prev => {
@@ -165,30 +242,136 @@ export default function ManpowerDialog({
         newData.employee_file_number = '';
       }
 
+      // Handle daily rate - if cleared or set to 0, recalculate from employee's basic salary
+      if (field === 'daily_rate') {
+        const dailyRateValue = value === '' || value === null || value === undefined ? 0 : parseFloat(value) || 0;
+        newData.daily_rate = dailyRateValue;
+        
+        // If daily rate is cleared/0 and we have an employee, recalculate from basic salary
+        if ((dailyRateValue === 0 || value === '' || value === null) && prev.employee_id) {
+          recalculateDailyRateFromEmployee(prev.employee_id, newData);
+        }
+      }
+
       return newData;
     });
+  };
+
+  // Function to recalculate daily rate from employee's basic salary
+  const recalculateDailyRateFromEmployee = async (employeeId: string, currentFormData: ManpowerResource) => {
+    try {
+      // Fetch employee details to get basic salary
+      const response = await ApiService.get(`/employees/${employeeId}`);
+      if (response.success && response.data) {
+        const selectedEmployee = response.data;
+        
+        if (selectedEmployee && selectedEmployee.basic_salary) {
+          const basicSalary = parseFloat(selectedEmployee.basic_salary) || 0;
+          const contractDaysPerMonth = selectedEmployee.contract_days_per_month || 30; // Default to 30 days
+          const dailyRate = basicSalary > 0 && contractDaysPerMonth > 0 
+            ? basicSalary / contractDaysPerMonth 
+            : 0;
+          
+          setFormData(prev => ({
+            ...prev,
+            daily_rate: parseFloat(dailyRate.toFixed(2)),
+          }));
+        }
+      } else {
+        // Fallback: try fetching from public endpoint
+        const fallbackResponse = await ApiService.get('/employees/public?all=true&limit=1000');
+        if (fallbackResponse.success) {
+          const data = fallbackResponse.data;
+          const employeeData = data.data || data || [];
+          const selectedEmployee = employeeData.find((emp: any) => emp.id === employeeId || emp.id?.toString() === employeeId);
+          
+          if (selectedEmployee && selectedEmployee.basic_salary) {
+            const basicSalary = parseFloat(selectedEmployee.basic_salary) || 0;
+            const contractDaysPerMonth = selectedEmployee.contract_days_per_month || 30; // Default to 30 days
+            const dailyRate = basicSalary > 0 && contractDaysPerMonth > 0 
+              ? basicSalary / contractDaysPerMonth 
+              : 0;
+            
+            setFormData(prev => ({
+              ...prev,
+              daily_rate: parseFloat(dailyRate.toFixed(2)),
+            }));
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error recalculating daily rate:', error);
+      // Don't show error to user, just log it
+    }
   };
 
   // Function to fetch employee details and populate form
   const fetchEmployeeDetails = async (employeeId: string, currentFormData: ManpowerResource) => {
     try {
-      const response = await ApiService.get('/employees/public?all=true&limit=1000');
-      if (response.success) {
-        const data = response.data;
-        const employeeData = data.data || data || [];
-        const selectedEmployee = employeeData.find((emp: any) => emp.id === employeeId);
+      // Fetch specific employee details to get basic salary
+      const response = await ApiService.get(`/employees/${employeeId}`);
+      if (response.success && response.data) {
+        const selectedEmployee = response.data;
 
         if (selectedEmployee) {
-          setFormData(prev => ({
-            ...prev,
-            employee_name: `${selectedEmployee.first_name} ${selectedEmployee.last_name}`,
-            employee_file_number: selectedEmployee.file_number || '',
-            name: `${selectedEmployee.first_name} ${selectedEmployee.last_name}`,
-          }));
+          setFormData(prev => {
+            const newData = {
+              ...prev,
+              employee_name: `${selectedEmployee.first_name || ''} ${selectedEmployee.last_name || ''}`.trim(),
+              employee_file_number: selectedEmployee.file_number || '',
+              name: `${selectedEmployee.first_name || ''} ${selectedEmployee.last_name || ''}`.trim(),
+            };
+
+            // Calculate daily rate from basic salary if available
+            // Set daily rate if it's not already set (0 or empty) to allow manual overrides
+            if (selectedEmployee.basic_salary && (!prev.daily_rate || prev.daily_rate === 0)) {
+              const basicSalary = parseFloat(selectedEmployee.basic_salary) || 0;
+              const contractDaysPerMonth = selectedEmployee.contract_days_per_month || 30; // Default to 30 days
+              const dailyRate = basicSalary > 0 && contractDaysPerMonth > 0 
+                ? basicSalary / contractDaysPerMonth 
+                : 0;
+              newData.daily_rate = parseFloat(dailyRate.toFixed(2));
+            }
+
+            return newData;
+          });
+        }
+      } else {
+        // Fallback: try fetching from public endpoint if direct endpoint fails
+        const fallbackResponse = await ApiService.get('/employees/public?all=true&limit=1000');
+        if (fallbackResponse.success) {
+          const data = fallbackResponse.data;
+          const employeeData = data.data || data || [];
+          const selectedEmployee = employeeData.find((emp: any) => emp.id === employeeId || emp.id?.toString() === employeeId);
+
+          if (selectedEmployee) {
+            setFormData(prev => {
+              const newData = {
+                ...prev,
+                employee_name: `${selectedEmployee.first_name || ''} ${selectedEmployee.last_name || ''}`.trim(),
+                employee_file_number: selectedEmployee.file_number || '',
+                name: `${selectedEmployee.first_name || ''} ${selectedEmployee.last_name || ''}`.trim(),
+              };
+
+              // Calculate daily rate from basic salary if available
+              // Set daily rate if it's not already set (0 or empty) to allow manual overrides
+              if (selectedEmployee.basic_salary && (!prev.daily_rate || prev.daily_rate === 0)) {
+                const basicSalary = parseFloat(selectedEmployee.basic_salary) || 0;
+                const contractDaysPerMonth = selectedEmployee.contract_days_per_month || 30; // Default to 30 days
+                const dailyRate = basicSalary > 0 && contractDaysPerMonth > 0 
+                  ? basicSalary / contractDaysPerMonth 
+                  : 0;
+                newData.daily_rate = parseFloat(dailyRate.toFixed(2));
+              }
+
+              return newData;
+            });
+          }
         }
       }
     } catch (error) {
-      
+      console.error('Error fetching employee details:', error);
+      // Don't show error to user, just log it
     }
   };
 
