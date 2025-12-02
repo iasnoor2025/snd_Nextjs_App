@@ -3,6 +3,7 @@ import { employees, salaryIncrements, users } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { and, desc, eq, gte, isNull, lte, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from '@/lib/auth';
 
 // GET /api/salary-increments - List salary increments
 const getSalaryIncrementsHandler = async (_request: NextRequest) => {
@@ -206,10 +207,12 @@ const createSalaryIncrementHandler = async (request: NextRequest) => {
     }
 
     // Get current user ID from session (this will be handled by the permission middleware)
-    const { getServerSession } = await import('next-auth');
-    const { authOptions } = await import('@/lib/auth-config');
     const session = await getServerSession();
     const requestedBy = session?.user?.id;
+
+    if (!requestedBy) {
+      return NextResponse.json({ error: 'User session not found' }, { status: 401 });
+    }
 
     // Get current employee salary information if not provided
     let currentBaseSalary = current_base_salary;
@@ -262,12 +265,18 @@ const createSalaryIncrementHandler = async (request: NextRequest) => {
     if (!newHousingAllowance) newHousingAllowance = currentHousingAllowance;
     if (!newTransportAllowance) newTransportAllowance = currentTransportAllowance;
 
+    // Format dates to YYYY-MM-DD format for date type fields
+    const effectiveDateFormatted = new Date(effective_date).toISOString().split('T')[0];
+    const requestedAtFormatted = new Date().toISOString().split('T')[0];
+    const createdAtFormatted = new Date().toISOString().split('T')[0];
+    const updatedAtFormatted = new Date().toISOString().split('T')[0];
+
     const [inserted] = await db
       .insert(salaryIncrements)
       .values({
         employeeId: parseInt(employee_id),
         incrementType: increment_type,
-        effectiveDate: new Date(effective_date).toISOString(),
+        effectiveDate: effectiveDateFormatted,
         reason: reason || 'Salary increment request',
         currentBaseSalary: String(currentBaseSalary),
         currentFoodAllowance: String(currentFoodAllowance),
@@ -281,10 +290,10 @@ const createSalaryIncrementHandler = async (request: NextRequest) => {
         newTransportAllowance: String(newTransportAllowance),
         status: 'pending',
         notes: notes || null,
-        requestedAt: new Date().toISOString(),
-        requestedBy: requestedBy || null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        requestedAt: requestedAtFormatted,
+        requestedBy: requestedBy,
+        createdAt: createdAtFormatted,
+        updatedAt: updatedAtFormatted,
       })
       .returning();
 
