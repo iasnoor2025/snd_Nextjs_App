@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { EquipmentDropdown } from '@/components/ui/equipment-dropdown';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import ApiService from '@/lib/api-service';
 import { Wrench } from 'lucide-react';
 import React, { useEffect, useState, useRef } from 'react';
@@ -185,14 +186,33 @@ export default function EquipmentDialog({
       if (response.success && response.data) {
         console.log('Raw manpower data:', response.data);
         // Map API response to expected frontend format
-        const mappedManpower = response.data.map((item: any) => ({
-          id: item.id.toString(),
-          employee_name: item.employeeName || '',
-          worker_name: item.workerName || '',
-          job_title: item.jobTitle || '',
-          // Create a display name that prioritizes employee name, then worker name
-          name: item.employeeName ? `${item.employeeName} ${item.employeeLastName || ''}`.trim() : item.workerName || 'Unnamed Worker',
-        }));
+        const mappedManpower = response.data.map((item: any) => {
+          // Construct full employee name from firstName and lastName
+          const employeeFullName = (item.employeeFirstName && item.employeeLastName)
+            ? `${item.employeeFirstName} ${item.employeeLastName}`.trim()
+            : item.employeeFirstName || item.employeeLastName || '';
+          
+          // Use employee name if available, otherwise use worker name
+          const displayName = employeeFullName || item.workerName || 'Unnamed Worker';
+          
+          // Create display label with file number if available
+          const fileNumber = item.employeeFileNumber || '';
+          const displayLabel = fileNumber 
+            ? `${displayName} (File: ${fileNumber})`
+            : displayName;
+          
+          return {
+            id: item.id.toString(),
+            employee_name: employeeFullName,
+            worker_name: item.workerName || '',
+            job_title: item.jobTitle || '',
+            file_number: fileNumber,
+            // Create a display name that prioritizes employee name, then worker name
+            name: displayName,
+            // Label for SearchableSelect
+            label: displayLabel,
+          };
+        });
         setManpowerResources(mappedManpower);
         console.log('Loaded manpower resources:', mappedManpower);
         console.log('Manpower resources count:', mappedManpower.length);
@@ -548,22 +568,22 @@ export default function EquipmentDialog({
                  </Button>
                </div>
              ) : (
-               <Select
+               <SearchableSelect
                  value={formData.operator_id || undefined}
                  onValueChange={value => handleInputChange('operator_id', value)}
-               >
-                 <SelectTrigger className="w-full">
-                   <SelectValue placeholder="Select operator from manpower resources" />
-                 </SelectTrigger>
-                 <SelectContent>
-                   {manpowerResources.map(resource => (
-                     <SelectItem key={resource.id} value={resource.id}>
-                       {resource.employee_name || resource.worker_name || resource.name}
-                       {resource.job_title && ` - ${resource.job_title}`}
-                     </SelectItem>
-                   ))}
-                 </SelectContent>
-               </Select>
+                 options={manpowerResources.map(resource => ({
+                   value: resource.id,
+                   label: `${resource.label || resource.name}${resource.job_title ? ` - ${resource.job_title}` : ''}`,
+                   name: resource.name,
+                   file_number: resource.file_number || '',
+                   job_title: resource.job_title || '',
+                 }))}
+                 placeholder="Select operator from manpower resources"
+                 searchPlaceholder="Search by name or file number..."
+                 emptyMessage="No operators found"
+                 searchFields={['label', 'name', 'file_number', 'job_title']}
+                 loading={loadingManpower}
+               />
              )}
 
             {/* Show selected operator details */}
