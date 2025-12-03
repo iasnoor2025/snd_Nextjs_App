@@ -117,13 +117,14 @@ const updateProjectEquipmentHandler = async (
   }
 }
 
-export async function DELETE(
+const deleteProjectEquipmentHandler = async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string; equipmentId: string }> }
-) {
+) => {
   try {
     const session = await getServerSession();
     if (!session?.user) {
+      // This should not happen as withPermission handles auth, but keep for safety
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -183,7 +184,7 @@ export async function DELETE(
 const getProjectEquipmentHandler = async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string; equipmentId: string }> }
-) {
+) => {
   try {
     const session = await getServerSession();
     if (!session?.user) {
