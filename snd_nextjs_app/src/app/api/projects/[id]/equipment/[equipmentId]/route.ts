@@ -4,15 +4,16 @@ import { projectEquipment, projects } from '@/lib/drizzle/schema';
 import { EquipmentStatusService } from '@/lib/services/equipment-status-service';
 import { eq, and } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-
-export async function PUT(
+const updateProjectEquipmentHandler = async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string; equipmentId: string }> }
-) {
+) => {
   try {
     const session = await getServerSession();
     if (!session?.user) {
+      // This should not happen as withPermission handles auth, but keep for safety
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -177,9 +178,9 @@ export async function DELETE(
     console.error('Error deleting project equipment:', error);
     return NextResponse.json({ error: 'Failed to delete project equipment' }, { status: 500 });
   }
-}
+};
 
-export async function GET(
+const getProjectEquipmentHandler = async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string; equipmentId: string }> }
 ) {
@@ -224,4 +225,8 @@ export async function GET(
     console.error('Error fetching project equipment:', error);
     return NextResponse.json({ error: 'Failed to fetch project equipment' }, { status: 500 });
   }
-}
+};
+
+export const GET = withPermission(PermissionConfigs.project.read)(getProjectEquipmentHandler);
+export const PUT = withPermission(PermissionConfigs.project.update)(updateProjectEquipmentHandler);
+export const DELETE = withPermission(PermissionConfigs.project.delete)(deleteProjectEquipmentHandler);

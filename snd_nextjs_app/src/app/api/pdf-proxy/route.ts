@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withReadPermission } from '@/lib/rbac/api-middleware';
 
-export async function GET(request: NextRequest) {
+const proxyPdfHandler = async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const pdfUrl = searchParams.get('url');
@@ -67,5 +68,7 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+};
+
+export const GET = withReadPermission('Document')(proxyPdfHandler);
 

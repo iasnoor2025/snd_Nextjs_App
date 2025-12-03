@@ -16,37 +16,19 @@ import {
   roleHasPermissions,
 } from '@/lib/drizzle/schema';
 import { and, desc, eq, gte } from 'drizzle-orm';
-import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { checkUserPermission } from '@/lib/rbac/permission-service';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
+import { getServerSession } from '@/lib/auth';
 
-export async function GET(_request: NextRequest) {
+const getEmployeeDashboardHandler = async (_request: NextRequest) => {
   try {
-    // Get the current user session
+    // Get the current user session (for user ID in handler)
     const session = await getServerSession();
+    const userId = session?.user?.id;
 
-    if (!session?.user?.id) {
-      console.log('❌ No session or user ID found');
+    if (!userId) {
+      // This should not happen as withPermission handles auth, but keep for safety
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    const userId = session.user.id;
-    console.log('🔍 Session user:', {
-      id: userId,
-      email: session.user.email,
-      role: session.user.role
-    });
-
-    // Check if user has permission to access employee dashboard
-    // This will check for wildcard permissions (*, manage.all) as well as specific permissions
-    const permissionCheck = await checkUserPermission(userId, 'read', 'mydashboard');
-    
-    if (!permissionCheck.hasPermission) {
-      console.log('❌ User does not have permission to access employee dashboard:', permissionCheck.reason);
-      return NextResponse.json(
-        { error: 'Access denied. Permission required to access employee dashboard.' },
-        { status: 403 }
-      );
     }
 
     console.log('✅ User has permission to access employee dashboard');
@@ -458,4 +440,6 @@ export async function GET(_request: NextRequest) {
     console.error('Employee dashboard error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}
+};
+
+export const GET = withPermission(PermissionConfigs.dashboard.read)(getEmployeeDashboardHandler);

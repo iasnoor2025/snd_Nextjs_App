@@ -3,12 +3,13 @@ import { db } from '@/lib/drizzle';
 import { projectMaterials, projects, employees } from '@/lib/drizzle/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+const getProjectMaterialsHandler = async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
     const session = await getServerSession();
     if (!session?.user) {
+      // This should not happen as withPermission handles auth, but keep for safety
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -78,12 +79,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     console.error('Error fetching project materials:', error);
     return NextResponse.json({ error: 'Failed to fetch project materials' }, { status: 500 });
   }
-}
+};
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+const createProjectMaterialHandler = async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
     const session = await getServerSession();
     if (!session?.user) {
+      // This should not happen as withPermission handles auth, but keep for safety
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -156,12 +158,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     console.error('Error adding material:', error);
     return NextResponse.json({ error: 'Failed to add material' }, { status: 500 });
   }
-}
+};
 
-export async function PUT(
+const updateProjectMaterialHandler = async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const session = await getServerSession();
     if (!session?.user) {
@@ -251,12 +253,12 @@ export async function PUT(
     console.error('Error updating project material:', error);
     return NextResponse.json({ error: 'Failed to update project material' }, { status: 500 });
   }
-}
+};
 
-export async function DELETE(
+const deleteProjectMaterialHandler = async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const session = await getServerSession();
     if (!session?.user) {
@@ -307,4 +309,9 @@ export async function DELETE(
     console.error('Error deleting project material:', error);
     return NextResponse.json({ error: 'Failed to delete project material' }, { status: 500 });
   }
-}
+};
+
+export const GET = withPermission(PermissionConfigs.project.read)(getProjectMaterialsHandler);
+export const POST = withPermission(PermissionConfigs.project.update)(createProjectMaterialHandler);
+export const PUT = withPermission(PermissionConfigs.project.update)(updateProjectMaterialHandler);
+export const DELETE = withPermission(PermissionConfigs.project.delete)(deleteProjectMaterialHandler);

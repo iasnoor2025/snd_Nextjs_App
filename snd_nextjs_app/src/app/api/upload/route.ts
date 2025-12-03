@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { config as dotenvConfig } from 'dotenv';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 // Load environment variables
 dotenvConfig({ path: '.env.local' });
 
-export async function POST(request: NextRequest) {
+const uploadFileHandler = async (request: NextRequest) => {
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -118,7 +119,9 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+};
+
+export const POST = withPermission(PermissionConfigs.document.upload)(uploadFileHandler);
 
 // Note: Next.js 16 App Router handles body parsing automatically
 // No need for the deprecated config export

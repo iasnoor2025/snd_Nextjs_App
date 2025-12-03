@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { getServerSession } from '@/lib/auth';
 
 import { db } from '@/lib/drizzle';
 import { users, roles, permissions, roleHasPermissions, modelHasRoles } from '@/lib/drizzle/schema';
 import { eq, inArray } from 'drizzle-orm';
 
-export async function GET(request: NextRequest) {
+const getUserPermissionsHandler = async (request: NextRequest) => {
   try {
-    // Get the current user's session
+    // Get the current user's session (for user ID in handler)
     const session = await getServerSession();
     
     if (!session?.user?.id) {
-      console.log('❌ API: No valid session found');
+      // This should not happen as withPermission handles auth, but keep for safety
       return NextResponse.json(
         { error: 'Unauthorized - No valid session' },
         { status: 401 }
@@ -114,4 +115,6 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+};
+
+export const GET = withPermission(PermissionConfigs.user.read)(getUserPermissionsHandler);

@@ -5,32 +5,20 @@ import { eq } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
-import { checkUserPermission } from '@/lib/rbac/permission-service';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 // GET /api/profile - Get current user profile
-export async function GET(_request: NextRequest) {
-  // Get the current user session
+const getProfileHandler = async (_request: NextRequest) => {
+  // Get the current user session (for user ID in handler)
   const session = await getServerSession();
 
   if (!session?.user?.id) {
+    // This should not happen as withPermission handles auth, but keep for safety
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
   try {
     const userId = session.user.id;
-
-    // Check if user has permission to access their own profile
-    const permissionCheck = await checkUserPermission(userId, 'read', 'own-profile');
-    
-    if (!permissionCheck.hasPermission) {
-      console.log('❌ User does not have permission to access profile:', permissionCheck.reason);
-      return NextResponse.json(
-        { error: 'Access denied. Permission required to access profile.' },
-        { status: 403 }
-      );
-    }
-
-    console.log('✅ User has permission to access profile');
 
     // Debug: Check what employees exist in the database
         const allEmployees = await db
@@ -334,27 +322,15 @@ export async function GET(_request: NextRequest) {
 // PUT /api/profile - Update user profile
 export async function POST(_request: NextRequest) {
   try {
-    // Get the current user session
+    // Get the current user session (for user ID in handler)
     const session = await getServerSession();
 
     if (!session?.user?.id) {
+      // This should not happen as withPermission handles auth, but keep for safety
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     const userId = session.user.id;
-
-    // Check if user has permission to update their own profile
-    const permissionCheck = await checkUserPermission(userId, 'update', 'own-profile');
-    
-    if (!permissionCheck.hasPermission) {
-      console.log('❌ User does not have permission to update profile:', permissionCheck.reason);
-      return NextResponse.json(
-        { error: 'Access denied. Permission required to update profile.' },
-        { status: 403 }
-      );
-    }
-
-    console.log('✅ User has permission to update profile');
 
     const body = await _request.json();
     const {

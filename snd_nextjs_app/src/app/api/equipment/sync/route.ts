@@ -7,13 +7,10 @@ import { getServerSession } from '@/lib/auth';
 import { withPermission } from '@/lib/rbac/api-middleware';
 import { PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-export const POST = withPermission(PermissionConfigs.equipment.sync)(async () => {
+const syncEquipmentHandler = async () => {
   try {
-    // Check authentication
+    // Get session for user ID if needed (middleware handles auth)
     const session = await getServerSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     // Validate environment variables - check both NEXT_PUBLIC_ and non-NEXT_PUBLIC_ versions
     const ERPNEXT_URL = process.env.NEXT_PUBLIC_ERPNEXT_URL || process.env.ERPNEXT_URL;
@@ -257,4 +254,6 @@ export const POST = withPermission(PermissionConfigs.equipment.sync)(async () =>
       { status: 500 }
     );
   }
-});
+};
+
+export const POST = withPermission(PermissionConfigs.equipment.sync)(syncEquipmentHandler);

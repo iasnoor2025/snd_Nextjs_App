@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { COUNTRIES, mapCountryToResponse } from '@/lib/data/countries';
+import { withReadPermission } from '@/lib/rbac/api-middleware';
 
 // Simple in-memory cache
 let cachedAll: any[] | null = null;
@@ -14,7 +15,7 @@ function getAllCountries() {
   return cachedAll;
 }
 
-export async function GET(request: NextRequest) {
+const getCountriesHandler = async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const search = (searchParams.get('search') || '').trim().toLowerCase();
@@ -40,5 +41,7 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+};
+
+export const GET = withReadPermission('Settings')(getCountriesHandler);
 

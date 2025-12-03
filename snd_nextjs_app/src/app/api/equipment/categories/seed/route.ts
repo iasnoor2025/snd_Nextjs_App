@@ -1,21 +1,10 @@
-
 import { db } from '@/lib/drizzle';
 import { equipmentCategories } from '@/lib/drizzle/schema';
-import { getServerSession } from '@/lib/auth';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(_request: NextRequest) {
+const seedCategoriesHandler = async (_request: NextRequest) => {
   try {
-    // Check authentication
-    const session = await getServerSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check if user is super admin
-    if (session.user.role !== 'super_admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
 
     const categories = [
       {
@@ -188,4 +177,6 @@ export async function POST(_request: NextRequest) {
       { status: 500 }
     );
   }
-}
+};
+
+export const POST = withPermission(PermissionConfigs.settings.manage)(seedCategoriesHandler);

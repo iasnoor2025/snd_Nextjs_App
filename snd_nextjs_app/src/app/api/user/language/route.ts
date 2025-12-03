@@ -4,13 +4,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-export async function GET() {
+const getLanguageHandler = async () => {
   try {
-    // Get the user session
+    // Get the user session (for user ID in handler)
     const session = await getServerSession();
 
     if (!session?.user?.id) {
+      // This should not happen as withPermission handles auth, but keep for safety
       return NextResponse.json(
         {
           success: false,
@@ -56,14 +58,15 @@ export async function GET() {
       { status: 500 }
     );
   }
-}
+};
 
-export async function PUT(request: NextRequest) {
+const updateLanguageHandler = async (request: NextRequest) => {
   try {
-    // Get the user session
+    // Get the user session (for user ID in handler)
     const session = await getServerSession();
 
     if (!session?.user?.id) {
+      // This should not happen as withPermission handles auth, but keep for safety
       return NextResponse.json(
         {
           success: false,
@@ -139,4 +142,7 @@ export async function PUT(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+};
+
+export const GET = withPermission(PermissionConfigs['own-profile'].read)(getLanguageHandler);
+export const PUT = withPermission(PermissionConfigs['own-profile'].update)(updateLanguageHandler);

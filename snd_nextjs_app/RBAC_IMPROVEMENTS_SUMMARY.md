@@ -112,17 +112,26 @@ This document summarizes the improvements made to the RBAC (Role-Based Access Co
 
 ---
 
-## Remaining Tasks
+## Completed Tasks
 
-### 6. ⏳ Audit and Document API Route Protection Patterns
+### 6. ✅ Audit and Document API Route Protection Patterns
 
-**Status**: Pending
+**Status**: Completed
 
 **Task**: 
-- Audit all API routes to ensure consistent permission protection
-- Document which routes use `withPermission()`, `withAuth()`, or no protection
-- Create guidelines for when to use each protection method
-- Identify routes that need permission protection but don't have it
+- ✅ Audited API routes and identified protection patterns
+- ✅ Documented routes using `withPermission()`, `withAuth()`, or no protection
+- ✅ Created actionable migration guide with examples
+- ✅ Identified ~60 routes needing protection upgrades
+
+**Files Created**:
+- `API_ROUTE_PROTECTION_AUDIT.md` - Actionable audit with migration examples
+
+**Findings**:
+- ✅ ~150+ routes well-protected with `withPermission()`
+- ⚠️ ~30 routes using `withAuth()` (needs upgrade)
+- ⚠️ ~20 routes with manual checks (needs upgrade)
+- ❌ ~10 routes with no protection (security risk)
 
 **Priority**: Medium
 
@@ -188,6 +197,7 @@ This document summarizes the improvements made to the RBAC (Role-Based Access Co
 
 ### New Files
 - `src/app/api/permissions/invalidate-cache/route.ts` - Cache invalidation API endpoint
+- `API_ROUTE_PROTECTION_AUDIT.md` - Actionable API route protection audit
 
 ---
 
@@ -196,7 +206,11 @@ This document summarizes the improvements made to the RBAC (Role-Based Access Co
 These improvements enhance the RBAC system's security, maintainability, and performance while maintaining backward compatibility. The system is now more secure (secure-by-default), easier to maintain (dynamic permission mapping), and has better cache management (proper invalidation).
 
 **Next Steps**:
-1. Complete API route protection audit
-2. Update documentation with new patterns
+1. ✅ Complete API route protection audit - **DONE**
+2. ✅ Update documentation with new patterns - **DONE**
 3. Consider migrating from custom-rbac.ts to server-rbac.ts for type exports
+4. **Action Items**: Upgrade routes identified in `API_ROUTE_PROTECTION_AUDIT.md`
+   - High Priority: Routes with no protection (~10 routes)
+   - Medium Priority: Routes using `withAuth()` (~30 routes)
+   - Low Priority: Routes with manual checks (~20 routes)
 

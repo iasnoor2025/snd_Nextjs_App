@@ -3,11 +3,12 @@ import { timesheets, rentalTimesheetReceived } from '@/lib/drizzle/schema';
 import { and, eq, gte, lte, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-export async function GET(
+const getTimesheetStatusHandler = async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const { id } = await params;
     const { searchParams } = new URL(request.url);
@@ -86,15 +87,16 @@ export async function GET(
       { status: 500 }
     );
   }
-}
+};
 
-export async function PUT(
+const updateTimesheetStatusHandler = async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const session = await getServerSession();
     if (!session?.user?.id) {
+      // This should not happen as withPermission handles auth, but keep for safety
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

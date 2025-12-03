@@ -2,8 +2,9 @@ import { db } from '@/lib/drizzle';
 import { customers } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-export async function POST(_request: NextRequest) {
+const syncCustomersHandler = async (_request: NextRequest) => {
   try {
 
     // Parse request body to get matched data
@@ -196,4 +197,6 @@ export async function POST(_request: NextRequest) {
       { status: 500 }
     );
   }
-}
+};
+
+export const POST = withPermission(PermissionConfigs.customer.sync)(syncCustomersHandler);

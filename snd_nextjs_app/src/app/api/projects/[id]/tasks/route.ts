@@ -3,12 +3,13 @@ import { db } from '@/lib/drizzle';
 import { projectTasks, projects, employees } from '@/lib/drizzle/schema';
 import { eq, and, desc, asc } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+const getProjectTasksHandler = async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
     const session = await getServerSession();
     if (!session?.user) {
+      // This should not happen as withPermission handles auth, but keep for safety
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -81,12 +82,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     console.error('Error fetching project tasks:', error);
     return NextResponse.json({ error: 'Failed to fetch project tasks' }, { status: 500 });
   }
-}
+};
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+const createProjectTaskHandler = async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
     const session = await getServerSession();
     if (!session?.user) {
+      // This should not happen as withPermission handles auth, but keep for safety
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -156,4 +158,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     console.error('Error creating project task:', error);
     return NextResponse.json({ error: 'Failed to create project task' }, { status: 500 });
   }
-}
+};
+
+export const GET = withPermission(PermissionConfigs.project.read)(getProjectTasksHandler);
+export const POST = withPermission(PermissionConfigs.project.update)(createProjectTaskHandler);

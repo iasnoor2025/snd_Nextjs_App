@@ -4,13 +4,15 @@ import { departments, designations, employees, users } from '@/lib/drizzle/schem
 import { and, eq, ne } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 // GET /api/user/nation-id - Check if user has nation ID
-export async function POST(_request: NextRequest) {
+const checkNationIdHandler = async (_request: NextRequest) => {
   try {
     const session = await getServerSession();
 
     if (!session?.user?.id) {
+      // This should not happen as withPermission handles auth, but keep for safety
       return NextResponse.json(
         {
           error: 'Not authenticated',
@@ -292,4 +294,6 @@ export async function PUT(_request: NextRequest) {
     
     return NextResponse.json({ error: 'Failed to update nation ID' }, { status: 500 });
   }
-}
+};
+
+export const POST = withPermission(PermissionConfigs['own-profile'].read)(checkNationIdHandler);

@@ -3,12 +3,13 @@ import { db } from '@/lib/drizzle';
 import { projectFuel, projects, equipment, employees } from '@/lib/drizzle/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+const getProjectFuelHandler = async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
     const session = await getServerSession();
     if (!session?.user) {
+      // This should not happen as withPermission handles auth, but keep for safety
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -314,4 +315,6 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     console.error('Error deleting fuel record:', error);
     return NextResponse.json({ error: 'Failed to delete fuel record' }, { status: 500 });
   }
-}
+};
+
+export const GET = withPermission(PermissionConfigs.project.read)(getProjectFuelHandler);

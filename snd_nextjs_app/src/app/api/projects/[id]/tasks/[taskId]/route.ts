@@ -3,15 +3,16 @@ import { db } from '@/lib/drizzle';
 import { projectTasks, projects } from '@/lib/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-
-export async function PUT(
+const updateProjectTaskHandler = async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string; taskId: string }> }
-) {
+) => {
   try {
     const session = await getServerSession();
     if (!session?.user) {
+      // This should not happen as withPermission handles auth, but keep for safety
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -100,15 +101,16 @@ export async function PUT(
     console.error('Error updating project task:', error);
     return NextResponse.json({ error: 'Failed to update project task' }, { status: 500 });
   }
-}
+};
 
-export async function DELETE(
+const deleteProjectTaskHandler = async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string; taskId: string }> }
-) {
+) => {
   try {
     const session = await getServerSession();
     if (!session?.user) {
+      // This should not happen as withPermission handles auth, but keep for safety
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -154,13 +156,14 @@ export async function DELETE(
   }
 }
 
-export async function GET(
+const getProjectTaskHandler = async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string; taskId: string }> }
-) {
+) => {
   try {
     const session = await getServerSession();
     if (!session?.user) {
+      // This should not happen as withPermission handles auth, but keep for safety
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -199,4 +202,8 @@ export async function GET(
     console.error('Error fetching project task:', error);
     return NextResponse.json({ error: 'Failed to fetch project task' }, { status: 500 });
   }
-}
+};
+
+export const GET = withPermission(PermissionConfigs.project.read)(getProjectTaskHandler);
+export const PUT = withPermission(PermissionConfigs.project.update)(updateProjectTaskHandler);
+export const DELETE = withPermission(PermissionConfigs.project.delete)(deleteProjectTaskHandler);

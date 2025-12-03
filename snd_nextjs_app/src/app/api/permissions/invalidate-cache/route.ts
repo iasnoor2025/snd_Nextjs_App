@@ -1,34 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
-import { checkUserPermission } from '@/lib/rbac/permission-service';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { clearAllPermissionCaches, clearUserPermissionCache } from '@/lib/rbac/permission-service';
 
 /**
  * API endpoint to invalidate permission caches
  * Requires 'manage.Settings' permission to prevent abuse
  */
-export async function POST(request: NextRequest) {
+const invalidateCacheHandler = async (request: NextRequest) => {
   try {
     const session = await getServerSession();
     
     if (!session?.user?.id) {
+      // This should not happen as withPermission handles auth, but keep for safety
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
-      );
-    }
-
-    // Check if user has permission to manage settings (required for cache invalidation)
-    const permissionCheck = await checkUserPermission(
-      session.user.id,
-      'manage',
-      'Settings'
-    );
-
-    if (!permissionCheck.hasPermission) {
-      return NextResponse.json(
-        { error: 'Insufficient permissions to invalidate cache' },
-        { status: 403 }
       );
     }
 
@@ -56,5 +43,7 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+};
+
+export const POST = withPermission(PermissionConfigs.settings.manage)(invalidateCacheHandler);
 

@@ -3,8 +3,9 @@ import { rentals } from '@/lib/drizzle/schema';
 import { ERPNextInvoiceService } from '@/lib/services/erpnext-invoice-service';
 import { eq, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-export async function POST(_request: NextRequest) {
+const syncInvoicesHandler = async (_request: NextRequest) => {
   try {
     console.log('Starting bulk invoice sync to detect deleted invoices...');
     
@@ -159,9 +160,9 @@ export async function POST(_request: NextRequest) {
       { status: 500 }
     );
   }
-}
+};
 
-export async function GET(_request: NextRequest) {
+const getInvoiceStatusHandler = async (_request: NextRequest) => {
   try {
     // Get all rentals with invoices for status check
     const rentalsWithInvoices = await db

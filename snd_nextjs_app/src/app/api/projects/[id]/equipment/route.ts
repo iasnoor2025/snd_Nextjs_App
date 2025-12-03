@@ -5,12 +5,13 @@ import { CentralAssignmentService } from '@/lib/services/central-assignment-serv
 import { EquipmentStatusService } from '@/lib/services/equipment-status-service';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+const getProjectEquipmentHandler = async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
     const session = await getServerSession();
     if (!session?.user) {
+      // This should not happen as withPermission handles auth, but keep for safety
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -91,12 +92,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
-}
+};
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+const createProjectEquipmentHandler = async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
     const session = await getServerSession();
     if (!session?.user) {
+      // This should not happen as withPermission handles auth, but keep for safety
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -165,4 +167,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     console.error('Error assigning equipment:', error);
     return NextResponse.json({ error: 'Failed to assign equipment' }, { status: 500 });
   }
-}
+};
+
+export const GET = withPermission(PermissionConfigs.project.read)(getProjectEquipmentHandler);
+export const POST = withPermission(PermissionConfigs.project.update)(createProjectEquipmentHandler);

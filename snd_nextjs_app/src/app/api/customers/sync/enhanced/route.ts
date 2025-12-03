@@ -2,6 +2,7 @@ import { db } from '@/lib/drizzle';
 import { customers } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 // ERPNext configuration
 const ERPNEXT_URL = process.env.NEXT_PUBLIC_ERPNEXT_URL;
@@ -128,7 +129,7 @@ function mapERPNextCustomerToLocal(erpnextCustomer: any) {
   };
 }
 
-export async function POST(_request: NextRequest) {
+const syncCustomersEnhancedHandler = async (_request: NextRequest) => {
   try {
     // Validate environment variables
     if (!ERPNEXT_URL || !ERPNEXT_API_KEY || !ERPNEXT_API_SECRET) {
@@ -225,4 +226,6 @@ export async function POST(_request: NextRequest) {
       { status: 500 }
     );
   }
-}
+};
+
+export const POST = withPermission(PermissionConfigs.customer.sync)(syncCustomersEnhancedHandler);

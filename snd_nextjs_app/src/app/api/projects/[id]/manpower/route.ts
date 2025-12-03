@@ -4,12 +4,13 @@ import { projectManpower, projects, employees, employeeAssignments } from '@/lib
 import { CentralAssignmentService } from '@/lib/services/central-assignment-service';
 import { eq, and, desc, asc, like } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+const getProjectManpowerHandler = async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
     const session = await getServerSession();
     if (!session?.user) {
+      // This should not happen as withPermission handles auth, but keep for safety
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -72,10 +73,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+const createProjectManpowerHandler = async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
     const session = await getServerSession();
     if (!session?.user) {
+      // This should not happen as withPermission handles auth, but keep for safety
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -213,4 +215,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     console.error('Error assigning manpower:', error);
     return NextResponse.json({ error: 'Failed to assign manpower' }, { status: 500 });
   }
-}
+};
+
+export const GET = withPermission(PermissionConfigs.project.read)(getProjectManpowerHandler);
+export const POST = withPermission(PermissionConfigs.project.update)(createProjectManpowerHandler);

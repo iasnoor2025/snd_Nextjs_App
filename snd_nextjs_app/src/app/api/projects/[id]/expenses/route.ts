@@ -3,12 +3,13 @@ import { db } from '@/lib/drizzle';
 import { projectExpenses, projects, employees } from '@/lib/drizzle/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+const getProjectExpensesHandler = async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
     const session = await getServerSession();
     if (!session?.user) {
+      // This should not happen as withPermission handles auth, but keep for safety
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -84,12 +85,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
-}
+};
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+const createProjectExpenseHandler = async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
     const session = await getServerSession();
     if (!session?.user) {
+      // This should not happen as withPermission handles auth, but keep for safety
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -175,9 +177,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
-}
+};
 
-export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+const updateProjectExpenseHandler = async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
     const session = await getServerSession();
     if (!session?.user) {
@@ -290,9 +292,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
-}
+};
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+const deleteProjectExpenseHandler = async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
     const session = await getServerSession();
     if (!session?.user) {
@@ -360,4 +362,9 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
-}
+};
+
+export const GET = withPermission(PermissionConfigs.project.read)(getProjectExpensesHandler);
+export const POST = withPermission(PermissionConfigs.project.update)(createProjectExpenseHandler);
+export const PUT = withPermission(PermissionConfigs.project.update)(updateProjectExpenseHandler);
+export const DELETE = withPermission(PermissionConfigs.project.delete)(deleteProjectExpenseHandler);

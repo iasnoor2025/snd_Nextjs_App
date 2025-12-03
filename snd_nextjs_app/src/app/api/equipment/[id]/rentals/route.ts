@@ -37,14 +37,10 @@ async function updateEquipmentStatusOnAssignmentChange(
   }
 }
 
-export const GET = withPermission(PermissionConfigs.equipment.read)(
-  async (request: Request, { params }: { params: Promise<{ id: string }> }) => {
+const getEquipmentRentalsHandler = async (request: Request, { params }: { params: Promise<{ id: string }> }) => {
   try {
-    // Check authentication
+    // Get session for user ID if needed (middleware handles auth)
     const session = await getServerSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     console.log('Starting equipment rental history fetch...');
 
@@ -580,16 +576,12 @@ export const GET = withPermission(PermissionConfigs.equipment.read)(
       { status: 500 }
     );
   }
-});
+};
 
-export const POST = withPermission(PermissionConfigs.equipment.create)(
-  async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+const createEquipmentRentalHandler = async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
-    // Check authentication
+    // Get session for user ID if needed (middleware handles auth)
     const session = await getServerSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     const { id: idParam } = await params;
     const id = parseInt(idParam);
@@ -768,4 +760,7 @@ export const POST = withPermission(PermissionConfigs.equipment.create)(
       { status: 500 }
     );
   }
-});
+};
+
+export const GET = withPermission(PermissionConfigs.equipment.read)(getEquipmentRentalsHandler);
+export const POST = withPermission(PermissionConfigs.equipment.create)(createEquipmentRentalHandler);

@@ -2,8 +2,10 @@ import { db } from '@/lib/drizzle';
 import { customers, projects, rentals, employees, locations } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
+import { getServerSession } from '@/lib/auth';
 
-export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+const getProjectHandler = async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
     const { id: projectId } = await params;
 
@@ -291,10 +293,16 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       { status: 500 }
     );
   }
-}
+};
 
-export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+const updateProjectHandler = async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
+    const session = await getServerSession();
+    if (!session?.user) {
+      // This should not happen as withPermission handles auth, but keep for safety
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id: projectId } = await params;
     const body = await request.json();
 
@@ -383,13 +391,19 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     console.error('Error updating project:', error);
     return NextResponse.json({ error: 'Failed to update project' }, { status: 500 });
   }
-}
+};
 
-export async function DELETE(
+const deleteProjectHandler = async (
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
+    const session = await getServerSession();
+    if (!session?.user) {
+      // This should not happen as withPermission handles auth, but keep for safety
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id: projectId } = await params;
 
     await db.delete(projects).where(eq(projects.id, parseInt(projectId)));
@@ -399,4 +413,8 @@ export async function DELETE(
     
     return NextResponse.json({ error: 'Failed to delete project' }, { status: 500 });
   }
-}
+};
+
+export const GET = withPermission(PermissionConfigs.project.read)(getProjectHandler);
+export const PUT = withPermission(PermissionConfigs.project.update)(updateProjectHandler);
+export const DELETE = withPermission(PermissionConfigs.project.delete)(deleteProjectHandler);
