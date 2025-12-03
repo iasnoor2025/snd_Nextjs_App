@@ -16,7 +16,7 @@ import { EquipmentDropdown } from '@/components/ui/equipment-dropdown';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import ApiService from '@/lib/api-service';
 import { Wrench } from 'lucide-react';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 
 interface Equipment {
@@ -128,6 +128,34 @@ export default function EquipmentDialog({
     }
   }, [open, projectId, initialData?.id]);
 
+  // Reset form function
+  const resetForm = useCallback(() => {
+    setFormData({
+      equipment_id: '',
+      equipment_name: '',
+      name: '',
+      operator_id: '',
+      operator_name: '',
+      start_date: '',
+      end_date: '',
+      hourly_rate: 0,
+      usage_hours: 0,
+      maintenance_cost: 0,
+      total_cost: 0,
+      notes: '',
+      status: 'pending',
+    });
+    setIsInitialized(false);
+    hasInitialHourlyRate.current = false;
+  }, []);
+
+  // Reset form when dialog closes (if not editing)
+  useEffect(() => {
+    if (!open && !initialData) {
+      resetForm();
+    }
+  }, [open, initialData, resetForm]);
+
   // Initialize form data when editing
   useEffect(() => {
     if (initialData) {
@@ -173,23 +201,9 @@ export default function EquipmentDialog({
       hasInitialHourlyRate.current = !!(initialData.hourly_rate || (initialData as any).hourlyRate);
       setIsInitialized(true);
     } else {
-      setFormData({
-        equipment_id: '',
-        equipment_name: '',
-        name: '', // Add name field
-        operator_id: '',
-        operator_name: '',
-        start_date: '',
-        end_date: '',
-        hourly_rate: 0,
-        usage_hours: 0,
-        maintenance_cost: 0,
-        total_cost: 0,
-        notes: '',
-        status: 'pending',
-      });
+      resetForm();
     }
-  }, [initialData]);
+  }, [initialData, resetForm]);
 
   // Load equipment for displaying details (EquipmentDropdown handles its own loading)
   const loadEquipmentForDetails = async () => {
@@ -506,6 +520,8 @@ export default function EquipmentDialog({
       } else {
         await ApiService.createProjectEquipment(Number(projectId), submitData);
         toast.success('Equipment resource added successfully');
+        // Reset form after successful creation
+        resetForm();
       }
 
       onSuccess();

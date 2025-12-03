@@ -225,6 +225,36 @@ export default function ManpowerDialog({
     return dateString.split('T')[0];
   };
 
+  // Reset form function
+  const resetForm = useCallback(() => {
+    setFormData({
+      employee_id: '',
+      employee_name: '',
+      employee_file_number: '',
+      worker_name: '',
+      name: '',
+      job_title: '',
+      start_date: '',
+      end_date: '',
+      daily_rate: 0,
+      total_days: 0,
+      total_cost: 0,
+      notes: '',
+      status: 'pending',
+    });
+    setUseEmployee(false);
+    setDuplicateWarnings([]);
+    setOriginalTotalDays(undefined);
+    setOriginalEndDate(undefined);
+  }, []);
+
+  // Reset form when dialog closes (if not editing)
+  useEffect(() => {
+    if (!open && !initialData) {
+      resetForm();
+    }
+  }, [open, initialData, resetForm]);
+
   useEffect(() => {
     if (initialData) {
       // Helper function to parse date string as local date (avoids timezone issues)
@@ -270,24 +300,9 @@ export default function ManpowerDialog({
         setUseEmployee(false);
       }
     } else {
-      setFormData({
-        employee_id: '',
-        employee_name: '',
-        employee_file_number: '',
-        worker_name: '',
-        name: '', // Add name field
-        job_title: '',
-        start_date: '',
-        end_date: '',
-        daily_rate: 0,
-        total_days: 0,
-        total_cost: 0,
-        notes: '',
-        status: 'pending',
-      });
-      setUseEmployee(false);
+      resetForm();
     }
-  }, [initialData]);
+  }, [initialData, resetForm]);
 
   // Employee loading is now handled by the EmployeeDropdown component
 
@@ -604,6 +619,8 @@ export default function ManpowerDialog({
           const response = await ApiService.createProjectManpower(Number(projectId), submitData);
           
           toast.success('Manpower resource added successfully');
+          // Reset form after successful creation
+          resetForm();
         } catch (apiError) {
           // Re-throw the error to be handled by the outer catch block
           throw apiError;
