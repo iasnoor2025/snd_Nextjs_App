@@ -410,9 +410,9 @@ function hasPermissionFallback(user: User, action: Action, subject: Subject): bo
   // Only SUPER_ADMIN has fallback permissions (wildcard access)
   // This is the only exception to the "no hardcoded permissions" rule
   if (user.role === 'SUPER_ADMIN') {
-    return true;
-  }
-
+      return true;
+    }
+    
   // For all other roles, deny access if database is unavailable
   // This ensures security: if we can't verify permissions from database, deny access
   console.error(`⚠️ Database unavailable - denying access for user ${user.id} (role: ${user.role})`);

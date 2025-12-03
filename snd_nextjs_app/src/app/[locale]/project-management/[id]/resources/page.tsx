@@ -268,22 +268,144 @@ export default function ProjectResourcesPage() {
         days_worked: resource.daysWorked,
         start_date: resource.startDate,
         end_date: resource.endDate,
-        total_days: resource.totalDays,
-        // Calculate total cost based on resource type
-        total_cost: (() => {
-          if (resource.type === 'manpower' && resource.dailyRate && resource.totalDays) {
-            return parseFloat(resource.dailyRate) * resource.totalDays;
-          } else if (resource.type === 'equipment' && resource.hourlyRate && resource.estimatedHours) {
-            return parseFloat(resource.hourlyRate) * parseFloat(resource.estimatedHours);
-          } else if (resource.type === 'material' && resource.unitPrice && resource.quantity) {
-            return parseFloat(resource.unitPrice) * parseFloat(resource.quantity);
-          } else if (resource.type === 'fuel' && resource.unitPrice && resource.quantity) {
-            return parseFloat(resource.unitPrice) * parseFloat(resource.quantity);
-          } else if (resource.type === 'expense' && resource.amount) {
-            return parseFloat(resource.amount);
+        // Calculate total days from dates (auto-updates as days pass)
+        total_days: (() => {
+          if (resource.startDate) {
+            const parseLocalDate = (dateString: string): Date => {
+              const dateStr = dateString.split('T')[0];
+              const [year, month, day] = dateStr.split('-').map(Number);
+              return new Date(year, month - 1, day);
+            };
+            
+            try {
+              const start = parseLocalDate(resource.startDate);
+              if (isNaN(start.getTime())) return resource.totalDays ? resource.totalDays : undefined;
+              
+              let end: Date;
+              if (resource.endDate) {
+                const parsedEnd = parseLocalDate(resource.endDate);
+                if (!isNaN(parsedEnd.getTime())) {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  end = parsedEnd > today ? today : parsedEnd;
+                } else {
+                  end = new Date();
+                  end.setHours(0, 0, 0, 0);
+                }
+              } else {
+                end = new Date();
+                end.setHours(0, 0, 0, 0);
+              }
+              
+              const diffTime = Math.abs(end.getTime() - start.getTime());
+              const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+              return diffDays;
+            } catch (e) {
+              return resource.totalDays ? resource.totalDays : undefined;
+            }
           }
-          return undefined;
+          return resource.totalDays ? resource.totalDays : undefined;
         })(),
+         // Calculate total cost based on resource type
+         total_cost: (() => {
+           if (resource.type === 'manpower') {
+             // For manpower, calculate total days from dates first, then calculate cost
+             const calculatedTotalDays = (() => {
+               if (resource.startDate) {
+                 const parseLocalDate = (dateString: string): Date => {
+                   const dateStr = dateString.split('T')[0];
+                   const [year, month, day] = dateStr.split('-').map(Number);
+                   return new Date(year, month - 1, day);
+                 };
+                 
+                 try {
+                   const start = parseLocalDate(resource.startDate);
+                   if (isNaN(start.getTime())) return resource.totalDays ? resource.totalDays : 0;
+                   
+                   let end: Date;
+                   if (resource.endDate) {
+                     const parsedEnd = parseLocalDate(resource.endDate);
+                     if (!isNaN(parsedEnd.getTime())) {
+                       const today = new Date();
+                       today.setHours(0, 0, 0, 0);
+                       end = parsedEnd > today ? today : parsedEnd;
+                     } else {
+                       end = new Date();
+                       end.setHours(0, 0, 0, 0);
+                     }
+                   } else {
+                     end = new Date();
+                     end.setHours(0, 0, 0, 0);
+                   }
+                   
+                   const diffTime = Math.abs(end.getTime() - start.getTime());
+                   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                   return diffDays;
+                 } catch (e) {
+                   return resource.totalDays ? resource.totalDays : 0;
+                 }
+               }
+               return resource.totalDays ? resource.totalDays : 0;
+             })();
+             
+             const dailyRate = resource.dailyRate ? parseFloat(resource.dailyRate) : 0;
+             
+             // Calculate total cost: daily rate * calculated total days
+             return dailyRate * calculatedTotalDays;
+           } else if (resource.type === 'equipment') {
+             // For equipment, calculate usage hours from dates first, then calculate cost
+             const calculatedUsageHours = (() => {
+               if (resource.startDate) {
+                 const parseLocalDate = (dateString: string): Date => {
+                   const dateStr = dateString.split('T')[0];
+                   const [year, month, day] = dateStr.split('-').map(Number);
+                   return new Date(year, month - 1, day);
+                 };
+                 
+                 try {
+                   const start = parseLocalDate(resource.startDate);
+                   if (isNaN(start.getTime())) return resource.estimatedHours ? parseFloat(resource.estimatedHours) : 0;
+                   
+                   let end: Date;
+                   if (resource.endDate) {
+                     const parsedEnd = parseLocalDate(resource.endDate);
+                     if (!isNaN(parsedEnd.getTime())) {
+                       const today = new Date();
+                       today.setHours(0, 0, 0, 0);
+                       end = parsedEnd > today ? today : parsedEnd;
+                     } else {
+                       end = new Date();
+                       end.setHours(0, 0, 0, 0);
+                     }
+                   } else {
+                     end = new Date();
+                     end.setHours(0, 0, 0, 0);
+                   }
+                   
+                   const diffTime = Math.abs(end.getTime() - start.getTime());
+                   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                   return diffDays * 10; // 10 hours per day
+                 } catch (e) {
+                   return resource.estimatedHours ? parseFloat(resource.estimatedHours) : 0;
+                 }
+               }
+               return resource.estimatedHours ? parseFloat(resource.estimatedHours) : 0;
+             })();
+             
+             const hourlyRate = resource.hourlyRate ? parseFloat(resource.hourlyRate) : 0;
+             const maintenanceCost = resource.maintenanceCost ? parseFloat(resource.maintenanceCost) : 0;
+             
+             // Calculate total cost: (hourly rate * calculated usage hours) + maintenance cost
+             return hourlyRate * calculatedUsageHours + maintenanceCost;
+           } else if (resource.type === 'material' && resource.unitPrice && resource.quantity) {
+             return parseFloat(resource.unitPrice) * parseFloat(resource.quantity);
+           } else if (resource.type === 'fuel' && resource.unitPrice && resource.quantity) {
+             return parseFloat(resource.unitPrice) * parseFloat(resource.quantity);
+           } else if (resource.type === 'expense' && resource.amount) {
+             return parseFloat(resource.amount);
+           }
+           return undefined;
+         })(),
 
         // Equipment specific fields
         equipment_id: resource.equipmentId?.toString(),
@@ -298,7 +420,45 @@ export default function ProjectResourcesPage() {
         hours_worked: resource.hoursWorked !== undefined && resource.hoursWorked !== null 
           ? parseFloat(resource.hoursWorked) 
           : undefined,
-        usage_hours: resource.estimatedHours ? parseFloat(resource.estimatedHours) : undefined,
+        // Calculate usage hours from dates (auto-updates as days pass)
+        usage_hours: (() => {
+          if (resource.startDate) {
+            // Use end date if provided and not in the future, otherwise use today
+            const parseLocalDate = (dateString: string): Date => {
+              const dateStr = dateString.split('T')[0];
+              const [year, month, day] = dateStr.split('-').map(Number);
+              return new Date(year, month - 1, day);
+            };
+            
+            try {
+              const start = parseLocalDate(resource.startDate);
+              if (isNaN(start.getTime())) return resource.estimatedHours ? parseFloat(resource.estimatedHours) : undefined;
+              
+              let end: Date;
+              if (resource.endDate) {
+                const parsedEnd = parseLocalDate(resource.endDate);
+                if (!isNaN(parsedEnd.getTime())) {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  end = parsedEnd > today ? today : parsedEnd;
+                } else {
+                  end = new Date();
+                  end.setHours(0, 0, 0, 0);
+                }
+              } else {
+                end = new Date();
+                end.setHours(0, 0, 0, 0);
+              }
+              
+              const diffTime = Math.abs(end.getTime() - start.getTime());
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+              return diffDays * 10; // 10 hours per day
+            } catch (e) {
+              return resource.estimatedHours ? parseFloat(resource.estimatedHours) : undefined;
+            }
+          }
+          return resource.estimatedHours ? parseFloat(resource.estimatedHours) : undefined;
+        })(),
         maintenance_cost: resource.maintenanceCost
           ? parseFloat(resource.maintenanceCost)
           : undefined,
@@ -631,6 +791,99 @@ export default function ProjectResourcesPage() {
     }
   };
 
+  // Helper function to calculate total days from dates for manpower (same logic as ManpowerDialog)
+  const calculateTotalDaysFromDates = (startDate: string | null | undefined, endDate: string | null | undefined): number => {
+    if (!startDate) return 0;
+    
+    try {
+      // Parse dates as local dates (avoid timezone issues)
+      const parseLocalDate = (dateString: string): Date => {
+        const dateStr = dateString.split('T')[0]; // Get YYYY-MM-DD part
+        const [year, month, day] = dateStr.split('-').map(Number);
+        return new Date(year, month - 1, day);
+      };
+      
+      const start = parseLocalDate(startDate);
+      if (isNaN(start.getTime())) return 0;
+      
+      // Use end date if provided and not in the future, otherwise use today
+      let end: Date;
+      if (endDate) {
+        const parsedEnd = parseLocalDate(endDate);
+        if (!isNaN(parsedEnd.getTime())) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          // Use the earlier of end date or today
+          end = parsedEnd > today ? today : parsedEnd;
+        } else {
+          end = new Date();
+          end.setHours(0, 0, 0, 0);
+        }
+      } else {
+        // No end date, use today
+        end = new Date();
+        end.setHours(0, 0, 0, 0);
+      }
+      
+      // Calculate difference in days (inclusive of both start and end dates)
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end dates
+      
+      return diffDays;
+    } catch (error) {
+      console.error('Error calculating total days from dates:', error);
+      return 0;
+    }
+  };
+
+  // Helper function to calculate usage hours from dates (same logic as EquipmentDialog)
+  const calculateUsageHoursFromDates = (startDate: string | null | undefined, endDate: string | null | undefined): number => {
+    if (!startDate) return 0;
+    
+    try {
+      // Parse dates as local dates (avoid timezone issues)
+      const parseLocalDate = (dateString: string): Date => {
+        const dateStr = dateString.split('T')[0]; // Get YYYY-MM-DD part
+        const [year, month, day] = dateStr.split('-').map(Number);
+        return new Date(year, month - 1, day);
+      };
+      
+      const start = parseLocalDate(startDate);
+      if (isNaN(start.getTime())) return 0;
+      
+      // Use end date if provided and not in the future, otherwise use today
+      let end: Date;
+      if (endDate) {
+        const parsedEnd = parseLocalDate(endDate);
+        if (!isNaN(parsedEnd.getTime())) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          // Use the earlier of end date or today
+          end = parsedEnd > today ? today : parsedEnd;
+        } else {
+          end = new Date();
+          end.setHours(0, 0, 0, 0);
+        }
+      } else {
+        // No end date, use today
+        end = new Date();
+        end.setHours(0, 0, 0, 0);
+      }
+      
+      // Calculate difference in days (inclusive of both start and end dates)
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end dates
+      
+      // 10 hours per day (same as EquipmentDialog)
+      const usageHours = diffDays * 10;
+      
+      return usageHours;
+    } catch (error) {
+      console.error('Error calculating usage hours from dates:', error);
+      return 0;
+    }
+  };
+
   // Function to update only equipment data
   const updateEquipmentData = async () => {
     try {
@@ -641,28 +894,46 @@ export default function ProjectResourcesPage() {
       }));
 
       // Transform equipment data to match frontend structure
-      const transformedEquipment = equipmentData.map((resource: any) => ({
-        id: resource.id.toString(),
-        type: resource.type,
-        name: resource.name || resource.title || resource.equipmentName || 'Unnamed Equipment',
-        description: resource.description,
-        quantity: resource.quantity,
-        unit_cost: resource.hourlyRate ? parseFloat(resource.hourlyRate) : undefined,
-        total_cost: resource.hourlyRate && resource.estimatedHours ? 
-          parseFloat(resource.hourlyRate) * parseFloat(resource.estimatedHours) : undefined,
-        date: resource.startDate,
-        status: resource.status,
-        notes: resource.notes,
-                                   equipment_id: resource.equipmentId?.toString(),
+      const transformedEquipment = equipmentData.map((resource: any) => {
+        // Always calculate usage hours from dates if dates are available
+        // This ensures the table shows the correct hours that update automatically as days pass
+        const calculatedUsageHours = calculateUsageHoursFromDates(resource.startDate, resource.endDate);
+        
+        // Use calculated hours if dates are present, otherwise fall back to stored estimatedHours
+        const usageHours = (resource.startDate && calculatedUsageHours > 0) 
+          ? calculatedUsageHours 
+          : (resource.estimatedHours ? parseFloat(resource.estimatedHours) : 0);
+        
+        const hourlyRate = resource.hourlyRate ? parseFloat(resource.hourlyRate) : 0;
+        const maintenanceCost = resource.maintenanceCost ? parseFloat(resource.maintenanceCost) : 0;
+        
+        // Calculate total cost: (hourly rate * usage hours) + maintenance cost
+        const totalCost = hourlyRate * usageHours + maintenanceCost;
+        
+        return {
+          id: resource.id.toString(),
+          type: resource.type,
+          name: resource.name || resource.title || resource.equipmentName || 'Unnamed Equipment',
+          description: resource.description,
+          quantity: resource.quantity,
+          unit_cost: hourlyRate || undefined,
+          total_cost: totalCost > 0 ? totalCost : undefined,
+          date: resource.startDate,
+          status: resource.status,
+          notes: resource.notes,
+          equipment_id: resource.equipmentId?.toString(),
           equipment_name: resource.equipmentName,
           operator_name: resource.operatorName ? `${resource.operatorName} ${resource.operatorLastName || ''}`.trim() : undefined,
-          hourly_rate: resource.hourlyRate ? parseFloat(resource.hourlyRate) : undefined,
+          hourly_rate: hourlyRate || undefined,
           hours_worked: resource.hoursWorked ? parseFloat(resource.hoursWorked) : undefined,
-          usage_hours: resource.estimatedHours ? parseFloat(resource.estimatedHours) : undefined,
-          maintenance_cost: resource.maintenanceCost ? parseFloat(resource.maintenanceCost) : undefined,
-        created_at: resource.createdAt,
-        updated_at: resource.updatedAt,
-      }));
+          usage_hours: usageHours, // This will now show the calculated hours from dates
+          maintenance_cost: maintenanceCost || undefined,
+          start_date: resource.startDate,
+          end_date: resource.endDate,
+          created_at: resource.createdAt,
+          updated_at: resource.updatedAt,
+        };
+      });
 
       // Update only equipment in the resources state
       setResources(prevResources => {
