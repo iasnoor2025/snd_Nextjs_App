@@ -123,59 +123,103 @@ const getEquipmentHandler = async (request: NextRequest) => {
           let currentAssignments: any[] = [];
 
           try {
-            // Get all active assignments from equipmentRentalHistory with related data
-            const rawRentalAssignments = await db
-              .select({
-                equipment_id: equipmentTable.id,
-                assignment_id: equipmentRentalHistory.id,
-                employee_id: employees.id,
-                employee_first_name: employees.firstName,
-                employee_last_name: employees.lastName,
-                project_id: projects.id,
-                project_name: projects.name,
-                rental_id: rentals.id,
-                rental_number: rentals.rentalNumber,
-                rental_customer_id: rentals.customerId,
-                rental_customer_name: customers.name,
-                assignment_type: equipmentRentalHistory.assignmentType,
-                assignment_date: equipmentRentalHistory.startDate,
-                return_date: equipmentRentalHistory.endDate,
-                assignment_status: equipmentRentalHistory.status,
-                notes: equipmentRentalHistory.notes,
-              })
-              .from(equipmentTable)
-              .leftJoin(equipmentRentalHistory, eq(equipmentTable.id, equipmentRentalHistory.equipmentId))
-              .leftJoin(employees, eq(equipmentRentalHistory.employeeId, employees.id))
-              .leftJoin(projects, eq(equipmentRentalHistory.projectId, projects.id))
-              .leftJoin(rentals, eq(equipmentRentalHistory.rentalId, rentals.id))
-              .leftJoin(customers, eq(rentals.customerId, customers.id))
-              .where(eq(equipmentRentalHistory.status, 'active'));
+            // Get equipment IDs for filtering assignments
+            const equipmentIds = equipment.map(e => e.id);
+            
+            if (equipmentIds.length === 0) {
+              // No equipment, return empty arrays
+              return NextResponse.json({
+                success: true,
+                data: [],
+                total: 0,
+                page,
+                limit,
+                totalPages: 0,
+                hasNextPage: false,
+                hasPrevPage: false,
+              });
+            }
 
-            // Get all active assignments from projectEquipment
-            const rawProjectAssignments = await db
-              .select({
-                equipment_id: projectEquipment.equipmentId,
-                assignment_id: projectEquipment.id,
-                project_id: projectEquipment.projectId,
-                project_name: projects.name,
-                assignment_type: sql<string>`'project'`,
-                assignment_date: projectEquipment.startDate,
-                return_date: projectEquipment.endDate,
-                assignment_status: projectEquipment.status,
-                notes: projectEquipment.notes,
-              })
-              .from(projectEquipment)
-              .leftJoin(projects, eq(projectEquipment.projectId, projects.id))
-              .where(
-                and(
-                  sql`${projectEquipment.status} IN ('active', 'pending')`,
-                  sql`${projectEquipment.startDate} <= CURRENT_DATE`,
-                  or(
-                    sql`${projectEquipment.endDate} IS NULL`,
-                    sql`${projectEquipment.endDate} >= CURRENT_DATE`
+            // Optimized: Fetch assignments and maintenance in parallel, filtered by equipment IDs
+            const [rawRentalAssignments, rawProjectAssignments, maintenanceRecords] = await Promise.all([
+              // Get active assignments from equipmentRentalHistory with related data (filtered by equipment IDs)
+              db
+                .select({
+                  equipment_id: equipmentRentalHistory.equipmentId,
+                  assignment_id: equipmentRentalHistory.id,
+                  employee_id: employees.id,
+                  employee_first_name: employees.firstName,
+                  employee_last_name: employees.lastName,
+                  project_id: projects.id,
+                  project_name: projects.name,
+                  rental_id: rentals.id,
+                  rental_number: rentals.rentalNumber,
+                  rental_customer_id: rentals.customerId,
+                  rental_customer_name: customers.name,
+                  assignment_type: equipmentRentalHistory.assignmentType,
+                  assignment_date: equipmentRentalHistory.startDate,
+                  return_date: equipmentRentalHistory.endDate,
+                  assignment_status: equipmentRentalHistory.status,
+                  notes: equipmentRentalHistory.notes,
+                })
+                .from(equipmentRentalHistory)
+                .leftJoin(employees, eq(equipmentRentalHistory.employeeId, employees.id))
+                .leftJoin(projects, eq(equipmentRentalHistory.projectId, projects.id))
+                .leftJoin(rentals, eq(equipmentRentalHistory.rentalId, rentals.id))
+                .leftJoin(customers, eq(rentals.customerId, customers.id))
+                .where(
+                  and(
+                    inArray(equipmentRentalHistory.equipmentId, equipmentIds),
+                    eq(equipmentRentalHistory.status, 'active')
+                  )
+                ),
+              // Get active assignments from projectEquipment (filtered by equipment IDs)
+              db
+                .select({
+                  equipment_id: projectEquipment.equipmentId,
+                  assignment_id: projectEquipment.id,
+                  project_id: projectEquipment.projectId,
+                  project_name: projects.name,
+                  assignment_type: sql<string>`'project'`,
+                  assignment_date: projectEquipment.startDate,
+                  return_date: projectEquipment.endDate,
+                  assignment_status: projectEquipment.status,
+                  notes: projectEquipment.notes,
+                })
+                .from(projectEquipment)
+                .leftJoin(projects, eq(projectEquipment.projectId, projects.id))
+                .where(
+                  and(
+                    inArray(projectEquipment.equipmentId, equipmentIds),
+                    sql`${projectEquipment.status} IN ('active', 'pending')`,
+                    sql`${projectEquipment.startDate} <= CURRENT_DATE`,
+                    or(
+                      sql`${projectEquipment.endDate} IS NULL`,
+                      sql`${projectEquipment.endDate} >= CURRENT_DATE`
+                    )
+                  )
+                ),
+              // Get active maintenance records (filtered by equipment IDs)
+              db
+                .select({
+                  equipment_id: equipmentMaintenance.equipmentId,
+                  maintenance_id: equipmentMaintenance.id,
+                  maintenance_status: equipmentMaintenance.status,
+                  maintenance_title: equipmentMaintenance.title,
+                  maintenance_type: equipmentMaintenance.type,
+                  scheduled_date: equipmentMaintenance.scheduledDate,
+                  due_date: equipmentMaintenance.dueDate,
+                  started_at: equipmentMaintenance.startedAt,
+                  completed_at: equipmentMaintenance.completedAt,
+                })
+                .from(equipmentMaintenance)
+                .where(
+                  and(
+                    inArray(equipmentMaintenance.equipmentId, equipmentIds),
+                    eq(equipmentMaintenance.status, 'open')
                   )
                 )
-              );
+            ]);
 
             // Combine both types of assignments
             const rawAssignments = [...rawRentalAssignments, ...rawProjectAssignments];
@@ -207,22 +251,6 @@ const getEquipmentHandler = async (request: NextRequest) => {
               notes: assignment.notes,
             }));
 
-            // Get all active maintenance records
-            const maintenanceRecords = await db
-              .select({
-                equipment_id: equipmentMaintenance.equipmentId,
-                maintenance_id: equipmentMaintenance.id,
-                maintenance_status: equipmentMaintenance.status,
-                maintenance_title: equipmentMaintenance.title,
-                maintenance_type: equipmentMaintenance.type,
-                scheduled_date: equipmentMaintenance.scheduledDate,
-                due_date: equipmentMaintenance.dueDate,
-                started_at: equipmentMaintenance.startedAt,
-                completed_at: equipmentMaintenance.completedAt,
-              })
-              .from(equipmentMaintenance)
-              .where(eq(equipmentMaintenance.status, 'open'));
-
             // Group assignments by equipment
             const assignmentsByEquipment = currentAssignments.reduce((acc, assignment) => {
               const equipmentId = assignment.equipment_id;
@@ -244,7 +272,6 @@ const getEquipmentHandler = async (request: NextRequest) => {
             }, {} as Record<number, any[]>);
 
             // Fetch equipment images/photos from documents
-            const equipmentIds = equipment.map(e => e.id);
             const equipmentImages: Record<number, { url: string | null; isCard: boolean }> = {};
             
             if (equipmentIds.length > 0) {

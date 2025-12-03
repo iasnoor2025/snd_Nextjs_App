@@ -3,6 +3,7 @@ import { equipment, equipmentMaintenance, equipmentRentalHistory, rentalItems, p
 import { eq, and, sql, or } from 'drizzle-orm';
 import { cacheService } from '@/lib/redis';
 import { CACHE_TAGS } from '@/lib/redis';
+import { getCurrentTimestamp } from '@/lib/utils/date-utils';
 
 export class EquipmentStatusService {
   /**
@@ -34,25 +35,24 @@ export class EquipmentStatusService {
         throw new Error('Equipment data is incomplete');
       }
 
-      // Check for active maintenance records
-      const activeMaintenance = await db
-        .select({ id: equipmentMaintenance.id })
-        .from(equipmentMaintenance)
-        .where(
-          and(
-            eq(equipmentMaintenance.equipmentId, equipmentId),
-            sql`${equipmentMaintenance.status} IN ('open', 'in_progress')`
+      // Optimized: Check for active maintenance and assignments in parallel
+      // Using a single combined query approach for better performance
+      const [activeMaintenance, activeRentalAssignments, activeProjectAssignments] = await Promise.all([
+        // Check for active maintenance records
+        db
+          .select({ id: equipmentMaintenance.id })
+          .from(equipmentMaintenance)
+          .where(
+            and(
+              eq(equipmentMaintenance.equipmentId, equipmentId),
+              sql`${equipmentMaintenance.status} IN ('open', 'in_progress')`
+            )
           )
-        )
-        .limit(1);
-
-      // Check for active rental/assignment records
-      // An assignment is active if:
-      // 1. equipmentRentalHistory.status = 'active' AND
-      // 2. For rental assignments, the rental item must also be active (not completed)
-      // OR
-      // 3. projectEquipment.status = 'active' (project assignments)
-      const [activeRentalAssignments, activeProjectAssignments] = await Promise.all([
+          .limit(1),
+        // Check for active rental/assignment records
+        // An assignment is active if:
+        // 1. equipmentRentalHistory.status = 'active' AND
+        // 2. For rental assignments, the rental item must also be active (not completed)
         db
           .select({ 
             id: equipmentRentalHistory.id,
@@ -128,25 +128,34 @@ export class EquipmentStatusService {
 
       // Only update if status actually needs to change
       if (currentStatus !== newStatus) {
+        const updatedAt = getCurrentTimestamp();
+        
         await db
           .update(equipment)
           .set({
             status: newStatus,
-            updatedAt: new Date().toISOString(),
+            updatedAt,
           })
           .where(eq(equipment.id, equipmentId));
 
-        console.log(`🔄 Equipment Status Updated: ${equipmentName} (${equipmentId})`);
-        console.log(`   Previous: ${currentStatus} → New: ${newStatus}`);
-        console.log(`   Reason: ${reason}`);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`🔄 Equipment Status Updated: ${equipmentName} (${equipmentId})`);
+          console.log(`   Previous: ${currentStatus} → New: ${newStatus}`);
+          console.log(`   Reason: ${reason}`);
+        }
 
         // Invalidate equipment cache to reflect status changes in list view
+        // Use targeted invalidation if possible, otherwise fall back to tag-based
         try {
           await cacheService.invalidateCacheByTag(CACHE_TAGS.EQUIPMENT);
-          console.log(`🗑️ Invalidated equipment cache after status update`);
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`🗑️ Invalidated equipment cache after status update`);
+          }
         } catch (cacheError) {
-          console.error('Error invalidating equipment cache:', cacheError);
           // Don't fail the status update if cache invalidation fails
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Error invalidating equipment cache:', cacheError);
+          }
         }
 
         return {
@@ -179,7 +188,9 @@ export class EquipmentStatusService {
    * Update equipment status when assignment is created
    */
   static async onAssignmentCreated(equipmentId: number): Promise<void> {
-    console.log(`📋 Assignment created for equipment ${equipmentId}, updating status immediately...`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`📋 Assignment created for equipment ${equipmentId}, updating status immediately...`);
+    }
     await this.updateEquipmentStatusImmediately(equipmentId);
   }
 
@@ -187,7 +198,9 @@ export class EquipmentStatusService {
    * Update equipment status when assignment is updated
    */
   static async onAssignmentUpdated(equipmentId: number): Promise<void> {
-    console.log(`📝 Assignment updated for equipment ${equipmentId}, updating status immediately...`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`📝 Assignment updated for equipment ${equipmentId}, updating status immediately...`);
+    }
     await this.updateEquipmentStatusImmediately(equipmentId);
   }
 
@@ -195,7 +208,9 @@ export class EquipmentStatusService {
    * Update equipment status when assignment is deleted/cancelled
    */
   static async onAssignmentDeleted(equipmentId: number): Promise<void> {
-    console.log(`🗑️ Assignment deleted for equipment ${equipmentId}, updating status immediately...`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🗑️ Assignment deleted for equipment ${equipmentId}, updating status immediately...`);
+    }
     await this.updateEquipmentStatusImmediately(equipmentId);
   }
 
@@ -203,7 +218,9 @@ export class EquipmentStatusService {
    * Update equipment status when maintenance is created
    */
   static async onMaintenanceCreated(equipmentId: number): Promise<void> {
-    console.log(`🔧 Maintenance created for equipment ${equipmentId}, updating status immediately...`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🔧 Maintenance created for equipment ${equipmentId}, updating status immediately...`);
+    }
     await this.updateEquipmentStatusImmediately(equipmentId);
   }
 
@@ -211,7 +228,9 @@ export class EquipmentStatusService {
    * Update equipment status when maintenance is completed/cancelled
    */
   static async onMaintenanceCompleted(equipmentId: number): Promise<void> {
-    console.log(`✅ Maintenance completed for equipment ${equipmentId}, updating status immediately...`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`✅ Maintenance completed for equipment ${equipmentId}, updating status immediately...`);
+    }
     await this.updateEquipmentStatusImmediately(equipmentId);
   }
 
@@ -224,7 +243,9 @@ export class EquipmentStatusService {
     errors: number;
   }> {
     try {
-      console.log('🔄 Starting bulk equipment status update...');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔄 Starting bulk equipment status update...');
+      }
       
       const allEquipment = await db
         .select({ id: equipment.id, name: equipment.name, status: equipment.status })
@@ -233,19 +254,30 @@ export class EquipmentStatusService {
       let updated = 0;
       let errors = 0;
 
-      for (const equip of allEquipment) {
-        try {
-          const result = await this.updateEquipmentStatusImmediately(equip.id);
-          if (result.success && result.previousStatus !== result.newStatus) {
-            updated++;
-          }
-        } catch (error) {
-          console.error(`❌ Error updating equipment ${equip.name} (${equip.id}):`, error);
-          errors++;
-        }
+      // Process in batches to avoid overwhelming the database
+      const batchSize = 50;
+      for (let i = 0; i < allEquipment.length; i += batchSize) {
+        const batch = allEquipment.slice(i, i + batchSize);
+        await Promise.all(
+          batch.map(async (equip) => {
+            try {
+              const result = await this.updateEquipmentStatusImmediately(equip.id);
+              if (result.success && result.previousStatus !== result.newStatus) {
+                updated++;
+              }
+            } catch (error) {
+              if (process.env.NODE_ENV === 'development') {
+                console.error(`❌ Error updating equipment ${equip.name} (${equip.id}):`, error);
+              }
+              errors++;
+            }
+          })
+        );
       }
 
-      console.log(`🎉 Bulk equipment status update completed. Total: ${allEquipment.length}, Updated: ${updated}, Errors: ${errors}`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🎉 Bulk equipment status update completed. Total: ${allEquipment.length}, Updated: ${updated}, Errors: ${errors}`);
+      }
       
       return {
         total: allEquipment.length,

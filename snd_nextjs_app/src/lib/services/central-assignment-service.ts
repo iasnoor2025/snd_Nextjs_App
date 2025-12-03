@@ -8,6 +8,7 @@ import {
   employees 
 } from '@/lib/drizzle/schema';
 import { eq, and, or, ne } from 'drizzle-orm';
+import { toDateString, toISOString, getPreviousDay, getCurrentDateString, getCurrentTimestamp } from '@/lib/utils/date-utils';
 
 export interface AssignmentData {
   type: 'equipment' | 'employee';
@@ -36,7 +37,9 @@ export class CentralAssignmentService {
   static async createAssignment(data: AssignmentData) {
     const { type, entityId, startDate } = data;
     
-    console.log(`CentralAssignmentService: Creating ${type} assignment for entity ${entityId}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`CentralAssignmentService: Creating ${type} assignment for entity ${entityId}`);
+    }
     
     // Complete previous active assignments for the same entity
     await this.completePreviousAssignments(type, entityId, startDate);
@@ -58,16 +61,20 @@ export class CentralAssignmentService {
     entityId: number, 
     startDate: string
   ) {
-    console.log(`CentralAssignmentService: Completing previous assignments for ${type} ${entityId}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`CentralAssignmentService: Completing previous assignments for ${type} ${entityId}`);
+    }
     
-    const previousDay = new Date(startDate);
-    previousDay.setDate(previousDay.getDate() - 1);
-    const completedDateStr = previousDay.toISOString().split('T')[0];
-    const completedTimestamp = previousDay.toISOString();
+    const completedDateStr = getPreviousDay(startDate);
+    const completedTimestamp = toISOString(completedDateStr);
+    const updatedAt = getCurrentTimestamp();
+    const updatedAtDate = getCurrentDateString();
 
     if (type === 'equipment') {
-      // Complete equipment assignments across all tables
-      console.log(`Completing equipment ${entityId} previous assignments`);
+      // Complete equipment assignments across all tables in parallel
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Completing equipment ${entityId} previous assignments`);
+      }
       
       await Promise.all([
         // Complete equipment rental history
@@ -75,59 +82,61 @@ export class CentralAssignmentService {
           .set({
             endDate: completedTimestamp,
             status: 'completed',
-            updatedAt: new Date().toISOString(),
+            updatedAt,
           })
           .where(
             and(
               eq(equipmentRentalHistory.equipmentId, entityId),
               eq(equipmentRentalHistory.status, 'active')
             )
-          ).then(() => console.log(`Completed equipment rental history for equipment ${entityId}`)),
+          ),
         
         // Complete project equipment
         db.update(projectEquipment)
           .set({
             endDate: completedDateStr,
             status: 'completed',
-            updatedAt: new Date().toISOString().split('T')[0],
+            updatedAt: updatedAtDate,
           })
           .where(
             and(
               eq(projectEquipment.equipmentId, entityId),
               eq(projectEquipment.status, 'active')
             )
-          ).then(() => console.log(`Completed project equipment for equipment ${entityId}`)),
+          ),
         
         // Complete rental items
         db.update(rentalItems)
           .set({
             completedDate: completedDateStr,
             status: 'completed',
-            updatedAt: new Date().toISOString().split('T')[0],
+            updatedAt: updatedAtDate,
           })
           .where(
             and(
               eq(rentalItems.equipmentId, entityId),
               eq(rentalItems.status, 'active')
             )
-          ).then(() => console.log(`Completed rental items for equipment ${entityId}`))
+          )
       ]);
     } else {
       // Complete employee assignments
-      console.log(`Completing employee ${entityId} previous assignments`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Completing employee ${entityId} previous assignments`);
+      }
       
       await db.update(employeeAssignments)
         .set({
           endDate: completedDateStr,
           status: 'completed',
-          updatedAt: new Date().toISOString().split('T')[0],
+          updatedAt: updatedAtDate,
         })
         .where(
           and(
             eq(employeeAssignments.employeeId, entityId),
             eq(employeeAssignments.status, 'active')
           )
-        ).then(() => console.log(`Completed employee assignments for employee ${entityId}`));
+        );
     }
   }
 
@@ -136,7 +145,14 @@ export class CentralAssignmentService {
    */
   static async createEquipmentAssignment(data: AssignmentData) {
     const { entityId, assignmentType, startDate, endDate, status = 'active', notes } = data;
-    console.log(`Creating equipment assignment for equipment ${entityId}, type: ${assignmentType}`);
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Creating equipment assignment for equipment ${entityId}, type: ${assignmentType}`);
+    }
+
+    const now = getCurrentTimestamp();
+    const startDateISO = toISOString(startDate);
+    const endDateISO = endDate ? toISOString(endDate) : null;
 
     if (assignmentType === 'rental') {
       // Create in equipment_rental_history
@@ -145,17 +161,19 @@ export class CentralAssignmentService {
         rentalId: data.rentalId,
         projectId: data.projectId,
         assignmentType: 'rental',
-        startDate: new Date(startDate).toISOString(),
-        endDate: endDate ? new Date(endDate).toISOString() : null,
+        startDate: startDateISO,
+        endDate: endDateISO,
         status,
         notes: notes || '',
         dailyRate: data.unitPrice?.toString(),
         totalAmount: data.totalPrice?.toString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: now,
+        updatedAt: now,
       }).returning();
       
-      console.log(`Created equipment rental history assignment ${result.id}`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Created equipment rental history assignment ${result.id}`);
+      }
       return result;
     } else if (assignmentType === 'project') {
       // Create in project_equipment
@@ -163,8 +181,8 @@ export class CentralAssignmentService {
         projectId: data.projectId!,
         equipmentId: entityId,
         operatorId: data.operatorId,
-        startDate: new Date(startDate),
-        endDate: endDate ? new Date(endDate) : null,
+        startDate: toDateString(startDate),
+        endDate: endDate ? toDateString(endDate) : null,
         hourlyRate: data.hourlyRate!,
         status,
         notes: notes || '',
@@ -172,7 +190,9 @@ export class CentralAssignmentService {
         updatedAt: new Date(),
       }).returning();
       
-      console.log(`Created project equipment assignment ${result.id}`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Created project equipment assignment ${result.id}`);
+      }
       return result;
     } else {
       // Create in equipment_rental_history for manual assignments
@@ -180,17 +200,19 @@ export class CentralAssignmentService {
         equipmentId: entityId,
         employeeId: data.operatorId,
         assignmentType: 'manual',
-        startDate: new Date(startDate).toISOString(),
-        endDate: endDate ? new Date(endDate).toISOString() : null,
+        startDate: startDateISO,
+        endDate: endDateISO,
         status,
         notes: notes || '',
         dailyRate: data.unitPrice?.toString(),
         totalAmount: data.totalPrice?.toString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: now,
+        updatedAt: now,
       }).returning();
       
-      console.log(`Created manual equipment assignment ${result.id}`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Created manual equipment assignment ${result.id}`);
+      }
       return result;
     }
   }
@@ -200,7 +222,10 @@ export class CentralAssignmentService {
    */
   static async createEmployeeAssignment(data: AssignmentData) {
     const { entityId, assignmentType, startDate, endDate, status = 'active', notes, name, location } = data;
-    console.log(`Creating employee assignment for employee ${entityId}, type: ${assignmentType}`);
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Creating employee assignment for employee ${entityId}, type: ${assignmentType}`);
+    }
 
     // Determine name based on assignment type and context
     let assignmentName = `Assignment - ${assignmentType}`;
@@ -221,6 +246,7 @@ export class CentralAssignmentService {
       assignmentLocation = '';
     }
 
+    const now = getCurrentDateString();
     const [result] = await db.insert(employeeAssignments).values({
       employeeId: entityId,
       projectId: data.projectId,
@@ -232,11 +258,13 @@ export class CentralAssignmentService {
       endDate: endDate || null,
       status,
       notes: notes || '',
-      createdAt: new Date().toISOString().split('T')[0],
-      updatedAt: new Date().toISOString().split('T')[0],
+      createdAt: now,
+      updatedAt: now,
     }).returning();
 
-    console.log(`Created employee assignment ${result.id}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Created employee assignment ${result.id}`);
+    }
     return result;
   }
 
@@ -267,38 +295,58 @@ export class CentralAssignmentService {
 
   /**
    * Complete a specific assignment
+   * Optimized to only update the relevant table instead of trying all tables
    */
   static async completeAssignment(
     type: 'equipment' | 'employee',
     assignmentId: number,
     endDate?: string
   ) {
-    const completionDate = endDate || new Date().toISOString().split('T')[0];
+    const completionDate = toDateString(endDate);
+    const updatedAt = getCurrentTimestamp();
+    const updatedAtDate = getCurrentDateString();
 
     if (type === 'equipment') {
-      // Get equipment assignment details before completing
-      const equipmentAssignment = await db
-        .select({ 
+      // Determine which table this assignment belongs to by checking both in parallel
+      const [rentalAssignment, projectAssignment] = await Promise.all([
+        db.select({ 
           equipmentId: equipmentRentalHistory.equipmentId,
           rentalId: equipmentRentalHistory.rentalId
         })
-        .from(equipmentRentalHistory)
-        .where(eq(equipmentRentalHistory.id, assignmentId))
-        .limit(1);
-
-      const equipmentId = equipmentAssignment[0]?.equipmentId;
-      const rentalId = equipmentAssignment[0]?.rentalId;
-
-      // Try to complete in all possible tables
-      await Promise.all([
-        db.update(equipmentRentalHistory)
-          .set({ status: 'completed', endDate: completionDate, updatedAt: new Date().toISOString() })
-          .where(eq(equipmentRentalHistory.id, assignmentId)),
-        
-        db.update(projectEquipment)
-          .set({ status: 'completed', endDate: completionDate, updatedAt: new Date().toISOString().split('T')[0] })
-          .where(eq(projectEquipment.id, assignmentId)),
+          .from(equipmentRentalHistory)
+          .where(eq(equipmentRentalHistory.id, assignmentId))
+          .limit(1),
+        db.select({ 
+          equipmentId: projectEquipment.equipmentId
+        })
+          .from(projectEquipment)
+          .where(eq(projectEquipment.id, assignmentId))
+          .limit(1)
       ]);
+
+      const equipmentId = rentalAssignment[0]?.equipmentId || projectAssignment[0]?.equipmentId;
+      const rentalId = rentalAssignment[0]?.rentalId;
+
+      // Update only the relevant table
+      if (rentalAssignment[0]) {
+        // Update equipment rental history
+        await db.update(equipmentRentalHistory)
+          .set({ 
+            status: 'completed', 
+            endDate: toISOString(completionDate), 
+            updatedAt 
+          })
+          .where(eq(equipmentRentalHistory.id, assignmentId));
+      } else if (projectAssignment[0]) {
+        // Update project equipment
+        await db.update(projectEquipment)
+          .set({ 
+            status: 'completed', 
+            endDate: completionDate, 
+            updatedAt: updatedAtDate 
+          })
+          .where(eq(projectEquipment.id, assignmentId));
+      }
 
       // For rental items, update by rentalId and equipmentId (not by assignmentId)
       if (rentalId && equipmentId) {
@@ -307,7 +355,7 @@ export class CentralAssignmentService {
           .set({ 
             status: 'completed', 
             completedDate: completionDate, 
-            updatedAt: new Date().toISOString().split('T')[0] 
+            updatedAt: updatedAtDate 
           })
           .where(
             and(
@@ -324,7 +372,11 @@ export class CentralAssignmentService {
       }
     } else {
       await db.update(employeeAssignments)
-        .set({ status: 'completed', endDate: completionDate, updatedAt: new Date().toISOString().split('T')[0] })
+        .set({ 
+          status: 'completed', 
+          endDate: completionDate, 
+          updatedAt: updatedAtDate 
+        })
         .where(eq(employeeAssignments.id, assignmentId));
     }
   }
@@ -337,19 +389,20 @@ export class CentralAssignmentService {
     employeeId: number,
     vacationStartDate: string
   ): Promise<void> {
-    console.log(`CentralAssignmentService: Completing assignments for employee ${employeeId} vacation starting ${vacationStartDate}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`CentralAssignmentService: Completing assignments for employee ${employeeId} vacation starting ${vacationStartDate}`);
+    }
     
     // Set end date to one day before vacation starts
-    const assignmentEnd = new Date(vacationStartDate);
-    assignmentEnd.setDate(assignmentEnd.getDate() - 1);
-    const assignmentEndStr = assignmentEnd.toISOString().split('T')[0];
+    const assignmentEndStr = getPreviousDay(vacationStartDate);
+    const updatedAt = getCurrentDateString();
 
     await db
       .update(employeeAssignments)
       .set({
         status: 'completed',
         endDate: assignmentEndStr,
-        updatedAt: new Date().toISOString().split('T')[0],
+        updatedAt,
       })
       .where(
         and(
@@ -358,7 +411,9 @@ export class CentralAssignmentService {
         )
       );
 
-    console.log(`CentralAssignmentService: Completed assignments for employee ${employeeId} ending ${assignmentEndStr}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`CentralAssignmentService: Completed assignments for employee ${employeeId} ending ${assignmentEndStr}`);
+    }
   }
 
   /**
@@ -369,14 +424,18 @@ export class CentralAssignmentService {
     employeeId: number,
     lastWorkingDate: string
   ): Promise<void> {
-    console.log(`CentralAssignmentService: Completing assignments for employee ${employeeId} exit on ${lastWorkingDate}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`CentralAssignmentService: Completing assignments for employee ${employeeId} exit on ${lastWorkingDate}`);
+    }
     
+    const updatedAt = getCurrentDateString();
+
     await db
       .update(employeeAssignments)
       .set({
         status: 'completed',
         endDate: lastWorkingDate,
-        updatedAt: new Date().toISOString().split('T')[0],
+        updatedAt,
       })
       .where(
         and(
@@ -385,7 +444,9 @@ export class CentralAssignmentService {
         )
       );
 
-    console.log(`CentralAssignmentService: Completed assignments for employee ${employeeId}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`CentralAssignmentService: Completed assignments for employee ${employeeId}`);
+    }
   }
 
   /**
@@ -395,18 +456,19 @@ export class CentralAssignmentService {
     employeeId: number,
     vacationStartDate: string
   ): Promise<void> {
-    console.log(`CentralAssignmentService: Restoring assignments for employee ${employeeId} after vacation deletion`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`CentralAssignmentService: Restoring assignments for employee ${employeeId} after vacation deletion`);
+    }
     
-    const assignmentEndDate = new Date(vacationStartDate);
-    assignmentEndDate.setDate(assignmentEndDate.getDate() - 1);
-    const assignmentEndDateStr = assignmentEndDate.toISOString().split('T')[0];
+    const assignmentEndDateStr = getPreviousDay(vacationStartDate);
+    const updatedAt = getCurrentDateString();
 
     await db
       .update(employeeAssignments)
       .set({
         status: 'active',
         endDate: null,
-        updatedAt: new Date().toISOString().split('T')[0],
+        updatedAt,
       })
       .where(
         and(
@@ -416,7 +478,9 @@ export class CentralAssignmentService {
         )
       );
 
-    console.log(`CentralAssignmentService: Restored assignments for employee ${employeeId}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`CentralAssignmentService: Restored assignments for employee ${employeeId}`);
+    }
   }
 
   /**
@@ -426,14 +490,18 @@ export class CentralAssignmentService {
     employeeId: number,
     lastWorkingDate: string
   ): Promise<void> {
-    console.log(`CentralAssignmentService: Restoring assignments for employee ${employeeId} after exit deletion`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`CentralAssignmentService: Restoring assignments for employee ${employeeId} after exit deletion`);
+    }
     
+    const updatedAt = getCurrentDateString();
+
     await db
       .update(employeeAssignments)
       .set({
         status: 'active',
         endDate: null,
-        updatedAt: new Date().toISOString().split('T')[0],
+        updatedAt,
       })
       .where(
         and(
@@ -443,7 +511,9 @@ export class CentralAssignmentService {
         )
       );
 
-    console.log(`CentralAssignmentService: Restored assignments for employee ${employeeId}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`CentralAssignmentService: Restored assignments for employee ${employeeId}`);
+    }
   }
 }
 
