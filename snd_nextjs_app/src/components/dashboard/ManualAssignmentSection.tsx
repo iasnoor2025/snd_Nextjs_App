@@ -172,18 +172,79 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
             setFilteredAssignments(activeAssignments);
             setShowAllEmployees(false);
         } else {
-            // Apply search filtering when there's a search term (still only active)
-            const filteredAssignments = assignments.filter(assignment =>
-                assignment.status === 'active' && (
-                    assignment.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    assignment.employee?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    assignment.type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    assignment.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    assignment.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    // Search by employee file number if available
-                    (assignment.employee?.fileNumber && assignment.employee.fileNumber.toLowerCase().includes(searchTerm.toLowerCase()))
-                )
-            );
+            const searchLower = searchTerm.toLowerCase().trim();
+            const searchTrimmed = searchTerm.trim();
+            
+            // Check if search term is a potential exact file number match
+            const isExactFileNumberSearch = /^\d+$/.test(searchTrimmed);
+            
+            // If searching for exact file number, check for exact match first
+            if (isExactFileNumberSearch && allowAllEmployees) {
+                // Ensure employees are fetched first
+                if (allEmployees.length === 0 && !fetchingEmployees) {
+                    fetchAllEmployees();
+                    // Return early - will re-run when employees are loaded
+                    return;
+                }
+                
+                // Check if there's an employee with exact file number
+                const exactFileNumberEmployee = allEmployees.find(emp => 
+                    String(emp.fileNumber || '').trim() === searchTrimmed
+                );
+                
+                if (exactFileNumberEmployee) {
+                    // Check if this employee has any active assignments
+                    const exactFileNumberAssignments = assignments.filter(assignment =>
+                        assignment.status === 'active' &&
+                        assignment.employee_id === exactFileNumberEmployee.id
+                    );
+                    
+                    if (exactFileNumberAssignments.length > 0) {
+                        // Employee has assignments - show only their assignments
+                        setFilteredAssignments(exactFileNumberAssignments);
+                        setShowAllEmployees(false);
+                    } else {
+                        // Employee exists but has no active assignments - show employee view
+                        setShowAllEmployees(true);
+                        setFilteredAssignments([]);
+                    }
+                    setCurrentPage(1);
+                    return;
+                }
+            }
+            
+            // Regular search - filter assignments
+            let filteredAssignments: Assignment[] = [];
+            
+            if (isExactFileNumberSearch) {
+                // For numeric searches, prioritize exact file number matches in assignments
+                const exactFileNumberAssignments = assignments.filter(assignment =>
+                    assignment.status === 'active' &&
+                    assignment.employee?.fileNumber &&
+                    String(assignment.employee.fileNumber).trim() === searchTrimmed
+                );
+                
+                if (exactFileNumberAssignments.length > 0) {
+                    // Found exact file number match - show only those
+                    filteredAssignments = exactFileNumberAssignments;
+                } else {
+                    // No exact match found - show empty (will show employee view instead)
+                    filteredAssignments = [];
+                }
+            } else {
+                // For non-numeric searches, do regular matching
+                filteredAssignments = assignments.filter(assignment =>
+                    assignment.status === 'active' && (
+                        assignment.name?.toLowerCase().includes(searchLower) ||
+                        assignment.employee?.name?.toLowerCase().includes(searchLower) ||
+                        assignment.type?.toLowerCase().includes(searchLower) ||
+                        assignment.status?.toLowerCase().includes(searchLower) ||
+                        assignment.notes?.toLowerCase().includes(searchLower) ||
+                        // Search by employee file number if available
+                        (assignment.employee?.fileNumber && assignment.employee.fileNumber.toLowerCase().includes(searchLower))
+                    )
+                );
+            }
 
             // If we found assignments, show them
             if (filteredAssignments.length > 0) {
@@ -193,31 +254,35 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                 // If no assignments match, search through all employees
                 setShowAllEmployees(true);
                 setFilteredAssignments([]);
+                // Fetch employees if not already fetched and we need to show them
+                if (allowAllEmployees && allEmployees.length === 0 && !fetchingEmployees) {
+                    fetchAllEmployees();
+                }
             }
         }
         
         // Reset to first page when search term changes
         setCurrentPage(1);
-    }, [assignments, searchTerm, allEmployees]);
+    }, [assignments, searchTerm, allEmployees, allowAllEmployees, fetchingEmployees]);
 
-    // Fetch all employees for search
+    // Fetch all employees for search - fetch immediately when allowAllEmployees is true
     useEffect(() => {
-        if (allowAllEmployees) {
+        if (allowAllEmployees && allEmployees.length === 0 && !fetchingEmployees) {
             fetchAllEmployees();
         }
-    }, [allowAllEmployees]);
+    }, [allowAllEmployees, allEmployees.length, fetchingEmployees]);
 
         const fetchAllEmployees = async () => {
       try {
         setFetchingEmployees(true);
         // Fetch all employees without pagination limits
-                const response = await fetch('/api/employees?limit=1000&page=1');
+        const response = await fetch('/api/employees?limit=1000&page=1');
         if (response.ok) {
             const data = await response.json();
             
             // Check if we need to fetch more pages
-            let allEmployees = data.data || [];
-            const totalPages = data.meta?.totalPages || 1;
+            let allEmployeesData = data.data || [];
+            const totalPages = data.meta?.totalPages || data.last_page || 1;
             
             // If there are more pages, fetch them all
             if (totalPages > 1) {
@@ -225,17 +290,19 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                     const nextResponse = await fetch(`/api/employees?limit=1000&page=${page}`);
                     if (nextResponse.ok) {
                         const nextData = await nextResponse.json();
-                        allEmployees = [...allEmployees, ...(nextData.data || [])];
+                        allEmployeesData = [...allEmployeesData, ...(nextData.data || [])];
                     }
                 }
             }
             
-            const employees = allEmployees.map((emp: any) => ({
+            const employees = allEmployeesData.map((emp: any) => ({
                 id: emp.id,
                 name: `${emp.first_name || emp.firstName || ''} ${emp.last_name || emp.lastName || ''}`.trim() || 'Unknown Employee',
-                fileNumber: emp.file_number || emp.employee_id || emp.fileNumber || emp.employeeNumber || emp.empCode || emp.code || ''
+                fileNumber: String(emp.file_number || emp.employee_id || emp.fileNumber || emp.employeeNumber || emp.empCode || emp.code || '').trim()
             }));
             setAllEmployees(employees);
+        } else {
+            console.error('Failed to fetch employees:', response.status, response.statusText);
         }
       } catch (error) {
         console.error('Failed to fetch all employees:', error);
@@ -287,9 +354,23 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
         if (showAllEmployees) {
             const filteredEmployees = allEmployees.filter(emp => {
                 if (!searchTerm) return true;
-                const nameMatch = emp.name.toLowerCase().includes(searchTerm.toLowerCase());
-                const fileNumberMatch = emp.fileNumber.toLowerCase().includes(searchTerm.toLowerCase());
-                return nameMatch || fileNumberMatch;
+                const searchTrimmed = searchTerm.trim();
+                const searchLower = searchTerm.toLowerCase().trim();
+                
+                // Check if search is a number (potential exact file number match)
+                const isNumericSearch = /^\d+$/.test(searchTrimmed);
+                
+                if (isNumericSearch) {
+                    // For numeric searches, only show exact file number match
+                    const fileNumberStr = String(emp.fileNumber || '').trim();
+                    return fileNumberStr === searchTrimmed;
+                } else {
+                    // For non-numeric searches, do regular matching
+                    const nameMatch = emp.name.toLowerCase().includes(searchLower);
+                    const fileNumberStr = String(emp.fileNumber || '').toLowerCase().trim();
+                    const fileNumberMatch = fileNumberStr.includes(searchLower);
+                    return nameMatch || fileNumberMatch;
+                }
             });
             
             const startIndex = (currentPage - 1) * itemsPerPage;
@@ -306,9 +387,23 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
     const getCurrentPageEmployees = () => {
         const filteredEmployees = allEmployees.filter(emp => {
             if (!searchTerm) return true;
-            const nameMatch = emp.name.toLowerCase().includes(searchTerm.toLowerCase());
-            const fileNumberMatch = emp.fileNumber.toLowerCase().includes(searchTerm.toLowerCase());
-            return nameMatch || fileNumberMatch;
+            const searchTrimmed = searchTerm.trim();
+            const searchLower = searchTerm.toLowerCase().trim();
+            
+            // Check if search is a number (potential exact file number match)
+            const isNumericSearch = /^\d+$/.test(searchTrimmed);
+            
+            if (isNumericSearch) {
+                // For numeric searches, only show exact file number match
+                const fileNumberStr = String(emp.fileNumber || '').trim();
+                return fileNumberStr === searchTrimmed;
+            } else {
+                // For non-numeric searches, do regular matching
+                const nameMatch = emp.name.toLowerCase().includes(searchLower);
+                const fileNumberStr = String(emp.fileNumber || '').toLowerCase().trim();
+                const fileNumberMatch = fileNumberStr.includes(searchLower);
+                return nameMatch || fileNumberMatch;
+            }
         });
         
         const startIndex = (currentPage - 1) * itemsPerPage;
@@ -327,9 +422,23 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
         if (showAllEmployees) {
             return allEmployees.filter(emp => {
                 if (!searchTerm) return true;
-                const nameMatch = emp.name.toLowerCase().includes(searchTerm.toLowerCase());
-                const fileNumberMatch = emp.fileNumber.toLowerCase().includes(searchTerm.toLowerCase());
-                return nameMatch || fileNumberMatch;
+                const searchTrimmed = searchTerm.trim();
+                const searchLower = searchTerm.toLowerCase().trim();
+                
+                // Check if search is a number (potential exact file number match)
+                const isNumericSearch = /^\d+$/.test(searchTrimmed);
+                
+                if (isNumericSearch) {
+                    // For numeric searches, only show exact file number match
+                    const fileNumberStr = String(emp.fileNumber || '').trim();
+                    return fileNumberStr === searchTrimmed;
+                } else {
+                    // For non-numeric searches, do regular matching
+                    const nameMatch = emp.name.toLowerCase().includes(searchLower);
+                    const fileNumberStr = String(emp.fileNumber || '').toLowerCase().trim();
+                    const fileNumberMatch = fileNumberStr.includes(searchLower);
+                    return nameMatch || fileNumberMatch;
+                }
             }).length;
         } else {
             return filteredAssignments.length;
@@ -974,8 +1083,22 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                                     </thead>
                                     <tbody>
                                         {showAllEmployees ? (
-                                            // Show paginated employees when searching
-                                            getCurrentPageEmployees().map(employee => (
+                                            fetchingEmployees ? (
+                                                <tr>
+                                                    <td colSpan={3} className="p-8 text-center text-muted-foreground">
+                                                        <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
+                                                        Loading employees...
+                                                    </td>
+                                                </tr>
+                                            ) : getCurrentPageEmployees().length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={3} className="p-8 text-center text-muted-foreground">
+                                                        No employees found matching "{searchTerm}"
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                // Show paginated employees when searching
+                                                getCurrentPageEmployees().map(employee => (
                                                     <tr key={employee.id} className="border-b border-border hover:bg-muted/20">
                                                         <td className="p-3 text-sm text-foreground">
                                                             <span className="font-mono bg-muted px-2 py-1 rounded text-xs">
@@ -1014,7 +1137,8 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                                                             </div>
                                                         </td>
                                                     </tr>
-                                            ))
+                                                ))
+                                            )
                                         ) : (
                                             // Show paginated assignments
                                             getCurrentPageAssignments().map(assignment => (
