@@ -151,6 +151,7 @@ export async function DELETE(
         id: projectManpower.id,
         employeeId: projectManpower.employeeId,
         projectId: projectManpower.projectId,
+        jobTitle: projectManpower.jobTitle,
       })
       .from(projectManpower)
       .where(
@@ -172,36 +173,89 @@ export async function DELETE(
     if (manpower.employeeId) {
       try {
         // Find the employee assignment that was created for this project and employee
-        const assignments = await db
+        // The assignment was created with type: 'project' (the schema field is 'type', not 'assignmentType')
+        // Check for both active and completed assignments to be safe
+        let assignments = await db
           .select({
             id: employeeAssignments.id,
             employeeId: employeeAssignments.employeeId,
             projectId: employeeAssignments.projectId,
             type: employeeAssignments.type,
-            assignmentType: employeeAssignments.assignmentType,
+            status: employeeAssignments.status,
+            notes: employeeAssignments.notes,
           })
           .from(employeeAssignments)
           .where(
             and(
               eq(employeeAssignments.employeeId, manpower.employeeId),
               eq(employeeAssignments.projectId, parseInt(projectId)),
-              eq(employeeAssignments.assignmentType, 'project'),
-              eq(employeeAssignments.status, 'active')
+              eq(employeeAssignments.type, 'project')
+              // Don't filter by status - delete all matching assignments regardless of status
             )
           );
+
+        console.log(`Found ${assignments.length} employee assignment(s) to delete for employee ${manpower.employeeId} on project ${projectId}`);
+
+        // If no assignments found with exact match, try to find by notes pattern
+        // The assignment notes format is: "Auto-created for project: {projectName} - {jobTitle}"
+        if (assignments.length === 0) {
+          // Get project name for notes matching
+          const projectDetails = await db
+            .select({ name: projects.name })
+            .from(projects)
+            .where(eq(projects.id, parseInt(projectId)))
+            .limit(1);
+          
+          const projectName = projectDetails[0]?.name || '';
+          
+          // Try to find assignments by notes pattern
+          const allAssignments = await db
+            .select({
+              id: employeeAssignments.id,
+              employeeId: employeeAssignments.employeeId,
+              projectId: employeeAssignments.projectId,
+              type: employeeAssignments.type,
+              status: employeeAssignments.status,
+              notes: employeeAssignments.notes,
+            })
+            .from(employeeAssignments)
+            .where(
+              and(
+                eq(employeeAssignments.employeeId, manpower.employeeId),
+                eq(employeeAssignments.type, 'project')
+              )
+            );
+
+          // Filter by notes pattern if project name is available
+          const matchingAssignments = projectName && manpower.jobTitle
+            ? allAssignments.filter(a => 
+                a.notes?.includes(`Auto-created for project: ${projectName}`) ||
+                a.notes?.includes(manpower.jobTitle || '')
+              )
+            : allAssignments.filter(a => a.projectId === parseInt(projectId));
+
+          if (matchingAssignments.length > 0) {
+            console.log(`Found ${matchingAssignments.length} assignment(s) by notes pattern matching`);
+            assignments = [...assignments, ...matchingAssignments];
+          }
+        }
 
         // Delete all matching assignments (there should typically be only one)
         for (const assignment of assignments) {
           try {
             await AssignmentService.deleteAssignment(assignment.id, assignment.employeeId);
-            console.log(`Deleted employee assignment ${assignment.id} for employee ${assignment.employeeId} on project ${projectId}`);
+            console.log(`✅ Deleted employee assignment ${assignment.id} for employee ${assignment.employeeId} on project ${projectId}`);
           } catch (assignmentError) {
-            console.error(`Error deleting employee assignment ${assignment.id}:`, assignmentError);
+            console.error(`❌ Error deleting employee assignment ${assignment.id}:`, assignmentError);
             // Continue with manpower deletion even if assignment deletion fails
           }
         }
+
+        if (assignments.length === 0) {
+          console.log(`⚠️ No employee assignment found for employee ${manpower.employeeId} on project ${projectId} - may have been deleted already or never created`);
+        }
       } catch (error) {
-        console.error('Error finding/deleting employee assignments:', error);
+        console.error('❌ Error finding/deleting employee assignments:', error);
         // Continue with manpower deletion even if assignment deletion fails
       }
     }
