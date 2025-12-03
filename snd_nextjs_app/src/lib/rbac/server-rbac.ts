@@ -386,9 +386,8 @@ export async function hasPermission(user: User, action: Action, subject: Subject
       return true;
     }
 
-    // Check for specific permission using mapping
-    const permissionName = `${action}.${subject}`;
-    const mappedPermissions = PERMISSION_MAPPING[permissionName] || [permissionName];
+    // Check for specific permission using dynamic mapping
+    const mappedPermissions = getPermissionMappings(action, subject);
     
     // Check if user has any of the mapped permissions
     const hasPermission = mappedPermissions.some(permission => userPermissions.includes(permission));
@@ -396,44 +395,27 @@ export async function hasPermission(user: User, action: Action, subject: Subject
     return hasPermission;
   } catch (error) {
     console.error('🔐 Error in hasPermission:', error);
-    // Fallback to dynamic system if database fails
+    // Fallback only for SUPER_ADMIN - all other roles require database access
+    // This ensures secure-by-default: deny if we can't verify from database
     return hasPermissionFallback(user, action, subject);
   }
 }
 
 /**
- * Dynamic fallback permission system when database is unavailable
- * Now supports new roles through configuration
+ * Fallback permission system when database is unavailable
+ * Only SUPER_ADMIN has fallback permissions - all other roles must be configured in database
+ * This ensures secure-by-default behavior: deny access if database is unavailable
  */
 function hasPermissionFallback(user: User, action: Action, subject: Subject): boolean {
-  
-  // Permission-based fallback: Check for wildcard permissions
-  // SUPER_ADMIN should have wildcard permissions (* or manage.all) assigned
-  // instead of hardcoded role-based access
-
-  // ADMIN role permissions
-  if (user.role === 'ADMIN') {
-    
-    // Admin can read all subjects
-    if (action === 'read') {
-      return true;
-    }
-    
-    // Admin can manage employees, users, and basic operations
-    if (subject === 'Employee' || subject === 'User' || subject === 'Dashboard') {
-      return true;
-    }
+  // Only SUPER_ADMIN has fallback permissions (wildcard access)
+  // This is the only exception to the "no hardcoded permissions" rule
+  if (user.role === 'SUPER_ADMIN') {
+    return true;
   }
 
-  // MANAGER role permissions
-  if (user.role === 'MANAGER') {
-    
-    // Manager can read most subjects
-    if (action === 'read') {
-      return true;
-    }
-  }
-
+  // For all other roles, deny access if database is unavailable
+  // This ensures security: if we can't verify permissions from database, deny access
+  console.error(`⚠️ Database unavailable - denying access for user ${user.id} (role: ${user.role})`);
   return false;
 }
 

@@ -1,0 +1,23 @@
+ALTER TABLE "companies" ADD COLUMN "commercial_registration" text;--> statement-breakpoint
+ALTER TABLE "companies" ADD COLUMN "commercial_registration_expiry" date;--> statement-breakpoint
+ALTER TABLE "companies" ADD COLUMN "tax_registration" text;--> statement-breakpoint
+ALTER TABLE "companies" ADD COLUMN "tax_registration_expiry" date;--> statement-breakpoint
+ALTER TABLE "companies" ADD COLUMN "municipality_license" text;--> statement-breakpoint
+ALTER TABLE "companies" ADD COLUMN "municipality_license_expiry" date;--> statement-breakpoint
+ALTER TABLE "companies" ADD COLUMN "chamber_of_commerce" text;--> statement-breakpoint
+ALTER TABLE "companies" ADD COLUMN "chamber_of_commerce_expiry" date;--> statement-breakpoint
+ALTER TABLE "companies" ADD COLUMN "labor_office_license" text;--> statement-breakpoint
+ALTER TABLE "companies" ADD COLUMN "labor_office_license_expiry" date;--> statement-breakpoint
+ALTER TABLE "companies" ADD COLUMN "gosi_registration" text;--> statement-breakpoint
+ALTER TABLE "companies" ADD COLUMN "gosi_registration_expiry" date;--> statement-breakpoint
+ALTER TABLE "companies" ADD COLUMN "saudi_standards_license" text;--> statement-breakpoint
+ALTER TABLE "companies" ADD COLUMN "saudi_standards_license_expiry" date;--> statement-breakpoint
+ALTER TABLE "companies" ADD COLUMN "environmental_license" text;--> statement-breakpoint
+ALTER TABLE "companies" ADD COLUMN "environmental_license_expiry" date;--> statement-breakpoint
+ALTER TABLE "companies" ADD COLUMN "website" text;--> statement-breakpoint
+ALTER TABLE "companies" ADD COLUMN "contact_person" text;--> statement-breakpoint
+ALTER TABLE "companies" ADD COLUMN "contact_person_phone" text;--> statement-breakpoint
+ALTER TABLE "companies" ADD COLUMN "contact_person_email" text;--> statement-breakpoint
+ALTER TABLE "companies" ADD COLUMN "company_type" text;--> statement-breakpoint
+ALTER TABLE "companies" ADD COLUMN "industry" text;--> statement-breakpoint
+ALTER TABLE "companies" ADD COLUMN "employee_count" integer;

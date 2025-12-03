@@ -170,44 +170,28 @@ export async function hasPermission(user: User, action: Action, subject: Subject
     return userPermissions.includes(permissionName);
   } catch (error) {
     console.error('Error checking permission:', error);
-    // Fallback to hardcoded system if database fails
+    // Fallback only for SUPER_ADMIN - all other roles require database access
+    // This ensures secure-by-default: deny if we can't verify from database
     return hasPermissionFallback(user, action, subject);
   }
 }
 
 /**
  * Fallback permission system when database is unavailable
+ * Only SUPER_ADMIN has fallback permissions - all other roles must be configured in database
+ * This ensures secure-by-default behavior: deny access if database is unavailable
  */
 function hasPermissionFallback(user: User, action: Action, subject: Subject): boolean {
-  // Define fallback permissions for each role
-  const fallbackPermissions: Record<string, string[]> = {
-    SUPER_ADMIN: ['*', 'manage.all'],
-    // ADMIN: [
-    //   'manage.User', 'manage.Employee', 'manage.Customer', 'manage.Equipment',
-    //   'manage.Rental', 'manage.Quotation', 'manage.Payroll', 'manage.Timesheet',
-    //   'manage.Project', 'manage.Leave', 'manage.Department', 'manage.Designation',
-    //   'manage.Report', 'manage.Settings', 'manage.Company', 'manage.Safety',
-    //   'manage.employee-document', 'manage.SalaryIncrement', 'manage.Advance',
-    //   'manage.Assignment', 'manage.Location', 'manage.Maintenance'
-    // ],
-    // All other roles start with empty permissions - they must be assigned dynamically
-    // MANAGER: [], // Will be populated dynamically
-    // SUPERVISOR: [], // Will be populated dynamically
-    // OPERATOR: [], // Will be populated dynamically
-    // EMPLOYEE: [], // Will be populated dynamically
-    // USER: [], // Will be populated dynamically
-  };
-
-  const userPermissions = fallbackPermissions[user.role] || [];
-  
-  // Check for wildcard permissions
-  if (userPermissions.includes('*') || userPermissions.includes('manage.all')) {
+  // Only SUPER_ADMIN has fallback permissions (wildcard access)
+  // This is the only exception to the "no hardcoded permissions" rule
+  if (user.role === 'SUPER_ADMIN') {
     return true;
   }
 
-  // Check for specific permission
-  const permissionName = `${action}.${subject}`;
-  return userPermissions.includes(permissionName);
+  // For all other roles, deny access if database is unavailable
+  // This ensures security: if we can't verify permissions from database, deny access
+  console.error(`⚠️ Database unavailable - denying access for user ${user.id} (role: ${user.role})`);
+  return false;
 }
 
 /**

@@ -1,0 +1,141 @@
+{
+  "title": "إدارة المستندات",
+  "subtitle": "إدارة المستندات والملفات",
+  "description": "إدارة جميع المستندات والملفات المتعلقة بالموظفين والمعدات",
+  "actions": {
+    "upload": "رفع",
+    "download": "تحميل",
+    "view": "عرض",
+    "delete": "حذف",
+    "combine": "دمج",
+    "search": "البحث",
+    "filter": "تصفية",
+    "refresh": "تحديث",
+    "export": "تصدير",
+    "import": "استيراد",
+    "preview": "معاينة",
+    "edit": "تعديل",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "close": "إغلاق"
+  },
+  "fields": {
+    "fileName": "اسم الملف",
+    "documentType": "نوع المستند",
+    "fileSize": "حجم الملف",
+    "createdAt": "تاريخ الإنشاء",
+    "updatedAt": "تاريخ التحديث",
+    "description": "الوصف",
+    "mimeType": "نوع الملف",
+    "employeeName": "اسم الموظف",
+    "equipmentName": "اسم المعدات",
+    "filePath": "مسار الملف",
+    "url": "الرابط",
+    "searchableText": "النص القابل للبحث"
+  },
+  "documentType": {
+    "all": "جميع المستندات",
+    "employee": "مستندات الموظفين",
+    "equipment": "مستندات المعدات",
+    "contract": "عقد",
+    "id": "هوية",
+    "certificate": "شهادة",
+    "license": "رخصة",
+    "manual": "دليل",
+    "report": "تقرير",
+    "invoice": "فاتورة",
+    "receipt": "إيصال",
+    "other": "أخرى"
+  },
+  "status": {
+    "uploading": "جاري الرفع...",
+    "uploaded": "تم الرفع",
+    "failed": "فشل",
+    "processing": "جاري المعالجة",
+    "ready": "جاهز",
+    "archived": "مؤرشف",
+    "deleted": "محذوف"
+  },
+  "messages": {
+    "loading": "جاري تحميل المستندات...",
+    "loadingDocuments": "جاري تحميل المستندات...",
+    "noDocumentsFound": "لم يتم العثور على مستندات",
+    "noDocumentsFoundDescription": "لا توجد مستندات لعرضها",
+    "tryAdjustingSearch": "جرب تعديل مصطلحات البحث",
+    "uploadSuccess": "تم رفع المستند بنجاح",
+    "uploadError": "فشل في رفع المستند",
+    "deleteConfirm": "هل أنت متأكد من حذف هذا المستند؟",
+    "deleteSuccess": "تم حذف المستند بنجاح",
+    "deleteError": "فشل في حذف المستند",
+    "combineSuccess": "تم دمج المستندات بنجاح",
+    "combineError": "فشل في دمج المستندات",
+    "combining": "جاري الدمج...",
+    "combinePDFs": "دمج ملفات PDF",
+    "selectAtLeast2PDFs": "اختر ملفي PDF على الأقل للدمج",
+    "downloadSuccess": "تم تحميل المستند بنجاح",
+    "downloadError": "فشل في تحميل المستند",
+    "accessDenied": "الوصول مرفوض. ليس لديك صلاحية لإدارة المستندات.",
+    "errorGeneral": "حدث خطأ أثناء العملية"
+  },
+  "search": {
+    "placeholder": "البحث في المستندات...",
+    "title": "البحث والتصفية",
+    "noResults": "لم يتم العثور على نتائج",
+    "resultCount": "المستندات ({{count}})"
+  },
+  "table": {
+    "headers": {
+      "fileName": "اسم الملف",
+      "documentType": "نوع المستند",
+      "fileSize": "حجم الملف",
+      "createdAt": "تاريخ الإنشاء",
+      "actions": "الإجراءات"
+    }
+  },
+  "pagination": {
+    "showing": "عرض {{start}} إلى {{end}} من {{total}} مستند",
+    "page": "الصفحة {{current}} من {{total}}",
+    "previous": "السابق",
+    "next": "التالي",
+    "itemsPerPage": "عنصر في الصفحة"
+  },
+  "selection": {
+    "documentsSelected": "مستند محدد",
+    "documentsSelectedPlural": "مستندات محددة",
+    "pdfsSelected": "ملف PDF محدد",
+    "pdfsSelectedPlural": "ملفات PDF محددة",
+    "clearSelection": "مسح التحديد"
+  },
+  "preview": {
+    "title": "معاينة المستند",
+    "close": "إغلاق المعاينة",
+    "download": "تحميل",
+    "created": "تم الإنشاء:",
+    "fileSize": "حجم الملف:",
+    "type": "النوع:"
+  },
+  "fileTypes": {
+    "pdf": "PDF",
+    "image": "صورة",
+    "document": "مستند",
+    "spreadsheet": "جدول بيانات",
+    "presentation": "عرض تقديمي",
+    "archive": "أرشيف",
+    "other": "أخرى"
+  },
+  "validation": {
+    "required": "هذا الحقل مطلوب",
+    "invalidFile": "ملف غير صحيح",
+    "fileTooLarge": "الملف كبير جداً",
+    "unsupportedType": "نوع ملف غير مدعوم",
+    "fileNameRequired": "اسم الملف مطلوب",
+    "fileRequired": "الملف مطلوب"
+  },
+  "stats": {
+    "totalDocuments": "إجمالي المستندات",
+    "employeeDocuments": "مستندات الموظفين",
+    "equipmentDocuments": "مستندات المعدات",
+    "totalSize": "إجمالي الحجم",
+    "recentUploads": "الرفع الأخير"
+  }
+}

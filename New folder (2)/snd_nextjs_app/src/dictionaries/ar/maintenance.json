@@ -1,0 +1,193 @@
+{
+  "title": "إدارة الصيانة",
+  "subtitle": "جدولة وتتبع أنشطة صيانة المعدات",
+  "description": "إدارة جميع أنشطة الصيانة والمعدات",
+  "create": {
+    "title": "إنشاء صيانة جديدة",
+    "description": "إنشاء سجل صيانة جديد للمعدات"
+  },
+  "actions": {
+    "createMaintenance": "إنشاء صيانة",
+    "editMaintenance": "تعديل الصيانة",
+    "deleteMaintenance": "حذف الصيانة",
+    "viewMaintenance": "عرض الصيانة",
+    "scheduleMaintenance": "جدولة الصيانة",
+    "backToMaintenance": "العودة إلى الصيانة",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "update": "تحديث",
+    "delete": "حذف",
+    "search": "البحث",
+    "filter": "تصفية",
+    "refresh": "تحديث",
+    "export": "تصدير",
+    "import": "استيراد"
+  },
+  "fields": {
+    "equipment": "المعدات",
+    "selectEquipment": "اختر المعدات",
+    "type": "نوع الصيانة",
+    "title": "العنوان",
+    "titlePlaceholder": "عنوان الصيانة",
+    "description": "الوصف",
+    "descriptionPlaceholder": "وصف العمل المطلوب للصيانة",
+    "scheduledDate": "تاريخ الجدولة",
+    "dueDate": "تاريخ الاستحقاق",
+    "assignedTo": "الموظف المخصص",
+    "selectEmployee": "اختر الموظف (اختياري)",
+    "cost": "التكلفة",
+    "estimatedCost": "التكلفة المقدرة",
+    "costPlaceholder": "ريال سعودي",
+    "datePlaceholder": "يوم/شهر/سنة",
+    "status": "الحالة",
+    "createdAt": "تاريخ الإنشاء",
+    "updatedAt": "تاريخ التحديث"
+  },
+  "types": {
+    "scheduled": "مجدول",
+    "corrective": "تصحيحي",
+    "emergency": "طارئ",
+    "inspection": "فحص",
+    "preventive": "وقائي"
+  },
+  "status": {
+    "open": "مفتوح",
+    "in_progress": "قيد التنفيذ",
+    "completed": "مكتمل",
+    "cancelled": "ملغي",
+    "overdue": "متأخر",
+    "scheduled": "مجدول"
+  },
+  "messages": {
+    "loading": "جاري التحميل...",
+    "saving": "جاري الحفظ...",
+    "createSuccess": "تم إنشاء سجل الصيانة بنجاح",
+    "createError": "فشل في إنشاء سجل الصيانة",
+    "updateSuccess": "تم تحديث سجل الصيانة بنجاح",
+    "updateError": "فشل في تحديث سجل الصيانة",
+    "deleteSuccess": "تم حذف سجل الصيانة بنجاح",
+    "deleteError": "فشل في حذف سجل الصيانة",
+    "fetchError": "خطأ في جلب سجلات الصيانة",
+    "validationError": "يرجى إدخال جميع الحقول المطلوبة",
+    "maintenanceNotFound": "لم يتم العثور على سجل الصيانة",
+    "accessDenied": "الوصول مرفوض. ليس لديك صلاحية لإدارة الصيانة.",
+    "errorGeneral": "حدث خطأ أثناء العملية",
+    "failedToLoad": "فشل في تحميل سجلات الصيانة",
+    "failedToCreate": "فشل في إنشاء سجل الصيانة",
+    "failedToUpdate": "فشل في تحديث سجل الصيانة",
+    "failedToDelete": "فشل في حذف سجل الصيانة"
+  },
+  "validation": {
+    "validationError": "يرجى إدخال جميع الحقول المطلوبة",
+    "required": "هذا الحقل مطلوب",
+    "invalidDate": "التاريخ غير صحيح",
+    "invalidDateRange": "نطاق التاريخ غير صحيح",
+    "equipmentRequired": "المعدات مطلوبة",
+    "titleRequired": "العنوان مطلوب",
+    "descriptionRequired": "الوصف مطلوب",
+    "scheduledDateRequired": "تاريخ الجدولة مطلوب",
+    "dueDateAfterScheduled": "تاريخ الاستحقاق يجب أن يكون بعد تاريخ الجدولة",
+    "invalidCost": "التكلفة غير صحيحة"
+  },
+  "items": {
+    "title": "عناصر الإصلاح والتكاليف",
+    "addItem": "إضافة عنصر",
+    "name": "اسم العنصر",
+    "namePlaceholder": "أدخل اسم العنصر",
+    "quantity": "الكمية",
+    "unit": "الوحدة",
+    "unitPlaceholder": "مثل: قطع، ساعات، لترات",
+    "unitCost": "تكلفة الوحدة (ريال)",
+    "totalCost": "التكلفة الإجمالية",
+    "description": "الوصف",
+    "descriptionPlaceholder": "أدخل وصف العنصر",
+    "noItems": "لم يتم إضافة عناصر إصلاح بعد",
+    "totalCost": "إجمالي تكلفة العناصر"
+  },
+  "workflow": {
+    "title": "سير عمل الصيانة",
+    "progress": "التقدم",
+    "completed": "مكتمل",
+    "scheduled": "مجدول",
+    "scheduledDesc": "تم جدولة الصيانة وهي جاهزة للبدء",
+    "inProgress": "قيد التنفيذ",
+    "inProgressDesc": "يتم تنفيذ أعمال الصيانة حالياً",
+    "completed": "مكتمل",
+    "completedDesc": "تم إنجاز أعمال الصيانة بنجاح",
+    "pending": "في الانتظار",
+    "in_progress": "قيد التنفيذ",
+    "startStep": "بدء هذه الخطوة",
+    "startWork": "بدء العمل",
+    "markCompleted": "تمييز كمكتمل",
+    "completeMaintenance": "إكمال الصيانة",
+    "cancel": "إلغاء الصيانة"
+  },
+  "details": {
+    "basicInfo": "المعلومات الأساسية",
+    "maintenanceId": "رقم الصيانة",
+    "notFound": "لم يتم العثور على الصيانة",
+    "notFoundDesc": "لم يتم العثور على سجل الصيانة المطلوب."
+  },
+  "table": {
+    "headers": {
+      "equipment": "المعدات",
+      "type": "النوع",
+      "title": "العنوان",
+      "status": "الحالة",
+      "scheduledDate": "تاريخ الجدولة",
+      "dueDate": "تاريخ الاستحقاق",
+      "assignedTo": "مخصص لـ",
+      "cost": "التكلفة",
+      "actions": "الإجراءات"
+    }
+  },
+  "pagination": {
+    "showing": "عرض {{start}} إلى {{end}} من {{total}} سجل صيانة",
+    "page": "الصفحة {{current}} من {{total}}",
+    "previous": "السابق",
+    "next": "التالي",
+    "itemsPerPage": "عنصر في الصفحة"
+  },
+  "search": {
+    "placeholder": "البحث في سجلات الصيانة...",
+    "title": "البحث والتصفية",
+    "noResults": "لم يتم العثور على سجلات صيانة",
+    "resultCount": "سجلات الصيانة ({{count}})"
+  },
+  "stats": {
+    "totalMaintenance": "إجمالي الصيانة",
+    "scheduledMaintenance": "الصيانة المجدولة",
+    "inProgressMaintenance": "الصيانة قيد التنفيذ",
+    "completedMaintenance": "الصيانة المكتملة",
+    "overdueMaintenance": "الصيانة المتأخرة",
+    "totalCost": "إجمالي التكلفة"
+  },
+  "filters": {
+    "type": "النوع",
+    "status": "الحالة",
+    "allTypes": "جميع الأنواع",
+    "allStatus": "جميع الحالات",
+    "applyFilters": "تطبيق التصفية",
+    "clearFilters": "مسح التصفية"
+  },
+  "dashboard": {
+    "title": "سجلات الصيانة",
+    "subtitle": "عرض وإدارة جميع أنشطة صيانة المعدات",
+    "overdue": "متأخر",
+    "inProgress": "قيد التنفيذ",
+    "scheduled": "مجدول",
+    "totalRecords": "إجمالي السجلات",
+    "searchPlaceholder": "البحث في سجلات الصيانة...",
+    "allTypes": "جميع الأنواع",
+    "allStatuses": "جميع الحالات",
+    "noRecordsFound": "لم يتم العثور على سجلات صيانة تطابق معاييرك",
+    "technician": "الفني",
+    "scheduledDate": "تاريخ الجدولة",
+    "description": "الوصف",
+    "type": "النوع",
+    "equipment": "المعدات",
+    "actions": "الإجراءات",
+    "cost": "التكلفة",
+    "status": "الحالة"
+  }
+}

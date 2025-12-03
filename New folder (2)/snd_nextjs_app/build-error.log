@@ -1,0 +1,60 @@
+﻿
+> snd-nextjs-app@0.1.0 build
+> cross-env NODE_OPTIONS=--max-old-space-size=8192 next build
+
+   Γû▓ Next.js 16.0.1 (Turbopack)
+   - Environments: .env.local, .env
+   - Experiments (use with caution):
+     Γ£ô optimizeCss
+     ┬╖ optimizePackageImports
+     Γ£ô scrollRestoration
+
+   Creating an optimized production build ...
+ Γ£ô Compiled successfully in 6.9s
+   Running TypeScript ...
+node.exe : Failed to compile.
+At C:\Users\IAS\AppData\Roaming\npm\npm.ps1:24 
+char:5
++     & "node$exe"  
+"$basedir/node_modules/npm/bin/npm-cli.js" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Failed 
+    to compile.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+./src/app/[locale]/employee-management/create/page.t
+sx:1931:29
+Type error: Type '{ children: Element[]; value: 
+string; onValueChange: (value: string) => void; 
+required: true; className: string; }' is not 
+assignable to type 'IntrinsicAttributes & 
+SelectSharedProps & { value?: string; 
+defaultValue?: string; onValueChange?(value: 
+string): void; }'.
+  Property 'className' does not exist on type 
+'IntrinsicAttributes & SelectSharedProps & { 
+value?: string; defaultValue?: string; 
+onValueChange?(value: string): void; }'.
+
+[0m [90m 1929 |[39m                             
+onValueChange[33m=[39m{(value) [33m=>[39m handle
+InputChange([32m'company_name'[39m[33m,[39m 
+value)}
+ [90m 1930 |[39m                             
+required[33m=[39m{formData[33m.[39mis_external}
+[31m[1m>[22m[39m[90m 1931 |[39m               
+              className[33m=[39m[32m"flex-1"[39m
+ [90m      |[39m                             
+[31m[1m^[22m[39m
+ [90m 1932 |[39m                           
+[33m>[39m
+ [90m 1933 |[39m                             
+[33m<[39m[33mSelectTrigger[39m[33m>[39m
+ [90m 1934 |[39m                               
+[33m<[39m[33mSelectValue[39m 
+placeholder[33m=[39m[32m"Select a company"[39m 
+[33m/[39m[33m>[39m[0m
+Next.js build worker exited with code: 1 and 
+signal: null

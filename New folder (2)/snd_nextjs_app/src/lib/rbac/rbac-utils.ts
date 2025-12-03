@@ -1,0 +1,111 @@
+import { db } from '@/lib/drizzle';
+import { modelHasRoles, roles, users } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
+import { Action, hasPermission, Subject, User } from './custom-rbac';
+
+export async function getRBACPermissions(userId: string) {
+  try {
+    // Get user with roles and permissions
+    const rows = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+        isActive: users.isActive,
+        roleName: roles.name,
+        roleId: roles.id,
+      })
+      .from(users)
+      .leftJoin(modelHasRoles, eq(modelHasRoles.userId, users.id))
+      .leftJoin(roles, eq(roles.id, modelHasRoles.roleId))
+      .where(eq(users.id, parseInt(userId)));
+    const user = rows.length
+      ? {
+          id: rows[0]?.id || 0,
+          email: rows[0]?.email || '',
+          name: rows[0]?.name || '',
+          isActive: rows[0]?.isActive || false,
+          role_id: rows[0]?.roleId || 0,
+          user_roles: rows.filter(r => r.roleName).map(r => ({ role: { name: r.roleName! } })),
+          user_permissions: [],
+        }
+      : null;
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Create a user object for RBAC
+    const userForRBAC: User = {
+      id: user.id.toString(),
+      email: user.email,
+      name: user.name,
+      role: 'USER', // Default role
+      isActive: user.isActive,
+    };
+
+    // Determine role from user_roles or role_id
+    if (user.user_roles && user.user_roles.length > 0) {
+      const roleHierarchy = {
+        SUPER_ADMIN: 1,
+        ADMIN: 2,
+        MANAGER: 3,
+        SUPERVISOR: 4,
+        OPERATOR: 5,
+        EMPLOYEE: 6,
+        USER: 7,
+      };
+
+      let highestRole = 'USER';
+      let highestPriority = 7;
+
+      user.user_roles.forEach(userRole => {
+        const roleName = userRole.role.name.toUpperCase();
+        const priority = roleHierarchy[roleName as keyof typeof roleHierarchy] || 7;
+        if (priority < highestPriority) {
+          highestPriority = priority;
+          highestRole = roleName;
+        }
+      });
+
+      userForRBAC.role = highestRole as any;
+    } else {
+      // Fallback: If no user_roles found, try to get role from the roles table using role_id
+      // This handles the transition period where users still have role_id but no modelHasRoles entries
+      if (user.role_id) {
+        // Use a simple mapping as fallback
+        const roleMapping: Record<number, string> = {
+          1: 'SUPER_ADMIN',
+          2: 'ADMIN', 
+          3: 'MANAGER',
+          4: 'SUPERVISOR',
+          5: 'OPERATOR',
+          6: 'EMPLOYEE',
+          7: 'USER'
+        };
+        userForRBAC.role = roleMapping[user.role_id] || 'USER';
+      } else {
+        // No role_id either, use default USER role
+        userForRBAC.role = 'USER';
+      }
+    }
+
+    return {
+      can: (action: string, subject: string) => {
+        return hasPermission(userForRBAC, action as Action, subject as Subject);
+      },
+      cannot: (action: string, subject: string) => {
+        return !hasPermission(userForRBAC, action as Action, subject as Subject);
+      },
+      user: userForRBAC,
+    };
+  } catch (error) {
+    
+    // Return a default ability that denies everything
+    return {
+      can: () => false,
+      cannot: () => true,
+      user: null,
+    };
+  }
+}

@@ -1,0 +1,129 @@
+{
+  "title": "إدارة الصلاحيات",
+  "subtitle": "إدارة صلاحيات الأدوار بواجهة منظمة ومجمعة",
+  "description": "إدارة جميع الصلاحيات والأدوار في النظام",
+  "actions": {
+    "createPermission": "إنشاء صلاحية",
+    "editPermission": "تعديل الصلاحية",
+    "deletePermission": "حذف الصلاحية",
+    "viewPermission": "عرض الصلاحية",
+    "createRole": "إنشاء دور",
+    "editRole": "تعديل الدور",
+    "deleteRole": "حذف الدور",
+    "viewRole": "عرض الدور",
+    "saveChanges": "حفظ التغييرات",
+    "savePermissions": "حفظ الصلاحيات",
+    "cancel": "إلغاء",
+    "backToPermissions": "العودة إلى الصلاحيات",
+    "save": "حفظ",
+    "update": "تحديث",
+    "delete": "حذف",
+    "search": "البحث",
+    "filter": "تصفية",
+    "refresh": "تحديث",
+    "export": "تصدير",
+    "import": "استيراد"
+  },
+  "fields": {
+    "name": "الاسم",
+    "namePlaceholder": "اسم الصلاحية",
+    "guardName": "اسم الحارس",
+    "guardNamePlaceholder": "اسم الحارس (مثل web)",
+    "description": "الوصف",
+    "descriptionPlaceholder": "وصف الصلاحية",
+    "roleName": "اسم الدور",
+    "roleNamePlaceholder": "اسم الدور",
+    "permissions": "الصلاحيات",
+    "assignedPermissions": "الصلاحيات المخصصة",
+    "availablePermissions": "الصلاحيات المتاحة",
+    "createdAt": "تاريخ الإنشاء",
+    "updatedAt": "تاريخ التحديث"
+  },
+  "messages": {
+    "loading": "جاري تحميل الصلاحيات...",
+    "saving": "جاري الحفظ...",
+    "createSuccess": "تم إنشاء الصلاحية بنجاح",
+    "createError": "فشل في إنشاء الصلاحية",
+    "updateSuccess": "تم تحديث الصلاحية بنجاح",
+    "updateError": "فشل في تحديث الصلاحية",
+    "deleteSuccess": "تم حذف الصلاحية بنجاح",
+    "deleteError": "فشل في حذف الصلاحية",
+    "fetchError": "خطأ في جلب الصلاحيات",
+    "validationError": "يرجى إدخال جميع الحقول المطلوبة",
+    "permissionNotFound": "لم يتم العثور على الصلاحية",
+    "roleNotFound": "لم يتم العثور على الدور",
+    "accessDenied": "الوصول مرفوض. ليس لديك صلاحية لإدارة الصلاحيات.",
+    "errorGeneral": "حدث خطأ أثناء العملية",
+    "failedToLoad": "فشل في تحميل الصلاحيات",
+    "failedToCreate": "فشل في إنشاء الصلاحية",
+    "failedToUpdate": "فشل في تحديث الصلاحية",
+    "failedToDelete": "فشل في حذف الصلاحية",
+    "saveChangesFor": "حفظ تغييرات الصلاحيات لـ {{role}}",
+    "permissionsUpdated": "تم تحديث الصلاحيات بنجاح",
+    "permissionsUpdateFailed": "فشل في تحديث الصلاحيات"
+  },
+  "validation": {
+    "required": "هذا الحقل مطلوب",
+    "nameRequired": "الاسم مطلوب",
+    "guardNameRequired": "اسم الحارس مطلوب",
+    "roleNameRequired": "اسم الدور مطلوب",
+    "permissionsRequired": "يجب اختيار صلاحية واحدة على الأقل",
+    "invalidName": "الاسم غير صحيح",
+    "nameAlreadyExists": "الاسم موجود بالفعل"
+  },
+  "table": {
+    "headers": {
+      "name": "الاسم",
+      "guardName": "اسم الحارس",
+      "createdAt": "تاريخ الإنشاء",
+      "updatedAt": "تاريخ التحديث",
+      "actions": "الإجراءات"
+    }
+  },
+  "pagination": {
+    "showing": "عرض {{start}} إلى {{end}} من {{total}} صلاحية",
+    "page": "الصفحة {{current}} من {{total}}",
+    "previous": "السابق",
+    "next": "التالي",
+    "itemsPerPage": "عنصر في الصفحة"
+  },
+  "search": {
+    "placeholder": "البحث في الصلاحيات...",
+    "title": "البحث والتصفية",
+    "noResults": "لم يتم العثور على صلاحيات",
+    "resultCount": "الصلاحيات ({{count}})"
+  },
+  "stats": {
+    "permissionsCount": "{{count}} صلاحية",
+    "rolesCount": "{{count}} دور",
+    "totalPermissions": "إجمالي الصلاحيات",
+    "totalRoles": "إجمالي الأدوار",
+    "activePermissions": "الصلاحيات النشطة",
+    "activeRoles": "الأدوار النشطة"
+  },
+  "filters": {
+    "guardName": "اسم الحارس",
+    "allGuards": "جميع الحرس",
+    "applyFilters": "تطبيق التصفية",
+    "clearFilters": "مسح التصفية"
+  },
+  "groups": {
+    "employee": "الموظفين",
+    "customer": "العملاء",
+    "company": "الشركات",
+    "project": "المشاريع",
+    "rental": "الإيجارات",
+    "equipment": "المعدات",
+    "quotation": "العروض",
+    "timesheet": "سجلات الوقت",
+    "payroll": "الرواتب",
+    "leave": "الإجازات",
+    "document": "المستندات",
+    "assignment": "التعيينات",
+    "maintenance": "الصيانة",
+    "safety": "السلامة",
+    "reporting": "التقارير",
+    "permissions": "الصلاحيات",
+    "system": "النظام"
+  }
+}

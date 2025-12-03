@@ -1,0 +1,210 @@
+{
+  "title": "إدارة المشاريع",
+  "subtitle": "إدارة المشاريع والموارد",
+  "description": "إدارة جميع المشاريع والموارد والجدول الزمني",
+  "create": {
+    "title": "إنشاء مشروع جديد",
+    "description": "إعداد مشروع بناء جديد مع جميع التفاصيل اللازمة",
+    "essentialDetails": "تفاصيل المشروع الأساسية والتعريف",
+    "timelineDescription": "الجدول الزمني للمشروع والحالة الحالية",
+    "budgetDescription": "ميزانية المشروع والتفاصيل المالية"
+  },
+  "edit": {
+    "title": "تعديل المشروع",
+    "description": "تحديث تفاصيل المشروع والمعلومات"
+  },
+  "actions": {
+    "createProject": "إنشاء مشروع",
+    "editProject": "تعديل المشروع",
+    "deleteProject": "حذف المشروع",
+    "viewProject": "عرض المشروع",
+    "backToProjects": "العودة إلى المشاريع",
+    "backToProject": "العودة إلى المشروع",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "update": "تحديث",
+    "delete": "حذف",
+    "search": "البحث",
+    "filter": "تصفية",
+    "refresh": "تحديث",
+    "export": "تصدير",
+    "import": "استيراد"
+  },
+  "actionsLabel": "الإجراءات",
+  "fields": {
+    "name": "اسم المشروع",
+    "description": "وصف المشروع",
+    "descriptionPlaceholder": "وصف نطاق المشروع والأهداف",
+    "client": "العميل",
+    "selectClient": "اختر عميل",
+    "location": "موقع المشروع",
+    "selectLocation": "اختر موقع",
+    "startDate": "تاريخ البدء",
+    "endDate": "تاريخ الانتهاء",
+    "pickDate": "اختر تاريخ",
+    "status": "الحالة",
+    "priority": "الأولوية",
+    "budget": "الميزانية",
+    "initialBudget": "الميزانية الأولية",
+    "notes": "ملاحظات",
+    "objectives": "أهداف المشروع",
+    "objectivesPlaceholder": "تحديد أهداف المشروع",
+    "scope": "نطاق المشروع",
+    "scopePlaceholder": "تحديد نطاق المشروع",
+    "deliverables": "مخرجات المشروع",
+    "deliverablesPlaceholder": "قائمة مخرجات المشروع",
+    "constraints": "قيود المشروع",
+    "constraintsPlaceholder": "قائمة قيود المشروع",
+    "assumptions": "افتراضات المشروع",
+    "assumptionsPlaceholder": "قائمة افتراضات المشروع",
+    "risks": "مخاطر المشروع",
+    "risksPlaceholder": "تحديد المخاطر الأولية للمشروع",
+    "qualityStandards": "معايير الجودة",
+    "communicationPlan": "خطة الاتصال",
+    "stakeholderManagement": "إدارة أصحاب المصلحة",
+    "changeManagement": "إدارة التغيير",
+    "procurementPlan": "خطة المشتريات",
+    "resourcePlan": "خطة الموارد",
+    "schedulePlan": "خطة الجدول الزمني",
+    "costPlan": "خطة التكلفة",
+    "qualityPlan": "خطة الجودة",
+    "riskPlan": "خطة المخاطر",
+    "communicationPlanDetailed": "خطة الاتصال المفصلة",
+    "stakeholderPlan": "خطة أصحاب المصلحة"
+  },
+  "status": {
+    "planning": "تخطيط",
+    "active": "نشط",
+    "onHold": "معلق",
+    "completed": "مكتمل",
+    "cancelled": "ملغي",
+    "suspended": "معلق"
+  },
+  "priority": {
+    "low": "منخفض",
+    "medium": "متوسط",
+    "high": "عالي",
+    "critical": "حرج"
+  },
+  "messages": {
+    "loading": "جاري التحميل...",
+    "saving": "جاري الحفظ...",
+    "createSuccess": "تم إنشاء المشروع بنجاح",
+    "createError": "فشل في إنشاء المشروع",
+    "updateSuccess": "تم تحديث المشروع بنجاح",
+    "updateError": "فشل في تحديث المشروع",
+    "deleteSuccess": "تم حذف المشروع بنجاح",
+    "deleteError": "فشل في حذف المشروع",
+    "fetchError": "خطأ في جلب بيانات المشروع",
+    "validationError": "يرجى إدخال جميع الحقول المطلوبة",
+    "projectNotFound": "لم يتم العثور على المشروع",
+    "accessDenied": "الوصول مرفوض. ليس لديك صلاحية لإدارة المشاريع.",
+    "errorGeneral": "حدث خطأ أثناء العملية",
+    "noCustomersFound": "لم يتم العثور على عملاء",
+    "noLocationsFound": "لم يتم العثور على مواقع"
+  },
+  "validation": {
+    "required": "هذا الحقل مطلوب",
+    "invalidDate": "التاريخ غير صحيح",
+    "invalidDateRange": "نطاق التاريخ غير صحيح",
+    "nameRequired": "اسم المشروع مطلوب",
+    "clientRequired": "العميل مطلوب",
+    "startDateRequired": "تاريخ البدء مطلوب",
+    "endDateAfterStart": "تاريخ الانتهاء يجب أن يكون بعد تاريخ البدء",
+    "budgetInvalid": "الميزانية غير صحيحة"
+  },
+  "table": {
+    "headers": {
+      "name": "اسم المشروع",
+      "client": "العميل",
+      "location": "الموقع",
+      "startDate": "تاريخ البدء",
+      "endDate": "تاريخ الانتهاء",
+      "status": "الحالة",
+      "priority": "الأولوية",
+      "budget": "الميزانية",
+      "actions": "الإجراءات"
+    }
+  },
+  "pagination": {
+    "showing": "عرض {{start}} إلى {{end}} من {{total}} مشروع",
+    "page": "الصفحة {{current}} من {{total}}",
+    "previous": "السابق",
+    "next": "التالي",
+    "itemsPerPage": "عنصر في الصفحة"
+  },
+  "search": {
+    "placeholder": "البحث في المشاريع...",
+    "title": "البحث والتصفية",
+    "noResults": "لم يتم العثور على مشاريع",
+    "resultCount": "المشاريع ({{count}})"
+  },
+  "stats": {
+    "totalProjects": "إجمالي المشاريع",
+    "activeProjects": "المشاريع النشطة",
+    "completedProjects": "المشاريع المكتملة",
+    "totalBudget": "إجمالي الميزانية",
+    "averageDuration": "متوسط المدة"
+  },
+  "completed": "مكتمل",
+  "cancelled": "ملغي",
+  "on_hold": "معلق",
+  "status_options": {
+    "planning": "تخطيط",
+    "active": "نشط",
+    "in_progress": "قيد التنفيذ",
+    "completed": "مكتمل",
+    "on_hold": "معلق",
+    "cancelled": "ملغي"
+  },
+  "priority_options": {
+    "low": "منخفض",
+    "medium": "متوسط",
+    "high": "عالي",
+    "critical": "حرج"
+  },
+  "sections": {
+    "basicInformation": "المعلومات الأساسية",
+    "timelineAndStatus": "الجدول الزمني والحالة",
+    "budgetInformation": "معلومات الميزانية",
+    "projectPlanning": "تخطيط المشروع",
+    "projectPlanningDescription": "معلومات تخطيط المشروع التفصيلية",
+    "projectTeam": "فريق المشروع",
+    "projectTeamDescription": "تعيين أعضاء الفريق لأدوار محددة",
+    "projectDocuments": "مستندات المشروع",
+    "projectDocumentsDescription": "رفع مستندات المشروع ذات الصلة",
+    "additionalNotes": "ملاحظات إضافية",
+    "additionalNotesDescription": "أي معلومات إضافية حول المشروع"
+  },
+  "roles": {
+    "projectManager": "مدير المشروع",
+    "projectEngineer": "مهندس المشروع",
+    "projectForeman": "رئيس العمال",
+    "supervisor": "المشرف",
+    "selectManager": "اختر مدير",
+    "selectEngineer": "اختر مهندس",
+    "selectForeman": "اختر رئيس عمال",
+    "selectSupervisor": "اختر مشرف"
+  },
+  "statusLabels": {
+    "selectStatus": "اختر الحالة",
+    "selectPriority": "اختر الأولوية"
+  },
+  "documents": {
+    "uploadDocuments": "رفع المستندات",
+    "selectedFiles": "الملفات المحددة",
+    "remove": "إزالة",
+    "supportedFormats": "الصيغ المدعومة: PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG, PNG"
+  },
+  "notes": {
+    "placeholder": "أضف أي ملاحظات أو تعليقات إضافية"
+  },
+  "buttons": {
+    "createProject": "إنشاء مشروع",
+    "creatingProject": "جاري إنشاء المشروع...",
+    "cancel": "إلغاء"
+  },
+  "fields": {
+    "totalBudget": "إجمالي الميزانية"
+  }
+}

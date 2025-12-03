@@ -1,0 +1,453 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --radius: 0.65rem;
+  --background: 0 0% 100%;
+  --foreground: 0 0% 3.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 3.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 3.9%;
+  --primary: 0 0% 9%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 0 0% 96.1%;
+  --secondary-foreground: 0 0% 9%;
+  --muted: 0 0% 96.1%;
+  --muted-foreground: 0 0% 45.1%;
+  --accent: 0 0% 96.1%;
+  --accent-foreground: 0 0% 9%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 0 0% 89.8%;
+  --input: 0 0% 89.8%;
+  --ring: 0 0% 3.9%;
+  --chart-1: 12 76% 61%;
+  --chart-2: 173 58% 39%;
+  --chart-3: 197 37% 24%;
+  --chart-4: 43 74% 66%;
+  --chart-5: 27 87% 67%;
+  --sidebar-background: 0 0% 98%;
+  --sidebar-foreground: 0 0% 3.9%;
+  --sidebar-primary: 0 0% 9%;
+  --sidebar-primary-foreground: 0 0% 98%;
+  --sidebar-accent: 0 0% 96.1%;
+  --sidebar-accent-foreground: 0 0% 9%;
+  --sidebar-border: 0 0% 89.8%;
+  --sidebar-ring: 0 0% 3.9%;
+}
+
+.dark {
+  --background: 0 0% 3.9%;
+  --foreground: 0 0% 98%;
+  --card: 0 0% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --popover: 0 0% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 0 0% 98%;
+  --primary-foreground: 0 0% 9%;
+  --secondary: 0 0% 14.9%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 0 0% 14.9%;
+  --muted-foreground: 0 0% 63.9%;
+  --accent: 0 0% 14.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 0 0% 14.9%;
+  --input: 0 0% 14.9%;
+  --ring: 0 0% 83.1%;
+  --chart-1: 220 70% 50%;
+  --chart-2: 160 60% 45%;
+  --chart-3: 30 80% 55%;
+  --chart-4: 280 65% 60%;
+  --chart-5: 340 75% 55%;
+  --sidebar-background: 0 0% 9%;
+  --sidebar-foreground: 0 0% 98%;
+  --sidebar-primary: 220 70% 50%;
+  --sidebar-primary-foreground: 0 0% 98%;
+  --sidebar-accent: 0 0% 14.9%;
+  --sidebar-accent-foreground: 0 0% 98%;
+  --sidebar-border: 0 0% 14.9%;
+  --sidebar-ring: 0 0% 83.1%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .sidebar-layout {
+    @apply flex h-screen w-full overflow-hidden;
+  }
+
+  .sidebar-content {
+    @apply flex min-w-0 flex-1 flex-col;
+  }
+
+  .sidebar {
+    @apply w-64 flex-shrink-0 border-r border-sidebar-border bg-sidebar;
+  }
+
+  .sidebar-inset {
+    @apply flex min-w-0 flex-1 flex-col transition-all duration-200 ease-linear;
+  }
+
+  /* RTL Support */
+  .rtl .sidebar {
+    @apply border-l border-r-0;
+  }
+
+  .rtl .sidebar-inset {
+    @apply border-l-0 border-r;
+  }
+
+  /* RTL Layout Fixes */
+  .rtl [data-sidebar] {
+    @apply border-l border-r-0;
+  }
+
+  .rtl [data-sidebar-inset] {
+    @apply border-l-0 border-r;
+  }
+
+  /* Ensure proper content width in RTL */
+  .rtl [data-slot='sidebar-inset'] {
+    @apply min-w-0 flex-1;
+  }
+
+  /* Fix content positioning in RTL */
+  .rtl .main-content {
+    @apply min-w-0 flex-1;
+  }
+
+  /* Ensure sidebar has proper background and positioning */
+  [data-sidebar] {
+    @apply border-r border-sidebar-border bg-sidebar;
+  }
+
+  /* Ensure content area doesn't overlap with sidebar */
+  [data-sidebar-inset] {
+    @apply flex min-w-0 flex-1 flex-col transition-all duration-200 ease-linear;
+  }
+
+  /* Fix for content width issues */
+  .main-content {
+    @apply min-w-0 flex-1 overflow-auto transition-all duration-200 ease-linear;
+  }
+
+  /* Ensure tables and content don't get cut off */
+  .content-wrapper {
+    @apply w-full max-w-none transition-all duration-200 ease-linear;
+  }
+
+  /* Ensure proper content area management */
+  [data-slot='sidebar-inset'] {
+    @apply flex min-w-0 flex-1 flex-col transition-all duration-200 ease-linear;
+  }
+
+  /* Fix content width when sidebar toggles */
+  [data-slot='sidebar-inset'] > main {
+    @apply min-w-0 flex-1 overflow-auto transition-all duration-200 ease-linear w-full;
+  }
+
+  /* Full width utilities */
+  .w-full-container {
+    @apply w-full max-w-none;
+  }
+
+  .content-full-width {
+    @apply w-full max-w-none px-0;
+  }
+
+  /* Override container constraints only for page content, not sidebar */
+  [data-slot='sidebar-inset'] .container,
+  main .container {
+    max-width: none !important;
+    width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /* Make page content full width without affecting individual elements */
+  /* This targets only the main page container, not individual UI elements */
+  [data-slot='sidebar-inset'] > main > div:first-child,
+  main > div:first-child {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  /* Desktop: Sidebar uses fixed positioning, no margin needed */
+  @media (min-width: 768px) {
+    [data-slot='sidebar-inset'] {
+      @apply transition-all duration-200 ease-linear;
+    }
+  }
+
+  /* Mobile: Sidebar overlays content */
+  @media (max-width: 767px) {
+    [data-slot='sidebar-inset'] {
+      @apply ml-0;
+    }
+    
+    /* Mobile table overflow handling */
+    .table-container,
+    [data-slot="table-container"] {
+      @apply overflow-x-auto -mx-3 sm:-mx-4 md:-mx-6;
+    }
+    
+    .table-container table,
+    [data-slot="table-container"] table {
+      @apply min-w-full;
+    }
+    
+    /* Mobile-friendly scrolling */
+    body {
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Mobile form inputs - prevent zoom on focus */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="date"],
+    input[type="time"],
+    input[type="datetime-local"],
+    textarea,
+    select {
+      font-size: 16px;
+    }
+    
+    /* Mobile button touch targets */
+    button,
+    a[role="button"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    
+    /* Prevent button overflow on mobile */
+    .flex-wrap {
+      flex-wrap: wrap;
+    }
+    
+    /* Ensure buttons in flex containers wrap properly */
+    .flex > button,
+    .flex > a[role="button"],
+    .flex > [role="button"] {
+      flex-shrink: 1;
+      min-width: 0;
+    }
+    
+    /* Button groups should wrap on mobile */
+    .flex.items-center.gap-2 > button,
+    .flex.items-center.gap-2 > a[role="button"] {
+      flex: 0 1 auto;
+    }
+    
+    /* RTL mobile specific fixes */
+    .rtl [data-slot='sidebar-inset'] {
+      @apply mr-0;
+    }
+    
+    .rtl .table-container,
+    .rtl [data-slot="table-container"] {
+      @apply -mx-3 sm:-mx-4 md:-mx-6;
+    }
+  }
+
+  /* Fix for content area width transitions */
+  [data-slot='sidebar-inset'] {
+    @apply transition-all duration-200 ease-linear;
+  }
+
+  /* Ensure proper flex behavior in RTL */
+  .rtl .flex {
+    display: flex;
+  }
+
+  /* Fix sidebar positioning in RTL */
+  .rtl [data-sidebar] {
+    @apply border-l border-r-0;
+  }
+
+  .rtl [data-sidebar-inset] {
+    @apply border-l-0 border-r;
+  }
+
+
+
+  /* Fix for mobile RTL layout */
+  @media (max-width: 767px) {
+    .rtl [data-slot='sidebar-inset'] {
+      @apply ml-0 mr-0;
+    }
+    
+    /* RTL mobile table overflow handling */
+    .rtl .table-container {
+      @apply overflow-x-auto;
+    }
+    
+    .rtl [data-slot="table-container"] {
+      @apply -mx-3 sm:-mx-4 md:-mx-6;
+    }
+    
+    /* RTL mobile padding adjustments */
+    .rtl .main-content {
+      @apply p-3 sm:p-4 md:p-6;
+    }
+    
+    /* RTL mobile flex direction fixes */
+    .rtl .flex-row {
+      flex-direction: row-reverse;
+    }
+    
+    /* RTL mobile gap adjustments */
+    .rtl .gap-1 {
+      gap: 0.25rem;
+    }
+    
+    .rtl .gap-2 {
+      gap: 0.5rem;
+    }
+  }
+
+  /* RTL Layout Container */
+  .rtl {
+    direction: rtl;
+  }
+
+  .rtl * {
+    direction: inherit;
+  }
+
+  /* RTL Text Alignment */
+  .rtl .text-left {
+    text-align: right;
+  }
+
+  .rtl .text-right {
+    text-align: left;
+  }
+
+  /* RTL Margin/Padding Adjustments */
+  .rtl .ml-2 {
+    margin-left: 0;
+    margin-right: 0.5rem;
+  }
+
+  .rtl .mr-2 {
+    margin-right: 0;
+    margin-left: 0.5rem;
+  }
+
+  .rtl .pl-10 {
+    padding-left: 0;
+    padding-right: 2.5rem;
+  }
+
+  .rtl .pr-10 {
+    padding-right: 0;
+    padding-left: 2.5rem;
+  }
+
+  /* RTL Flex Direction */
+  .rtl .flex-row {
+    flex-direction: row-reverse;
+  }
+
+  .rtl .flex-row-reverse {
+    flex-direction: row;
+  }
+
+  /* RTL SidebarInset Margin Override - Mirror LTR logic exactly */
+  .rtl [data-slot='sidebar-inset'] {
+    margin-left: 0 !important;
+  }
+  
+  /* Desktop RTL: When sidebar is expanded, add right margin */
+  @media (min-width: 768px) {
+    /* RTL: Default expanded state - add right margin */
+    .rtl [data-slot='sidebar-inset'] {
+      margin-right: 16rem !important;
+      margin-left: 0 !important;
+      transition: margin-right 200ms ease-linear !important;
+    }
+    
+    /* RTL collapsed state - remove right margin when sidebar is collapsed */
+    /* Using group selector to detect collapsed state from parent */
+    .rtl .group[data-state="collapsed"] ~ [data-slot='sidebar-inset'],
+    .rtl [data-state="collapsed"] ~ [data-slot='sidebar-inset'],
+    .rtl .peer[data-state="collapsed"] ~ [data-slot='sidebar-inset'] {
+      margin-right: 0 !important;
+    }
+  }
+  
+  /* RTL mobile sidebar margin reset */
+  @media (max-width: 767px) {
+    .rtl [data-slot='sidebar-inset'] {
+      margin-right: 0 !important;
+    }
+    
+    /* RTL mobile toast positioning */
+    .rtl [data-sonner-toaster] {
+      left: 1rem !important;
+      right: auto !important;
+    }
+  }
+  
+  /* RTL desktop toast positioning */
+  .rtl [data-sonner-toaster] {
+    left: 1rem !important;
+    right: auto !important;
+  }
+
+  /* H2S Card Print Styles */
+  @media print {
+    @page {
+      size: 85.6mm 53.98mm;
+      margin: 0;
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+    }
+    
+    .h2s-card-front,
+    .h2s-card-back {
+      page-break-after: always;
+      width: 85.6mm;
+      height: 53.98mm;
+      margin: 0;
+      padding: 4mm;
+      box-sizing: border-box;
+    }
+    
+    .no-print {
+      display: none !important;
+    }
+  }
+}

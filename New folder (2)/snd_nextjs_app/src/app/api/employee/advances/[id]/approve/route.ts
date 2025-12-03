@@ -1,0 +1,81 @@
+
+import { db } from '@/lib/db';
+import { advancePayments } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
+import { getServerSession } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
+
+// Explicit route configuration for Next.js 15
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+
+// Additional route configuration for Next.js 15
+export const runtime = 'nodejs';
+export const preferredRegion = 'auto';
+
+export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+
+    const session = await getServerSession();
+    if (!session?.user) {
+      
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const resolvedParams = await params;
+    const advanceId = parseInt(resolvedParams.id);
+    if (!advanceId) {
+      return NextResponse.json({ error: 'Invalid advance ID' }, { status: 400 });
+    }
+
+    // Check if advance exists and is pending using Drizzle
+    const advanceRows = await db
+      .select()
+      .from(advancePayments)
+      .where(eq(advancePayments.id, advanceId))
+      .limit(1);
+
+    if (advanceRows.length === 0) {
+      return NextResponse.json({ error: 'Advance not found' }, { status: 404 });
+    }
+
+    const advance = advanceRows[0];
+
+    if (!advance) {
+      return NextResponse.json({ error: 'Advance not found' }, { status: 404 });
+    }
+
+    if (advance.status !== 'pending') {
+      return NextResponse.json({ error: 'Advance is not in pending status' }, { status: 400 });
+    }
+
+    // Update advance status to approved using Drizzle
+    const updatedAdvanceRows = await db
+      .update(advancePayments)
+      .set({
+        status: 'approved',
+        approvedBy: parseInt(session.user.id),
+        approvedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(advancePayments.id, advanceId))
+      .returning();
+
+    const updatedAdvance = updatedAdvanceRows[0];
+
+    return NextResponse.json({
+      success: true,
+      advance: updatedAdvance,
+      message: 'Advance approved successfully',
+    });
+  } catch (error) {
+    
+    return NextResponse.json(
+      {
+        error: `Failed to approve advance: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      },
+      { status: 500 }
+    );
+  }
+}

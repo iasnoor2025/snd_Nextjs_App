@@ -1,0 +1,1694 @@
+'use client';
+
+// Force dynamic rendering to prevent SSR issues
+export const dynamic = 'force-dynamic';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { NationalityDropdown } from '@/components/shared/NationalityDropdown';
+import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
+import { SearchableSelect } from '@/components/ui/searchable-select';
+import { ArrowLeft, Calendar, Edit, IdCard, MapPin, Phone, Plus, Save, Trash2, User, Scan } from 'lucide-react';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { useI18n } from '@/hooks/use-i18n';
+import { ExpiryStatusDisplay, getExpiryStatus } from '@/lib/utils/expiry-utils';
+import { useConfirmationDialog } from '@/components/providers/confirmation-provider';
+
+interface Employee {
+  id: number;
+  first_name: string;
+  middle_name?: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  employee_id: string;
+  file_number: string;
+  status: string;
+  hire_date: string;
+  date_of_birth?: string;
+  nationality: string;
+  current_location?: string;
+  hourly_rate?: number;
+  basic_salary?: number;
+  overtime_rate_multiplier?: number;
+  overtime_fixed_rate?: number;
+  contract_days_per_month?: number;
+  contract_hours_per_day?: number;
+  address?: string;
+  city?: string;
+  state?: string;
+  postal_code?: string;
+  country?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  emergency_contact_relationship?: string;
+  iqama_number?: string;
+  iqama_expiry?: string;
+  passport_number?: string;
+  passport_expiry?: string;
+  driving_license_number?: string;
+  driving_license_expiry?: string;
+  operator_license_number?: string;
+  operator_license_expiry?: string;
+  tuv_certification_number?: string;
+  tuv_certification_expiry?: string;
+  spsp_license_number?: string;
+  spsp_license_expiry?: string;
+  supervisor?: string;
+  department?: {
+    id: number;
+    name: string;
+  };
+  designation?: {
+    id: number;
+    name: string;
+  };
+}
+
+interface Department {
+  id: number;
+  name: string;
+  code?: string;
+}
+
+interface Designation {
+  id: number;
+  name: string;
+  department_id?: number;
+  description?: string;
+}
+
+export default function EditEmployeePage() {
+  const params = useParams();
+  const locale = params?.locale as string || 'en';
+  const router = useRouter();
+  const { t } = useI18n(); 
+  const { confirm } = useConfirmationDialog();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [extractingNationality, setExtractingNationality] = useState(false);
+  const [employee, setEmployee] = useState<Employee | null>(null);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [designations, setDesignations] = useState<Designation[]>([]);
+
+  // Add modal states
+  const [showAddDepartment, setShowAddDepartment] = useState(false);
+  const [showAddDesignation, setShowAddDesignation] = useState(false);
+  const [newDepartment, setNewDepartment] = useState({ name: '', code: '' });
+  const [newDesignation, setNewDesignation] = useState({ name: '', description: '' });
+  const [addingDepartment, setAddingDepartment] = useState(false);
+  const [addingDesignation, setAddingDesignation] = useState(false);
+
+  // Edit modal states
+  const [showEditDepartment, setShowEditDepartment] = useState(false);
+  const [showEditDesignation, setShowEditDesignation] = useState(false);
+  const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
+  const [editingDesignation, setEditingDesignation] = useState<Designation | null>(null);
+  const [updatingDepartment, setUpdatingDepartment] = useState(false);
+  const [updatingDesignation, setUpdatingDesignation] = useState(false);
+  const [deletingDesignation, setDeletingDesignation] = useState(false);
+  const [deletingDepartment, setDeletingDepartment] = useState(false);
+
+  const [formData, setFormData] = useState({
+    first_name: '',
+    middle_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    employee_id: '',
+    file_number: '',
+    status: 'active',
+    hire_date: '',
+    date_of_birth: '',
+    nationality: '',
+    current_location: '',
+    hourly_rate: '',
+    basic_salary: '',
+    overtime_rate_multiplier: '1.5',
+    overtime_fixed_rate: '6',
+    contract_days_per_month: '30',
+    contract_hours_per_day: '8',
+    address: '',
+    city: '',
+    state: '',
+    postal_code: '',
+    country: '',
+    emergency_contact_name: '',
+    emergency_contact_phone: '',
+    emergency_contact_relationship: '',
+    iqama_number: '',
+    iqama_expiry: '',
+    passport_number: '',
+    passport_expiry: '',
+    driving_license_number: '',
+    driving_license_expiry: '',
+    operator_license_number: '',
+    operator_license_expiry: '',
+    tuv_certification_number: '',
+    tuv_certification_expiry: '',
+    spsp_license_number: '',
+    spsp_license_expiry: '',
+    department_id: '',
+    designation_id: '',
+    supervisor: '',
+  });
+
+  // Fetch departments and designations
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [departmentsResponse, designationsResponse] = await Promise.all([
+          fetch('/api/departments'),
+          fetch('/api/designations'),
+        ]);
+
+        if (departmentsResponse.ok) {
+          const deptData = await departmentsResponse.json();
+          setDepartments(deptData.data || []);
+        }
+
+        if (designationsResponse.ok) {
+          const desigData = await designationsResponse.json();
+          setDesignations(desigData.data || []);
+        }
+      } catch (error) {
+        
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    const fetchEmployee = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/employees/${params.id}`);
+        const result = await response.json();
+
+        if (result.success) {
+          const emp = result.employee;
+          setEmployee(emp);
+          setFormData({
+            first_name: emp.first_name || '',
+            middle_name: emp.middle_name || '',
+            last_name: emp.last_name || '',
+            email: emp.email || '',
+            phone: emp.phone || '',
+            employee_id: emp.employee_id || '',
+            file_number: emp.file_number || '',
+            status: emp.status || 'active',
+            hire_date: emp.hire_date ? emp.hire_date.split('T')[0] : '',
+            date_of_birth: emp.date_of_birth ? emp.date_of_birth.split('T')[0] : '',
+            nationality: emp.nationality || '',
+            current_location: emp.current_location || '',
+            hourly_rate: emp.hourly_rate ? emp.hourly_rate.toString() : '',
+            basic_salary: emp.basic_salary ? emp.basic_salary.toString() : '',
+            overtime_rate_multiplier: emp.overtime_fixed_rate
+              ? '0'
+              : emp.overtime_rate_multiplier
+                ? emp.overtime_rate_multiplier.toString()
+                : '1.5',
+            overtime_fixed_rate: emp.overtime_fixed_rate ? emp.overtime_fixed_rate.toString() : '',
+            contract_days_per_month: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate().toString(),
+            contract_hours_per_day: emp.contract_hours_per_day
+              ? emp.contract_hours_per_day.toString()
+              : '8',
+            address: emp.address || '',
+            city: emp.city || '',
+            state: emp.state || '',
+            postal_code: emp.postal_code || '',
+            country: emp.country || '',
+            emergency_contact_name: emp.emergency_contact_name || '',
+            emergency_contact_phone: emp.emergency_contact_phone || '',
+            emergency_contact_relationship: emp.emergency_contact_relationship || '',
+            iqama_number: emp.iqama_number || '',
+            iqama_expiry: emp.iqama_expiry ? emp.iqama_expiry.split('T')[0] : '',
+            passport_number: emp.passport_number || '',
+            passport_expiry: emp.passport_expiry ? emp.passport_expiry.split('T')[0] : '',
+            driving_license_number: emp.driving_license_number || '',
+            driving_license_expiry: emp.driving_license_expiry
+              ? emp.driving_license_expiry.split('T')[0]
+              : '',
+            operator_license_number: emp.operator_license_number || '',
+            operator_license_expiry: emp.operator_license_expiry
+              ? emp.operator_license_expiry.split('T')[0]
+              : '',
+            tuv_certification_number: emp.tuv_certification_number || '',
+            tuv_certification_expiry: emp.tuv_certification_expiry
+              ? emp.tuv_certification_expiry.split('T')[0]
+              : '',
+            spsp_license_number: emp.spsp_license_number || '',
+            spsp_license_expiry: emp.spsp_license_expiry
+              ? emp.spsp_license_expiry.split('T')[0]
+              : '',
+            supervisor: emp.supervisor || '',
+            department_id: emp.department?.id ? emp.department.id.toString() : '',
+            designation_id: emp.designation?.id ? emp.designation.id.toString() : '',
+          });
+        } else {
+          toast.error(result.message || 'Failed to fetch employee');
+          router.push(`/${locale}/employee-management`);
+        }
+      } catch (error) {
+        
+        toast.error('Failed to fetch employee');
+        router.push(`/${locale}/employee-management`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (params.id) {
+      fetchEmployee();
+    }
+  }, [params.id, router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.first_name.trim() || !formData.last_name.trim()) {
+      toast.error('First name and last name are required');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const response = await fetch(`/api/employees/${params.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          hourly_rate:
+            formData.hourly_rate && formData.hourly_rate.trim() !== ''
+              ? parseFloat(formData.hourly_rate)
+              : null,
+          basic_salary:
+            formData.basic_salary && formData.basic_salary.trim() !== ''
+              ? parseFloat(formData.basic_salary)
+              : null,
+          overtime_rate_multiplier:
+            formData.overtime_fixed_rate && formData.overtime_fixed_rate.trim() !== ''
+              ? 0
+              : 1.5,
+          overtime_fixed_rate:
+            formData.overtime_fixed_rate && formData.overtime_fixed_rate.trim() !== ''
+              ? parseFloat(formData.overtime_fixed_rate)
+              : 0,
+          contract_days_per_month: formData.contract_days_per_month
+            ? parseInt(formData.contract_days_per_month)
+            : 26,
+          contract_hours_per_day: formData.contract_hours_per_day
+            ? parseInt(formData.contract_hours_per_day)
+            : 8,
+          department_id: formData.department_id ? parseInt(formData.department_id) : null,
+          designation_id: formData.designation_id ? parseInt(formData.designation_id) : null,
+          supervisor: formData.supervisor || null,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success(t('employee.messages.saveSuccess'));
+        router.push(`/${locale}/employee-management/${params.id}`);
+      } else {
+        toast.error(result.message || t('employee.messages.saveError'));
+      }
+    } catch (error) {
+      
+      toast.error(t('employee.messages.saveError'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const calculateHourlyRate = (
+    basicSalary: number,
+    contractHours: number
+  ): number => {
+    if (contractHours <= 0) {
+      return 0;
+    }
+    // Use actual total days in current month
+    const currentMonthDays = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+    return Math.round((basicSalary / (currentMonthDays * contractHours)) * 100) / 100;
+  };
+
+  const handleExtractNationality = async () => {
+    if (!params.id) return;
+
+    try {
+      setExtractingNationality(true);
+      const toastId = toast.loading('Extracting nationality from Iqama... This may take 10-30 seconds');
+      
+      const response = await fetch(`/api/employees/${params.id}/extract-nationality`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success(`Nationality extracted: ${result.employee.nationality}`, { id: toastId });
+        // Update form data with extracted nationality
+        setFormData(prev => ({
+          ...prev,
+          nationality: result.employee.nationality,
+        }));
+        // Refresh employee data
+        if (params.id) {
+          const empResponse = await fetch(`/api/employees/${params.id}`);
+          const empResult = await empResponse.json();
+          if (empResult.success && empResult.employee) {
+            setEmployee(empResult.employee);
+          }
+        }
+      } else {
+        if (response.status === 408) {
+          toast.error('Processing timeout. Please set nationality manually or try with a clearer image.', { id: toastId });
+        } else {
+          toast.error(result.message || result.error || 'Failed to extract nationality. Please set it manually.', { id: toastId });
+        }
+      }
+    } catch (error) {
+      console.error('Error extracting nationality:', error);
+      if (error instanceof Error && error.message.includes('timeout')) {
+        toast.error('Processing took too long. Please set nationality manually.');
+      } else {
+        toast.error('Failed to extract nationality from Iqama. Please set it manually.');
+      }
+    } finally {
+      setExtractingNationality(false);
+    }
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [field]: value,
+      };
+
+      // Auto-calculate hourly rate when basic salary or contract hours change
+      if (
+        field === 'basic_salary' ||
+        field === 'contract_hours_per_day'
+      ) {
+        const basicSalary = parseFloat(newData.basic_salary) || 0;
+        const contractHours = parseFloat(newData.contract_hours_per_day) || 8;
+
+        const calculatedHourlyRate = calculateHourlyRate(basicSalary, contractHours);
+        newData.hourly_rate = calculatedHourlyRate.toString();
+      }
+
+      // Auto-set driving license number to iqama number when iqama is entered
+      if (field === 'iqama_number') {
+        if (value && value.trim() !== '') {
+          newData.driving_license_number = value;
+        } else {
+          // Clear driving license number when iqama is cleared
+          newData.driving_license_number = '';
+        }
+      }
+
+      return newData;
+    });
+  };
+
+  // Add new department
+  const handleAddDepartment = async () => {
+    if (!newDepartment.name.trim()) {
+      toast.error(t('employee.messages.departmentNameRequired'));
+      return;
+    }
+
+    try {
+      setAddingDepartment(true);
+      const response = await fetch('/api/departments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newDepartment.name.trim(),
+          code: newDepartment.code?.trim() || null,
+          description: null,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success(t('employee.messages.departmentAddedSuccess'));
+        setDepartments(prev => [...prev, result.data]);
+        setFormData(prev => ({ ...prev, department_id: result.data.id.toString() }));
+        setNewDepartment({ name: '', code: '' });
+        setShowAddDepartment(false);
+      } else {
+        // If creation fails, try to refresh the departments list
+        toast.error(result.message || t('employee.messages.departmentAddError'));
+
+        // Refresh departments list in case there was a sync issue
+        try {
+          const refreshResponse = await fetch('/api/departments');
+          if (refreshResponse.ok) {
+            const refreshData = await refreshResponse.json();
+            setDepartments(refreshData.data || []);
+          }
+        } catch (refreshError) {
+          
+        }
+      }
+    } catch (error) {
+      
+      toast.error('Failed to add department. Please try again.');
+
+      // Refresh departments list in case there was a sync issue
+      try {
+        const refreshResponse = await fetch('/api/departments');
+        if (refreshResponse.ok) {
+          const refreshData = await refreshResponse.json();
+          setDepartments(refreshData.data || []);
+        }
+      } catch (refreshError) {
+        
+      }
+    } finally {
+      setAddingDepartment(false);
+    }
+  };
+
+  // Add new designation
+  const handleAddDesignation = async () => {
+    if (!newDesignation.name.trim()) {
+      toast.error('Designation name is required');
+      return;
+    }
+
+    try {
+      setAddingDesignation(true);
+      const response = await fetch('/api/designations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newDesignation.name.trim(),
+          description: newDesignation.description?.trim() || null,
+          department_id: formData.department_id || null,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success('Designation added successfully');
+        setDesignations(prev => [...prev, result.data]);
+        setFormData(prev => ({ ...prev, designation_id: result.data.id }));
+        setNewDesignation({ name: '', description: '' });
+        setShowAddDesignation(false);
+      } else {
+        toast.error(result.message || 'Failed to add designation');
+      }
+    } catch (error) {
+      
+      toast.error('Failed to add designation');
+    } finally {
+      setAddingDesignation(false);
+    }
+  };
+
+  const handleDeleteDepartment = async () => {
+    if (!formData.department_id) {
+      toast.error(t('employee.messages.selectDepartmentToDelete'));
+      return;
+    }
+
+    const selectedDepartment = departments.find(
+      d => d.id.toString() === formData.department_id
+    );
+
+    if (!selectedDepartment) {
+      toast.error(t('employee.messages.selectDepartmentToDelete'));
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: t('employee.confirmDelete.department.title'),
+      description: t('employee.confirmDelete.department.description', {
+        name: selectedDepartment.name,
+      }),
+      confirmText: t('common.actions.delete'),
+      cancelText: t('employee.actions.cancel'),
+      variant: 'destructive',
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletingDepartment(true);
+
+      const response = await fetch(`/api/departments/${selectedDepartment.id}`, {
+        method: 'DELETE',
+      });
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success(t('common.messages.deleteSuccess'));
+        setDepartments(prev => prev.filter(d => d.id !== selectedDepartment.id));
+        setFormData(prev => ({
+          ...prev,
+          department_id:
+            prev.department_id === selectedDepartment.id.toString()
+              ? ''
+              : prev.department_id,
+        }));
+        setShowEditDepartment(false);
+        setEditingDepartment(null);
+      } else {
+        toast.error(result.message || t('employee.messages.departmentDeleteError'));
+      }
+    } catch (error) {
+      toast.error(t('employee.messages.departmentDeleteError'));
+    } finally {
+      setDeletingDepartment(false);
+    }
+  };
+
+  const handleDeleteDesignation = async () => {
+    if (!formData.designation_id) {
+      toast.error(t('employee.messages.selectDesignationToDelete'));
+      return;
+    }
+
+    const designationId = parseInt(formData.designation_id, 10);
+    if (Number.isNaN(designationId)) {
+      toast.error(t('employee.messages.designationDeleteError'));
+      return;
+    }
+
+    const selectedDesignation = designations.find(d => d.id === designationId);
+
+    if (!selectedDesignation) {
+      toast.error(t('employee.messages.selectDesignationToDelete'));
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: t('employee.confirmDelete.designation.title'),
+      description: t('employee.confirmDelete.designation.description', {
+        name: selectedDesignation.name,
+      }),
+      confirmText: t('common.actions.delete'),
+      cancelText: t('employee.actions.cancel'),
+      variant: 'destructive',
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletingDesignation(true);
+
+      const response = await fetch(`/api/designations/${designationId}`, {
+        method: 'DELETE',
+      });
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success(t('common.messages.deleteSuccess'));
+        setDesignations(prev => prev.filter(d => d.id !== selectedDesignation.id));
+        setFormData(prev => ({
+          ...prev,
+          designation_id:
+            prev.designation_id === selectedDesignation.id.toString()
+              ? ''
+              : prev.designation_id,
+        }));
+        setShowEditDesignation(false);
+        setEditingDesignation(null);
+      } else {
+        toast.error(result.message || t('employee.messages.designationDeleteError'));
+      }
+    } catch (error) {
+      toast.error(t('employee.messages.designationDeleteError'));
+    } finally {
+      setDeletingDesignation(false);
+    }
+  };
+
+  // Edit department
+  const handleEditDepartment = async () => {
+    if (!editingDepartment || !editingDepartment.name.trim()) {
+      toast.error('Department name is required');
+      return;
+    }
+
+    try {
+      setUpdatingDepartment(true);
+      const response = await fetch(`/api/departments/${editingDepartment.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: editingDepartment.name.trim(),
+          code: editingDepartment.code?.trim() || null,
+          description: null,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success('Department updated successfully');
+        setDepartments(prev =>
+          prev.map(dept => (dept.id === editingDepartment.id ? result.data : dept))
+        );
+        setEditingDepartment(null);
+        setShowEditDepartment(false);
+      } else {
+        toast.error(result.message || 'Failed to update department');
+      }
+    } catch (error) {
+      
+      toast.error('Failed to update department');
+    } finally {
+      setUpdatingDepartment(false);
+    }
+  };
+
+  // Edit designation
+  const handleEditDesignation = async () => {
+    if (!editingDesignation || !editingDesignation.name.trim()) {
+      toast.error(t('employee.messages.designationNameRequired'));
+      return;
+    }
+
+    try {
+      setUpdatingDesignation(true);
+      const response = await fetch(`/api/designations/${editingDesignation.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: editingDesignation.name.trim(),
+          description: editingDesignation.description?.trim() || null,
+          department_id: editingDesignation.department_id || null,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success(t('employee.messages.designationUpdatedSuccess'));
+        setDesignations(prev =>
+          prev.map(desig => (desig.id === editingDesignation.id ? result.data : desig))
+        );
+        setEditingDesignation(null);
+        setShowEditDesignation(false);
+      } else {
+        toast.error(result.message || t('employee.messages.designationUpdateError'));
+      }
+    } catch (error) {
+      
+      toast.error(t('employee.messages.designationUpdateError'));
+    } finally {
+      setUpdatingDesignation(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg">{t('employee.messages.loading')}</div>
+      </div>
+    );
+  }
+
+  if (!employee) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg">{t('employee.messages.employeeNotFound')}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <Link href={`/${locale}/employee-management/${params.id}`}>
+            <Button variant="ghost" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              {t('employee.actions.back')}
+            </Button>
+          </Link>
+          <User className="h-6 w-6" />
+          <h1 className="text-2xl font-bold">{t('employee.actions.editEmployee')}</h1>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Personal Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              {t('employee.personalInformation.title')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="first_name">{t('employee.fields.firstName')} *</Label>
+                <Input
+                  id="first_name"
+                  value={formData.first_name}
+                  onChange={e => handleInputChange('first_name', e.target.value)}
+                  placeholder={t('employee.fields.firstName')}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="middle_name">{t('employee.fields.middleName')}</Label>
+                <Input
+                  id="middle_name"
+                  value={formData.middle_name}
+                  onChange={e => handleInputChange('middle_name', e.target.value)}
+                  placeholder={t('employee.fields.middleName')}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="last_name">{t('employee.fields.lastName')} *</Label>
+                <Input
+                  id="last_name"
+                  value={formData.last_name}
+                  onChange={e => handleInputChange('last_name', e.target.value)}
+                  placeholder={t('employee.fields.lastName')}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">{t('employee.fields.email')}</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={e => handleInputChange('email', e.target.value)}
+                  placeholder={t('employee.fields.email')}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">{t('employee.fields.phone')}</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={e => handleInputChange('phone', e.target.value)}
+                  placeholder={t('employee.fields.phone')}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="date_of_birth">{t('employee.fields.dateOfBirth')}</Label>
+                <Input
+                  id="date_of_birth"
+                  type="date"
+                  value={formData.date_of_birth}
+                  onChange={e => handleInputChange('date_of_birth', e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="nationality">{t('employee.fields.nationality')}</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleExtractNationality}
+                          disabled={extractingNationality}
+                          className="h-8"
+                        >
+                          <Scan className="h-4 w-4 mr-1" />
+                          {extractingNationality ? 'Extracting...' : 'Extract from Iqama'}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Extract nationality from uploaded Iqama image</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <NationalityDropdown
+                  value={formData.nationality || ''}
+                  onValueChange={(value) => handleInputChange('nationality', value)}
+                  placeholder={t('employee.fields.nationality')}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Employment Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              {t('employee.employment.title')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+
+              <div className="space-y-2">
+                <Label htmlFor="file_number">{t('employee.fields.fileNumber')}</Label>
+                <Input
+                  id="file_number"
+                  value={formData.file_number}
+                  onChange={e => handleInputChange('file_number', e.target.value)}
+                  placeholder={t('employee.fields.fileNumber')}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="status">{t('employee.fields.status')}</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={value => handleInputChange('status', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">{t('employee.status.active')}</SelectItem>
+                    <SelectItem value="inactive">{t('employee.status.inactive')}</SelectItem>
+                    <SelectItem value="on_leave">{t('employee.status.onLeave')}</SelectItem>
+                    <SelectItem value="left">{t('employee.status.left')}</SelectItem>
+                    <SelectItem value="terminated">{t('employee.status.terminated')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="department_id">{t('employee.fields.department')}</Label>
+                <div className="flex gap-2">
+                  <SearchableSelect
+                    value={formData.department_id || ''}
+                    onValueChange={value =>
+                      handleInputChange('department_id', value || '')
+                    }
+                    options={[
+                      { value: '', label: t('employee.fields.noDepartment') },
+                      ...departments.map(dept => ({
+                        value: dept.id.toString(),
+                        label: dept.name,
+                        ...dept
+                      }))
+                    ]}
+                    placeholder={t('employee.fields.selectDepartment')}
+                    searchPlaceholder={t('employee.fields.searchDepartment')}
+                    emptyMessage={t('employee.messages.noDepartmentsFound')}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAddDepartment(true)}
+                    className="px-3"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const selectedDept = departments.find(
+                        d => d.id.toString() === formData.department_id
+                      );
+                      if (selectedDept) {
+                        setEditingDepartment(selectedDept);
+                        setShowEditDepartment(true);
+                      } else {
+                        toast.error(t('employee.messages.selectDepartmentToEdit'));
+                      }
+                    }}
+                    className="px-3"
+                    disabled={!formData.department_id || formData.department_id === ''}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDeleteDepartment}
+                    className="px-3"
+                    disabled={
+                      !formData.department_id ||
+                      formData.department_id === '' ||
+                      deletingDepartment
+                    }
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="designation_id">{t('employee.fields.designation')}</Label>
+                <div className="flex gap-2">
+                  <SearchableSelect
+                    value={formData.designation_id || ''}
+                    onValueChange={value =>
+                      handleInputChange('designation_id', value || '')
+                    }
+                    options={[
+                      { value: '', label: t('employee.fields.noDesignation') },
+                      ...designations.map(desig => ({
+                        value: desig.id.toString(),
+                        label: desig.name,
+                        ...desig
+                      }))
+                    ]}
+                    placeholder={t('employee.fields.selectDesignation')}
+                    searchPlaceholder={t('employee.fields.searchDesignation')}
+                    emptyMessage={t('employee.messages.noDesignationsFound')}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAddDesignation(true)}
+                    className="px-3"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const selectedDesig = designations.find(
+                        d => d.id.toString() === formData.designation_id
+                      );
+                      if (selectedDesig) {
+                        setEditingDesignation(selectedDesig);
+                        setShowEditDesignation(true);
+                      } else {
+                        toast.error(t('employee.messages.selectDesignationToEdit'));
+                      }
+                    }}
+                    className="px-3"
+                    disabled={!formData.designation_id || formData.designation_id === ''}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDeleteDesignation}
+                  className="px-3"
+                  disabled={!formData.designation_id || formData.designation_id === '' || deletingDesignation}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="supervisor">{t('employee.fields.supervisor')}</Label>
+                <EmployeeDropdown
+                  value={formData.supervisor}
+                  onValueChange={(value) => handleInputChange('supervisor', value)}
+                  placeholder={t('employee.fields.supervisor')}
+                  showSearch={true}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="hire_date">{t('employee.fields.hireDate')}</Label>
+                <Input
+                  id="hire_date"
+                  type="date"
+                  value={formData.hire_date}
+                  onChange={e => handleInputChange('hire_date', e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="current_location">{t('employee.fields.currentLocation')}</Label>
+                <Input
+                  id="current_location"
+                  value={formData.current_location}
+                  onChange={e => handleInputChange('current_location', e.target.value)}
+                  placeholder={t('employee.fields.currentLocation')}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="basic_salary">{t('employee.fields.basicSalary')}</Label>
+                <Input
+                  id="basic_salary"
+                  type="number"
+                  step="0.01"
+                  value={formData.basic_salary}
+                  onChange={e => handleInputChange('basic_salary', e.target.value)}
+                  placeholder={t('employee.fields.basicSalary')}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="contract_days_per_month">{t('employee.fields.contractDaysPerMonth')}</Label>
+                <Input
+                  id="contract_days_per_month"
+                  type="number"
+                  min="1"
+                  max="31"
+                  value={formData.contract_days_per_month}
+                  onChange={e => handleInputChange('contract_days_per_month', e.target.value)}
+                  placeholder={t('employee.fields.contractDaysPerMonth')}
+                  readOnly
+                  className="bg-gray-50 cursor-not-allowed"
+                  title={t('employee.fields.contractDaysPerMonth')}
+                />
+                <div className="text-xs text-muted-foreground">
+                  {t('employee.fields.contractDaysPerMonth')}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="contract_hours_per_day">{t('employee.fields.contractHoursPerDay')}</Label>
+                <Input
+                  id="contract_hours_per_day"
+                  type="number"
+                  min="1"
+                  max="24"
+                  value={formData.contract_hours_per_day}
+                  onChange={e => handleInputChange('contract_hours_per_day', e.target.value)}
+                  placeholder={t('employee.fields.contractHoursPerDay')}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="hourly_rate">{t('employee.fields.hourlyRate')}</Label>
+                <Input
+                  id="hourly_rate"
+                  type="number"
+                  step="0.01"
+                  value={formData.hourly_rate}
+                  onChange={e => handleInputChange('hourly_rate', e.target.value)}
+                  placeholder={t('employee.fields.hourlyRate')}
+                  readOnly
+                  className="bg-gray-50"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="text-sm text-muted-foreground">
+                {t('employee.fields.chooseOvertimeMethod')}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="overtime_rate_multiplier">{t('employee.fields.overtimeRateMultiplier')}</Label>
+                  <Input
+                    id="overtime_rate_multiplier"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={
+                      parseFloat(formData.overtime_fixed_rate) > 0
+                        ? '0'
+                        : '1.5'
+                    }
+                    placeholder={t('employee.fields.overtimeRateMultiplier')}
+                    readOnly
+                    className="bg-gray-50"
+                  />
+                  <div className="text-xs text-muted-foreground">
+                    {t('employee.fields.overtimeRateMultiplierDescription')}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="overtime_fixed_rate">{t('employee.fields.overtimeFixedRate')}</Label>
+                  <Input
+                    id="overtime_fixed_rate"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.overtime_fixed_rate}
+                    onChange={e => {
+                      const value = e.target.value;
+                      handleInputChange('overtime_fixed_rate', value);
+                      // When fixed rate is set, multiplier should be 0
+                      // When fixed rate is cleared, multiplier should be 1.5
+                      if (value && value.trim() !== '' && parseFloat(value) > 0) {
+                        handleInputChange('overtime_rate_multiplier', '0');
+                      } else {
+                        handleInputChange('overtime_rate_multiplier', '1.5');
+                      }
+                    }}
+                    placeholder={t('employee.fields.overtimeFixedRate')}
+                  />
+                  <div className="text-xs text-muted-foreground">
+                    {t('employee.fields.overtimeFixedRateDescription')}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Address Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5" />
+              {t('employee.fields.addressInformation')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="address">{t('employee.fields.address')}</Label>
+              <Textarea
+                id="address"
+                value={formData.address}
+                onChange={e => handleInputChange('address', e.target.value)}
+                placeholder={t('employee.fields.address')}
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="city">{t('employee.fields.city')}</Label>
+                <Input
+                  id="city"
+                  value={formData.city}
+                  onChange={e => handleInputChange('city', e.target.value)}
+                  placeholder={t('employee.fields.city')}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="state">{t('employee.fields.state')}</Label>
+                <Input
+                  id="state"
+                  value={formData.state}
+                  onChange={e => handleInputChange('state', e.target.value)}
+                  placeholder={t('employee.fields.state')}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="postal_code">{t('employee.fields.postalCode')}</Label>
+                <Input
+                  id="postal_code"
+                  value={formData.postal_code}
+                  onChange={e => handleInputChange('postal_code', e.target.value)}
+                  placeholder={t('employee.fields.postalCode')}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="country">{t('employee.fields.country')}</Label>
+                <Input
+                  id="country"
+                  value={formData.country}
+                  onChange={e => handleInputChange('country', e.target.value)}
+                  placeholder={t('employee.fields.country')}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Emergency Contact */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Phone className="h-5 w-5" />
+              {t('employee.personalInformation.emergencyContact')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="emergency_contact_name">{t('employee.fields.name')}</Label>
+                <Input
+                  id="emergency_contact_name"
+                  value={formData.emergency_contact_name}
+                  onChange={e => handleInputChange('emergency_contact_name', e.target.value)}
+                  placeholder={t('employee.fields.name')}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="emergency_contact_phone">{t('employee.fields.phone')}</Label>
+                <Input
+                  id="emergency_contact_phone"
+                  value={formData.emergency_contact_phone}
+                  onChange={e => handleInputChange('emergency_contact_phone', e.target.value)}
+                  placeholder={t('employee.fields.phone')}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="emergency_contact_relationship">{t('employee.fields.relationship')}</Label>
+                <Input
+                  id="emergency_contact_relationship"
+                  value={formData.emergency_contact_relationship}
+                  onChange={e =>
+                    handleInputChange('emergency_contact_relationship', e.target.value)
+                  }
+                  placeholder={t('employee.fields.relationship')}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Documents */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <IdCard className="h-5 w-5" />
+              {t('employee.documents.title')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Label htmlFor="iqama_number">
+                        {t('employee.fields.iqamaNumber')}
+                        <span className="text-xs text-blue-600 ml-1">(ℹ)</span>
+                      </Label>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>When you enter an Iqama number, the Driving License number will be automatically set to the same value since they are typically the same number in Saudi Arabia.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <Input
+                  id="iqama_number"
+                  value={formData.iqama_number}
+                  onChange={e => handleInputChange('iqama_number', e.target.value)}
+                  placeholder={t('employee.fields.iqamaNumber')}
+                  className={`${formData.iqama_number && formData.iqama_expiry ? (getExpiryStatus(formData.iqama_expiry).status === 'expired' ? 'border-red-500 text-red-600' : 'border-green-500 text-green-600') : ''}`}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="iqama_expiry">{t('employee.fields.iqamaExpiry')}</Label>
+                <Input
+                  id="iqama_expiry"
+                  type="date"
+                  value={formData.iqama_expiry}
+                  onChange={e => handleInputChange('iqama_expiry', e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="passport_number">{t('employee.fields.passportNumber')}</Label>
+                <Input
+                  id="passport_number"
+                  value={formData.passport_number}
+                  onChange={e => handleInputChange('passport_number', e.target.value)}
+                  placeholder={t('employee.fields.passportNumber')}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="passport_expiry">{t('employee.fields.passportExpiry')}</Label>
+                <Input
+                  id="passport_expiry"
+                  type="date"
+                  value={formData.passport_expiry}
+                  onChange={e => handleInputChange('passport_expiry', e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="driving_license_number">
+                  {t('employee.fields.drivingLicenseNumber')}
+                  {formData.iqama_number && formData.iqama_number.trim() !== '' && (
+                    <span className="text-xs text-blue-600 ml-1">(Auto-set from Iqama)</span>
+                  )}
+                </Label>
+                <Input
+                  id="driving_license_number"
+                  value={formData.driving_license_number}
+                  onChange={e => handleInputChange('driving_license_number', e.target.value)}
+                  placeholder={t('employee.fields.drivingLicenseNumber')}
+                  readOnly={!!(formData.iqama_number && formData.iqama_number.trim() !== '')}
+                  className={formData.iqama_number && formData.iqama_number.trim() !== '' ? 'bg-gray-100' : ''}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="driving_license_expiry">{t('employee.fields.drivingLicenseExpiry')}</Label>
+                <Input
+                  id="driving_license_expiry"
+                  type="date"
+                  value={formData.driving_license_expiry}
+                  onChange={e => handleInputChange('driving_license_expiry', e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="operator_license_number">{t('employee.fields.operatorLicenseNumber')}</Label>
+                <Input
+                  id="operator_license_number"
+                  value={formData.operator_license_number}
+                  onChange={e => handleInputChange('operator_license_number', e.target.value)}
+                  placeholder={t('employee.fields.operatorLicenseNumber')}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="operator_license_expiry">{t('employee.fields.operatorLicenseExpiry')}</Label>
+                <Input
+                  id="operator_license_expiry"
+                  type="date"
+                  value={formData.operator_license_expiry}
+                  onChange={e => handleInputChange('operator_license_expiry', e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="tuv_certification_number">{t('employee.fields.tuvCertificationNumber')}</Label>
+                <Input
+                  id="tuv_certification_number"
+                  value={formData.tuv_certification_number}
+                  onChange={e => handleInputChange('tuv_certification_number', e.target.value)}
+                  placeholder={t('employee.fields.tuvCertificationNumber')}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="tuv_certification_expiry">{t('employee.fields.tuvCertificationExpiry')}</Label>
+                <Input
+                  id="tuv_certification_expiry"
+                  type="date"
+                  value={formData.tuv_certification_expiry}
+                  onChange={e => handleInputChange('tuv_certification_expiry', e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="spsp_license_number">{t('employee.fields.spspLicenseNumber')}</Label>
+                <Input
+                  id="spsp_license_number"
+                  value={formData.spsp_license_number}
+                  onChange={e => handleInputChange('spsp_license_number', e.target.value)}
+                  placeholder={t('employee.fields.spspLicenseNumber')}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="spsp_license_expiry">{t('employee.fields.spspLicenseExpiry')}</Label>
+                <Input
+                  id="spsp_license_expiry"
+                  type="date"
+                  value={formData.spsp_license_expiry}
+                  onChange={e => handleInputChange('spsp_license_expiry', e.target.value)}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Action Buttons */}
+        <div className="flex gap-4">
+          <Button type="submit" disabled={saving}>
+            <Save className="h-4 w-4 mr-2" />
+            {saving ? t('employee.actions.saving') : t('employee.actions.saveChanges')}
+          </Button>
+          <Link href={`/${locale}/employee-management/${params.id}`}>
+            <Button type="button" variant="outline">
+              {t('employee.actions.cancel')}
+            </Button>
+          </Link>
+        </div>
+      </form>
+
+      {/* Add Department Modal */}
+      {showAddDepartment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">{t('employee.modals.addDepartment.title')}</h3>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="dept_name">{t('employee.fields.departmentName')} *</Label>
+                <Input
+                  id="dept_name"
+                  value={newDepartment.name}
+                  onChange={e => setNewDepartment(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder={t('employee.fields.departmentName')}
+                />
+              </div>
+              <div>
+                <Label htmlFor="dept_code">{t('employee.fields.departmentCode')}</Label>
+                <Input
+                  id="dept_code"
+                  value={newDepartment.code}
+                  onChange={e => setNewDepartment(prev => ({ ...prev, code: e.target.value }))}
+                  placeholder={t('employee.fields.departmentCode')}
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddDepartment(false);
+                    setNewDepartment({ name: '', code: '' });
+                  }}
+                >
+                  {t('employee.actions.cancel')}
+                </Button>
+                <Button type="button" onClick={handleAddDepartment} disabled={addingDepartment}>
+                  {addingDepartment ? t('employee.actions.adding') : t('employee.actions.addDepartment')}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Designation Modal */}
+      {showAddDesignation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">{t('employee.modals.addDesignation.title')}</h3>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="desig_name">{t('employee.fields.designationName')} *</Label>
+                <Input
+                  id="desig_name"
+                  value={newDesignation.name}
+                  onChange={e => setNewDesignation(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder={t('employee.fields.designationName')}
+                />
+              </div>
+              <div>
+                <Label htmlFor="desig_description">{t('employee.fields.description')}</Label>
+                <Textarea
+                  id="desig_description"
+                  value={newDesignation.description}
+                  onChange={e =>
+                    setNewDesignation(prev => ({ ...prev, description: e.target.value }))
+                  }
+                  placeholder={t('employee.fields.description')}
+                  rows={3}
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddDesignation(false);
+                    setNewDesignation({ name: '', description: '' });
+                  }}
+                >
+                  {t('employee.actions.cancel')}
+                </Button>
+                <Button type="button" onClick={handleAddDesignation} disabled={addingDesignation}>
+                  {addingDesignation ? t('employee.actions.adding') : t('employee.actions.addDesignation')}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Department Modal */}
+      {showEditDepartment && editingDepartment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">{t('employee.modals.editDepartment.title')}</h3>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit_dept_name">{t('employee.fields.departmentName')} *</Label>
+                <Input
+                  id="edit_dept_name"
+                  value={editingDepartment.name}
+                  onChange={e =>
+                    setEditingDepartment(prev => (prev ? { ...prev, name: e.target.value } : null))
+                  }
+                  placeholder={t('employee.fields.departmentName')}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_dept_code">{t('employee.fields.departmentCode')}</Label>
+                <Input
+                  id="edit_dept_code"
+                  value={editingDepartment.code || ''}
+                  onChange={e =>
+                    setEditingDepartment(prev => (prev ? { ...prev, code: e.target.value } : null))
+                  }
+                  placeholder={t('employee.fields.departmentCode')}
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowEditDepartment(false);
+                    setEditingDepartment(null);
+                  }}
+                >
+                  {t('employee.actions.cancel')}
+                </Button>
+                <Button type="button" onClick={handleEditDepartment} disabled={updatingDepartment}>
+                  {updatingDepartment ? t('employee.actions.updating') : t('employee.actions.updateDepartment')}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Designation Modal */}
+      {showEditDesignation && editingDesignation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">{t('employee.modals.editDesignation.title')}</h3>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit_desig_name">{t('employee.fields.designationName')} *</Label>
+                <Input
+                  id="edit_desig_name"
+                  value={editingDesignation.name}
+                  onChange={e =>
+                    setEditingDesignation(prev => (prev ? { ...prev, name: e.target.value } : null))
+                  }
+                  placeholder={t('employee.fields.designationName')}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_desig_description">{t('employee.fields.description')}</Label>
+                <Textarea
+                  id="edit_desig_description"
+                  value={editingDesignation.description || ''}
+                  onChange={e =>
+                    setEditingDesignation(prev =>
+                      prev ? { ...prev, description: e.target.value } : null
+                    )
+                  }
+                  placeholder={t('employee.fields.description')}
+                  rows={3}
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowEditDesignation(false);
+                    setEditingDesignation(null);
+                  }}
+                >
+                  {t('employee.actions.cancel')}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleEditDesignation}
+                  disabled={updatingDesignation}
+                >
+                  {updatingDesignation ? t('employee.actions.updating') : t('employee.actions.updateDesignation')}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

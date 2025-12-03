@@ -1,0 +1,27 @@
+{
+  "dashboard": "لوحة التحكم",
+  "employeeDashboard": "لوحة تحكمي",
+  "customerManagement": "إدارة العملاء",
+  "companyManagement": "إدارة الشركة",
+  "employeeManagement": "إدارة الموظفين",
+
+  "equipmentManagement": "إدارة المعدات",
+  "maintenanceManagement": "الصيانة والإصلاحات",
+  "rentalManagement": "إدارة التأجير",
+  "quotationManagement": "إدارة العروض",
+  "timesheetManagement": "إدارة الجداول الزمنية",
+  "projectManagement": "إدارة المشاريع",
+  "payrollManagement": "إدارة الرواتب",
+  "salaryIncrements": "زيادات الرواتب",
+  "leaveManagement": "إدارة الإجازات",
+  "safetyManagement": "إدارة السلامة",
+  "locationManagement": "إدارة المواقع",
+  "reporting": "التقارير",
+  "documentManagement": "إدارة المستندات",
+  "chat": "الدردشة",
+    "userManagement": "إدارة المستخدمين",
+  "getHelp": "الحصول على المساعدة",
+  "search": "البحث",
+  "appTitle": "إدارة التأجير SND",
+  "databaseBackup": "نسخ احتياطي لقاعدة البيانات"
+}

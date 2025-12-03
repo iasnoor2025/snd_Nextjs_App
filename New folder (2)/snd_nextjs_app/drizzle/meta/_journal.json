@@ -1,0 +1,272 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1755420500468,
+      "tag": "0000_motionless_dagger",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1755600681457,
+      "tag": "0001_sharp_guardian",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1755603075897,
+      "tag": "0002_slow_justin_hammer",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1755603285019,
+      "tag": "0003_familiar_tigra",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1755603462734,
+      "tag": "0004_mixed_vin_gonzales",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1755603675064,
+      "tag": "0005_furry_iron_monger",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1755604110831,
+      "tag": "0006_stiff_nicolaos",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1755604500000,
+      "tag": "0003_update_equipment_operator_reference",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1755684329058,
+      "tag": "0008_ambiguous_scorpion",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1755687830362,
+      "tag": "0009_first_gamora",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1755689012905,
+      "tag": "0010_warm_scream",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1755690916294,
+      "tag": "0011_wild_giant_girl",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1755691397109,
+      "tag": "0012_wonderful_romulus",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1755951084181,
+      "tag": "0013_opposite_black_panther",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1756119111592,
+      "tag": "0014_cheerful_swordsman",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1756552323289,
+      "tag": "0015_clear_mulholland_black",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1756714824646,
+      "tag": "0016_gifted_nightcrawler",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1756802581597,
+      "tag": "0017_magenta_professor_monster",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1756897756035,
+      "tag": "0018_bent_colossus",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1756985558057,
+      "tag": "0019_low_agent_brand",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1757145352617,
+      "tag": "0020_hot_leopardon",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1757145458411,
+      "tag": "0021_acoustic_freak",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1757397949407,
+      "tag": "0022_dark_tony_stark",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1757398162022,
+      "tag": "0023_unique_brood",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1758777641936,
+      "tag": "0024_supreme_epoch",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1758781891846,
+      "tag": "0025_eager_sprite",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1758784237882,
+      "tag": "0026_slimy_cable",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1758791554605,
+      "tag": "0027_exotic_sphinx",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1759914838908,
+      "tag": "0028_outstanding_ma_gnuci",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1761389885215,
+      "tag": "0029_sloppy_nightcrawler",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1761397371520,
+      "tag": "0030_skinny_manta",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1761466254806,
+      "tag": "0031_flowery_drax",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1761548811934,
+      "tag": "0032_silly_sphinx",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1762154031906,
+      "tag": "0033_reflective_chamber",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1762249911035,
+      "tag": "0034_add_gps_fields_to_equipment",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1762252124355,
+      "tag": "0035_add_periodic_examination_fields_to_equipment",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1763277099982,
+      "tag": "0036_chief_harrier",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1763277524325,
+      "tag": "0037_flawless_hercules",
+      "breakpoints": true
+    }
+  ]
+}

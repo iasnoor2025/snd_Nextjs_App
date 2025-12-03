@@ -1,0 +1,203 @@
+{
+  "name": "SPSP License Expiry WhatsApp Notification",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24,
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Daily Schedule (8 AM)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.APP_URL }}/api/employees/spsp-expiring",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "days",
+              "value": "10"
+            },
+            {
+              "name": "includeExpired",
+              "value": "1"
+            },
+            {
+              "name": "limit",
+              "value": "100"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.N8N_API_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "http-request",
+      "name": "Fetch Expiring SPSP Licenses",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-check",
+              "leftValue": "={{ $json.data.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-has-data",
+      "name": "Has Expiring Licenses?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the data from the API response\nconst apiResponse = $input.first().json;\nconst employees = apiResponse.data || [];\nconst summary = apiResponse.summary || {};\n\nif (employees.length === 0) {\n  return [{ json: { message: 'No expiring SPSP licenses found', skip: true } }];\n}\n\n// Group by status\nconst expired = employees.filter(e => e.status === 'expired');\nconst expiring = employees.filter(e => e.status === 'expiring');\n\n// Build the message\nlet message = `🚨 *SPSP License Expiry Alert*\\n`;\nmessage += `📅 Date: ${new Date().toLocaleDateString('en-SA')}\\n`;\nmessage += `━━━━━━━━━━━━━━━━━━━━\\n\\n`;\n\nif (expired.length > 0) {\n  message += `❌ *EXPIRED LICENSES (${expired.length}):*\\n`;\n  expired.forEach((emp, idx) => {\n    message += `${idx + 1}. ${emp.name}\\n`;\n    message += `   📋 File: ${emp.fileNumber || 'N/A'}\\n`;\n    message += `   🔖 License: ${emp.spspLicenseNumber}\\n`;\n    message += `   📆 Expired: ${emp.spspLicenseExpiry}\\n`;\n    message += `   🏢 Dept: ${emp.department || 'N/A'}\\n\\n`;\n  });\n}\n\nif (expiring.length > 0) {\n  message += `⚠️ *EXPIRING SOON (${expiring.length}):*\\n`;\n  expiring.forEach((emp, idx) => {\n    message += `${idx + 1}. ${emp.name}\\n`;\n    message += `   📋 File: ${emp.fileNumber || 'N/A'}\\n`;\n    message += `   🔖 License: ${emp.spspLicenseNumber}\\n`;\n    message += `   📆 Expires: ${emp.spspLicenseExpiry}\\n`;\n    message += `   ⏳ Days Left: ${emp.daysRemaining}\\n`;\n    message += `   🏢 Dept: ${emp.department || 'N/A'}\\n\\n`;\n  });\n}\n\nmessage += `━━━━━━━━━━━━━━━━━━━━\\n`;\nmessage += `📊 Total: ${employees.length} license(s) need attention\\n`;\nmessage += `🔗 View details in the system`;\n\nreturn [{\n  json: {\n    message,\n    totalCount: employees.length,\n    expiredCount: expired.length,\n    expiringCount: expiring.length,\n    employees,\n    skip: false\n  }\n}];"
+      },
+      "id": "format-message",
+      "name": "Format WhatsApp Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "operation": "sendMessage",
+        "phoneNumberId": "={{ $env.WHATSAPP_PHONE_NUMBER_ID }}",
+        "recipientPhoneNumber": "={{ $env.WHATSAPP_RECIPIENT_NUMBER }}",
+        "textBody": "={{ $json.message }}"
+      },
+      "id": "send-whatsapp",
+      "name": "Send WhatsApp Message",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [1120, 200],
+      "credentials": {
+        "whatsAppApi": {
+          "id": "WHATSAPP_CREDENTIAL_ID",
+          "name": "WhatsApp Business API"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "no-op",
+      "name": "No Expiring Licenses",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [900, 400]
+    }
+  ],
+  "connections": {
+    "Daily Schedule (8 AM)": {
+      "main": [
+        [
+          {
+            "node": "Fetch Expiring SPSP Licenses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Expiring SPSP Licenses": {
+      "main": [
+        [
+          {
+            "node": "Has Expiring Licenses?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Expiring Licenses?": {
+      "main": [
+        [
+          {
+            "node": "Format WhatsApp Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Expiring Licenses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format WhatsApp Message": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "notifications"
+    },
+    {
+      "name": "spsp"
+    },
+    {
+      "name": "whatsapp"
+    }
+  ],
+  "pinData": {}
+}
+

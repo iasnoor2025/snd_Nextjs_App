@@ -233,20 +233,19 @@ function hasPermissionClient(user: User, action: Action, subject: Subject): bool
     return true;
   }
   
-  // Check for specific permission (case-insensitive)
-  const permissionName = `${action}.${subject}`;
-  const permissionNameLower = `${action}.${subject.toLowerCase()}`;
+  // Check for specific permission (normalize to lowercase for consistency)
+  // Database stores permissions in lowercase format (e.g., 'read.employee', 'manage.user')
+  const permissionName = `${action}.${subject}`.toLowerCase();
   
-  // Check both capitalized and lowercase versions
-  if (userPermissions.includes(permissionName) || userPermissions.includes(permissionNameLower)) {
+  // Check exact permission match
+  if (userPermissions.some(p => p.toLowerCase() === permissionName)) {
     return true;
   }
   
   // Check if user has manage permission for the subject (which includes read, create, update, delete)
-  const managePermission = `manage.${subject}`;
-  const managePermissionLower = `manage.${subject.toLowerCase()}`;
+  const managePermission = `manage.${subject}`.toLowerCase();
   
-  if (userPermissions.includes(managePermission) || userPermissions.includes(managePermissionLower)) {
+  if (userPermissions.some(p => p.toLowerCase() === managePermission)) {
     return true;
   }
   

@@ -1,0 +1,103 @@
+---
+alwaysApply: true
+---
+app patch is D:\Apps\Mix-app\snd_nextjs_app
+Follow these rules when generating or refactoring code for my Next.js app:
+
+Framework:
+
+Use Next.js best practices (App Router or Pages Router as appropriate).
+
+Database:
+
+Use PostgreSQL as the main database.
+
+Use Prisma ORM for all database queries and migrations.
+
+Store only references/URLs to files/images in the database, never blobs or base64.
+
+Image/File Uploads:
+
+Handle uploads via Next.js API routes.
+
+Store all files/images in S3-compatible object storage (Coolify/MinIO).
+
+After upload, store only the file URL in PostgreSQL.
+
+Use the official AWS SDK (@aws-sdk/client-s3) for S3-compatible storage.
+
+For uploads, use the formidable package to handle multipart form data in API routes.
+
+Authentication & Authorization:
+
+Use NextAuth.js for authentication and session management.
+
+Implement RBAC using CASL.
+
+Always check user session and permissions (role) before protected actions (both in UI and API routes).
+
+Store the user's role in the NextAuth session object.
+
+Frontend:
+
+Use React function components with hooks.
+
+Style with Tailwind CSS (or your chosen system, if specified).
+
+Ensure file/image uploads are triggered from the frontend and sent to the correct API route.
+
+API Security:
+
+Always validate file type and size before uploading.
+
+Sanitize and validate all user inputs before database operations.
+
+General Best Practices:
+
+Keep frontend and backend RBAC logic in sync (use shared ability definitions with CASL).
+
+Avoid storing sensitive secrets or credentials in the codebase—use .env for all configuration.
+
+Write code that is modular, readable, and well-commented.
+
+Provide short explanations for any new or complex code.
+
+Deployment:
+
+Assume the app will be deployed via Coolify on a self-hosted server.
+
+When responding to requests for code changes or additions in my Next.js project:
+
+Only output the specific code that needs to be added or changed.
+
+Do not rewrite or include the entire file/component unless absolutely necessary.
+
+If changing a function, show only the function (or even just the lines that change), not the entire file.
+
+For new features or code additions:
+
+Output only the new function, hook, or component to add, and clearly state where it should go (e.g., "Add this function to utils/helpers.js").
+
+For edits to existing code:
+
+Quote or reference the original code that needs to be changed.
+
+Show only the modified lines or blocks with clear before/after context.
+
+Prefer diffs or patches when possible.
+
+No unnecessary boilerplate:
+
+Don’t repeat imports, wrapper functions, or unrelated code that doesn’t change.
+
+Add brief comments to clarify where and why changes are needed.
+
+If unsure about the exact location, ask for a code snippet or filename before proceeding.
+
+For bug fixes or UI changes:
+
+Show only the fix, and indicate which line or section to replace.
+
+Summarize what you changed in 1-2 sentences at the top of your output.
+
+Ask for clarification if the request is ambiguous.

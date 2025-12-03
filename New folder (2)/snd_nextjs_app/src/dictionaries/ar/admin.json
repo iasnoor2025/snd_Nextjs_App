@@ -1,0 +1,22 @@
+{
+  "super_admin_approval_center": "مركز موافقات المشرف العام",
+  "manage_all_system_approvals": "إدارة جميع موافقات النظام بصلاحيات إدارية كاملة",
+  "total_approvals": "إجمالي الموافقات",
+  "across_all_modules": "في جميع الوحدات",
+  "pending": "في الانتظار",
+  "awaiting_approval": "في انتظار الموافقة",
+  "approved": "تمت الموافقة",
+  "successfully_processed": "تمت المعالجة بنجاح",
+  "rejected": "مرفوض",
+  "declined_requests": "الطلبات المرفوضة",
+  "approval_modules": "وحدات الموافقة",
+  "overview_of_approval_types": "نظرة عامة على أنواع الموافقات في وحدات النظام المختلفة",
+  "rental_management": "إدارة التأجير",
+  "equipment_requests": "طلبات المعدات",
+  "timesheet": "جدول الوقت",
+  "time_tracking": "تتبع الوقت",
+  "payroll": "الرواتب",
+  "salary_processing": "معالجة الرواتب",
+  "leave_management": "إدارة الإجازات",
+  "vacation_requests": "طلبات الإجازات"
+}

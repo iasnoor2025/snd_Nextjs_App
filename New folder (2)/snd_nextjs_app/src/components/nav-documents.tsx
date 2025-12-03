@@ -1,0 +1,115 @@
+'use client';
+
+import { Mail, PlusCircle, type LucideIcon } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
+import { Button } from '@/components/ui/button';
+import { useI18n } from '@/hooks/use-i18n';
+import {
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from '@/components/ui/sidebar';
+
+export function NavMain({
+  items,
+}: {
+  items: {
+    title: string;
+    url: string;
+    icon?: LucideIcon;
+  }[];
+}) {
+  const { t } = useI18n();
+  return (
+    <SidebarGroup>
+      <SidebarGroupContent className="flex flex-col gap-2">
+        <SidebarMenu>
+          <SidebarMenuItem className="flex items-center gap-2">
+            <SidebarMenuButton
+              tooltip={t('common.actions.quickCreate')}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
+            >
+              <PlusCircle />
+              <span>{t('common.actions.quickCreate')}</span>
+            </SidebarMenuButton>
+            <Button
+              size="icon"
+              className="size-8 group-data-[collapsible=icon]:opacity-0"
+              variant="outline"
+            >
+              <Mail />
+              <span className="sr-only">{t('common.actions.inbox')}</span>
+            </Button>
+          </SidebarMenuItem>
+        </SidebarMenu>
+        <SidebarMenu>
+          {items.map(item => (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton tooltip={item.title}>
+                {item.icon && <item.icon />}
+                <span>{item.title}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+}
+
+export function NavDocuments({
+  items,
+}: {
+  items: {
+    title: string;
+    url: string;
+    icon?: LucideIcon;
+    requiredRole?: string;
+    requiredPermission?: { action: string; subject: string };
+  }[];
+}) {
+  const pathname = usePathname();
+
+  return (
+    <SidebarGroup>
+      <SidebarGroupContent className="flex flex-col gap-2">
+        <SidebarMenu>
+          {items.map(item => {
+            // Special handling for dashboard to avoid conflicts with other routes
+            let isActive = false;
+            
+            // Check if this is the dashboard item (URL is just locale like /en or /ar)
+            const isDashboard = item.url.match(/^\/[a-z]{2}$/);
+            
+            if (isDashboard) {
+              // Dashboard case - only match exact locale path
+              isActive = pathname === item.url;
+            } else {
+              // Other routes - match exact or starts with
+              isActive = pathname === item.url || pathname.startsWith(item.url + '/');
+            }
+            
+            return (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton
+                  asChild
+                  tooltip={item.title}
+                  className={isActive ? 'bg-primary text-primary-foreground' : ''}
+                >
+                  <Link href={item.url} prefetch={true}>
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+}

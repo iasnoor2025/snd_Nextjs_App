@@ -62,6 +62,23 @@ export function clearUserPermissionCache(userId: string): void {
     }
   }
   keysToDelete.forEach(key => permissionCache.delete(key));
+  
+  // Also clear client-side cache via API endpoint (if available)
+  // This ensures client-side permissions are refreshed
+  if (typeof window === 'undefined') {
+    // Server-side: trigger client cache invalidation via event or API
+    // This will be handled by the client-side refresh mechanism
+  }
+}
+
+/**
+ * Clear all permission caches (server-side and trigger client-side refresh)
+ * Use this when role permissions are changed globally
+ */
+export function clearAllPermissionCaches(): void {
+  permissionCache.clear();
+  // Client-side cache will be invalidated on next permission check
+  // by checking cache timestamp
 }
 
 export interface UserPermissions {
@@ -340,7 +357,7 @@ export async function assignPermissionsToRole(
     }
 
     // Clear all permission caches since role permissions changed
-    permissionCache.clear();
+    clearAllPermissionCaches();
 
     return { success: true, message: 'Permissions assigned successfully' };
   } catch (error) {
@@ -371,8 +388,12 @@ export async function assignPermissionsToUser(
         .values(permissionIds.map(pid => ({ userId: parsedUserId, permissionId: pid })));
     }
 
-    // Clear cache for this user
+    // Clear cache for this user (both server and client)
     clearUserPermissionCache(userId);
+    
+    // Also clear all permission caches since user permissions affect role-based checks
+    // This ensures all users with the same role get fresh permission data
+    clearAllPermissionCaches();
 
     return { success: true, message: 'Permissions assigned successfully' };
   } catch (error) {

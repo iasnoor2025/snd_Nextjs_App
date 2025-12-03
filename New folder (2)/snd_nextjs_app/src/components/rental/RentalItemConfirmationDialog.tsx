@@ -1,0 +1,175 @@
+import React, { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { AlertTriangle, CheckCircle, Info, Trash2, Edit, Plus, PackageCheck } from 'lucide-react';
+
+export interface RentalItemConfirmationDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (returnDate?: string) => void;
+  title: string;
+  description: string;
+  actionType: 'add' | 'edit' | 'delete' | 'confirm' | 'return';
+  itemName?: string;
+  isLoading?: boolean;
+  showReturnDate?: boolean;
+  minReturnDate?: string;
+}
+
+const RentalItemConfirmationDialog: React.FC<RentalItemConfirmationDialogProps> = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  description,
+  actionType,
+  itemName,
+  isLoading = false,
+  showReturnDate = false,
+  minReturnDate,
+}) => {
+  const [returnDate, setReturnDate] = useState(
+    minReturnDate && minReturnDate > new Date().toISOString().split('T')[0] 
+      ? minReturnDate 
+      : new Date().toISOString().split('T')[0]
+  );
+
+  const handleConfirm = () => {
+    onConfirm(returnDate);
+  };
+  const getActionIcon = () => {
+    switch (actionType) {
+      case 'add':
+        return <Plus className="h-5 w-5 text-green-600" />;
+      case 'edit':
+        return <Edit className="h-5 w-5 text-blue-600" />;
+      case 'delete':
+        return <Trash2 className="h-5 w-5 text-red-600" />;
+      case 'return':
+        return <PackageCheck className="h-5 w-5 text-green-600" />;
+      case 'confirm':
+        return <CheckCircle className="h-5 w-5 text-green-600" />;
+      default:
+        return <Info className="h-5 w-5 text-blue-600" />;
+    }
+  };
+
+  const getActionButtonVariant = () => {
+    switch (actionType) {
+      case 'add':
+      case 'confirm':
+      case 'return':
+        return 'default';
+      case 'edit':
+        return 'default';
+      case 'delete':
+        return 'destructive';
+      default:
+        return 'default';
+    }
+  };
+
+  const getActionButtonText = () => {
+    switch (actionType) {
+      case 'add':
+        return 'Add Item';
+      case 'edit':
+        return 'Update Item';
+      case 'delete':
+        return 'Delete Item';
+      case 'return':
+        return 'Return Equipment';
+      case 'confirm':
+        return 'Confirm';
+      default:
+        return 'Confirm';
+    }
+  };
+
+  const getCancelButtonText = () => {
+    switch (actionType) {
+      case 'delete':
+        return 'Keep Item';
+      default:
+        return 'Cancel';
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <div className="flex items-center gap-3">
+            {getActionIcon()}
+            <DialogTitle className="text-lg font-semibold">{title}</DialogTitle>
+          </div>
+          <DialogDescription className="text-sm text-muted-foreground">
+            {description}
+            {itemName && (
+              <span className="block mt-2 font-medium text-foreground">
+                Item: <span className="text-primary">{itemName}</span>
+              </span>
+            )}
+          </DialogDescription>
+        </DialogHeader>
+
+        {showReturnDate && (
+          <div className="py-4">
+            <Label htmlFor="returnDate">Return Date</Label>
+            <Input
+              id="returnDate"
+              type="date"
+              value={returnDate}
+              onChange={e => setReturnDate(e.target.value)}
+              className="mt-2"
+              min={minReturnDate}
+              max={new Date().toISOString().split('T')[0]}
+            />
+            {minReturnDate && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Earliest return date: {minReturnDate}
+              </p>
+            )}
+          </div>
+        )}
+
+        <DialogFooter className="flex gap-2 sm:justify-end">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={isLoading}
+            className="min-w-[100px]"
+          >
+            {getCancelButtonText()}
+          </Button>
+          <Button
+            variant={getActionButtonVariant()}
+            onClick={handleConfirm}
+            disabled={isLoading}
+            className="min-w-[100px]"
+          >
+            {isLoading ? (
+              <>
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                Processing...
+              </>
+            ) : (
+              getActionButtonText()
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default RentalItemConfirmationDialog;

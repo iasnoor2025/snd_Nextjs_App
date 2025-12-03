@@ -1,0 +1,193 @@
+{
+  "title": "Maintenance Management",
+  "subtitle": "Schedule and track equipment maintenance activities",
+  "description": "Manage all maintenance activities and equipment",
+  "create": {
+    "title": "Create New Maintenance",
+    "description": "Create a new maintenance record for equipment"
+  },
+  "actions": {
+    "createMaintenance": "Create Maintenance",
+    "editMaintenance": "Edit Maintenance",
+    "deleteMaintenance": "Delete Maintenance",
+    "viewMaintenance": "View Maintenance",
+    "scheduleMaintenance": "Schedule Maintenance",
+    "backToMaintenance": "Back to Maintenance",
+    "save": "Save",
+    "cancel": "Cancel",
+    "update": "Update",
+    "delete": "Delete",
+    "search": "Search",
+    "filter": "Filter",
+    "refresh": "Refresh",
+    "export": "Export",
+    "import": "Import"
+  },
+  "fields": {
+    "equipment": "Equipment",
+    "selectEquipment": "Select equipment",
+    "type": "Maintenance Type",
+    "title": "Title",
+    "titlePlaceholder": "Maintenance title",
+    "description": "Description",
+    "descriptionPlaceholder": "Describe the maintenance work needed",
+    "scheduledDate": "Scheduled Date",
+    "dueDate": "Due Date",
+    "assignedTo": "Assigned Employee",
+    "selectEmployee": "Select employee (optional)",
+    "cost": "Cost",
+    "estimatedCost": "Estimated Cost",
+    "costPlaceholder": "SAR",
+    "datePlaceholder": "mm/dd/yyyy",
+    "status": "Status",
+    "createdAt": "Created At",
+    "updatedAt": "Updated At"
+  },
+  "types": {
+    "scheduled": "Scheduled",
+    "corrective": "Corrective",
+    "emergency": "Emergency",
+    "inspection": "Inspection",
+    "preventive": "Preventive"
+  },
+  "status": {
+    "open": "Open",
+    "in_progress": "In Progress",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "overdue": "Overdue",
+    "scheduled": "Scheduled"
+  },
+  "messages": {
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "createSuccess": "Maintenance record created successfully",
+    "createError": "Failed to create maintenance record",
+    "updateSuccess": "Maintenance record updated successfully",
+    "updateError": "Failed to update maintenance record",
+    "deleteSuccess": "Maintenance record deleted successfully",
+    "deleteError": "Failed to delete maintenance record",
+    "fetchError": "Error fetching maintenance records",
+    "validationError": "Please fill in all required fields",
+    "maintenanceNotFound": "Maintenance record not found",
+    "accessDenied": "Access denied. You don't have permission to manage maintenance.",
+    "errorGeneral": "An error occurred during the operation",
+    "failedToLoad": "Failed to load maintenance records",
+    "failedToCreate": "Failed to create maintenance record",
+    "failedToUpdate": "Failed to update maintenance record",
+    "failedToDelete": "Failed to delete maintenance record"
+  },
+  "validation": {
+    "validationError": "Please fill in all required fields",
+    "required": "This field is required",
+    "invalidDate": "Invalid date",
+    "invalidDateRange": "Invalid date range",
+    "equipmentRequired": "Equipment is required",
+    "titleRequired": "Title is required",
+    "descriptionRequired": "Description is required",
+    "scheduledDateRequired": "Scheduled date is required",
+    "dueDateAfterScheduled": "Due date must be after scheduled date",
+    "invalidCost": "Invalid cost"
+  },
+  "items": {
+    "title": "Repair Items & Costs",
+    "addItem": "Add Item",
+    "name": "Item Name",
+    "namePlaceholder": "Enter item name",
+    "quantity": "Quantity",
+    "unit": "Unit",
+    "unitPlaceholder": "e.g., pieces, hours, liters",
+    "unitCost": "Unit Cost (SAR)",
+    "totalCost": "Total Cost",
+    "description": "Description",
+    "descriptionPlaceholder": "Enter item description",
+    "noItems": "No repair items added yet",
+    "totalCost": "Total Items Cost"
+  },
+  "workflow": {
+    "title": "Maintenance Workflow",
+    "progress": "Progress",
+    "completed": "completed",
+    "scheduled": "Scheduled",
+    "scheduledDesc": "Maintenance is scheduled and ready to begin",
+    "inProgress": "In Progress",
+    "inProgressDesc": "Maintenance work is currently being performed",
+    "completed": "Completed",
+    "completedDesc": "Maintenance work has been completed successfully",
+    "pending": "Pending",
+    "in_progress": "In Progress",
+    "startStep": "Start This Step",
+    "startWork": "Start Work",
+    "markCompleted": "Mark as Completed",
+    "completeMaintenance": "Complete Maintenance",
+    "cancel": "Cancel Maintenance"
+  },
+  "details": {
+    "basicInfo": "Basic Information",
+    "maintenanceId": "Maintenance ID",
+    "notFound": "Maintenance Not Found",
+    "notFoundDesc": "The requested maintenance record could not be found."
+  },
+  "table": {
+    "headers": {
+      "equipment": "Equipment",
+      "type": "Type",
+      "title": "Title",
+      "status": "Status",
+      "scheduledDate": "Scheduled Date",
+      "dueDate": "Due Date",
+      "assignedTo": "Assigned To",
+      "cost": "Cost",
+      "actions": "Actions"
+    }
+  },
+  "pagination": {
+    "showing": "Showing {{start}} to {{end}} of {{total}} maintenance records",
+    "page": "Page {{current}} of {{total}}",
+    "previous": "Previous",
+    "next": "Next",
+    "itemsPerPage": "Items per page"
+  },
+  "search": {
+    "placeholder": "Search maintenance records...",
+    "title": "Search and Filter",
+    "noResults": "No maintenance records found",
+    "resultCount": "Maintenance Records ({{count}})"
+  },
+  "stats": {
+    "totalMaintenance": "Total Maintenance",
+    "scheduledMaintenance": "Scheduled Maintenance",
+    "inProgressMaintenance": "In Progress Maintenance",
+    "completedMaintenance": "Completed Maintenance",
+    "overdueMaintenance": "Overdue Maintenance",
+    "totalCost": "Total Cost"
+  },
+  "filters": {
+    "type": "Type",
+    "status": "Status",
+    "allTypes": "All Types",
+    "allStatus": "All Status",
+    "applyFilters": "Apply Filters",
+    "clearFilters": "Clear Filters"
+  },
+  "dashboard": {
+    "title": "Maintenance Records",
+    "subtitle": "View and manage all equipment maintenance activities",
+    "overdue": "Overdue",
+    "inProgress": "In Progress",
+    "scheduled": "Scheduled",
+    "totalRecords": "Total Records",
+    "searchPlaceholder": "Search maintenance records...",
+    "allTypes": "All Types",
+    "allStatuses": "All Statuses",
+    "noRecordsFound": "No maintenance records found matching your criteria",
+    "technician": "Technician",
+    "scheduledDate": "Scheduled Date",
+    "description": "Description",
+    "type": "Type",
+    "equipment": "Equipment",
+    "actions": "Actions",
+    "cost": "Cost",
+    "status": "Status"
+  }
+}
