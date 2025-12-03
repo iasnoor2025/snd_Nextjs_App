@@ -745,39 +745,63 @@ export default function ProjectResourcesPage() {
       }));
 
       // Transform manpower data to match frontend structure
-      const transformedManpower = manpowerData.map((resource: any) => ({
-        id: resource.id.toString(),
-        type: resource.type,
-        name: resource.name || resource.title || resource.workerName || resource.jobTitle || 'Unnamed Resource',
-        description: resource.description,
-        quantity: resource.quantity,
-        unit_cost: resource.dailyRate ? parseFloat(resource.dailyRate) : undefined,
-        total_cost: resource.dailyRate && resource.totalDays ? 
-          parseFloat(resource.dailyRate) * resource.totalDays : undefined,
-        date: resource.startDate,
-        status: resource.status,
-        notes: resource.notes,
-        employee_id: resource.employeeId?.toString(),
-        employee: resource.employee
+      const transformedManpower = manpowerData.map((resource: any) => {
+        // Always calculate total days from dates if dates are available
+        // This ensures the table shows the correct days that update automatically as days pass
+        const calculatedTotalDays = calculateTotalDaysFromDates(resource.startDate, resource.endDate);
+        
+        // Use calculated days if dates are present, otherwise fall back to stored totalDays
+        const totalDays = (resource.startDate && calculatedTotalDays > 0) 
+          ? calculatedTotalDays 
+          : (resource.totalDays ? resource.totalDays : 0);
+        
+        const dailyRate = resource.dailyRate ? parseFloat(resource.dailyRate) : 0;
+        
+        // Calculate total cost: daily rate * calculated total days
+        const totalCost = dailyRate * totalDays;
+        
+        // Handle employee data - check for employeeFirstName/employeeLastName from JOIN (same as initial fetchData)
+        const employee = (resource.employeeFirstName || resource.employeeLastName)
           ? {
-              id: resource.employee.id.toString(),
-              first_name: resource.employee.first_name,
-              last_name: resource.employee.last_name,
-              full_name: `${resource.employee.first_name} ${resource.employee.last_name}`,
+              id: resource.employeeId?.toString() || '',
+              first_name: resource.employeeFirstName || '',
+              last_name: resource.employeeLastName || '',
+              full_name: `${resource.employeeFirstName || ''} ${resource.employeeLastName || ''}`.trim(),
             }
-          : undefined,
-        employee_name: resource.employeeName,
-        employee_file_number: resource.employeeFileNumber,
-        worker_name: resource.workerName,
-        job_title: resource.jobTitle,
-        daily_rate: resource.dailyRate ? parseFloat(resource.dailyRate) : undefined,
-        days_worked: resource.daysWorked,
-        start_date: resource.startDate,
-        end_date: resource.endDate,
-        total_days: resource.totalDays,
-        created_at: resource.createdAt,
-        updated_at: resource.updatedAt,
-      }));
+          : resource.employee || undefined;
+        
+        // Handle both employee names (from JOIN) and worker names
+        // Combine firstName and lastName if both exist, otherwise use workerName
+        const employeeName = (resource.employeeFirstName && resource.employeeLastName)
+          ? `${resource.employeeFirstName} ${resource.employeeLastName}`.trim()
+          : resource.employeeFirstName || resource.employeeLastName || resource.employeeName || resource.workerName || `Employee ${resource.employeeId || 'Unknown'}`;
+        
+        return {
+          id: resource.id.toString(),
+          type: resource.type,
+          name: resource.name || resource.title || resource.workerName || resource.equipmentName || resource.materialName || resource.jobTitle || resource.companyName || 'Unnamed Resource',
+          description: resource.description,
+          quantity: resource.quantity,
+          unit_cost: dailyRate || undefined,
+          total_cost: totalCost > 0 ? totalCost : undefined,
+          date: resource.startDate,
+          status: resource.status,
+          notes: resource.notes,
+          employee_id: resource.employeeId?.toString(),
+          employee: employee,
+          employee_name: employeeName,
+          employee_file_number: resource.employeeFileNumber || '-',
+          worker_name: resource.workerName,
+          job_title: resource.jobTitle,
+          daily_rate: dailyRate || undefined,
+          days_worked: resource.daysWorked,
+          start_date: resource.startDate,
+          end_date: resource.endDate,
+          total_days: totalDays, // This will now show the calculated days from dates
+          created_at: resource.createdAt,
+          updated_at: resource.updatedAt,
+        };
+      });
 
       // Update only manpower in the resources state
       setResources(prevResources => {
