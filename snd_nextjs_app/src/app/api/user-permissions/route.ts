@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
+import { withAuth } from '@/lib/rbac/api-middleware';
 import { getServerSession } from '@/lib/auth';
 
 import { db } from '@/lib/drizzle';
@@ -12,7 +12,7 @@ const getUserPermissionsHandler = async (request: NextRequest) => {
     const session = await getServerSession();
     
     if (!session?.user?.id) {
-      // This should not happen as withPermission handles auth, but keep for safety
+      // This should not happen as withAuth handles auth, but keep for safety
       return NextResponse.json(
         { error: 'Unauthorized - No valid session' },
         { status: 401 }
@@ -117,4 +117,7 @@ const getUserPermissionsHandler = async (request: NextRequest) => {
   }
 };
 
-export const GET = withPermission(PermissionConfigs.user.read)(getUserPermissionsHandler);
+// Note: This endpoint uses withAuth() instead of withPermission() because
+// users need to fetch their own permissions to know what permissions they have.
+// This is a special case where authenticated users can read their own data.
+export const GET = withAuth(getUserPermissionsHandler);
