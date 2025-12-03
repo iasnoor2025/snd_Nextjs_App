@@ -386,10 +386,11 @@ export default function ProjectResourcesPage() {
     if (!deleteResource) return;
 
     try {
-      setLoading(true);
+      // Don't set loading state - we want to update only the specific tab
+      const resourceType = deleteResource.type;
       
       // Use appropriate delete endpoint based on resource type
-      switch (deleteResource.type) {
+      switch (resourceType) {
         case 'manpower':
           await ApiService.delete(`/projects/${projectId}/manpower/${deleteResource.id}`);
           break;
@@ -409,25 +410,30 @@ export default function ProjectResourcesPage() {
           await ApiService.delete(`/projects/${projectId}/tasks/${deleteResource.id}`);
           break;
         default:
-          throw new Error(`Unknown resource type: ${deleteResource.type}`);
+          throw new Error(`Unknown resource type: ${resourceType}`);
       }
       
-             toast.success('Resource deleted successfully');
-       // Use targeted update if possible, otherwise refresh all data
-       if (deleteResource.type === 'tasks') {
-         await updateTasksData();
-       } else if (deleteResource.type === 'manpower') {
-         await updateManpowerData();
-       } else if (deleteResource.type === 'equipment') {
-         await updateEquipmentData();
-       } else {
-         fetchData();
-       }
+      toast.success('Resource deleted successfully');
+      
+      // Update only the specific tab that was deleted, not the entire page
+      if (resourceType === 'tasks') {
+        await updateTasksData();
+      } else if (resourceType === 'manpower') {
+        await updateManpowerData();
+      } else if (resourceType === 'equipment') {
+        await updateEquipmentData();
+      } else if (resourceType === 'material') {
+        await updateMaterialsData();
+      } else if (resourceType === 'fuel') {
+        await updateFuelData();
+      } else if (resourceType === 'expense') {
+        await updateExpensesData();
+      }
     } catch (error) {
       console.error('Error deleting resource:', error);
       toast.error('Failed to delete resource');
     } finally {
-      setLoading(false);
+      // Close dialog without setting loading state
       setDeleteDialogOpen(false);
       setDeleteResource(null);
     }
@@ -469,8 +475,39 @@ export default function ProjectResourcesPage() {
     setEditingResource(null);
   };
 
+  // Handler for when dialog is closed (via onOpenChange)
+  const handleDialogOpenChange = (type: ResourceType, open: boolean) => {
+    if (!open) {
+      // When dialog closes, clear editing state
+      setEditingResource(null);
+    }
+    
+    // Update the appropriate dialog state
+    switch (type) {
+      case 'manpower':
+        setManpowerDialogOpen(open);
+        break;
+      case 'equipment':
+        setEquipmentDialogOpen(open);
+        break;
+      case 'material':
+        setMaterialDialogOpen(open);
+        break;
+      case 'fuel':
+        setFuelDialogOpen(open);
+        break;
+      case 'expense':
+        setExpenseDialogOpen(open);
+        break;
+      case 'tasks':
+        setTaskDialogOpen(open);
+        break;
+    }
+  };
+
   const handleResourceSuccess = (resourceType?: ResourceType) => {
     // Use targeted update based on resource type, fallback to full refresh
+    // Only update the specific tab that was modified, not the entire page
     if (resourceType === 'tasks') {
       updateTasksData();
     } else if (resourceType === 'manpower') {
@@ -532,8 +569,7 @@ export default function ProjectResourcesPage() {
         return [...nonTaskResources, ...transformedTasks];
       });
       
-      // Update statistics
-      updateStatistics();
+      // Statistics will update automatically from the resources state
     } catch (error) {
       console.error('Error updating tasks data:', error);
     }
@@ -589,8 +625,7 @@ export default function ProjectResourcesPage() {
         return [...nonManpowerResources, ...transformedManpower];
       });
       
-      // Update statistics
-      updateStatistics();
+      // Statistics will update automatically from the resources state
     } catch (error) {
       console.error('Error updating manpower data:', error);
     }
@@ -635,8 +670,7 @@ export default function ProjectResourcesPage() {
         return [...nonEquipmentResources, ...transformedEquipment];
       });
       
-      // Update statistics
-      updateStatistics();
+      // Statistics will update automatically from the resources state
     } catch (error) {
       console.error('Error updating equipment data:', error);
     }
@@ -678,8 +712,7 @@ export default function ProjectResourcesPage() {
         return [...nonMaterialResources, ...transformedMaterials];
       });
       
-      // Update statistics
-      updateStatistics();
+      // Statistics will update automatically from the resources state
     } catch (error) {
       console.error('Error updating materials data:', error);
     }
@@ -722,8 +755,7 @@ export default function ProjectResourcesPage() {
         return [...nonFuelResources, ...transformedFuel];
       });
       
-      // Update statistics
-      updateStatistics();
+      // Statistics will update automatically from the resources state
     } catch (error) {
       console.error('Error updating fuel data:', error);
     }
@@ -766,8 +798,7 @@ export default function ProjectResourcesPage() {
         return [...nonExpenseResources, ...transformedExpenses];
       });
       
-      // Update statistics
-      updateStatistics();
+      // Statistics will update automatically from the resources state
     } catch (error) {
       console.error('Error updating expenses data:', error);
     }
@@ -1447,7 +1478,7 @@ export default function ProjectResourcesPage() {
       {/* Separate Dialogs for each resource type */}
              <ManpowerDialog
          open={manpowerDialogOpen}
-         onOpenChange={setManpowerDialogOpen}
+         onOpenChange={(open) => handleDialogOpenChange('manpower', open)}
          projectId={projectId}
          initialData={editingResource}
          onSuccess={() => handleResourceSuccess('manpower')}
@@ -1455,7 +1486,7 @@ export default function ProjectResourcesPage() {
 
        <EquipmentDialog
          open={equipmentDialogOpen}
-         onOpenChange={setEquipmentDialogOpen}
+         onOpenChange={(open) => handleDialogOpenChange('equipment', open)}
          projectId={projectId}
          initialData={editingResource}
          onSuccess={() => handleResourceSuccess('equipment')}
@@ -1463,7 +1494,7 @@ export default function ProjectResourcesPage() {
 
       <MaterialDialog
         open={materialDialogOpen}
-        onOpenChange={setMaterialDialogOpen}
+        onOpenChange={(open) => handleDialogOpenChange('material', open)}
         projectId={projectId}
         initialData={editingResource}
         onSuccess={() => handleResourceSuccess('material')}
@@ -1471,7 +1502,7 @@ export default function ProjectResourcesPage() {
 
       <FuelDialog
         open={fuelDialogOpen}
-        onOpenChange={setFuelDialogOpen}
+        onOpenChange={(open) => handleDialogOpenChange('fuel', open)}
         projectId={projectId}
         initialData={editingResource}
         onSuccess={() => handleResourceSuccess('fuel')}
@@ -1479,7 +1510,7 @@ export default function ProjectResourcesPage() {
 
       <ExpenseDialog
         open={expenseDialogOpen}
-        onOpenChange={setExpenseDialogOpen}
+        onOpenChange={(open) => handleDialogOpenChange('expense', open)}
         projectId={projectId}
         initialData={editingResource}
         onSuccess={() => handleResourceSuccess('expense')}
@@ -1487,7 +1518,7 @@ export default function ProjectResourcesPage() {
 
              <TaskDialog
          open={taskDialogOpen}
-         onOpenChange={setTaskDialogOpen}
+         onOpenChange={(open) => handleDialogOpenChange('tasks', open)}
          projectId={projectId}
          initialData={editingResource && editingResource.type === 'tasks' ? {
            id: editingResource.id,
