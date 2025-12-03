@@ -143,24 +143,24 @@ export async function GET(
       'Content-Length': pdfBuffer.length.toString(),
     });
 
-        // Convert Buffer to ArrayBuffer (like pdf-proxy route does)
-    // This is the most compatible format for Next.js
-    const arrayBuffer = pdfBuffer.buffer.slice(
-      pdfBuffer.byteOffset,
-      pdfBuffer.byteOffset + pdfBuffer.byteLength
-    );
-
-    // Use NextResponse with ArrayBuffer (same pattern as pdf-proxy route)
-    const response = new NextResponse(arrayBuffer, {
+        console.log('[PDF] Preparing response, pdfBuffer length:', pdfBuffer.length);
+    
+    // Convert to base64 as a workaround for Next.js serialization issues
+    const base64 = pdfBuffer.toString('base64');
+    const dataUri = `data:application/pdf;base64,${base64}`;
+    
+    // Return as JSON with base64 data
+    return NextResponse.json({
+      success: true,
+      data: dataUri,
+      filename: `Final_Settlement_${settlementData.settlementNumber}_${language}.pdf`,
+      size: pdfBuffer.length,
+    }, {
       status: 200,
       headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="Final_Settlement_${settlementData.settlementNumber}_${language}.pdf"`,
-        'Content-Length': arrayBuffer.byteLength.toString(),
+        'Cache-Control': 'no-cache',
       },
     });
-    
-    return response;
   } catch (error) {
     console.error('[PDF] Error generating settlement PDF:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -175,17 +175,21 @@ export async function GET(
       errorType: error instanceof Error ? error.constructor.name : typeof error,
     });
     
-    // Always return JSON error response - never empty
+    // Always return JSON error response with detailed error message
+    // Include error details even in production for debugging
     const errorResponse = {
       success: false,
       message: 'Failed to generate PDF',
       error: errorMessage,
+      // Always include error message, even in production
+      details: {
+        settlementId,
+        language,
+        errorType: error instanceof Error ? error.constructor.name : typeof error,
+      },
+      // Include stack trace in development only
       ...(process.env.NODE_ENV !== 'production' && {
         stack: errorStack,
-        details: {
-          settlementId,
-          language,
-        }
       }),
     };
     
@@ -332,19 +336,20 @@ export async function POST(
         throw new Error('Generated PDF buffer is empty');
       }
 
-      // Convert Buffer to ArrayBuffer (like pdf-proxy route does)
-      const arrayBuffer = pdfBuffer.buffer.slice(
-        pdfBuffer.byteOffset,
-        pdfBuffer.byteOffset + pdfBuffer.byteLength
-      );
-
-      // Use NextResponse with ArrayBuffer (same pattern as pdf-proxy route)
-      return new NextResponse(arrayBuffer, {
+      // Convert to base64 as a workaround for Next.js serialization issues
+      const base64 = pdfBuffer.toString('base64');
+      const dataUri = `data:application/pdf;base64,${base64}`;
+      
+      // Return as JSON with base64 data
+      return NextResponse.json({
+        success: true,
+        data: dataUri,
+        filename: `Final_Settlement_${settlementData.settlementNumber}_${language}.pdf`,
+        size: pdfBuffer.length,
+      }, {
         status: 200,
         headers: {
-          'Content-Type': 'application/pdf',
-          'Content-Disposition': `attachment; filename="Final_Settlement_${settlementData.settlementNumber}_${language}.pdf"`,
-          'Content-Length': arrayBuffer.byteLength.toString(),
+          'Cache-Control': 'no-cache',
         },
       });
     }
@@ -361,20 +366,29 @@ export async function POST(
       language,
     });
     
-    return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to generate PDF',
-        error: errorMessage,
-        ...(process.env.NODE_ENV !== 'production' && {
-          stack: errorStack,
-          details: {
-            settlementId,
-            language,
-          }
-        }),
+    // Always return JSON error response with detailed error message
+    // Include error details even in production for debugging
+    const errorResponse = {
+      success: false,
+      message: 'Failed to generate PDF',
+      error: errorMessage,
+      // Always include error message and details, even in production
+      details: {
+        settlementId,
+        language,
+        errorType: error instanceof Error ? error.constructor.name : typeof error,
       },
-      { status: 500 }
-    );
+      // Include stack trace in development only
+      ...(process.env.NODE_ENV !== 'production' && {
+        stack: errorStack,
+      }),
+    };
+    
+    return NextResponse.json(errorResponse, { 
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
   }
 }

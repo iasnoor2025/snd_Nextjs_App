@@ -146,41 +146,30 @@ export function ViewFinalSettlementDialog({
       const response = await fetch(`/api/final-settlements/${settlement.id}/pdf?language=${language}`);
       
       if (!response.ok) {
-        // Try to get error message from response
         let errorMessage = 'Failed to generate PDF';
         try {
           const errorData = await response.json();
           errorMessage = errorData.error || errorData.message || errorMessage;
         } catch {
-          // If response is not JSON, use status text
           errorMessage = response.statusText || errorMessage;
         }
         throw new Error(errorMessage);
       }
       
-      const blob = await response.blob();
+      // Get JSON response with base64 data
+      const data = await response.json();
       
-      // Check if the blob is actually a PDF (not an error JSON)
-      if (blob.type !== 'application/pdf') {
-        const text = await blob.text();
-        let errorMessage = 'Failed to generate PDF';
-        try {
-          const errorData = JSON.parse(text);
-          errorMessage = errorData.error || errorData.message || errorMessage;
-        } catch {
-          errorMessage = text || errorMessage;
-        }
-        throw new Error(errorMessage);
+      if (!data.success || !data.data) {
+        throw new Error(data.error || 'Failed to generate PDF');
       }
       
-      const url = window.URL.createObjectURL(blob);
+      // Convert data URI to blob
       const a = document.createElement('a');
       a.style.display = 'none';
-      a.href = url;
-      a.download = `Final_Settlement_${settlement.settlementNumber}_${language}.pdf`;
+      a.href = data.data; // data URI
+      a.download = data.filename || `Final_Settlement_${settlement.settlementNumber}_${language}.pdf`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
       console.error('Error downloading PDF:', error);

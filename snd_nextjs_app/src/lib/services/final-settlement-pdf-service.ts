@@ -57,31 +57,47 @@ export class FinalSettlementPDFService {
   private static getChromiumPath(): string | undefined {
     // Check environment variable first
     if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+      console.log(`[PDF] Using PUPPETEER_EXECUTABLE_PATH: ${process.env.PUPPETEER_EXECUTABLE_PATH}`);
       return process.env.PUPPETEER_EXECUTABLE_PATH;
     }
 
     // In production, try to find Chromium in PATH
     if (process.env.NODE_ENV === 'production') {
+      console.log('[PDF] Production mode: Attempting to find Chromium in PATH...');
       try {
         // Try chromium first
         const chromium = execSync('which chromium', { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
-        if (chromium) return chromium;
-      } catch {
+        if (chromium) {
+          console.log(`[PDF] Found Chromium at: ${chromium}`);
+          return chromium;
+        }
+      } catch (e) {
+        console.log('[PDF] chromium not found, trying chromium-browser...');
         // Try chromium-browser
         try {
           const chromiumBrowser = execSync('which chromium-browser', { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
-          if (chromiumBrowser) return chromiumBrowser;
-        } catch {
+          if (chromiumBrowser) {
+            console.log(`[PDF] Found chromium-browser at: ${chromiumBrowser}`);
+            return chromiumBrowser;
+          }
+        } catch (e2) {
+          console.log('[PDF] chromium-browser not found, trying google-chrome...');
           // Try google-chrome as fallback
           try {
             const chrome = execSync('which google-chrome', { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
-            if (chrome) return chrome;
-          } catch {
+            if (chrome) {
+              console.log(`[PDF] Found google-chrome at: ${chrome}`);
+              return chrome;
+            }
+          } catch (e3) {
             // Not found, will use Puppeteer's bundled Chrome
-            console.warn('Chromium not found in PATH, Puppeteer will attempt to use bundled Chrome');
+            console.warn('[PDF] Chromium not found in PATH, Puppeteer will attempt to use bundled Chrome');
+            console.warn('[PDF] Error details:', { chromium: e, chromiumBrowser: e2, chrome: e3 });
           }
         }
       }
+    } else {
+      console.log('[PDF] Development mode: Using Puppeteer bundled Chrome');
     }
 
     // In development or if not found, let Puppeteer use its bundled Chrome

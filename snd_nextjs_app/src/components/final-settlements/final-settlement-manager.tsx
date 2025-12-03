@@ -174,51 +174,30 @@ export function FinalSettlementManager({
       const response = await fetch(`/api/final-settlements/${settlementId}/pdf?language=${language}`);
       
       if (!response.ok) {
-        // Try to get error message from response
         let errorMessage = 'Failed to generate PDF';
-        let errorDetails = '';
         try {
           const errorData = await response.json();
-          console.error('Error response data:', errorData);
-          errorMessage = errorData.error || errorData.message || errorMessage;
-          errorDetails = errorData.stack ? `\n\nDetails: ${errorData.stack.substring(0, 200)}` : '';
-        } catch (parseError) {
-          // If response is not JSON, try to get text
-          try {
-            const text = await response.text();
-            console.error('Error response text:', text);
-            errorMessage = text || response.statusText || errorMessage;
-          } catch {
-            errorMessage = response.statusText || errorMessage;
-          }
-        }
-        throw new Error(`${errorMessage}${errorDetails}`);
-      }
-      
-      const blob = await response.blob();
-      
-      // Check if the blob is actually a PDF (not an error JSON)
-      if (blob.type !== 'application/pdf') {
-        const text = await blob.text();
-        console.error('Blob is not PDF, content:', text.substring(0, 200));
-        let errorMessage = 'Failed to generate PDF';
-        try {
-          const errorData = JSON.parse(text);
           errorMessage = errorData.error || errorData.message || errorMessage;
         } catch {
-          errorMessage = text || errorMessage;
+          errorMessage = response.statusText || errorMessage;
         }
         throw new Error(errorMessage);
       }
       
-      const url = window.URL.createObjectURL(blob);
+      // Get JSON response with base64 data
+      const data = await response.json();
+      
+      if (!data.success || !data.data) {
+        throw new Error(data.error || 'Failed to generate PDF');
+      }
+      
+      // Convert data URI to blob
       const a = document.createElement('a');
       a.style.display = 'none';
-      a.href = url;
-      a.download = `Final_Settlement_${settlementId}_${language}.pdf`;
+      a.href = data.data; // data URI
+      a.download = data.filename || `Final_Settlement_${settlementId}_${language}.pdf`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
       console.error('Error downloading PDF:', error);
