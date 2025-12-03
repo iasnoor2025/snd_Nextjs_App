@@ -1,6 +1,8 @@
 import { db } from '@/lib/drizzle';
-import { equipment, equipmentMaintenance, equipmentRentalHistory, rentalItems } from '@/lib/drizzle/schema';
+import { equipment, equipmentMaintenance, equipmentRentalHistory, rentalItems, projectEquipment } from '@/lib/drizzle/schema';
 import { eq, and, sql, or } from 'drizzle-orm';
+import { cacheService } from '@/lib/redis';
+import { CACHE_TAGS } from '@/lib/redis';
 
 export class EquipmentStatusService {
   /**
@@ -48,40 +50,69 @@ export class EquipmentStatusService {
       // An assignment is active if:
       // 1. equipmentRentalHistory.status = 'active' AND
       // 2. For rental assignments, the rental item must also be active (not completed)
-      const activeAssignments = await db
-        .select({ 
-          id: equipmentRentalHistory.id,
-          assignmentType: equipmentRentalHistory.assignmentType,
-          rentalId: equipmentRentalHistory.rentalId,
-        })
-        .from(equipmentRentalHistory)
-        .leftJoin(
-          rentalItems,
-          and(
-            eq(rentalItems.rentalId, equipmentRentalHistory.rentalId),
-            eq(rentalItems.equipmentId, equipmentRentalHistory.equipmentId)
+      // OR
+      // 3. projectEquipment.status = 'active' (project assignments)
+      const [activeRentalAssignments, activeProjectAssignments] = await Promise.all([
+        db
+          .select({ 
+            id: equipmentRentalHistory.id,
+            assignmentType: equipmentRentalHistory.assignmentType,
+            rentalId: equipmentRentalHistory.rentalId,
+          })
+          .from(equipmentRentalHistory)
+          .leftJoin(
+            rentalItems,
+            and(
+              eq(rentalItems.rentalId, equipmentRentalHistory.rentalId),
+              eq(rentalItems.equipmentId, equipmentRentalHistory.equipmentId)
+            )
           )
-        )
-        .where(
-          and(
-            eq(equipmentRentalHistory.equipmentId, equipmentId),
-            eq(equipmentRentalHistory.status, 'active'),
-            // For rental assignments, also check that rental item is not completed
-            or(
-              // Not a rental assignment - use assignment status
-              sql`${equipmentRentalHistory.assignmentType} != 'rental'`,
-              // Is a rental assignment but rental item doesn't exist (legacy data) - treat as active if assignment is active
-              sql`${rentalItems.id} IS NULL`,
-              // Is a rental assignment and rental item exists - must be active (not completed)
-              and(
-                sql`${rentalItems.id} IS NOT NULL`,
-                sql`${rentalItems.status} = 'active'`,
-                sql`${rentalItems.completedDate} IS NULL`
+          .where(
+            and(
+              eq(equipmentRentalHistory.equipmentId, equipmentId),
+              eq(equipmentRentalHistory.status, 'active'),
+              // For rental assignments, also check that rental item is not completed
+              or(
+                // Not a rental assignment - use assignment status
+                sql`${equipmentRentalHistory.assignmentType} != 'rental'`,
+                // Is a rental assignment but rental item doesn't exist (legacy data) - treat as active if assignment is active
+                sql`${rentalItems.id} IS NULL`,
+                // Is a rental assignment and rental item exists - must be active (not completed)
+                and(
+                  sql`${rentalItems.id} IS NOT NULL`,
+                  sql`${rentalItems.status} = 'active'`,
+                  sql`${rentalItems.completedDate} IS NULL`
+                )
               )
             )
           )
-        )
-        .limit(1);
+          .limit(1),
+        // Check for active project equipment assignments
+        // An assignment is active if:
+        // 1. status is 'active' or 'pending' AND
+        // 2. startDate is today or in the past AND
+        // 3. endDate is null or in the future
+        db
+          .select({ 
+            id: projectEquipment.id,
+          })
+          .from(projectEquipment)
+          .where(
+            and(
+              eq(projectEquipment.equipmentId, equipmentId),
+              sql`${projectEquipment.status} IN ('active', 'pending')`,
+              sql`${projectEquipment.startDate} <= CURRENT_DATE`,
+              or(
+                sql`${projectEquipment.endDate} IS NULL`,
+                sql`${projectEquipment.endDate} >= CURRENT_DATE`
+              )
+            )
+          )
+          .limit(1)
+      ]);
+
+      // Combine both types of assignments
+      const activeAssignments = [...activeRentalAssignments, ...activeProjectAssignments];
 
       // Determine what the status should be
       let newStatus = 'available';
@@ -108,6 +139,15 @@ export class EquipmentStatusService {
         console.log(`🔄 Equipment Status Updated: ${equipmentName} (${equipmentId})`);
         console.log(`   Previous: ${currentStatus} → New: ${newStatus}`);
         console.log(`   Reason: ${reason}`);
+
+        // Invalidate equipment cache to reflect status changes in list view
+        try {
+          await cacheService.invalidateCacheByTag(CACHE_TAGS.EQUIPMENT);
+          console.log(`🗑️ Invalidated equipment cache after status update`);
+        } catch (cacheError) {
+          console.error('Error invalidating equipment cache:', cacheError);
+          // Don't fail the status update if cache invalidation fails
+        }
 
         return {
           success: true,

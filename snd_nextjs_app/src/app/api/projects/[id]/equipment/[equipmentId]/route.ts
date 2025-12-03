@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { projectEquipment, projects } from '@/lib/drizzle/schema';
+import { EquipmentStatusService } from '@/lib/services/equipment-status-service';
 import { eq, and } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
 
@@ -68,6 +69,10 @@ export async function PUT(
       notes,
     } = body;
 
+    // Get equipmentId before update (in case it's being changed)
+    const equipmentIdToUpdate = existingEquipment[0].equipmentId;
+    const newEquipmentIdValue = newEquipmentId !== undefined ? parseInt(newEquipmentId) : equipmentIdToUpdate;
+
     // Update equipment
     const [updatedEquipment] = await db
       .update(projectEquipment)
@@ -87,6 +92,18 @@ export async function PUT(
       })
       .where(eq(projectEquipment.id, parseInt(equipmentId)))
       .returning();
+
+    // Update equipment status immediately after assignment update
+    try {
+      // Update status for both old and new equipment if equipment was changed
+      await EquipmentStatusService.onAssignmentUpdated(equipmentIdToUpdate);
+      if (newEquipmentIdValue !== equipmentIdToUpdate) {
+        await EquipmentStatusService.onAssignmentUpdated(newEquipmentIdValue);
+      }
+    } catch (statusError) {
+      console.error('Error updating equipment status:', statusError);
+      // Don't fail the update if status update fails
+    }
 
     return NextResponse.json({
       success: true,
@@ -136,10 +153,21 @@ export async function DELETE(
       return NextResponse.json({ error: 'Equipment resource not found' }, { status: 404 });
     }
 
+    // Get equipmentId before deletion for status update
+    const equipmentIdToUpdate = existingEquipment[0].equipmentId;
+
     // Delete equipment
     await db
       .delete(projectEquipment)
       .where(eq(projectEquipment.id, parseInt(equipmentId)));
+
+    // Update equipment status immediately after assignment deletion
+    try {
+      await EquipmentStatusService.onAssignmentDeleted(equipmentIdToUpdate);
+    } catch (statusError) {
+      console.error('Error updating equipment status:', statusError);
+      // Don't fail the deletion if status update fails
+    }
 
     return NextResponse.json({
       success: true,

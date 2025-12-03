@@ -17,8 +17,8 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import ApiService from '@/lib/api-service';
 import { format } from 'date-fns';
-import { CalendarIcon, User, Users } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import { AlertTriangle, CalendarIcon, User, Users } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 
 interface ManpowerResource {
@@ -57,6 +57,8 @@ export default function ManpowerDialog({
   const [useEmployee, setUseEmployee] = useState(initialData?.employee_id ? true : false);
   const [originalTotalDays, setOriginalTotalDays] = useState<number | undefined>(initialData?.total_days);
   const [originalEndDate, setOriginalEndDate] = useState<string | undefined>(initialData?.end_date);
+  const [duplicateWarnings, setDuplicateWarnings] = useState<string[]>([]);
+  const [existingManpower, setExistingManpower] = useState<any[]>([]);
   const [formData, setFormData] = useState<ManpowerResource>({
     employee_id: '',
     employee_name: '',
@@ -72,6 +74,146 @@ export default function ManpowerDialog({
     notes: '',
     status: 'pending',
   });
+
+  // Load existing manpower resources and check all assignments across the app
+  const loadExistingManpower = useCallback(async () => {
+    try {
+      const response = await ApiService.getProjectManpower(Number(projectId));
+      if (response.success && response.data) {
+        // Filter out current manpower if editing
+        const existing = response.data.filter((item: any) => {
+          if (initialData?.id && item.id?.toString() === initialData.id.toString()) {
+            return false; // Exclude current item when editing
+          }
+          return true;
+        });
+        setExistingManpower(existing);
+        console.log('Loaded existing manpower:', existing);
+      }
+    } catch (error) {
+      console.error('Error loading existing manpower:', error);
+      setExistingManpower([]);
+    }
+  }, [projectId, initialData?.id]);
+
+  // Load existing manpower when dialog opens
+  useEffect(() => {
+    if (open) {
+      loadExistingManpower();
+    }
+  }, [open, loadExistingManpower]);
+
+  // Check for duplicate employee assignments across entire app (projects, rentals, assignments)
+  useEffect(() => {
+    const checkEmployeeAssignments = async () => {
+      if (!open || !useEmployee || !formData.employee_id) {
+        setDuplicateWarnings([]);
+        return;
+      }
+
+      const warnings: string[] = [];
+      const employeeIdStr = formData.employee_id.toString();
+      const employeeId = parseInt(employeeIdStr);
+      // Track rentals we've already warned about to avoid duplicates
+      const warnedRentalIds = new Set<number>();
+
+      try {
+        // 1. Check project manpower (current project)
+        const duplicateInProject = existingManpower.filter((item: any) => {
+          if (!item.employeeId) return false;
+          // Exclude current item if editing
+          if (initialData?.id && item.id?.toString() === initialData.id.toString()) return false;
+          return item.employeeId.toString() === employeeIdStr;
+        });
+
+        duplicateInProject.forEach((duplicate: any) => {
+          const employeeName = duplicate.employeeFirstName && duplicate.employeeLastName
+            ? `${duplicate.employeeFirstName} ${duplicate.employeeLastName}`.trim()
+            : duplicate.employeeFirstName || duplicate.employeeLastName || 'Unknown';
+          const jobTitle = duplicate.jobTitle || 'Unknown Job';
+          const startDate = duplicate.startDate;
+          const dateStr = startDate ? new Date(startDate).toLocaleDateString() : 'unknown date';
+          warnings.push(`Already assigned in this project as "${jobTitle}" (started: ${dateStr})`);
+        });
+
+        // 2. Check employee assignments (assignment service) - across all projects and rentals
+        try {
+          const assignmentsResponse = await ApiService.get(`/employees/${employeeId}/assignments`);
+          if (assignmentsResponse.success && assignmentsResponse.data) {
+            const activeAssignments = assignmentsResponse.data.filter((assignment: any) => 
+              assignment.status === 'active' || assignment.status === 'pending'
+            );
+
+            activeAssignments.forEach((assignment: any) => {
+              // Check if assignment is to a project (including current project if different assignment)
+              if (assignment.project_id) {
+                const projectName = assignment.project?.name || `Project ${assignment.project_id}`;
+                const startDate = assignment.start_date;
+                const dateStr = startDate ? new Date(startDate).toLocaleDateString() : 'unknown date';
+                if (assignment.project_id.toString() !== projectId) {
+                  // Assignment to a different project
+                  warnings.push(`Already assigned to project "${projectName}" (started: ${dateStr})`);
+                } else if (assignment.name) {
+                  // Assignment to current project via assignment service (not manpower)
+                  warnings.push(`Already assigned to this project via assignment service: "${assignment.name}" (started: ${dateStr})`);
+                }
+              } else if (assignment.rental_id) {
+                // Assignment to a rental - track to avoid duplicate warnings
+                const rentalId = assignment.rental_id;
+                if (!warnedRentalIds.has(rentalId)) {
+                  warnedRentalIds.add(rentalId);
+                  const rentalNumber = assignment.rental?.rental_number || `Rental ${rentalId}`;
+                  const startDate = assignment.start_date;
+                  const dateStr = startDate ? new Date(startDate).toLocaleDateString() : 'unknown date';
+                  const assignmentName = assignment.name || 'Rental Operator';
+                  warnings.push(`Already assigned to rental "${rentalNumber}" as "${assignmentName}" (started: ${dateStr})`);
+                }
+              } else if (assignment.name) {
+                // Manual assignment (not linked to project or rental)
+                const startDate = assignment.start_date;
+                const dateStr = startDate ? new Date(startDate).toLocaleDateString() : 'unknown date';
+                warnings.push(`Already has active assignment: "${assignment.name}" (started: ${dateStr})`);
+              }
+            });
+          }
+        } catch (assignmentsError) {
+          console.error('Error checking employee assignments:', assignmentsError);
+        }
+
+        // 3. Check rental items where employee is operator (via previous-assignments endpoint for detailed info)
+        // This provides more detailed equipment information that might not be in the assignment service
+        try {
+          const previousAssignmentsResponse = await ApiService.get(`/employees/${employeeId}/previous-assignments`);
+          if (previousAssignmentsResponse && previousAssignmentsResponse.assignments) {
+            const activeRentalAssignments = previousAssignmentsResponse.assignments.filter((assignment: any) => 
+              assignment.role === 'operator' && 
+              (assignment.status === 'active' || !assignment.completedDate)
+            );
+
+            activeRentalAssignments.forEach((assignment: any) => {
+              if (assignment.rentalId && !warnedRentalIds.has(assignment.rentalId)) {
+                warnedRentalIds.add(assignment.rentalId);
+                const equipmentName = assignment.equipmentName || 'Unknown Equipment';
+                const rentalNumber = assignment.rentalNumber || `Rental ${assignment.rentalId}`;
+                const startDate = assignment.startDate;
+                const dateStr = startDate ? new Date(startDate).toLocaleDateString() : 'unknown date';
+                warnings.push(`Already assigned as operator to rental "${rentalNumber}" (Equipment: ${equipmentName}, started: ${dateStr})`);
+              }
+            });
+          }
+        } catch (rentalError) {
+          console.error('Error checking rental operator assignments:', rentalError);
+        }
+
+        setDuplicateWarnings(warnings);
+      } catch (error) {
+        console.error('Error checking employee assignments:', error);
+        setDuplicateWarnings([]);
+      }
+    };
+
+    checkEmployeeAssignments();
+  }, [open, useEmployee, formData.employee_id, existingManpower, projectId]);
 
   // No need to load employees here - handled by EmployeeDropdown component
 
@@ -401,6 +543,14 @@ export default function ManpowerDialog({
         toast.error('Please select an employee or provide employee details');
         return;
       }
+      
+      // Warning if employee is already assigned (but allow submission)
+      if (duplicateWarnings.length > 0) {
+        toast.warning(
+          `Warning: ${duplicateWarnings[0]}. Creating duplicate assignment.`,
+          { duration: 5000 }
+        );
+      }
       if (!useEmployee && !formData.worker_name) {
         toast.error('Please enter a worker name');
         return;
@@ -576,14 +726,37 @@ export default function ManpowerDialog({
                   </div>
                 </div>
               ) : (
-                <EmployeeDropdown
-                  value={formData.employee_id || undefined}
-                  onValueChange={value => handleInputChange('employee_id', value)}
-                  label="Select Employee"
-                  placeholder="Select an employee"
-                  required={true}
-                  showSearch={true}
-                />
+                <div className="space-y-2">
+                  <EmployeeDropdown
+                    value={formData.employee_id || undefined}
+                    onValueChange={value => handleInputChange('employee_id', value)}
+                    label="Select Employee"
+                    placeholder="Select an employee"
+                    required={true}
+                    showSearch={true}
+                  />
+                  {/* Duplicate Warning - Similar to rental items */}
+                  {duplicateWarnings.length > 0 && (
+                    <div className="rounded-md bg-yellow-50 border border-yellow-200 p-3 space-y-2">
+                      <div className="flex items-start">
+                        <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" />
+                        <div className="flex-1">
+                          <h4 className="text-sm font-semibold text-yellow-800 mb-1">
+                            Employee Already Assigned
+                          </h4>
+                          <ul className="list-disc list-inside space-y-1 text-xs text-yellow-700">
+                            {duplicateWarnings.map((warning, index) => (
+                              <li key={index}>{warning}</li>
+                            ))}
+                          </ul>
+                          <p className="text-xs text-yellow-600 mt-2">
+                            You can still proceed, but this will create a duplicate assignment.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
 
               {/* Employee Name and File Number - Show as read-only when employee is selected */}

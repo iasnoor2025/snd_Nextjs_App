@@ -62,6 +62,7 @@ export default function EquipmentDialog({
 }: EquipmentDialogProps) {
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [manpowerResources, setManpowerResources] = useState<any[]>([]);
+  const [assignedOperatorIds, setAssignedOperatorIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [loadingManpower, setLoadingManpower] = useState(false);
   const [loadingEquipment, setLoadingEquipment] = useState(false);
@@ -88,16 +89,44 @@ export default function EquipmentDialog({
     status: 'pending',
   });
 
+  // Load assigned operators from existing equipment
+  const loadAssignedOperators = async () => {
+    try {
+      const response = await ApiService.getProjectEquipment(Number(projectId));
+      if (response.success && response.data) {
+        // Get all operator IDs that are already assigned to equipment
+        // Exclude the current equipment being edited (if editing)
+        const assignedIds = new Set<string>();
+        response.data.forEach((item: any) => {
+          // Skip the current equipment if editing
+          if (initialData?.id && item.id?.toString() === initialData.id.toString()) {
+            return;
+          }
+          // operatorId references projectManpower.id
+          if (item.operatorId) {
+            assignedIds.add(item.operatorId.toString());
+          }
+        });
+        setAssignedOperatorIds(assignedIds);
+        console.log('Assigned operator IDs:', Array.from(assignedIds));
+      }
+    } catch (error) {
+      console.error('Error loading assigned operators:', error);
+      setAssignedOperatorIds(new Set());
+    }
+  };
+
   // Load equipment when dialog opens (for displaying selected equipment details)
   useEffect(() => {
     if (open) {
       console.log('Dialog opened, projectId:', projectId);
       loadEquipmentForDetails();
       loadManpowerResources();
+      loadAssignedOperators();
       setIsInitialized(false); // Reset when dialog opens
       hasInitialHourlyRate.current = false; // Reset when dialog opens
     }
-  }, [open, projectId]);
+  }, [open, projectId, initialData?.id]);
 
   // Initialize form data when editing
   useEffect(() => {
@@ -571,16 +600,25 @@ export default function EquipmentDialog({
                <SearchableSelect
                  value={formData.operator_id || undefined}
                  onValueChange={value => handleInputChange('operator_id', value)}
-                 options={manpowerResources.map(resource => ({
-                   value: resource.id,
-                   label: `${resource.label || resource.name}${resource.job_title ? ` - ${resource.job_title}` : ''}`,
-                   name: resource.name,
-                   file_number: resource.file_number || '',
-                   job_title: resource.job_title || '',
-                 }))}
+                 options={manpowerResources
+                   .filter(resource => {
+                     // Filter out operators that are already assigned to other equipment
+                     // Allow the current operator if editing
+                     if (initialData?.operator_id && resource.id === initialData.operator_id) {
+                       return true; // Allow current operator when editing
+                     }
+                     return !assignedOperatorIds.has(resource.id);
+                   })
+                   .map(resource => ({
+                     value: resource.id,
+                     label: `${resource.label || resource.name}${resource.job_title ? ` - ${resource.job_title}` : ''}${assignedOperatorIds.has(resource.id) ? ' (Already Assigned)' : ''}`,
+                     name: resource.name,
+                     file_number: resource.file_number || '',
+                     job_title: resource.job_title || '',
+                   }))}
                  placeholder="Select operator from manpower resources"
                  searchPlaceholder="Search by name or file number..."
-                 emptyMessage="No operators found"
+                 emptyMessage={assignedOperatorIds.size > 0 ? "No available operators (all are assigned)" : "No operators found"}
                  searchFields={['label', 'name', 'file_number', 'job_title']}
                  loading={loadingManpower}
                />

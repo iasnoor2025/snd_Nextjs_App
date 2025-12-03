@@ -6,6 +6,7 @@ import {
   equipmentMaintenance,
   equipmentDocuments,
   projects,
+  projectEquipment,
   rentals,
   customers,
 } from '@/lib/drizzle/schema';
@@ -63,6 +64,7 @@ const getEquipmentHandler = async (request: NextRequest) => {
               description: equipmentTable.description,
               door_number: equipmentTable.doorNumber,
               assigned_to: equipmentTable.assignedTo,
+              status: equipmentTable.status, // Include status field from database
             })
             .from(equipmentTable);
 
@@ -121,8 +123,8 @@ const getEquipmentHandler = async (request: NextRequest) => {
           let currentAssignments: any[] = [];
 
           try {
-            // Get all active assignments with related data
-            const rawAssignments = await db
+            // Get all active assignments from equipmentRentalHistory with related data
+            const rawRentalAssignments = await db
               .select({
                 equipment_id: equipmentTable.id,
                 assignment_id: equipmentRentalHistory.id,
@@ -148,6 +150,35 @@ const getEquipmentHandler = async (request: NextRequest) => {
               .leftJoin(rentals, eq(equipmentRentalHistory.rentalId, rentals.id))
               .leftJoin(customers, eq(rentals.customerId, customers.id))
               .where(eq(equipmentRentalHistory.status, 'active'));
+
+            // Get all active assignments from projectEquipment
+            const rawProjectAssignments = await db
+              .select({
+                equipment_id: projectEquipment.equipmentId,
+                assignment_id: projectEquipment.id,
+                project_id: projectEquipment.projectId,
+                project_name: projects.name,
+                assignment_type: sql<string>`'project'`,
+                assignment_date: projectEquipment.startDate,
+                return_date: projectEquipment.endDate,
+                assignment_status: projectEquipment.status,
+                notes: projectEquipment.notes,
+              })
+              .from(projectEquipment)
+              .leftJoin(projects, eq(projectEquipment.projectId, projects.id))
+              .where(
+                and(
+                  sql`${projectEquipment.status} IN ('active', 'pending')`,
+                  sql`${projectEquipment.startDate} <= CURRENT_DATE`,
+                  or(
+                    sql`${projectEquipment.endDate} IS NULL`,
+                    sql`${projectEquipment.endDate} >= CURRENT_DATE`
+                  )
+                )
+              );
+
+            // Combine both types of assignments
+            const rawAssignments = [...rawRentalAssignments, ...rawProjectAssignments];
 
             // Transform the flat data to nested objects expected by frontend
             currentAssignments = rawAssignments.map(assignment => ({
@@ -285,13 +316,10 @@ const getEquipmentHandler = async (request: NextRequest) => {
               const assignments = assignmentsByEquipment[item.id] || [];
               const maintenance = maintenanceByEquipment[item.id] || [];
               
-              // Calculate dynamic status based on assignments and maintenance
-              let status = 'available';
-              if (maintenance.length > 0) {
-                status = 'maintenance';
-              } else if (assignments.length > 0) {
-                status = 'assigned';
-              }
+              // Use the actual equipment status from database (which is updated by EquipmentStatusService)
+              // This ensures consistency with the status shown on detail pages
+              // The status is already calculated correctly by EquipmentStatusService based on all assignments
+              const status = item.status || 'available';
               
               return {
                 ...item,
@@ -301,7 +329,7 @@ const getEquipmentHandler = async (request: NextRequest) => {
                 is_under_maintenance: maintenance.length > 0,
                 current_assignment: assignments[0] || null,
                 current_maintenance: maintenance[0] || null,
-                status,
+                status, // Use actual status from database
                 image_url: equipmentImages[item.id]?.url || null,
                 image_is_card: equipmentImages[item.id]?.isCard || false,
               };

@@ -6,6 +6,8 @@ import {
   equipment,
   equipmentRentalHistory,
   projects,
+  projectEquipment,
+  projectManpower,
   rentals,
   rentalItems,
 } from '@/lib/drizzle/schema';
@@ -170,6 +172,57 @@ export const GET = withPermission(PermissionConfigs.equipment.read)(
 
     console.log('Enhanced rental history fetched with JOINs, count:', rentalHistoryWithJoins.length);
 
+    // Fetch project equipment assignments
+    console.log('Fetching project equipment assignments...');
+    const projectEquipmentAssignments = await db
+      .select({
+        id: projectEquipment.id,
+        projectId: projectEquipment.projectId,
+        equipmentId: projectEquipment.equipmentId,
+        operatorId: projectEquipment.operatorId,
+        startDate: projectEquipment.startDate,
+        endDate: projectEquipment.endDate,
+        hourlyRate: projectEquipment.hourlyRate,
+        estimatedHours: projectEquipment.estimatedHours,
+        actualHours: projectEquipment.actualHours,
+        maintenanceCost: projectEquipment.maintenanceCost,
+        status: projectEquipment.status,
+        notes: projectEquipment.notes,
+        createdAt: projectEquipment.createdAt,
+        updatedAt: projectEquipment.updatedAt,
+        // Project information
+        project: {
+          id: projects.id,
+          name: projects.name,
+          description: projects.description,
+          status: projects.status,
+        },
+        // Operator information (from projectManpower)
+        operator: {
+          id: projectManpower.id,
+          employeeId: projectManpower.employeeId,
+          workerName: projectManpower.workerName,
+          jobTitle: projectManpower.jobTitle,
+        },
+        // Employee information (if operator is an employee)
+        employee: {
+          id: employees.id,
+          firstName: employees.firstName,
+          lastName: employees.lastName,
+          fileNumber: employees.fileNumber,
+          email: employees.email,
+          phone: employees.phone,
+        },
+      })
+      .from(projectEquipment)
+      .leftJoin(projects, eq(projectEquipment.projectId, projects.id))
+      .leftJoin(projectManpower, eq(projectEquipment.operatorId, projectManpower.id))
+      .leftJoin(employees, eq(projectManpower.employeeId, employees.id))
+      .where(eq(projectEquipment.equipmentId, id))
+      .orderBy(desc(projectEquipment.createdAt));
+
+    console.log('Project equipment assignments fetched, count:', projectEquipmentAssignments.length);
+
     // Get operator counts for rental assignments
     const rentalIds = rentalHistoryWithJoins
       .filter(item => item.rentalId)
@@ -201,6 +254,15 @@ export const GET = withPermission(PermissionConfigs.equipment.read)(
         operatorCounts[rentalId] = operators.size;
       });
     }
+
+    // Helper function to parse Decimal types to numbers
+    const parseDecimal = (value: any): number => {
+      if (!value) return 0;
+      if (typeof value === 'string') return parseFloat(value) || 0;
+      if (typeof value === 'number') return value;
+      // Handle Decimal type from drizzle
+      return parseFloat(value.toString()) || 0;
+    };
 
     // Helper function to calculate total based on duration
     const calculateTotalByDuration = (
@@ -251,16 +313,89 @@ export const GET = withPermission(PermissionConfigs.equipment.read)(
       }
     };
 
-    // Transform the data to match the expected format
-    const history = rentalHistoryWithJoins.map(item => {
-      // Convert Decimal types to numbers
-      const parseDecimal = (value: any): number => {
-        if (!value) return 0;
-        if (typeof value === 'string') return parseFloat(value) || 0;
-        if (typeof value === 'number') return value;
-        // Handle Decimal type from drizzle
-        return parseFloat(value.toString()) || 0;
+    // Transform project equipment assignments to match the expected format
+
+    const projectEquipmentHistory = projectEquipmentAssignments.map(item => {
+      // Calculate total price: (hourlyRate * estimatedHours) + maintenanceCost
+      const hourlyRate = parseDecimal(item.hourlyRate);
+      const estimatedHours = parseDecimal(item.estimatedHours) || parseDecimal(item.actualHours) || 0;
+      const maintenanceCost = parseDecimal(item.maintenanceCost) || 0;
+      const totalPrice = (hourlyRate * estimatedHours) + maintenanceCost;
+
+      // Calculate duration in days
+      const calculateDuration = (start: string | Date | null, end: string | Date | null, status: string): number => {
+        if (!start) return 0;
+        const startDate = new Date(start);
+        let endDate: Date;
+        
+        if (end && (status === 'completed' || status === 'returned' || status === 'damaged')) {
+          endDate = new Date(end);
+        } else {
+          endDate = new Date();
+        }
+        
+        if (endDate < startDate) {
+          endDate = startDate;
+        }
+        
+        const diffTime = endDate.getTime() - startDate.getTime();
+        return Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
       };
+
+      const durationDays = calculateDuration(item.startDate, item.endDate, item.status);
+
+      // Get operator name
+      let operatorName = null;
+      if (item.employee) {
+        operatorName = `${item.employee.firstName} ${item.employee.lastName}`.trim();
+      } else if (item.operator?.workerName) {
+        operatorName = item.operator.workerName;
+      }
+
+      // Map status from project_equipment to assignment status
+      let displayStatus = item.status;
+      if (item.status === 'returned' || item.status === 'damaged') {
+        displayStatus = 'completed';
+      }
+
+      return {
+        id: `project_${item.id}`, // Prefix to avoid conflicts with rental history IDs
+        rental_id: null,
+        rental_number: null,
+        customer_name: null,
+        customer_email: null,
+        customer_phone: null,
+        project_id: item.projectId,
+        project_name: item.project?.name || null,
+        project_description: item.project?.description || null,
+        project_status: item.project?.status || null,
+        employee_id: item.employee?.id || null,
+        employee_name: operatorName,
+        employee_id_number: item.employee?.fileNumber || null,
+        employee_email: item.employee?.email || null,
+        employee_phone: item.employee?.phone || null,
+        assignment_type: 'project',
+        equipment_name: equipmentItem.name,
+        equipment_door_number: equipmentItem.doorNumber || null,
+        quantity: 1,
+        unit_price: hourlyRate,
+        total_price: totalPrice,
+        rate_type: 'hourly', // Project equipment uses hourly rate
+        status: displayStatus,
+        notes: item.notes,
+        rental_start_date: item.startDate ? new Date(item.startDate).toISOString() : null,
+        rental_expected_end_date: item.endDate ? new Date(item.endDate).toISOString() : null,
+        rental_actual_end_date: item.endDate ? new Date(item.endDate).toISOString() : null,
+        rental_status: item.status,
+        duration_days: durationDays,
+        operator_count: item.operatorId ? 1 : 0,
+        created_at: item.createdAt ? new Date(item.createdAt).toISOString() : null,
+        updated_at: item.updatedAt ? new Date(item.updatedAt).toISOString() : null,
+      };
+    });
+
+    // Transform the rental history data to match the expected format
+    const history = rentalHistoryWithJoins.map(item => {
 
       let totalPrice = 0;
       let unitPrice = parseDecimal(item.dailyRate);
@@ -417,11 +552,20 @@ export const GET = withPermission(PermissionConfigs.equipment.read)(
 
     console.log('History transformed successfully');
 
+    // Merge both histories and sort by creation date (most recent first)
+    const allHistory = [...history, ...projectEquipmentHistory].sort((a, b) => {
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return dateB - dateA; // Descending order (most recent first)
+    });
+
+    console.log('Total assignment history count:', allHistory.length);
+
     return NextResponse.json({
       success: true,
-      data: history,
-      count: history.length,
-      message: 'Equipment rental history loaded successfully',
+      data: allHistory,
+      count: allHistory.length,
+      message: 'Equipment assignment history loaded successfully',
     });
 
   } catch (error) {

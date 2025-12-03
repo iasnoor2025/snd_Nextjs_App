@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { projectEquipment, projects, equipment, projectManpower, employees } from '@/lib/drizzle/schema';
 import { CentralAssignmentService } from '@/lib/services/central-assignment-service';
+import { EquipmentStatusService } from '@/lib/services/equipment-status-service';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
 
@@ -146,6 +147,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       operatorId: operatorId ? parseInt(operatorId) : undefined,
       hourlyRate: parseFloat(hourlyRate),
     });
+
+    // Update equipment status immediately after assignment
+    try {
+      await EquipmentStatusService.onAssignmentCreated(parseInt(equipmentId));
+    } catch (statusError) {
+      console.error('Error updating equipment status:', statusError);
+      // Don't fail the assignment if status update fails
+    }
 
     return NextResponse.json({ 
       success: true,
