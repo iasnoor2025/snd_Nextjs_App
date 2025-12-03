@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { projectManpower, projects, employees } from '@/lib/drizzle/schema';
+import { projectManpower, projects, employees, employeeAssignments } from '@/lib/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
+import { AssignmentService } from '@/lib/services/assignment-service';
 
 
 export async function PUT(
@@ -146,7 +147,11 @@ export async function DELETE(
 
     // Verify manpower exists and belongs to the project
     const existingManpower = await db
-      .select()
+      .select({
+        id: projectManpower.id,
+        employeeId: projectManpower.employeeId,
+        projectId: projectManpower.projectId,
+      })
       .from(projectManpower)
       .where(
         and(
@@ -158,6 +163,47 @@ export async function DELETE(
 
     if (existingManpower.length === 0) {
       return NextResponse.json({ error: 'Manpower resource not found' }, { status: 404 });
+    }
+
+    const manpower = existingManpower[0];
+
+    // Delete the corresponding employee assignment if it exists
+    // The assignment was auto-created when manpower was added, so we should delete it when manpower is deleted
+    if (manpower.employeeId) {
+      try {
+        // Find the employee assignment that was created for this project and employee
+        const assignments = await db
+          .select({
+            id: employeeAssignments.id,
+            employeeId: employeeAssignments.employeeId,
+            projectId: employeeAssignments.projectId,
+            type: employeeAssignments.type,
+            assignmentType: employeeAssignments.assignmentType,
+          })
+          .from(employeeAssignments)
+          .where(
+            and(
+              eq(employeeAssignments.employeeId, manpower.employeeId),
+              eq(employeeAssignments.projectId, parseInt(projectId)),
+              eq(employeeAssignments.assignmentType, 'project'),
+              eq(employeeAssignments.status, 'active')
+            )
+          );
+
+        // Delete all matching assignments (there should typically be only one)
+        for (const assignment of assignments) {
+          try {
+            await AssignmentService.deleteAssignment(assignment.id, assignment.employeeId);
+            console.log(`Deleted employee assignment ${assignment.id} for employee ${assignment.employeeId} on project ${projectId}`);
+          } catch (assignmentError) {
+            console.error(`Error deleting employee assignment ${assignment.id}:`, assignmentError);
+            // Continue with manpower deletion even if assignment deletion fails
+          }
+        }
+      } catch (error) {
+        console.error('Error finding/deleting employee assignments:', error);
+        // Continue with manpower deletion even if assignment deletion fails
+      }
     }
 
     // Delete manpower
