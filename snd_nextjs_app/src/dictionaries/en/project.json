@@ -115,6 +115,9 @@
     "timelineDescription": "Project timeline and current status",
     "budgetDescription": "Project budget and financial details"
   },
+  "edit": {
+    "description": "Update project details and information"
+  },
   "fields": {
     "name": "Project Name",
     "description": "Description",
@@ -212,5 +215,14 @@
     "startDateRequired": "Start date is required",
     "endDateAfterStart": "End date must be after start date",
     "budgetInvalid": "Invalid budget"
+  },
+  "warnings": {
+    "employeeAlreadyAssigned": "Employee Already Assigned",
+    "employeeAlreadyAssignedMessage": "You can still proceed, but this employee is already assigned elsewhere.",
+    "alreadyAssignedToProject": "Already assigned to project \"{{projectName}}\" (started: {{date}})",
+    "alreadyAssignedToThisProject": "Already assigned to this project via assignment service: \"{{assignmentName}}\" (started: {{date}})",
+    "alreadyAssignedToRental": "Already assigned to rental \"{{rentalNumber}}\" as \"{{assignmentName}}\" (started: {{date}})",
+    "alreadyAssignedAsOperator": "Already assigned as operator to rental \"{{rentalNumber}}\" (Equipment: {{equipmentName}}, started: {{date}})",
+    "alreadyHasActiveAssignment": "Already has active assignment: \"{{assignmentName}}\" (started: {{date}})"
   }
 }

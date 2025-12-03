@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
 import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
@@ -116,6 +116,14 @@ export default function EditProjectPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [project, setProject] = useState<Project | null>(null);
+  
+  // Track warnings for each employee field
+  const [employeeWarnings, setEmployeeWarnings] = useState<{
+    project_manager_id?: string[];
+    project_engineer_id?: string[];
+    project_foreman_id?: string[];
+    supervisor_id?: string[];
+  }>({});
 
   const [formData, setFormData] = useState({
     name: '',
@@ -164,6 +172,120 @@ export default function EditProjectPage() {
   useEffect(() => {
     fetchProjectData();
   }, [projectId]);
+
+  // Check employee assignments when any employee field changes
+  const checkEmployeeAssignments = useCallback(async (employeeId: string | undefined, fieldName: string) => {
+    if (!employeeId) {
+      setEmployeeWarnings(prev => {
+        const newWarnings = { ...prev };
+        delete newWarnings[fieldName as keyof typeof newWarnings];
+        return newWarnings;
+      });
+      return;
+    }
+
+    const warnings: string[] = [];
+    const employeeIdNum = parseInt(employeeId);
+    const warnedRentalIds = new Set<number>();
+
+    try {
+      // 1. Check employee assignments (assignment service) - across all projects and rentals
+      try {
+        const assignmentsResponse = await ApiService.get(`/employees/${employeeIdNum}/assignments`);
+        if (assignmentsResponse.success && assignmentsResponse.data) {
+          const activeAssignments = assignmentsResponse.data.filter((assignment: any) => 
+            assignment.status === 'active' || assignment.status === 'pending'
+          );
+
+          activeAssignments.forEach((assignment: any) => {
+            // Check if assignment is to a project (including current project if different assignment)
+            if (assignment.project_id) {
+              const projectName = assignment.project?.name || `Project ${assignment.project_id}`;
+              const startDate = assignment.start_date;
+              const dateStr = startDate ? new Date(startDate).toLocaleDateString() : 'unknown date';
+              if (assignment.project_id.toString() !== projectId) {
+                // Assignment to a different project
+                warnings.push(`Already assigned to project "${projectName}" (started: ${dateStr})`);
+              } else if (assignment.name) {
+                // Assignment to current project via assignment service (not as team role)
+                warnings.push(`Already assigned to this project via assignment service: "${assignment.name}" (started: ${dateStr})`);
+              }
+            } else if (assignment.rental_id) {
+              // Assignment to a rental - track to avoid duplicate warnings
+              const rentalId = assignment.rental_id;
+              if (!warnedRentalIds.has(rentalId)) {
+                warnedRentalIds.add(rentalId);
+                const rentalNumber = assignment.rental?.rental_number || `Rental ${rentalId}`;
+                const startDate = assignment.start_date;
+                const dateStr = startDate ? new Date(startDate).toLocaleDateString() : 'unknown date';
+                const assignmentName = assignment.name || 'Rental Operator';
+                warnings.push(`Already assigned to rental "${rentalNumber}" as "${assignmentName}" (started: ${dateStr})`);
+              }
+            } else if (assignment.name) {
+              // Manual assignment (not linked to project or rental)
+              const startDate = assignment.start_date;
+              const dateStr = startDate ? new Date(startDate).toLocaleDateString() : 'unknown date';
+              warnings.push(`Already has active assignment: "${assignment.name}" (started: ${dateStr})`);
+            }
+          });
+        }
+      } catch (assignmentsError) {
+        console.error('Error checking employee assignments:', assignmentsError);
+      }
+
+      // 2. Check rental items where employee is operator (via previous-assignments endpoint for detailed info)
+      try {
+        const previousAssignmentsResponse = await ApiService.get(`/employees/${employeeIdNum}/previous-assignments`);
+        if (previousAssignmentsResponse && previousAssignmentsResponse.assignments) {
+          const activeRentalAssignments = previousAssignmentsResponse.assignments.filter((assignment: any) => 
+            assignment.role === 'operator' && 
+            (assignment.status === 'active' || !assignment.completedDate)
+          );
+
+          activeRentalAssignments.forEach((assignment: any) => {
+            if (assignment.rentalId && !warnedRentalIds.has(assignment.rentalId)) {
+              warnedRentalIds.add(assignment.rentalId);
+              const equipmentName = assignment.equipmentName || 'Unknown Equipment';
+              const rentalNumber = assignment.rentalNumber || `Rental ${assignment.rentalId}`;
+              const startDate = assignment.startDate;
+              const dateStr = startDate ? new Date(startDate).toLocaleDateString() : 'unknown date';
+              warnings.push(`Already assigned as operator to rental "${rentalNumber}" (Equipment: ${equipmentName}, started: ${dateStr})`);
+            }
+          });
+        }
+      } catch (rentalError) {
+        console.error('Error checking rental operator assignments:', rentalError);
+      }
+
+      setEmployeeWarnings(prev => ({
+        ...prev,
+        [fieldName]: warnings.length > 0 ? warnings : undefined,
+      }));
+    } catch (error) {
+      console.error('Error checking employee assignments:', error);
+      setEmployeeWarnings(prev => ({
+        ...prev,
+        [fieldName]: undefined,
+      }));
+    }
+  }, [projectId]);
+
+  // Check assignments when employee fields change
+  useEffect(() => {
+    checkEmployeeAssignments(formData.project_manager_id, 'project_manager_id');
+  }, [formData.project_manager_id, checkEmployeeAssignments]);
+
+  useEffect(() => {
+    checkEmployeeAssignments(formData.project_engineer_id, 'project_engineer_id');
+  }, [formData.project_engineer_id, checkEmployeeAssignments]);
+
+  useEffect(() => {
+    checkEmployeeAssignments(formData.project_foreman_id, 'project_foreman_id');
+  }, [formData.project_foreman_id, checkEmployeeAssignments]);
+
+  useEffect(() => {
+    checkEmployeeAssignments(formData.supervisor_id, 'supervisor_id');
+  }, [formData.supervisor_id, checkEmployeeAssignments]);
 
   const fetchProjectData = async () => {
     try {
@@ -244,7 +366,7 @@ export default function EditProjectPage() {
         });
         setFormData(initialFormData);
       } else {
-        toast.error('Failed to load project details');
+        toast.error(t('project.messages.fetchError'));
         router.push(`/${locale}/project-management`);
       }
 
@@ -277,10 +399,32 @@ export default function EditProjectPage() {
       }
     } catch (error) {
       console.error('Error fetching project data:', error);
-      toast.error('Failed to load project data');
+        toast.error(t('project.messages.fetchError'));
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper functions for number formatting with thousand separators
+  const formatNumber = (value: string | number | undefined): string => {
+    if (!value && value !== 0) return '';
+    const numValue = typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : value;
+    if (isNaN(numValue)) return '';
+    return numValue.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+  };
+
+  const parseNumber = (value: string): string => {
+    // Remove all non-digit characters except decimal point
+    const cleaned = value.replace(/[^\d.]/g, '');
+    // Ensure only one decimal point
+    const parts = cleaned.split('.');
+    if (parts.length > 2) {
+      return parts[0] + '.' + parts.slice(1).join('');
+    }
+    return cleaned;
   };
 
   const handleInputChange = (field: string, value: any) => {
@@ -288,6 +432,12 @@ export default function EditProjectPage() {
       ...prev,
       [field]: value,
     }));
+  };
+
+  const handleBudgetChange = (field: 'budget' | 'initial_budget', value: string) => {
+    // Parse the input to remove formatting
+    const parsed = parseNumber(value);
+    handleInputChange(field, parsed);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -304,12 +454,19 @@ export default function EditProjectPage() {
         return `${year}-${month}-${day}`;
       };
 
+      // Parse budget values, removing any formatting (commas)
+      const parseBudgetValue = (value: string | undefined): number => {
+        if (!value) return 0;
+        const cleaned = value.toString().replace(/,/g, '');
+        return parseFloat(cleaned) || 0;
+      };
+
       const submitData = {
         ...formData,
         start_date: formatDateForSubmit(formData.start_date),
         end_date: formatDateForSubmit(formData.end_date),
-        budget: parseFloat(formData.budget) || 0,
-        initial_budget: parseFloat(formData.initial_budget) || 0,
+        budget: parseBudgetValue(formData.budget),
+        initial_budget: parseBudgetValue(formData.initial_budget),
         // Project team roles
         project_manager_id: formData.project_manager_id || null,
         project_engineer_id: formData.project_engineer_id || null,
@@ -320,14 +477,14 @@ export default function EditProjectPage() {
       const response = await ApiService.put(`/projects/${projectId}`, submitData);
       
       if (response.success) {
-        toast.success('Project updated successfully');
+        toast.success(t('project.messages.updateSuccess'));
         router.push(`/${locale}/project-management/${projectId}`);
       } else {
         throw new Error(response.error || 'Failed to update project');
       }
     } catch (error) {
-      console.error('Error updating project:', error);
-      toast.error('Failed to update project');
+      console.error('Error updating project.', error);
+        toast.error(t('project.messages.updateError'));
     } finally {
       setSaving(false);
     }
@@ -354,7 +511,7 @@ export default function EditProjectPage() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Loading project details...</p>
+            <p className="mt-2 text-gray-600">{t('project.messages.loading')}</p>
           </div>
         </div>
       </div>
@@ -366,10 +523,10 @@ export default function EditProjectPage() {
       <div className="container mx-auto py-6">
         <div className="text-center">
           <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">{t('project:messages.projectNotFound')}</h2>
-          <p className="text-gray-600 mb-4">{t('project:messages.projectNotFound')}</p>
+          <h2 className="text-xl font-semibold mb-2">{t('project.messages.projectNotFound')}</h2>
+          <p className="text-gray-600 mb-4">{t('project.messages.projectNotFound')}</p>
           <Link href={`/${locale}/project-management`}>
-            <Button>{t('project:actions.backToProjects')}</Button>
+            <Button>{t('project.actions.backToProjects')}</Button>
           </Link>
         </div>
       </div>
@@ -384,12 +541,12 @@ export default function EditProjectPage() {
           <Link href={`/${locale}/project-management/${projectId}`}>
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              {t('project:actions.backToProject')}
+              {t('project.actions.backToProject')}
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold">{t('project:actions.editProject')}</h1>
-            <p className="text-muted-foreground">{t('project:edit.description')}</p>
+            <h1 className="text-3xl font-bold">{t('project.actions.editProject')}</h1>
+            <p className="text-muted-foreground">{t('project.edit.description')}</p>
           </div>
         </div>
       </div>
@@ -400,30 +557,30 @@ export default function EditProjectPage() {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Building2 className="h-5 w-5" />
-              <span>Basic Information</span>
+              <span>{t('project.sections.basicInformation')}</span>
             </CardTitle>
-            <CardDescription>{t('project:create.essentialDetails')}</CardDescription>
+            <CardDescription>{t('project.create.essentialDetails')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">{t('project:fields.name')} *</Label>
+                <Label htmlFor="name">{t('project.fields.name')} *</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={e => handleInputChange('name', e.target.value)}
-                  placeholder={t('project:fields.name')}
+                  placeholder={t('project.fields.name')}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="customer_id">{t('project:fields.client')} *</Label>
+                <Label htmlFor="customer_id">{t('project.fields.client')} *</Label>
                 <Select
                   value={formData.customer_id}
                   onValueChange={value => handleInputChange('customer_id', value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={t('project:fields.selectClient')}>
+                    <SelectValue placeholder={t('project.fields.selectClient')}>
                       {formData.customer_id &&
                         customers.find(c => c.id.toString() === formData.customer_id.toString())
                           ?.companyName || customers.find(c => c.id.toString() === formData.customer_id.toString())
@@ -442,25 +599,25 @@ export default function EditProjectPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">{t('project:fields.description')}</Label>
+              <Label htmlFor="description">{t('project.fields.description')}</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={e => handleInputChange('description', e.target.value)}
-                placeholder={t('project:fields.descriptionPlaceholder')}
+                placeholder={t('project.fields.descriptionPlaceholder')}
                 rows={3}
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="location_id">Project Location</Label>
+                <Label htmlFor="location_id">{t('project.fields.location')}</Label>
                 <Select
                   value={formData.location_id}
                   onValueChange={value => handleInputChange('location_id', value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a location">
+                    <SelectValue placeholder={t('project.fields.selectLocation')}>
                       {formData.location_id &&
                         locations.find(l => l.id.toString() === formData.location_id.toString()) &&
                         `${locations.find(l => l.id.toString() === formData.location_id.toString())?.name}, ${locations.find(l => l.id.toString() === formData.location_id.toString())?.city}, ${locations.find(l => l.id.toString() === formData.location_id.toString())?.state}`}
@@ -484,14 +641,14 @@ export default function EditProjectPage() {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <CalendarIcon className="h-5 w-5" />
-              <span>Timeline & Status</span>
+              <span>{t('project.sections.timelineAndStatus')}</span>
             </CardTitle>
-            <CardDescription>Project timeline and current status</CardDescription>
+            <CardDescription>{t('project.create.timelineDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="start_date">Start Date *</Label>
+                <Label htmlFor="start_date">{t('project.fields.startDate')} *</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -499,7 +656,7 @@ export default function EditProjectPage() {
                       className="w-full justify-start text-left font-normal"
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.start_date ? format(formData.start_date, 'PPP') : 'Pick a date'}
+                      {formData.start_date ? format(formData.start_date, 'PPP') : t('project.fields.pickDate')}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
@@ -513,7 +670,7 @@ export default function EditProjectPage() {
                 </Popover>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="end_date">End Date</Label>
+                <Label htmlFor="end_date">{t('project.fields.endDate')}</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -521,7 +678,7 @@ export default function EditProjectPage() {
                       className="w-full justify-start text-left font-normal"
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.end_date ? format(formData.end_date, 'PPP') : 'Pick a date'}
+                      {formData.end_date ? format(formData.end_date, 'PPP') : t('project.fields.pickDate')}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
@@ -538,13 +695,13 @@ export default function EditProjectPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">{t('project.fields.status')}</Label>
                 <Select
                   value={formData.status}
                   onValueChange={value => handleInputChange('status', value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
+                    <SelectValue placeholder={t('project.statusLabels.selectStatus')} />
                   </SelectTrigger>
                   <SelectContent className="max-h-60 overflow-y-auto">
                     {statusOptions.map(option => (
@@ -558,13 +715,13 @@ export default function EditProjectPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="priority">Priority</Label>
+                <Label htmlFor="priority">{t('project.fields.priority')}</Label>
                 <Select
                   value={formData.priority}
                   onValueChange={value => handleInputChange('priority', value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select priority" />
+                    <SelectValue placeholder={t('project.statusLabels.selectPriority')} />
                   </SelectTrigger>
                   <SelectContent className="max-h-60 overflow-y-auto">
                     {priorityOptions.map(option => (
@@ -586,32 +743,44 @@ export default function EditProjectPage() {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <DollarSign className="h-5 w-5" />
-              <span>Budget Information</span>
+              <span>{t('project.sections.budgetInformation')}</span>
             </CardTitle>
-            <CardDescription>Project budget and financial details</CardDescription>
+            <CardDescription>{t('project.create.budgetDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="budget">Total Budget</Label>
+                <Label htmlFor="budget">{t('project.fields.totalBudget')}</Label>
                 <Input
                   id="budget"
-                  type="number"
-                  value={formData.budget}
-                  onChange={e => handleInputChange('budget', e.target.value)}
-                  placeholder="0.00"
-                  step="0.01"
+                  type="text"
+                  value={formatNumber(formData.budget)}
+                  onChange={e => handleBudgetChange('budget', e.target.value)}
+                  onBlur={e => {
+                    // Format on blur
+                    const parsed = parseNumber(e.target.value);
+                    if (parsed) {
+                      handleInputChange('budget', parsed);
+                    }
+                  }}
+                  placeholder="0"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="initial_budget">Initial Budget</Label>
+                <Label htmlFor="initial_budget">{t('project.fields.initialBudget')}</Label>
                 <Input
                   id="initial_budget"
-                  type="number"
-                  value={formData.initial_budget}
-                  onChange={e => handleInputChange('initial_budget', e.target.value)}
-                  placeholder="0.00"
-                  step="0.01"
+                  type="text"
+                  value={formatNumber(formData.initial_budget)}
+                  onChange={e => handleBudgetChange('initial_budget', e.target.value)}
+                  onBlur={e => {
+                    // Format on blur
+                    const parsed = parseNumber(e.target.value);
+                    if (parsed) {
+                      handleInputChange('initial_budget', parsed);
+                    }
+                  }}
+                  placeholder="0"
                 />
               </div>
             </div>
@@ -623,75 +792,75 @@ export default function EditProjectPage() {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <FileText className="h-5 w-5" />
-              <span>Project Planning</span>
+              <span>{t('project.sections.projectPlanning')}</span>
             </CardTitle>
-            <CardDescription>Detailed project planning information</CardDescription>
+            <CardDescription>{t('project.sections.projectPlanningDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="objectives">Project Objectives</Label>
+                <Label htmlFor="objectives">{t('project.fields.objectives')}</Label>
                 <Textarea
                   id="objectives"
                   value={formData.objectives}
                   onChange={e => handleInputChange('objectives', e.target.value)}
-                  placeholder="Define project objectives"
+                  placeholder={t('project.fields.objectivesPlaceholder')}
                   rows={3}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="scope">Project Scope</Label>
+                <Label htmlFor="scope">{t('project.fields.scope')}</Label>
                 <Textarea
                   id="scope"
                   value={formData.scope}
                   onChange={e => handleInputChange('scope', e.target.value)}
-                  placeholder="Define project scope"
+                  placeholder={t('project.fields.scopePlaceholder')}
                   rows={3}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="deliverables">Deliverables</Label>
+              <Label htmlFor="deliverables">{t('project.fields.deliverables')}</Label>
               <Textarea
                 id="deliverables"
                 value={formData.deliverables}
                 onChange={e => handleInputChange('deliverables', e.target.value)}
-                placeholder="List project deliverables"
+                placeholder={t('project.fields.deliverablesPlaceholder')}
                 rows={3}
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="constraints">Constraints</Label>
+                <Label htmlFor="constraints">{t('project.fields.constraints')}</Label>
                 <Textarea
                   id="constraints"
                   value={formData.constraints}
                   onChange={e => handleInputChange('constraints', e.target.value)}
-                  placeholder="Project constraints"
+                  placeholder={t('project.fields.constraintsPlaceholder')}
                   rows={3}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="assumptions">Assumptions</Label>
+                <Label htmlFor="assumptions">{t('project.fields.assumptions')}</Label>
                 <Textarea
                   id="assumptions"
                   value={formData.assumptions}
                   onChange={e => handleInputChange('assumptions', e.target.value)}
-                  placeholder="Project assumptions"
+                  placeholder={t('project.fields.assumptionsPlaceholder')}
                   rows={3}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="risks">Risks</Label>
+              <Label htmlFor="risks">{t('project.fields.risks')}</Label>
               <Textarea
                 id="risks"
                 value={formData.risks}
                 onChange={e => handleInputChange('risks', e.target.value)}
-                placeholder="Identify project risks"
+                placeholder={t('project.fields.risksPlaceholder')}
                 rows={3}
               />
             </div>
@@ -703,45 +872,125 @@ export default function EditProjectPage() {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Users className="h-5 w-5" />
-              <span>Project Team</span>
+              <span>{t('project.sections.projectTeam')}</span>
             </CardTitle>
-            <CardDescription>Assign team members to specific roles</CardDescription>
+            <CardDescription>{t('project.sections.projectTeamDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="project_manager_id">Project Manager</Label>
+                <Label htmlFor="project_manager_id">{t('project.roles.projectManager')}</Label>
                 <EmployeeDropdown
                   value={formData.project_manager_id}
                   onValueChange={value => handleInputChange('project_manager_id', value)}
-                  placeholder="Select a manager"
+                  placeholder={t('project.roles.selectManager')}
                 />
+                {employeeWarnings.project_manager_id && employeeWarnings.project_manager_id.length > 0 && (
+                  <div className="rounded-md bg-yellow-50 border border-yellow-200 p-3 space-y-2">
+                    <div className="flex items-start">
+                      <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" />
+                      <div className="flex-1">
+                        <h4 className="text-sm font-semibold text-yellow-800 mb-1">
+                          {t('project.warnings.employeeAlreadyAssigned')}
+                        </h4>
+                        <ul className="list-disc list-inside space-y-1 text-xs text-yellow-700">
+                          {employeeWarnings.project_manager_id.map((warning, index) => (
+                            <li key={index}>{warning}</li>
+                          ))}
+                        </ul>
+                        <p className="text-xs text-yellow-600 mt-2">
+                          {t('project.warnings.employeeAlreadyAssignedMessage')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="project_engineer_id">Project Engineer</Label>
+                <Label htmlFor="project_engineer_id">{t('project.roles.projectEngineer')}</Label>
                 <EmployeeDropdown
                   value={formData.project_engineer_id}
                   onValueChange={value => handleInputChange('project_engineer_id', value)}
-                  placeholder="Select an engineer"
+                  placeholder={t('project.roles.selectEngineer')}
                 />
+                {employeeWarnings.project_engineer_id && employeeWarnings.project_engineer_id.length > 0 && (
+                  <div className="rounded-md bg-yellow-50 border border-yellow-200 p-3 space-y-2">
+                    <div className="flex items-start">
+                      <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" />
+                      <div className="flex-1">
+                        <h4 className="text-sm font-semibold text-yellow-800 mb-1">
+                          {t('project.warnings.employeeAlreadyAssigned')}
+                        </h4>
+                        <ul className="list-disc list-inside space-y-1 text-xs text-yellow-700">
+                          {employeeWarnings.project_engineer_id.map((warning, index) => (
+                            <li key={index}>{warning}</li>
+                          ))}
+                        </ul>
+                        <p className="text-xs text-yellow-600 mt-2">
+                          {t('project.warnings.employeeAlreadyAssignedMessage')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="project_foreman_id">Project Foreman</Label>
+                <Label htmlFor="project_foreman_id">{t('project.roles.projectForeman')}</Label>
                 <EmployeeDropdown
                   value={formData.project_foreman_id}
                   onValueChange={value => handleInputChange('project_foreman_id', value)}
-                  placeholder="Select a foreman"
+                  placeholder={t('project.roles.selectForeman')}
                 />
+                {employeeWarnings.project_foreman_id && employeeWarnings.project_foreman_id.length > 0 && (
+                  <div className="rounded-md bg-yellow-50 border border-yellow-200 p-3 space-y-2">
+                    <div className="flex items-start">
+                      <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" />
+                      <div className="flex-1">
+                        <h4 className="text-sm font-semibold text-yellow-800 mb-1">
+                          {t('project.warnings.employeeAlreadyAssigned')}
+                        </h4>
+                        <ul className="list-disc list-inside space-y-1 text-xs text-yellow-700">
+                          {employeeWarnings.project_foreman_id.map((warning, index) => (
+                            <li key={index}>{warning}</li>
+                          ))}
+                        </ul>
+                        <p className="text-xs text-yellow-600 mt-2">
+                          {t('project.warnings.employeeAlreadyAssignedMessage')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="supervisor_id">Supervisor</Label>
+                <Label htmlFor="supervisor_id">{t('project.roles.supervisor')}</Label>
                 <EmployeeDropdown
                   value={formData.supervisor_id}
                   onValueChange={value => handleInputChange('supervisor_id', value)}
-                  placeholder="Select a supervisor"
+                  placeholder={t('project.roles.selectSupervisor')}
                 />
+                {employeeWarnings.supervisor_id && employeeWarnings.supervisor_id.length > 0 && (
+                  <div className="rounded-md bg-yellow-50 border border-yellow-200 p-3 space-y-2">
+                    <div className="flex items-start">
+                      <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" />
+                      <div className="flex-1">
+                        <h4 className="text-sm font-semibold text-yellow-800 mb-1">
+                          {t('project.warnings.employeeAlreadyAssigned')}
+                        </h4>
+                        <ul className="list-disc list-inside space-y-1 text-xs text-yellow-700">
+                          {employeeWarnings.supervisor_id.map((warning, index) => (
+                            <li key={index}>{warning}</li>
+                          ))}
+                        </ul>
+                        <p className="text-xs text-yellow-600 mt-2">
+                          {t('project.warnings.employeeAlreadyAssignedMessage')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
@@ -751,11 +1000,11 @@ export default function EditProjectPage() {
         <div className="flex justify-end space-x-4">
           <Link href={`/${locale}/project-management/${projectId}`}>
             <Button variant="outline" type="button">
-              Cancel
+              {t('project.buttons.cancel')}
             </Button>
           </Link>
           <Button type="submit" disabled={saving}>
-            {saving ? 'Saving...' : 'Save Changes'}
+            {saving ? t('project.messages.saving') : t('project.save')}
           </Button>
         </div>
       </form>

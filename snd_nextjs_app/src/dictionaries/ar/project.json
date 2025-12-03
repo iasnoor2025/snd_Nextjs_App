@@ -206,5 +206,14 @@
   },
   "fields": {
     "totalBudget": "إجمالي الميزانية"
+  },
+  "warnings": {
+    "employeeAlreadyAssigned": "الموظف معين بالفعل",
+    "employeeAlreadyAssignedMessage": "يمكنك المتابعة، لكن هذا الموظف معين بالفعل في مكان آخر.",
+    "alreadyAssignedToProject": "معين بالفعل في مشروع \"{{projectName}}\" (بدأ: {{date}})",
+    "alreadyAssignedToThisProject": "معين بالفعل في هذا المشروع عبر خدمة التعيين: \"{{assignmentName}}\" (بدأ: {{date}})",
+    "alreadyAssignedToRental": "معين بالفعل في تأجير \"{{rentalNumber}}\" كـ \"{{assignmentName}}\" (بدأ: {{date}})",
+    "alreadyAssignedAsOperator": "معين بالفعل كعامل في تأجير \"{{rentalNumber}}\" (المعدات: {{equipmentName}}، بدأ: {{date}})",
+    "alreadyHasActiveAssignment": "لديه تعيين نشط بالفعل: \"{{assignmentName}}\" (بدأ: {{date}})"
   }
 }
