@@ -14,7 +14,6 @@ export async function POST(request: NextRequest) {
     } = body;
     // Parse the date for better debugging
     const parsedDate = new Date(date);
-        });
 
     // Validate required fields
     if (!employeeFileNumber || !date) {

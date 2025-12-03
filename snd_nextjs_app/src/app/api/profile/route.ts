@@ -133,8 +133,6 @@ const getProfileHandler = async (_request: NextRequest) => {
             .where(eq(employees.iqamaNumber, user.nationalId))
             .limit(1);
 
-                    });
-
           if (nationalIdEmployeeRows.length > 0) {
             employee = nationalIdEmployeeRows[0];
             // Auto-link this employee to the user if not already linked

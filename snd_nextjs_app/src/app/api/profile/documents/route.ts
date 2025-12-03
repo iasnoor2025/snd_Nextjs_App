@@ -60,8 +60,6 @@ export async function GET(_request: NextRequest) {
           .from(employees)
           .where(eq(employees.iqamaNumber, userRows[0].nationalId))
           .limit(1);
-        
-                });
       }
     }
 
