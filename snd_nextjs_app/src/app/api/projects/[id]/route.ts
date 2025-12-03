@@ -18,8 +18,6 @@ const getProjectHandler = async (_request: NextRequest, { params }: { params: Pr
     const projectIdNum = parseInt(projectId);
 
     // First, get the project data
-    console.log('Fetching project with ID:', projectIdNum);
-    
     const projectData = await db
       .select({
         id: projects.id,
@@ -54,16 +52,10 @@ const getProjectHandler = async (_request: NextRequest, { params }: { params: Pr
       console.error('Project data is null for ID:', projectIdNum);
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
-
-    console.log('Found project:', project);
-    console.log('Project locationId:', project.locationId);
-
     // Get customer data if customerId exists
     let customer: any = null;
     if (project.customerId) {
       try {
-        console.log('Fetching customer with ID:', project.customerId);
-        
         const customerData = await db
           .select({
             id: customers.id,
@@ -76,8 +68,6 @@ const getProjectHandler = async (_request: NextRequest, { params }: { params: Pr
           .limit(1);
 
         customer = customerData[0] || null;
-        console.log('Found customer:', customer);
-        
       } catch (customerError) {
         console.error('Error fetching customer:', customerError);
         customer = null;
@@ -88,8 +78,6 @@ const getProjectHandler = async (_request: NextRequest, { params }: { params: Pr
     let location: any = null;
     if (project.locationId) {
       try {
-        console.log('Fetching location with ID:', project.locationId);
-        
         const locationData = await db
           .select({
             id: locations.id,
@@ -103,9 +91,6 @@ const getProjectHandler = async (_request: NextRequest, { params }: { params: Pr
           .limit(1);
 
         location = locationData[0] || null;
-        console.log('Found location:', location);
-        console.log('Location data:', locationData);
-        
       } catch (locationError) {
         console.error('Error fetching location:', locationError);
         location = null;
@@ -115,8 +100,6 @@ const getProjectHandler = async (_request: NextRequest, { params }: { params: Pr
     // Get rental data if any exists for this project
     let rental: any = null;
     try {
-      console.log('Fetching rental for project ID:', projectIdNum);
-      
       const rentalData = await db
         .select({
           id: rentals.id,
@@ -127,8 +110,6 @@ const getProjectHandler = async (_request: NextRequest, { params }: { params: Pr
         .limit(1);
 
       rental = rentalData[0] || null;
-      console.log('Found rental:', rental);
-      
     } catch (rentalError) {
       console.error('Error fetching rental:', rentalError);
       rental = null;
@@ -138,8 +119,6 @@ const getProjectHandler = async (_request: NextRequest, { params }: { params: Pr
     let projectManager: any = null;
     if (project.projectManagerId) {
       try {
-        console.log('Fetching project manager with ID:', project.projectManagerId);
-        
         const managerData = await db
           .select({
             id: employees.id,
@@ -152,8 +131,6 @@ const getProjectHandler = async (_request: NextRequest, { params }: { params: Pr
           .limit(1);
 
         projectManager = managerData[0] || null;
-        console.log('Found project manager:', projectManager);
-        
       } catch (managerError) {
         console.error('Error fetching project manager:', managerError);
         projectManager = null;
@@ -276,9 +253,6 @@ const getProjectHandler = async (_request: NextRequest, { params }: { params: Pr
       created_at: project.createdAt,
       updated_at: project.updatedAt,
     };
-
-    console.log('Transformed project data:', transformedProject);
-
     return NextResponse.json({
       success: true,
       data: transformedProject,

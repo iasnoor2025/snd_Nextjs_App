@@ -118,14 +118,6 @@ export class ERPNextInvoiceService {
       const subtotal = parseFloat(rental.subtotal?.toString() || '0') || 0;
       const taxAmount = parseFloat(rental.taxAmount?.toString() || '0') || 0;
       const totalAmount = parseFloat(rental.totalAmount?.toString() || '0') || 0;
-
-      console.log('Using rental amounts for invoice:', {
-        subtotal,
-        taxAmount,
-        totalAmount,
-        rentalId: rental.id
-      });
-
       if (totalAmount <= 0) {
         throw new Error('Rental must have a valid total amount');
       }
@@ -232,33 +224,7 @@ export class ERPNextInvoiceService {
       invoiceData.total_taxes_and_charges = taxAmount;
       invoiceData.base_rounded_total = totalAmount;
       invoiceData.rounded_total = totalAmount;
-
-      console.log('Invoice totals set from rental:', {
-        subtotal,
-        taxAmount,
-        totalAmount,
-        base_total: invoiceData.base_total,
-        grand_total: invoiceData.grand_total
-      });
-
       // Log the complete invoice data for debugging
-      console.log('Complete invoice data being sent to ERPNext:', {
-        posting_date: invoiceData.posting_date,
-        due_date: invoiceData.due_date,
-        custom_from: invoiceData.custom_from,
-        custom_to: invoiceData.custom_to,
-        from_date: invoiceData.from_date,
-        to_date: invoiceData.to_date,
-        custom_subject: invoiceData.custom_subject,
-        set_posting_time: invoiceData.set_posting_time,
-        rental_invoiceDate: rental.invoiceDate,
-        rental_paymentDueDate: rental.paymentDueDate,
-        rental_customFrom: rental.customFrom,
-        rental_customTo: rental.customTo,
-        rental_invoiceMonth: rental.invoiceMonth,
-        rental_customSubject: rental.customSubject
-      });
-
       // Create invoice in ERPNext
       const response = await this.makeERPNextRequest('/api/resource/Sales Invoice', {
         method: 'POST',

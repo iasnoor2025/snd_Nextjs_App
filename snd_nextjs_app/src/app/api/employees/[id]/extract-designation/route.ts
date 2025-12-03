@@ -88,8 +88,6 @@ const extractDesignationHandler = async (
     }
 
     // Extract designation from Iqama image with timeout handling
-    console.log(`Extracting designation from Iqama for employee ${employeeId}...`);
-    
     // Add timeout wrapper (35 seconds total)
     const extractionPromise = IqamaOCRService.extractDesignationFromIqama(
       iqamaDoc.filePath,

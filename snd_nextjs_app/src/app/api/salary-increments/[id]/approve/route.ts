@@ -25,7 +25,6 @@ const approveSalaryIncrementHandler = async (request: NextRequest, ...args: unkn
       }
     } catch (error) {
       // Body is optional, continue without notes
-      console.log('[APPROVE] Body parsing skipped:', error);
     }
 
     // Get current user ID from session (this will be handled by the permission middleware)
@@ -56,7 +55,6 @@ const approveSalaryIncrementHandler = async (request: NextRequest, ...args: unkn
 
     // Only allow approval if status is pending
     if (increment.status !== 'pending') {
-      console.log('[APPROVE] Status check failed:', increment.status);
       return NextResponse.json(
         { 
           success: false,

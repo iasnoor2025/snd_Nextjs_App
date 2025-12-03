@@ -122,8 +122,6 @@ export const authConfig: NextAuthConfig = {
             isActive: user.isActive || true,
           };
 
-          console.log('🔍 Auth: Login successful - Email:', email, 'Role:', role);
-
           return userData;
         } catch (error) {
           

@@ -102,8 +102,7 @@ export class IqamaOCRService {
       const ocrPromise = Tesseract.recognize(optimizedBuffer, 'ara+eng', {
         logger: (m: any) => {
           if (m.status === 'recognizing text') {
-            console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
-          }
+                      }
         },
         // Optimize OCR settings for speed
         tessedit_pageseg_mode: '6', // Assume uniform block of text (faster)
@@ -415,8 +414,7 @@ export class IqamaOCRService {
         });
 
       if (newDesignation) {
-        console.log(`Created new designation: ${trimmedName} (ID: ${newDesignation.id})`);
-        return newDesignation.id;
+                return newDesignation.id;
       }
 
       return null;

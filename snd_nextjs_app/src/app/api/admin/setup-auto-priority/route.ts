@@ -5,8 +5,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔄 Setting up smart auto role priority system...');
-    
     // Create the trigger function that reuses lowest available priority
     const createFunctionSQL = `
       CREATE OR REPLACE FUNCTION set_role_priority()
@@ -67,15 +65,10 @@ export async function POST(request: NextRequest) {
     await db.execute(createFunctionSQL);
     await db.execute(createTriggerSQL);
     await db.execute(updateRolesSQL);
-    
-    console.log('✅ Smart auto role priority system set up successfully!');
-    
     // Show all roles with their priorities
     const allRoles = await db.select().from(roles).orderBy(roles.priority);
-    console.log('\n📋 All roles with priorities:');
     allRoles.forEach(role => {
-      console.log(`  ${role.name}: priority ${role.priority} (ID: ${role.id})`);
-    });
+          });
     
     return NextResponse.json({
       success: true,

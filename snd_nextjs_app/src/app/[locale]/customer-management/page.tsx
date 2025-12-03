@@ -94,9 +94,7 @@ export default function CustomerManagementPage() {
         }
       } else {
         const data = await response.json();
-        console.log('Fetched customers data:', data);
         if (data.success) {
-          console.log('Setting customers:', data.customers?.length, 'total pages:', data.pagination?.totalPages);
           setCustomers(data.customers || []);
           setTotalPages(data.pagination?.totalPages || 1);
         } else {

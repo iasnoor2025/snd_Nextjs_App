@@ -183,12 +183,6 @@ export function EquipmentDropdown({
   
   // Debug logging
   if (value && equipment.length > 0) {
-    console.log('EquipmentDropdown Debug:', {
-      value,
-      equipmentCount: equipment.length,
-      selectedEquipment,
-      firstEquipment: equipment[0]
-    });
   }
 
   return (

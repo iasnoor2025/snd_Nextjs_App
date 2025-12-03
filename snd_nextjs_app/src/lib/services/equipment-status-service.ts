@@ -139,17 +139,13 @@ export class EquipmentStatusService {
           .where(eq(equipment.id, equipmentId));
 
         if (process.env.NODE_ENV === 'development') {
-          console.log(`🔄 Equipment Status Updated: ${equipmentName} (${equipmentId})`);
-          console.log(`   Previous: ${currentStatus} → New: ${newStatus}`);
-          console.log(`   Reason: ${reason}`);
-        }
+                  }
 
         // Invalidate equipment cache to reflect status changes in list view
         // Use targeted invalidation if possible, otherwise fall back to tag-based
         try {
           await cacheService.invalidateCacheByTag(CACHE_TAGS.EQUIPMENT);
           if (process.env.NODE_ENV === 'development') {
-            console.log(`🗑️ Invalidated equipment cache after status update`);
           }
         } catch (cacheError) {
           // Don't fail the status update if cache invalidation fails
@@ -189,7 +185,6 @@ export class EquipmentStatusService {
    */
   static async onAssignmentCreated(equipmentId: number): Promise<void> {
     if (process.env.NODE_ENV === 'development') {
-      console.log(`📋 Assignment created for equipment ${equipmentId}, updating status immediately...`);
     }
     await this.updateEquipmentStatusImmediately(equipmentId);
   }
@@ -199,7 +194,6 @@ export class EquipmentStatusService {
    */
   static async onAssignmentUpdated(equipmentId: number): Promise<void> {
     if (process.env.NODE_ENV === 'development') {
-      console.log(`📝 Assignment updated for equipment ${equipmentId}, updating status immediately...`);
     }
     await this.updateEquipmentStatusImmediately(equipmentId);
   }
@@ -209,7 +203,6 @@ export class EquipmentStatusService {
    */
   static async onAssignmentDeleted(equipmentId: number): Promise<void> {
     if (process.env.NODE_ENV === 'development') {
-      console.log(`🗑️ Assignment deleted for equipment ${equipmentId}, updating status immediately...`);
     }
     await this.updateEquipmentStatusImmediately(equipmentId);
   }
@@ -219,7 +212,6 @@ export class EquipmentStatusService {
    */
   static async onMaintenanceCreated(equipmentId: number): Promise<void> {
     if (process.env.NODE_ENV === 'development') {
-      console.log(`🔧 Maintenance created for equipment ${equipmentId}, updating status immediately...`);
     }
     await this.updateEquipmentStatusImmediately(equipmentId);
   }
@@ -229,7 +221,6 @@ export class EquipmentStatusService {
    */
   static async onMaintenanceCompleted(equipmentId: number): Promise<void> {
     if (process.env.NODE_ENV === 'development') {
-      console.log(`✅ Maintenance completed for equipment ${equipmentId}, updating status immediately...`);
     }
     await this.updateEquipmentStatusImmediately(equipmentId);
   }
@@ -244,7 +235,6 @@ export class EquipmentStatusService {
   }> {
     try {
       if (process.env.NODE_ENV === 'development') {
-        console.log('🔄 Starting bulk equipment status update...');
       }
       
       const allEquipment = await db
@@ -276,7 +266,6 @@ export class EquipmentStatusService {
       }
 
       if (process.env.NODE_ENV === 'development') {
-        console.log(`🎉 Bulk equipment status update completed. Total: ${allEquipment.length}, Updated: ${updated}, Errors: ${errors}`);
       }
       
       return {

@@ -38,9 +38,6 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-
-    console.log(`🗑️ Deleting employee ID: ${employeeId} and all related data...`);
-
     // List of all tables that reference employees (in order of dependency)
     const tablesToClear = [
       'advance_payment_histories',
@@ -76,14 +73,12 @@ export async function POST(request: Request) {
           const result = await db.execute(sql`DELETE FROM ${sql.identifier(table)} WHERE assigned_to_employee_id = ${employeeId}`);
           if (result.rowCount && result.rowCount > 0) {
             relatedDataDeleted += result.rowCount;
-            console.log(`✅ Deleted ${result.rowCount} records from ${table}`);
           }
         } else {
           // Delete from tables that reference employee_id
           const result = await db.execute(sql`DELETE FROM ${sql.identifier(table)} WHERE employee_id = ${employeeId}`);
           if (result.rowCount && result.rowCount > 0) {
             relatedDataDeleted += result.rowCount;
-            console.log(`✅ Deleted ${result.rowCount} records from ${table}`);
           }
         }
       } catch (error) {
@@ -103,9 +98,6 @@ export async function POST(request: Request) {
         { status: 404 }
       );
     }
-
-    console.log(`✅ Employee deleted successfully`);
-
     return NextResponse.json({
       success: true,
       message: 'Employee and all related data deleted successfully',

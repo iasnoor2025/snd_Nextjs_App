@@ -86,10 +86,6 @@ export default function ProjectDetailPage() {
   const locale = params?.locale as string || 'en';
   const router = useRouter();
   const projectId = params.id as string;
-
-  console.log('Project ID from params:', projectId);
-  console.log('Params object:', params);
-
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
   const [resources, setResources] = useState<ProjectResource[]>([]);
@@ -201,10 +197,8 @@ export default function ProjectDetailPage() {
   const getResourceCostByType = (type: string) => {
     const cost = resources.filter(r => r.type === type).reduce((sum, r) => {
       const resourceCost = r.total_cost || 0;
-      console.log(`Resource ${r.id} (${r.type}): total_cost = ${resourceCost}`);
-      return sum + resourceCost;
+            return sum + resourceCost;
     }, 0);
-    console.log(`Total cost for type ${type}:`, cost);
     return cost;
   };
 
@@ -263,10 +257,8 @@ export default function ProjectDetailPage() {
   const calculateGrandTotal = () => {
     const total = resources.reduce((total, resource) => {
       const cost = resource.total_cost || 0;
-      console.log(`Resource ${resource.id} (${resource.type}): cost = ${cost}`);
-      return total + cost;
+            return total + cost;
     }, 0);
-    console.log('Grand total calculated:', total);
     return total;
   };
 
@@ -314,12 +306,6 @@ export default function ProjectDetailPage() {
   const grandTotal = calculateGrandTotal();
 
   // Debug logging
-  console.log('Project data:', project);
-  console.log('Project budget:', project?.budget);
-  console.log('Resources:', resources);
-  console.log('Tasks:', tasks);
-  console.log('Grand total:', grandTotal);
-
   useEffect(() => {
     const fetchProjectData = async () => {
       // Skip fetch if data already exists
@@ -332,7 +318,6 @@ export default function ProjectDetailPage() {
 
         // Fetch project details
         const projectResponse = await ApiService.get<Project>(`/projects/${projectId}`);
-        console.log('Project response:', projectResponse);
         setProject(projectResponse.data);
 
         // Fetch project resources
@@ -343,15 +328,6 @@ export default function ProjectDetailPage() {
           ApiService.getProjectFuel(Number(projectId)),
           ApiService.getProjectExpenses(Number(projectId)),
         ]);
-
-        console.log('Resource responses:', {
-          manpower: manpowerRes,
-          equipment: equipmentRes,
-          materials: materialsRes,
-          fuel: fuelRes,
-          expenses: expensesRes
-        });
-
         // Combine all resources
         const allResources = [
           ...(manpowerRes.data || []).map((r: any) => ({ ...r, type: 'manpower' })),
@@ -360,13 +336,10 @@ export default function ProjectDetailPage() {
           ...(fuelRes.data || []).map((r: any) => ({ ...r, type: 'fuel' })),
           ...(expensesRes.data || []).map((r: any) => ({ ...r, type: 'expense' })),
         ];
-
-        console.log('Combined resources:', allResources);
         setResources(allResources);
 
         // Fetch tasks
         const tasksResponse = await ApiService.getProjectTasks(Number(projectId));
-        console.log('Tasks response:', tasksResponse);
         if (tasksResponse.success) {
           setTasks(tasksResponse.data || []);
         } else {

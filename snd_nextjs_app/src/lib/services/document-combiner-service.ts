@@ -63,13 +63,6 @@ export class DocumentCombinerService {
     pdfDoc: PDFDocument,
     document: DocumentToCombine
   ): Promise<void> {
-    console.log('Processing document for PDF:', {
-      name: document.fileName,
-      type: document.type,
-      mimeType: document.mimeType,
-      url: document.url
-    });
-
     try {
       // Fetch file from MinIO URL
       const response = await fetch(document.url);

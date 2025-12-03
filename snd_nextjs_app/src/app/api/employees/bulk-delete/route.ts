@@ -45,9 +45,6 @@ export async function POST(request: Request) {
         { status: 404 }
       );
     }
-
-    console.log(`🗑️ Bulk deleting ${employeeIdsToDelete.length} employees and all related data...`);
-
     // List of all tables that reference employees
     const tablesToClear = [
       'advance_payment_histories',
@@ -83,14 +80,12 @@ export async function POST(request: Request) {
           const result = await db.execute(sql`DELETE FROM ${sql.identifier(table)} WHERE assigned_to_employee_id = ANY(${employeeIdsToDelete})`);
           if (result.rowCount && result.rowCount > 0) {
             totalRelatedDataDeleted += result.rowCount;
-            console.log(`✅ Deleted ${result.rowCount} records from ${table}`);
           }
         } else {
           // Delete from tables that reference employee_id
           const result = await db.execute(sql`DELETE FROM ${sql.identifier(table)} WHERE employee_id = ANY(${employeeIdsToDelete})`);
           if (result.rowCount && result.rowCount > 0) {
             totalRelatedDataDeleted += result.rowCount;
-            console.log(`✅ Deleted ${result.rowCount} records from ${table}`);
           }
         }
       } catch (error) {
@@ -103,9 +98,6 @@ export async function POST(request: Request) {
       .delete(employeesTable)
       .where(sql`id = ANY(${employeeIdsToDelete})`)
       .returning({ id: employeesTable.id, firstName: employeesTable.firstName, lastName: employeesTable.lastName, fileNumber: employeesTable.fileNumber });
-
-    console.log(`✅ Bulk delete completed successfully`);
-
     return NextResponse.json({
       success: true,
       message: `Bulk delete completed successfully. ${deletedEmployees.length} employees and all related data deleted.`,

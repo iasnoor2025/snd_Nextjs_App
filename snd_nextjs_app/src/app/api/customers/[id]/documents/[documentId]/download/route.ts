@@ -45,14 +45,6 @@ export async function GET(
     const customer = customerResult[0];
     
     // Debug logging
-    console.log('Customer document download debug:', {
-      documentId: documentRecord.id,
-      documentCustomerId: documentRecord.customerId,
-      urlCustomerId: customerId,
-      documentType: documentRecord.documentType,
-      fileName: documentRecord.fileName
-    });
-
     // Check if user has permission to access this document
     if (session.user.role !== 'SUPER_ADMIN' && 
         session.user.role !== 'ADMIN' && 
@@ -64,8 +56,6 @@ export async function GET(
     // If the document is stored in MinIO/S3 (URL starts with http/https)
     if (documentRecord.filePath && documentRecord.filePath.startsWith('http')) {
       try {
-        console.log('Fetching from MinIO:', documentRecord.filePath);
-        
         // Initialize S3 client
         const s3Client = new S3Client({
           endpoint: process.env.S3_ENDPOINT!,
@@ -86,9 +76,6 @@ export async function GET(
         if (key.startsWith(`${bucketName}/`)) {
           key = key.substring(bucketName.length + 1);
         }
-
-        console.log('Fetching from MinIO - bucket:', bucketName, 'key:', key);
-
         // Get the object from S3
         const command = new GetObjectCommand({
           Bucket: bucketName,

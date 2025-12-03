@@ -46,7 +46,6 @@ export async function GET() {
         fields = doctypeData.message?.fields || [];
       }
     } catch (error) {
-      console.log('Approach 1 failed:', error);
     }
 
     // Approach 2: Try to get fields from meta
@@ -65,7 +64,6 @@ export async function GET() {
           fields = metaData.message?.fields || [];
         }
       } catch (error) {
-        console.log('Approach 2 failed:', error);
       }
     }
 
@@ -89,7 +87,6 @@ export async function GET() {
           }
         }
       } catch (error) {
-        console.log('Approach 3 failed:', error);
       }
     }
 
@@ -115,7 +112,6 @@ export async function GET() {
         sampleInvoice = sampleData.data?.[0] || null;
       }
     } catch (error) {
-      console.log('Could not fetch sample invoice:', error);
     }
 
     return NextResponse.json({

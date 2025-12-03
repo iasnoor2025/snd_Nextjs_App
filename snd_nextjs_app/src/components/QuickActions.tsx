@@ -35,72 +35,63 @@ export function QuickActions({ userRole, className = '' }: QuickActionsProps) {
       subtitle: 'Manage users, roles & permissions',
       icon: <Users className="h-6 w-6" />,
       variant: 'default',
-      action: () => console.log('User Management clicked')
-    },
+      action: () =>     },
     {
       id: 'analytics',
       title: 'Analytics',
       subtitle: 'Business intelligence & reports',
       icon: <BarChart3 className="h-6 w-6" />,
       variant: 'secondary',
-      action: () => console.log('Analytics clicked')
-    },
+      action: () =>     },
     {
       id: 'payroll',
       title: 'Payroll',
       subtitle: 'Salary & compensation management',
       icon: <DollarSign className="h-6 w-6" />,
       variant: 'outline',
-      action: () => console.log('Payroll clicked')
-    },
+      action: () =>     },
     {
       id: 'settings',
       title: 'Settings',
       subtitle: 'System configuration',
       icon: <Settings className="h-6 w-6" />,
       variant: 'ghost',
-      action: () => console.log('Settings clicked')
-    },
+      action: () =>     },
     {
       id: 'equipment',
       title: 'Equipment',
       subtitle: 'Manage equipment & maintenance',
       icon: <Wrench className="h-6 w-6" />,
       variant: 'default',
-      action: () => console.log('Equipment clicked')
-    },
+      action: () =>     },
     {
       id: 'rentals',
       title: 'Rentals',
       subtitle: 'Equipment rental tracking',
       icon: <Truck className="h-6 w-6" />,
       variant: 'secondary',
-      action: () => console.log('Rentals clicked')
-    },
+      action: () =>     },
     {
       id: 'documents',
       title: 'Documents',
       subtitle: 'File & document management',
       icon: <FileText className="h-6 w-6" />,
       variant: 'outline',
-      action: () => console.log('Documents clicked')
-    },
+      action: () =>     },
     {
       id: 'projects',
       title: 'Projects',
       subtitle: 'Project planning & tracking',
       icon: <FolderOpen className="h-6 w-6" />,
       variant: 'ghost',
-      action: () => console.log('Projects clicked')
-    },
+      action: () =>     },
     {
       id: 'employee-management',
       title: 'Employee Management',
       subtitle: 'Manage employee information & profiles',
       icon: <UserCheck className="h-6 w-6" />,
       variant: 'default',
-      action: () => console.log('Employee Management clicked')
-    }
+      action: () =>     }
   ];
 
   return (

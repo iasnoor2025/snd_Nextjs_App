@@ -5,7 +5,6 @@ import { CentralAssignmentService } from '@/lib/services/central-assignment-serv
 import { eq, and, or, lte, gte, like } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
 
-
 // GET: Fetch a specific final settlement by ID
 export async function GET(
   request: NextRequest,
@@ -251,14 +250,14 @@ export async function DELETE(
         );
 
       // Restore assignments that were completed for this vacation settlement using central service
-      console.log(`[Final Settlement] Restoring assignments for employee ${s.employeeId} after deleting vacation settlement`);
+
       await CentralAssignmentService.restoreAssignmentsAfterVacationDeletion(s.employeeId, s.vacationStartDate);
-      console.log(`[Final Settlement] Assignment restore complete for employee ${s.employeeId}`);
+
     } else if (s.settlementType === 'exit' && s.lastWorkingDate) {
       // For exit settlements, restore assignments that were completed on the last working date using central service
-      console.log(`[Final Settlement] Restoring assignments for employee ${s.employeeId} after deleting exit settlement`);
+
       await CentralAssignmentService.restoreAssignmentsAfterExitDeletion(s.employeeId, s.lastWorkingDate);
-      console.log(`[Final Settlement] Assignment restore complete for employee ${s.employeeId}`);
+
     }
 
     // Delete the settlement

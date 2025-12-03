@@ -43,27 +43,14 @@ export async function GET(request: NextRequest) {
     const allCustomersTest = await db
       .select({ id: customers.id, name: customers.name, erpnextId: customers.erpnextId })
       .from(customers);
-    console.log('🔍 TOTAL CUSTOMERS IN DB:', allCustomersTest.length);
-    console.log('🔍 Sample customers:', allCustomersTest.slice(0, 5));
-    
-    // Get total count with filters
-    console.log('📊 Fetching customers with conditions:', { 
-      whereCondition: !!whereCondition, 
-      search, 
-      status, 
-      page, 
-      limit,
-      sortBy,
-      sortOrder 
-    });
-    
+
+        // Get total count with filters
+
     const totalResult = await db
       .select({ count: customers.id })
       .from(customers)
       .where(whereCondition);
     const total = totalResult.length;
-    
-    console.log('📊 Total customers found in DB:', total);
 
     // Get customers with pagination
     let customersResult: {
@@ -140,9 +127,8 @@ export async function GET(request: NextRequest) {
       customersResult = [];
     }
 
-    console.log('📊 Fetched customers:', customersResult.length);
     if (customersResult.length > 0) {
-      console.log('📊 First customer:', customersResult[0]);
+
     }
 
     // Calculate pagination info
@@ -177,9 +163,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('📝 Creating customer with data:', JSON.stringify(body, null, 2));
-
-    // Validate required fields
+        // Validate required fields
     if (!body.name || typeof body.name !== 'string') {
       return NextResponse.json(
         { success: false, message: 'Customer name is required and must be a string' },
@@ -225,13 +209,9 @@ export async function POST(request: NextRequest) {
       updatedAt: today,
     };
 
-    console.log('📝 Inserting customer with data:', JSON.stringify(insertData, null, 2));
-    
-    try {
+        try {
       const newCustomer = await db.insert(customers).values(insertData).returning();
-      console.log('✅ Customer created successfully:', JSON.stringify(newCustomer, null, 2));
-      
-      if (!newCustomer || newCustomer.length === 0) {
+            if (!newCustomer || newCustomer.length === 0) {
         console.error('❌ No customer returned from insert');
         throw new Error('Customer insert returned empty result');
       }
@@ -243,9 +223,7 @@ export async function POST(request: NextRequest) {
         .where(eq(customers.id, newCustomer[0].id))
         .limit(1);
       
-      console.log('🔍 Verifying customer in DB:', JSON.stringify(verifyCustomer, null, 2));
-      
-      // Sync to ERPNext if configured
+            // Sync to ERPNext if configured
       try {
         const erpnextClient = new ERPNextClient();
         const erpnextId = await erpnextClient.createCustomer({
@@ -270,7 +248,7 @@ export async function POST(request: NextRequest) {
         });
         
         if (erpnextId) {
-          console.log('✅ Customer synced to ERPNext:', erpnextId);
+
           // Update the customer with erpnextId
           await db
             .update(customers)
@@ -289,7 +267,7 @@ export async function POST(request: NextRequest) {
       // Invalidate the customers list cache
       try {
         await cacheService.invalidateCacheByTag(CACHE_TAGS.CUSTOMERS);
-        console.log('🗑️ Invalidated customers cache');
+
       } catch (cacheError) {
         console.warn('⚠️ Failed to invalidate cache:', cacheError);
       }
@@ -410,7 +388,7 @@ export async function PUT(request: NextRequest) {
       });
       
       if (syncSuccess) {
-        console.log('✅ Customer updated in ERPNext');
+
       } else {
         console.warn('⚠️ Failed to update customer in ERPNext');
       }

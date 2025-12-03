@@ -4,7 +4,6 @@ import { employeeAssignments } from '@/lib/drizzle/schema';
 import { eq, and, ne } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
 
-
 // POST: Manually complete assignments for testing
 export async function POST(
   request: NextRequest,
@@ -25,15 +24,11 @@ export async function POST(
     const body = await request.json();
     const { action, date } = body;
 
-    console.log(`[Assignment Test] Testing assignment completion for employee ${employeeId}, action: ${action}, date: ${date}`);
-
     // First, let's see what assignments exist for this employee
     const existingAssignments = await db
       .select()
       .from(employeeAssignments)
       .where(eq(employeeAssignments.employeeId, employeeId));
-    
-    console.log(`[Assignment Test] Existing assignments for employee ${employeeId}:`, existingAssignments);
 
     let updateResult;
     if (action === 'complete_vacation') {
@@ -66,15 +61,11 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
 
-    console.log(`[Assignment Test] Assignment update result for employee ${employeeId}:`, updateResult);
-
     // Verify the update by fetching assignments again
     const updatedAssignments = await db
       .select()
       .from(employeeAssignments)
       .where(eq(employeeAssignments.employeeId, employeeId));
-    
-    console.log(`[Assignment Test] Updated assignments for employee ${employeeId}:`, updatedAssignments);
 
     return NextResponse.json({
       success: true,

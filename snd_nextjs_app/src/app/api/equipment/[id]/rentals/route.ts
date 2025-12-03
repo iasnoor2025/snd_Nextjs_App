@@ -41,33 +41,21 @@ const getEquipmentRentalsHandler = async (request: Request, { params }: { params
   try {
     // Get session for user ID if needed (middleware handles auth)
     const session = await getServerSession();
-
-    console.log('Starting equipment rental history fetch...');
-
     const { id: idParam } = await params;
     const id = parseInt(idParam);
 
     if (isNaN(id)) {
-      console.log('Invalid equipment ID:', idParam);
       return NextResponse.json({ success: false, error: 'Invalid equipment ID' }, { status: 400 });
     }
-
-    console.log('Fetching equipment with ID:', id);
-
     // Check if equipment exists
     const equipmentData = await db.select().from(equipment).where(eq(equipment.id, id)).limit(1);
 
     if (!equipmentData.length) {
-      console.log('Equipment not found for ID:', id);
       return NextResponse.json({ success: false, error: 'Equipment not found' }, { status: 404 });
     }
 
     const equipmentItem = equipmentData[0];
-    console.log('Equipment found:', equipmentItem.name);
-
     // Get basic rental history without JOINs first
-    console.log('Fetching rental history...');
-    
     const rentalHistory = await db
       .select({
         id: equipmentRentalHistory.id,
@@ -88,9 +76,6 @@ const getEquipmentRentalsHandler = async (request: Request, { params }: { params
       .from(equipmentRentalHistory)
       .where(eq(equipmentRentalHistory.equipmentId, id))
       .orderBy(desc(equipmentRentalHistory.createdAt));
-
-    console.log('Basic rental history fetched, count:', rentalHistory.length);
-
     // Get additional data with JOINs for complete information
     const rentalHistoryWithJoins = await db
       .select({
@@ -165,11 +150,7 @@ const getEquipmentRentalsHandler = async (request: Request, { params }: { params
       )
       .where(eq(equipmentRentalHistory.equipmentId, id))
       .orderBy(desc(equipmentRentalHistory.createdAt));
-
-    console.log('Enhanced rental history fetched with JOINs, count:', rentalHistoryWithJoins.length);
-
     // Fetch project equipment assignments
-    console.log('Fetching project equipment assignments...');
     const projectEquipmentAssignments = await db
       .select({
         id: projectEquipment.id,
@@ -216,9 +197,6 @@ const getEquipmentRentalsHandler = async (request: Request, { params }: { params
       .leftJoin(employees, eq(projectManpower.employeeId, employees.id))
       .where(eq(projectEquipment.equipmentId, id))
       .orderBy(desc(projectEquipment.createdAt));
-
-    console.log('Project equipment assignments fetched, count:', projectEquipmentAssignments.length);
-
     // Get operator counts for rental assignments
     const rentalIds = rentalHistoryWithJoins
       .filter(item => item.rentalId)
@@ -545,18 +523,12 @@ const getEquipmentRentalsHandler = async (request: Request, { params }: { params
         updated_at: item.updatedAt,
       };
     });
-
-    console.log('History transformed successfully');
-
     // Merge both histories and sort by creation date (most recent first)
     const allHistory = [...history, ...projectEquipmentHistory].sort((a, b) => {
       const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
       const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
       return dateB - dateA; // Descending order (most recent first)
     });
-
-    console.log('Total assignment history count:', allHistory.length);
-
     return NextResponse.json({
       success: true,
       data: allHistory,

@@ -20,15 +20,11 @@ export async function GET(_request: NextRequest) {
     const permissionCheck = await checkUserPermission(userId, 'read', 'own-profile');
     
     if (!permissionCheck.hasPermission) {
-      console.log('❌ User does not have permission to read profile settings:', permissionCheck.reason);
       return NextResponse.json(
         { error: 'Access denied. Permission required to read profile settings.' },
         { status: 403 }
       );
     }
-
-    console.log('✅ User has permission to read profile settings');
-
     const { searchParams } = new URL(_request.url);
     const type = searchParams.get('type'); // 'notifications' or 'appearance'
 
@@ -87,15 +83,11 @@ export async function PUT(_request: NextRequest) {
     const permissionCheck = await checkUserPermission(userId, 'update', 'own-profile');
     
     if (!permissionCheck.hasPermission) {
-      console.log('❌ User does not have permission to update profile settings:', permissionCheck.reason);
       return NextResponse.json(
         { error: 'Access denied. Permission required to update profile settings.' },
         { status: 403 }
       );
     }
-
-    console.log('✅ User has permission to update profile settings');
-
     // In a real app, you would save these settings to a database
     // For now, we'll just return success
 

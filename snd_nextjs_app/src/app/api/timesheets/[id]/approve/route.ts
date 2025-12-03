@@ -74,9 +74,9 @@ async function checkStageApprovalPermission(userId: string, stage: ApprovalStage
 export const POST = async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
     const { id } = await params;
-    console.log('[APPROVE] Received ID:', id);
+
     const timesheetId = parseInt(id);
-    console.log('[APPROVE] Parsed timesheetId:', timesheetId);
+
     if (isNaN(timesheetId)) {
       console.error('[APPROVE] Invalid timesheet ID - NaN');
       return NextResponse.json({ error: 'Invalid timesheet ID' }, { status: 400 });
@@ -84,7 +84,7 @@ export const POST = async (_request: NextRequest, { params }: { params: Promise<
 
     // Authentication check
     const session = await getServerSession();
-    console.log('[APPROVE] Session:', session?.user?.id);
+
     if (!session?.user?.id) {
       console.error('[APPROVE] No session or user ID');
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
@@ -93,7 +93,7 @@ export const POST = async (_request: NextRequest, { params }: { params: Promise<
     const userId = session.user.id;
 
     // Get the timesheet
-    console.log('[APPROVE] Fetching timesheet:', timesheetId);
+
     const timesheet = await db
       .select()
       .from(timesheets)
@@ -111,13 +111,10 @@ export const POST = async (_request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: 'Timesheet data not found' }, { status: 404 });
     }
 
-    console.log('[APPROVE] Timesheet status:', timesheetData.status);
-
     // Database-driven permission check
     const { checkUserPermission } = await import('@/lib/rbac/permission-service');
     const permissionResult = await checkUserPermission(userId, 'approve', 'Timesheet');
 
-    console.log('[APPROVE] Permission check:', permissionResult);
     if (!permissionResult.hasPermission) {
       console.error('[APPROVE] Permission denied:', permissionResult.reason);
       return NextResponse.json({
@@ -127,7 +124,6 @@ export const POST = async (_request: NextRequest, { params }: { params: Promise<
 
     // Automatically determine the next approval stage based on current status
     const nextStage = getNextApprovalStage(timesheetData.status);
-    console.log('[APPROVE] Next stage:', nextStage);
 
     if (!nextStage) {
       console.error('[APPROVE] Cannot approve further. Current status:', timesheetData.status);
@@ -142,7 +138,6 @@ export const POST = async (_request: NextRequest, { params }: { params: Promise<
     // Approve the timesheet to the next stage
     try {
       const newStatus = getApprovalStatusForStage(nextStage);
-      console.log('[APPROVE] Updating to status:', newStatus);
 
       const updatedTimesheet = await db
         .update(timesheets)
@@ -161,7 +156,6 @@ export const POST = async (_request: NextRequest, { params }: { params: Promise<
         return NextResponse.json({ error: 'Failed to update timesheet' }, { status: 500 });
       }
 
-      console.log('[APPROVE] Successfully approved timesheet');
       return NextResponse.json({
         success: true,
         message: `Timesheet approved to ${nextStage} stage`,

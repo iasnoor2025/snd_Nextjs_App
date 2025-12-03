@@ -1,7 +1,6 @@
 
 'use client';
 
-
 // Force dynamic rendering to prevent SSR issues
 export const dynamic = 'force-dynamic';
 
@@ -212,8 +211,6 @@ export default function EquipmentEditPage() {
         periodic_examination_date: formData.periodic_examination_date,
         periodic_examination_expiry_date: formData.periodic_examination_expiry_date,
       };
-
-      console.log('Sending update data:', updateData);
 
       const response = await ApiService.updateEquipment(equipment.id, updateData);
       if (response.success) {

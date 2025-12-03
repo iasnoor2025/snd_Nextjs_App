@@ -8,17 +8,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    console.log('Invoice API called');
-    
     const { id } = await params;
-    console.log('Rental ID:', id);
-    
     const body = await request.json();
-    console.log('Request body:', body);
-    
     const { billingMonth } = body || {};
-    console.log('Billing month:', billingMonth);
-
     // Get rental data with all necessary information
     const rental = await RentalService.getRental(parseInt(id));
 
@@ -27,9 +19,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     // Log the complete rental object structure
-    console.log('Rental object structure:', rental);
-    console.log('Billing month requested:', billingMonth);
-
     // Validate rental can have invoice generated
     if (rental.status === 'cancelled' || rental.status === 'draft') {
       return NextResponse.json(
@@ -75,14 +64,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!updatedRental) {
       return NextResponse.json({ error: 'Rental not found after recalculation' }, { status: 404 });
     }
-
-    console.log('Recalculated rental totals:', {
-      subtotal: updatedRental.subtotal,
-      taxAmount: updatedRental.taxAmount,
-      totalAmount: updatedRental.totalAmount,
-      finalAmount: updatedRental.finalAmount
-    });
-
     // Create invoiceRental object (always needed)
     let invoiceRental = { ...updatedRental };
     
@@ -91,8 +72,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     try {
       
       if (billingMonth) {
-        console.log(`Creating invoice for billing month: ${billingMonth}`);
-        
         // Parse the billing month (format: YYYY-MM)
         const [year, month] = billingMonth.split('-');
         const billingYear = parseInt(year);
@@ -130,23 +109,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         invoiceRental.invoiceMonth = `${monthName} ${billingYear}`;
         invoiceRental.customSubject = `Invoice for ${updatedRental.rentalNumber} - ${monthName} ${billingYear}`;
         
-        console.log(`Billing month calculation:`, {
-          billingMonth: billingMonth,
-          billingYear: billingYear,
-          billingMonthNum: billingMonthNum,
-          monthStart: monthStart.toISOString().split('T')[0],
-          monthEnd: monthEnd.toISOString().split('T')[0],
-          rentalStartDate: rentalStartDate.toISOString().split('T')[0],
-          fromDate: fromDate.toISOString().split('T')[0],
-          toDate: toDate.toISOString().split('T')[0],
-          invoiceDate: invoiceRental.invoiceDate,
-          paymentDueDate: invoiceRental.paymentDueDate,
-          customFrom: invoiceRental.customFrom,
-          customTo: invoiceRental.customTo,
-          invoiceMonth: invoiceRental.invoiceMonth,
-          customSubject: invoiceRental.customSubject
-        });
-      } else {
+              } else {
         // For non-monthly billing, set default values
         invoiceRental.invoiceDate = new Date().toISOString().split('T')[0];
         invoiceRental.paymentDueDate = new Date(Date.now() + (updatedRental.paymentTermsDays || 30) * 24 * 60 * 60 * 1000)
@@ -172,18 +135,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           { status: 400 }
         );
       }
-
-      console.log('Validated rental data for invoice creation:', {
-        customer: invoiceRental.customer?.name || invoiceRental.customerName,
-        totalAmount: invoiceRental.totalAmount,
-        invoiceDate: invoiceRental.invoiceDate,
-        paymentDueDate: invoiceRental.paymentDueDate,
-        customFrom: invoiceRental.customFrom,
-        customTo: invoiceRental.customTo,
-        invoiceMonth: invoiceRental.invoiceMonth,
-        customSubject: invoiceRental.customSubject
-      });
-
       erpnextInvoice = await ERPNextInvoiceService.createRentalInvoice(invoiceRental, invoiceNumber);
       
     } catch (erpnextError) {
@@ -215,16 +166,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     // Get updated invoice details from ERPNext to sync payment status
-    console.log('Getting ERPNext invoice details for:', invoiceId);
-    
     let erpnextInvoiceDetails: any = null;
     try {
       erpnextInvoiceDetails = await ERPNextInvoiceService.getInvoice(invoiceId);
-      console.log('Fetched ERPNext invoice details:', erpnextInvoiceDetails);
     } catch (syncError) {
-      console.log('Failed to fetch ERPNext invoice details, using created invoice:', syncError);
       erpnextInvoiceDetails = erpnextInvoice;
-      console.log('Using created invoice details:', erpnextInvoiceDetails);
     }
 
     // Check if ERPNext invoice was deleted and reset rental if needed
@@ -265,15 +211,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     // Get the actual invoice amount from ERPNext
     const invoiceAmount = erpnextInvoiceDetails?.grand_total || erpnextInvoiceDetails?.total || 0;
-    console.log('ERPNext invoice amount calculation:', {
-      grand_total: erpnextInvoiceDetails?.grand_total,
-      total: erpnextInvoiceDetails?.total,
-      base_grand_total: erpnextInvoiceDetails?.base_grand_total,
-      rounded_total: erpnextInvoiceDetails?.rounded_total,
-      invoiceAmount: invoiceAmount,
-      willUpdateTotalAmount: invoiceAmount > 0
-    });
-    
     // If invoiceAmount is 0, log full invoice details for debugging
     if (invoiceAmount === 0) {
       console.error('Invoice amount is 0! Full ERPNext invoice details:', JSON.stringify(erpnextInvoiceDetails, null, 2));
@@ -294,7 +231,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // Only update totalAmount if we have a valid invoice amount from ERPNext
     if (invoiceAmount > 0) {
       updateData.totalAmount = invoiceAmount.toString();
-      console.log('Updating totalAmount with ERPNext invoice amount:', invoiceAmount);
     } else {
       console.warn('Invoice amount is 0 or invalid, keeping original totalAmount');
     }
@@ -305,9 +241,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         .update(rentals)
         .set(updateData)
         .where(eq(rentals.id, parseInt(id)));
-
-      console.log('Rental update result:', updateResult);
-      console.log('Updated rental data:', updateData);
     } catch (dbError) {
       console.error('Database update error:', dbError);
       return NextResponse.json(
@@ -330,7 +263,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         amount: invoiceAmount.toString(),
         status: invoiceStatus
       });
-      console.log('Created rental invoice record for tracking');
     } catch (invoiceRecordError) {
       console.error('Failed to create rental invoice record:', invoiceRecordError);
       // Don't fail the whole operation if invoice record creation fails
@@ -338,12 +270,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     // Verify the rental was updated
     const verifiedRental = await RentalService.getRental(parseInt(id));
-    console.log('Updated rental verification:', {
-      invoiceId: verifiedRental?.invoiceId,
-      invoiceDate: verifiedRental?.invoiceDate,
-      paymentStatus: verifiedRental?.paymentStatus
-    });
-
     // Optionally submit the invoice in ERPNext if it's in draft status
     if (invoiceStatus === 'Draft') {
       

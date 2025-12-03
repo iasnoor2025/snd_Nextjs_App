@@ -165,7 +165,6 @@ const uploadDocumentsHandler = async (
       // First check if it's a general document type - these should NEVER overwrite
       const generalDocumentTypes = ['general', 'other', 'misc', 'miscellaneous'];
       if (generalDocumentTypes.includes(documentType.toLowerCase())) {
-        console.log(`Document type '${documentType}' is general - will NOT overwrite`);
         return false;
       }
       
@@ -177,7 +176,6 @@ const uploadDocumentsHandler = async (
       ];
       
       const result = specificDocumentTypes.includes(documentType.toLowerCase());
-      console.log(`Document type '${documentType}' should overwrite: ${result}`);
       return result;
     };
     
@@ -199,9 +197,7 @@ const uploadDocumentsHandler = async (
 
         // Delete existing documents from database
         if (existingDocuments.length > 0) {
-          console.log(`🗑️ Deleting existing documents:`, existingDocuments.map(d => ({ id: d.id, fileName: d.fileName })));
-          
-          await db
+                    await db
             .delete(equipmentDocuments)
             .where(
               and(
@@ -212,10 +208,7 @@ const uploadDocumentsHandler = async (
 
           // Note: MinIO files will be overwritten automatically when uploading with the same key
           // No need to manually delete old files from MinIO storage
-          console.log(`MinIO will automatically overwrite existing files with the same key`);
-
-          console.log(`✅ Successfully deleted ${existingDocuments.length} existing ${rawDocumentType} document(s) for equipment ${equipmentId}`);
-        }
+                  }
       } catch (error) {
         console.error('Error deleting existing documents:', error);
         // Continue with upload even if deletion fails
@@ -282,13 +275,11 @@ const uploadDocumentsHandler = async (
           );
         }
       } else {
-        console.log(`Skipping duplicate filename check for general document type: ${rawDocumentType}`);
         // Add timestamp to general documents to make them unique
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[1].substring(0, 8);
         const baseFilename = descriptiveFilename.replace(/\.[^/.]+$/, ''); // Remove extension
         const fileExtension = descriptiveFilename.split('.').pop() || 'pdf';
         descriptiveFilename = `${baseFilename}-${timestamp}.${fileExtension}`;
-        console.log(`Updated general document filename to: ${descriptiveFilename}`);
       }
     } else {
       // Fallback to descriptive filename based on document type
@@ -304,10 +295,6 @@ const uploadDocumentsHandler = async (
     // This creates a folder structure like: equipment-documents/equipment-14/ or equipment-documents/equipment-180/
     const path = `equipment-${equipmentId}`;
     const fullPath = `${path}/${descriptiveFilename}`;
-
-    console.log(`Uploading file: ${file.name} as ${descriptiveFilename} to path: ${fullPath}`);
-    console.log(`File details: name=${file.name}, type=${file.type}, size=${file.size}`);
-
     // Initialize MinIO S3 client
     const s3Client = new S3Client({
       endpoint: process.env.S3_ENDPOINT!,
@@ -336,10 +323,6 @@ const uploadDocumentsHandler = async (
     const baseUrl = process.env.S3_ENDPOINT?.replace(/\/$/, '');
     const secureUrl = baseUrl?.replace(/^http:\/\//, 'https://') || baseUrl;
     const minioUrl = `${secureUrl}/equipment-documents/${fullPath}`;
-
-    console.log('File uploaded successfully to MinIO, saving to database...');
-    console.log('MinIO URL:', minioUrl);
-
     // Save document record to database
     const documentResult = await db
       .insert(equipmentDocuments)
@@ -366,14 +349,9 @@ const uploadDocumentsHandler = async (
     const cacheKey = `equipment:${equipmentId}:documents`;
     try {
       await cacheService.delete(cacheKey, 'documents');
-      console.log(`Invalidated cache for equipment ${equipmentId} documents`);
-      
       // Also invalidate any related caches
       await cacheService.delete(`equipment:${equipmentId}:*`, 'documents');
-      console.log(`Invalidated all caches for equipment ${equipmentId}`);
-      
       // Additional cache invalidation for better reliability
-      console.log(`Completed cache invalidation for equipment ${equipmentId}`);
     } catch (error) {
       console.error('Cache invalidation error:', error);
     }

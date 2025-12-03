@@ -83,7 +83,6 @@ export class H2SCardPDFService {
         });
       } catch (e) {
         // Logo not found, skip it
-        console.log('Logo not available, skipping:', e);
       }
     }
 
@@ -245,7 +244,6 @@ export class H2SCardPDFService {
           height: qrSize,
         });
       } catch (e) {
-        console.log('QR code not available, skipping');
       }
     }
 

@@ -30,8 +30,6 @@ export const PUT = withPermission(PermissionConfigs.equipment.update)(
     }
 
     const body = await request.json();
-    console.log('Equipment update request body:', body);
-
     // Update equipment data
     const updateData: any = {};
     
@@ -107,9 +105,6 @@ export const PUT = withPermission(PermissionConfigs.equipment.update)(
     if (body.periodic_examination_expiry_date !== undefined) {
       updateData.periodicExaminationExpiryDate = body.periodic_examination_expiry_date ? new Date(body.periodic_examination_expiry_date) : null;
     }
-
-    console.log('Updating equipment with data:', updateData);
-    
     // Update the equipment in the database
     const [updatedEquipment] = await db
       .update(equipment)

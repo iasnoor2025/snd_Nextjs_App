@@ -39,7 +39,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
 
     // Return cached data if available and no filters applied
     if (!hasFilters && employeesCache && (now - employeesCacheTimestamp) < EMPLOYEES_CACHE_TTL) {
-      console.log('📦 Serving employees from cache');
+
       // Return the cached response directly (it already has the correct structure)
       return NextResponse.json(employeesCache);
     }
@@ -74,7 +74,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
       filters.push(eq(employeesTable.status, status));
     }
     if (supervisor) {
-      console.log('Filtering by supervisor:', supervisor);
+
       filters.push(eq(employeesTable.supervisor, supervisor));
     }
 
@@ -125,11 +125,9 @@ const getEmployeesHandler = async (request: NextRequest) => {
 
     const employeeRows = await (!all ? baseQuery.offset(skip).limit(limit) : baseQuery);
 
-    console.log('Employees found:', employeeRows.length);
     if (supervisor) {
-      console.log('Supervisor filter applied:', supervisor);
-      console.log('Sample employee supervisor values:', employeeRows.slice(0, 3).map(e => ({ id: e.id, supervisor: e.supervisor })));
-    }
+
+          }
 
     const countRow = await db
       .select({ count: sql<number>`count(*)` })
@@ -488,7 +486,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
     if (!hasFilters) {
       employeesCache = response;
       employeesCacheTimestamp = now;
-      console.log('💾 Cached employees data');
+
     }
 
     return NextResponse.json(response);
@@ -805,7 +803,7 @@ const createEmployeeHandler = async (request: NextRequest) => {
             });
 
             if (process.env.NODE_ENV === 'development') {
-              console.log('✅ Employment contract generated successfully for employee:', emp.fileNumber || emp.id);
+
             }
           }
         }

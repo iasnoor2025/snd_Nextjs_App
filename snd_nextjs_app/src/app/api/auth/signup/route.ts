@@ -43,8 +43,6 @@ export async function POST(request: NextRequest) {
 
     const roleId = defaultRole[0]?.id || 6; // Fallback to role ID 6 (EMPLOYEE) if "EMPLOYEE" role not found
 
-    console.log('Creating user with data:', { firstName, lastName, email, roleId });
-    
     // Create user
     const inserted = await db
       .insert(usersTable)

@@ -154,8 +154,6 @@ const createProjectManpowerHandler = async (request: NextRequest, { params }: { 
               updatedAt: new Date().toISOString().split('T')[0]
             })
             .where(eq(employees.id, parseInt(employeeId)));
-
-          console.log(`Auto-assigned supervisor ${projectWithSupervisor[0].supervisorId} to employee ${employeeId} for project ${projectId}`);
         }
       } catch (supervisorError) {
         console.error('Error auto-assigning supervisor to employee:', supervisorError);
@@ -197,8 +195,6 @@ const createProjectManpowerHandler = async (request: NextRequest, { params }: { 
             notes: `Auto-created for project: ${projectName} - ${jobTitle}`,
             projectId: parseInt(projectId),
           });
-
-          console.log(`Auto-created employee assignment for employee ${employeeId} on project ${projectId}`);
         }
       } catch (assignmentError) {
         console.error('Error auto-creating employee assignment:', assignmentError);

@@ -345,8 +345,6 @@ const updateEmployeeHandler = async (
 
     // Debug logging (development only)
     if (process.env.NODE_ENV === 'development') {
-      console.log('Update request body:', body);
-      console.log('Employee ID:', employeeId);
     }
 
     const dateFields = [
@@ -510,7 +508,6 @@ const updateEmployeeHandler = async (
 
     // Debug logging (development only)
     if (process.env.NODE_ENV === 'development') {
-      console.log('Drizzle update data:', drizzleData);
     }
 
     // Validate required fields before update

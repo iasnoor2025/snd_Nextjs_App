@@ -5,8 +5,6 @@ import { sql } from 'drizzle-orm';
 
 export async function POST(_request: NextRequest) {
   try {
-    console.log('Starting auto-generation request...');
-
     // Use the cron service to trigger timesheet generation
     const { cronService } = await import('@/lib/services/cron-service');
     
@@ -29,9 +27,6 @@ export async function POST(_request: NextRequest) {
 
     // Race between timeout and completion
     const result = (await Promise.race([resultPromise, timeoutPromise])) as any;
-
-    console.log('Auto-generation result:', result);
-
     if (result && result.success) {
       return NextResponse.json(result);
     } else {
@@ -59,12 +54,8 @@ export async function POST(_request: NextRequest) {
 // Test endpoint to check database connection
 export async function GET() {
   try {
-    console.log('Testing database connection...');
-    
     // Test database connection
     const testResult = await db.execute(sql`SELECT 1 as test`);
-    console.log('Database connection test successful:', testResult);
-    
     // Check employee assignments
     const assignmentsResult = await db.execute(sql`
       SELECT id, employee_id, project_id, rental_id, start_date, end_date, status 

@@ -13,7 +13,6 @@ export async function proxy(request: NextRequest) {
   
   // Only log in development
   if (process.env.NODE_ENV === 'development') {
-    console.log('🔍 Proxy triggered for path:', pathname);
   }
 
   // Allow static files from public folder (images, fonts, etc.)

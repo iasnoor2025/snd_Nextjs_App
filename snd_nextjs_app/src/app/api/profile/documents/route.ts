@@ -23,15 +23,11 @@ export async function GET(_request: NextRequest) {
     const permissionCheck = await checkUserPermission(userId.toString(), 'read', 'own-profile');
     
     if (!permissionCheck.hasPermission) {
-      console.log('❌ User does not have permission to read profile documents:', permissionCheck.reason);
       return NextResponse.json(
         { error: 'Access denied. Permission required to read profile documents.' },
         { status: 403 }
       );
     }
-
-    console.log('✅ User has permission to read profile documents');
-
     // First, find the employee record linked to this user
     let employeeRows = await db
       .select({
@@ -46,8 +42,6 @@ export async function GET(_request: NextRequest) {
 
     // If no employee found by userId, try to find by National ID from user record
     if (employeeRows.length === 0) {
-      console.log('No employee found by userId, trying National ID match...');
-      
       // Get user's National ID
       const userRows = await db
         .select({ nationalId: users.nationalId })
@@ -56,8 +50,6 @@ export async function GET(_request: NextRequest) {
         .limit(1);
       
       if (userRows.length > 0 && userRows[0].nationalId) {
-        console.log('Looking for employee with National ID:', userRows[0].nationalId);
-        
         employeeRows = await db
           .select({
             id: employees.id,
@@ -69,14 +61,7 @@ export async function GET(_request: NextRequest) {
           .where(eq(employees.iqamaNumber, userRows[0].nationalId))
           .limit(1);
         
-        console.log('National ID search results:', {
-          foundCount: employeeRows.length,
-          employees: employeeRows.map(emp => ({
-            id: emp.id,
-            name: `${emp.firstName} ${emp.lastName}`,
-            iqamaNumber: emp.iqamaNumber
-          }))
-        });
+                });
       }
     }
 

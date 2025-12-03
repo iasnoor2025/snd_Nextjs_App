@@ -53,8 +53,6 @@ export async function GET(
     // Fetch the file from MinIO using S3 client
     if (documentRecord.filePath && documentRecord.filePath.startsWith('http')) {
       try {
-        console.log('Fetching from MinIO:', documentRecord.filePath);
-        
         // Initialize S3 client
         const s3Client = new S3Client({
           endpoint: process.env.S3_ENDPOINT!,
@@ -75,9 +73,6 @@ export async function GET(
         if (key.startsWith(`${bucketName}/`)) {
           key = key.substring(bucketName.length + 1);
         }
-
-        console.log('Fetching from MinIO - bucket:', bucketName, 'key:', key);
-
         // Get the object from S3
         const command = new GetObjectCommand({
           Bucket: bucketName,

@@ -12,7 +12,6 @@ class RedisService {
   async connect(): Promise<void> {
     // Skip connection if Redis is disabled
     if (!isRedisEnabled()) {
-      console.log('Redis is disabled - skipping connection');
       return;
     }
 
@@ -33,21 +32,18 @@ class RedisService {
 
       this.client.on('connect', () => {
         if (redisConfig.development.logConnection) {
-          console.log('Redis Client Connected');
         }
         this.isConnected = true;
       });
 
       this.client.on('ready', () => {
         if (redisConfig.development.logConnection) {
-          console.log('Redis Client Ready');
         }
         this.isConnected = true;
       });
 
       this.client.on('end', () => {
         if (redisConfig.development.logConnection) {
-          console.log('Redis Client Disconnected');
         }
         this.isConnected = false;
       });

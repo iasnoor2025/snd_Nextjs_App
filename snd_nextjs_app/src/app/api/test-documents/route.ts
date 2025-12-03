@@ -17,9 +17,6 @@ export async function GET(request: NextRequest) {
     if (isNaN(id)) {
       return NextResponse.json({ error: 'Invalid employee ID' }, { status: 400 });
     }
-
-    console.log(`Testing documents for employee ${id}`);
-
     // Test database connection
     const documentsRows = await db
       .select({
@@ -37,9 +34,6 @@ export async function GET(request: NextRequest) {
       .from(employeeDocuments)
       .where(eq(employeeDocuments.employeeId, id))
       .limit(5); // Limit to 5 documents for testing
-
-    console.log(`Found ${documentsRows.length} documents for employee ${id}`);
-
     // Test ensureHttps function
     const testUrls = [
       'http://minio.snd-ksa.online/test.jpg',

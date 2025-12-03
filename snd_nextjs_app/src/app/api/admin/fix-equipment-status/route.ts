@@ -12,17 +12,11 @@ export const POST = withPermission(PermissionConfigs.admin.manage)(async (reques
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    console.log(`🔧 Admin ${session.user.email} triggered equipment status fix...`);
-    
     // Run the monitoring and fixing
     const result = await EquipmentStatusMonitor.checkAndFixEquipmentStatus();
     
     // Get current status summary
     const statusSummary = await EquipmentStatusMonitor.getEquipmentStatusSummary();
-    
-    console.log('✅ Equipment status fix completed by admin');
-    
     return NextResponse.json({
       success: true,
       message: 'Equipment status fix completed',

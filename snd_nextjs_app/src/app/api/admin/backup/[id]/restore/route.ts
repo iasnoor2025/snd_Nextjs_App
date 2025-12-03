@@ -152,10 +152,8 @@ export const POST = withPermission({ action: 'manage', subject: 'all' })(
 
         // Recreate schema from backup
         if (backup.schema && backup.schema.tables) {
-          console.log(`Recreating ${backup.schema.tables.length} tables...`);
           for (const table of backup.schema.tables) {
             try {
-              console.log(`Creating table: ${table.table}`);
               // Create table structure
               const createTableQuery = `CREATE TABLE ${table.table} (
                 ${table.columns.map((col: any) => {
@@ -202,11 +200,9 @@ export const POST = withPermission({ action: 'manage', subject: 'all' })(
 
         // Restore data
         if (backup.data && backup.data.tables) {
-          console.log(`Restoring data for ${Object.keys(backup.data.tables).length} tables...`);
-          for (const [tableName, records] of Object.entries(backup.data.tables)) {
+                    for (const [tableName, records] of Object.entries(backup.data.tables)) {
             if (Array.isArray(records) && records.length > 0) {
               try {
-                console.log(`Restoring ${records.length} records to table: ${tableName}`);
                 const columns = Object.keys(records[0]);
                 const values = records.map(record => 
                   `(${columns.map(col => {

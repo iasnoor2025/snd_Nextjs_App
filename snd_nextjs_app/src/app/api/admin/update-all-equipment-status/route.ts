@@ -12,14 +12,8 @@ export const POST = withPermission(PermissionConfigs.admin.manage)(async (reques
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    console.log(`🔄 Admin ${session.user.email} triggered immediate update of all equipment statuses...`);
-    
     // Update all equipment statuses immediately
     const result = await EquipmentStatusService.updateAllEquipmentStatuses();
-    
-    console.log('✅ Immediate equipment status update completed by admin');
-    
     return NextResponse.json({
       success: true,
       message: 'All equipment statuses updated immediately',

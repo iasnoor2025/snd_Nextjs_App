@@ -8,9 +8,6 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const customerName = searchParams.get('name') || 'AKFA UNITED COMPANY LTD';
-    
-    console.log(`🔍 Checking customer: ${customerName}`);
-    
     // Find customer in local database
     const localCustomer = await db
       .select()

@@ -10,8 +10,6 @@ export async function GET(request: NextRequest) {
     const employeeFileNumber = searchParams.get('employeeFileNumber');
     const limit = parseInt(searchParams.get('limit') || '1000'); // Allow more records
 
-    console.log('Google Sheets API called with:', { month, employeeFileNumber, limit });
-
     // Build filters
     const filters: SQL[] = [];
 
@@ -19,9 +17,7 @@ export async function GET(request: NextRequest) {
     if (month) {
       const [year, monthNum] = month.split('-');
       if (year && monthNum) {
-        console.log('Looking for month:', month, 'Year:', year, 'Month:', monthNum);
-        console.log('Using EXTRACT SQL like payslip system');
-        
+
         // Use EXTRACT SQL functions like payslip system to avoid timezone issues
         const monthCondition = and(
           sql`EXTRACT(YEAR FROM ${timesheetsTable.date}) = ${parseInt(year)}`,
@@ -76,13 +72,11 @@ export async function GET(request: NextRequest) {
       .orderBy(asc(timesheetsTable.date))
       .limit(limit);
 
-    console.log('Found timesheets:', timesheetsData.length);
-    
     // Debug: Show first few dates to see what we're getting
     if (timesheetsData.length > 0) {
-      console.log('Sample dates from database:');
+
       timesheetsData.slice(0, 5).forEach((ts, index) => {
-        console.log(`${index + 1}. Date: ${ts.date}, Type: ${typeof ts.date}`);
+
       });
     }
 

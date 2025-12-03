@@ -37,7 +37,6 @@ const RentalItemConfirmationExample: React.FC = () => {
         // Simulate API call
         setTimeout(() => {
           setIsLoading(false);
-          console.log('Item added successfully');
         }, 2000);
       }
     );
@@ -52,7 +51,6 @@ const RentalItemConfirmationExample: React.FC = () => {
         // Simulate API call
         setTimeout(() => {
           setIsLoading(false);
-          console.log('Item added successfully with detailed confirmation');
         }, 2000);
       }
     );
@@ -67,7 +65,6 @@ const RentalItemConfirmationExample: React.FC = () => {
         // Simulate API call
         setTimeout(() => {
           setIsLoading(false);
-          console.log('Item updated successfully');
         }, 2000);
       }
     );
@@ -82,7 +79,6 @@ const RentalItemConfirmationExample: React.FC = () => {
         // Simulate API call
         setTimeout(() => {
           setIsLoading(false);
-          console.log('Item deleted successfully');
         }, 2000);
       }
     );
@@ -99,7 +95,6 @@ const RentalItemConfirmationExample: React.FC = () => {
         // Simulate API call
         setTimeout(() => {
           setIsLoading(false);
-          console.log('Bulk delete completed successfully');
         }, 2000);
       }
     );

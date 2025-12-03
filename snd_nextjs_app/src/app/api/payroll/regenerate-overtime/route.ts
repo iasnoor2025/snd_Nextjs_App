@@ -72,9 +72,6 @@ export async function POST() {
           const totalDaysInMonth = new Date(payrollYear, payrollMonth, 0).getDate();
           const contractHours = Number(payroll.employee.contractHoursPerDay) || 8;
           const hourlyRate = basicSalary / (totalDaysInMonth * contractHours);
-
-          console.log(`Hourly rate calculated: ${hourlyRate}`);
-
           // Use employee's overtime settings
           // Check if multiplier is 0 (indicating fixed rate is being used)
           const overtimeMultiplier = Number(payroll.employee.overtimeRateMultiplier) || 1.5;
@@ -82,11 +79,9 @@ export async function POST() {
             // Use fixed overtime rate
             overtimeAmount =
               Number(payroll.overtimeHours) * Number(payroll.employee.overtimeFixedRate);
-            console.log(`Using fixed overtime rate: ${payroll.employee.overtimeFixedRate} SAR/hr`);
           } else {
             // Use overtime multiplier with calculated hourly rate
             overtimeAmount = Number(payroll.overtimeHours) * (hourlyRate * overtimeMultiplier);
-            console.log(`Using overtime multiplier: ${overtimeMultiplier}x basic rate`);
           }
 
         }
@@ -144,8 +139,6 @@ export async function POST() {
         }
 
         updatedPayrolls.push(payroll.id.toString());
-        console.log(`Payroll ${payroll.id} updated successfully`);
-        
       } catch (error) {
         const errorMsg = `Error updating payroll ${payroll.id}: ${error}`;
         console.error('Error updating payroll:', errorMsg);

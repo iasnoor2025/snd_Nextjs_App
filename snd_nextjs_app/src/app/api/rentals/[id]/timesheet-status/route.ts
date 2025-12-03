@@ -107,8 +107,6 @@ const updateTimesheetStatusHandler = async (
     const body = await request.json();
     const { month, itemId, received } = body; // month: YYYY-MM, itemId: optional, received: boolean
 
-    console.log('Update timesheet status request:', { rentalId: id, month, itemId, received, body });
-
     if (!month) {
       return NextResponse.json(
         { error: 'Month parameter is required (format: YYYY-MM)' },

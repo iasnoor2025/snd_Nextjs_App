@@ -161,7 +161,7 @@ const seedCategoriesHandler = async (_request: NextRequest) => {
         insertedCategories.push(result[0]);
       } catch (error) {
         // Category might already exist, continue
-        console.log(`Category ${category.name} might already exist`);
+
       }
     }
 

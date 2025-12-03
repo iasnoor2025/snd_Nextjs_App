@@ -106,9 +106,6 @@ export function RBACInitializer() {
           console.error('Failed to parse JSON response:', parseError);
           throw new Error('Invalid response from server');
         }
-
-        console.log('RBAC initialization response:', initData);
-
         if (initData.success) {
           setStatus('completed');
           setMessage('RBAC system initialized successfully');

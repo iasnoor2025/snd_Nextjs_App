@@ -57,16 +57,6 @@ interface DocumentManagerProps {
 
 const DocumentManagerComponent = function DocumentManager(props: DocumentManagerProps) {
   const { t } = useI18n();
-  
-  // Debug logging
-  console.log('DocumentManager rendered with props:', {
-    hasLoadDocuments: !!props.loadDocuments,
-    hasUploadDocument: !!props.uploadDocument,
-    hasDeleteDocument: !!props.deleteDocument,
-    loadDocumentsType: typeof props.loadDocuments,
-    uploadDocumentType: typeof props.uploadDocument,
-    deleteDocumentType: typeof props.deleteDocument,
-  });
 
   const {
     title = t('employee.documents.title'),
@@ -260,9 +250,7 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
   const handleDelete = async (id: number) => {
     setDeleting(id);
     try {
-      console.log('Attempting to delete document:', id);
       const result = await deleteDocument(id);
-      console.log('Delete result:', result);
       toast.success(t('employee.documents.deleteSuccess'));
       await refresh();
     } catch (error) {
@@ -277,18 +265,13 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
     try {
       // If a custom download handler is provided, use it
       if (downloadDocument && typeof downloadDocument === 'function') {
-        console.log('Using custom download handler for document:', doc.id);
         await downloadDocument(doc.id);
         toast.success(t('employee.documents.downloadStarted'));
         return;
       }
 
-      console.log('Document employee_file_number:', doc.employee_file_number);
-      console.log('Document downloadPrefix result:', typeof downloadPrefix === 'function' ? downloadPrefix(doc) : downloadPrefix);
-      
       // If the URL is a MinIO URL (starts with http), handle it directly
       if (doc.url.startsWith('http')) {
-        console.log('Downloading from MinIO URL:', doc.url);
         
         // For MinIO URLs, we need to fetch the file and create a blob download
         const response = await fetch(doc.url);
@@ -309,12 +292,6 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
         const fileNumber =
           prefixFromProp || (doc.employee_file_number ? String(doc.employee_file_number) : '');
         
-        console.log('Download prefix calculation:', {
-          prefixFromProp,
-          employee_file_number: doc.employee_file_number,
-          finalFileNumber: fileNumber,
-          downloadPrefixType: typeof downloadPrefix
-        });
         // Human-readable type label for display
         const printableType = (doc.typeLabel || 'Document').trim();
         // Determine extension from file_name or URL
@@ -327,8 +304,6 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
         // Desired pattern: "Type (File 123).ext"
         link.download = fileNumber && ext ? `${printableType} (File ${fileNumber}).${ext}` : fallback;
         
-        console.log('Downloading file with name:', link.download);
-        
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -339,8 +314,6 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
         return;
       }
 
-      console.log('Downloading from legacy URL:', doc.url);
-      
       // For legacy local file URLs, try to use the download API
       const link = document.createElement('a');
       // Append download parameter to force download instead of preview

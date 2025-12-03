@@ -60,9 +60,6 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
       setLoading(true);
       setError(null);
 
-      console.log('Current user ID:', session?.user?.id);
-      console.log('Current user ID type:', typeof session?.user?.id);
-
       // First, find the employee record that matches the current user ID
       const employeeResponse = await fetch(`/api/employees?all=true`);
       if (!employeeResponse.ok) {
@@ -70,7 +67,6 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
       }
 
       const employeeData = await employeeResponse.json();
-      console.log('All employees fetched:', employeeData.data?.length || 0);
 
       if (!employeeData.success) {
         throw new Error('Failed to fetch employees');
@@ -81,10 +77,8 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
         emp.user?.id?.toString() === session?.user?.id?.toString()
       );
 
-      console.log('Current employee found:', currentEmployee);
-
       if (!currentEmployee) {
-        console.log('No employee record found for current user');
+
         setTeamMembers([]);
         setCurrentEmployee(null);
         return;
@@ -92,9 +86,6 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
 
       // Set current employee in state
       setCurrentEmployee(currentEmployee);
-
-      console.log('Current employee ID:', currentEmployee.id);
-      console.log('Fetching team members for supervisor:', currentEmployee.id);
 
       // Now fetch employees where supervisor = current employee ID
       const response = await fetch(`/api/employees?supervisor=${currentEmployee.id}`);
@@ -105,9 +96,8 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
 
       const data = await response.json();
 
-      console.log('MyTeam API Response:', data);
       if (data.success) {
-        console.log('Team members found:', data.data?.length || 0);
+
         setTeamMembers(data.data || []);
       } else {
         throw new Error(data.error || 'Failed to fetch team members');
@@ -130,7 +120,7 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
       }
 
       const data = await response.json();
-      console.log('Timesheets API response:', data);
+
       if (!data.data || data.data.length === 0) {
         toast.error(`No pending timesheet found for ${employeeName}`);
         return;
@@ -160,7 +150,6 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
       setApprovingId(null);
     }
   };
-
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -230,8 +219,6 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
       return shortenedName;
     }
   };
-
-
 
   if (loading) {
     return (

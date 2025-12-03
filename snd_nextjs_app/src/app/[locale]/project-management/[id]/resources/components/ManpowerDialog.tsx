@@ -88,7 +88,6 @@ export default function ManpowerDialog({
           return true;
         });
         setExistingManpower(existing);
-        console.log('Loaded existing manpower:', existing);
       }
     } catch (error) {
       console.error('Error loading existing manpower:', error);

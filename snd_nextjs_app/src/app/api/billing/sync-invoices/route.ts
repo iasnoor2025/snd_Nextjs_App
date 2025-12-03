@@ -7,8 +7,6 @@ import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 const syncInvoicesHandler = async (_request: NextRequest) => {
   try {
-    console.log('Starting bulk invoice sync to detect deleted invoices...');
-    
     // Get all rentals with invoices
     let rentalsWithInvoices;
     try {
@@ -23,14 +21,11 @@ const syncInvoicesHandler = async (_request: NextRequest) => {
         })
         .from(rentals)
         .where(sql`${rentals.invoiceId} IS NOT NULL`);
-      
-      console.log(`Found ${rentalsWithInvoices.length} rentals with invoices to check`);
     } catch (dbError) {
       console.error('Database query error:', dbError);
       
       // Try a simpler query without the new fields
       try {
-        console.log('Trying simpler query without new fields...');
         rentalsWithInvoices = await db
           .select({
             id: rentals.id,
@@ -41,8 +36,7 @@ const syncInvoicesHandler = async (_request: NextRequest) => {
           .from(rentals)
           .where(sql`${rentals.invoiceId} IS NOT NULL`);
         
-        console.log(`Found ${rentalsWithInvoices.length} rentals with invoices (simplified query)`);
-      } catch (simpleDbError) {
+              } catch (simpleDbError) {
         console.error('Simple database query also failed:', simpleDbError);
         return NextResponse.json(
           {
@@ -69,18 +63,13 @@ const syncInvoicesHandler = async (_request: NextRequest) => {
         // Check if invoice exists in ERPNext
         let invoiceDetails: any = null;
         try {
-          console.log(`Checking invoice ${rental.invoiceId} for rental ${rental.id}`);
           invoiceDetails = await ERPNextInvoiceService.getInvoice(rental.invoiceId!);
-          console.log(`Invoice ${rental.invoiceId} found in ERPNext`);
         } catch (error) {
-          console.log(`Invoice ${rental.invoiceId} not found in ERPNext for rental ${rental.id}:`, error);
           invoiceDetails = null;
         }
 
         // If invoice was deleted in ERPNext, reset rental record
         if (!invoiceDetails || invoiceDetails.error) {
-          console.log(`Resetting rental ${rental.id} - invoice ${rental.invoiceId} was deleted`);
-          
           try {
             await db
               .update(rentals)
@@ -94,7 +83,6 @@ const syncInvoicesHandler = async (_request: NextRequest) => {
               .where(eq(rentals.id, rental.id));
 
             results.deleted++;
-            console.log(`Successfully reset rental ${rental.id}`);
           } catch (updateError) {
             console.error(`Failed to reset rental ${rental.id}:`, updateError);
             results.errors.push({
@@ -119,7 +107,6 @@ const syncInvoicesHandler = async (_request: NextRequest) => {
               .where(eq(rentals.id, rental.id));
 
             results.updated++;
-            console.log(`Successfully updated rental ${rental.id}`);
           } catch (updateError) {
             console.error(`Failed to update rental ${rental.id}:`, updateError);
             results.errors.push({
@@ -140,9 +127,6 @@ const syncInvoicesHandler = async (_request: NextRequest) => {
         });
       }
     }
-
-    console.log('Bulk invoice sync completed:', results);
-
     return NextResponse.json({
       success: true,
       message: `Checked ${results.checked} rentals, reset ${results.deleted} deleted invoices, updated ${results.updated} invoices`,

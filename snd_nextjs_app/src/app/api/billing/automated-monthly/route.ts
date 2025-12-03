@@ -3,16 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(_request: NextRequest) {
   try {
-    console.log('Starting automated monthly billing process...');
-    
     const result = await AutomatedMonthlyBillingService.generateMonthlyInvoicesForAllRentals();
-    
-    console.log('Automated monthly billing completed:', {
-      processed: result.processed,
-      invoicesGenerated: result.invoices.length,
-      errors: result.errors.length
-    });
-    
     return NextResponse.json({
       success: result.success,
       message: `Processed ${result.processed} rentals, generated ${result.invoices.length} monthly invoices`,

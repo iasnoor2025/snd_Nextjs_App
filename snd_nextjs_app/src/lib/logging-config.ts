@@ -38,10 +38,8 @@ export function log(level: LogLevel, message: string, ...args: any[]): void {
         console.warn(prefix, message, ...args);
         break;
       case 'INFO':
-        console.info(prefix, message, ...args);
         break;
       case 'DEBUG':
-        console.log(prefix, message, ...args);
         break;
     }
   }

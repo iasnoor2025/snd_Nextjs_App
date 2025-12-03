@@ -30,9 +30,6 @@ const getEmployeeDashboardHandler = async (_request: NextRequest) => {
       // This should not happen as withPermission handles auth, but keep for safety
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
-
-    console.log('✅ User has permission to access employee dashboard');
-
     // Debug: Check if there are any employees in the database and what user IDs they have
     const allEmployees = await db
       .select({
@@ -44,13 +41,7 @@ const getEmployeeDashboardHandler = async (_request: NextRequest) => {
       })
       .from(employees)
       .limit(10);
-
-    console.log('👥 All employees in database:', allEmployees);
-    console.log('🔍 Current session user ID:', userId, 'Type:', typeof userId);
-    console.log('🔍 Looking for employee with userId =', parseInt(userId));
-    console.log('🔍 Current user email:', session.user.email);
-
-    // Get employee data for the current user using Drizzle
+        // Get employee data for the current user using Drizzle
     const employeeRows = await db
       .select({
         id: employees.id,
@@ -102,24 +93,8 @@ const getEmployeeDashboardHandler = async (_request: NextRequest) => {
       .leftJoin(designations, eq(employees.designationId, designations.id))
       .where(eq(employees.userId, parseInt(userId)))
       .limit(1);
-
-    console.log('👤 Employee query result for current user:', {
-      queryUserId: userId,
-      employeeRowsFound: employeeRows.length,
-      firstEmployee: employeeRows[0] ? {
-        id: employeeRows[0].id,
-        firstName: employeeRows[0].firstName,
-        lastName: employeeRows[0].lastName,
-        userId: employeeRows[0].userId
-      } : null
-    });
-
     if (employeeRows.length === 0) {
-      console.log('❌ No employee record found for user ID:', userId);
-      
       // Fallback: Create a basic profile from user session data
-      console.log('🔄 Creating fallback profile from user session data');
-      
       return NextResponse.json({
         employee: {
           id: null,

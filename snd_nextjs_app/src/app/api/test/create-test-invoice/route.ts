@@ -79,9 +79,6 @@ export async function POST(request: Request) {
       base_rounded_total: 1000,
       rounded_total: 1000
     };
-
-    console.log('Creating test invoice with data:', testInvoiceData);
-
     const response = await fetch(url, {
       method: 'POST',
       headers,
@@ -114,7 +111,6 @@ export async function POST(request: Request) {
           createdInvoice = getData.data;
         }
       } catch (error) {
-        console.log('Could not fetch created invoice:', error);
       }
     }
 

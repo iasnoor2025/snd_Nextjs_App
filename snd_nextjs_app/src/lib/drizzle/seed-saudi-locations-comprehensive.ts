@@ -252,8 +252,6 @@ export async function seedSaudiLocationsComprehensive() {
   const db = drizzle(client);
 
   try {
-    console.log('Starting to seed comprehensive Saudi Arabia locations...');
-    
     for (const location of saudiLocationsComprehensive) {
       await db.insert(locations).values({
         name: location.name,
@@ -268,8 +266,6 @@ export async function seedSaudiLocationsComprehensive() {
         updatedAt: new Date().toISOString().split('T')[0]
       });
     }
-    
-    console.log(`Successfully seeded ${saudiLocationsComprehensive.length} comprehensive Saudi Arabia locations`);
   } catch (error) {
     console.error('Error seeding comprehensive locations:', error);
     throw error;
@@ -282,7 +278,6 @@ export async function seedSaudiLocationsComprehensive() {
 if (require.main === module) {
   seedSaudiLocationsComprehensive()
     .then(() => {
-      console.log('Comprehensive seeding completed successfully');
       process.exit(0);
     })
     .catch((error) => {

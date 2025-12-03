@@ -4,9 +4,6 @@ export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
     const id = url.searchParams.get('id');
-    
-    console.log('Fetching leave by ID:', id);
-    
     if (!id) {
       return NextResponse.json({ error: 'ID parameter is required' }, { status: 400 });
     }
@@ -123,9 +120,6 @@ export async function DELETE(request: NextRequest) {
   try {
     const url = new URL(request.url);
     const id = url.searchParams.get('id');
-    
-    console.log('Deleting leave with ID:', id);
-    
     if (!id) {
       return NextResponse.json({ error: 'ID parameter is required' }, { status: 400 });
     }
@@ -170,9 +164,6 @@ export async function PUT(request: NextRequest) {
   try {
     const url = new URL(request.url);
     const id = url.searchParams.get('id');
-    
-    console.log('Updating leave with ID:', id);
-    
     if (!id) {
       return NextResponse.json({ error: 'ID parameter is required' }, { status: 400 });
     }

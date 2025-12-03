@@ -16,9 +16,6 @@ export async function POST(_request: NextRequest) {
 
     const body = await _request.json();
     const { documentIds, type = 'all' } = body;
-
-    console.log('Combine PDF request:', { documentIds, type });
-
     if (!documentIds || !Array.isArray(documentIds) || documentIds.length === 0) {
       return NextResponse.json({ error: 'Document IDs are required' }, { status: 400 });
     }
@@ -35,7 +32,6 @@ export async function POST(_request: NextRequest) {
 
     // Fetch employee documents
     if (type === 'all' || type === 'employee') {
-      console.log('Fetching employee documents with IDs:', documentIds);
       const employeeDocs = await db
         .select({
           id: employeeDocuments.id,
@@ -54,9 +50,6 @@ export async function POST(_request: NextRequest) {
         .from(employeeDocuments)
         .leftJoin(employees, eq(employees.id, employeeDocuments.employeeId))
         .where(inArray(employeeDocuments.id, documentIds));
-
-      console.log('Found employee documents:', employeeDocs.length);
-
       documents.push(
         ...employeeDocs.map(doc => ({
           ...doc,
@@ -74,7 +67,6 @@ export async function POST(_request: NextRequest) {
 
     // Fetch equipment documents
     if (type === 'all' || type === 'equipment') {
-      console.log('Fetching equipment documents with IDs:', documentIds);
       const equipmentDocs = await db
         .select({
           id: equipmentDocuments.id,
@@ -92,9 +84,6 @@ export async function POST(_request: NextRequest) {
         .from(equipmentDocuments)
         .leftJoin(equipment, eq(equipment.id, equipmentDocuments.equipmentId))
         .where(inArray(equipmentDocuments.id, documentIds));
-
-      console.log('Found equipment documents:', equipmentDocs.length);
-
       documents.push(
         ...equipmentDocs.map(doc => ({
           ...doc,
@@ -111,11 +100,7 @@ export async function POST(_request: NextRequest) {
         }))
       );
     }
-
-    console.log('Total documents found:', documents.length);
-    console.log('Document details:', documents.map(d => ({ id: d.id, name: d.name, type: d.type, url: d.url })));
-
-    if (documents.length === 0) {
+        if (documents.length === 0) {
       return NextResponse.json({ 
         error: 'No documents found for the provided IDs',
         debug: {
@@ -132,9 +117,6 @@ export async function POST(_request: NextRequest) {
     // Generate descriptive filename with employee numbers and equipment names
     const timestamp = Date.now();
     const filename = generateDescriptiveFilename(documents, timestamp);
-
-    console.log('Generated combined PDF, size:', combinedPdfBuffer.length, 'filename:', filename);
-
     // Return the PDF data directly for download (no file saving)
     return new NextResponse(combinedPdfBuffer as any, {
       status: 200,

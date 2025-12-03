@@ -37,9 +37,7 @@ export default function EquipmentDocumentUpload({
   equipmentId,
   onDocumentsUpdated,
 }: EquipmentDocumentUploadProps) {
-  console.log('🔧 EquipmentDocumentUpload component rendering with equipmentId:', equipmentId);
-  console.log('🚨 COMPONENT IS RENDERING - CHECK THIS LOG');
-  
+
   const { t } = useTranslations();
   const { hasPermission } = useRBAC();
   
@@ -51,20 +49,9 @@ export default function EquipmentDocumentUpload({
   
   // Use manage permission as fallback for upload if create is not available
   const canUpload = canCreate || canManage;
-  
-  console.log('📋 Equipment Document Permissions:', {
-    canCreate,
-    canDelete,
-    canRead,
-    canManage,
-    canUpload,
-    equipmentId
-  });
-  
+
   // Additional debug info
-  console.log('🔍 canUpload value:', canUpload);
-  console.log('🔍 canCreate value:', canCreate);
-  console.log('🔍 canManage value:', canManage);
+
   const [_documents, setDocuments] = useState<DocumentItem[]>([]);
   const [_isLoading, setIsLoading] = useState(false);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
@@ -105,7 +92,7 @@ export default function EquipmentDocumentUpload({
 
   const loadDocuments = useCallback(async () => {
     try {
-      console.log('🔄 loadDocuments called for equipment:', equipmentId);
+
       setIsLoading(true);
       // Fetch documents from the equipment documents API
       const response = await fetch(`/api/equipment/${equipmentId}/documents?t=${Date.now()}`, {
@@ -117,7 +104,7 @@ export default function EquipmentDocumentUpload({
 
       if (response.ok) {
         const result = await response.json();
-        console.log('📄 Documents API response:', result);
+
         if (result.success && result.documents) {
                      // Convert API response to DocumentItem format
            const docs = result.documents.map((doc: Record<string, unknown>) => ({
@@ -129,8 +116,7 @@ export default function EquipmentDocumentUpload({
             url: doc.url || doc.filePath,
             created_at: doc.createdAt || doc.created_at
           })) as DocumentItem[];
-          
-          console.log('📋 Processed documents:', docs);
+
           setDocuments(docs);
           return docs;
         }
@@ -286,7 +272,7 @@ export default function EquipmentDocumentUpload({
       }
       
       if (!hasErrors) {
-        console.log('✅ All uploads successful, refreshing documents...');
+
         toast.success(t('equipment.documents.uploadSuccess'));
         setShowUploadDialog(false);
         setPendingFiles([]);
@@ -297,14 +283,14 @@ export default function EquipmentDocumentUpload({
         setTimeout(async () => {
           await loadDocuments();
           setRefreshTrigger(prev => prev + 1);
-          console.log('🔄 Documents refresh completed');
+
         }, 500);
         
         // Also refresh after a longer delay to ensure cache is cleared
         setTimeout(async () => {
           await loadDocuments();
           setRefreshTrigger(prev => prev + 1);
-          console.log('🔄 Second documents refresh completed');
+
         }, 2000);
       }
     } catch (error) {
@@ -314,7 +300,6 @@ export default function EquipmentDocumentUpload({
       setUploading(false);
     }
   };
-
 
   
   return (

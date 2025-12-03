@@ -20,7 +20,11 @@ nixPkgs = [
 ]
 
 [phases.install]
-cmds = ["npm ci"]
+cmds = [
+  "npm ci",
+  # Install Chrome for Puppeteer if not using system Chromium
+  "npx puppeteer browsers install chrome || true"
+]
 
 [phases.build]
 cmds = ["npm run build"]

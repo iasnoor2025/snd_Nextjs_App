@@ -509,7 +509,6 @@ export default function CreateRentalPage() {
                 <EmployeeDropdown
                   value={formData.supervisor}
                   onValueChange={(value) => {
-                    console.log('Supervisor selected:', value);
                     setFormData(prev => ({ ...prev, supervisor: value }));
                   }}
                   placeholder="Select supervisor"

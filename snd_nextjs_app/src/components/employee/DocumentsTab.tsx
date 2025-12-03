@@ -134,7 +134,6 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
   const fetchDocuments = async () => {
     setLoading(true);
     setError(null);
-    console.log('🔄 DocumentsTab - Starting fresh fetch with cache busting');
     try {
       
       const response = await fetch(`/api/employees/${employeeId}/documents`, {

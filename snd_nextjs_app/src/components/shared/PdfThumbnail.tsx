@@ -58,8 +58,6 @@ export default function PdfThumbnail({ url, alt = 'PDF Document', className = ''
         setLoading(true);
         setError(false);
 
-        console.log('🔄 Starting PDF thumbnail load for:', url);
-
         // Set a timeout (15 seconds) to prevent infinite loading
         timeoutId = setTimeout(() => {
           if (isMounted) {
@@ -75,7 +73,7 @@ export default function PdfThumbnail({ url, alt = 'PDF Document', className = ''
         // If URL is external (MinIO/S3), use proxy
         if (url.startsWith('http://') || url.startsWith('https://')) {
           try {
-            console.log('📡 Fetching PDF via proxy...');
+
             // Use our proxy API route
             const proxyUrl = `/api/pdf-proxy?url=${encodeURIComponent(url)}`;
             const response = await fetch(proxyUrl, {
@@ -92,7 +90,7 @@ export default function PdfThumbnail({ url, alt = 'PDF Document', className = ''
             }
             
             const arrayBuffer = await response.arrayBuffer();
-            console.log('✅ PDF fetched via proxy, size:', arrayBuffer.byteLength, 'bytes');
+
             pdfData = new Uint8Array(arrayBuffer);
           } catch (fetchError) {
             console.error('❌ Failed to fetch PDF via proxy, trying direct fetch:', fetchError);
@@ -112,7 +110,7 @@ export default function PdfThumbnail({ url, alt = 'PDF Document', className = ''
               const blob = await directResponse.blob();
               const arrayBuffer = await blob.arrayBuffer();
               pdfData = new Uint8Array(arrayBuffer);
-              console.log('✅ PDF fetched directly, size:', arrayBuffer.byteLength, 'bytes');
+
             } catch (directError) {
               console.error('❌ Both proxy and direct fetch failed:', directError);
               throw directError;
@@ -120,17 +118,14 @@ export default function PdfThumbnail({ url, alt = 'PDF Document', className = ''
           }
         }
 
-        console.log('📄 Loading PDF into PDF.js...');
         // Load the PDF - use data for ArrayBuffer/Uint8Array, url for string
         const loadingTask = pdfjsLib.getDocument(
           pdfData instanceof Uint8Array || pdfData instanceof ArrayBuffer
             ? { data: pdfData }
             : { url: pdfData as string }
         );
-        
-        console.log('⏳ Waiting for PDF to load...');
+
         const pdf = await loadingTask.promise;
-        console.log('✅ PDF loaded, pages:', pdf.numPages);
 
         if (!isMounted) return;
 
@@ -149,7 +144,7 @@ export default function PdfThumbnail({ url, alt = 'PDF Document', className = ''
         }
 
         // Get the first page
-        console.log('📑 Getting first page...');
+
         const page = await pdf.getPage(1);
 
         // Set up canvas
@@ -164,7 +159,6 @@ export default function PdfThumbnail({ url, alt = 'PDF Document', className = ''
           throw new Error('Canvas context not available');
         }
 
-        console.log('🎨 Rendering PDF page...');
         await page.render({
           canvasContext: context,
           viewport: viewport,
@@ -172,8 +166,7 @@ export default function PdfThumbnail({ url, alt = 'PDF Document', className = ''
 
         // Convert canvas to data URL
         const dataUrl = canvas.toDataURL('image/png');
-        console.log('✅ PDF thumbnail generated successfully');
-        
+
         // Clear timeout on success
         if (timeoutId) clearTimeout(timeoutId);
         

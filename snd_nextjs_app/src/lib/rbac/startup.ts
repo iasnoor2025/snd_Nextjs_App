@@ -6,15 +6,11 @@ import { initializeRBACSystem } from './rbac-initializer';
  */
 export async function initializeRBACOnStartup(): Promise<void> {
   try {
-    console.log('🔐 Starting RBAC system auto-initialization...');
-    
     // Wait a bit for database connection to be ready
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     // Initialize the RBAC system
     await initializeRBACSystem();
-    
-    console.log('✅ RBAC system auto-initialization completed');
   } catch (error) {
     console.error('❌ RBAC system auto-initialization failed:', error);
     // Don't throw - let the application continue
@@ -42,7 +38,6 @@ export async function checkRBACInitializationNeeded(): Promise<boolean> {
  */
 export async function manualRBACInitialization(): Promise<boolean> {
   try {
-    console.log('🔧 Manual RBAC initialization triggered...');
     await initializeRBACSystem();
     return true;
   } catch (error) {

@@ -171,10 +171,7 @@ export function FinalSettlementManager({
 
   const handleDownloadPDF = async (settlementId: number, language: 'en' | 'ar' | 'bilingual' = 'bilingual') => {
     try {
-      console.log(`Starting PDF download for settlement ${settlementId}, language: ${language}`);
       const response = await fetch(`/api/final-settlements/${settlementId}/pdf?language=${language}`);
-      
-      console.log(`Response status: ${response.status}, ok: ${response.ok}`);
       
       if (!response.ok) {
         // Try to get error message from response
@@ -199,7 +196,6 @@ export function FinalSettlementManager({
       }
       
       const blob = await response.blob();
-      console.log(`Blob received, type: ${blob.type}, size: ${blob.size}`);
       
       // Check if the blob is actually a PDF (not an error JSON)
       if (blob.type !== 'application/pdf') {
@@ -224,7 +220,6 @@ export function FinalSettlementManager({
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      console.log('PDF download initiated successfully');
     } catch (error) {
       console.error('Error downloading PDF:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to download PDF';

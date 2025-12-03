@@ -104,8 +104,6 @@ export async function PUT(
               updatedAt: new Date().toISOString().split('T')[0]
             })
             .where(eq(employees.id, parseInt(employeeId)));
-
-          console.log(`Auto-assigned supervisor ${projectWithSupervisor[0].supervisorId} to employee ${employeeId} for project ${projectId}`);
         }
       } catch (supervisorError) {
         console.error('Error auto-assigning supervisor to employee:', supervisorError);
@@ -194,9 +192,7 @@ export async function DELETE(
             )
           );
 
-        console.log(`Found ${assignments.length} employee assignment(s) to delete for employee ${manpower.employeeId} on project ${projectId}`);
-
-        // If no assignments found with exact match, try to find by notes pattern
+                // If no assignments found with exact match, try to find by notes pattern
         // The assignment notes format is: "Auto-created for project: {projectName} - {jobTitle}"
         if (assignments.length === 0) {
           // Get project name for notes matching
@@ -235,8 +231,7 @@ export async function DELETE(
             : allAssignments.filter(a => a.projectId === parseInt(projectId));
 
           if (matchingAssignments.length > 0) {
-            console.log(`Found ${matchingAssignments.length} assignment(s) by notes pattern matching`);
-            assignments = [...assignments, ...matchingAssignments];
+                        assignments = [...assignments, ...matchingAssignments];
           }
         }
 
@@ -244,7 +239,6 @@ export async function DELETE(
         for (const assignment of assignments) {
           try {
             await AssignmentService.deleteAssignment(assignment.id, assignment.employeeId);
-            console.log(`✅ Deleted employee assignment ${assignment.id} for employee ${assignment.employeeId} on project ${projectId}`);
           } catch (assignmentError) {
             console.error(`❌ Error deleting employee assignment ${assignment.id}:`, assignmentError);
             // Continue with manpower deletion even if assignment deletion fails
@@ -252,7 +246,6 @@ export async function DELETE(
         }
 
         if (assignments.length === 0) {
-          console.log(`⚠️ No employee assignment found for employee ${manpower.employeeId} on project ${projectId} - may have been deleted already or never created`);
         }
       } catch (error) {
         console.error('❌ Error finding/deleting employee assignments:', error);

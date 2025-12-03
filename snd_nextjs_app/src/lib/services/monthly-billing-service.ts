@@ -92,7 +92,6 @@ export class MonthlyBillingService {
       const items = await RentalService.getRentalItems(rental.id);
 
       if (!items || items.length === 0) {
-        console.log(`No rental items found for rental ${rental.id}`);
         return null;
       }
 
@@ -110,7 +109,6 @@ export class MonthlyBillingService {
 
       // Skip if billing period is invalid
       if (billingStartDate >= billingEndDate) {
-        console.log(`Invalid billing period for rental ${rental.id}`);
         return null;
       }
 

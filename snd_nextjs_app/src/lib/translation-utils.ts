@@ -449,7 +449,6 @@ export const batchTranslateNames = async (
   // Check if we're currently rate limited
   if (isRateLimited) {
     if (Date.now() < rateLimitResetTime) {
-      console.log('Translation rate limited, skipping batch translation');
       return;
     } else {
       // Reset rate limit status

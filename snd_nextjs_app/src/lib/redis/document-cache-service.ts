@@ -21,8 +21,6 @@ export class DocumentCacheService {
       prefix: 'documents',
       tags: options.tags || tags
     });
-    
-    console.log(`Cached employee ${employeeId} documents for ${options.ttl || this.defaultTTL} seconds`);
   }
 
   /**
@@ -37,8 +35,6 @@ export class DocumentCacheService {
       prefix: 'documents',
       tags: options.tags || tags
     });
-    
-    console.log(`Cached equipment ${equipmentId} documents for ${options.ttl || this.defaultTTL} seconds`);
   }
 
   /**
@@ -53,8 +49,6 @@ export class DocumentCacheService {
       prefix: 'documents',
       tags: options.tags || tags
     });
-    
-    console.log(`Cached documents list for ${type}, limit: ${limit} for ${options.ttl || this.defaultTTL} seconds`);
   }
 
   /**
@@ -90,8 +84,6 @@ export class DocumentCacheService {
     
     // Also invalidate general document caches
     await cacheService.clearByTags(['documents', 'employee']);
-    
-    console.log(`Invalidated cache for employee ${employeeId} documents`);
   }
 
   /**
@@ -103,8 +95,6 @@ export class DocumentCacheService {
     
     // Also invalidate general document caches
     await cacheService.clearByTags(['documents', 'equipment']);
-    
-    console.log(`Invalidated cache for equipment ${equipmentId} documents`);
   }
 
   /**
@@ -112,7 +102,6 @@ export class DocumentCacheService {
    */
   async invalidateAllDocumentCaches() {
     await cacheService.clearByTags(['documents']);
-    console.log('Invalidated all document caches');
   }
 
   /**
@@ -120,7 +109,6 @@ export class DocumentCacheService {
    */
   async invalidateCachesByType(type: 'employee' | 'equipment') {
     await cacheService.clearByTags(['documents', type]);
-    console.log(`Invalidated all ${type} document caches`);
   }
 
   /**

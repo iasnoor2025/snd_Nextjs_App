@@ -110,9 +110,6 @@ export default function CreateCustomerPage() {
         defaultCurrency: 'SAR',
         language: 'en',
       };
-
-      console.log('Creating customer with data:', requestBody);
-
       const response = await fetch('/api/customers', {
         method: 'POST',
         headers: {
@@ -128,8 +125,6 @@ export default function CreateCustomerPage() {
       }
 
       const result = await response.json();
-      console.log('Customer created successfully:', result);
-
       // Extract the created customer ID from the response
       const createdCustomerId = result.customer?.id;
       

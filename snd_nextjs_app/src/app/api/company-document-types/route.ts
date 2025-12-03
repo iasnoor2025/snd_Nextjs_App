@@ -6,16 +6,11 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const GET = withPermission(PermissionConfigs.company.read)(async (request: NextRequest) => {
   try {
-    console.log('Fetching company document types...');
-    
     const documentTypes = await db
       .select()
       .from(companyDocumentTypes)
       .where(eq(companyDocumentTypes.isActive, true))
       .orderBy(asc(companyDocumentTypes.sortOrder), asc(companyDocumentTypes.label));
-
-    console.log('Found document types:', documentTypes.length);
-
     // Convert dates to ISO strings for JSON serialization
     const formattedTypes = documentTypes.map(type => ({
       ...type,

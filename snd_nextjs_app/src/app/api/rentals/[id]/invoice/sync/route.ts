@@ -37,8 +37,6 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
 
     // Check if invoice was deleted in ERPNext
     if (!invoiceDetails || invoiceDetails.error) {
-      console.log(`Invoice ${rentalData.invoiceId} not found in ERPNext, resetting rental record`);
-      
       // Reset rental invoice information
       const resetData = {
         invoiceId: null,

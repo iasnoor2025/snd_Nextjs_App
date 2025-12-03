@@ -229,9 +229,6 @@ export const DELETE = withPermission(PermissionConfigs.maintenance.delete)(
       const { id } = await params;
       const maintenanceId = parseInt(id);
       if (!maintenanceId) return NextResponse.json({ success: false, message: 'Invalid ID' }, { status: 400 });
-      
-      console.log(`Attempting to delete maintenance record with ID: ${maintenanceId}`);
-      
       await db.transaction(async tx => {
         // First get the equipment ID before deleting
         const maintenanceRecord = await tx
@@ -263,13 +260,9 @@ export const DELETE = withPermission(PermissionConfigs.maintenance.delete)(
                 updatedAt: new Date().toISOString()
               })
               .where(eq(equipment.id, equipmentId));
-            
-            console.log(`Updated equipment ${equipmentId} status to 'available' after maintenance deletion`);
           }
         }
       });
-      
-      console.log(`Successfully deleted maintenance record with ID: ${maintenanceId}`);
       // Invalidate equipment cache to reflect status changes
       await cacheService.invalidateCacheByTag(CACHE_TAGS.EQUIPMENT);
 

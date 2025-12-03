@@ -270,11 +270,7 @@ export default function DocumentManagementPage() {
     const selectedIds = Array.from(selectedDocuments);
     
     // Debug: Log the selected document IDs
-    console.log('Selected document IDs for combination:', selectedIds);
-    
     // Allow combining any documents (PDFs, images, etc.)
-    console.log(`Found ${selectedIds.length} documents selected for combination`);
-
     if (selectedIds.length === 0) {
       toast.error('Please select documents to combine');
       return;

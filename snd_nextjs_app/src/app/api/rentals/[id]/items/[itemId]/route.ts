@@ -33,15 +33,12 @@ export async function PUT(
     // Handle different operator change scenarios
     const actionType = body.actionType;
     let rentalItem;
-    
-    console.log('Update rental item - Action type:', actionType);
-    console.log('Update rental item - Start date from body:', body.startDate);
-    
+
     if (actionType === 'handover' && newOperatorId !== previousOperatorId) {
       // Scenario 1: Operator Changes with handover - Don't update the old item, complete it and create new one
       if (newOperatorId !== undefined && newOperatorId !== null) {
         const handoverStartDate = body.startDate && body.startDate !== '' ? body.startDate : null;
-        console.log('Handover - Using start date:', handoverStartDate);
+
         rentalItem = await handleOperatorHandover(parseInt(itemId), parseInt(rentalId), previousOperatorId, newOperatorId, body.equipmentName, currentItem, handoverStartDate);
       }
     } else {
@@ -117,16 +114,14 @@ async function handleOperatorHandover(itemId: number, rentalId: number, previous
 
     // Use provided start date or default to today
     const handoverStartDate = newStartDate || new Date().toISOString().split('T')[0];
-    console.log('handleOperatorHandover - Final start date to use:', handoverStartDate);
+
     const handoverStartDateObj = new Date(handoverStartDate);
     
     // Calculate completed date (one day before handover start date)
     const previousDay = new Date(handoverStartDateObj);
     previousDay.setDate(previousDay.getDate() - 1);
     const completedDate = previousDay.toISOString().split('T')[0];
-    console.log('handleOperatorHandover - Completed date (previous day):', completedDate);
-
-    // End previous operator assignment if exists
+        // End previous operator assignment if exists
     if (previousOperatorId) {
       await db
         .update(employeeAssignments)

@@ -66,6 +66,5 @@ export function ensureHttpsBatch(urls: string[]): string[] {
  */
 export function logUrlConversion(originalUrl: string, secureUrl: string): void {
   if (process.env.NODE_ENV === 'development') {
-    console.log('URL Conversion:', { original: originalUrl, secure: secureUrl });
   }
 }

@@ -38,7 +38,6 @@ export class CentralAssignmentService {
     const { type, entityId, startDate } = data;
     
     if (process.env.NODE_ENV === 'development') {
-      console.log(`CentralAssignmentService: Creating ${type} assignment for entity ${entityId}`);
     }
     
     // Complete previous active assignments for the same entity
@@ -62,7 +61,6 @@ export class CentralAssignmentService {
     startDate: string
   ) {
     if (process.env.NODE_ENV === 'development') {
-      console.log(`CentralAssignmentService: Completing previous assignments for ${type} ${entityId}`);
     }
     
     const completedDateStr = getPreviousDay(startDate);
@@ -73,7 +71,6 @@ export class CentralAssignmentService {
     if (type === 'equipment') {
       // Complete equipment assignments across all tables in parallel
       if (process.env.NODE_ENV === 'development') {
-        console.log(`Completing equipment ${entityId} previous assignments`);
       }
       
       await Promise.all([
@@ -122,7 +119,6 @@ export class CentralAssignmentService {
     } else {
       // Complete employee assignments
       if (process.env.NODE_ENV === 'development') {
-        console.log(`Completing employee ${entityId} previous assignments`);
       }
       
       await db.update(employeeAssignments)
@@ -147,7 +143,6 @@ export class CentralAssignmentService {
     const { entityId, assignmentType, startDate, endDate, status = 'active', notes } = data;
     
     if (process.env.NODE_ENV === 'development') {
-      console.log(`Creating equipment assignment for equipment ${entityId}, type: ${assignmentType}`);
     }
 
     const now = getCurrentTimestamp();
@@ -172,7 +167,6 @@ export class CentralAssignmentService {
       }).returning();
       
       if (process.env.NODE_ENV === 'development') {
-        console.log(`Created equipment rental history assignment ${result.id}`);
       }
       return result;
     } else if (assignmentType === 'project') {
@@ -191,7 +185,6 @@ export class CentralAssignmentService {
       }).returning();
       
       if (process.env.NODE_ENV === 'development') {
-        console.log(`Created project equipment assignment ${result.id}`);
       }
       return result;
     } else {
@@ -211,7 +204,6 @@ export class CentralAssignmentService {
       }).returning();
       
       if (process.env.NODE_ENV === 'development') {
-        console.log(`Created manual equipment assignment ${result.id}`);
       }
       return result;
     }
@@ -224,7 +216,6 @@ export class CentralAssignmentService {
     const { entityId, assignmentType, startDate, endDate, status = 'active', notes, name, location } = data;
     
     if (process.env.NODE_ENV === 'development') {
-      console.log(`Creating employee assignment for employee ${entityId}, type: ${assignmentType}`);
     }
 
     // Determine name based on assignment type and context
@@ -263,7 +254,6 @@ export class CentralAssignmentService {
     }).returning();
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`Created employee assignment ${result.id}`);
     }
     return result;
   }
@@ -390,7 +380,6 @@ export class CentralAssignmentService {
     vacationStartDate: string
   ): Promise<void> {
     if (process.env.NODE_ENV === 'development') {
-      console.log(`CentralAssignmentService: Completing assignments for employee ${employeeId} vacation starting ${vacationStartDate}`);
     }
     
     // Set end date to one day before vacation starts
@@ -412,7 +401,6 @@ export class CentralAssignmentService {
       );
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`CentralAssignmentService: Completed assignments for employee ${employeeId} ending ${assignmentEndStr}`);
     }
   }
 
@@ -425,7 +413,6 @@ export class CentralAssignmentService {
     lastWorkingDate: string
   ): Promise<void> {
     if (process.env.NODE_ENV === 'development') {
-      console.log(`CentralAssignmentService: Completing assignments for employee ${employeeId} exit on ${lastWorkingDate}`);
     }
     
     const updatedAt = getCurrentDateString();
@@ -445,7 +432,6 @@ export class CentralAssignmentService {
       );
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`CentralAssignmentService: Completed assignments for employee ${employeeId}`);
     }
   }
 
@@ -457,7 +443,6 @@ export class CentralAssignmentService {
     vacationStartDate: string
   ): Promise<void> {
     if (process.env.NODE_ENV === 'development') {
-      console.log(`CentralAssignmentService: Restoring assignments for employee ${employeeId} after vacation deletion`);
     }
     
     const assignmentEndDateStr = getPreviousDay(vacationStartDate);
@@ -479,7 +464,6 @@ export class CentralAssignmentService {
       );
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`CentralAssignmentService: Restored assignments for employee ${employeeId}`);
     }
   }
 
@@ -491,7 +475,6 @@ export class CentralAssignmentService {
     lastWorkingDate: string
   ): Promise<void> {
     if (process.env.NODE_ENV === 'development') {
-      console.log(`CentralAssignmentService: Restoring assignments for employee ${employeeId} after exit deletion`);
     }
     
     const updatedAt = getCurrentDateString();
@@ -512,7 +495,6 @@ export class CentralAssignmentService {
       );
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`CentralAssignmentService: Restored assignments for employee ${employeeId}`);
     }
   }
 }

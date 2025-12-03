@@ -5,8 +5,6 @@ import { NextResponse } from 'next/server';
 
 export async function POST() {
   try {
-    console.log('🔍 Finding duplicate employees...');
-    
     // Find duplicates by file_number
     const duplicateFileNumbers = await db
       .select({
@@ -19,9 +17,6 @@ export async function POST() {
       .where(sql`file_number IS NOT NULL`)
       .groupBy(employeesTable.fileNumber)
       .having(sql`count(*) > 1`);
-
-    console.log(`Found ${duplicateFileNumbers.length} duplicate file numbers`);
-    
     // Find duplicates by erpnext_id
     const duplicateErpnextIds = await db
       .select({
@@ -34,9 +29,6 @@ export async function POST() {
       .where(sql`erpnext_id IS NOT NULL`)
       .groupBy(employeesTable.erpnextId)
       .having(sql`count(*) > 1`);
-
-    console.log(`Found ${duplicateErpnextIds.length} duplicate ERPNext IDs`);
-    
     // Find duplicates by name combination
     const duplicateNames = await db
       .select({
@@ -56,9 +48,6 @@ export async function POST() {
       .where(sql`first_name IS NOT NULL AND last_name IS NOT NULL`)
       .groupBy(employeesTable.firstName, employeesTable.lastName)
       .having(sql`count(*) > 1`);
-
-    console.log(`Found ${duplicateNames.length} duplicate names`);
-
     let removedCount = 0;
     
     // Remove duplicates by file_number (keep most recent)
@@ -67,9 +56,7 @@ export async function POST() {
       const keepId = ids[0]; // Keep the most recent
       const removeIds = ids.slice(1);
       
-      console.log(`📁 File Number: ${dup.fileNumber} - Keeping ID: ${keepId}, Removing: ${removeIds.join(', ')}`);
-      
-      for (const removeId of removeIds) {
+            for (const removeId of removeIds) {
         try {
           // First, clear references from related tables
           await db.execute(sql`UPDATE advance_payment_histories SET employee_id = NULL WHERE employee_id = ${parseInt(removeId)}`);
@@ -112,9 +99,7 @@ export async function POST() {
       const keepId = ids[0]; // Keep the most recent
       const removeIds = ids.slice(1);
       
-      console.log(`🔄 ERPNext ID: ${dup.erpnextId} - Keeping ID: ${keepId}, Removing: ${removeIds.join(', ')}`);
-      
-      for (const removeId of removeIds) {
+            for (const removeId of removeIds) {
         try {
           // First, clear references from related tables
           await db.execute(sql`UPDATE advance_payment_histories SET employee_id = NULL WHERE employee_id = ${parseInt(removeId)}`);
@@ -157,9 +142,7 @@ export async function POST() {
       const keepId = ids[0]; // Keep the one with file_number or most recent
       const removeIds = ids.slice(1);
       
-      console.log(`👤 Name: ${dup.firstName} ${dup.lastName} - Keeping ID: ${keepId}, Removing: ${removeIds.join(', ')}`);
-      
-      for (const removeId of removeIds) {
+            for (const removeId of removeIds) {
         try {
           // First, clear references from related tables
           await db.execute(sql`UPDATE advance_payment_histories SET employee_id = NULL WHERE employee_id = ${parseInt(removeId)}`);
@@ -197,8 +180,6 @@ export async function POST() {
     }
 
     // Clear all remaining employees for fresh sync
-    console.log('\n🧹 Clearing all remaining employees for fresh sync...');
-    
     try {
       // First, clear all employee references from related tables
       await db.execute(sql`UPDATE advance_payment_histories SET employee_id = NULL WHERE employee_id IS NOT NULL`);
@@ -227,11 +208,6 @@ export async function POST() {
       await db.delete(employeesTable);
       
       const totalCleared = removedCount;
-
-      console.log(`✅ Total employees processed: ${totalCleared}`);
-      console.log(`   - Duplicates removed: ${removedCount}`);
-      console.log(`   - All employees cleared for fresh sync`);
-
       return NextResponse.json({
         success: true,
         message: `Employee duplicates fixed and data cleared for fresh sync`,

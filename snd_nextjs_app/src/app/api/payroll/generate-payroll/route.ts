@@ -207,11 +207,9 @@ export async function POST() {
             if (overtimeMultiplier === 0 && employee.overtimeFixedRate && Number(employee.overtimeFixedRate) > 0) {
               // Use fixed overtime rate
               overtimeAmount = totalOvertimeHours * Number(employee.overtimeFixedRate);
-              console.log(`Using fixed overtime rate: ${employee.overtimeFixedRate} SAR/hr`);
             } else {
               // Use overtime multiplier with calculated hourly rate
               overtimeAmount = totalOvertimeHours * (hourlyRate * overtimeMultiplier);
-              console.log(`Using overtime multiplier: ${overtimeMultiplier}x basic rate`);
             }
 
           }
@@ -221,9 +219,7 @@ export async function POST() {
           const totalDaysInMonth = daysInMonth; // Use actual days in the month
           const absentDeduction = absentDays > 0 ? (basicSalary / totalDaysInMonth) * absentDays : 0;
 
-          console.log(`Absent deduction calculation: (${basicSalary} / ${daysInMonth}) * ${absentDays} = ${absentDeduction}`);
-
-          // Calculate short hours deduction
+                    // Calculate short hours deduction
           // Get employee's contract hours per day
           const contractHoursPerDay = Number(employee.contractHoursPerDay) || 8;
           
@@ -239,7 +235,6 @@ export async function POST() {
             const expectedHours = daysWorked * contractHoursPerDay;
             const shortHours = expectedHours - totalHours;
             shortHoursDeduction = shortHours * hourlyRate;
-            console.log(`Short hours deduction: ${shortHours} hours × ${hourlyRate} = ${shortHoursDeduction}`);
           }
 
           const bonusAmount = 0; // Manual setting only

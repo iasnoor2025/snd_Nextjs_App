@@ -4,14 +4,9 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    console.log('Test: Fetching company document types...');
-    
     const documentTypes = await db
       .select()
       .from(companyDocumentTypes);
-    
-    console.log('Test: Found document types:', documentTypes.length);
-    
     return NextResponse.json({
       success: true,
       data: documentTypes,

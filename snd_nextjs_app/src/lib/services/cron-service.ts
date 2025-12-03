@@ -16,29 +16,23 @@ class CronService {
   public async initialize() {
     // Only initialize on the server side
     if (typeof window !== 'undefined') {
-      console.log('Cron service cannot run on client side');
       return;
     }
 
     if (this.isInitialized) {
-      console.log('Cron service already initialized');
       return;
     }
 
     try {
-      console.log('Initializing cron service...');
-      
       // Schedule timesheet auto-generation at 4 AM every day
       cron.schedule(
         '0 4 * * *',
         async () => {
-          console.log('Running scheduled timesheet auto-generation...');
           try {
             // Dynamic import to avoid client-side bundling
             const { autoGenerateTimesheets } = await import('@/lib/timesheet-auto-generator');
             const result = await autoGenerateTimesheets();
             if (result.success) {
-              console.log('Scheduled timesheet auto-generation completed successfully');
               if (result.errors.length > 0) {
                 console.warn('Scheduled timesheet auto-generation completed with warnings:', result.errors);
               }
@@ -61,7 +55,6 @@ class CronService {
       cron.schedule(
         '0 5 * * *',
         async () => {
-          console.log('Running scheduled employee status update...');
           try {
             // Call the employee status update API
             const response = await fetch(
@@ -77,7 +70,6 @@ class CronService {
 
             if (response.ok) {
               const result = await response.json();
-              console.log('Scheduled employee status update completed successfully');
             } else {
               console.error('Scheduled employee status update failed with status:', response.status);
             }
@@ -94,7 +86,6 @@ class CronService {
       cron.schedule(
         '0 * * * *',
         async () => {
-          console.log('Running hourly equipment status monitoring...');
           try {
             // Call the equipment status monitoring API
             const response = await fetch(
@@ -110,9 +101,7 @@ class CronService {
 
             if (response.ok) {
               const result = await response.json();
-              console.log('Hourly equipment status monitoring completed successfully');
               if (result.results && result.results.fixed > 0) {
-                console.log(`Fixed ${result.results.fixed} equipment status issues`);
               }
             } else {
               console.error('Hourly equipment status monitoring failed with status:', response.status);
@@ -130,7 +119,6 @@ class CronService {
       cron.schedule(
         '0 6 * * *',
         async () => {
-          console.log('Running daily comprehensive equipment status monitoring...');
           try {
             // Call the equipment status monitoring API
             const response = await fetch(
@@ -146,9 +134,7 @@ class CronService {
 
             if (response.ok) {
               const result = await response.json();
-              console.log('Daily comprehensive equipment status monitoring completed successfully');
               if (result.results && result.results.fixed > 0) {
-                console.log(`Fixed ${result.results.fixed} equipment status issues`);
               }
             } else {
               console.error('Daily comprehensive equipment status monitoring failed with status:', response.status);
@@ -166,7 +152,6 @@ class CronService {
       cron.schedule(
         '*/15 * * * *',
         async () => {
-          console.log('Running automatic customer sync from ERPNext...');
           try {
             const response = await fetch(
               `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/customers/sync/enhanced`,
@@ -180,10 +165,8 @@ class CronService {
 
             if (response.ok) {
               const result = await response.json();
-              console.log('Automatic customer sync from ERPNext completed successfully');
               if (result.data) {
-                console.log(`Synced ${result.data.processed} customers (${result.data.created} created, ${result.data.updated} updated)`);
-              }
+                              }
             } else {
               const errorData = await response.json().catch(() => null);
               console.warn('Automatic customer sync failed:', errorData?.message || 'Unknown error');
@@ -198,7 +181,6 @@ class CronService {
       );
 
       this.isInitialized = true;
-      console.log('Cron service initialized successfully with scheduled jobs');
     } catch (error) {
       console.error('Failed to initialize cron service:', error);
     }
@@ -207,12 +189,10 @@ class CronService {
   // Method to manually trigger timesheet auto-generation
   public async triggerTimesheetGeneration() {
     try {
-      console.log('Manually triggering timesheet auto-generation...');
       const { autoGenerateTimesheets } = await import('@/lib/timesheet-auto-generator');
       const result = await autoGenerateTimesheets();
       
       if (result.success) {
-        console.log('Manual timesheet auto-generation completed successfully');
         if (result.errors.length > 0) {
           console.warn('Manual timesheet auto-generation completed with warnings:', result.errors);
         }
@@ -233,10 +213,8 @@ class CronService {
 
 
   public stop() {
-    console.log('Stopping cron service...');
     cron.getTasks().forEach(task => task.stop());
     this.isInitialized = false;
-    console.log('Cron service stopped');
   }
 
   public getStatus() {

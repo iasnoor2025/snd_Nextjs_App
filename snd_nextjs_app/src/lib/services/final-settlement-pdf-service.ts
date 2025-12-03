@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer';
 import fs from 'fs/promises';
 import path from 'path';
+import { execSync } from 'child_process';
 
 export interface SettlementPDFData {
   settlementNumber: string;
@@ -49,6 +50,44 @@ export interface SettlementPDFData {
 }
 
 export class FinalSettlementPDFService {
+  /**
+   * Get Chromium executable path for Puppeteer
+   * In production (Coolify/Nixpacks), Chromium is installed via nixpacks.toml
+   */
+  private static getChromiumPath(): string | undefined {
+    // Check environment variable first
+    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+      return process.env.PUPPETEER_EXECUTABLE_PATH;
+    }
+
+    // In production, try to find Chromium in PATH
+    if (process.env.NODE_ENV === 'production') {
+      try {
+        // Try chromium first
+        const chromium = execSync('which chromium', { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+        if (chromium) return chromium;
+      } catch {
+        // Try chromium-browser
+        try {
+          const chromiumBrowser = execSync('which chromium-browser', { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+          if (chromiumBrowser) return chromiumBrowser;
+        } catch {
+          // Try google-chrome as fallback
+          try {
+            const chrome = execSync('which google-chrome', { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+            if (chrome) return chrome;
+          } catch {
+            // Not found, will use Puppeteer's bundled Chrome
+            console.warn('Chromium not found in PATH, Puppeteer will attempt to use bundled Chrome');
+          }
+        }
+      }
+    }
+
+    // In development or if not found, let Puppeteer use its bundled Chrome
+    return undefined;
+  }
+
   /**
    * Format currency value with proper Saudi Riyal formatting
    */
@@ -99,7 +138,10 @@ export class FinalSettlementPDFService {
     
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        browser = await puppeteer.launch({
+        // Get Chromium path (for production environments like Coolify/Nixpacks)
+        const chromiumPath = this.getChromiumPath();
+
+        const launchOptions: any = {
           headless: true,
           args: [
             '--no-sandbox',
@@ -115,7 +157,17 @@ export class FinalSettlementPDFService {
             '--disable-renderer-backgrounding',
           ],
           timeout: 60000,
-        });
+        };
+
+        // Set executablePath if Chromium was found
+        if (chromiumPath) {
+          launchOptions.executablePath = chromiumPath;
+          console.log(`[PDF] Using Chromium at: ${chromiumPath}`);
+        } else {
+          console.log('[PDF] Using Puppeteer bundled Chrome');
+        }
+
+        browser = await puppeteer.launch(launchOptions);
 
         page = await browser.newPage();
         
@@ -196,7 +248,6 @@ export class FinalSettlementPDFService {
           console.error('PDF buffer is empty after conversion, original pdfBuffer type:', typeof pdfBuffer, 'length:', pdfBuffer?.length);
           throw new Error('PDF buffer is empty after generation');
         }
-        console.log(`PDF buffer generated successfully, size: ${buffer.length} bytes`);
         return buffer;
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
@@ -258,7 +309,10 @@ export class FinalSettlementPDFService {
     
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        browser = await puppeteer.launch({
+        // Get Chromium path (for production environments like Coolify/Nixpacks)
+        const chromiumPath = this.getChromiumPath();
+
+        const launchOptions: any = {
           headless: true,
           args: [
             '--no-sandbox',
@@ -274,7 +328,17 @@ export class FinalSettlementPDFService {
             '--disable-renderer-backgrounding',
           ],
           timeout: 60000,
-        });
+        };
+
+        // Set executablePath if Chromium was found
+        if (chromiumPath) {
+          launchOptions.executablePath = chromiumPath;
+          console.log(`[PDF] Using Chromium at: ${chromiumPath}`);
+        } else {
+          console.log('[PDF] Using Puppeteer bundled Chrome');
+        }
+
+        browser = await puppeteer.launch(launchOptions);
 
         page = await browser.newPage();
         
@@ -352,7 +416,6 @@ export class FinalSettlementPDFService {
           console.error('PDF buffer is empty after conversion, original pdfBuffer type:', typeof pdfBuffer, 'length:', pdfBuffer?.length);
           throw new Error('PDF buffer is empty after generation');
         }
-        console.log(`PDF buffer generated successfully, size: ${buffer.length} bytes`);
         return buffer;
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));

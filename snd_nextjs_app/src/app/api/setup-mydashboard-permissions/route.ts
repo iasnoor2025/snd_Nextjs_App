@@ -5,8 +5,6 @@ import { eq, inArray } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔧 API: Setting up read.mydashboard permissions...');
-    
     // 1. Create the read.mydashboard permission if it doesn't exist
     let dashboardPermission = await db
       .select()
@@ -17,7 +15,6 @@ export async function POST(request: NextRequest) {
     let permissionId: number;
     
     if (dashboardPermission.length === 0) {
-      console.log('📝 Creating read.mydashboard permission...');
       const newPermission = await db
         .insert(permissions)
         .values({
@@ -29,24 +26,18 @@ export async function POST(request: NextRequest) {
         .returning();
       
       permissionId = newPermission[0].id;
-      console.log('✅ Created read.mydashboard permission with ID:', permissionId);
     } else {
       permissionId = dashboardPermission[0].id;
-      console.log('✅ read.mydashboard permission already exists with ID:', permissionId);
     }
 
     // 2. Get the roles we want to assign this permission to
     const targetRoles = ['SUPER_ADMIN', 'EMPLOYEE'];
-    console.log('🎯 Assigning permission to roles:', targetRoles);
-    
     const roleRecords = await db
       .select()
       .from(roles)
       .where(inArray(roles.name, targetRoles));
 
-    console.log('📋 Found roles:', roleRecords.map(r => ({ id: r.id, name: r.name })));
-
-    // 3. Assign the permission to each role
+        // 3. Assign the permission to each role
     for (const role of roleRecords) {
       // Check if permission is already assigned
       const existingAssignment = await db
@@ -57,16 +48,13 @@ export async function POST(request: NextRequest) {
         .limit(1);
 
       if (existingAssignment.length === 0) {
-        console.log(`🔗 Assigning read.mydashboard to role: ${role.name}`);
         await db
           .insert(roleHasPermissions)
           .values({
             roleId: role.id,
             permissionId: permissionId,
           });
-        console.log(`✅ Assigned read.mydashboard to ${role.name}`);
       } else {
-        console.log(`ℹ️ read.mydashboard already assigned to ${role.name}`);
       }
     }
 
@@ -80,9 +68,6 @@ export async function POST(request: NextRequest) {
       .leftJoin(roles, eq(roleHasPermissions.roleId, roles.id))
       .leftJoin(permissions, eq(roleHasPermissions.permissionId, permissions.id))
       .where(eq(permissions.name, 'read.mydashboard'));
-
-    console.log('🔍 Final verification:', finalCheck);
-
     return NextResponse.json({
       success: true,
       message: 'read.mydashboard permissions set up successfully!',

@@ -12,9 +12,6 @@ async function handleFixStatus(request: NextRequest) {
     if (!session?.user) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
-
-    console.log('Starting equipment status fix...');
-
     // Step 1: Backfill completedDate for rental items that are completed but missing completedDate
     const completedItemsWithoutDate = await db
       .select({
@@ -29,9 +26,6 @@ async function handleFixStatus(request: NextRequest) {
           isNull(rentalItems.completedDate)
         )
       );
-
-    console.log(`Found ${completedItemsWithoutDate.length} completed rental items without completedDate`);
-
     let backfilledCount = 0;
     for (const item of completedItemsWithoutDate) {
       // Try to get completion date from rental's actualEndDate
@@ -70,9 +64,6 @@ async function handleFixStatus(request: NextRequest) {
 
       backfilledCount++;
     }
-
-    console.log(`Backfilled ${backfilledCount} rental items with completedDate`);
-
     // Step 2: Update equipment statuses for all equipment
     const allEquipment = await db
       .select({ id: equipment.id })
@@ -85,9 +76,6 @@ async function handleFixStatus(request: NextRequest) {
         updatedCount++;
       }
     }
-
-    console.log(`Updated ${updatedCount} equipment statuses`);
-
     return NextResponse.json({
       success: true,
       message: 'Equipment status fix completed',

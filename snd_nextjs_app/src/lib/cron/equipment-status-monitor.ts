@@ -26,8 +26,6 @@ export class EquipmentStatusMonitor {
     let totalChecked = 0;
 
     try {
-      console.log('🔍 Starting equipment status monitoring...');
-
       // 1. Check equipment with 'under_maintenance' status that have no maintenance records
       const underMaintenanceWithoutRecords = await db
         .select({
@@ -66,8 +64,7 @@ export class EquipmentStatusMonitor {
           .where(eq(equipment.id, equip.id));
 
         fixedCount++;
-        console.log(`✅ Fixed ${equip.name} (${equip.erpnextId}) status to 'available'`);
-      }
+              }
 
       // 2. Check equipment with 'assigned' status that have no active assignments
       const assignedWithoutActiveAssignments = await db
@@ -107,8 +104,7 @@ export class EquipmentStatusMonitor {
           .where(eq(equipment.id, equip.id));
 
         fixedCount++;
-        console.log(`✅ Fixed ${equip.name} (${equip.erpnextId}) status to 'available'`);
-      }
+              }
 
       // 3. Check equipment with 'available' status that should be 'under_maintenance'
       const availableWithActiveMaintenance = await db
@@ -149,8 +145,7 @@ export class EquipmentStatusMonitor {
           .where(eq(equipment.id, equip.id));
 
         fixedCount++;
-        console.log(`✅ Fixed ${equip.name} (${equip.erpnextId}) status to 'under_maintenance'`);
-      }
+              }
 
       // 4. Check equipment with 'available' status that should be 'assigned'
       const availableWithActiveAssignments = await db
@@ -190,11 +185,9 @@ export class EquipmentStatusMonitor {
           .where(eq(equipment.id, equip.id));
 
         fixedCount++;
-        console.log(`✅ Fixed ${equip.name} (${equip.erpnextId}) status to 'assigned'`);
-      }
+              }
 
       // 5. Backfill completedDate for rental items that are completed but missing completedDate
-      console.log('🔄 Backfilling completedDate for rental items...');
       const completedItemsWithoutDate = await db
         .select({
           id: rentalItems.id,
@@ -248,7 +241,6 @@ export class EquipmentStatusMonitor {
       }
 
       if (backfilledCount > 0) {
-        console.log(`✅ Backfilled ${backfilledCount} rental items with completedDate`);
         // After backfilling, re-check equipment statuses that might have been affected
         const affectedEquipmentIds = new Set(
           completedItemsWithoutDate.map(item => item.equipmentId).filter(id => id !== null)
@@ -264,9 +256,6 @@ export class EquipmentStatusMonitor {
           }
         }
       }
-
-      console.log(`🎉 Equipment status monitoring completed. Checked: ${totalChecked}, Fixed: ${fixedCount}, Backfilled: ${backfilledCount}`);
-
       return {
         checked: totalChecked,
         fixed: fixedCount,

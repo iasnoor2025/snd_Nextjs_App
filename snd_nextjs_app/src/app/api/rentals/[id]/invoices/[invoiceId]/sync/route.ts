@@ -30,8 +30,6 @@ export async function POST(
     
     // Check if invoice was deleted in ERPNext
     if (!invoiceDetails || invoiceDetails.error) {
-      console.log(`Invoice ${invoiceId} not found in ERPNext - likely deleted`);
-      
       // Delete the invoice from our database
       try {
         await RentalInvoiceService.deleteInvoice(invoiceId);
@@ -50,7 +48,6 @@ export async function POST(
           };
           
           await RentalService.updateRental(rentalId, resetData);
-          console.log(`Reset rental ${rentalId} invoice fields after ERPNext deletion`);
         }
         
         return NextResponse.json({

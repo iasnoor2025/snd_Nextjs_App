@@ -4,8 +4,6 @@ import { projects, customers, projectTasks, projectManpower, projectMaterials } 
 
 export async function POST() {
   try {
-    console.log('Creating sample project data...');
-
     // First, create a sample customer if none exists
     let customerId = null;
     try {
@@ -13,7 +11,6 @@ export async function POST() {
       
       if (existingCustomers.length > 0) {
         customerId = existingCustomers[0].id;
-        console.log('Using existing customer ID:', customerId);
       } else {
         // Create a sample customer
         const [newCustomer] = await db
@@ -36,10 +33,8 @@ export async function POST() {
           .returning();
         
         customerId = newCustomer.id;
-        console.log('Created new customer with ID:', customerId);
       }
     } catch (customerError) {
-      console.log('Could not create/find customer, proceeding without customer');
     }
 
     // Create the sample project "Colleen Bond"
@@ -57,9 +52,6 @@ export async function POST() {
         updatedAt: new Date().toISOString().split('T')[0],
       })
       .returning();
-
-    console.log('Created project:', newProject);
-
     // Create sample tasks
     const sampleTasks = [
       {
@@ -223,9 +215,6 @@ export async function POST() {
           updatedAt: new Date(),
         });
     }
-
-    console.log('Sample project data created successfully');
-
     return NextResponse.json({
       success: true,
       data: {

@@ -267,16 +267,8 @@ export async function PUT(_request: NextRequest) {
           email: updatedUser.email,
           userId: userId,
         };
-
-        console.log('Successfully linked employee to user:', {
-          employeeId: employee.id,
-          employeeName: `${employee.firstName} ${employee.lastName}`,
-          userId: userId,
-          userEmail: updatedUser.email
-        });
       } else {
-        console.log('No employee found with National ID:', nationId.trim());
-      }
+              }
     } catch (linkError) {
       console.error('Failed to link employee:', linkError);
       // Continue without employee linking - user can still access the system

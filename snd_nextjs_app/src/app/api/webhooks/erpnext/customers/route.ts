@@ -93,9 +93,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    console.log(`ERPNext webhook received: ${eventType} for customer ${customerData.name}`);
-
     // Fetch full customer details from ERPNext
     let fullCustomerData;
     try {

@@ -24,17 +24,13 @@ export class RBACInitializer {
 
   async initialize(): Promise<void> {
     if (this.isInitialized) {
-      console.log('🔐 RBAC system already initialized');
       return;
     }
 
     try {
-      console.log('🚀 Initializing RBAC system...');
-
       // Check if system is already initialized
       const existingRoles = await db.select().from(roles).limit(1);
       if (existingRoles.length > 0) {
-        console.log('✅ RBAC system already exists, skipping initialization');
         this.isInitialized = true;
         return;
       }
@@ -46,7 +42,6 @@ export class RBACInitializer {
       await this.createSuperAdminUsers();
 
       this.isInitialized = true;
-      console.log('🎉 RBAC system initialization completed successfully!');
     } catch (error) {
       console.error('❌ RBAC system initialization failed:', error);
       throw error;
@@ -54,8 +49,6 @@ export class RBACInitializer {
   }
 
   private async createRoles(): Promise<void> {
-    console.log('👑 Creating system roles...');
-
     const systemRoles = [
       { name: 'SUPER_ADMIN', guardName: 'web' },
       { name: 'ADMIN', guardName: 'web' },
@@ -74,13 +67,9 @@ export class RBACInitializer {
         updatedAt: new Date().toISOString().split('T')[0],
       });
     }
-
-    console.log(`✅ Created ${systemRoles.length} system roles`);
   }
 
   private async createPermissions(): Promise<void> {
-    console.log('🔐 Creating system permissions...');
-
     const actions = ['create', 'read', 'update', 'delete', 'manage'];
     const subjects = [
       'User', 'Employee', 'Customer', 'Equipment', 'Maintenance',
@@ -110,13 +99,9 @@ export class RBACInitializer {
         updatedAt: new Date().toISOString().split('T')[0],
       });
     }
-
-    console.log(`✅ Created ${allPermissions.length} system permissions`);
   }
 
   private async assignRolePermissions(): Promise<void> {
-    console.log('🔗 Assigning permissions to roles...');
-
     const allRoles = await db.select().from(roles);
     const allPermissions = await db.select().from(permissions);
 
@@ -129,7 +114,6 @@ export class RBACInitializer {
           permissionId: permission.id,
         });
       }
-      console.log(`✅ SUPER_ADMIN assigned ${allPermissions.length} permissions`);
     }
 
     // Other roles get basic permissions
@@ -145,15 +129,10 @@ export class RBACInitializer {
           permissionId: permission.id,
         });
       }
-      console.log(`✅ ${role.name} assigned ${basicPermissions.length} permissions`);
     }
-
-    console.log('✅ Role permissions assigned successfully');
   }
 
   private async createSuperAdminUsers(): Promise<void> {
-    console.log('👤 Creating/updating super admin users...');
-
     const superAdminRole = await db.select().from(roles).where(eq(roles.name, 'SUPER_ADMIN')).limit(1);
     if (superAdminRole.length === 0) {
       throw new Error('SUPER_ADMIN role not found');
@@ -187,8 +166,6 @@ export class RBACInitializer {
             userId: userResult[0].id,
           });
         }
-
-        console.log(`✅ Created super admin user: ${userData.email}`);
       } else {
         // Update existing user to ensure password is properly hashed
         const existingUserData = existingUser[0]!;
@@ -199,7 +176,6 @@ export class RBACInitializer {
         if (!existingUserData.password || !existingUserData.password.startsWith('$2b$')) {
           hashedPassword = await bcrypt.hash(userData.password, 12);
           needsUpdate = true;
-          console.log(`🔄 Updating password hash for existing user: ${userData.email}`);
         }
         
         // Update user if needed
@@ -210,10 +186,7 @@ export class RBACInitializer {
               updatedAt: new Date().toISOString().split('T')[0],
             })
             .where(eq(users.id, existingUserData.id));
-          
-          console.log(`✅ Updated super admin user: ${userData.email}`);
         } else {
-          console.log(`ℹ️ Super admin user already exists with proper password: ${userData.email}`);
         }
         
         // Ensure user has the correct role
@@ -227,12 +200,9 @@ export class RBACInitializer {
             roleId: superAdminRole[0]!.id,
             userId: existingUserData.id,
           });
-          console.log(`✅ Assigned role to existing user: ${userData.email}`);
         }
       }
     }
-
-    console.log('✅ Super admin users created/updated successfully');
   }
 
   isSystemInitialized(): boolean {

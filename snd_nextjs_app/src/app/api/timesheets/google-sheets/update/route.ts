@@ -12,23 +12,9 @@ export async function POST(request: NextRequest) {
       overtimeHours, 
       hoursWorked 
     } = body;
-
-    console.log('Google Sheets Update API called with:', { 
-      employeeFileNumber, 
-      date, 
-      overtimeHours, 
-      hoursWorked 
-    });
-
     // Parse the date for better debugging
     const parsedDate = new Date(date);
-    console.log('Parsed date:', {
-      original: date,
-      parsed: parsedDate,
-      year: parsedDate.getFullYear(),
-      month: parsedDate.getMonth() + 1,
-      day: parsedDate.getDate()
-    });
+        });
 
     // Validate required fields
     if (!employeeFileNumber || !date) {
@@ -58,10 +44,7 @@ export async function POST(request: NextRequest) {
         )
       )
       .limit(1);
-
-    console.log('Found timesheets:', existingTimesheet.length);
     if (existingTimesheet.length > 0) {
-      console.log('Found timesheet:', existingTimesheet[0]);
     }
 
     if (existingTimesheet.length === 0) {
@@ -112,9 +95,6 @@ export async function POST(request: NextRequest) {
         overtimeHours: timesheetsTable.overtimeHours,
         updatedAt: timesheetsTable.updatedAt,
       });
-
-    console.log('Timesheet updated successfully:', updatedTimesheet[0]);
-
     return NextResponse.json({
       success: true,
       message: 'Timesheet updated successfully',

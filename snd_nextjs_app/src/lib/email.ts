@@ -107,7 +107,6 @@ export async function sendPasswordResetEmail(
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log(`Password reset email sent to ${email}`);
   } catch (error) {
     console.error('Failed to send password reset email:', error);
     throw error;
@@ -156,7 +155,6 @@ export async function sendWelcomeEmail(
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log(`Welcome email sent to ${email}`);
   } catch (error) {
     console.error('Failed to send welcome email:', error);
     throw error;

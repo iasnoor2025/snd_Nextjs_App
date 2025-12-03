@@ -5,9 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔄 Setting role priorities based on ID (except USER = 999)...');
-    
-    // Get all roles first
+        // Get all roles first
     const allRoles = await db.select().from(roles).orderBy(roles.id);
     
     // Update priorities based on ID, except USER gets 999
@@ -22,15 +20,10 @@ export async function POST(request: NextRequest) {
     });
     
     const results = await Promise.all(updatePromises);
-    
-    console.log('✅ All role priorities updated successfully!');
-    
     // Show all roles with their new priorities
     const updatedRoles = await db.select().from(roles).orderBy(roles.priority);
-    console.log('\n📋 All roles with priorities:');
     updatedRoles.forEach(role => {
-      console.log(`  ${role.name}: priority ${role.priority} (ID: ${role.id})`);
-    });
+          });
     
     return NextResponse.json({
       success: true,

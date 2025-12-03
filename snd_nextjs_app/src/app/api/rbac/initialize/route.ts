@@ -5,8 +5,6 @@ import { roles } from '@/lib/drizzle/schema';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🚀 RBAC initialization requested via API...');
-    
     // Initialize the RBAC system
     await initializeRBACSystem();
     
@@ -32,18 +30,9 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('🔍 RBAC status check requested...');
-    
     // Check if RBAC system is already initialized by checking the database directly
-    console.log('📊 Querying database for existing roles...');
     const existingRoles = await db.select().from(roles).limit(1);
     const isInitialized = existingRoles.length > 0;
-    
-    console.log('✅ Database query successful:', { 
-      rolesFound: existingRoles.length, 
-      isInitialized 
-    });
-    
     return NextResponse.json({
       success: true,
       initialized: isInitialized,

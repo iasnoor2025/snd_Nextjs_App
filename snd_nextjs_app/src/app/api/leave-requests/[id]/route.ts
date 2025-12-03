@@ -4,8 +4,6 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET({ params }: { params: { id: string } }) {
   try {
     const { id } = params;
-    console.log('Fetching leave request with ID:', id);
-    
     // Import database and schema
     const { db } = await import('@/lib/drizzle');
     const { employeeLeaves, employees, departments, designations } = await import('@/lib/drizzle/schema');

@@ -13,17 +13,11 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
-
-    console.log('🚀 Starting equipment status monitoring cron job...');
-    
     // Run the monitoring and fixing
     const result = await EquipmentStatusMonitor.checkAndFixEquipmentStatus();
     
     // Get current status summary
     const statusSummary = await EquipmentStatusMonitor.getEquipmentStatusSummary();
-    
-    console.log('✅ Equipment status monitoring cron job completed successfully');
-    
     return NextResponse.json({
       success: true,
       message: 'Equipment status monitoring completed',

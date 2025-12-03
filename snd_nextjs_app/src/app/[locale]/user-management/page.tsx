@@ -142,9 +142,7 @@ export default function UserManagementPage() {
   // Fetch users with role information
   const fetchUsers = async (retryCount = 0) => {
     try {
-      console.log(`🔄 Fetching users (attempt ${retryCount + 1})...`);
-      
-      // Add cache-busting parameter to prevent stale data
+            // Add cache-busting parameter to prevent stale data
       const timestamp = new Date().getTime();
       const response = await fetch(`/api/users?t=${timestamp}`, {
         headers: {
@@ -152,9 +150,6 @@ export default function UserManagementPage() {
           'Pragma': 'no-cache',
         },
       });
-      
-      console.log(`📡 API response status: ${response.status}`);
-      
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`❌ API error response:`, errorText);
@@ -172,8 +167,6 @@ export default function UserManagementPage() {
       }
       
       const usersData = await response.json();
-      console.log(`📊 Users data received:`, usersData);
-      
       // The API returns { success: true, users: [...] }
       let usersArray = [];
       if (usersData && typeof usersData === 'object' && Array.isArray(usersData.users)) {
@@ -185,8 +178,6 @@ export default function UserManagementPage() {
         console.warn('⚠️ Unexpected API response format:', usersData);
         usersArray = [];
       }
-      
-      console.log(`✅ Final users array processed: ${usersArray.length} users`);
       setUsers(usersArray);
       setError(null); // Clear any previous errors
       
@@ -202,8 +193,7 @@ export default function UserManagementPage() {
           error.message.includes('Server error')
         )
       )) {
-        console.log(`🔄 Retrying fetchUsers in ${(retryCount + 1) * 1000}ms...`);
-        await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 1000));
+                await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 1000));
         return fetchUsers(retryCount + 1);
       }
       
@@ -254,14 +244,11 @@ export default function UserManagementPage() {
   const fetchPermissions = async () => {
     try {
       setLoadingPermissions(true);
-      console.log('Fetching permissions...');
       const response = await fetch('/api/permissions?limit=all');
       if (!response.ok) {
         throw new Error('Failed to fetch permissions');
       }
       const data = await response.json();
-      console.log('Permissions API response:', data);
-      
       // Ensure we always set an array
       let permissionsArray = [];
       if (data && typeof data === 'object' && Array.isArray(data.permissions)) {
@@ -270,8 +257,6 @@ export default function UserManagementPage() {
         // Fallback: if the API returns the array directly
         permissionsArray = data;
       }
-      
-      console.log('Final permissions array:', permissionsArray);
       setPermissions(permissionsArray);
     } catch (error) {
       console.error('Error fetching permissions:', error);
@@ -286,13 +271,11 @@ export default function UserManagementPage() {
   // Fetch permissions for a specific role
   const fetchRolePermissions = async (roleId: number) => {
     try {
-      console.log(`Fetching permissions for role ${roleId}...`);
       const response = await fetch(`/api/roles/${roleId}/permissions`);
       if (!response.ok) {
         throw new Error('Failed to fetch role permissions');
       }
       const data = await response.json();
-      console.log(`Role ${roleId} permissions response:`, data);
       setSelectedRolePermissions(data.data || []);
       return data;
     } catch (error) {
@@ -304,19 +287,14 @@ export default function UserManagementPage() {
     // Fetch permissions for all roles
   const fetchAllRolePermissions = async () => {
     try {
-      console.log('Fetching permissions for all roles...');
-      console.log('Available roles:', safeRoles);
       const permissionsMap: Record<number, Permission[]> = {};
 
       if (safeRoles.length > 0) {
         for (const role of safeRoles) {
           try {
-            console.log(`Fetching permissions for role: ${role.name} (ID: ${role.id})`);
-            const response = await fetch(`/api/roles/${role.id}/permissions`);
+                        const response = await fetch(`/api/roles/${role.id}/permissions`);
             if (response.ok) {
               const data = await response.json();
-              console.log(`Permissions fetched for role ${role.name}:`, data.data?.length || 0);
-              console.log(`Permissions data for role ${role.name}:`, data.data);
               permissionsMap[role.id] = data.data || [];
             } else {
               console.error(`Failed to fetch permissions for role ${role.name}:`, response.status);
@@ -328,10 +306,7 @@ export default function UserManagementPage() {
           }
         }
       }
-
-      console.log('Final permissions map:', permissionsMap);
       setRolePermissions(permissionsMap);
-      console.log('All role permissions fetched successfully');
     } catch (error) {
       console.error('Error fetching all role permissions:', error);
     }
@@ -339,10 +314,6 @@ export default function UserManagementPage() {
 
   // Open permission management dialog
   const openPermissionDialog = async (role: Role) => {
-    console.log('Opening permission dialog for role:', role);
-    console.log('Available permissions:', permissions);
-    console.log('Current role permissions:', rolePermissions);
-    
     setSelectedRoleForPermissions(role);
     setIsPermissionDialogOpen(true);
     await fetchRolePermissions(role.id);
@@ -353,9 +324,6 @@ export default function UserManagementPage() {
     if (!selectedRoleForPermissions) return;
 
     try {
-      console.log('Updating role permissions:', { roleId: selectedRoleForPermissions.id, permissionIds });
-      console.log('Available permissions:', permissions);
-
       const response = await fetch(`/api/roles/${selectedRoleForPermissions.id}/permissions`, {
         method: 'POST',
         headers: {
@@ -369,13 +337,9 @@ export default function UserManagementPage() {
       }
 
       const result = await response.json();
-      console.log('API response:', result);
-
       // Update the local role permissions state immediately
       // Get the permission objects that match the selected IDs
       const updatedPermissions = permissions.filter(p => permissionIds.includes(p.id));
-      console.log('Updated permissions for local state:', updatedPermissions);
-      
       setRolePermissions(prev => ({
         ...prev,
         [selectedRoleForPermissions.id]: updatedPermissions
@@ -387,9 +351,7 @@ export default function UserManagementPage() {
       setSelectedRolePermissions([]);
       
       // Refresh all role permissions to ensure consistency
-      console.log('Refreshing all role permissions...');
       await fetchAllRolePermissions();
-      console.log('Role permissions refresh completed');
     } catch (error) {
       console.error('Error updating role permissions:', error);
       toast.error('Failed to update role permissions');
@@ -822,7 +784,6 @@ export default function UserManagementPage() {
       }
 
       try {
-        console.log('🚀 Starting user management data fetch...');
         setLoading(true);
         setError(null);
         
@@ -855,7 +816,6 @@ export default function UserManagementPage() {
             toast.warning(`Some data may be incomplete: ${errorMessages.join(', ')}`);
           }
         } else {
-          console.log('✅ All user management data loaded successfully');
         }
         
       } catch (err) {
@@ -879,7 +839,6 @@ export default function UserManagementPage() {
   // Fetch role permissions when roles are loaded
   useEffect(() => {
     if (safeRoles.length > 0) {
-      console.log('Roles loaded, fetching role permissions...');
       fetchAllRolePermissions();
     }
   }, [safeRoles]);
@@ -1743,8 +1702,6 @@ export default function UserManagementPage() {
             
             <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
               {(() => {
-                console.log('Rendering permissions dialog with:', { safePermissions, selectedRolePermissions });
-                
                 // Group permissions by category
                 const groupedPermissions: Record<string, Permission[]> = {};
                 
@@ -1755,9 +1712,6 @@ export default function UserManagementPage() {
                   }
                   groupedPermissions[category].push(permission);
                 });
-
-                console.log('Grouped permissions:', groupedPermissions);
-
                 return Object.entries(groupedPermissions).map(([category, permissions]) => {
                   const allSelected = permissions.every(p => 
                     Array.isArray(selectedRolePermissions) && 
@@ -1831,9 +1785,7 @@ export default function UserManagementPage() {
                     {t('user.cancel')}
                   </Button>
                   <Button onClick={() => {
-                    console.log('Update button clicked with permissions:', selectedRolePermissions);
                     const permissionIds = Array.isArray(selectedRolePermissions) ? selectedRolePermissions.map(p => p.id) : [];
-                    console.log('Permission IDs to update:', permissionIds);
                     updateRolePermissions(permissionIds);
                   }}>
                     {t('user.updatePermissions')}

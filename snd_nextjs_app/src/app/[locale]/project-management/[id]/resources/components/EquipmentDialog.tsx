@@ -108,8 +108,7 @@ export default function EquipmentDialog({
           }
         });
         setAssignedOperatorIds(assignedIds);
-        console.log('Assigned operator IDs:', Array.from(assignedIds));
-      }
+              }
     } catch (error) {
       console.error('Error loading assigned operators:', error);
       setAssignedOperatorIds(new Set());
@@ -119,7 +118,7 @@ export default function EquipmentDialog({
   // Load equipment when dialog opens (for displaying selected equipment details)
   useEffect(() => {
     if (open) {
-      console.log('Dialog opened, projectId:', projectId);
+
       loadEquipmentForDetails();
       loadManpowerResources();
       loadAssignedOperators();
@@ -159,8 +158,7 @@ export default function EquipmentDialog({
   // Initialize form data when editing
   useEffect(() => {
     if (initialData) {
-      console.log('Initializing form data with:', initialData);
-      
+
       // Helper function to format date for input field (avoids timezone issues)
       const formatDateForInput = (dateValue: string | undefined | null): string => {
         if (!dateValue) return '';
@@ -225,9 +223,9 @@ export default function EquipmentDialog({
       setLoadingManpower(true);
       // Load manpower resources from the current project
       const response = await ApiService.getProjectManpower(Number(projectId));
-      console.log('API Response:', response);
+
       if (response.success && response.data) {
-        console.log('Raw manpower data:', response.data);
+
         // Map API response to expected frontend format
         const mappedManpower = response.data.map((item: any) => {
           // Construct full employee name from firstName and lastName
@@ -257,8 +255,7 @@ export default function EquipmentDialog({
           };
         });
         setManpowerResources(mappedManpower);
-        console.log('Loaded manpower resources:', mappedManpower);
-        console.log('Manpower resources count:', mappedManpower.length);
+
       } else {
         console.warn('Failed to load manpower resources:', response.message);
         // Fall back to mock data

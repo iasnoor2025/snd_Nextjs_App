@@ -72,9 +72,6 @@ function applyFridayLogic(dayName: string, workingHours: string, index: number, 
  */
 async function saveToGoogleSheets(empCode: string, monthKey: string, timesheetData: TimesheetEntry[]) {
   try {
-    console.log(`Saving to Google Sheets - Employee: ${empCode}, Month: ${monthKey}`);
-    console.log(`Timesheet entries: ${timesheetData.length}`);
-    
     // Option 1: Call your existing Google Apps Script (RECOMMENDED)
     // Replace 'YOUR_GOOGLE_APPS_SCRIPT_URL' with your actual script URL
     const scriptUrl = process.env.GOOGLE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbzwSXLfHm791C5Z2MGtRVaKtzJSGJ7R1bJfWnTKRVIJjsyk24w3jzcTDB7gkEYQpmOj0w/exec';
@@ -111,8 +108,6 @@ async function saveToGoogleSheets(empCode: string, monthKey: string, timesheetDa
     }
     
     const result = await response.text();
-    console.log('Google Apps Script response:', result);
-    
     return {
       success: true,
       message: `Data saved to Google Sheets for ${monthKey}`,
@@ -144,38 +139,25 @@ async function saveToDatabase(employeeId: number, monthKey: string, timesheetDat
       .from(timesheets)
       .where(eq(timesheets.employeeId, employeeId));
     
-    console.log(`All timesheets for employee ${employeeId}:`, allEmployeeTimesheets.map(t => t.date));
-    
-    // Now filter for the specific month
+        // Now filter for the specific month
     const existingTimesheets = allEmployeeTimesheets.filter(t => {
       const timesheetDate = new Date(t.date);
       return timesheetDate.getFullYear() === monthStart.getFullYear() && 
              timesheetDate.getMonth() === monthStart.getMonth();
     });
     
-    console.log(`Filtered timesheets for ${monthKey}:`, existingTimesheets.map(t => t.date));
-
-    const isUpdate = existingTimesheets.length > 0;
-    console.log(`Found ${existingTimesheets.length} existing timesheets for employee ${employeeId} in ${monthKey}`);
-
+        const isUpdate = existingTimesheets.length > 0;
     // If updating, delete existing timesheets for this month
     if (isUpdate) {
-      console.log(`Deleting existing timesheets for employee ${employeeId} in ${monthKey}`);
-      
       // Delete each timesheet individually to avoid SQL complexity
       for (const timesheet of existingTimesheets) {
         await db
           .delete(timesheets)
           .where(eq(timesheets.id, timesheet.id));
       }
-      
-      console.log(`Deleted ${existingTimesheets.length} timesheets for employee ${employeeId} in ${monthKey}`);
     }
 
     // Insert all timesheet entries
-    console.log(`Inserting ${timesheetData.length} timesheet entries for employee ${employeeId}`);
-    console.log('Sample timesheet entry:', timesheetData[0]);
-    
     const insertedTimesheets = await db
       .insert(timesheets)
       .values(timesheetData)
@@ -220,32 +202,11 @@ export async function POST(request: NextRequest) {
     const incomingSecret = request.headers.get('x-gas-secret') || '';
     const expectedSecret = process.env.GAS_SHARED_SECRET;
     
-    console.log('Request received:', {
-      userAgent,
-      isGoogleAppsScript,
-      contentType: request.headers.get('content-type'),
-      hasGasSecret: !!incomingSecret,
-      incomingSecretLength: incomingSecret.length,
-      expectedSecretLength: expectedSecret?.length || 0,
-      secretMatch: incomingSecret === expectedSecret
-    });
-    
-    // Allow Google Apps Script requests that include the shared secret,
+        // Allow Google Apps Script requests that include the shared secret,
     // otherwise require a NextAuth session.
     const isTrustedGAS = isGoogleAppsScript && expectedSecret && incomingSecret === expectedSecret;
     
     // TEMPORARY DEBUG: Log authentication details
-    console.log('Authentication check:', {
-      isGoogleAppsScript,
-      hasExpectedSecret: !!expectedSecret,
-      hasIncomingSecret: !!incomingSecret,
-      secretMatch: incomingSecret === expectedSecret,
-      isTrustedGAS,
-      userAgent,
-      incomingSecretLength: incomingSecret.length,
-      expectedSecretLength: expectedSecret?.length || 0
-    });
-    
     if (!isTrustedGAS) {
       const session = await getServerSession();
       if (!session?.user?.id) {
@@ -281,7 +242,6 @@ export async function POST(request: NextRequest) {
 
     // Get employee ID by file number
     const employeeId = await getEmployeeByFileNumber(empCode);
-    console.log(`Looking up employee with file number: ${empCode}, found ID: ${employeeId}`);
     if (!employeeId) {
       return NextResponse.json({ 
         error: 'Employee not found with file number: ' + empCode 
@@ -338,19 +298,11 @@ export async function POST(request: NextRequest) {
         updatedAt: new Date().toISOString(),
       });
     }
-
-    console.log(`Processing ${timesheetEntries.length} timesheet entries for employee ${employeeId}, month ${monthKey}`);
-
     // Save to both Google Sheets and Database
-    console.log('Starting dual save process...');
     const [googleSheetsResult, databaseResult] = await Promise.allSettled([
       saveToGoogleSheets(empCode, monthKey, timesheetEntries),
       saveToDatabase(employeeId, monthKey, timesheetEntries)
     ]);
-    
-    console.log('Google Sheets result:', googleSheetsResult);
-    console.log('Database result:', databaseResult);
-
     // Check if both saves were successful
     const googleSheetsSuccess = googleSheetsResult.status === 'fulfilled' && googleSheetsResult.value.success;
     const databaseSuccess = databaseResult.status === 'fulfilled' && databaseResult.value.success;
@@ -419,13 +371,6 @@ export async function GET(request: NextRequest) {
     // Check if this is a request from Google Apps Script
     const userAgent = request.headers.get('user-agent') || '';
     const isGoogleAppsScript = userAgent.includes('GoogleAppsScript');
-    
-    console.log('GET Request received:', {
-      userAgent,
-      isGoogleAppsScript,
-      url: request.url
-    });
-    
     // Allow Google Apps Script requests without session authentication
     if (!isGoogleAppsScript) {
       const session = await getServerSession();

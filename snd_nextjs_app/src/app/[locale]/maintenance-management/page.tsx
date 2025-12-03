@@ -175,11 +175,7 @@ export default function MaintenanceManagementPage() {
       if (confirm(t('common.messages.deleteConfirm'))) {
       try {
         setLoading(true);
-        console.log(`Attempting to delete maintenance record with ID: ${id}`);
-        
         const response = await ApiService.delete(`/maintenance/${id}`);
-        console.log('Delete response:', response);
-        
         if (response.success) {
           toast.success(t('maintenance.messages.deleteSuccess'));
           fetchMaintenanceRecords();

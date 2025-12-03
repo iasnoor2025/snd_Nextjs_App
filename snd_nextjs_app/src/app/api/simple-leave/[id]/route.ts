@@ -3,8 +3,6 @@ import { NextResponse } from 'next/server';
 export async function GET({ params }: { params: { id: string } }) {
   try {
     const { id } = params;
-    console.log('Simple leave request with ID:', id);
-    
     return NextResponse.json({
       success: true,
       message: 'Simple route working',

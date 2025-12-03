@@ -672,8 +672,6 @@ export class RentalService {
   // Delete rental
   static async deleteRental(id: number) {
     try {
-      console.log(`Starting cascade deletion for rental ${id}`);
-
       // Delete all associated assignments first
       await this.deleteAllRentalAssignments(id);
 
@@ -682,8 +680,6 @@ export class RentalService {
 
       // Delete rental
       await db.delete(rentals).where(eq(rentals.id, id));
-
-      console.log(`Successfully deleted rental ${id} and all associated data`);
       return true;
     } catch (error) {
       console.error('Error deleting rental:', error);
@@ -694,8 +690,6 @@ export class RentalService {
   // Delete all assignments associated with a rental
   static async deleteAllRentalAssignments(rentalId: number) {
     try {
-      console.log(`Deleting all assignments for rental ${rentalId}`);
-
       // Delete employee assignments linked to this rental
       const deletedEmployeeAssignments = await db
         .delete(employeeAssignments)
@@ -707,9 +701,6 @@ export class RentalService {
         .delete(equipmentRentalHistory)
         .where(eq(equipmentRentalHistory.rentalId, rentalId))
         .returning();
-
-      console.log(`Deleted ${deletedEmployeeAssignments.length} employee assignments and ${deletedEquipmentAssignments.length} equipment assignments for rental ${rentalId}`);
-
       return {
         employeeAssignments: deletedEmployeeAssignments.length,
         equipmentAssignments: deletedEquipmentAssignments.length
@@ -734,9 +725,6 @@ export class RentalService {
     notes?: string;
     startDate?: string | null;
   }) {
-    console.log('RentalService.addRentalItem called with:', data);
-    console.log('Start date in data:', data.startDate);
-
     // If startDate is provided, update previous active rental items to completed
     // Only complete items with the same equipment or operator assignments
     if (data.startDate) {
@@ -744,14 +732,6 @@ export class RentalService {
       const previousDay = new Date(startDate);
       previousDay.setDate(previousDay.getDate() - 1);
       const completedDateStr = previousDay.toISOString().split('T')[0];
-
-      console.log('Completion logic triggered:', {
-        startDate: data.startDate,
-        completedDateStr,
-        equipmentId: data.equipmentId,
-        operatorId: data.operatorId
-      });
-
       // Update conditions for completion
       const completionConditions = [];
 
@@ -763,7 +743,6 @@ export class RentalService {
             eq(rentalItems.equipmentId, data.equipmentId)
           )
         );
-        console.log('Added equipment completion condition for equipmentId:', data.equipmentId);
       }
 
       // Complete items with the same operator (across all rentals)
@@ -774,12 +753,10 @@ export class RentalService {
             eq(rentalItems.operatorId, data.operatorId)
           )
         );
-        console.log('Added operator completion condition for operatorId:', data.operatorId);
       }
 
       // Execute completion for each condition
       for (const condition of completionConditions) {
-        console.log('Executing completion condition:', condition);
         const result = await db
           .update(rentalItems)
           .set({
@@ -788,7 +765,6 @@ export class RentalService {
             updatedAt: new Date().toISOString().split('T')[0],
           })
           .where(condition);
-        console.log('Completion update result:', result);
       }
     }
 
@@ -818,7 +794,6 @@ export class RentalService {
 
   // Get rental items for a rental
   static async getRentalItems(rentalId: number) {
-    console.log('Getting rental items for rental ID:', rentalId);
     const { alias } = await import('drizzle-orm/pg-core');
     const supervisorEmp = alias(employees, 'supervisor_emp');
 
@@ -856,15 +831,7 @@ export class RentalService {
       .leftJoin(supervisorEmp, eq(rentalItems.supervisorId, supervisorEmp.id))
       .where(eq(rentalItems.rentalId, rentalId))
       .orderBy(desc(rentalItems.createdAt));
-
-    console.log('Rental items from database:', result);
     result.forEach((item, index) => {
-      console.log(`Item ${index + 1}:`, {
-        id: item.id,
-        equipmentName: item.equipmentName,
-        startDate: item.startDate,
-        status: item.status
-      });
     });
 
     return result;
@@ -1010,7 +977,6 @@ export class RentalService {
                 updatedAt: new Date().toISOString(),
               })
               .where(eq(equipmentRentalHistory.id, previousCompletedAssignment[0].id));
-            console.log(`Reactivated previous equipment assignment ${previousCompletedAssignment[0].id} for equipment ${equipmentId}`);
             shouldUpdateEquipmentStatus = true;
           }
         }
@@ -1024,7 +990,6 @@ export class RentalService {
               eq(equipmentRentalHistory.rentalId, rentalId)
             )
           );
-        console.log(`Deleted equipment assignment for equipment ${equipmentId} in rental ${rentalId}`);
         shouldUpdateEquipmentStatus = true;
 
         // Update equipment status after all changes
@@ -1081,7 +1046,6 @@ export class RentalService {
                   updatedAt: new Date().toISOString().split('T')[0],
                 })
                 .where(eq(employeeAssignments.id, previousCompletedAssignment[0].id));
-              console.log(`Reactivated previous employee assignment ${previousCompletedAssignment[0].id} for operator ${operatorId}`);
             }
           }
 
@@ -1094,15 +1058,10 @@ export class RentalService {
                 eq(employeeAssignments.rentalId, rentalId)
               )
             );
-          console.log(`Deleted employee assignment for operator ${operatorId} in rental ${rentalId}`);
         } else {
-          console.log(`Kept employee assignment for operator ${operatorId} in rental ${rentalId} (${otherItemsWithOperator.length} other items still use this operator)`);
-        }
+                  }
       } else {
-        console.log(`No operatorId provided for rental ${rentalId}, skipping employee assignment cleanup`);
       }
-
-      console.log(`Cleaned up assignments for rental ${rentalId}, equipment ${equipmentId}, operator ${operatorId}`);
     } catch (error) {
       console.error('Error cleaning up rental item assignments:', error);
       throw error;
@@ -1228,8 +1187,6 @@ export class RentalService {
                   updatedAt: new Date().toISOString().split('T')[0],
                 })
                 .where(eq(employees.id, item.operatorId));
-
-              console.log(`Auto-assigned supervisor ${rental.supervisor} to employee ${item.operatorId} for rental ${rental.rentalNumber}`);
             } catch (supervisorError) {
               console.error('Failed to auto-assign supervisor to employee:', supervisorError);
               // Don't fail the main assignment if supervisor assignment fails
@@ -1353,8 +1310,6 @@ export class RentalService {
         .update(equipmentRentalHistory)
         .set(equipmentUpdateData)
         .where(eq(equipmentRentalHistory.rentalId, rentalId));
-
-      console.log(`Updated assignment dates for rental ${rentalId}: start=${startDateStr}, end=${endDateStr}`);
     } catch (error) {
       console.error('Error updating rental assignment dates:', error);
     }
@@ -1402,15 +1357,6 @@ export class RentalService {
         finalAmount: totalAmount.toString(),
         updatedAt: new Date().toISOString().split('T')[0],
       }).where(eq(rentals.id, rentalId));
-
-      console.log('Recalculated rental totals:', {
-        rentalId,
-        subtotal,
-        taxAmount,
-        totalAmount,
-        itemsUpdated: items.length
-      });
-
     } catch (error) {
       console.error('Error recalculating rental totals:', error);
     }

@@ -98,7 +98,7 @@ export const PUT = withPermission(PermissionConfigs.equipment.update)(
     }
 
     const body = await request.json();
-    console.log('Equipment update request body:', body);
+
     const { istimara_expiry_date, istimara } = body;
 
     // Validate required fields
@@ -120,8 +120,6 @@ export const PUT = withPermission(PermissionConfigs.equipment.update)(
       updateData.istimara = istimara;
     }
 
-    console.log('Updating equipment with data:', updateData);
-    
     // Update the equipment in the database
     const [updatedEquipment] = await db
       .update(equipment)

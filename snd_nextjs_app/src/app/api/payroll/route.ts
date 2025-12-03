@@ -265,8 +265,7 @@ export async function POST(_request: NextRequest) {
 
       // Use simple formula: (Basic Salary / Total Days in Month) * Absent Days
       absentDeduction = (baseSalary / daysInMonth) * Number(body.absentDays);
-      console.log(`Absent deduction calculation: (${baseSalary} / ${daysInMonth}) * ${body.absentDays} = ${absentDeduction}`);
-    }
+          }
 
     const finalAmount =
       baseSalary +

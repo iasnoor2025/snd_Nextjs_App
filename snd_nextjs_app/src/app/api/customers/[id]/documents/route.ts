@@ -38,8 +38,7 @@ const getDocumentsHandler = async (
   { params }: { params: { id: string } }
 ) => {
   try {
-    console.log('📄 GET /api/customers/[id]/documents called with params:', params);
-    
+
     if (!params || !params.id) {
       console.error('❌ Invalid route parameters');
       return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
@@ -47,7 +46,6 @@ const getDocumentsHandler = async (
 
     const { id } = params;
     const customerId = parseInt(id);
-    console.log('📄 Parsed customer ID:', customerId);
 
     if (!customerId) {
       console.error('❌ Invalid customer ID');
@@ -66,16 +64,14 @@ const getDocumentsHandler = async (
     }
 
     // Get documents from database
-    console.log('📄 Fetching documents for customer:', customerId);
+
     const documents = await db
       .select()
       .from(customerDocuments)
       .where(eq(customerDocuments.customerId, customerId))
       .orderBy(desc(customerDocuments.createdAt));
-    console.log('📄 Found documents:', documents.length);
-    console.log('📄 Documents data:', JSON.stringify(documents, null, 2));
 
-    // Transform documents for response
+        // Transform documents for response
     const transformedDocuments = documents.map(doc => {
       // Create a user-friendly display name from the document type
       const displayName = doc.documentType
@@ -111,10 +107,7 @@ const getDocumentsHandler = async (
       };
     });
 
-    console.log('📄 Returning documents:', transformedDocuments.length);
-    console.log('📄 Transformed documents data:', JSON.stringify(transformedDocuments, null, 2));
-
-    return NextResponse.json({
+        return NextResponse.json({
       success: true,
       documents: transformedDocuments,
     });
@@ -222,9 +215,7 @@ const uploadDocumentsHandler = async (
           );
 
         if (existingDocuments.length > 0) {
-          console.log(`🗑️ Deleting existing documents:`, existingDocuments.map(d => ({ id: d.id, fileName: d.fileName })));
-          
-          // Delete files from MinIO
+                    // Delete files from MinIO
           try {
             const s3Client = new S3Client({
               endpoint: process.env.S3_ENDPOINT!,
@@ -253,7 +244,7 @@ const uploadDocumentsHandler = async (
                 });
 
                 await s3Client.send(deleteCommand);
-                console.log('✅ Deleted from MinIO:', key);
+
               } catch (minioError) {
                 console.error('Error deleting from MinIO for document:', doc.id, minioError);
                 // Continue with other deletions
@@ -273,8 +264,7 @@ const uploadDocumentsHandler = async (
               )
             );
 
-          console.log(`✅ Successfully deleted ${existingDocuments.length} existing ${rawDocumentType} document(s) for customer ${customerId}`);
-        }
+                  }
       } catch (error) {
         console.error('Error deleting existing documents:', error);
       }
@@ -327,8 +317,6 @@ const uploadDocumentsHandler = async (
     const path = `customer-${customerId}`;
     const fullPath = `${path}/${descriptiveFilename}`;
 
-    console.log(`Uploading file: ${file.name} as ${descriptiveFilename} to path: ${fullPath}`);
-
     // Initialize MinIO S3 client
     const s3Client = new S3Client({
       endpoint: process.env.S3_ENDPOINT!,
@@ -358,9 +346,6 @@ const uploadDocumentsHandler = async (
     const secureUrl = baseUrl?.replace(/^http:\/\//, 'https://') || baseUrl;
     const minioUrl = `${secureUrl}/customer-documents/${fullPath}`;
 
-    console.log('File uploaded successfully to MinIO, saving to database...');
-    console.log('MinIO URL:', minioUrl);
-
     // Save document record to database
     const documentResult = await db
       .insert(customerDocuments)
@@ -387,7 +372,7 @@ const uploadDocumentsHandler = async (
     const cacheKey = `customer:${customerId}:documents`;
     try {
       await cacheService.delete(cacheKey, 'documents');
-      console.log(`Invalidated cache for customer ${customerId} documents`);
+
     } catch (error) {
       console.error('Cache invalidation error:', error);
     }
@@ -477,15 +462,13 @@ const deleteDocumentsHandler = async (
         key = key.substring(bucketName.length + 1); // Remove "customer-documents/"
       }
 
-      console.log('🗑️ Deleting from MinIO - bucket:', bucketName, 'key:', key);
-
       const deleteCommand = new DeleteObjectCommand({
         Bucket: bucketName,
         Key: key,
       });
 
       await s3Client.send(deleteCommand);
-      console.log('✅ Successfully deleted file from MinIO:', key);
+
     } catch (minioError) {
       console.error('❌ Error deleting from MinIO:', minioError);
       // Continue with database deletion even if MinIO deletion fails

@@ -295,13 +295,6 @@ export default function EditProjectPage() {
       const projectResponse = (await ApiService.getProject(Number(projectId))) as any;
       if (projectResponse.success) {
         const projectData = projectResponse.data;
-        console.log('Project data received:', projectData);
-        console.log('Project team IDs:', {
-          project_manager_id: projectData.project_manager_id,
-          project_engineer_id: projectData.project_engineer_id,
-          project_foreman_id: projectData.project_foreman_id,
-          supervisor_id: projectData.supervisor_id,
-        });
         setProject(projectData);
 
         // Helper function to parse date string as local date (avoids timezone issues)
@@ -356,14 +349,6 @@ export default function EditProjectPage() {
           project_foreman_id: projectData.project_foreman_id ? projectData.project_foreman_id.toString() : '',
           supervisor_id: projectData.supervisor_id ? projectData.supervisor_id.toString() : '',
         };
-
-        console.log('Initial form data:', initialFormData);
-        console.log('Form data team IDs:', {
-          project_manager_id: initialFormData.project_manager_id,
-          project_engineer_id: initialFormData.project_engineer_id,
-          project_foreman_id: initialFormData.project_foreman_id,
-          supervisor_id: initialFormData.supervisor_id,
-        });
         setFormData(initialFormData);
       } else {
         toast.error(t('project.messages.fetchError'));

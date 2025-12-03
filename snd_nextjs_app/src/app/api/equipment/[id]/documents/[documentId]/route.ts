@@ -88,13 +88,6 @@ export const DELETE = withPermission(PermissionConfigs['equipment-document'].del
         if (!filePath) {
           filePath = `equipment-${equipmentId}/${documentData.fileName}`;
         }
-
-        console.log('Deleting file from MinIO:', {
-          bucket: 'equipment-documents',
-          path: filePath,
-          document: documentData
-        });
-
         // Initialize MinIO S3 client
         const s3Client = new S3Client({
           endpoint: process.env.S3_ENDPOINT,
@@ -113,7 +106,6 @@ export const DELETE = withPermission(PermissionConfigs['equipment-document'].del
         });
 
         await s3Client.send(deleteCommand);
-        console.log('Successfully deleted file from MinIO storage');
       } catch (error) {
         console.error('Error deleting file from MinIO storage:', error);
         // Continue with database deletion even if file deletion fails
@@ -136,9 +128,6 @@ export const DELETE = withPermission(PermissionConfigs['equipment-document'].del
     
     // Also invalidate general document caches
     await cacheService.clearByTags(['documents', 'equipment']);
-    
-    console.log(`Invalidated cache for equipment ${equipmentId} documents after deletion`);
-
     return NextResponse.json({
       success: true,
       data: {

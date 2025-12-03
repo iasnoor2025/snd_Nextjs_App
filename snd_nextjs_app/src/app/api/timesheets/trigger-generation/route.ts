@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('Manual timesheet generation triggered via API...');
-
     // Import and use the cron service to trigger timesheet generation
     const { cronService } = await import('@/lib/services/cron-service');
     

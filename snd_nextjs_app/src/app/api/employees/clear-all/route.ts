@@ -4,14 +4,9 @@ import { NextResponse } from 'next/server';
 
 export async function POST() {
   try {
-    console.log('🧹 Clearing all employees for fresh ERPNext sync...');
-    
     // Simple approach: just delete all employees
     // This will fail if there are foreign key constraints, but let's try
     await db.delete(employeesTable);
-    
-    console.log('✅ All employees cleared successfully');
-    
     return NextResponse.json({
       success: true,
       message: 'All employees cleared successfully. Ready for fresh ERPNext sync.',

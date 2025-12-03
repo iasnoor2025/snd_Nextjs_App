@@ -41,15 +41,11 @@ export async function POST(request: NextRequest) {
     const permissionCheck = await checkUserPermission(userId, 'update', 'own-profile');
     
     if (!permissionCheck.hasPermission) {
-      console.log('❌ User does not have permission to change password:', permissionCheck.reason);
       return NextResponse.json(
         { error: 'Access denied. Permission required to change password.' },
         { status: 403 }
       );
     }
-
-    console.log('✅ User has permission to change password');
-
     // Get user with current password hash
     const userRows = await db
       .select({

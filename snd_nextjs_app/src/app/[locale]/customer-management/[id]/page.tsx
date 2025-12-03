@@ -3,7 +3,6 @@
 // Force dynamic rendering to prevent SSR issues
 export const dynamic = 'force-dynamic';
 
-
 import DocumentManager from '@/components/shared/DocumentManager';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -146,11 +145,6 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
         if (!statsData.success) {
           throw new Error(statsData.message || 'Failed to fetch customer stats');
         }
-
-        console.log('📊 Stats data received:', statsData);
-        console.log('📊 Total rentals:', statsData.stats?.totalRentals);
-        console.log('📊 Total invoices:', statsData.stats?.totalInvoices);
-        console.log('📊 Outstanding:', statsData.stats?.outstandingAmount);
 
         // Set customer from stats (fallback to fetching customer directly if needed)
         if (statsData.stats && !customer) {

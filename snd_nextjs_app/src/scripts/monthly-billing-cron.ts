@@ -5,26 +5,11 @@ import { MonthlyBillingService } from '@/lib/services/monthly-billing-service';
  * This should be run monthly to generate invoices for all active rentals
  */
 export async function runMonthlyBilling() {
-  console.log('Starting monthly billing process...');
-  
   try {
     // Generate monthly invoices for all active rentals
     const invoiceResult = await MonthlyBillingService.generateMonthlyInvoices();
-    
-    console.log(`Monthly billing completed:`, {
-      processed: invoiceResult.processed,
-      invoicesGenerated: invoiceResult.invoices.length,
-      errors: invoiceResult.errors.length
-    });
-
     // Sync payment status from ERPNext
     const paymentResult = await MonthlyBillingService.syncPaymentStatus();
-    
-    console.log(`Payment sync completed:`, {
-      synced: paymentResult.synced,
-      errors: paymentResult.errors.length
-    });
-
     return {
       success: true,
       invoices: invoiceResult,
@@ -44,16 +29,8 @@ export async function runMonthlyBilling() {
  * This should be run daily to keep payment status updated
  */
 export async function runDailyPaymentSync() {
-  console.log('Starting daily payment sync...');
-  
   try {
     const result = await MonthlyBillingService.syncPaymentStatus();
-    
-    console.log(`Daily payment sync completed:`, {
-      synced: result.synced,
-      errors: result.errors.length
-    });
-
     return result;
   } catch (error) {
     console.error('Daily payment sync failed:', error);

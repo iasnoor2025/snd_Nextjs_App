@@ -46,7 +46,6 @@ const getEmployeeStatisticsHandler = async () => {
     
     if (employeeIds.length > 0) {
       if (process.env.NODE_ENV === 'development') {
-        console.log('🔍 Found employee IDs:', employeeIds);
       }
       
       // Get all active assignments from employeeAssignments table
@@ -83,8 +82,6 @@ const getEmployeeStatisticsHandler = async () => {
         );
 
       if (process.env.NODE_ENV === 'development') {
-        console.log('🔍 Found assignment rows:', assignmentRows.length);
-        console.log('🔍 Found projectManpower rows:', projectManpowerRows.length);
       }
 
       // Count unique employees with active assignments from both sources
@@ -99,7 +96,6 @@ const getEmployeeStatisticsHandler = async () => {
         
         if (process.env.NODE_ENV === 'development') {
           // Detailed row logging only in development
-          console.log('🔍 Assignment row:', row, 'isActive:', isAssignmentActive);
         }
         
         if (isAssignmentActive) {
@@ -115,7 +111,6 @@ const getEmployeeStatisticsHandler = async () => {
           (!row.endDate || new Date(row.endDate) > new Date());
         
         if (process.env.NODE_ENV === 'development') {
-          console.log('🔍 ProjectManpower row:', row, 'isActive:', isAssignmentActive);
         }
         
         if (isAssignmentActive) {
@@ -125,14 +120,12 @@ const getEmployeeStatisticsHandler = async () => {
       
       currentlyAssigned = employeesWithAssignments.size;
       if (process.env.NODE_ENV === 'development') {
-        console.log('🔍 Employees with assignments set:', employeesWithAssignments.size);
       }
     } else {
       currentlyAssigned = 0;
     }
     
     if (process.env.NODE_ENV === 'development') {
-      console.log('🔍 Currently assigned count:', currentlyAssigned);
     }
 
     // Count project assignments (from both employeeAssignments and projectManpower tables)
@@ -193,11 +186,6 @@ const getEmployeeStatisticsHandler = async () => {
       
       projectAssignments = employeesWithProjectAssignments.size;
       if (process.env.NODE_ENV === 'development') {
-        console.log('🔍 Project assignments breakdown:', {
-          fromEmployeeAssignments: assignmentRows.length,
-          fromProjectManpower: projectManpowerRows.length,
-          totalUnique: projectAssignments,
-        });
       }
     } else {
       projectAssignments = 0;
@@ -209,7 +197,6 @@ const getEmployeeStatisticsHandler = async () => {
     
     if (totalEmployees > 0) {
       if (process.env.NODE_ENV === 'development') {
-        console.log('🔍 Checking rental assignments for all employees');
       }
       
       const assignmentRows = await db
@@ -229,8 +216,6 @@ const getEmployeeStatisticsHandler = async () => {
         );
 
       if (process.env.NODE_ENV === 'development') {
-        console.log('🔍 Rental assignment rows count:', assignmentRows.length);
-        console.log('🔍 Looking for types:', rentalTypes);
       }
 
       // Count unique employees with active rental assignments
@@ -241,7 +226,6 @@ const getEmployeeStatisticsHandler = async () => {
           (!row.endDate || new Date(row.endDate) > new Date());
         
         if (process.env.NODE_ENV === 'development') {
-          console.log('🔍 Rental assignment row:', row, 'isActive:', isAssignmentActive);
         }
         
         if (isAssignmentActive) {
@@ -251,15 +235,12 @@ const getEmployeeStatisticsHandler = async () => {
       
       rentalAssignments = employeesWithRentalAssignments.size;
       if (process.env.NODE_ENV === 'development') {
-        console.log('🔍 Employees with rental assignments count:', employeesWithRentalAssignments.size);
       }
     } else {
       rentalAssignments = 0;
     }
     
     if (process.env.NODE_ENV === 'development') {
-      console.log('🔍 Project assignments count:', projectAssignments);
-      console.log('🔍 Rental assignments count:', rentalAssignments);
     }
 
     // Count employees currently on leave
@@ -290,7 +271,6 @@ const getEmployeeStatisticsHandler = async () => {
       });
       
       employeesOnLeave = employeesOnLeaveSet.size;
-      console.log('🔍 Employees on leave count:', employeesOnLeave);
     }
 
     // Count external employees

@@ -69,7 +69,6 @@ export async function GET() {
           detailedInvoice = detailData.data;
         }
       } catch (error) {
-        console.log('Could not fetch detailed invoice:', error);
       }
     }
 

@@ -11,10 +11,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try {
     const body = await request.json();
     const rentalId = id;
-
-    console.log('Received rental item data:', body);
-    console.log('Start date received:', body.startDate);
-
     // Check if rental exists
     const rentalExists = await RentalService.getRental(parseInt(rentalId));
     if (!rentalExists) {

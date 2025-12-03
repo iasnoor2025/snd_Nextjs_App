@@ -3,8 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(_request: NextRequest) {
   try {
-    console.log('Testing ERPNext connection...');
-    
     // Test ERPNext connection
     const isConnected = await ERPNextInvoiceService.testConnection();
     

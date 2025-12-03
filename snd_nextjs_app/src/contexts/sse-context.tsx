@@ -234,7 +234,6 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
   const connectSSE = useCallback(() => {
     // Check if already connected or connecting to prevent multiple connections
     if (isConnected || connectionStatus === 'connecting') {
-      console.log('SSE: Already connected or connecting, skipping connection attempt');
       return;
     }
     
@@ -274,7 +273,6 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
         setIsConnected(true);
         setConnectionStatus('connected');
         reconnectAttemptsRef.current = 0; // Reset reconnection attempts on successful connection
-        console.log('SSE: Connection established successfully');
       };
 
       const handleMessage = (event: MessageEvent) => {
@@ -294,15 +292,12 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
         // Only reconnect if we haven't exceeded max attempts
         if (reconnectAttemptsRef.current < maxReconnectAttempts) {
           reconnectAttemptsRef.current += 1;
-          console.log(`SSE: Reconnection attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts}`);
-          
           setTimeout(() => {
             if (isMountedRef.current && !isConnected) {
               connectSSE();
             }
           }, 5000);
         } else {
-          console.log('SSE: Max reconnection attempts reached, stopping reconnection');
         }
       };
 

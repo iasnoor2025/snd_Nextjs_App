@@ -216,7 +216,7 @@ export function H2SCardManagement() {
         if (records.length === 0) {
           toast.info('No H2S training records found. Employees need to complete H2S training first.');
         } else {
-          console.log(`Loaded ${records.length} H2S training records`);
+
         }
       } else {
         toast.error(data.error || 'Failed to load H2S training records');

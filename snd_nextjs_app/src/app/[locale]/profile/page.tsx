@@ -137,7 +137,6 @@ export default function ProfilePage() {
       const data = await response.json();
       
       if (response.ok) {
-        console.log('Profile data received:', data);
         setFormData({
           firstName: data.firstName || '',
           lastName: data.lastName || '',
@@ -192,22 +191,17 @@ export default function ProfilePage() {
       const profileData = await profileResponse.json();
       
       if (!profileResponse.ok) {
-        console.log('Failed to get profile data for documents:', profileData);
         setEmployeeDocuments([]);
         return;
       }
       
       // If we have employee data and employee ID, fetch documents using the working API
       if (profileData.employeeLinked && profileData.employeeId) {
-        console.log('Profile shows employee is linked, fetching documents for employee ID:', profileData.employeeId);
-        
         // Use the same API that the Personal tab uses - this one works!
         const documentsResponse = await fetch(`/api/employees/${profileData.employeeId}/documents`);
         const documentsData = await documentsResponse.json();
         
         if (documentsResponse.ok && Array.isArray(documentsData)) {
-          console.log('Employee documents received:', documentsData);
-          
           // Filter for personal documents (photos, iqama, passport) like the Personal tab does
           const personalDocs = documentsData.filter((d: any) => {
             const docName = (d.fileName || d.name || '').toLowerCase();
@@ -229,11 +223,9 @@ export default function ProfilePage() {
           });
           setEmployeeDocuments(personalDocs);
         } else {
-          console.log('No employee documents found or error:', documentsData);
           setEmployeeDocuments([]);
         }
       } else {
-        console.log('No employee linked in profile, cannot fetch documents');
         setEmployeeDocuments([]);
       }
     } catch (error) {

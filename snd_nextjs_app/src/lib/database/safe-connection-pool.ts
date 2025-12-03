@@ -209,14 +209,12 @@ export class SafeEnhancedPool {
     this.pool.on('connect', (client) => {
       this.metrics.totalConnections++;
       if (this.config.logLevel === 'debug') {
-        console.log('New client connected to pool');
       }
     });
 
     this.pool.on('remove', (client) => {
       this.metrics.totalConnections--;
       if (this.config.logLevel === 'debug') {
-        console.log('Client removed from pool');
       }
     });
 

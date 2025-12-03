@@ -137,10 +137,7 @@ export default function FuelDialog({
       setLoadingEquipment(true);
       // Load equipment resources from the current project (like manpower)
       const response = await ApiService.getProjectEquipment(Number(projectId));
-      console.log('Project Equipment API Response:', response);
-      
       if (response.success && response.data) {
-        console.log('Raw project equipment data:', response.data);
         // Map API response to expected frontend format
         const mappedEquipment = response.data.map((item: any) => ({
           id: item.id.toString(),
@@ -149,7 +146,6 @@ export default function FuelDialog({
           status: item.status || 'available',
         }));
         setEquipment(mappedEquipment);
-        console.log('Loaded project equipment:', mappedEquipment);
       } else {
         console.warn('Failed to load project equipment:', response.message);
         // Fall back to mock data if no project equipment

@@ -45,15 +45,6 @@ export async function GET(
     const fileNumber = employee.fileNumber || String(documentRecord.employeeId);
     
     // Debug logging
-    console.log('Download debug:', {
-      documentId: documentRecord.id,
-      documentEmployeeId: documentRecord.employeeId,
-      urlEmployeeId: employeeId,
-      employeeFileNumber: employee.fileNumber,
-      finalFileNumber: fileNumber,
-      documentType: documentRecord.documentType,
-      fileName: documentRecord.fileName
-    });
 
     // Check if user has permission to access this document
     if (session.user.role !== 'SUPER_ADMIN' && 

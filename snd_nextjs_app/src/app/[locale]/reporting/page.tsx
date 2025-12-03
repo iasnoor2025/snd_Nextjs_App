@@ -561,9 +561,7 @@ export default function ReportingDashboardPage() {
         }
         
         if (customerGroupsArray && Array.isArray(customerGroupsArray) && customerGroupsArray.length > 0) {
-          console.log('First customer rentals:', customerGroupsArray[0]?.rentals);
-          console.log('First customer rentals length:', customerGroupsArray[0]?.rentals?.length);
-          
+
           return (
             <div className="space-y-6">
               {/* Customer Equipment Summary */}
@@ -586,7 +584,7 @@ export default function ReportingDashboardPage() {
                     </TableHeader>
                     <TableBody>
                       {customerGroupsArray.map((customer: any, index: number) => {
-                        console.log(`Rendering customer ${index}:`, customer);
+
                         return (
                           <TableRow key={customer.customer_info?.id || index}>
                             <TableCell className="font-medium">{customer.customer_info?.name || 'N/A'}</TableCell>
@@ -630,11 +628,11 @@ export default function ReportingDashboardPage() {
                     </TableHeader>
                     <TableBody>
                       {customerGroupsArray.map((customer: any, customerIndex: number) => {
-                        console.log(`Processing customer ${customerIndex} rentals:`, customer.rentals);
+
                         return customer.rentals?.map((rental: any, rentalIndex: number) => {
-                          console.log(`Processing rental ${rentalIndex} equipment:`, rental.equipment);
+
                           return rental.equipment?.map((equipment: any, equipmentIndex: number) => {
-                            console.log(`Rendering equipment ${equipmentIndex}:`, equipment);
+
                             // Create unique key by including all indices to prevent duplicates
                             const uniqueKey = `customer-${customer.customer_info?.id || customerIndex}-rental-${rental.id || rentalIndex}-equipment-${equipment.id || equipmentIndex}-idx-${customerIndex}-${rentalIndex}-${equipmentIndex}`;
                             return (

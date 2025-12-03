@@ -90,11 +90,6 @@ export class ERPNextClient {
    */
   async renameEmployee(erpnextId: string, newEmployeeNumber: string): Promise<boolean> {
     try {
-      console.log('🔍 ERPNext Client - Renaming employee:', {
-        erpnextId,
-        newEmployeeNumber
-      });
-
       // Use ERPNext's rename method
       const result = await this.makeRequest('/api/method/frappe.client.rename_doc', {
         method: 'POST',
@@ -104,8 +99,6 @@ export class ERPNextClient {
           new: newEmployeeNumber
         })
       });
-
-      console.log('✅ Rename result:', result);
       return !!result;
     } catch (error) {
       console.error('💥 ERPNext Client Rename Error:', error);
@@ -124,11 +117,9 @@ export class ERPNextClient {
         const renameSuccess = await this.renameEmployee(employee.erpnextId, employee.fileNumber);
         
         if (renameSuccess) {
-          console.log('✅ Employee renamed successfully to:', employee.fileNumber);
           // Update the erpnextId to the new name
           employee.erpnextId = employee.fileNumber;
         } else {
-          console.log('⚠️ Employee rename failed, falling back to regular update');
         }
       }
 
@@ -301,12 +292,6 @@ export class ERPNextClient {
         };
 
         // Debug logging for file number
-        console.log('🔍 ERPNext Client Debug - Creating Employee:', {
-          fileNumber: employee.fileNumber,
-          firstName: employee.firstName,
-          lastName: employee.lastName
-        });
-
         const result = await this.makeRequest('/api/resource/Employee', {
           method: 'POST',
           body: JSON.stringify(data),
@@ -391,25 +376,10 @@ export class ERPNextClient {
       if (employee.spspLicenseExpiry) data.spsp_license_expiry = employee.spspLicenseExpiry;
       if (employee.spspLicenseCost) data.spsp_license_cost = employee.spspLicenseCost;
 
-      // Debug logging for file number update
-      console.log('🔍 ERPNext Client Debug - Updating Employee:', {
-        erpnextId: employee.erpnextId,
-        fileNumber: employee.fileNumber,
-        firstName: employee.firstName,
-        lastName: employee.lastName,
-        allFields: Object.keys(data)
-      });
-
-      console.log('🔍 ERPNext Client Debug - About to make request to:', `/api/resource/Employee/${employee.erpnextId}`);
-      console.log('🔍 ERPNext Client Debug - Request data:', data);
-
       const updateResponse = await this.makeRequest(`/api/resource/Employee/${employee.erpnextId}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       });
-
-      console.log('🔍 ERPNext Client Debug - Update response received:', updateResponse);
-
       return true;
     } catch (error) {
       console.error('💥 ERPNext Client Error:', error);
@@ -447,13 +417,6 @@ export class ERPNextClient {
       };
 
       // Debug logging for file number creation
-      console.log('🔍 ERPNext Client Debug - Creating New Employee:', {
-        fileNumber: employee.fileNumber,
-        firstName: employee.firstName,
-        lastName: employee.lastName,
-        fullData: data
-      });
-
       const result = await this.makeRequest('/api/resource/Employee', {
         method: 'POST',
         body: JSON.stringify(data),
@@ -495,12 +458,6 @@ export class ERPNextClient {
       if (customer.state) data.state = customer.state;
       if (customer.postalCode) data.pincode = customer.postalCode;
       if (customer.country) data.country = customer.country || 'Saudi Arabia';
-
-      console.log('🔍 ERPNext Client - Creating Customer:', {
-        name: customer.name,
-        fullData: data
-      });
-
       const result = await this.makeRequest('/api/resource/Customer', {
         method: 'POST',
         body: JSON.stringify(data),
@@ -518,16 +475,11 @@ export class ERPNextClient {
    */
   async getCustomerFinancialData(erpnextCustomerName: string): Promise<any> {
     try {
-      console.log('📊 Fetching customer financial data from ERPNext:', erpnextCustomerName);
-      
       // Fetch customer details with outstanding and credit info
       const customerData = await this.makeRequest(`/api/resource/Customer/${encodeURIComponent(erpnextCustomerName)}`);
       
       // Fetch invoices for this customer
       const invoices = await this.makeRequest(`/api/resource/Sales Invoice?filters=[["customer","=","${erpnextCustomerName}"]]&limit_page_length=1000`);
-      
-      console.log('📊 Raw invoices from ERPNext:', invoices);
-      
       // Calculate invoice statistics
       let totalInvoices = 0;
       let totalInvoiced = 0;
@@ -535,42 +487,20 @@ export class ERPNextClient {
       
       if (invoices.data && invoices.data.length > 0) {
         totalInvoices = invoices.data.length;
-        console.log(`📊 Processing ${totalInvoices} invoices for customer ${erpnextCustomerName}`);
-        
         // Log first invoice to see available fields
         if (invoices.data[0]) {
-          console.log('📊 Sample invoice fields:', Object.keys(invoices.data[0]));
-          console.log('📊 Sample invoice data:', invoices.data[0]);
-        }
+                  }
         
         invoices.data.forEach((invoice: any, index: number) => {
           // Log each invoice to see what fields exist
-          console.log(`📊 Invoice ${index + 1}:`, {
-            name: invoice.name,
-            customer: invoice.customer,
-            grand_total: invoice.grand_total,
-            outstanding_amount: invoice.outstanding_amount,
-            net_total: invoice.net_total,
-            status: invoice.status,
-            docstatus: invoice.docstatus
-          });
-          
           // Try multiple field names for amounts - check both string and number types
           const grandTotal = parseFloat(invoice.grand_total || invoice.total || invoice.amount || '0');
           const outstanding = parseFloat(invoice.outstanding_amount || invoice.outstanding || '0');
-          
-          console.log(`📊 Parsed amounts - grandTotal: ${grandTotal}, outstanding: ${outstanding}`);
-          
           totalInvoiced += grandTotal;
           outstandingAmount += outstanding;
         });
       } else {
-        console.log('📊 No invoices found in invoices.data');
-        console.log('📊 Invoices response structure:', invoices);
       }
-      
-      console.log('📊 Final totals - totalInvoiced:', totalInvoiced, 'outstandingAmount:', outstandingAmount);
-      
       const financialData = {
         // From customer record
         outstandingAmount: parseFloat(customerData.data?.outstanding_amount || '0') || outstandingAmount,
@@ -583,8 +513,6 @@ export class ERPNextClient {
         creditLimit: parseFloat(customerData.data?.credit_limit || '0'),
         creditLimitUsed: outstandingAmount || parseFloat(customerData.data?.outstanding_amount || '0'),
       };
-      
-      console.log('📊 Customer financial data from ERPNext:', financialData);
       return financialData;
     } catch (error) {
       console.error('💥 Error fetching customer financial data from ERPNext:', error);
@@ -598,7 +526,6 @@ export class ERPNextClient {
   async updateCustomer(customer: any): Promise<boolean> {
     try {
       if (!customer.erpnextId) {
-        console.log('⚠️ No ERPNext ID found, creating customer instead');
         const erpnextId = await this.createCustomer(customer);
         if (erpnextId) {
           customer.erpnextId = erpnextId;
@@ -630,13 +557,6 @@ export class ERPNextClient {
       if (customer.state) data.state = customer.state;
       if (customer.postalCode) data.pincode = customer.postalCode;
       if (customer.country) data.country = customer.country || 'Saudi Arabia';
-
-      console.log('🔍 ERPNext Client - Updating Customer:', {
-        erpnextId: customer.erpnextId,
-        name: customer.name,
-        fullData: data
-      });
-
       await this.makeRequest(`/api/resource/Customer/${customer.erpnextId}`, {
         method: 'PUT',
         body: JSON.stringify(data),

@@ -48,13 +48,11 @@ function getApprovalStatusForStage(stage: ApprovalStage): string {
 
 // Helper function to check if user can approve at specific stage
 async function checkStageApprovalPermission(userId: string, stage: ApprovalStage) {
-  console.log(`🔐 Checking stage approval permission for user ${userId} at stage ${stage}`);
 
   // Check if user has specific stage approval permission
   const stagePermission = `approve.Timesheet.${stage.charAt(0).toUpperCase() + stage.slice(1)}`;
   const stageResult = await checkUserPermission(userId, 'approve', `Timesheet.${stage.charAt(0).toUpperCase() + stage.slice(1)}`);
-  
-  console.log(`🔐 Stage permission result:`, stageResult);
+
   if (stageResult.hasPermission) {
     return { allowed: true };
   }
@@ -87,12 +85,9 @@ async function checkRejectionPermission(userId: string) {
 
 // POST /api/timesheets/bulk-approve - Bulk approve/reject timesheets
 export const POST = async (request: NextRequest) => {
-  console.log('🚀 Bulk approve endpoint called (BYPASSING PERMISSION CHECK)');
-  
-  try {
+    try {
     const body = await request.json();
-    console.log('📝 Request body received:', body);
-    
+
     const { timesheetIds, action, notes, approvalStage } = body;
 
     if (!Array.isArray(timesheetIds) || timesheetIds.length === 0) {
@@ -111,13 +106,12 @@ export const POST = async (request: NextRequest) => {
 
     // Get user ID from session
     const session = await getServerSession();
-    console.log('🔐 Session retrieved:', { userId: session?.user?.id, userRole: session?.user?.role });
+
     if (!session?.user?.id) {
-      console.log('❌ No session or user ID found');
+
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
     const userId = session.user.id;
-    console.log('✅ User ID extracted:', userId);
 
     const results: {
       approved: any[];
@@ -130,7 +124,7 @@ export const POST = async (request: NextRequest) => {
     };
 
     // Get all timesheets that need to be processed
-    console.log('🔍 Fetching timesheets with IDs:', timesheetIds);
+
     let timesheetsToProcess;
     try {
       timesheetsToProcess = await db
@@ -146,7 +140,7 @@ export const POST = async (request: NextRequest) => {
             timesheetIds.map(id => parseInt(id))
           )
         );
-      console.log('📊 Found timesheets to process:', timesheetsToProcess);
+
     } catch (dbError) {
       console.error('❌ Database error fetching timesheets:', dbError);
       return NextResponse.json({ 
@@ -174,8 +168,7 @@ export const POST = async (request: NextRequest) => {
           // Approve the timesheet to the next stage
           try {
             const newStatus = getApprovalStatusForStage(nextStage);
-            console.log(`✅ Approving timesheet ${timesheet.id} to status: ${newStatus}`);
-            
+
             const updatedTimesheet = await db
               .update(timesheets)
               .set({
@@ -188,7 +181,6 @@ export const POST = async (request: NextRequest) => {
               .where(eq(timesheets.id, timesheet.id))
               .returning();
 
-            console.log(`✅ Successfully updated timesheet:`, updatedTimesheet[0]);
             results.approved.push(updatedTimesheet[0]);
           } catch (error) {
             console.error(`❌ Failed to approve timesheet ${timesheet.id}:`, error);
@@ -217,8 +209,7 @@ export const POST = async (request: NextRequest) => {
 
           // Reject the timesheet
           try {
-            console.log(`❌ Rejecting timesheet ${timesheet.id}`);
-            
+
             const updatedTimesheet = await db
               .update(timesheets)
               .set({
@@ -229,7 +220,6 @@ export const POST = async (request: NextRequest) => {
               .where(eq(timesheets.id, timesheet.id))
               .returning();
 
-            console.log(`✅ Successfully rejected timesheet:`, updatedTimesheet[0]);
             results.rejected.push(updatedTimesheet[0]);
           } catch (error) {
             console.error(`❌ Failed to reject timesheet ${timesheet.id}:`, error);
@@ -254,8 +244,7 @@ export const POST = async (request: NextRequest) => {
       message: `Successfully ${action}d ${action === 'approve' ? results.approved.length : results.rejected.length} timesheets`,
       results,
     };
-    
-    console.log('🎉 Returning successful response:', response);
+
     return NextResponse.json(response);
   } catch (error) {
     console.error('Bulk approve error:', error);

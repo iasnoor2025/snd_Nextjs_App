@@ -25,7 +25,6 @@ const getUserPermissionsHandler = async (request: NextRequest) => {
       : session.user.id;
     
     if (!userId || isNaN(userId)) {
-      console.log('❌ API: Invalid user ID format:', session.user.id);
       return NextResponse.json(
         { error: 'Invalid user ID format' },
         { status: 400 }
@@ -45,7 +44,6 @@ const getUserPermissionsHandler = async (request: NextRequest) => {
       .limit(1);
 
     if (userRecord.length === 0) {
-      console.log('❌ API: User not found in database');
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }

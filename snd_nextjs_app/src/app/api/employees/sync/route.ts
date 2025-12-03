@@ -422,8 +422,6 @@ export async function POST() {
           if (existingEmployee.length > 0) {
             const existingEmployeeData = existingEmployee[0];
             if (!existingEmployeeData) {
-              console.log('No existing employee data found for ERPNext ID:', employeeData.erpnextId);
-
               // Use the already transformed data directly
               const newEmployee = await db.insert(employeesTable).values(employeeData).returning();
               return { type: 'created', employee: (newEmployee as any[])[0] };
@@ -452,7 +450,6 @@ export async function POST() {
                 (iqamaExpiry ? new Date(iqamaExpiry).toISOString().split('T')[0] || null : null);
 
             if (hasChanges) {
-              console.log('Employee data has changed, updating:', employeeData.erpnextId);
               const updatedEmployee = await db
                 .update(employeesTable)
                 .set(employeeData)
@@ -460,11 +457,9 @@ export async function POST() {
                 .returning();
               return { type: 'updated', employee: updatedEmployee[0] };
             } else {
-              console.log('Employee data unchanged:', employeeData.erpnextId);
               return { type: 'unchanged', employee: existingEmployeeData };
             }
           } else {
-            console.log('Creating new employee:', employeeData.erpnextId);
             const newEmployeeResult = await db
               .insert(employeesTable)
               .values(employeeData)

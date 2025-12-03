@@ -33,9 +33,7 @@ const getProfileHandler = async (_request: NextRequest) => {
           .from(employees)
           .limit(10);
 
-        console.log('All employees in database (first 10):', allEmployees);
-        
-        // Debug: Check if there's an employee linked to this user
+                // Debug: Check if there's an employee linked to this user
         const userLinkedEmployees = await db
           .select({
             id: employees.id,
@@ -47,9 +45,6 @@ const getProfileHandler = async (_request: NextRequest) => {
           })
           .from(employees)
           .where(eq(employees.userId, parseInt(userId)));
-
-        console.log('Employees linked to this user:', userLinkedEmployees);
-
         // Generate cache key for user profile
         const cacheKey = generateCacheKey('profile', 'user', { userId });
     
@@ -84,14 +79,6 @@ const getProfileHandler = async (_request: NextRequest) => {
         if (!user) {
           return NextResponse.json({ error: 'User not found in database' }, { status: 404 });
         }
-
-        console.log('Profile API Debug - User Info:', {
-          userId: user.id,
-          userEmail: user.email,
-          userNationalId: user.nationalId,
-          userName: user.name
-        });
-
         // Debug: Check what employees exist in the database
         const allEmployees = await db
           .select({
@@ -105,15 +92,11 @@ const getProfileHandler = async (_request: NextRequest) => {
           .from(employees)
           .limit(10);
 
-        console.log('All employees in database (first 10):', allEmployees);
-
-        // Get employee data if exists (direct user_id match)
+                // Get employee data if exists (direct user_id match)
         let employee = null;
         
         // First try to find employee by National ID match (this should be the primary method)
         if (user.nationalId) {
-          console.log('Looking for employee with National ID:', user.nationalId);
-          
           const nationalIdEmployeeRows = await db
             .select({
               id: employees.id,
@@ -150,24 +133,10 @@ const getProfileHandler = async (_request: NextRequest) => {
             .where(eq(employees.iqamaNumber, user.nationalId))
             .limit(1);
 
-          console.log('National ID search results:', {
-            foundCount: nationalIdEmployeeRows.length,
-            employees: nationalIdEmployeeRows.map(emp => ({
-              id: emp.id,
-              name: `${emp.firstName} ${emp.lastName}`,
-              iqamaNumber: emp.iqamaNumber,
-              userId: emp.userId
-            }))
-          });
+                    });
 
           if (nationalIdEmployeeRows.length > 0) {
             employee = nationalIdEmployeeRows[0];
-            console.log('Found employee by National ID:', {
-              employeeId: employee.id,
-              employeeName: `${employee.firstName} ${employee.lastName}`,
-              nationalId: employee.iqamaNumber
-            });
-            
             // Auto-link this employee to the user if not already linked
             if (!employee.userId) {
               try {
@@ -181,7 +150,6 @@ const getProfileHandler = async (_request: NextRequest) => {
                 
                 employee.userId = parseInt(user.id.toString());
                 employee.email = user.email;
-                console.log('Auto-linked employee to user');
               } catch (linkError) {
                 console.error('Failed to auto-link employee:', linkError);
               }
@@ -231,32 +199,10 @@ const getProfileHandler = async (_request: NextRequest) => {
         }
 
         // Debug logging
-        console.log('Profile API Debug:', {
-          userId: user.id,
-          userEmail: user.email,
-          directEmployeeFound: !!employee,
-          directEmployeeId: employee?.id,
-          directEmployeeName: employee ? `${employee.firstName} ${employee.lastName}` : 'None'
-        });
-
         // Use the employee found (either by National ID or direct userId)
         const bestEmployee = employee;
         
-        console.log('Final employee selection:', {
-          employeeFound: !!bestEmployee,
-          finalEmployeeId: bestEmployee?.id,
-          finalEmployeeName: bestEmployee ? `${bestEmployee.firstName} ${bestEmployee.lastName}` : 'None',
-          source: bestEmployee ? (bestEmployee.userId === parseInt(user.id.toString()) ? 'direct' : 'nationalId') : 'none',
-          employeeDetails: bestEmployee ? {
-            firstName: bestEmployee.firstName,
-            lastName: bestEmployee.lastName,
-            email: bestEmployee.email,
-            phone: bestEmployee.phone,
-            iqamaNumber: bestEmployee.iqamaNumber
-          } : null
-        });
-
-        // Format the response
+                // Format the response
         const profile = {
           id: user.id,
           name: user.name || 'Unknown User',

@@ -6,10 +6,7 @@ import { NextResponse } from 'next/server';
 
 const getDetailedStatisticsHandler = async () => {
   try {
-    console.log('\n🔍 DETAILED EMPLOYEE STATISTICS');
-    console.log('='.repeat(80));
-
-    // 1. Total and status breakdown
+        // 1. Total and status breakdown
     const totalResult = await db.select({ count: sql<number>`count(*)` }).from(employees);
     const totalEmployees = Number(totalResult[0]?.count ?? 0);
 
@@ -20,11 +17,7 @@ const getDetailedStatisticsHandler = async () => {
       })
       .from(employees)
       .groupBy(employees.status);
-
-    console.log(`\nTotal Employees: ${totalEmployees}`);
-    console.log('\nStatus Breakdown:');
     statusBreakdown.forEach(row => {
-      console.log(`  ${row.status}: ${row.count}`);
     });
 
     // 2. Active employees
@@ -33,19 +26,13 @@ const getDetailedStatisticsHandler = async () => {
       .from(employees)
       .where(eq(employees.status, 'active'));
     const activeEmployees = Number(activeResult[0]?.count ?? 0);
-    console.log(`\nActive Employees: ${activeEmployees}`);
-
     // 3. External employees
     const externalResult = await db
       .select({ count: sql<number>`count(*)` })
       .from(employees)
       .where(eq(employees.isExternal, true));
     const externalEmployees = Number(externalResult[0]?.count ?? 0);
-    console.log(`External Employees: ${externalEmployees}`);
-
     // 4. Assignment analysis
-    console.log('\n--- ASSIGNMENT ANALYSIS ---');
-
     // Get all employees
     const allEmployees = await db.select({ id: employees.id }).from(employees);
     const employeeIds = allEmployees.map(emp => emp.id);
@@ -65,9 +52,7 @@ const getDetailedStatisticsHandler = async () => {
       )
       .groupBy(employeeAssignments.type);
 
-    console.log('\nemployeeAssignments table (by type):');
-    assignmentTypes.forEach(row => {
-      console.log(`  ${row.type}: ${row.count} employees`);
+        assignmentTypes.forEach(row => {
     });
 
     // projectManpower count
@@ -84,8 +69,6 @@ const getDetailedStatisticsHandler = async () => {
       );
     
     const projectManpowerCount = Number(projectManpowerResult[0]?.count ?? 0);
-    console.log(`\nprojectManpower table: ${projectManpowerCount} employees`);
-
     // Combined currently assigned
     const assignedFromBothTables = await db
       .select({
@@ -102,9 +85,7 @@ const getDetailedStatisticsHandler = async () => {
       );
 
     const uniqueAssigned = new Set(assignedFromBothTables.map(r => r.employeeId));
-    console.log(`\nTotal Currently Assigned (unique): ${uniqueAssigned.size} employees`);
-
-    // Employees on leave
+        // Employees on leave
     const today = new Date().toISOString().split('T')[0];
     const onLeaveResult = await db
       .select({
@@ -120,15 +101,9 @@ const getDetailedStatisticsHandler = async () => {
       );
     
     const employeesOnLeave = Number(onLeaveResult[0]?.count ?? 0);
-    console.log(`\nEmployees on Leave: ${employeesOnLeave}`);
-
     // Calculate unassigned active employees
     const unassignedActive = activeEmployees - uniqueAssigned.size;
-    console.log(`\nUnassigned Active Employees: ${unassignedActive} (${activeEmployees} active - ${uniqueAssigned.size} assigned)`);
-
-    console.log('\n' + '='.repeat(80));
-
-    return NextResponse.json({
+            return NextResponse.json({
       success: true,
       data: {
         summary: {

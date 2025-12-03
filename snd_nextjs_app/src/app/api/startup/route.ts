@@ -2,19 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('Startup API called - initializing application services...');
-
     // Initialize cron service
     try {
       const { cronService } = await import('@/lib/services/cron-service');
       await cronService.initialize();
-      console.log('Cron service initialized successfully');
-      
       // Optionally trigger an immediate timesheet generation for testing
       if (process.env.NODE_ENV === 'development') {
         try {
           const result = await cronService.triggerTimesheetGeneration();
-          console.log('Initial timesheet generation result:', result);
         } catch (triggerError) {
           console.error('Failed to trigger initial timesheet generation:', triggerError);
         }

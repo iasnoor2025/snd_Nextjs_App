@@ -18,9 +18,6 @@ export async function GET(request: NextRequest) {
     if (!permissions.can('read', 'Customer')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-
-    console.log('Fetching customers with rentals...');
-
     // Get customers who have rentals
     const customersWithRentals = await db
       .select({
@@ -47,9 +44,6 @@ export async function GET(request: NextRequest) {
         customers.customerType
       )
       .orderBy(customers.name);
-
-    console.log('Customers with rentals:', customersWithRentals);
-
     return NextResponse.json({
       success: true,
       data: customersWithRentals,

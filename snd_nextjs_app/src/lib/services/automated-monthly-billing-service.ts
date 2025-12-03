@@ -48,25 +48,13 @@ export class AutomatedMonthlyBillingService {
     };
 
     try {
-      console.log('Starting automated monthly billing for all rentals...');
-      
       // Get all active rentals - also include 'approved' status as they might be active
       const activeRentals = await db
         .select()
         .from(rentals)
         .where(sql`${rentals.status} IN ('active', 'approved')`);
 
-      console.log(`Found ${activeRentals.length} active rentals:`, activeRentals.map(r => ({
-        id: r.id,
-        rentalNumber: r.rentalNumber,
-        status: r.status,
-        startDate: r.startDate,
-        expectedEndDate: r.expectedEndDate
-      })));
-
-      if (activeRentals.length === 0) {
-        console.log('No active rentals found. Checking all rentals...');
-        
+            if (activeRentals.length === 0) {
         // Check all rentals to see what statuses exist
         const allRentals = await db
           .select({
@@ -77,14 +65,7 @@ export class AutomatedMonthlyBillingService {
           })
           .from(rentals);
         
-        console.log(`Found ${allRentals.length} total rentals:`, allRentals.map(r => ({
-          id: r.id,
-          rentalNumber: r.rentalNumber,
-          status: r.status,
-          startDate: r.startDate
-        })));
-        
-        return {
+                return {
           success: true,
           processed: 0,
           invoices: [],
@@ -97,9 +78,7 @@ export class AutomatedMonthlyBillingService {
 
       for (const rental of activeRentals) {
         try {
-          console.log(`Processing rental ${rental.id} (${rental.rentalNumber})...`);
-          const monthlyInvoices = await this.generateMonthlyInvoicesForRental(rental);
-          console.log(`Generated ${monthlyInvoices.length} invoices for rental ${rental.id}`);
+                    const monthlyInvoices = await this.generateMonthlyInvoicesForRental(rental);
           results.invoices.push(...monthlyInvoices);
           results.processed++;
         } catch (error) {
@@ -133,23 +112,14 @@ export class AutomatedMonthlyBillingService {
     const invoices = [];
 
     try {
-      console.log(`Generating monthly invoices for rental ${rental.id} (${rental.rentalNumber})...`);
-      
-      // Get rental items
+            // Get rental items
       const items = await RentalService.getRentalItems(rental.id);
-      
-      console.log(`Found ${items?.length || 0} rental items for rental ${rental.id}`);
-      
       if (!items || items.length === 0) {
-        console.log(`No rental items found for rental ${rental.id}`);
         return invoices;
       }
 
       // Calculate billing periods
       const billingPeriods = this.calculateMonthlyBillingPeriods(rental);
-
-      console.log(`Calculated ${billingPeriods.length} billing periods for rental ${rental.id}`);
-
       for (const period of billingPeriods) {
         try {
           const invoiceData = await this.prepareMonthlyInvoiceData(rental, items, period);
@@ -174,14 +144,6 @@ export class AutomatedMonthlyBillingService {
    */
   static calculateMonthlyBillingPeriods(rental: any): MonthlyInvoicePeriod[] {
     const periods: MonthlyInvoicePeriod[] = [];
-    
-    console.log(`Calculating billing periods for rental ${rental.id}:`, {
-      startDate: rental.startDate,
-      expectedEndDate: rental.expectedEndDate,
-      lastInvoiceDate: rental.lastInvoiceDate,
-      status: rental.status
-    });
-    
     const rentalStartDate = new Date(rental.startDate);
     const rentalEndDate = rental.expectedEndDate ? new Date(rental.expectedEndDate) : new Date();
     
@@ -199,9 +161,7 @@ export class AutomatedMonthlyBillingService {
       currentStartDate = new Date(rentalStartDate);
     }
 
-    console.log(`Billing start date: ${currentStartDate.toISOString().split('T')[0]}, Rental end date: ${rentalEndDate.toISOString().split('T')[0]}`);
-
-    // Generate monthly periods
+        // Generate monthly periods
     while (currentStartDate < rentalEndDate) {
       // Calculate the end of the current month
       const monthEndDate = new Date(currentStartDate.getFullYear(), currentStartDate.getMonth() + 1, 0);
@@ -211,8 +171,7 @@ export class AutomatedMonthlyBillingService {
       
       // Skip if period is invalid (start >= end)
       if (currentStartDate >= periodEndDate) {
-        console.log(`Skipping invalid period: ${currentStartDate.toISOString().split('T')[0]} >= ${periodEndDate.toISOString().split('T')[0]}`);
-        break;
+                break;
       }
 
       // Generate invoice number
@@ -227,15 +186,12 @@ export class AutomatedMonthlyBillingService {
         isFirstMonth: !lastInvoiceDate
       };
 
-      console.log(`Created billing period: ${period.startDate.toISOString().split('T')[0]} to ${period.endDate.toISOString().split('T')[0]}`);
-      periods.push(period);
+            periods.push(period);
 
       // Move to the next month
       currentStartDate = new Date(periodEndDate);
       currentStartDate.setDate(currentStartDate.getDate() + 1);
     }
-
-    console.log(`Generated ${periods.length} billing periods for rental ${rental.id}`);
     return periods;
   }
 
@@ -336,13 +292,7 @@ export class AutomatedMonthlyBillingService {
         })
         .where(eq(rentals.id, invoiceData.rentalId));
 
-      console.log(`Created monthly invoice for rental ${invoiceData.rentalId}:`, {
-        invoiceNumber: invoiceData.billingPeriod.invoiceNumber,
-        period: `${invoiceData.billingPeriod.startDate.toISOString().split('T')[0]} to ${invoiceData.billingPeriod.endDate.toISOString().split('T')[0]}`,
-        amount: invoiceData.totalAmount
-      });
-
-      return {
+            return {
         rentalId: invoiceData.rentalId,
         rentalNumber: invoiceData.rentalNumber,
         invoiceNumber: erpnextInvoice.name || invoiceData.billingPeriod.invoiceNumber,

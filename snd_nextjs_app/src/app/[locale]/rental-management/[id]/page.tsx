@@ -1007,7 +1007,7 @@ export default function RentalDetailPage() {
 
   // Debug form data changes
   useEffect(() => {
-    console.log('Form data changed:', itemFormData);
+
   }, [itemFormData]);
 
   // Check for duplicates when adding item
@@ -1413,17 +1413,10 @@ export default function RentalDetailPage() {
       }
 
       setRental(data);
-      
-      console.log('Rental data received:', data);
-      console.log('Rental items:', data.rentalItems);
+
       if (data.rentalItems) {
         data.rentalItems.forEach((item, index) => {
-          console.log(`Frontend Item ${index + 1}:`, {
-            id: item.id,
-            equipmentName: item.equipmentName,
-            startDate: item.startDate,
-            status: item.status
-          });
+
         });
       }
       
@@ -1838,12 +1831,7 @@ export default function RentalDetailPage() {
       }
       const data = await response.json();
       const employeesData = data.data || data.employees || [];
-      console.log('Fetched employees data:', {
-        responseData: data,
-        employeesData: employeesData.slice(0, 3),
-        totalCount: employeesData.length
-      });
-      setEmployees(employeesData);
+            setEmployees(employeesData);
       
     } catch (err) {
       console.error('Error fetching employees:', err);
@@ -1940,9 +1928,7 @@ export default function RentalDetailPage() {
     if (!rental || !selectedMonth) return;
 
     try {
-      console.log('Generating invoice for month:', selectedMonth);
-      console.log('Rental ID:', rental.id);
-      
+
       const response = await fetch(`/api/rentals/${rental.id}/invoice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1951,9 +1937,6 @@ export default function RentalDetailPage() {
         })
       });
 
-      console.log('Invoice API response status:', response.status);
-      console.log('Invoice API response ok:', response.ok);
-
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Invoice API error:', errorData);
@@ -1961,7 +1944,7 @@ export default function RentalDetailPage() {
       }
 
       const result = await response.json();
-      console.log('Invoice API success:', result);
+
       toast.success(result.message || 'Invoice generated successfully');
       
       // Close dialog and refresh rental data
@@ -2226,8 +2209,6 @@ export default function RentalDetailPage() {
   const addRentalItem = async () => {
     if (!rental) return;
 
-    console.log('Form data before submission:', itemFormData);
-
     // Validate required fields
     if (!itemFormData.equipmentId || !itemFormData.unitPrice) {
       toast.error('Please fill in all required fields: Equipment and Unit Price');
@@ -2243,8 +2224,6 @@ export default function RentalDetailPage() {
         totalPrice,
         rentalId: rental.id,
       };
-
-      console.log('Sending rental item data:', requestData);
 
       const response = await fetch(`/api/rentals/${rental.id}/items`, {
         method: 'POST',
@@ -2334,9 +2313,6 @@ export default function RentalDetailPage() {
         totalPrice,
         startDate: itemFormData.startDate || null, // Explicitly include startDate
       };
-
-      console.log('Updating rental item with data:', requestData);
-      console.log('Start date value:', itemFormData.startDate);
 
       const response = await fetch(`/api/rentals/${rental.id}/items/${itemFormData.id}`, {
         method: 'PUT',
@@ -2944,14 +2920,7 @@ export default function RentalDetailPage() {
                     <TableBody>
                       {sortedRentalItems.map(({ item }, index) => {
                         // Debug logging for rental item data
-                        console.log('Rental item data:', {
-                          itemId: item?.id,
-                          equipmentName: item?.equipmentName,
-                          operatorId: item?.operatorId,
-                          operatorIdType: typeof item?.operatorId,
-                          hasOperatorId: item?.operatorId !== null && item?.operatorId !== undefined
-                        });
-                        
+
                         // Get operator name directly from API response
                         let operatorName = 'N/A';
                         
@@ -2968,13 +2937,6 @@ export default function RentalDetailPage() {
                         } else if (item?.supervisorId) {
                           supervisorName = `Employee ${item.supervisorId}`;
                         }
-                        
-                        console.log('Operator data from API:', {
-                          operatorId: item?.operatorId,
-                          operatorFirstName: item?.operatorFirstName,
-                          operatorLastName: item?.operatorLastName,
-                          operatorName
-                        });
 
                         // Calculate duration based on actual rental period
                         const { label: durationText } = getRentalItemDurationMeta(item);

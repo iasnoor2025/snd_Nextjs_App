@@ -8,9 +8,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   try {
     const { id } = await params;
     const customerId = parseInt(id);
-
-    console.log('📊 Fetching stats for customer ID:', customerId);
-
     if (isNaN(customerId)) {
       return NextResponse.json(
         {
@@ -37,9 +34,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         { status: 404 }
       );
     }
-
-    console.log('📊 Customer found:', customer[0].name);
-
     // Get rental statistics for this customer
     const rentalStats = await db
       .select({
@@ -55,9 +49,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       .select()
       .from(rentals)
       .where(eq(rentals.customerId, customerId));
-
-    console.log('📊 Customer rentals found:', customerRentals.length);
-
     // Calculate outstanding amount (sum of unpaid rentals)
     const outstandingRentals = customerRentals.filter(
       rental => rental.paymentStatus !== 'paid' && rental.status === 'active'
@@ -66,10 +57,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       (total, rental) => total + (parseFloat(rental.finalAmount || '0') || 0),
       0
     );
-
-    console.log('📊 Outstanding amount:', outstandingAmount);
-    console.log('📊 Total rentals:', rentalStats[0]?.totalRentals || 0);
-
     // Calculate total paid amount
     const paidRentals = customerRentals.filter(rental => rental.paymentStatus === 'paid');
     const totalPaid = paidRentals.reduce(
@@ -120,9 +107,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       currency: customer[0].currency || 'SAR',
       status: customer[0].status,
     };
-
-    console.log('📊 Returning stats:', stats);
-
     // Fetch ERPNext financial data if customer has erpnextId
     let erpnextFinancialData = null;
     if (customer[0].erpnextId) {
@@ -131,8 +115,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         erpnextFinancialData = await erpnextClient.getCustomerFinancialData(customer[0].erpnextId);
         
         if (erpnextFinancialData) {
-          console.log('📊 ERPNext financial data:', erpnextFinancialData);
-          
           // Merge ERPNext data with local stats
           // ERPNext data takes precedence for invoices and outstanding
           stats.totalInvoices = Math.max(stats.totalInvoices, erpnextFinancialData.totalInvoices || 0);

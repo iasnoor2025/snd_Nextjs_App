@@ -179,7 +179,6 @@ export default function DynamicDocumentTypeManager({ companyId }: { companyId?: 
       if (result.success) {
         setDocumentTypes(result.data || []);
         if (!result.data || result.data.length === 0) {
-          console.log('No document types found in database');
         }
       } else {
         toast.error(result.message || 'Failed to fetch document types');

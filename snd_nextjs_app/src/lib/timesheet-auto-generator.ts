@@ -32,12 +32,9 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
   isAutoGenerating = true;
 
   try {
-    console.log('Starting timesheet auto-generation...');
-
     // Test database connection first with better error handling
     try {
       const testResult = await db.execute(sql`SELECT 1 as test`);
-      console.log('Database connection test successful');
     } catch (dbError) {
               // Database connection failed
       return {
@@ -194,8 +191,7 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
 
         // Only log assignment start in development mode
         if (process.env.NODE_ENV === 'development') {
-          console.log(`Processing assignment ${assignment.id} (employee ${employeeId}): ${effectiveStart.toDateString()} to ${effectiveEnd.toDateString()}`);
-        }
+                  }
 
         while (currentDate <= effectiveEnd && loopCount < maxLoopCount) {
           loopCount++;
@@ -262,8 +258,7 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
               
               // Only log when a timesheet is actually created
               if (process.env.NODE_ENV === 'development') {
-                console.log(`  ✓ Created timesheet for ${dateString} (assignment ${assignment.id})`);
-              }
+                              }
             } catch (insertError) {
               console.error(`Error creating timesheet for ${dateString}:`, insertError);
 
@@ -317,7 +312,6 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
 
         // Log summary for assignment (only in development)
         if (process.env.NODE_ENV === 'development' && (assignmentCreated > 0 || assignmentSkipped > 0)) {
-          console.log(`  Assignment ${assignment.id} complete: ${assignmentCreated} created, ${assignmentSkipped} skipped`);
         }
 
       } catch (assignmentError) {

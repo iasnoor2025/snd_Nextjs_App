@@ -7,8 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // POST /api/employees/update-driving-license - Update driving license numbers from iqama numbers
 export const POST = async (request: NextRequest) => {
   try {
-    console.log('Starting driving license update process...');
-    
+
     // Find employees who have iqama numbers but missing driving license numbers
     const employeesToUpdate = await db
       .select({
@@ -26,8 +25,6 @@ export const POST = async (request: NextRequest) => {
         AND (${employees.drivingLicenseNumber} IS NULL 
         OR ${employees.drivingLicenseNumber} = '')`
       );
-
-    console.log(`Found ${employeesToUpdate.length} employees to update`);
 
     if (employeesToUpdate.length === 0) {
       return NextResponse.json({
@@ -48,8 +45,7 @@ export const POST = async (request: NextRequest) => {
 
     for (const employee of employeesToUpdate) {
       try {
-        console.log(`Updating employee ${employee.id}: ${employee.firstName} ${employee.lastName}`);
-        
+
         await db
           .update(employees)
           .set({
@@ -66,15 +62,13 @@ export const POST = async (request: NextRequest) => {
           drivingLicenseNumber: employee.iqamaNumber,
         });
         updatedCount++;
-        console.log(`Successfully updated employee ${employee.id}`);
+
       } catch (error) {
         console.error(`Failed to update employee ${employee.id}:`, error);
       }
     }
 
     const failedCount = employeesToUpdate.length - updatedCount;
-
-    console.log(`Update completed: ${updatedCount} successful, ${failedCount} failed`);
 
     return NextResponse.json({
       success: true,

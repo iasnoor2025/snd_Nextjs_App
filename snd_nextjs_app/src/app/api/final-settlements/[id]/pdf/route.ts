@@ -28,7 +28,7 @@ export async function GET(
     // Check permission to export final settlements (non-blocking for now)
     try {
       await requirePermission(request, 'export', 'FinalSettlement');
-      console.log(`Permission check passed for user ${session.user.id}`);
+
     } catch (permissionError) {
       console.warn('Permission check failed, but continuing:', permissionError);
       // Temporarily allow - fix permissions later
@@ -106,16 +106,8 @@ export async function GET(
     };
 
     // Generate PDF
-    console.log(`[PDF] Starting PDF generation for settlement ${settlementId}, language: ${language}`);
-    console.log(`[PDF] PDF data prepared:`, {
-      settlementNumber: pdfData.settlementNumber,
-      employeeName: pdfData.employeeName,
-      hasAllFields: !!pdfData.settlementType && !!pdfData.absentDays !== undefined,
-    });
-    
     let pdfBuffer: Buffer;
     try {
-      console.log(`[PDF] Calling PDF service for ${language} PDF...`);
       if (language === 'bilingual') {
         pdfBuffer = await FinalSettlementPDFService.generateBilingualSettlementPDF(pdfData);
       } else {
@@ -124,7 +116,6 @@ export async function GET(
           language as 'en' | 'ar'
         );
       }
-      console.log(`[PDF] PDF service returned, buffer type: ${typeof pdfBuffer}, length: ${pdfBuffer?.length}`);
     } catch (pdfGenError) {
       console.error('[PDF] PDF generation failed:', pdfGenError);
       console.error('[PDF] Error details:', {
@@ -145,8 +136,6 @@ export async function GET(
       throw new Error('Generated PDF buffer is empty');
     }
 
-    console.log(`PDF generated successfully, size: ${pdfBuffer.length} bytes`);
-
     // Set headers for PDF download
     const headers = new Headers({
       'Content-Type': 'application/pdf',
@@ -154,18 +143,12 @@ export async function GET(
       'Content-Length': pdfBuffer.length.toString(),
     });
 
-    console.log(`[PDF] Returning PDF response, size: ${pdfBuffer.length} bytes`);
-    console.log(`[PDF] Buffer is instance of Buffer: ${pdfBuffer instanceof Buffer}`);
-    console.log(`[PDF] Buffer first 10 bytes:`, Array.from(pdfBuffer.slice(0, 10)));
-
-    // Convert Buffer to ArrayBuffer (like pdf-proxy route does)
+        // Convert Buffer to ArrayBuffer (like pdf-proxy route does)
     // This is the most compatible format for Next.js
     const arrayBuffer = pdfBuffer.buffer.slice(
       pdfBuffer.byteOffset,
       pdfBuffer.byteOffset + pdfBuffer.byteLength
     );
-
-    console.log(`[PDF] Converted to ArrayBuffer, size: ${arrayBuffer.byteLength} bytes`);
 
     // Use NextResponse with ArrayBuffer (same pattern as pdf-proxy route)
     const response = new NextResponse(arrayBuffer, {
@@ -177,7 +160,6 @@ export async function GET(
       },
     });
     
-    console.log(`[PDF] Response created, status: ${response.status}, headers:`, Object.fromEntries(response.headers.entries()));
     return response;
   } catch (error) {
     console.error('[PDF] Error generating settlement PDF:', error);
@@ -207,8 +189,6 @@ export async function GET(
       }),
     };
     
-    console.log('[PDF] Returning error response:', JSON.stringify(errorResponse, null, 2));
-    
     return NextResponse.json(errorResponse, { 
       status: 500,
       headers: {
@@ -235,7 +215,7 @@ export async function POST(
     // Check permission to export final settlements (non-blocking for now)
     try {
       await requirePermission(request, 'export', 'FinalSettlement');
-      console.log(`Permission check passed for user ${session.user.id}`);
+
     } catch (permissionError) {
       console.warn('Permission check failed, but continuing:', permissionError);
       // Temporarily allow - fix permissions later
@@ -351,8 +331,6 @@ export async function POST(
         console.error('PDF buffer is empty or invalid');
         throw new Error('Generated PDF buffer is empty');
       }
-
-      console.log(`PDF generated successfully, size: ${pdfBuffer.length} bytes`);
 
       // Convert Buffer to ArrayBuffer (like pdf-proxy route does)
       const arrayBuffer = pdfBuffer.buffer.slice(

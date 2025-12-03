@@ -5,8 +5,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(_request: NextRequest) {
   try {
-    console.log('Testing database connection for sync-invoices...');
-    
     // Simple database test without ERPNext
     const rentalsWithInvoices = await db
       .select({
@@ -19,9 +17,6 @@ export async function POST(_request: NextRequest) {
       })
       .from(rentals)
       .where(sql`${rentals.invoiceId} IS NOT NULL`);
-
-    console.log(`Found ${rentalsWithInvoices.length} rentals with invoices`);
-
     return NextResponse.json({
       success: true,
       message: `Database query successful - found ${rentalsWithInvoices.length} rentals with invoices`,

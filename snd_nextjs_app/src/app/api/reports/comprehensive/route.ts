@@ -192,8 +192,6 @@ async function generateOverviewReport(startDate?: string | null, endDate?: strin
 
 async function generateEmployeeAnalyticsReport(startDate?: string | null, endDate?: string | null, departmentId?: string | null) {
   try {
-    console.log('Generating employee analytics report...');
-    
     const [
       performanceMetrics,
       leaveAnalysis
@@ -215,10 +213,6 @@ async function generateEmployeeAnalyticsReport(startDate?: string | null, endDat
       .from(employeeLeaves)
       .groupBy(employeeLeaves.leaveType)
     ]);
-
-    console.log('Performance metrics:', performanceMetrics);
-    console.log('Leave analysis:', leaveAnalysis);
-
     return {
       performance_metrics: performanceMetrics[0] || { total_employees: 0, active_employees: 0, avg_salary: 0 },
       leave_analysis: leaveAnalysis || [],
@@ -492,8 +486,6 @@ async function generatePerformanceAnalyticsReport(startDate?: string | null, end
 
 async function generateRentalAnalyticsReport(startDate?: string | null, endDate?: string | null) {
   try {
-    console.log('Generating rental analytics report...');
-
     const [
       rentalStats,
       companyRentals,
@@ -552,12 +544,6 @@ async function generateRentalAnalyticsReport(startDate?: string | null, endDate?
       .leftJoin(equipment, eq(rentals.equipmentId, equipment.id))
       .leftJoin(customers, eq(rentals.customerId, customers.id))
     ]);
-
-    console.log('Rental stats:', rentalStats);
-    console.log('Company rentals:', companyRentals);
-    console.log('Equipment rentals:', equipmentRentals);
-    console.log('Operator assignments:', operatorAssignments);
-
     return {
       rental_stats: rentalStats[0] || { total_rentals: 0, active_rentals: 0, completed_rentals: 0, total_revenue: 0, avg_rental_amount: 0 },
       company_rentals: companyRentals || [],
@@ -580,8 +566,6 @@ async function generateRentalAnalyticsReport(startDate?: string | null, endDate?
 
 async function generateCustomerAnalyticsReport(startDate?: string | null, endDate?: string | null) {
   try {
-    console.log('Generating customer analytics report...');
-
     // Simple and fast queries
     const customerStats = await db.select({
       total_customers: count(),
@@ -599,11 +583,6 @@ async function generateCustomerAnalyticsReport(startDate?: string | null, endDat
       count: count(sql`DISTINCT ${customers.id}`)
     }).from(customers)
     .innerJoin(projects, eq(customers.id, projects.customerId));
-
-    console.log('Customer stats:', customerStats);
-    console.log('Customers with rentals count:', customersWithRentalsCount);
-    console.log('Customers with projects count:', customersWithProjectsCount);
-
     return {
       customer_stats: {
         total_customers: customerStats[0]?.total_customers || 0,

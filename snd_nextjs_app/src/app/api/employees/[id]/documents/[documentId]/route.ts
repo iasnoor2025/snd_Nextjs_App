@@ -54,8 +54,6 @@ export async function DELETE(
           const filePath = urlParts[1];
           
           if (filePath) {
-            console.log('Deleting file from MinIO:', { bucket: 'employee-documents', path: filePath });
-            
             // Initialize MinIO S3 client
             const s3Client = new S3Client({
               endpoint: process.env.S3_ENDPOINT,
@@ -74,7 +72,6 @@ export async function DELETE(
             });
 
             await s3Client.send(deleteCommand);
-            console.log('Successfully deleted file from MinIO storage');
           }
         }
       } catch (error) {
@@ -92,9 +89,6 @@ export async function DELETE(
     
     // Also invalidate general document caches
     await cacheService.clearByTags(['documents', 'employee']);
-    
-    console.log(`Invalidated cache for employee ${employeeId} documents after deletion`);
-
     return NextResponse.json({
       success: true,
       message: 'Document deleted successfully from MinIO and database',

@@ -3,7 +3,6 @@
 // Force dynamic rendering to prevent SSR issues
 export const dynamic = 'force-dynamic';
 
-
 import { ProtectedRoute } from '@/components/protected-route';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -83,7 +82,6 @@ import {
 import { useDeleteConfirmations } from '@/lib/utils/confirmation-utils';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { cn } from '@/lib/utils';
-
 
 interface RentalItem {
   id: string;
@@ -1253,9 +1251,7 @@ export default function RentalManagementPage() {
                 <SearchableSelect
                   value={formData.customerId}
                   onValueChange={value => {
-                    console.log('Selected customer:', value); // Debug log
-                    setFormData(prev => ({ ...prev, customerId: value }));
-                    setFormErrors(prev => ({ ...prev, customerId: '' }));
+                                        setFormErrors(prev => ({ ...prev, customerId: '' }));
                   }}
                   options={customers.map(customer => ({
                     value: customer.id.toString(),
@@ -1441,7 +1437,7 @@ export default function RentalManagementPage() {
                 <EmployeeDropdown
                   value={formData.supervisor}
                   onValueChange={(value) => {
-                    console.log('Supervisor selected in edit:', value);
+
                     setFormData(prev => ({ ...prev, supervisor: value }));
                   }}
                   placeholder={t('rental.fields.selectSupervisor')}

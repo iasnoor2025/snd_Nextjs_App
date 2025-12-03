@@ -4,8 +4,6 @@ import { NextResponse } from 'next/server';
 
 export async function POST() {
   try {
-    console.log('🧹 Starting comprehensive database reset...');
-    
     // List of all tables that reference employees (in order of dependency)
     const tablesToClear = [
       'advance_payment_histories',
@@ -47,16 +45,11 @@ export async function POST() {
           // Clear tables that reference employee_id
           await db.execute(sql`DELETE FROM ${sql.identifier(table)} WHERE employee_id IS NOT NULL`);
         }
-        
-        console.log(`✅ Cleared table: ${table}`);
         totalCleared++;
       } catch (error) {
         console.warn(`⚠️ Could not clear table ${table}:`, error);
       }
     }
-
-    console.log('✅ Database reset completed successfully');
-    
     return NextResponse.json({
       success: true,
       message: 'Database reset completed successfully. All employee data has been cleared.',

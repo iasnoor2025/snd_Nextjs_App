@@ -76,37 +76,24 @@ async function saveToDatabase(employeeId: number, monthKey: string, timesheetDat
       .from(timesheets)
       .where(eq(timesheets.employeeId, employeeId));
     
-    console.log(`All timesheets for employee ${employeeId}:`, allEmployeeTimesheets.map(t => t.date));
-    
-    // Filter to current month
+        // Filter to current month
     const existingTimesheets = allEmployeeTimesheets.filter(t => {
       const timesheetDate = new Date(t.date);
       return timesheetDate.getFullYear() === monthStart.getFullYear() && 
              timesheetDate.getMonth() === monthStart.getMonth();
     });
     
-    console.log(`Filtered timesheets for ${monthKey}:`, existingTimesheets.map(t => t.date));
-
-    const isUpdate = existingTimesheets.length > 0;
-    console.log(`Found ${existingTimesheets.length} existing timesheets for employee ${employeeId} in ${monthKey}`);
-
+        const isUpdate = existingTimesheets.length > 0;
     // Delete existing timesheets for this month
     if (isUpdate) {
-      console.log(`Deleting existing timesheets for employee ${employeeId} in ${monthKey}`);
-      
       for (const timesheet of existingTimesheets) {
         await db
           .delete(timesheets)
           .where(eq(timesheets.id, timesheet.id));
       }
-      
-      console.log(`Deleted ${existingTimesheets.length} timesheets for employee ${employeeId} in ${monthKey}`);
     }
 
     // Insert new timesheets
-    console.log(`Inserting ${timesheetData.length} timesheet entries for employee ${employeeId}`);
-    console.log('Sample timesheet entry:', timesheetData[0]);
-    
     const insertedTimesheets = await db
       .insert(timesheets)
       .values(timesheetData)
@@ -143,10 +130,7 @@ async function saveToDatabase(employeeId: number, monthKey: string, timesheetDat
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log('=== GAS Submit Endpoint Called ===');
-    console.log('Request headers:', Object.fromEntries(request.headers.entries()));
-    
-    const body = await request.json();
+        const body = await request.json();
     
     let params: Record<string, string[]>;
     if (typeof body === 'string') {
@@ -164,9 +148,7 @@ export async function POST(request: NextRequest) {
     const empCode = params.empCode?.[0];
     const monthKey = params.month?.[0];
 
-    console.log('Processing request:', { empCode, monthKey, paramsCount: Object.keys(params).length });
-
-    if (!empCode || !monthKey) {
+        if (!empCode || !monthKey) {
       return NextResponse.json({ 
         error: 'Employee code and month are required' 
       }, { status: 400 });
@@ -178,9 +160,6 @@ export async function POST(request: NextRequest) {
         error: 'Employee not found with file number: ' + empCode 
       }, { status: 404 });
     }
-
-    console.log(`Found employee ${empCode} with ID: ${employeeId}`);
-
     const dates = params['date[]'] || [];
     const workingHours = params['workingHours[]'] || [];
     const overtimeHours = params['overtime[]'] || [];
@@ -230,13 +209,7 @@ export async function POST(request: NextRequest) {
         updatedAt: new Date().toISOString(),
       });
     }
-
-    console.log(`Processing ${timesheetEntries.length} timesheet entries for employee ${employeeId}, month ${monthKey}`);
-    
     const databaseResult = await saveToDatabase(employeeId, monthKey, timesheetEntries);
-    
-    console.log('Database result:', databaseResult);
-
     const response = {
       success: databaseResult.success,
       message: databaseResult.success 
@@ -270,8 +243,6 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    console.log('=== GAS Submit GET Endpoint Called ===');
-    
     const { searchParams } = new URL(request.url);
     const empCode = searchParams.get('empCode');
     const monthKey = searchParams.get('month');

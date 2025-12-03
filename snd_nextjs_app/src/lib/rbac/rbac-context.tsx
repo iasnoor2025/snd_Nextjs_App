@@ -188,8 +188,7 @@ async function loadUserPermissions(userId: string, userRole: string, forceRefres
     if (data.success && Array.isArray(data.permissions)) {
       // Only log in development mode to reduce console noise
       if (process.env.NODE_ENV === 'development') {
-        console.log('🔄 Loaded user permissions from API:', data.permissions.slice(0, 5), data.permissions.length > 5 ? '...' : '');
-      }
+              }
       setUserPermissionsInCache(userId, data.permissions, userRole);
       return data.permissions;
     } else {
