@@ -246,6 +246,17 @@ export const PermissionConfigs = {
     delete: { action: 'delete' as Action, subject: 'Admin' },
     manage: { action: 'manage' as Action, subject: 'Admin' },
   },
+  finalSettlement: {
+    read: { action: 'read' as Action, subject: 'FinalSettlement' },
+    create: { action: 'create' as Action, subject: 'FinalSettlement' },
+    update: { action: 'update' as Action, subject: 'FinalSettlement' },
+    delete: { action: 'delete' as Action, subject: 'FinalSettlement' },
+    manage: { action: 'manage' as Action, subject: 'FinalSettlement' },
+    approve: { action: 'approve' as Action, subject: 'FinalSettlement' },
+    reject: { action: 'reject' as Action, subject: 'FinalSettlement' },
+    process: { action: 'process' as Action, subject: 'FinalSettlement' },
+    export: { action: 'export' as Action, subject: 'FinalSettlement' },
+  },
 };
 
 /**

@@ -171,10 +171,50 @@ export function FinalSettlementManager({
 
   const handleDownloadPDF = async (settlementId: number, language: 'en' | 'ar' | 'bilingual' = 'bilingual') => {
     try {
+      console.log(`Starting PDF download for settlement ${settlementId}, language: ${language}`);
       const response = await fetch(`/api/final-settlements/${settlementId}/pdf?language=${language}`);
-      if (!response.ok) throw new Error('Failed to generate PDF');
+      
+      console.log(`Response status: ${response.status}, ok: ${response.ok}`);
+      
+      if (!response.ok) {
+        // Try to get error message from response
+        let errorMessage = 'Failed to generate PDF';
+        let errorDetails = '';
+        try {
+          const errorData = await response.json();
+          console.error('Error response data:', errorData);
+          errorMessage = errorData.error || errorData.message || errorMessage;
+          errorDetails = errorData.stack ? `\n\nDetails: ${errorData.stack.substring(0, 200)}` : '';
+        } catch (parseError) {
+          // If response is not JSON, try to get text
+          try {
+            const text = await response.text();
+            console.error('Error response text:', text);
+            errorMessage = text || response.statusText || errorMessage;
+          } catch {
+            errorMessage = response.statusText || errorMessage;
+          }
+        }
+        throw new Error(`${errorMessage}${errorDetails}`);
+      }
       
       const blob = await response.blob();
+      console.log(`Blob received, type: ${blob.type}, size: ${blob.size}`);
+      
+      // Check if the blob is actually a PDF (not an error JSON)
+      if (blob.type !== 'application/pdf') {
+        const text = await blob.text();
+        console.error('Blob is not PDF, content:', text.substring(0, 200));
+        let errorMessage = 'Failed to generate PDF';
+        try {
+          const errorData = JSON.parse(text);
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch {
+          errorMessage = text || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+      
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.style.display = 'none';
@@ -184,9 +224,11 @@ export function FinalSettlementManager({
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+      console.log('PDF download initiated successfully');
     } catch (error) {
       console.error('Error downloading PDF:', error);
-      alert('Failed to download PDF');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to download PDF';
+      alert(`Failed to download PDF: ${errorMessage}`);
     }
   };
 

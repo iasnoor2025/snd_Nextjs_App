@@ -144,9 +144,35 @@ export function ViewFinalSettlementDialog({
   const handleDownloadPDF = async (language: 'en' | 'ar' | 'bilingual' = 'bilingual') => {
     try {
       const response = await fetch(`/api/final-settlements/${settlement.id}/pdf?language=${language}`);
-      if (!response.ok) throw new Error('Failed to generate PDF');
+      
+      if (!response.ok) {
+        // Try to get error message from response
+        let errorMessage = 'Failed to generate PDF';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch {
+          // If response is not JSON, use status text
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
       
       const blob = await response.blob();
+      
+      // Check if the blob is actually a PDF (not an error JSON)
+      if (blob.type !== 'application/pdf') {
+        const text = await blob.text();
+        let errorMessage = 'Failed to generate PDF';
+        try {
+          const errorData = JSON.parse(text);
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch {
+          errorMessage = text || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+      
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.style.display = 'none';
@@ -158,7 +184,8 @@ export function ViewFinalSettlementDialog({
       document.body.removeChild(a);
     } catch (error) {
       console.error('Error downloading PDF:', error);
-      alert('Failed to download PDF');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to download PDF';
+      alert(`Failed to download PDF: ${errorMessage}`);
     }
   };
 

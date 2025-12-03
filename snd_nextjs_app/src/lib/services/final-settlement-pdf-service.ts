@@ -92,39 +92,157 @@ export class FinalSettlementPDFService {
     settlementData: SettlementPDFData,
     language: 'en' | 'ar' = 'en'
   ): Promise<Buffer> {
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+    let browser;
+    let page;
+    const maxRetries = 2;
+    let lastError: Error | null = null;
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        browser = await puppeteer.launch({
+          headless: true,
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--disable-gpu',
+            '--disable-web-security',
+            '--disable-features=IsolateOrigins,site-per-process',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding',
+          ],
+          timeout: 60000,
+        });
 
-    try {
-      const page = await browser.newPage();
-      
-      // Set page format and margins
-      await page.setViewport({ width: 1200, height: 1600 });
-      
-      const htmlContent = language === 'ar' 
-        ? await this.generateArabicTemplate(settlementData)
-        : await this.generateEnglishTemplate(settlementData);
+        page = await browser.newPage();
+        
+        // Set up error handlers to catch page crashes
+        const pageErrors: Error[] = [];
+        page.on('error', (error) => {
+          console.error('Page error:', error);
+          pageErrors.push(error);
+        });
+        page.on('pageerror', (error) => {
+          console.error('Page error event:', error);
+          pageErrors.push(error);
+        });
+        
+        // Set page format and margins
+        await page.setViewport({ width: 1200, height: 1600 });
+        
+        const htmlContent = language === 'ar' 
+          ? await this.generateArabicTemplate(settlementData)
+          : await this.generateEnglishTemplate(settlementData);
 
-      await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+        // Use domcontentloaded - doesn't wait for images/resources that might timeout
+        await page.setContent(htmlContent, { 
+          waitUntil: 'domcontentloaded',
+          timeout: 60000 
+        });
+        
+        // Brief wait for styles to apply
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Check if page is still open and connected before generating PDF
+        if (page.isClosed()) {
+          throw new Error('Page was closed before PDF generation');
+        }
+        
+        // Verify page is still connected to browser
+        try {
+          const readyState = await page.evaluate(() => document.readyState);
+          if (readyState !== 'complete' && readyState !== 'interactive') {
+            console.warn(`Page readyState is ${readyState}, proceeding anyway`);
+          }
+        } catch (e) {
+          throw new Error(`Page is not connected: ${e instanceof Error ? e.message : String(e)}`);
+        }
+        
+        if (pageErrors.length > 0) {
+          console.warn(`Page errors detected but continuing: ${pageErrors.map(e => e.message).join(', ')}`);
+        }
 
-      // Generate PDF
-      const pdfBuffer = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: {
-          top: '8mm',
-          right: '8mm',
-          bottom: '8mm',
-          left: '8mm',
-        },
-      });
+        // Generate PDF with error handling
+        let pdfBuffer;
+        try {
+          pdfBuffer = await page.pdf({
+            format: 'A4',
+            printBackground: true,
+            margin: {
+              top: '8mm',
+              right: '8mm',
+              bottom: '8mm',
+              left: '8mm',
+            },
+            timeout: 60000,
+          });
+        } catch (pdfError) {
+          // Check if page closed during PDF generation
+          if (page.isClosed()) {
+            throw new Error(`Page closed during PDF generation. Original error: ${pdfError instanceof Error ? pdfError.message : String(pdfError)}`);
+          }
+          throw pdfError;
+        }
 
-      return Buffer.from(pdfBuffer);
-    } finally {
-      await browser.close();
+        if (!pdfBuffer) {
+          throw new Error('PDF buffer from Puppeteer is null or undefined');
+        }
+        
+        const buffer = Buffer.from(pdfBuffer);
+        if (!buffer || buffer.length === 0) {
+          console.error('PDF buffer is empty after conversion, original pdfBuffer type:', typeof pdfBuffer, 'length:', pdfBuffer?.length);
+          throw new Error('PDF buffer is empty after generation');
+        }
+        console.log(`PDF buffer generated successfully, size: ${buffer.length} bytes`);
+        return buffer;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        console.error(`Error in generateSettlementPDF (attempt ${attempt + 1}/${maxRetries + 1}):`, lastError);
+        
+        // Clean up on error
+        if (page && !page.isClosed()) {
+          try {
+            await page.close();
+          } catch (e) {
+            // Ignore
+          }
+        }
+        if (browser) {
+          try {
+            await browser.close();
+          } catch (e) {
+            // Ignore
+          }
+        }
+        browser = undefined;
+        page = undefined;
+        
+        // If this was the last attempt, throw the error
+        if (attempt === maxRetries) {
+          throw new Error(`Failed to generate PDF after ${maxRetries + 1} attempts: ${lastError.message}`);
+        }
+        
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } finally {
+        // Only close if we succeeded
+        if (browser && !lastError) {
+          try {
+            if (page && !page.isClosed()) {
+              await page.close();
+            }
+            await browser.close();
+          } catch (closeError) {
+            console.error('Error closing browser:', closeError);
+          }
+        }
+      }
     }
+    
+    throw new Error('Unexpected end of retry loop');
   }
 
   /**
@@ -133,33 +251,154 @@ export class FinalSettlementPDFService {
   static async generateBilingualSettlementPDF(
     settlementData: SettlementPDFData
   ): Promise<Buffer> {
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+    let browser;
+    let page;
+    const maxRetries = 2;
+    let lastError: Error | null = null;
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        browser = await puppeteer.launch({
+          headless: true,
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--disable-gpu',
+            '--disable-web-security',
+            '--disable-features=IsolateOrigins,site-per-process',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding',
+          ],
+          timeout: 60000,
+        });
 
-    try {
-      const page = await browser.newPage();
-      await page.setViewport({ width: 1200, height: 1600 });
-      
-      const htmlContent = await this.generateBilingualTemplate(settlementData);
-      await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+        page = await browser.newPage();
+        
+        // Set up error handlers to catch page crashes
+        const pageErrors: Error[] = [];
+        page.on('error', (error) => {
+          console.error('Page error:', error);
+          pageErrors.push(error);
+        });
+        page.on('pageerror', (error) => {
+          console.error('Page error event:', error);
+          pageErrors.push(error);
+        });
+        
+        await page.setViewport({ width: 1200, height: 1600 });
+        
+        const htmlContent = await this.generateBilingualTemplate(settlementData);
+        
+        // Use domcontentloaded - doesn't wait for images/resources that might timeout
+        await page.setContent(htmlContent, { 
+          waitUntil: 'domcontentloaded',
+          timeout: 60000 
+        });
+        
+        // Brief wait for styles to apply
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Check if page is still open and connected before generating PDF
+        if (page.isClosed()) {
+          throw new Error('Page was closed before PDF generation');
+        }
+        
+        // Verify page is still connected to browser
+        try {
+          const readyState = await page.evaluate(() => document.readyState);
+          if (readyState !== 'complete' && readyState !== 'interactive') {
+            console.warn(`Page readyState is ${readyState}, proceeding anyway`);
+          }
+        } catch (e) {
+          throw new Error(`Page is not connected: ${e instanceof Error ? e.message : String(e)}`);
+        }
+        
+        if (pageErrors.length > 0) {
+          console.warn(`Page errors detected but continuing: ${pageErrors.map(e => e.message).join(', ')}`);
+        }
 
-      const pdfBuffer = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: {
-          top: '6mm',
-          right: '6mm',
-          bottom: '6mm',
-          left: '6mm',
-        },
-      });
+        // Generate PDF with error handling
+        let pdfBuffer;
+        try {
+          pdfBuffer = await page.pdf({
+            format: 'A4',
+            printBackground: true,
+            margin: {
+              top: '6mm',
+              right: '6mm',
+              bottom: '6mm',
+              left: '6mm',
+            },
+            timeout: 60000,
+          });
+        } catch (pdfError) {
+          // Check if page closed during PDF generation
+          if (page.isClosed()) {
+            throw new Error(`Page closed during PDF generation. Original error: ${pdfError instanceof Error ? pdfError.message : String(pdfError)}`);
+          }
+          throw pdfError;
+        }
 
-      return Buffer.from(pdfBuffer);
-    } finally {
-      await browser.close();
+        if (!pdfBuffer) {
+          throw new Error('PDF buffer from Puppeteer is null or undefined');
+        }
+        
+        const buffer = Buffer.from(pdfBuffer);
+        if (!buffer || buffer.length === 0) {
+          console.error('PDF buffer is empty after conversion, original pdfBuffer type:', typeof pdfBuffer, 'length:', pdfBuffer?.length);
+          throw new Error('PDF buffer is empty after generation');
+        }
+        console.log(`PDF buffer generated successfully, size: ${buffer.length} bytes`);
+        return buffer;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        console.error(`Error in generateBilingualSettlementPDF (attempt ${attempt + 1}/${maxRetries + 1}):`, lastError);
+        
+        // Clean up on error
+        if (page && !page.isClosed()) {
+          try {
+            await page.close();
+          } catch (e) {
+            // Ignore
+          }
+        }
+        if (browser) {
+          try {
+            await browser.close();
+          } catch (e) {
+            // Ignore
+          }
+        }
+        browser = undefined;
+        page = undefined;
+        
+        // If this was the last attempt, throw the error
+        if (attempt === maxRetries) {
+          throw new Error(`Failed to generate PDF after ${maxRetries + 1} attempts: ${lastError.message}`);
+        }
+        
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } finally {
+        // Only close if we succeeded
+        if (browser && !lastError) {
+          try {
+            if (page && !page.isClosed()) {
+              await page.close();
+            }
+            await browser.close();
+          } catch (closeError) {
+            console.error('Error closing browser:', closeError);
+          }
+        }
+      }
     }
+    
+    throw new Error('Unexpected end of retry loop');
   }
 
   /**
