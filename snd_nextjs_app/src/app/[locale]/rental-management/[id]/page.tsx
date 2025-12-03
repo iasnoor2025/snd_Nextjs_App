@@ -3967,35 +3967,51 @@ export default function RentalDetailPage() {
                                                 // Update all items in this month
                                                 const updates = monthItems.map(async (item: any) => {
                                                   const itemKey = `${monthKey}-${item.id}`;
-                                                  const response = await fetch(`/api/rentals/${rentalId}/timesheet-status`, {
-                                                    method: 'PUT',
-                                                    headers: { 'Content-Type': 'application/json' },
-                                                    body: JSON.stringify({
-                                                      month: monthKey,
-                                                      itemId: item.id,
-                                                      received: checked === true,
-                                                    }),
-                                                  });
-                                                  
-                                                  if (!response.ok) {
-                                                    throw new Error(`Failed to update timesheet status for item ${item.id}`);
+                                                  try {
+                                                    const response = await fetch(`/api/rentals/${rentalId}/timesheet-status`, {
+                                                      method: 'PUT',
+                                                      headers: { 'Content-Type': 'application/json' },
+                                                      body: JSON.stringify({
+                                                        month: monthKey,
+                                                        itemId: item.id?.toString() || item.id,
+                                                        received: checked === true,
+                                                      }),
+                                                    });
+                                                    
+                                                    if (!response.ok) {
+                                                      const errorData = await response.json().catch(() => ({}));
+                                                      throw new Error(errorData.error || `Failed to update timesheet status for item ${item.id}`);
+                                                    }
+                                                    
+                                                    return { itemKey, received: checked === true, success: true };
+                                                  } catch (error) {
+                                                    console.error(`Error updating item ${item.id}:`, error);
+                                                    return { itemKey, received: checked === true, success: false, error };
                                                   }
-                                                  
-                                                  return { itemKey, received: checked === true };
                                                 });
                                                 
                                                 const results = await Promise.all(updates);
+                                                const failed = results.filter(r => !r.success);
+                                                if (failed.length > 0) {
+                                                  console.error('Some items failed to update:', failed);
+                                                  toast.error(`${failed.length} item(s) failed to update. Check console for details.`);
+                                                }
                                                 
-                                                // Update local state for all items
+                                                // Update local state for all items (only successful ones)
+                                                const successfulResults = results.filter(r => r.success);
                                                 setTimesheetStatus(prev => {
                                                   const newState = { ...prev };
-                                                  results.forEach(({ itemKey, received }) => {
+                                                  successfulResults.forEach(({ itemKey, received }) => {
                                                     newState[itemKey] = received;
                                                   });
                                                   return newState;
                                                 });
                                                 
-                                                toast.success(checked ? `All ${monthItems.length} timesheets marked as received for this month` : 'All timesheet received statuses cleared for this month');
+                                                if (failed.length === 0) {
+                                                  toast.success(checked ? `All ${monthItems.length} timesheets marked as received for this month` : 'All timesheet received statuses cleared for this month');
+                                                } else {
+                                                  toast.warning(`${successfulResults.length} of ${monthItems.length} timesheets updated. ${failed.length} failed.`);
+                                                }
                                               } catch (error) {
                                                 console.error('Error updating timesheet status:', error);
                                                 toast.error('Failed to update timesheet received status');

@@ -107,6 +107,8 @@ const updateTimesheetStatusHandler = async (
     const body = await request.json();
     const { month, itemId, received } = body; // month: YYYY-MM, itemId: optional, received: boolean
 
+    console.log('Update timesheet status request:', { rentalId: id, month, itemId, received, body });
+
     if (!month) {
       return NextResponse.json(
         { error: 'Month parameter is required (format: YYYY-MM)' },
@@ -129,21 +131,31 @@ const updateTimesheetStatusHandler = async (
       );
     }
 
-    const rentalItemId = itemId ? parseInt(itemId) : null;
+    // Parse itemId - handle both string and number
+    let rentalItemId: number | null = null;
+    if (itemId !== undefined && itemId !== null && itemId !== '') {
+      const parsed = typeof itemId === 'string' ? parseInt(itemId) : itemId;
+      if (!isNaN(parsed) && parsed > 0) {
+        rentalItemId = parsed;
+      }
+    }
 
     // Check if record exists
+    const whereConditions = [
+      eq(rentalTimesheetReceived.rentalId, parseInt(id)),
+      eq(rentalTimesheetReceived.month, month),
+    ];
+    
+    if (rentalItemId !== null) {
+      whereConditions.push(eq(rentalTimesheetReceived.rentalItemId, rentalItemId));
+    } else {
+      whereConditions.push(sql`${rentalTimesheetReceived.rentalItemId} IS NULL`);
+    }
+
     const existing = await db
       .select()
       .from(rentalTimesheetReceived)
-      .where(
-        and(
-          eq(rentalTimesheetReceived.rentalId, parseInt(id)),
-          eq(rentalTimesheetReceived.month, month),
-          rentalItemId 
-            ? eq(rentalTimesheetReceived.rentalItemId, rentalItemId)
-            : sql`${rentalTimesheetReceived.rentalItemId} IS NULL`
-        )
-      )
+      .where(and(...whereConditions))
       .limit(1);
 
     if (existing.length > 0) {
@@ -159,16 +171,45 @@ const updateTimesheetStatusHandler = async (
         .where(eq(rentalTimesheetReceived.id, existing[0].id));
     } else {
       // Create new record
-      await db.insert(rentalTimesheetReceived).values({
-        rentalId: parseInt(id),
-        rentalItemId,
-        month,
-        received,
-        receivedBy: received ? parseInt(session.user.id) : null,
-        receivedAt: received ? new Date().toISOString() : null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+      try {
+        await db.insert(rentalTimesheetReceived).values({
+          rentalId: parseInt(id),
+          rentalItemId,
+          month,
+          received,
+          receivedBy: received ? parseInt(session.user.id) : null,
+          receivedAt: received ? new Date().toISOString() : null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      } catch (insertError: any) {
+        console.error('Error inserting timesheet received record:', insertError);
+        // If it's a unique constraint violation, try to update instead
+        if (insertError?.code === '23505' || insertError?.message?.includes('unique')) {
+          // Record might have been created between check and insert, try update
+          const retryExisting = await db
+            .select()
+            .from(rentalTimesheetReceived)
+            .where(and(...whereConditions))
+            .limit(1);
+          
+          if (retryExisting.length > 0) {
+            await db
+              .update(rentalTimesheetReceived)
+              .set({
+                received,
+                receivedBy: received ? parseInt(session.user.id) : null,
+                receivedAt: received ? new Date().toISOString() : null,
+                updatedAt: new Date(),
+              })
+              .where(eq(rentalTimesheetReceived.id, retryExisting[0].id));
+          } else {
+            throw insertError;
+          }
+        } else {
+          throw insertError;
+        }
+      }
     }
 
     return NextResponse.json({
@@ -181,9 +222,18 @@ const updateTimesheetStatusHandler = async (
   } catch (error) {
     console.error('Error updating timesheet received status:', error);
     return NextResponse.json(
-      { error: 'Failed to update timesheet received status' },
+      { 
+        error: 'Failed to update timesheet received status',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
-}
+};
+
+// Export GET handler with permission check
+export const GET = withPermission(PermissionConfigs.rental.read)(getTimesheetStatusHandler);
+
+// Export PUT handler with permission check (update permission for rental)
+export const PUT = withPermission(PermissionConfigs.rental.update)(updateTimesheetStatusHandler);
 

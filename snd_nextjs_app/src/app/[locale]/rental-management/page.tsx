@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -215,6 +216,7 @@ export default function RentalManagementPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customerSearchTerm, setCustomerSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+  const [timesheetStatus, setTimesheetStatus] = useState<Record<string, boolean>>({});
 
   // Get allowed actions for rental management
   const allowedActions = getAllowedActions('Rental');
@@ -439,12 +441,50 @@ export default function RentalManagementPage() {
       
       // Use totals as-is from the database/API
       setRentals(data || []);
+      
+      // Fetch timesheet received status for current month for all rentals
+      if (data && Array.isArray(data) && data.length > 0) {
+        fetchTimesheetStatusForRentals(data);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : t('rental.messages.generalError'));
       toast.error(t('rental.messages.fetchError'));
       setRentals([]); // Ensure rentals is always an array
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch timesheet received status for current month
+  const fetchTimesheetStatusForRentals = async (rentalsList: Rental[]) => {
+    try {
+      const currentMonth = format(new Date(), 'yyyy-MM');
+      const statusPromises = rentalsList.map(async (rental) => {
+        try {
+          const response = await fetch(`/api/rentals/${rental.id}/timesheet-status?month=${currentMonth}`);
+          if (!response.ok) {
+            return { rentalId: rental.id, hasReceived: false };
+          }
+          const data = await response.json();
+          // Check if any items have received status for current month
+          const itemStatuses = data.itemStatuses || {};
+          const hasReceived = Object.values(itemStatuses).some((status: any) => status === true);
+          return { rentalId: rental.id, hasReceived };
+        } catch (error) {
+          console.error(`Error fetching timesheet status for rental ${rental.id}:`, error);
+          return { rentalId: rental.id, hasReceived: false };
+        }
+      });
+
+      const results = await Promise.all(statusPromises);
+      const statusMap: Record<string, boolean> = {};
+      results.forEach(({ rentalId, hasReceived }) => {
+        statusMap[rentalId] = hasReceived;
+      });
+      
+      setTimesheetStatus(statusMap);
+    } catch (error) {
+      console.error('Error fetching timesheet status:', error);
     }
   };
 
@@ -923,6 +963,7 @@ export default function RentalManagementPage() {
                   <TableHead>
                     <SortableHeader column="totalAmount" label={t('rental.table.headers.totalAmount')} />
                   </TableHead>
+                  <TableHead className="w-24 text-center">Received Timesheet</TableHead>
                   <TableHead>{t('rental.table.headers.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -1008,6 +1049,13 @@ export default function RentalManagementPage() {
                     <TableCell>{getStatusBadge(rental.status)}</TableCell>
                     <TableCell className="font-mono">
                       SAR {convertToArabicNumerals(formatAmount(rental.totalAmount), isRTL)}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Checkbox 
+                        checked={timesheetStatus[rental.id] || false} 
+                        disabled
+                        className="mx-auto"
+                      />
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
