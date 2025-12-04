@@ -41,6 +41,7 @@ const getProjectManpowerHandler = async (request: NextRequest, { params }: { par
         updatedAt: projectManpower.updatedAt,
         // Employee info from JOIN (only if employee_id exists)
         employeeFirstName: employees.firstName,
+        employeeMiddleName: employees.middleName,
         employeeLastName: employees.lastName,
         employeeFileNumber: employees.fileNumber,
       })

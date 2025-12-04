@@ -58,7 +58,9 @@ const getProjectEquipmentHandler = async (request: NextRequest, { params }: { pa
         // Operator info now comes from projectManpower with proper JOIN to employees
         // Handle both employee-based and worker-based manpower records using SQL CASE
         operatorName: sql`CASE WHEN ${projectManpower.employeeId} IS NOT NULL THEN ${employees.firstName} ELSE NULL END`,
+        operatorMiddleName: sql`CASE WHEN ${projectManpower.employeeId} IS NOT NULL THEN ${employees.middleName} ELSE NULL END`,
         operatorLastName: sql`CASE WHEN ${projectManpower.employeeId} IS NOT NULL THEN ${employees.lastName} ELSE NULL END`,
+        operatorFileNumber: sql`CASE WHEN ${projectManpower.employeeId} IS NOT NULL THEN ${employees.fileNumber} ELSE NULL END`,
         operatorJobTitle: projectManpower.jobTitle,
         operatorEmployeeId: projectManpower.employeeId,
         operatorWorkerName: projectManpower.workerName,

@@ -92,10 +92,12 @@ interface ProjectResource {
   employee?: {
     id: string;
     first_name: string;
+    middle_name?: string;
     last_name: string;
     full_name?: string;
   };
   employee_name?: string;
+  employee_middle_name?: string;
   employee_file_number?: string;
   worker_name?: string;
   job_title?: string;
@@ -111,6 +113,8 @@ interface ProjectResource {
   door_number?: string;
   operator_id?: string;
   operator_name?: string;
+  operator_middle_name?: string;
+  operator_file_number?: string;
   hourly_rate?: number;
   hours_worked?: number;
   usage_hours?: number;
@@ -264,15 +268,32 @@ export default function ProjectResourcesPage() {
           ? {
               id: resource.employeeId?.toString() || '',
               first_name: resource.employeeFirstName || '',
+              middle_name: resource.employeeMiddleName || undefined,
               last_name: resource.employeeLastName || '',
-              full_name: `${resource.employeeFirstName || ''} ${resource.employeeLastName || ''}`.trim(),
+              full_name: (() => {
+                const nameParts = [
+                  resource.employeeFirstName,
+                  resource.employeeMiddleName,
+                  resource.employeeLastName
+                ].filter(Boolean);
+                return nameParts.join(' ').trim();
+              })(),
             }
           : resource.employee || undefined,
         // Handle both employee names (from JOIN) and worker names
-        // Combine firstName and lastName if both exist, otherwise use workerName
-        employee_name: (resource.employeeFirstName && resource.employeeLastName)
-          ? `${resource.employeeFirstName} ${resource.employeeLastName}`.trim()
-          : resource.employeeFirstName || resource.employeeLastName || resource.employeeName || resource.workerName || `Employee ${resource.employeeId || 'Unknown'}`,
+        // Combine firstName, middleName, and lastName if they exist
+        employee_name: (() => {
+          if (resource.employeeFirstName && resource.employeeLastName) {
+            const nameParts = [
+              resource.employeeFirstName,
+              resource.employeeMiddleName,
+              resource.employeeLastName
+            ].filter(Boolean);
+            return nameParts.join(' ').trim();
+          }
+          return resource.employeeFirstName || resource.employeeLastName || resource.employeeName || resource.workerName || `Employee ${resource.employeeId || 'Unknown'}`;
+        })(),
+        employee_middle_name: resource.employeeMiddleName || undefined,
         employee_file_number: resource.employeeFileNumber || '-',
         worker_name: resource.workerName,
         job_title: resource.jobTitle,
@@ -424,9 +445,20 @@ export default function ProjectResourcesPage() {
         equipment_name: resource.equipmentName,
         door_number: resource.doorNumber || resource.door_number || extractDoorNumberFromName(resource.equipmentName),
         operator_id: resource.operatorId?.toString(),
-        operator_name: resource.operatorName && resource.operatorLastName 
-          ? `${resource.operatorName} ${resource.operatorLastName}`.trim()
-          : resource.operatorWorkerName || undefined,
+        operator_name: (() => {
+          // Build full name: first + middle + last
+          if (resource.operatorName && resource.operatorLastName) {
+            const nameParts = [
+              resource.operatorName,
+              resource.operatorMiddleName,
+              resource.operatorLastName
+            ].filter(Boolean);
+            return nameParts.join(' ').trim();
+          }
+          return resource.operatorWorkerName || undefined;
+        })(),
+        operator_middle_name: resource.operatorMiddleName || undefined,
+        operator_file_number: resource.operatorFileNumber || undefined,
         hourly_rate: resource.hourlyRate !== undefined && resource.hourlyRate !== null 
           ? parseFloat(resource.hourlyRate) 
           : undefined,
@@ -777,16 +809,32 @@ export default function ProjectResourcesPage() {
           ? {
               id: resource.employeeId?.toString() || '',
               first_name: resource.employeeFirstName || '',
+              middle_name: resource.employeeMiddleName || undefined,
               last_name: resource.employeeLastName || '',
-              full_name: `${resource.employeeFirstName || ''} ${resource.employeeLastName || ''}`.trim(),
+              full_name: (() => {
+                const nameParts = [
+                  resource.employeeFirstName,
+                  resource.employeeMiddleName,
+                  resource.employeeLastName
+                ].filter(Boolean);
+                return nameParts.join(' ').trim();
+              })(),
             }
           : resource.employee || undefined;
         
         // Handle both employee names (from JOIN) and worker names
-        // Combine firstName and lastName if both exist, otherwise use workerName
-        const employeeName = (resource.employeeFirstName && resource.employeeLastName)
-          ? `${resource.employeeFirstName} ${resource.employeeLastName}`.trim()
-          : resource.employeeFirstName || resource.employeeLastName || resource.employeeName || resource.workerName || `Employee ${resource.employeeId || 'Unknown'}`;
+        // Combine firstName, middleName, and lastName if they exist
+        const employeeName = (() => {
+          if (resource.employeeFirstName && resource.employeeLastName) {
+            const nameParts = [
+              resource.employeeFirstName,
+              resource.employeeMiddleName,
+              resource.employeeLastName
+            ].filter(Boolean);
+            return nameParts.join(' ').trim();
+          }
+          return resource.employeeFirstName || resource.employeeLastName || resource.employeeName || resource.workerName || `Employee ${resource.employeeId || 'Unknown'}`;
+        })();
         
         return {
           id: resource.id.toString(),
@@ -802,6 +850,7 @@ export default function ProjectResourcesPage() {
           employee_id: resource.employeeId?.toString(),
           employee: employee,
           employee_name: employeeName,
+          employee_middle_name: resource.employeeMiddleName || undefined,
           employee_file_number: resource.employeeFileNumber || '-',
           worker_name: resource.workerName,
           job_title: resource.jobTitle,
@@ -960,7 +1009,20 @@ export default function ProjectResourcesPage() {
           equipment_id: resource.equipmentId?.toString(),
           equipment_name: resource.equipmentName,
           door_number: resource.doorNumber || resource.door_number || extractDoorNumberFromName(resource.equipmentName),
-          operator_name: resource.operatorName ? `${resource.operatorName} ${resource.operatorLastName || ''}`.trim() : undefined,
+          operator_name: (() => {
+            // Build full name: first + middle + last
+            if (resource.operatorName && resource.operatorLastName) {
+              const nameParts = [
+                resource.operatorName,
+                resource.operatorMiddleName,
+                resource.operatorLastName
+              ].filter(Boolean);
+              return nameParts.join(' ').trim();
+            }
+            return resource.operatorWorkerName || undefined;
+          })(),
+          operator_middle_name: resource.operatorMiddleName || undefined,
+          operator_file_number: resource.operatorFileNumber || undefined,
           hourly_rate: hourlyRate || undefined,
           hours_worked: resource.hoursWorked ? parseFloat(resource.hoursWorked) : undefined,
           usage_hours: usageHours, // This will now show the calculated hours from dates
@@ -1615,7 +1677,20 @@ export default function ProjectResourcesPage() {
 
                               {/* Operator Column */}
                               <TableCell>
-                                <div className="text-sm">{resource.operator_name || '-'}</div>
+                                <div className="text-sm">
+                                  {resource.operator_name || resource.operator_file_number ? (
+                                    <div>
+                                      <div className="font-medium">{resource.operator_name || '-'}</div>
+                                      {resource.operator_file_number && (
+                                        <div className="text-xs text-muted-foreground">
+                                          File #: {resource.operator_file_number}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    '-'
+                                  )}
+                                </div>
                               </TableCell>
 
                               {/* Start Date Column */}
