@@ -24,6 +24,15 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import ApiService from '@/lib/api-service';
 import { format } from 'date-fns';
 import {
@@ -99,6 +108,7 @@ interface ProjectResource {
   // Equipment specific fields
   equipment_id?: string;
   equipment_name?: string;
+  door_number?: string;
   operator_id?: string;
   operator_name?: string;
   hourly_rate?: number;
@@ -166,7 +176,17 @@ export default function ProjectResourcesPage() {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<ResourceFilters>({});
   const locale = params?.locale as string || 'en';
-  const [currentPage, setCurrentPage] = useState(1);
+  
+  // Pagination state for each tab
+  const [currentPages, setCurrentPages] = useState<Record<ResourceType, number>>({
+    manpower: 1,
+    equipment: 1,
+    material: 1,
+    fuel: 1,
+    expense: 1,
+    tasks: 1,
+  });
+  const itemsPerPage = 10;
 
   // Separate dialog states for each resource type
   const [manpowerDialogOpen, setManpowerDialogOpen] = useState(false);
@@ -402,6 +422,7 @@ export default function ProjectResourcesPage() {
         // Equipment specific fields
         equipment_id: resource.equipmentId?.toString(),
         equipment_name: resource.equipmentName,
+        door_number: resource.doorNumber || resource.door_number || extractDoorNumberFromName(resource.equipmentName),
         operator_id: resource.operatorId?.toString(),
         operator_name: resource.operatorName && resource.operatorLastName 
           ? `${resource.operatorName} ${resource.operatorLastName}`.trim()
@@ -938,6 +959,7 @@ export default function ProjectResourcesPage() {
           notes: resource.notes,
           equipment_id: resource.equipmentId?.toString(),
           equipment_name: resource.equipmentName,
+          door_number: resource.doorNumber || resource.door_number || extractDoorNumberFromName(resource.equipmentName),
           operator_name: resource.operatorName ? `${resource.operatorName} ${resource.operatorLastName || ''}`.trim() : undefined,
           hourly_rate: hourlyRate || undefined,
           hours_worked: resource.hoursWorked ? parseFloat(resource.hoursWorked) : undefined,
@@ -1143,6 +1165,19 @@ export default function ProjectResourcesPage() {
     return resources.filter(resource => resource.type === type);
   };
 
+  // Helper function to extract door number from equipment name
+  const extractDoorNumberFromName = (equipmentName: string | undefined): string | undefined => {
+    if (!equipmentName) return undefined;
+    
+    // Try to extract numeric prefix (e.g., "1404-DOZER" -> "1404")
+    const match = equipmentName.match(/^(\d+)/);
+    if (match) {
+      return match[1];
+    }
+    
+    return undefined;
+  };
+
   const getResourceCount = (type: ResourceType) => {
     return filterResourcesByType(type).length;
   };
@@ -1152,6 +1187,84 @@ export default function ProjectResourcesPage() {
       (sum, resource) => sum + (resource.total_cost || 0),
       0
     );
+  };
+
+  // Pagination helper functions
+  const getPaginatedResources = (type: ResourceType) => {
+    let allResources = filterResourcesByType(type);
+    
+    // Sort manpower by file number
+    if (type === 'manpower') {
+      allResources = [...allResources].sort((a, b) => {
+        const fileA = a.employee_file_number || '-';
+        const fileB = b.employee_file_number || '-';
+        
+        // Handle numeric file numbers
+        const numA = parseInt(fileA);
+        const numB = parseInt(fileB);
+        
+        // If both are numeric, compare numerically
+        if (!isNaN(numA) && !isNaN(numB)) {
+          return numA - numB;
+        }
+        
+        // If one is numeric and the other is not, numeric comes first
+        if (!isNaN(numA) && isNaN(numB)) {
+          return -1;
+        }
+        if (isNaN(numA) && !isNaN(numB)) {
+          return 1;
+        }
+        
+        // Both are non-numeric (e.g., "-", "EXT-S-14"), sort alphabetically
+        return fileA.localeCompare(fileB);
+      });
+    }
+    
+    // Sort equipment by door number
+    if (type === 'equipment') {
+      allResources = [...allResources].sort((a, b) => {
+        const doorA = a.door_number || '';
+        const doorB = b.door_number || '';
+        
+        // Handle numeric door numbers
+        const numA = parseInt(doorA);
+        const numB = parseInt(doorB);
+        
+        // If both are numeric, compare numerically
+        if (!isNaN(numA) && !isNaN(numB)) {
+          return numA - numB;
+        }
+        
+        // If one is numeric and the other is not, numeric comes first
+        if (!isNaN(numA) && isNaN(numB)) {
+          return -1;
+        }
+        if (isNaN(numA) && !isNaN(numB)) {
+          return 1;
+        }
+        
+        // Both are non-numeric or empty, sort alphabetically
+        return doorA.localeCompare(doorB);
+      });
+    }
+    
+    const currentPage = currentPages[type];
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return allResources.slice(startIndex, endIndex);
+  };
+
+  const getTotalPages = (type: ResourceType) => {
+    const totalItems = getResourceCount(type);
+    return Math.ceil(totalItems / itemsPerPage);
+  };
+
+  const handlePageChange = (type: ResourceType, page: number) => {
+    setCurrentPages(prev => ({
+      ...prev,
+      [type]: page,
+    }));
   };
 
   // Function to update statistics without full page refresh
@@ -1417,7 +1530,7 @@ export default function ProjectResourcesPage() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filterResourcesByType(type).map(resource => (
+                      getPaginatedResources(type).map(resource => (
                         <TableRow key={resource.id}>
                           {type === 'manpower' ? (
                             <>
@@ -1664,6 +1777,74 @@ export default function ProjectResourcesPage() {
                     )}
                   </TableBody>
                 </Table>
+                
+                {/* Pagination Controls */}
+                {getTotalPages(type) > 1 && (
+                  <div className="mt-4 flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">
+                      Showing {((currentPages[type] - 1) * itemsPerPage) + 1} to{' '}
+                      {Math.min(currentPages[type] * itemsPerPage, getResourceCount(type))} of{' '}
+                      {getResourceCount(type)} items
+                    </div>
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious
+                            onClick={() => handlePageChange(type, Math.max(1, currentPages[type] - 1))}
+                            className={currentPages[type] === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                          />
+                        </PaginationItem>
+                        
+                        {Array.from({ length: getTotalPages(type) }, (_, i) => i + 1).map(page => {
+                          const totalPages = getTotalPages(type);
+                          const currentPage = currentPages[type];
+                          
+                          // Show first page, last page, current page, and pages around current
+                          if (
+                            page === 1 ||
+                            page === totalPages ||
+                            (page >= currentPage - 1 && page <= currentPage + 1)
+                          ) {
+                            return (
+                              <PaginationItem key={page}>
+                                <PaginationLink
+                                  onClick={() => handlePageChange(type, page)}
+                                  isActive={currentPage === page}
+                                  className="cursor-pointer"
+                                >
+                                  {page}
+                                </PaginationLink>
+                              </PaginationItem>
+                            );
+                          } else if (
+                            page === currentPage - 2 ||
+                            page === currentPage + 2
+                          ) {
+                            return (
+                              <PaginationItem key={page}>
+                                <PaginationEllipsis />
+                              </PaginationItem>
+                            );
+                          }
+                          return null;
+                        })}
+                        
+                        <PaginationItem>
+                          <PaginationNext
+                            onClick={() =>
+                              handlePageChange(type, Math.min(getTotalPages(type), currentPages[type] + 1))
+                            }
+                            className={
+                              currentPages[type] === getTotalPages(type)
+                                ? 'pointer-events-none opacity-50'
+                                : 'cursor-pointer'
+                            }
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

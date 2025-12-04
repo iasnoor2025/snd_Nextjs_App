@@ -54,6 +54,7 @@ const getProjectEquipmentHandler = async (request: NextRequest, { params }: { pa
         updatedAt: projectEquipment.updatedAt,
         equipmentName: equipment.name,
         equipmentModel: equipment.modelNumber,
+        doorNumber: equipment.doorNumber,
         // Operator info now comes from projectManpower with proper JOIN to employees
         // Handle both employee-based and worker-based manpower records using SQL CASE
         operatorName: sql`CASE WHEN ${projectManpower.employeeId} IS NOT NULL THEN ${employees.firstName} ELSE NULL END`,
