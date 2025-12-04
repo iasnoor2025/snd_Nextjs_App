@@ -14,12 +14,14 @@ interface ProjectOverviewSectionProps {
   projectData: ActiveProject[];
   onUpdateProject: (project: ActiveProject) => void;
   onHideSection?: () => void;
+  isLoading?: boolean;
 }
 
 export default function ProjectOverviewSection({
   projectData,
   onUpdateProject,
   onHideSection,
+  isLoading = false,
 }: ProjectOverviewSectionProps) {
   const params = useParams();
   const locale = params?.locale as string || 'en';
@@ -35,9 +37,6 @@ export default function ProjectOverviewSection({
     const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
     return matchesStatus;
   });
-
-  // Add loading state for when data is being fetched
-  const isLoading = !projectData || projectData.length === 0;
 
   // Calculate summary statistics
   const summaryStats = useMemo(() => {

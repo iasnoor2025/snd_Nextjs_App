@@ -325,6 +325,19 @@ export default function DashboardPage() {
     }
   };
 
+  // Fetch Project data
+  const fetchProjectData = async () => {
+    try {
+      const response = await fetch('/api/dashboard/projects?limit=50');
+      if (response.ok) {
+        const data = await response.json();
+        setProjectData(data.projectData || []);
+      }
+    } catch (error) {
+      // Handle error silently for production
+    }
+  };
+
   // Memoized fetch functions to prevent recreation on every render
   const memoizedFetchDashboardStats = useCallback(async () => {
     try {
@@ -386,6 +399,18 @@ export default function DashboardPage() {
     }
   }, []);
 
+  const memoizedFetchProjectData = useCallback(async () => {
+    try {
+      const response = await fetch('/api/dashboard/projects?limit=50');
+      if (response.ok) {
+        const data = await response.json();
+        setProjectData(data.projectData || []);
+      }
+    } catch (error) {
+      // Handle error silently for production
+    }
+  }, []);
+
   // Fetch all dashboard data in parallel with optimized functions
   const fetchDashboardData = useCallback(async (showLoading = false) => {
     try {
@@ -399,7 +424,8 @@ export default function DashboardPage() {
         memoizedFetchIqamaData(),
         memoizedFetchEquipmentData(),
         memoizedFetchTimesheetData(),
-        memoizedFetchActivityData()
+        memoizedFetchActivityData(),
+        memoizedFetchProjectData()
       ]);
 
     } catch (_error) {
@@ -436,7 +462,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [memoizedFetchDashboardStats, memoizedFetchIqamaData, memoizedFetchEquipmentData, memoizedFetchTimesheetData, memoizedFetchActivityData]);
+  }, [memoizedFetchDashboardStats, memoizedFetchIqamaData, memoizedFetchEquipmentData, memoizedFetchTimesheetData, memoizedFetchActivityData, memoizedFetchProjectData]);
 
   // Fetch only timesheet data for quick updates (legacy)
   const fetchTimesheetDataLegacy = async () => {
@@ -516,10 +542,13 @@ export default function DashboardPage() {
       if (sectionVisibility.equipment && equipmentData.length > 0) {
         fetchEquipmentData();
       }
+      if (sectionVisibility.projectOverview && projectData.length > 0) {
+        fetchProjectData();
+      }
     }, 30000); // Refresh every 30 seconds
     
     return () => clearInterval(interval);
-  }, [session, sectionVisibility, iqamaData.length, timesheetData.length, activities.length, equipmentData.length]);
+  }, [session, sectionVisibility, iqamaData.length, timesheetData.length, activities.length, equipmentData.length, projectData.length]);
 
   // Fetch equipment data immediately when equipment section becomes visible
   // Only fetch if data doesn't exist
@@ -528,6 +557,14 @@ export default function DashboardPage() {
       fetchEquipmentData();
     }
   }, [session, sectionVisibility.equipment, equipmentData.length]);
+
+  // Fetch project data immediately when project overview section becomes visible
+  // Only fetch if data doesn't exist
+  useEffect(() => {
+    if (session && sectionVisibility.projectOverview && projectData.length === 0) {
+      fetchProjectData();
+    }
+  }, [session, sectionVisibility.projectOverview, projectData.length]);
 
   // Handle refresh
   const handleRefresh = async () => {
@@ -1053,6 +1090,7 @@ export default function DashboardPage() {
                 projectData={projectData}
                 onUpdateProject={handleOpenProjectModal}
                 onHideSection={() => toggleSection('projectOverview')}
+                isLoading={loading && projectData.length === 0}
               />
             </ProjectOverviewPermission>
           )}
