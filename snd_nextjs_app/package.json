@@ -104,7 +104,7 @@
     "next-auth": "^5.0.0-beta.30",
     "next-themes": "^0.4.6",
     "node-cron": "^4.2.1",
-    "nodemailer": "^6.10.1",
+    "nodemailer": "^7.0.11",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^5.4.394",
     "pg": "^8.16.3",
@@ -145,7 +145,7 @@
     "@types/webpack": "^5.28.5",
     "@typescript-eslint/eslint-plugin": "^8.46.2",
     "@typescript-eslint/parser": "^8.46.2",
-    "drizzle-kit": "^0.31.5",
+    "drizzle-kit": "^0.31.7",
     "esbuild": "^0.25.10",
     "eslint": "^9.38.0",
     "eslint-config-next": "^16.0.1",
@@ -172,5 +172,8 @@
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"
+  },
+  "overrides": {
+    "esbuild": "^0.25.10"
   }
 }
