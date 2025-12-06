@@ -71,7 +71,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
 import { 
-  RentalItemConfirmationDialog
+  RentalItemConfirmationDialog,
+  EquipmentTimesheetDialog
 } from '@/components/rental';
 import { useRentalItemConfirmation } from '@/hooks/use-rental-item-confirmation';
 import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
@@ -827,6 +828,20 @@ export default function RentalDetailPage() {
   const [rentalPayments, setRentalPayments] = useState<any[]>([]);
   // Track timesheet received status per item per month: key format: `${monthKey}-${itemId}`
   const [timesheetStatus, setTimesheetStatus] = useState<Record<string, boolean>>({});
+  // Track timesheet total hours for each rental item
+  const [itemTimesheetHours, setItemTimesheetHours] = useState<Record<number, number>>({});
+  // Equipment timesheet dialog state
+  const [equipmentTimesheetDialog, setEquipmentTimesheetDialog] = useState<{
+    open: boolean;
+    rentalItemId: number | null;
+    equipmentName: string;
+    month: string;
+  }>({
+    open: false,
+    rentalItemId: null,
+    equipmentName: '',
+    month: '',
+  });
   const [formData, setFormData] = useState({
     customerId: '',
     rentalNumber: '',
@@ -869,7 +884,64 @@ export default function RentalDetailPage() {
       .filter((entry): entry is RentalItemWithIndex => Boolean(entry.item));
   }, [rental?.rentalItems]);
 
-  const getRentalItemDurationMeta = (item: RentalItem) => {
+  // Fetch timesheet total hours for all rental items for a specific month
+  const fetchTimesheetHoursForMonth = async (items: RentalItem[], monthKey: string) => {
+    if (!rentalId || items.length === 0 || !monthKey) return;
+
+    const hoursMap: Record<string, number> = {};
+
+    await Promise.all(
+      items.map(async (item) => {
+        try {
+          const response = await fetch(
+            `/api/rentals/${rentalId}/equipment-timesheets?rentalItemId=${item.id}&month=${monthKey}`
+          );
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.data && data.data.length > 0) {
+              // Sum all actual hours (regular + overtime) for this month
+              const totalHours = data.data.reduce((sum: number, ts: any) => {
+                const regular = parseFloat(ts.regularHours?.toString() || '0') || 0;
+                const overtime = parseFloat(ts.overtimeHours?.toString() || '0') || 0;
+                return sum + regular + overtime;
+              }, 0);
+              
+              // Debug: Log individual day breakdown
+              if (totalHours > 0) {
+                hoursMap[`${item.id}-${monthKey}`] = totalHours;
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching timesheet hours for item ${item.id} month ${monthKey}:`, error);
+        }
+      })
+    );
+
+    if (Object.keys(hoursMap).length > 0) {
+      setItemTimesheetHours(prev => ({ ...prev, ...hoursMap }));
+    }
+  };
+
+  const getRentalItemDurationMeta = (item: RentalItem, monthKey?: string) => {
+    // Check if we have timesheet data for this item and month (only for report view)
+    let timesheetHours: number | undefined;
+    if (monthKey) {
+      timesheetHours = itemTimesheetHours[`${item.id}-${monthKey}`];
+    }
+    
+    // Only show timesheet hours in report view for the specific month
+    if (monthKey && timesheetHours && timesheetHours > 0) {
+      // Show total working hours from timesheet for this month
+      return {
+        label: `${timesheetHours % 1 === 0 ? timesheetHours.toString() : timesheetHours.toFixed(1)} hours`,
+        durationMs: timesheetHours * 60 * 60 * 1000, // Convert to milliseconds for sorting
+        hasTimesheet: true,
+        totalHours: timesheetHours,
+      };
+    }
+
+    // Fallback to date-based calculation (for main table or months without timesheet)
     let label = 'N/A';
     let durationMs = 0;
     const itemStartDate = item?.startDate && item.startDate !== '' ? item.startDate : rental?.startDate;
@@ -909,7 +981,7 @@ export default function RentalDetailPage() {
       }
     }
 
-    return { label, durationMs };
+    return { label, durationMs, hasTimesheet: false, totalHours: 0 };
   };
 
   const getRentalItemSortableValue = (entry: RentalItemWithIndex, column: RentalItemSortableColumn) => {
@@ -1396,15 +1468,23 @@ export default function RentalDetailPage() {
         data = { ...data, ...financials };
         
         // Update the database with recalculated totals so listing page shows correct values
+        // Include required fields (customerId, startDate) from the rental data
         try {
           await fetch(`/api/rentals/${rentalId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+              customerId: data.customerId || data.customer?.id,
+              startDate: data.startDate,
+              rentalNumber: data.rentalNumber,
+              expectedEndDate: data.expectedEndDate,
+              status: data.status,
+              paymentStatus: data.paymentStatus,
               subtotal: financials.subtotal,
               taxAmount: financials.taxAmount,
               totalAmount: financials.totalAmount,
               finalAmount: financials.finalAmount,
+              tax: financials.tax,
             }),
           });
         } catch (err) {
@@ -1427,13 +1507,18 @@ export default function RentalDetailPage() {
       // Fetch equipment names for rental items that have fallback names
       if (data.rentalItems && data.rentalItems.length > 0) {
         fetchEquipmentNames(data.rentalItems);
+        // Fetch timesheet total hours for all items
+        // Fetch timesheet hours will be handled by the useEffect that watches rental items
       }
       
       // Fetch timesheet status for all months
       fetchTimesheetStatusForMonths(data.rentalItems || [], data);
+      
+      return data;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       toast.error('Failed to fetch rental details');
+      return null;
     } finally {
       setLoading(false);
     }
@@ -1501,6 +1586,28 @@ export default function RentalDetailPage() {
       });
       
       setTimesheetStatus(statusMap);
+      
+      // After setting status, fetch hours for months where timesheet was received
+      const monthsWithTimesheet = new Set<string>();
+      Object.keys(statusMap).forEach((key) => {
+        if (statusMap[key] === true) {
+          // Key format: `${monthKey}-${itemId}`
+          const parts = key.split('-');
+          if (parts.length >= 3) {
+            const monthKey = `${parts[0]}-${parts[1]}`;
+            if (monthKey.match(/^\d{4}-\d{2}$/)) {
+              monthsWithTimesheet.add(monthKey);
+            }
+          }
+        }
+      });
+      
+      // Fetch hours for months with received timesheets
+      if (monthsWithTimesheet.size > 0 && rentalId) {
+        Array.from(monthsWithTimesheet).forEach((monthKey) => {
+          fetchTimesheetHoursForMonth(rentalItems, monthKey);
+        });
+      }
     } catch (error) {
       console.error('Error fetching timesheet status:', error);
     }
@@ -1593,11 +1700,11 @@ export default function RentalDetailPage() {
     };
   };
 
-  // Calculate financial totals from rental items
+  // Calculate financial totals from rental items (based on start date, not timesheet)
   const calculateFinancials = (items: any[]) => {
     const subtotal = items.reduce((sum, item) => {
-      // Calculate item total based on rate type and duration
-      const itemTotal = calculateItemTotal(item);
+      // Always use start-date-based calculation for items tab
+      const itemTotal = calculateItemTotal(item, rental || undefined);
       return sum + itemTotal;
     }, 0);
     
@@ -1630,6 +1737,33 @@ export default function RentalDetailPage() {
       recalculateTotals();
     }
   }, [rental?.startDate, rental?.expectedEndDate]);
+
+  // Fetch timesheet hours only for months where timesheet was received (checked)
+  useEffect(() => {
+    if (rental?.rentalItems && rental.rentalItems.length > 0 && rental?.id && Object.keys(timesheetStatus).length > 0) {
+      // Get all unique months where timesheet was received
+      const monthsWithTimesheet = new Set<string>();
+      
+      // Check which months have timesheet received status
+      Object.keys(timesheetStatus).forEach((key) => {
+        if (timesheetStatus[key] === true) {
+          // Key format: `${monthKey}-${itemId}`
+          const [monthKey] = key.split('-').slice(0, 2); // Get year-month part
+          if (monthKey && monthKey.match(/^\d{4}-\d{2}$/)) {
+            monthsWithTimesheet.add(monthKey);
+          }
+        }
+      });
+      
+      // Only fetch timesheet hours for months where timesheet was received
+      if (monthsWithTimesheet.size > 0) {
+        Array.from(monthsWithTimesheet).forEach((monthKey) => {
+          fetchTimesheetHoursForMonth(rental.rentalItems, monthKey);
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rental?.id, rental?.rentalItems?.length, timesheetStatus]);
 
   // Fetch supervisor details when rental loads
   useEffect(() => {
@@ -2468,7 +2602,8 @@ export default function RentalDetailPage() {
     if (rental && rental.rentalItems) {
       recalculateTotals();
     }
-  }, [rental?.rentalItems]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rental?.rentalItems?.length]);
 
   // Initial data fetch
   useEffect(() => {
@@ -2968,7 +3103,9 @@ export default function RentalDetailPage() {
                               }
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">{durationText}</TableCell>
-                                                         <TableCell className="font-mono font-semibold">SAR {formatAmount(calculateItemTotal(item, rental || undefined))}</TableCell>
+                            <TableCell className="font-mono font-semibold">
+                              SAR {formatAmount(calculateItemTotal(item, rental || undefined))}
+                            </TableCell>
                             <TableCell className="text-sm">{operatorName}</TableCell>
                             <TableCell className="text-sm">{supervisorName}</TableCell>
                             <TableCell>
@@ -4067,7 +4204,7 @@ export default function RentalDetailPage() {
                                         <TableHead className="text-sm py-1 px-1 w-20">Duration</TableHead>
                                         <TableHead className="text-sm py-1 px-1 w-28">Total</TableHead>
                                         <TableHead className="text-sm py-1 px-1 w-28">Completed Date</TableHead>
-                                        <TableHead className="text-sm py-1 px-1 w-20 text-center">Timesheet</TableHead>
+                                        <TableHead className="text-sm py-1 px-1 w-32 text-center">Timesheet</TableHead>
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -4118,7 +4255,29 @@ export default function RentalDetailPage() {
                                       
                                       // Calculate duration for this specific month
                                       let durationText = 'N/A';
-                                      if (item.startDate) {
+                                      
+                                      // Check if we have timesheet data for this item and this specific month
+                                      const monthKeyForDuration = monthData.monthLabel ? (() => {
+                                        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                                        const [monthName, yearStr] = monthData.monthLabel.split(' ');
+                                        const monthNum = monthNames.indexOf(monthName);
+                                        return `${yearStr}-${String(monthNum + 1).padStart(2, '0')}`;
+                                      })() : '';
+                                      
+                                      // Check if we have timesheet hours for this item and month
+                                      const timesheetReceived = timesheetStatus[`${monthKeyForDuration}-${item.id}`];
+                                      const timesheetHours = monthKeyForDuration ? itemTimesheetHours[`${item.id}-${monthKeyForDuration}`] : undefined;
+                                      
+                                      // Track if this is timesheet-based hours for styling
+                                      let isTimesheetHours = false;
+                                      
+                                      // Show timesheet hours if they exist AND timesheet is marked as received
+                                      if (timesheetHours && timesheetHours > 0 && timesheetReceived) {
+                                        // Show total working hours from timesheet for this month only (if timesheet was received)
+                                        const hoursDisplay = timesheetHours % 1 === 0 ? timesheetHours.toString() : timesheetHours.toFixed(1);
+                                        durationText = `${hoursDisplay} hours`;
+                                        isTimesheetHours = true;
+                                      } else if (item.startDate) {
                                         const itemStartDate = new Date(item.startDate);
                                         itemStartDate.setHours(0, 0, 0, 0);
                                         
@@ -4252,50 +4411,100 @@ export default function RentalDetailPage() {
                                           </TableCell>
                                           <TableCell className="text-sm text-muted-foreground py-1 px-1 min-w-[100px]">{operatorName}</TableCell>
                                                       <TableCell className="text-sm text-muted-foreground py-1 px-1 min-w-[110px]">{supervisorName}</TableCell>
-                                          <TableCell className="text-sm text-muted-foreground py-1 px-1 w-20">{durationText}</TableCell>
+                                          <TableCell className={`text-sm py-1 px-1 w-20 ${isTimesheetHours ? 'text-green-600 font-semibold' : 'text-muted-foreground'}`}>{durationText}</TableCell>
                                           <TableCell className="font-mono font-semibold text-sm py-1 px-1 w-28">
                                             {(() => {
-                                              const days = parseInt(durationText.replace(' days', '')) || 1;
+                                              // Get monthKey for this month
+                                              const monthKeyForTotal = (() => {
+                                                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                                                const [monthName, yearStr] = monthData.monthLabel.split(' ');
+                                                const monthNum = monthNames.indexOf(monthName);
+                                                return `${yearStr}-${String(monthNum + 1).padStart(2, '0')}`;
+                                              })();
+                                              
+                                              // Only use timesheet hours if timesheet was actually imported (checked)
+                                              const timesheetReceived = timesheetStatus[`${monthKeyForTotal}-${item.id}`];
+                                              const timesheetHoursForTotal = timesheetReceived ? itemTimesheetHours[`${item.id}-${monthKeyForTotal}`] : undefined;
+                                              
+                                              // If we have timesheet hours for this month AND timesheet was received, calculate based on hours
+                                              if (timesheetHoursForTotal && timesheetHoursForTotal > 0 && timesheetReceived) {
+                                                const unitPrice = parseFloat(item.unitPrice || 0) || 0;
+                                                const rateType = item.rateType || 'daily';
+                                                
+                                                // Convert rate to hourly equivalent
+                                                let hourlyRate = unitPrice;
+                                                if (rateType === 'daily') {
+                                                  hourlyRate = unitPrice / 10;
+                                                } else if (rateType === 'weekly') {
+                                                  hourlyRate = unitPrice / (7 * 10);
+                                                } else if (rateType === 'monthly') {
+                                                  hourlyRate = unitPrice / (30 * 10);
+                                                }
+                                                
+                                                const monthlyTotal = hourlyRate * timesheetHoursForTotal;
+                                                return `SAR ${formatAmount(monthlyTotal.toString())}`;
+                                              }
+                                              
+                                              // Otherwise, calculate based on days (normal calculation)
+                                              const days = parseInt(durationText.replace(' days', '').replace(' day', '').replace(' hours', '').replace(/\d+\.?\d*\s*hours?/i, '')) || 1;
                                               const unitPrice = parseFloat(item.unitPrice || 0) || 0;
                                               const monthlyTotal = unitPrice * days;
                                               return `SAR ${formatAmount(monthlyTotal.toString())}`;
                                             })()}
                                           </TableCell>
                                           <TableCell className="text-sm text-muted-foreground py-1 px-1 w-28">{completedDateDisplay}</TableCell>
-                                          <TableCell className="text-sm py-1 px-1 w-20 text-center">
-                                            <Checkbox 
-                                              checked={timesheetStatus[`${monthKey}-${item.id}`] || false} 
-                                              onCheckedChange={async (checked) => {
-                                                try {
-                                                  const response = await fetch(`/api/rentals/${rentalId}/timesheet-status`, {
-                                                    method: 'PUT',
-                                                    headers: { 'Content-Type': 'application/json' },
-                                                    body: JSON.stringify({
-                                                      month: monthKey,
-                                                      itemId: item.id,
-                                                      received: checked === true,
-                                                    }),
+                                          <TableCell className="text-sm py-1 px-1 w-32 text-center">
+                                            <div className="flex items-center justify-center gap-2">
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-7 w-7 p-0"
+                                                onClick={() => {
+                                                  setEquipmentTimesheetDialog({
+                                                    open: true,
+                                                    rentalItemId: item.id,
+                                                    equipmentName: equipmentName,
+                                                    month: monthKey,
                                                   });
-                                                  
-                                                  if (!response.ok) {
-                                                    throw new Error('Failed to update timesheet received status');
+                                                }}
+                                                title="Enter/Import Timesheet Data"
+                                              >
+                                                <FileText className="h-4 w-4" />
+                                              </Button>
+                                              <Checkbox 
+                                                checked={timesheetStatus[`${monthKey}-${item.id}`] || false} 
+                                                onCheckedChange={async (checked) => {
+                                                  try {
+                                                    const response = await fetch(`/api/rentals/${rentalId}/timesheet-status`, {
+                                                      method: 'PUT',
+                                                      headers: { 'Content-Type': 'application/json' },
+                                                      body: JSON.stringify({
+                                                        month: monthKey,
+                                                        itemId: item.id,
+                                                        received: checked === true,
+                                                      }),
+                                                    });
+                                                    
+                                                    if (!response.ok) {
+                                                      throw new Error('Failed to update timesheet received status');
+                                                    }
+                                                    
+                                                    // Update local state for this specific item
+                                                    const itemKey = `${monthKey}-${item.id}`;
+                                                    setTimesheetStatus(prev => ({
+                                                      ...prev,
+                                                      [itemKey]: checked === true,
+                                                    }));
+                                                    
+                                                    toast.success(checked ? 'Timesheet marked as received' : 'Timesheet marked as not received');
+                                                  } catch (error) {
+                                                    console.error('Error updating timesheet status:', error);
+                                                    toast.error('Failed to update timesheet received status');
                                                   }
-                                                  
-                                                  // Update local state for this specific item
-                                                  const itemKey = `${monthKey}-${item.id}`;
-                                                  setTimesheetStatus(prev => ({
-                                                    ...prev,
-                                                    [itemKey]: checked === true,
-                                                  }));
-                                                  
-                                                  toast.success(checked ? 'Timesheet marked as received' : 'Timesheet marked as not received');
-                                                } catch (error) {
-                                                  console.error('Error updating timesheet status:', error);
-                                                  toast.error('Failed to update timesheet received status');
-                                                }
-                                              }}
-                                              className="mx-auto"
-                                            />
+                                                }}
+                                                className="mx-auto"
+                                              />
+                                            </div>
                                           </TableCell>
                                         </TableRow>
                                                   );
@@ -5123,6 +5332,39 @@ export default function RentalDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Equipment Timesheet Dialog */}
+      {equipmentTimesheetDialog.rentalItemId && (
+        <EquipmentTimesheetDialog
+          open={equipmentTimesheetDialog.open}
+          onOpenChange={(open) =>
+            setEquipmentTimesheetDialog((prev) => ({ ...prev, open }))
+          }
+          rentalId={rentalId}
+          rentalItemId={equipmentTimesheetDialog.rentalItemId}
+          equipmentName={equipmentTimesheetDialog.equipmentName}
+          month={equipmentTimesheetDialog.month}
+          onSuccess={async () => {
+            // Refresh rental data to get updated totals after timesheet import
+            const updatedRental = await fetchRental();
+            // Small delay to ensure state updates
+            await new Promise(resolve => setTimeout(resolve, 100));
+            // Refresh timesheet hours and status for the imported month
+            if (equipmentTimesheetDialog.month) {
+              // Use the updated rental data or fallback to current rental state
+              const rentalItems = updatedRental?.rentalItems || rental?.rentalItems || [];
+              if (rentalItems.length > 0) {
+                // Refresh timesheet status first to ensure checkbox is checked
+                await fetchTimesheetStatusForMonths(rentalItems, updatedRental || rental);
+                // Small delay to ensure status is updated
+                await new Promise(resolve => setTimeout(resolve, 100));
+                // Then refresh timesheet hours
+                await fetchTimesheetHoursForMonth(rentalItems, equipmentTimesheetDialog.month);
+              }
+            }
+          }}
+        />
+      )}
 
       {/* Manual Payment Linking Dialog */}
       <Dialog open={isManualPaymentDialogOpen} onOpenChange={setIsManualPaymentDialogOpen}>

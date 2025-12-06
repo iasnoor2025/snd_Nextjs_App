@@ -1334,8 +1334,12 @@ export class RentalService {
 
       // Update each rental item with calculated total and accumulate subtotal
       for (const item of items) {
-        const itemTotal = this.calculateItemTotal(item, rental);
+        // Try to use actual hours from timesheets for all rate types
+        // Falls back to regular calculation if no timesheet data exists
+        const itemTotal = await this.calculateItemTotalWithActualHours(item, rental);
         subtotal += itemTotal;
+
+        console.log(`[recalculateRentalTotals] Updating item ${item.id}: old totalPrice=${item.totalPrice}, new totalPrice=${itemTotal}`);
 
         // Update the rental item's totalPrice with the calculated amount
         await db.update(rentalItems).set({
@@ -1406,6 +1410,92 @@ export class RentalService {
 
     // Fallback to stored totalPrice if no start date available
     return parseFloat(item.totalPrice?.toString() || '0') || 0;
+  }
+
+  // Calculate total price using actual equipment timesheet hours (for all rate types)
+  // Converts monthly/daily rates to hourly equivalent when using actual hours
+  static async calculateItemTotalWithActualHours(item: any, rental: any): Promise<number> {
+    const { unitPrice, quantity = 1, rateType = 'daily', startDate: itemStartDate } = item;
+    const basePrice = parseFloat(unitPrice?.toString() || '0') || 0;
+
+    try {
+      const { rentalEquipmentTimesheets } = await import('@/lib/drizzle/schema');
+      const { gte, lte, and, eq } = await import('drizzle-orm');
+      
+      // Normalize dates to YYYY-MM-DD format for comparison
+      const normalizeDate = (date: any): string | null => {
+        if (!date) return null;
+        if (typeof date === 'string') {
+          // If already in YYYY-MM-DD format, return as is
+          if (/^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
+          // Otherwise parse and format
+          const d = new Date(date);
+          if (isNaN(d.getTime())) return null;
+          return d.toISOString().split('T')[0];
+        }
+        if (date instanceof Date) {
+          return date.toISOString().split('T')[0];
+        }
+        return null;
+      };
+
+      // First, try to get ALL timesheet data for this item (regardless of date range)
+      // This ensures we use actual hours even if they're outside the rental period
+      let timesheets = await db
+        .select()
+        .from(rentalEquipmentTimesheets)
+        .where(eq(rentalEquipmentTimesheets.rentalItemId, item.id));
+
+      // If we have timesheet data, use it regardless of date range
+      if (timesheets.length > 0) {
+
+        // Sum all actual hours (regular + overtime)
+        const totalHours = timesheets.reduce((sum, ts) => {
+          const regular = parseFloat(ts.regularHours?.toString() || '0') || 0;
+          const overtime = parseFloat(ts.overtimeHours?.toString() || '0') || 0;
+          return sum + regular + overtime;
+        }, 0);
+
+        if (totalHours > 0) {
+          // Convert rate to hourly equivalent based on rate type
+          let hourlyRate = basePrice;
+          
+          if (rateType === 'daily') {
+            // Convert daily rate to hourly: daily rate / 10 hours (standard work day)
+            hourlyRate = basePrice / 10;
+          } else if (rateType === 'weekly') {
+            // Convert weekly rate to hourly: weekly rate / (7 days * 10 hours)
+            hourlyRate = basePrice / (7 * 10);
+          } else if (rateType === 'monthly') {
+            // Convert monthly rate to hourly: monthly rate / (30 days * 10 hours)
+            hourlyRate = basePrice / (30 * 10);
+          }
+          // If rateType is already 'hourly', use basePrice as is
+
+          const calculatedTotal = hourlyRate * totalHours * quantity;
+          
+          console.log(`[calculateItemTotalWithActualHours] Item ${item.id}: Using timesheet data`, {
+            rateType,
+            basePrice,
+            hourlyRate,
+            totalHours,
+            quantity,
+            calculatedTotal,
+            timesheetCount: timesheets.length
+          });
+
+          return calculatedTotal;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching equipment timesheet hours:', error);
+      // Fall through to regular calculation
+    }
+
+    // Fallback to regular calculation if no timesheet data
+    const fallbackTotal = this.calculateItemTotal(item, rental);
+    console.log(`[calculateItemTotalWithActualHours] Item ${item.id}: Using fallback calculation: ${fallbackTotal}`);
+    return fallbackTotal;
   }
 
   // Create or update equipment assignment for rental item

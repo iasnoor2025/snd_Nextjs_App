@@ -2230,7 +2230,51 @@ export const rentalItems = pgTable(
   ]
 );
 
-
+export const rentalEquipmentTimesheets = pgTable(
+  'rental_equipment_timesheets',
+  {
+    id: serial().primaryKey().notNull(),
+    rentalItemId: integer('rental_item_id').notNull(),
+    rentalId: integer('rental_id').notNull(),
+    equipmentId: integer('equipment_id'),
+    date: date().notNull(),
+    regularHours: numeric('regular_hours', { precision: 5, scale: 2 }).default('0').notNull(),
+    overtimeHours: numeric('overtime_hours', { precision: 5, scale: 2 }).default('0').notNull(),
+    notes: text(),
+    createdBy: integer('created_by'),
+    createdAt: date('created_at')
+      .default(sql`CURRENT_DATE`)
+      .notNull(),
+    updatedAt: date('updated_at').notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.rentalItemId],
+      foreignColumns: [rentalItems.id],
+      name: 'rental_equipment_timesheets_rental_item_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('cascade'),
+    foreignKey({
+      columns: [table.rentalId],
+      foreignColumns: [rentals.id],
+      name: 'rental_equipment_timesheets_rental_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('cascade'),
+    foreignKey({
+      columns: [table.equipmentId],
+      foreignColumns: [equipment.id],
+      name: 'rental_equipment_timesheets_equipment_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+    uniqueIndex('rental_equipment_timesheets_rental_item_date_key').on(
+      table.rentalItemId,
+      table.date
+    ),
+  ]
+);
 
 export const roles = pgTable(
   'roles',

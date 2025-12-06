@@ -1,8 +1,8 @@
 import { db } from '@/lib/drizzle';
-import { rentals, rentalItems } from '@/lib/drizzle/schema';
+import { rentals, rentalItems, rentalEquipmentTimesheets } from '@/lib/drizzle/schema';
 import { ERPNextInvoiceService } from './erpnext-invoice-service';
 import { RentalService } from './rental-service';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, sql, gte, lte } from 'drizzle-orm';
 
 export interface MonthlyInvoicePeriod {
   startDate: Date;
@@ -205,11 +205,37 @@ export class AutomatedMonthlyBillingService {
   ): Promise<MonthlyInvoiceData | null> {
     try {
       // Calculate billing amounts for each item
-      const billingItems = items.map(item => {
+      const billingItems = await Promise.all(items.map(async (item) => {
         const daysInPeriod = Math.ceil((period.endDate.getTime() - period.startDate.getTime()) / (1000 * 60 * 60 * 24));
         let totalAmount = 0;
 
-        if (item.rateType === 'daily') {
+        if (item.rateType === 'hourly') {
+          // For hourly billing, use actual equipment timesheet hours
+          const startDateStr = period.startDate.toISOString().split('T')[0];
+          const endDateStr = period.endDate.toISOString().split('T')[0];
+          
+          const equipmentTimesheets = await db
+            .select()
+            .from(rentalEquipmentTimesheets)
+            .where(
+              and(
+                eq(rentalEquipmentTimesheets.rentalItemId, item.id),
+                gte(rentalEquipmentTimesheets.date, startDateStr),
+                lte(rentalEquipmentTimesheets.date, endDateStr)
+              )
+            );
+
+          // Sum all actual hours (regular + overtime)
+          const totalHours = equipmentTimesheets.reduce((sum, ts) => {
+            const regular = parseFloat(ts.regularHours?.toString() || '0') || 0;
+            const overtime = parseFloat(ts.overtimeHours?.toString() || '0') || 0;
+            return sum + regular + overtime;
+          }, 0);
+
+          // Calculate amount based on actual hours
+          const unitPrice = parseFloat(item.unitPrice?.toString() || '0') || 0;
+          totalAmount = unitPrice * totalHours;
+        } else if (item.rateType === 'daily') {
           totalAmount = item.unitPrice * daysInPeriod;
         } else if (item.rateType === 'weekly') {
           const weeks = Math.ceil(daysInPeriod / 7);
@@ -230,7 +256,7 @@ export class AutomatedMonthlyBillingService {
           quantity: 1,
           totalAmount: totalAmount
         };
-      });
+      }));
 
       const subtotal = billingItems.reduce((sum, item) => sum + item.totalAmount, 0);
       const taxRate = 15; // 15% VAT for KSA
