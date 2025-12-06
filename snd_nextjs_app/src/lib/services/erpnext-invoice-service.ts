@@ -256,6 +256,7 @@ export class ERPNextInvoiceService {
             const itemCode = matchedItem?.item_code || await this.findSuitableItemCode();
             
             // Calculate duration based on rate type (this will be used as quantity)
+            // IMPORTANT: Quantity should be hours (like the report shows), not days
             const rateType = item.rateType || 'daily';
             const itemStartDate = item.startDate || rental.startDate;
             const itemCompletedDate = item.completedDate || (item as any).completed_date;
@@ -263,71 +264,64 @@ export class ERPNextInvoiceService {
             let duration = 1; // Default quantity
             let uom = 'Nos'; // Default UOM
             
-            // For hourly rates, try to use actual timesheet hours if available
-            if (rateType === 'hourly') {
-              try {
-                const { db } = await import('@/lib/db');
-                const { rentalEquipmentTimesheets } = await import('@/lib/drizzle/schema');
-                const { eq, and, gte, lte } = await import('drizzle-orm');
-                
-                let startDateStr: string;
-                let endDateStr: string;
-                
-                // Determine date range for timesheet query
-                if (billingMonth && rental.customFrom && rental.customTo) {
-                  // For monthly billing, use billing month period
-                  startDateStr = rental.customFrom;
-                  endDateStr = rental.customTo;
-                } else if (itemStartDate) {
-                  // For non-monthly billing, use item date range
-                  startDateStr = new Date(itemStartDate).toISOString().split('T')[0];
-                  if (itemCompletedDate) {
-                    endDateStr = new Date(itemCompletedDate).toISOString().split('T')[0];
-                  } else if (rental.status === 'completed' && rental.expectedEndDate) {
-                    endDateStr = new Date(rental.expectedEndDate).toISOString().split('T')[0];
-                  } else {
-                    endDateStr = new Date().toISOString().split('T')[0];
-                  }
+            // For all rate types, try to use actual timesheet hours if available
+            // This matches the report which shows hours (e.g., "230 hours")
+            try {
+              const { db } = await import('@/lib/db');
+              const { rentalEquipmentTimesheets } = await import('@/lib/drizzle/schema');
+              const { eq, and, gte, lte } = await import('drizzle-orm');
+              
+              let startDateStr: string;
+              let endDateStr: string;
+              
+              // Determine date range for timesheet query
+              if (billingMonth && rental.customFrom && rental.customTo) {
+                // For monthly billing, use billing month period
+                startDateStr = rental.customFrom;
+                endDateStr = rental.customTo;
+              } else if (itemStartDate) {
+                // For non-monthly billing, use item date range
+                startDateStr = new Date(itemStartDate).toISOString().split('T')[0];
+                if (itemCompletedDate) {
+                  endDateStr = new Date(itemCompletedDate).toISOString().split('T')[0];
+                } else if (rental.status === 'completed' && rental.expectedEndDate) {
+                  endDateStr = new Date(rental.expectedEndDate).toISOString().split('T')[0];
                 } else {
-                  startDateStr = new Date().toISOString().split('T')[0];
                   endDateStr = new Date().toISOString().split('T')[0];
                 }
-                
-                // Fetch timesheet data for this item and period
-                const timesheets = await db
-                  .select()
-                  .from(rentalEquipmentTimesheets)
-                  .where(
-                    and(
-                      eq(rentalEquipmentTimesheets.rentalItemId, item.id),
-                      gte(rentalEquipmentTimesheets.date, startDateStr),
-                      lte(rentalEquipmentTimesheets.date, endDateStr)
-                    )
-                  );
-                
-                // If we have timesheet data, use actual hours
-                if (timesheets.length > 0) {
-                  const totalHours = timesheets.reduce((sum, ts) => {
-                    const regular = parseFloat(ts.regularHours?.toString() || '0') || 0;
-                    const overtime = parseFloat(ts.overtimeHours?.toString() || '0') || 0;
-                    return sum + regular + overtime;
-                  }, 0);
-                  
-                  if (totalHours > 0) {
-                    duration = totalHours;
-                    uom = 'Hour';
-                  }
-                }
-              } catch (error) {
-                // If timesheet fetch fails, fall through to date-based calculation
+              } else {
+                startDateStr = new Date().toISOString().split('T')[0];
+                endDateStr = new Date().toISOString().split('T')[0];
               }
-            }
-            
-            // For daily rates with timesheet hours, convert hours to days for quantity
-            if (rateType === 'daily' && duration > 1 && uom === 'Hour') {
-              // Convert hours to days (10 hours = 1 day)
-              duration = Math.ceil(duration / 10);
-              uom = 'Day';
+              
+              // Fetch timesheet data for this item and period
+              const timesheets = await db
+                .select()
+                .from(rentalEquipmentTimesheets)
+                .where(
+                  and(
+                    eq(rentalEquipmentTimesheets.rentalItemId, item.id),
+                    gte(rentalEquipmentTimesheets.date, startDateStr),
+                    lte(rentalEquipmentTimesheets.date, endDateStr)
+                  )
+                );
+              
+              // If we have timesheet data, use actual hours as quantity (like the report shows)
+              // For daily rates: quantity = 230 hours (not 23 days)
+              if (timesheets.length > 0) {
+                const totalHours = timesheets.reduce((sum, ts) => {
+                  const regular = parseFloat(ts.regularHours?.toString() || '0') || 0;
+                  const overtime = parseFloat(ts.overtimeHours?.toString() || '0') || 0;
+                  return sum + regular + overtime;
+                }, 0);
+                
+                if (totalHours > 0) {
+                  duration = totalHours; // Use hours directly (e.g., 230 hours)
+                  uom = 'Hour'; // Always use hours when timesheet data is available
+                }
+              }
+            } catch (error) {
+              // If timesheet fetch fails, fall through to date-based calculation
             }
             
             // If duration is still 1 (default) or not set from timesheet, calculate from dates
@@ -394,16 +388,34 @@ export class ERPNextInvoiceService {
             
             // Calculate amount based on unit price and duration
             const unitPrice = parseFloat(item.unitPrice?.toString() || '0') || 0;
-            const amount = unitPrice * duration;
+            let amount = 0;
+            let rate = unitPrice; // Default rate
+            
+            // If we're using hours from timesheet, convert rate to hourly for calculation
+            if (uom === 'Hour' && duration > 1) {
+              // Convert rate to hourly equivalent based on rate type
+              if (rateType === 'daily') {
+                rate = unitPrice / 10; // Daily rate / 10 hours = hourly rate
+              } else if (rateType === 'weekly') {
+                rate = unitPrice / (7 * 10); // Weekly rate / (7 days * 10 hours) = hourly rate
+              } else if (rateType === 'monthly') {
+                rate = unitPrice / (30 * 10); // Monthly rate / (30 days * 10 hours) = hourly rate
+              }
+              // If rateType is already 'hourly', rate stays as unitPrice
+              amount = rate * duration; // hourly rate * hours
+            } else {
+              // For date-based calculation, use unit price directly
+              amount = unitPrice * duration;
+            }
             
             const mappedItem = {
               item_code: itemCode,
               item_name: equipmentName,
               description: item.notes || `Rental of ${equipmentName} (${duration} ${uom}${duration !== 1 ? 's' : ''})`,
-              qty: duration, // Use calculated duration as quantity
-              rate: unitPrice, // Unit price per day/hour/week/month
-              amount: amount, // Total amount = unit price * duration
-              uom: uom, // Unit of measure based on rate type
+              qty: duration, // Use hours as quantity (e.g., 230 hours) to match report
+              rate: rate, // Hourly rate when using timesheet hours, otherwise unit price
+              amount: amount, // Total amount = rate * quantity
+              uom: uom, // Unit of measure (Hour when timesheet available, otherwise Day/Week/Month)
               income_account: incomeAccount, // Use dynamically found account
             };
             
