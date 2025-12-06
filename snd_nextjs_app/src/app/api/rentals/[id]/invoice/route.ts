@@ -5,8 +5,9 @@ import { RentalService } from '@/lib/services/rental-service';
 import { RentalInvoiceService } from '@/lib/services/rental-invoice-service';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+const createInvoiceHandler = async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
     const { id } = await params;
     const body = await request.json();
@@ -135,19 +136,40 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           { status: 400 }
         );
       }
-      erpnextInvoice = await ERPNextInvoiceService.createRentalInvoice(invoiceRental, invoiceNumber);
+      erpnextInvoice = await ERPNextInvoiceService.createRentalInvoice(invoiceRental, invoiceNumber, billingMonth);
       
     } catch (erpnextError) {
-      console.error('ERPNext invoice creation error:', erpnextError);
-      console.error('Invoice rental data:', invoiceRental);
+      console.error('=== ERPNext Invoice Creation Error ===');
+      console.error('Error:', erpnextError);
+      console.error('Error Type:', typeof erpnextError);
+      console.error('Error Message:', erpnextError instanceof Error ? erpnextError.message : String(erpnextError));
+      console.error('Error Stack:', erpnextError instanceof Error ? erpnextError.stack : 'No stack');
+      console.error('Invoice rental data:', JSON.stringify(invoiceRental, null, 2));
       console.error('Invoice number:', invoiceNumber);
+      
+      const errorMessage = erpnextError instanceof Error ? erpnextError.message : String(erpnextError);
+      const errorDetails = erpnextError instanceof Error ? {
+        message: erpnextError.message,
+        name: erpnextError.name,
+        stack: erpnextError.stack?.substring(0, 1000) // Limit stack trace
+      } : { raw: String(erpnextError) };
       
       return NextResponse.json(
         {
           error: 'ERPNext invoice creation failed',
-          details: erpnextError instanceof Error ? erpnextError.message : 'Unknown error',
+          details: errorMessage,
+          errorDetails: errorDetails,
           billingMonth: billingMonth,
-          invoiceNumber: invoiceNumber
+          invoiceNumber: invoiceNumber,
+          troubleshooting: {
+            suggestion: 'Check ERPNext API key permissions. The API key needs "Write" permission for Sales Invoice doctype.',
+            steps: [
+              '1. Go to ERPNext: Settings → Integrations → API Keys',
+              '2. Find your API key',
+              '3. Ensure it has "Write" permission for Sales Invoice',
+              '4. Check that the API key user role can create Sales Invoices'
+            ]
+          }
         },
         { status: 500 }
       );
@@ -336,4 +358,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       );
     }
   }
-}
+};
+
+export const POST = withPermission(PermissionConfigs.rental.update)(createInvoiceHandler);

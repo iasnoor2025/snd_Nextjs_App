@@ -3964,10 +3964,36 @@ export default function RentalDetailPage() {
                         }
 
                         if (startInMonth <= endInMonth) {
-                          const startDay = startInMonth.getDate();
-                          const endDay = endInMonth.getDate();
-                          const days = endDay - startDay + 1; // +1 inclusive
-                          const itemAmount = (parseFloat(item.unitPrice || 0) || 0) * Math.max(days, 0);
+                          // Check if we have timesheet hours for this item and month
+                          const timesheetHours = itemTimesheetHours[`${item.id}-${monthKey}`];
+                          const timesheetReceived = timesheetStatus[`${monthKey}-${item.id}`] === true;
+                          
+                          let itemAmount = 0;
+                          
+                          // If timesheet was received and we have hours, use timesheet-based calculation
+                          if (timesheetReceived && timesheetHours && timesheetHours > 0) {
+                            const unitPrice = parseFloat(item.unitPrice || 0) || 0;
+                            const rateType = item.rateType || 'daily';
+                            
+                            // Convert rate to hourly equivalent
+                            let hourlyRate = unitPrice;
+                            if (rateType === 'daily') {
+                              hourlyRate = unitPrice / 10; // 10 hours per day
+                            } else if (rateType === 'weekly') {
+                              hourlyRate = unitPrice / (7 * 10); // 7 days * 10 hours
+                            } else if (rateType === 'monthly') {
+                              hourlyRate = unitPrice / (30 * 10); // 30 days * 10 hours
+                            }
+                            
+                            itemAmount = hourlyRate * timesheetHours;
+                          } else {
+                            // Fallback to date-based calculation
+                            const startDay = startInMonth.getDate();
+                            const endDay = endInMonth.getDate();
+                            const days = endDay - startDay + 1; // +1 inclusive
+                            itemAmount = (parseFloat(item.unitPrice || 0) || 0) * Math.max(days, 0);
+                          }
+                          
                           acc[monthKey].totalAmount += itemAmount;
 
                           acc[monthKey].items.push(item);
@@ -3997,10 +4023,36 @@ export default function RentalDetailPage() {
                                     const handoverStartInMonth = handoverStartDate > monthStart ? handoverStartDate : monthStart;
                                     const handoverEndInMonth = monthEnd;
                                     if (handoverStartInMonth <= handoverEndInMonth) {
-                                      const handoverStartDay = handoverStartInMonth.getDate();
-                                      const handoverEndDay = handoverEndInMonth.getDate();
-                                      const handoverDays = handoverEndDay - handoverStartDay + 1;
-                                      const handoverAmount = (Number(handoverItem.unitPrice) || 0) * Math.max(handoverDays, 0);
+                                      // Check if we have timesheet hours for handover item
+                                      const handoverTimesheetHours = itemTimesheetHours[`${handoverItem.id}-${monthKey}`];
+                                      const handoverTimesheetReceived = timesheetStatus[`${monthKey}-${handoverItem.id}`] === true;
+                                      
+                                      let handoverAmount = 0;
+                                      
+                                      // If timesheet was received and we have hours, use timesheet-based calculation
+                                      if (handoverTimesheetReceived && handoverTimesheetHours && handoverTimesheetHours > 0) {
+                                        const unitPrice = parseFloat(handoverItem.unitPrice || 0) || 0;
+                                        const rateType = handoverItem.rateType || 'daily';
+                                        
+                                        // Convert rate to hourly equivalent
+                                        let hourlyRate = unitPrice;
+                                        if (rateType === 'daily') {
+                                          hourlyRate = unitPrice / 10;
+                                        } else if (rateType === 'weekly') {
+                                          hourlyRate = unitPrice / (7 * 10);
+                                        } else if (rateType === 'monthly') {
+                                          hourlyRate = unitPrice / (30 * 10);
+                                        }
+                                        
+                                        handoverAmount = hourlyRate * handoverTimesheetHours;
+                                      } else {
+                                        // Fallback to date-based calculation
+                                        const handoverStartDay = handoverStartInMonth.getDate();
+                                        const handoverEndDay = handoverEndInMonth.getDate();
+                                        const handoverDays = handoverEndDay - handoverStartDay + 1;
+                                        handoverAmount = (Number(handoverItem.unitPrice) || 0) * Math.max(handoverDays, 0);
+                                      }
+                                      
                                       acc[monthKey].totalAmount += handoverAmount;
                                     }
                                   }

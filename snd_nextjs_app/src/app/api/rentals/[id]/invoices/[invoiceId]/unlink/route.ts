@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { RentalInvoiceService } from '@/lib/services/rental-invoice-service';
+import { RentalService } from '@/lib/services/rental-service';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; invoiceId: string } }
+  { params }: { params: Promise<{ id: string; invoiceId: string }> }
 ) {
   try {
-    const { id, invoiceId } = params;
+    const { id, invoiceId } = await params;
     const rentalId = parseInt(id);
 
     if (isNaN(rentalId)) {
@@ -25,6 +26,20 @@ export async function DELETE(
 
     // Delete the invoice from rental_invoices table
     await RentalInvoiceService.deleteInvoice(invoiceId);
+
+    // Also check if this was the main invoice for the rental and reset if needed
+    const rental = await RentalService.getRental(rentalId);
+    if (rental?.invoiceId === invoiceId) {
+      // Reset the main rental invoice fields
+      const resetData = {
+        invoiceId: null,
+        invoiceDate: null,
+        paymentDueDate: null,
+        paymentStatus: 'pending' as const,
+      };
+      
+      await RentalService.updateRental(rentalId, resetData);
+    }
 
     return NextResponse.json({
       success: true,

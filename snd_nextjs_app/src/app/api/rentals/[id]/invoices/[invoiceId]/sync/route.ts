@@ -5,10 +5,10 @@ import { ERPNextInvoiceService } from '@/lib/services/erpnext-invoice-service';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string; invoiceId: string } }
+  { params }: { params: Promise<{ id: string; invoiceId: string }> }
 ) {
   try {
-    const { id, invoiceId } = params;
+    const { id, invoiceId } = await params;
     const rentalId = parseInt(id);
 
     if (isNaN(rentalId)) {
