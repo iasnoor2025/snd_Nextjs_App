@@ -709,24 +709,28 @@ export default function ProjectResourcesPage() {
     }
   };
 
-  const handleResourceSuccess = (resourceType?: ResourceType) => {
+  const handleResourceSuccess = async (resourceType?: ResourceType) => {
     // Use targeted update based on resource type, fallback to full refresh
     // Only update the specific tab that was modified, not the entire page
-    if (resourceType === 'tasks') {
-      updateTasksData();
-    } else if (resourceType === 'manpower') {
-      updateManpowerData();
-    } else if (resourceType === 'equipment') {
-      updateEquipmentData();
-    } else if (resourceType === 'material') {
-      updateMaterialsData();
-    } else if (resourceType === 'fuel') {
-      updateFuelData();
-    } else if (resourceType === 'expense') {
-      updateExpensesData();
-    } else {
-      // For other resource types, refresh all data
-      fetchData();
+    try {
+      if (resourceType === 'tasks') {
+        await updateTasksData();
+      } else if (resourceType === 'manpower') {
+        await updateManpowerData();
+      } else if (resourceType === 'equipment') {
+        await updateEquipmentData();
+      } else if (resourceType === 'material') {
+        await updateMaterialsData();
+      } else if (resourceType === 'fuel') {
+        await updateFuelData();
+      } else if (resourceType === 'expense') {
+        await updateExpensesData();
+      } else {
+        // For other resource types, refresh all data
+        await fetchData();
+      }
+    } catch (error) {
+      console.error('Error refreshing data after resource update:', error);
     }
     handleDialogClose();
   };
@@ -1009,6 +1013,7 @@ export default function ProjectResourcesPage() {
           equipment_id: resource.equipmentId?.toString(),
           equipment_name: resource.equipmentName,
           door_number: resource.doorNumber || resource.door_number || extractDoorNumberFromName(resource.equipmentName),
+          operator_id: resource.operatorId?.toString(), // Include operator_id so it's available when editing
           operator_name: (() => {
             // Build full name: first + middle + last
             if (resource.operatorName && resource.operatorLastName) {

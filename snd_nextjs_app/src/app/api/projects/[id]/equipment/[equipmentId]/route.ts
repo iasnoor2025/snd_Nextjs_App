@@ -75,22 +75,57 @@ const updateProjectEquipmentHandler = async (
     const newEquipmentIdValue = newEquipmentId !== undefined ? parseInt(newEquipmentId) : equipmentIdToUpdate;
 
     // Update equipment
+    // Build update object conditionally
+    const updateData: any = {
+      updatedAt: new Date().toISOString().split('T')[0],
+    };
+
+    if (newEquipmentId !== undefined) {
+      updateData.equipmentId = parseInt(newEquipmentId);
+    }
+
+    // Handle operatorId: only update if explicitly provided with a value
+    // If undefined, preserve existing value; if null or empty string, clear it
+    if (operatorId !== undefined) {
+      if (operatorId === null || operatorId === '') {
+        updateData.operatorId = null;
+      } else {
+        updateData.operatorId = parseInt(operatorId);
+      }
+    }
+    // If operatorId is undefined, don't include it in update (preserves existing value)
+
+    if (startDate !== undefined) {
+      updateData.startDate = new Date(startDate).toISOString().split('T')[0];
+    }
+    if (endDate !== undefined) {
+      updateData.endDate = endDate ? new Date(endDate).toISOString().split('T')[0] : null;
+    }
+    if (hourlyRate !== undefined) {
+      updateData.hourlyRate = parseFloat(hourlyRate).toString();
+    }
+    if (estimatedHours !== undefined) {
+      updateData.estimatedHours = estimatedHours ? parseFloat(estimatedHours).toString() : null;
+    }
+    if (actualHours !== undefined) {
+      updateData.actualHours = actualHours ? parseFloat(actualHours).toString() : null;
+    }
+    if (maintenanceCost !== undefined) {
+      updateData.maintenanceCost = maintenanceCost ? parseFloat(maintenanceCost).toString() : null;
+    }
+    if (fuelConsumption !== undefined) {
+      updateData.fuelConsumption = fuelConsumption ? parseFloat(fuelConsumption).toString() : null;
+    }
+    if (status !== undefined) {
+      updateData.status = status;
+    }
+    if (notes !== undefined) {
+      updateData.notes = notes;
+    }
+
     const [updatedEquipment] = await db
       .update(projectEquipment)
-      .set({
-        ...(newEquipmentId !== undefined && { equipmentId: parseInt(newEquipmentId) }),
-        ...(operatorId !== undefined && { operatorId: operatorId ? parseInt(operatorId) : null }),
-        ...(startDate !== undefined && { startDate: new Date(startDate).toISOString().split('T')[0] }),
-        ...(endDate !== undefined && { endDate: endDate ? new Date(endDate).toISOString().split('T')[0] : null }),
-        ...(hourlyRate !== undefined && { hourlyRate: parseFloat(hourlyRate).toString() }),
-        ...(estimatedHours !== undefined && { estimatedHours: estimatedHours ? parseFloat(estimatedHours).toString() : null }),
-        ...(actualHours !== undefined && { actualHours: actualHours ? parseFloat(actualHours).toString() : null }),
-        ...(maintenanceCost !== undefined && { maintenanceCost: maintenanceCost ? parseFloat(maintenanceCost).toString() : null }),
-        ...(fuelConsumption !== undefined && { fuelConsumption: fuelConsumption ? parseFloat(fuelConsumption).toString() : null }),
-        ...(status !== undefined && { status }),
-        ...(notes !== undefined && { notes }),
-        updatedAt: new Date().toISOString().split('T')[0],
-      })
+      .set(updateData)
       .where(eq(projectEquipment.id, parseInt(equipmentId)))
       .returning();
 
