@@ -34,9 +34,16 @@ export {
   employeeTraining,
   
   // Equipment management
+  equipmentCategories,
   equipmentMaintenance,
   equipmentMaintenanceItems,
   equipmentRentalHistory,
+  
+  // Materials management
+  materials,
+  
+  // Expense categories management
+  expenseCategories,
   
   // Financial
   advancePayments,

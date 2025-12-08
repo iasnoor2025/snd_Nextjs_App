@@ -22,7 +22,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import ApiService from '@/lib/api-service';
 import { format } from 'date-fns';
-import { CalendarIcon, Receipt } from 'lucide-react';
+import { CalendarIcon, Receipt, Settings, Pencil, Trash2 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -46,16 +46,14 @@ interface ExpenseDialogProps {
   onSuccess: () => void;
 }
 
-const EXPENSE_CATEGORIES = [
-  { value: 'accommodation', label: 'Accommodation' },
-  { value: 'transportation', label: 'Transportation' },
-  { value: 'meals', label: 'Meals' },
-  { value: 'utilities', label: 'Utilities' },
-  { value: 'office_supplies', label: 'Office Supplies' },
-  { value: 'safety', label: 'Safety' },
-  { value: 'permits', label: 'Permits' },
-  { value: 'other', label: 'Other' },
-];
+interface ExpenseCategory {
+  id: number;
+  name: string;
+  description?: string | null;
+  icon?: string | null;
+  color?: string | null;
+  isActive: boolean;
+}
 
 export default function ExpenseDialog({
   open,
@@ -65,6 +63,9 @@ export default function ExpenseDialog({
   onSuccess,
 }: ExpenseDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [categoriesList, setCategoriesList] = useState<ExpenseCategory[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [categoryManageOpen, setCategoryManageOpen] = useState(false);
   const [formData, setFormData] = useState<ExpenseResource>({
     category: '',
     amount: 0,
@@ -92,6 +93,28 @@ export default function ExpenseDialog({
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  };
+
+  // Fetch expense categories from API
+  useEffect(() => {
+    if (open) {
+      fetchCategories();
+    }
+  }, [open]);
+
+  const fetchCategories = async () => {
+    setLoadingCategories(true);
+    try {
+      const response = await ApiService.get('/expense-categories');
+      if (response.success && response.data) {
+        setCategoriesList(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching expense categories:', error);
+      toast.error('Failed to load expense categories');
+    } finally {
+      setLoadingCategories(false);
+    }
   };
 
   // Initialize form data when editing
@@ -220,20 +243,42 @@ export default function ExpenseDialog({
               {/* Category and Amount */}
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="category">Category</Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCategoryManageOpen(true)}
+                      className="h-7 px-2 text-xs"
+                    >
+                      <Settings className="h-3 w-3 mr-1" />
+                      Manage
+                    </Button>
+                  </div>
                   <Select
                     value={formData.category || undefined}
                     onValueChange={value => handleInputChange('category', value)}
+                    disabled={loadingCategories}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
+                      <SelectValue placeholder={loadingCategories ? "Loading..." : "Select category"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {EXPENSE_CATEGORIES.map(category => (
-                        <SelectItem key={category.value} value={category.value}>
-                          {category.label}
+                      {categoriesList.length === 0 && !loadingCategories ? (
+                        <SelectItem value="no-categories" disabled>
+                          No categories available
                         </SelectItem>
-                      ))}
+                      ) : (
+                        categoriesList.map(category => (
+                          <SelectItem key={category.id} value={category.name}>
+                            <div className="flex items-center gap-2">
+                              {category.icon && <span>{category.icon}</span>}
+                              <span>{category.name}</span>
+                            </div>
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -345,7 +390,7 @@ export default function ExpenseDialog({
               <div>
                 <p className="text-sm text-muted-foreground">Category</p>
                 <p className="font-medium">
-                  {EXPENSE_CATEGORIES.find(cat => cat.value === formData.category)?.label ||
+                  {categoriesList.find(cat => cat.name === formData.category)?.name ||
                     'Not selected'}
                 </p>
               </div>
@@ -370,6 +415,265 @@ export default function ExpenseDialog({
             </Button>
           </div>
         </form>
+      </DialogContent>
+
+      {/* Expense Category Management Dialog */}
+      <ExpenseCategoryManageDialog
+        open={categoryManageOpen}
+        onOpenChange={setCategoryManageOpen}
+        categories={categoriesList}
+        onRefresh={fetchCategories}
+      />
+    </Dialog>
+  );
+}
+
+// Expense Category Management Dialog Component
+interface ExpenseCategoryManageDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  categories: ExpenseCategory[];
+  onRefresh: () => void;
+}
+
+function ExpenseCategoryManageDialog({
+  open,
+  onOpenChange,
+  categories,
+  onRefresh,
+}: ExpenseCategoryManageDialogProps) {
+  const [loading, setLoading] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<ExpenseCategory | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    icon: '💰',
+    color: '#EF4444',
+  });
+
+  useEffect(() => {
+    if (editingCategory) {
+      setFormData({
+        name: editingCategory.name || '',
+        description: editingCategory.description || '',
+        icon: editingCategory.icon || '💰',
+        color: editingCategory.color || '#EF4444',
+      });
+    } else {
+      setFormData({
+        name: '',
+        description: '',
+        icon: '💰',
+        color: '#EF4444',
+      });
+    }
+  }, [editingCategory]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      if (!formData.name.trim()) {
+        toast.error('Category name is required');
+        return;
+      }
+
+      if (editingCategory) {
+        // Update
+        await ApiService.put(`/expense-categories/${editingCategory.id}`, formData);
+        toast.success('Expense category updated successfully');
+      } else {
+        // Create
+        await ApiService.post('/expense-categories', formData);
+        toast.success('Expense category created successfully');
+      }
+
+      onRefresh();
+      setEditingCategory(null);
+      setFormData({ name: '', description: '', icon: '💰', color: '#EF4444' });
+    } catch (error: any) {
+      console.error('Error saving expense category:', error);
+      const errorMessage = error?.message || error?.response?.message || error?.response?.data?.message || error?.response?.data?.error || 'Failed to save expense category';
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (category: ExpenseCategory) => {
+    if (!confirm(`Are you sure you want to delete "${category.name}"?`)) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await ApiService.delete(`/expense-categories/${category.id}`);
+      toast.success('Expense category deleted successfully');
+      onRefresh();
+    } catch (error: any) {
+      console.error('Error deleting expense category:', error);
+      const errorMessage = error?.message || error?.response?.message || error?.response?.data?.message || error?.response?.data?.error || 'Failed to delete expense category';
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center space-x-2">
+            <Settings className="h-5 w-5 text-red-600" />
+            <span>Manage Expense Categories</span>
+          </DialogTitle>
+          <DialogDescription>
+            Create, edit, or delete expense categories that can be used in projects.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          {/* Create/Edit Form */}
+          <form onSubmit={handleSubmit} className="space-y-4 p-4 border rounded-lg">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold">
+                {editingCategory ? 'Edit Expense Category' : 'Add New Expense Category'}
+              </h3>
+              {editingCategory && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setEditingCategory(null)}
+                >
+                  Cancel Edit
+                </Button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Name *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="e.g., Accommodation, Transportation"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="icon">Icon (Emoji)</Label>
+                <Input
+                  id="icon"
+                  value={formData.icon}
+                  onChange={e => setFormData({ ...formData, icon: e.target.value })}
+                  placeholder="💰"
+                  maxLength={2}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="color">Color</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="color"
+                  type="color"
+                  value={formData.color}
+                  onChange={e => setFormData({ ...formData, color: e.target.value })}
+                  className="w-20 h-10"
+                />
+                <Input
+                  value={formData.color}
+                  onChange={e => setFormData({ ...formData, color: e.target.value })}
+                  placeholder="#EF4444"
+                  className="flex-1"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={e => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Optional description"
+                rows={2}
+              />
+            </div>
+
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Saving...' : editingCategory ? 'Update Category' : 'Add Category'}
+            </Button>
+          </form>
+
+          {/* Categories List */}
+          <div className="space-y-2">
+            <h3 className="font-semibold">Existing Categories</h3>
+            <div className="border rounded-lg divide-y">
+              {categories.length === 0 ? (
+                <div className="p-4 text-center text-muted-foreground">
+                  No categories found. Create your first category above.
+                </div>
+              ) : (
+                categories.map(category => (
+                  <div
+                    key={category.id}
+                    className="p-4 flex items-center justify-between hover:bg-muted/50"
+                  >
+                    <div className="flex items-center gap-3 flex-1">
+                      {category.icon && (
+                        <span className="text-2xl">{category.icon}</span>
+                      )}
+                      <div className="flex-1">
+                        <div className="font-medium">{category.name}</div>
+                        {category.description && (
+                          <div className="text-sm text-muted-foreground">{category.description}</div>
+                        )}
+                      </div>
+                      {category.color && (
+                        <div
+                          className="w-6 h-6 rounded-full border"
+                          style={{ backgroundColor: category.color }}
+                        />
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setEditingCategory(category)}
+                        disabled={loading}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(category)}
+                        disabled={loading}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

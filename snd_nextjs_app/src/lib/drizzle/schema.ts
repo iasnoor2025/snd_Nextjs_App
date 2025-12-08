@@ -2147,6 +2147,50 @@ export const equipmentCategories = pgTable(
   ]
 );
 
+export const materials = pgTable(
+  'materials',
+  {
+    id: serial().primaryKey().notNull(),
+    name: text().notNull(),
+    description: text(),
+    category: text(),
+    unit: text(),
+    isActive: boolean('is_active').default(true).notNull(),
+    createdAt: date('created_at')
+      .default(sql`CURRENT_DATE`)
+      .notNull(),
+    updatedAt: date('updated_at').notNull(),
+  },
+  table => [
+    uniqueIndex('materials_name_key').using(
+      'btree',
+      table.name.asc().nullsLast().op('text_ops')
+    ),
+  ]
+);
+
+export const expenseCategories = pgTable(
+  'expense_categories',
+  {
+    id: serial().primaryKey().notNull(),
+    name: text().notNull(),
+    description: text(),
+    icon: text(),
+    color: text(),
+    isActive: boolean('is_active').default(true).notNull(),
+    createdAt: date('created_at')
+      .default(sql`CURRENT_DATE`)
+      .notNull(),
+    updatedAt: date('updated_at').notNull(),
+  },
+  table => [
+    uniqueIndex('expense_categories_name_key').using(
+      'btree',
+      table.name.asc().nullsLast().op('text_ops')
+    ),
+  ]
+);
+
 export const equipmentDocuments = pgTable(
   'equipment_documents',
   {
