@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { RentalService } from '@/lib/services/rental-service';
 import { format } from 'date-fns';
 import puppeteer from 'puppeteer';
+import { db } from '@/lib/drizzle';
+import { rentalEquipmentTimesheets, rentalTimesheetReceived } from '@/lib/drizzle/schema';
+import { eq, and, gte, lte } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
@@ -22,8 +25,11 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const selectedMonth = searchParams.get('month');
 
+    // Fetch timesheet data for all items and months
+    const timesheetData = await fetchTimesheetData(rentalId, rental.rentalItems || []);
+
     // Generate HTML report
-    const html = generateReportHTML(rental, rental.rentalItems || [], selectedMonth);
+    const html = generateReportHTML(rental, rental.rentalItems || [], selectedMonth, timesheetData);
 
     // Generate PDF using Puppeteer
     const browser = await puppeteer.launch({
@@ -73,7 +79,118 @@ function getShortName(fullName: string): string {
   return words.slice(0, 2).join(' ');
 }
 
-function generateReportHTML(rental: any, rentalItems: any[], selectedMonth: string | null): string {
+// Fetch timesheet hours and status for all rental items
+async function fetchTimesheetData(rentalId: number, rentalItems: any[]): Promise<{
+  hours: Record<string, number>; // key: `${itemId}-${monthKey}`, value: total hours
+  status: Record<string, boolean>; // key: `${monthKey}-${itemId}`, value: received status
+}> {
+  const hoursMap: Record<string, number> = {};
+  const statusMap: Record<string, boolean> = {};
+
+  if (!rentalItems || rentalItems.length === 0) {
+    return { hours: hoursMap, status: statusMap };
+  }
+
+  // Get all unique months from rental items
+  const months = new Set<string>();
+  rentalItems.forEach((item: any) => {
+    const itemStartDate = item.startDate;
+    if (itemStartDate) {
+      const startDate = new Date(itemStartDate);
+      let endDate = new Date();
+      const itemCompletedDate = item.completedDate || (item as any).completed_date;
+      if (itemCompletedDate) {
+        endDate = new Date(itemCompletedDate);
+      }
+      
+      const currentMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+      const endMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+      
+      while (currentMonth <= endMonth) {
+        const monthKey = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
+        months.add(monthKey);
+        currentMonth.setMonth(currentMonth.getMonth() + 1);
+      }
+    }
+  });
+
+  // Fetch timesheet hours for each item and month
+  await Promise.all(
+    rentalItems.map(async (item) => {
+      await Promise.all(
+        Array.from(months).map(async (monthKey) => {
+          try {
+            // Fetch timesheet hours
+            const [year, monthNum] = monthKey.split('-').map(Number);
+            const startDateStr = `${year}-${String(monthNum).padStart(2, '0')}-01`;
+            const lastDay = new Date(year, monthNum, 0).getDate();
+            const endDateStr = `${year}-${String(monthNum).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+            
+            const timesheets = await db
+              .select()
+              .from(rentalEquipmentTimesheets)
+              .where(
+                and(
+                  eq(rentalEquipmentTimesheets.rentalId, rentalId),
+                  eq(rentalEquipmentTimesheets.rentalItemId, item.id),
+                  gte(rentalEquipmentTimesheets.date, startDateStr),
+                  lte(rentalEquipmentTimesheets.date, endDateStr)
+                )
+              )
+              .orderBy(rentalEquipmentTimesheets.date);
+
+            if (timesheets.length > 0) {
+              const totalHours = timesheets.reduce((sum, ts) => {
+                const regular = parseFloat(ts.regularHours?.toString() || '0') || 0;
+                const overtime = parseFloat(ts.overtimeHours?.toString() || '0') || 0;
+                return sum + regular + overtime;
+              }, 0);
+              
+              if (totalHours > 0) {
+                hoursMap[`${item.id}-${monthKey}`] = totalHours;
+              }
+            }
+          } catch (error) {
+            console.error(`Error fetching timesheet hours for item ${item.id} month ${monthKey}:`, error);
+          }
+        })
+      );
+    })
+  );
+
+  // Fetch timesheet status for each month
+  await Promise.all(
+    Array.from(months).map(async (monthKey) => {
+      try {
+        const statusRecords = await db
+          .select()
+          .from(rentalTimesheetReceived)
+          .where(
+            and(
+              eq(rentalTimesheetReceived.rentalId, rentalId),
+              eq(rentalTimesheetReceived.month, monthKey)
+            )
+          );
+
+        statusRecords.forEach((record) => {
+          if (record.rentalItemId) {
+            const itemKey = `${monthKey}-${record.rentalItemId}`;
+            statusMap[itemKey] = record.received || false;
+          }
+        });
+      } catch (error) {
+        console.error(`Error fetching timesheet status for ${monthKey}:`, error);
+      }
+    })
+  );
+
+  return { hours: hoursMap, status: statusMap };
+}
+
+function generateReportHTML(rental: any, rentalItems: any[], selectedMonth: string | null, timesheetData?: { hours: Record<string, number>; status: Record<string, boolean> }): string {
+  const itemTimesheetHours = timesheetData?.hours || {};
+  const timesheetStatus = timesheetData?.status || {};
+
   const monthlyData = rentalItems.reduce((acc: any, item: any) => {
     const itemStartDate = item.startDate || rental.startDate;
     if (!itemStartDate) return acc;
@@ -153,11 +270,37 @@ function generateReportHTML(rental: any, rentalItems: any[], selectedMonth: stri
       }
       
       if (startInMonth <= endInMonth) {
-        const startDay = startInMonth.getDate();
-        const endDay = endInMonth.getDate();
-        const days = endDay - startDay + 1; // +1 for inclusive counting
-        const monthlyAmount = (parseFloat(item.unitPrice || 0) || 0) * Math.max(days, 0);
-        acc[monthKey].totalAmount += monthlyAmount;
+        // Check if we have timesheet hours for this item and month
+        const timesheetHours = itemTimesheetHours[`${item.id}-${monthKey}`];
+        const timesheetReceived = timesheetStatus[`${monthKey}-${item.id}`] === true;
+        
+        let itemAmount = 0;
+        
+        // If timesheet was received and we have hours, use timesheet-based calculation
+        if (timesheetReceived && timesheetHours && timesheetHours > 0) {
+          const unitPrice = parseFloat(item.unitPrice || 0) || 0;
+          const rateType = item.rateType || 'daily';
+          
+          // Convert rate to hourly equivalent
+          let hourlyRate = unitPrice;
+          if (rateType === 'daily') {
+            hourlyRate = unitPrice / 10; // 10 hours per day
+          } else if (rateType === 'weekly') {
+            hourlyRate = unitPrice / (7 * 10); // 7 days * 10 hours
+          } else if (rateType === 'monthly') {
+            hourlyRate = unitPrice / (30 * 10); // 30 days * 10 hours
+          }
+          
+          itemAmount = hourlyRate * timesheetHours;
+        } else {
+          // Fallback to date-based calculation
+          const startDay = startInMonth.getDate();
+          const endDay = endInMonth.getDate();
+          const days = endDay - startDay + 1; // +1 inclusive
+          itemAmount = (parseFloat(item.unitPrice || 0) || 0) * Math.max(days, 0);
+        }
+        
+        acc[monthKey].totalAmount += itemAmount;
       } else {
         // No valid overlap within this month; skip adding the item
         currentMonth.setMonth(currentMonth.getMonth() + 1);
@@ -394,18 +537,44 @@ function generateReportHTML(rental: any, rentalItems: any[], selectedMonth: stri
           }
         }
         
-        // Calculate days - ensure we don't go outside the month
-        if (itemStartDate <= monthEnd) {
-          const startDay = startInMonth.getDate();
-          const endDay = endInMonth.getDate();
-          const days = endDay - startDay + 1; // +1 for inclusive counting
-          durationText = days >= 1 ? `${days} days` : '1 day';
+        // Check if we have timesheet hours for this item and month
+        const timesheetHours = itemTimesheetHours[`${item.id}-${monthKey}`];
+        const timesheetReceived = timesheetStatus[`${monthKey}-${item.id}`] === true;
+        
+        // If timesheet was received and we have hours, use timesheet-based calculation
+        if (timesheetReceived && timesheetHours && timesheetHours > 0) {
+          // Show duration in hours
+          durationText = timesheetHours % 1 === 0 ? `${timesheetHours} hours` : `${timesheetHours.toFixed(1)} hours`;
           
-          // Calculate monthly total
-          monthlyTotal = (parseFloat(item.unitPrice || 0) || 0) * Math.max(days, 1);
+          // Calculate monthly total based on timesheet hours
+          const unitPrice = parseFloat(item.unitPrice || 0) || 0;
+          const rateType = item.rateType || 'daily';
+          
+          // Convert rate to hourly equivalent
+          let hourlyRate = unitPrice;
+          if (rateType === 'daily') {
+            hourlyRate = unitPrice / 10; // 10 hours per day
+          } else if (rateType === 'weekly') {
+            hourlyRate = unitPrice / (7 * 10); // 7 days * 10 hours
+          } else if (rateType === 'monthly') {
+            hourlyRate = unitPrice / (30 * 10); // 30 days * 10 hours
+          }
+          
+          monthlyTotal = hourlyRate * timesheetHours;
         } else {
-          durationText = '0 days';
-          monthlyTotal = 0;
+          // Fallback to date-based calculation
+          if (itemStartDate <= monthEnd) {
+            const startDay = startInMonth.getDate();
+            const endDay = endInMonth.getDate();
+            const days = endDay - startDay + 1; // +1 for inclusive counting
+            durationText = days >= 1 ? `${days} days` : '1 day';
+            
+            // Calculate monthly total
+            monthlyTotal = (parseFloat(item.unitPrice || 0) || 0) * Math.max(days, 1);
+          } else {
+            durationText = '0 days';
+            monthlyTotal = 0;
+          }
         }
       }
       
