@@ -42,6 +42,7 @@ import {
   CheckCircle,
   Clock,
   DollarSign,
+  Download,
   Edit,
   FileText,
   Filter,
@@ -72,6 +73,7 @@ import {
   TaskList,
 } from './components';
 import { ProjectTask } from './components/TaskList';
+import { ProjectResourcesReportService, ProjectResourceReportData } from '@/lib/services/project-resources-report-service';
 
 type ResourceType = 'manpower' | 'equipment' | 'material' | 'fuel' | 'expense' | 'tasks';
 
@@ -1334,6 +1336,39 @@ export default function ProjectResourcesPage() {
     }));
   };
 
+  const handleGenerateReport = async (type: ResourceType) => {
+    try {
+      const filteredResources = filterResourcesByType(type);
+      const totalCost = calculateTotalCost(type);
+      
+      const reportData: ProjectResourceReportData = {
+        project: {
+          id: projectId,
+          name: project?.name || 'Unknown Project',
+        },
+        resourceType: type,
+        resources: filteredResources,
+        summary: {
+          totalCount: filteredResources.length,
+          totalCost: totalCost,
+        },
+      };
+
+      const loadingToastId = toast.loading('Generating report...');
+      
+      await ProjectResourcesReportService.downloadPDFReport(
+        reportData,
+        `${type}-report-${project?.name?.replace(/\s+/g, '-') || projectId}-${format(new Date(), 'yyyy-MM-dd')}.pdf`
+      );
+
+      toast.dismiss(loadingToastId);
+      toast.success('Report generated successfully');
+    } catch (error) {
+      console.error('Error generating report:', error);
+      toast.error('Failed to generate report');
+    }
+  };
+
   // Function to update statistics without full page refresh
   const updateStatistics = () => {
     // This will trigger a re-render of the statistics cards
@@ -1505,6 +1540,15 @@ export default function ProjectResourcesPage() {
                     <span className="text-sm text-muted-foreground">
                       {getResourceCount(type)} items
                     </span>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleGenerateReport(type)}
+                      disabled={getResourceCount(type) === 0}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Export Report
+                    </Button>
                     <Button size="sm" onClick={() => handleAddResource(type)}>
                       <Plus className="h-4 w-4 mr-2" />
                       Add {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -1946,6 +1990,15 @@ export default function ProjectResourcesPage() {
                   <span className="text-sm text-muted-foreground">
                     {getResourceCount('tasks')} items
                   </span>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleGenerateReport('tasks')}
+                    disabled={getResourceCount('tasks') === 0}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export Report
+                  </Button>
                   <Button size="sm" onClick={() => handleAddResource('tasks')}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add Task
