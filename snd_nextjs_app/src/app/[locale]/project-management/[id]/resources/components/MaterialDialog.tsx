@@ -155,8 +155,14 @@ export default function MaterialDialog({
   // Initialize form data when editing or when materials list loads
   useEffect(() => {
     if (initialData) {
-      // Get date from various possible field names
-      const dateValue = initialData.date_used || initialData.date || initialData.orderDate || (initialData as any).order_date || '';
+      // Get date from various possible field names - check all possible variations
+      const dateValue = initialData.date_used 
+        || initialData.date 
+        || initialData.orderDate 
+        || (initialData as any).order_date 
+        || (initialData as any).dateUsed
+        || (initialData as any).orderDate
+        || '';
       
       // Get material name from various possible field names
       const materialName = initialData.material_name || initialData.name || '';
@@ -174,11 +180,18 @@ export default function MaterialDialog({
         }
       }
       
+      // Get unit_price from various possible field names
+      const unitPrice = initialData.unit_price !== undefined && initialData.unit_price !== null 
+        ? initialData.unit_price 
+        : (initialData as any).unitPrice !== undefined && (initialData as any).unitPrice !== null
+          ? (initialData as any).unitPrice
+          : 0;
+      
       // Set form data, ensuring material_id is properly set (set it last so it doesn't get overwritten)
       setFormData({
         ...initialData,
         quantity: initialData.quantity || 0,
-        unit_price: initialData.unit_price || 0,
+        unit_price: unitPrice,
         unit: initialData.unit || '',
         total_cost: initialData.total_cost || 0,
         notes: initialData.notes || '',
@@ -186,7 +199,7 @@ export default function MaterialDialog({
         // Set these last to ensure they override any values from initialData
         material_id: materialId && materialId.trim() !== '' ? materialId : '',
         material_name: materialName || '',
-        date_used: dateValue ? dateValue.split('T')[0] : '',
+        date_used: dateValue ? (typeof dateValue === 'string' ? dateValue.split('T')[0] : dateValue) : '',
       });
     } else {
       setFormData({

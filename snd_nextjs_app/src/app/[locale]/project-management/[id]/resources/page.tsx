@@ -516,8 +516,10 @@ export default function ProjectResourcesPage() {
         // Material specific fields
         material_name: resource.name,
         unit: resource.unit,
-        unit_price: resource.unitPrice ? parseFloat(resource.unitPrice) : undefined,
+        unit_price: resource.unitPrice !== undefined && resource.unitPrice !== null ? parseFloat(resource.unitPrice) : undefined,
         material_id: resource.id?.toString(),
+        date_used: resource.orderDate || resource.date || resource.dateUsed || resource.date_used,
+        orderDate: resource.orderDate || resource.date || resource.dateUsed || resource.date_used,
 
         // Fuel specific fields
         fuel_type: resource.fuelType,
@@ -1063,25 +1065,38 @@ export default function ProjectResourcesPage() {
       }));
 
       // Transform materials data to match frontend structure
-      const transformedMaterials = materialsData.map((resource: any) => ({
-        id: resource.id.toString(),
-        type: resource.type,
-        name: resource.name || resource.title || 'Unnamed Material',
-        description: resource.description,
-        quantity: resource.quantity,
-        unit_cost: resource.unitPrice ? parseFloat(resource.unitPrice) : undefined,
-        total_cost: resource.unitPrice && resource.quantity ? 
-          parseFloat(resource.unitPrice) * parseFloat(resource.quantity) : undefined,
-        date: resource.orderDate || resource.date,
-        status: resource.status,
-        notes: resource.notes,
-        material_id: resource.materialId?.toString(),
-        material_name: resource.name,
-        unit: resource.unit,
-        supplier: resource.supplier,
-        created_at: resource.createdAt,
-        updated_at: resource.updatedAt,
-      }));
+      const transformedMaterials = materialsData.map((resource: any) => {
+        // Get date from all possible field names
+        const materialDate = resource.orderDate 
+          || resource.date 
+          || resource.dateUsed 
+          || resource.date_used
+          || resource.order_date
+          || resource.dateUsed
+          || '';
+        
+        return {
+          id: resource.id.toString(),
+          type: resource.type,
+          name: resource.name || resource.title || 'Unnamed Material',
+          description: resource.description,
+          quantity: resource.quantity,
+          unit_cost: resource.unitPrice ? parseFloat(resource.unitPrice) : undefined,
+          total_cost: resource.unitPrice && resource.quantity ? 
+            parseFloat(resource.unitPrice) * parseFloat(resource.quantity) : undefined,
+          date: materialDate,
+          orderDate: materialDate,
+          date_used: materialDate,
+          status: resource.status,
+          notes: resource.notes,
+          material_id: resource.materialId?.toString(),
+          material_name: resource.name,
+          unit: resource.unit,
+          supplier: resource.supplier,
+          created_at: resource.createdAt,
+          updated_at: resource.updatedAt,
+        };
+      });
 
       // Update only materials in the resources state
       setResources(prevResources => {
@@ -1818,7 +1833,9 @@ export default function ProjectResourcesPage() {
                               {/* Unit Price Column */}
                               <TableCell>
                                 <div className="text-sm">
-                                  {resource.unit_price ? `SAR ${resource.unit_price}` : '-'}
+                                  {resource.unit_price !== undefined && resource.unit_price !== null 
+                                    ? `SAR ${resource.unit_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
+                                    : '-'}
                                 </div>
                               </TableCell>
 
@@ -1826,10 +1843,20 @@ export default function ProjectResourcesPage() {
                               <TableCell>
                                 <div className="text-sm">
                                   {(() => {
-                                    const materialDate = resource.date || resource.orderDate;
+                                    // Check all possible date field names
+                                    const materialDate = resource.date 
+                                      || resource.orderDate 
+                                      || resource.date_used 
+                                      || (resource as any).dateUsed
+                                      || (resource as any).order_date;
+                                    
                                     if (materialDate) {
                                       try {
-                                        const date = new Date(materialDate);
+                                        // Handle both string and Date object
+                                        const date = typeof materialDate === 'string' 
+                                          ? new Date(materialDate) 
+                                          : materialDate;
+                                        
                                         if (!isNaN(date.getTime())) {
                                           return date.toLocaleDateString();
                                         }

@@ -214,12 +214,14 @@ const updateProjectMaterialHandler = async (
 
     const body = await request.json();
     const {
+      name,
       materialName,
       quantity,
       unit,
       unitPrice,
       totalCost,
       supplier,
+      orderDate,
       deliveryDate,
       notes,
       status,
@@ -229,13 +231,15 @@ const updateProjectMaterialHandler = async (
     const [updatedMaterial] = await db
       .update(projectMaterials)
       .set({
-        ...(materialName !== undefined && { materialName }),
+        ...(name !== undefined && { name }),
+        ...(materialName !== undefined && { name: materialName }),
         ...(quantity !== undefined && { quantity: parseFloat(quantity) }),
         ...(unit !== undefined && { unit }),
         ...(unitPrice !== undefined && { unitPrice: parseFloat(unitPrice) }),
         ...(totalCost !== undefined && { totalCost: parseFloat(totalCost) }),
         ...(supplier !== undefined && { supplier }),
         // Store dates as YYYY-MM-DD strings to avoid timezone issues
+        ...(orderDate !== undefined && { orderDate: orderDate ? orderDate.split('T')[0] : null }),
         ...(deliveryDate !== undefined && { deliveryDate: deliveryDate ? deliveryDate.split('T')[0] : null }),
         ...(notes !== undefined && { notes }),
         ...(status !== undefined && { status }),
