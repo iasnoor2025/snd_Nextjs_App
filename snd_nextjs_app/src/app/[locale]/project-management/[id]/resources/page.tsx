@@ -1586,6 +1586,7 @@ export default function ProjectResourcesPage() {
                           <TableHead>Unit</TableHead>
                           <TableHead>Quantity</TableHead>
                           <TableHead>Unit Price</TableHead>
+                          <TableHead>Date</TableHead>
                           <TableHead>Total Cost</TableHead>
                         </>
                       ) : type === 'fuel' ? (
@@ -1600,6 +1601,7 @@ export default function ProjectResourcesPage() {
                           <TableHead>Category</TableHead>
                           <TableHead>Description</TableHead>
                           <TableHead>Amount</TableHead>
+                          <TableHead>Date</TableHead>
                         </>
                       ) : (
                         <>
@@ -1621,11 +1623,11 @@ export default function ProjectResourcesPage() {
                               : type === 'equipment'
                                 ? 8
                                 : type === 'material'
-                                  ? 6
+                                  ? 7
                                   : type === 'fuel'
                                     ? 5
                                     : type === 'expense'
-                                      ? 4
+                                      ? 5
                                       : 4
                           }
                           className="text-center py-8"
@@ -1819,6 +1821,26 @@ export default function ProjectResourcesPage() {
                                   {resource.unit_price ? `SAR ${resource.unit_price}` : '-'}
                                 </div>
                               </TableCell>
+
+                              {/* Date Column */}
+                              <TableCell>
+                                <div className="text-sm">
+                                  {(() => {
+                                    const materialDate = resource.date || resource.orderDate;
+                                    if (materialDate) {
+                                      try {
+                                        const date = new Date(materialDate);
+                                        if (!isNaN(date.getTime())) {
+                                          return date.toLocaleDateString();
+                                        }
+                                      } catch (e) {
+                                        console.error('Invalid date:', materialDate, e);
+                                      }
+                                    }
+                                    return '-';
+                                  })()}
+                                </div>
+                              </TableCell>
                             </>
                           ) : type === 'fuel' ? (
                             <>
@@ -1854,6 +1876,33 @@ export default function ProjectResourcesPage() {
                                   {resource.expense_description || resource.description || '-'}
                                 </div>
                               </TableCell>
+
+                              {/* Amount Column */}
+                              <TableCell>
+                                <div className="text-sm font-medium">
+                                  SAR {(resource.amount || resource.total_cost || 0).toLocaleString()}
+                                </div>
+                              </TableCell>
+
+                              {/* Date Column */}
+                              <TableCell>
+                                <div className="text-sm">
+                                  {(() => {
+                                    const expenseDate = resource.date || resource.expenseDate || resource.expense_date;
+                                    if (expenseDate) {
+                                      try {
+                                        const date = new Date(expenseDate);
+                                        if (!isNaN(date.getTime())) {
+                                          return date.toLocaleDateString();
+                                        }
+                                      } catch (e) {
+                                        console.error('Invalid date:', expenseDate, e);
+                                      }
+                                    }
+                                    return '-';
+                                  })()}
+                                </div>
+                              </TableCell>
                             </>
                           ) : (
                             <>
@@ -1871,12 +1920,14 @@ export default function ProjectResourcesPage() {
                             </>
                           )}
 
-                          {/* Cost Column - Common for all types */}
-                          <TableCell>
-                            <div className="text-sm font-medium">
-                              SAR {(resource.total_cost || 0).toLocaleString()}
-                            </div>
-                          </TableCell>
+                          {/* Cost Column - Common for all types (except expenses, which already show Amount) */}
+                          {type !== 'expense' && (
+                            <TableCell>
+                              <div className="text-sm font-medium">
+                                SAR {(resource.total_cost || 0).toLocaleString()}
+                              </div>
+                            </TableCell>
+                          )}
 
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end space-x-2">

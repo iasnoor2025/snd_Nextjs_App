@@ -182,7 +182,7 @@ export class ProjectResourcesReportService {
       case 'equipment':
         return ['Equipment', 'Operator', 'Start Date', 'End Date', 'Usage Hours', 'Hourly Rate', 'Total Cost'];
       case 'material':
-        return ['Material', 'Unit', 'Quantity', 'Unit Price', 'Total Cost'];
+        return ['Material', 'Unit', 'Quantity', 'Unit Price', 'Date', 'Total Cost'];
       case 'fuel':
         return ['Fuel Type', 'Liters', 'Price/Liter', 'Total Cost'];
       case 'expense':
@@ -208,8 +208,8 @@ export class ProjectResourcesReportService {
         widths = [30, 65, 24, 24, 20, 22, 30];
         break;
       case 'material':
-        // Optimized: Material (wider), Unit, Quantity, Unit Price, Total Cost
-        widths = [55, 22, 22, 28, 33];
+        // Optimized: Material (wider), Unit, Quantity, Unit Price, Date, Total Cost
+        widths = [50, 20, 18, 25, 25, 28];
         break;
       case 'fuel':
         // Optimized: Fuel Type, Liters, Price/Liter, Total Cost
@@ -354,6 +354,10 @@ export class ProjectResourcesReportService {
     const formatDate = (dateStr: string | null | undefined): string => {
       if (!dateStr) return '-';
       try {
+        // Handle date strings that are already in YYYY-MM-DD format
+        if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+          return dateStr;
+        }
         const date = new Date(dateStr);
         if (isNaN(date.getTime())) return '-';
         return format(date, 'yyyy-MM-dd');
@@ -389,6 +393,7 @@ export class ProjectResourcesReportService {
           resource.unit || '-',
           resource.quantity?.toString() || '-',
           resource.unit_price ? `SAR ${resource.unit_price.toLocaleString()}` : '-',
+          formatDate(resource.date || resource.orderDate),
           resource.total_cost ? `SAR ${resource.total_cost.toLocaleString()}` : '-',
         ];
       case 'fuel':
@@ -403,7 +408,7 @@ export class ProjectResourcesReportService {
           resource.category || '-',
           resource.expense_description || resource.description || '-',
           resource.amount ? `SAR ${resource.amount.toLocaleString()}` : '-',
-          formatDate(resource.date),
+          formatDate(resource.date || resource.expenseDate || resource.expense_date),
         ];
       case 'tasks':
         return [

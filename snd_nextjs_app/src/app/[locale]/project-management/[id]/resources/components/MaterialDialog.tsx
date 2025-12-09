@@ -28,7 +28,7 @@ import { toast } from 'sonner';
 
 interface MaterialResource {
   id?: string;
-  material_id?: string;
+  material_id?: string | undefined;
   material_name?: string;
   name?: string; // Add name field
   quantity?: number;
@@ -36,6 +36,8 @@ interface MaterialResource {
   unit_price?: number;
   total_cost?: number;
   date_used?: string;
+  date?: string; // Also accept date field
+  orderDate?: string; // Also accept orderDate field
   notes?: string;
   status?: string;
 }
@@ -116,12 +118,31 @@ export default function MaterialDialog({
     }
   }, [open]);
 
+
   const fetchMaterials = async () => {
     setLoadingMaterials(true);
     try {
       const response = await ApiService.get('/materials');
       if (response.success && response.data) {
         setMaterialsList(response.data);
+        
+        // After materials load, if we have initialData, set the material_id
+        if (initialData) {
+          const materialName = initialData.material_name || initialData.name || '';
+          if (materialName) {
+            const foundMaterial = response.data.find((mat: Material) => 
+              mat.name.toLowerCase().trim() === materialName.toLowerCase().trim()
+            );
+            if (foundMaterial) {
+              const materialIdStr = foundMaterial.id.toString();
+              setFormData(prev => ({
+                ...prev,
+                material_id: materialIdStr,
+                material_name: materialName,
+              }));
+            }
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching materials:', error);
@@ -131,13 +152,41 @@ export default function MaterialDialog({
     }
   };
 
-  // Initialize form data when editing
+  // Initialize form data when editing or when materials list loads
   useEffect(() => {
     if (initialData) {
+      // Get date from various possible field names
+      const dateValue = initialData.date_used || initialData.date || initialData.orderDate || (initialData as any).order_date || '';
+      
+      // Get material name from various possible field names
+      const materialName = initialData.material_name || initialData.name || '';
+      
+      // Get material_id - check multiple possible field names
+      let materialId = initialData.material_id || (initialData as any).materialId || '';
+      
+      // If material_id is not set but we have material name and materials list is loaded, find it
+      if ((!materialId || materialId.trim() === '') && materialName && materialsList.length > 0) {
+        const foundMaterial = materialsList.find(mat => 
+          mat.name.toLowerCase().trim() === materialName.toLowerCase().trim()
+        );
+        if (foundMaterial) {
+          materialId = foundMaterial.id.toString();
+        }
+      }
+      
+      // Set form data, ensuring material_id is properly set (set it last so it doesn't get overwritten)
       setFormData({
         ...initialData,
-        // Ensure date_used is in YYYY-MM-DD format
-        date_used: initialData.date_used ? initialData.date_used.split('T')[0] : '',
+        quantity: initialData.quantity || 0,
+        unit_price: initialData.unit_price || 0,
+        unit: initialData.unit || '',
+        total_cost: initialData.total_cost || 0,
+        notes: initialData.notes || '',
+        status: initialData.status || 'pending',
+        // Set these last to ensure they override any values from initialData
+        material_id: materialId && materialId.trim() !== '' ? materialId : '',
+        material_name: materialName || '',
+        date_used: dateValue ? dateValue.split('T')[0] : '',
       });
     } else {
       setFormData({
@@ -152,7 +201,7 @@ export default function MaterialDialog({
         status: 'pending',
       });
     }
-  }, [initialData]);
+  }, [initialData, materialsList]);
 
   // Calculate total cost when quantity or unit price changes
   useEffect(() => {
@@ -169,7 +218,7 @@ export default function MaterialDialog({
 
       // Handle material selection
       if (field === 'material_id') {
-        if (value) {
+        if (value && value.trim() !== '') {
           const selectedMaterial = materialsList.find(mat => mat.id.toString() === value);
           if (selectedMaterial) {
             newData.material_id = value;
@@ -195,7 +244,7 @@ export default function MaterialDialog({
 
     try {
       // Validation
-      if (!formData.material_id) {
+      if (!formData.material_id || formData.material_id.trim() === '') {
         toast.error('Please select a material');
         return;
       }
@@ -285,28 +334,38 @@ export default function MaterialDialog({
                   Manage
                 </Button>
               </div>
-              <Select
-                value={formData.material_id || undefined}
-                onValueChange={value => handleInputChange('material_id', value)}
-                disabled={loadingMaterials}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={loadingMaterials ? "Loading..." : "Select material"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {materialsList.length === 0 && !loadingMaterials ? (
-                    <SelectItem value="no-materials" disabled>
-                      No materials available
-                    </SelectItem>
-                  ) : (
-                    materialsList.map(material => (
-                      <SelectItem key={material.id} value={material.id.toString()}>
-                        {material.name}
+              {initialData && formData.material_name ? (
+                // Show read-only input when editing
+                <Input
+                  value={formData.material_name}
+                  readOnly
+                  className="bg-muted cursor-not-allowed"
+                />
+              ) : (
+                // Show dropdown when adding new material - always controlled with string value
+                <Select
+                  value={formData.material_id && typeof formData.material_id === 'string' ? formData.material_id : ''}
+                  onValueChange={value => handleInputChange('material_id', value || '')}
+                  disabled={loadingMaterials}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={loadingMaterials ? "Loading..." : "Select material"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {materialsList.length === 0 && !loadingMaterials ? (
+                      <SelectItem value="no-materials" disabled>
+                        No materials available
                       </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
+                    ) : (
+                      materialsList.map(material => (
+                        <SelectItem key={material.id} value={material.id.toString()}>
+                          {material.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div className="space-y-2">
