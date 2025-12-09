@@ -15,7 +15,7 @@ export interface ProjectResourceReportData {
 }
 
 export class ProjectResourcesReportService {
-  static generatePDFReport(data: ProjectResourceReportData): jsPDF {
+  static async generatePDFReport(data: ProjectResourceReportData): Promise<jsPDF> {
     // Sort resources before generating report
     const sortedResources = this.sortResources([...data.resources], data.resourceType);
     const sortedData = { ...data, resources: sortedResources };
@@ -35,12 +35,37 @@ export class ProjectResourcesReportService {
       creator: 'SND Rental System',
     });
 
-    // Header
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
+    // Load logo once for reuse on all pages
+    const logoPath = '/snd-logo.png';
+    const companyName = 'Samhan Naser Al-Dosri Est.';
+    let logoDataUrl: string | null = null;
+    try {
+      logoDataUrl = await this.loadImageAsDataURL(logoPath);
+    } catch (error) {
+      console.warn('Could not load logo:', error);
+    }
+
+    // Function to draw page header (logo and company name)
+    const drawPageHeader = (yPos: number) => {
+      if (logoDataUrl) {
+        const logoWidth = 20;
+        const logoHeight = 15;
+        doc.addImage(logoDataUrl, 'PNG', margin, yPos - 5, logoWidth, logoHeight);
+      }
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      const companyX = margin + 25; // Position after logo
+      doc.text(companyName, companyX, yPos);
+    };
+
+    // Draw header on first page
+    drawPageHeader(yPosition);
+    
+    yPosition += 6;
+    doc.setFontSize(14);
     doc.text(
       `${data.resourceType.charAt(0).toUpperCase() + data.resourceType.slice(1)} Resources Report`,
-      margin,
+      margin + 25,
       yPosition
     );
 
@@ -85,11 +110,14 @@ export class ProjectResourcesReportService {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
 
-    sortedData.resources.forEach((resource, index) => {
+    for (const resource of sortedData.resources) {
       // Check if we need a new page
       if (yPosition > pageHeight - 20) {
         doc.addPage();
         yPosition = 15;
+        // Redraw logo and company name on new page
+        drawPageHeader(yPosition);
+        yPosition += 25; // Space for header
         // Redraw header on new page
         drawHeaderRow(yPosition);
         yPosition += headerHeight + 2;
@@ -132,7 +160,7 @@ export class ProjectResourcesReportService {
 
       // Move to next row with adjusted height
       yPosition += 4 + (maxLines * 3);
-    });
+    }
 
     // Add summary at the end
     if (yPosition > pageHeight - 30) {
@@ -159,7 +187,7 @@ export class ProjectResourcesReportService {
     filename?: string
   ): Promise<void> {
     try {
-      const pdf = this.generatePDFReport(data);
+      const pdf = await this.generatePDFReport(data);
       const pdfBlob = pdf.output('blob');
       const url = URL.createObjectURL(pdfBlob);
       const link = document.createElement('a');
@@ -174,6 +202,24 @@ export class ProjectResourcesReportService {
       throw error;
     }
   }
+
+  private static async loadImageAsDataURL(imagePath: string): Promise<string | null> {
+    try {
+      const response = await fetch(imagePath);
+      if (!response.ok) return null;
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.warn('Error loading image:', error);
+      return null;
+    }
+  }
+
 
   private static getHeaders(resourceType: string): string[] {
     switch (resourceType) {
