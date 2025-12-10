@@ -68,8 +68,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       paymentTermsDays: parseInt(body.paymentTermsDays) || 30,
       hasTimesheet: body.hasTimesheet || false,
       hasOperators: body.hasOperators || false,
-      supervisor: body.supervisor || null,
-      area: body.area || null,
+      supervisor: body.supervisor !== undefined ? (body.supervisor || null) : currentRental.supervisor,
+      area: body.area !== undefined ? (body.area || null) : currentRental.area,
       notes: body.notes || '',
     };
 
