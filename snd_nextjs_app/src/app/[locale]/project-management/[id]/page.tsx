@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ApiService from '@/lib/api-service';
+import ProjectDocumentsTab from '@/components/project/ProjectDocumentsTab';
 import {
   AlertCircle,
   ArrowLeft,
@@ -1231,15 +1232,7 @@ export default function ProjectDetailPage() {
 
         {/* Documents Tab */}
         <TabsContent value="documents" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Project Documents</CardTitle>
-              <CardDescription>No documents found</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-center text-gray-500 py-8">No documents found</p>
-            </CardContent>
-          </Card>
+          <ProjectDocumentsTab projectId={parseInt(projectId)} />
         </TabsContent>
       </Tabs>
 

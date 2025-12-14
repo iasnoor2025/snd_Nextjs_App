@@ -1,58 +1,154 @@
 import { db } from '@/lib/drizzle';
-import { media } from '@/lib/drizzle/schema';
-import { desc, eq } from 'drizzle-orm';
+import { projectDocuments, projects } from '@/lib/drizzle/schema';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
+import { eq, desc } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { cacheService } from '@/lib/redis/cache-service';
+import { ensureHttps } from '@/lib/utils/url-utils';
 
-export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const GET = withPermission(PermissionConfigs.project.read)(async (_request: NextRequest, ...args: unknown[]) => {
+  const { params } = args[0] as { params: Promise<{ id: string }> };
+  let projectId: number | null = null;
+  
   try {
-    const { id: projectId } = await params;
+    const resolvedParams = await params;
 
-    const documents = await db
+    if (!resolvedParams || !resolvedParams.id) {
+      return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
+    }
+
+    const { id } = resolvedParams;
+    projectId = parseInt(id);
+
+    if (isNaN(projectId)) {
+      return NextResponse.json({ error: 'Invalid project ID' }, { status: 400 });
+    }
+
+    // Try to get from cache first
+    const cacheKey = `project:${projectId}:documents`;
+    const cachedDocuments = await cacheService.get(cacheKey, 'documents');
+    
+    if (cachedDocuments) {
+      return NextResponse.json(cachedDocuments);
+    }
+
+    // Check if project exists
+    const projectResult = await db
       .select()
-      .from(media)
-      .where(eq(media.modelId, parseInt(projectId)))
-      .orderBy(desc(media.createdAt));
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .limit(1);
 
-    // Transform the data to match the frontend expectations
-    const transformedDocuments = documents.map((doc: any) => ({
-      id: doc.id,
-      name: doc.fileName,
-      type: doc.mimeType || 'Unknown',
-      uploaded_by: 'Unknown', // Media model doesn't have uploader relation
-      uploaded_at: doc.createdAt,
-      size: doc.fileSize ? `${(doc.fileSize / 1024 / 1024).toFixed(1)} MB` : 'Unknown',
-    }));
+    if (!projectResult[0]) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    }
 
-    return NextResponse.json({ data: transformedDocuments });
-  } catch (error) {
-    
-    return NextResponse.json({ error: 'Failed to fetch project documents' }, { status: 500 });
-  }
-}
-
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id: projectId } = await params;
-    const body = await request.json();
-
-    const documentRows = await db
-      .insert(media)
-      .values({
-        fileName: body.name,
-        filePath: body.file_path,
-        fileSize: body.file_size,
-        mimeType: body.file_type,
-        modelType: 'Project',
-        modelId: parseInt(projectId),
-        collection: body.category || 'documents',
-        createdAt: new Date().toISOString().split('T')[0],
-        updatedAt: new Date().toISOString().split('T')[0] as string,
+    // Get project documents
+    const documentsRows = await db
+      .select({
+        id: projectDocuments.id,
+        projectId: projectDocuments.projectId,
+        documentType: projectDocuments.documentType,
+        fileName: projectDocuments.fileName,
+        filePath: projectDocuments.filePath,
+        fileSize: projectDocuments.fileSize,
+        mimeType: projectDocuments.mimeType,
+        description: projectDocuments.description,
+        createdAt: projectDocuments.createdAt,
+        updatedAt: projectDocuments.updatedAt,
       })
-      .returning();
+      .from(projectDocuments)
+      .where(eq(projectDocuments.projectId, projectId))
+      .orderBy(desc(projectDocuments.createdAt));
 
-    return NextResponse.json({ data: documentRows[0] }, { status: 201 });
+    // Format response to match what DocumentManager expects
+    const formattedDocuments = documentsRows.map(doc => {
+      try {
+        // Create a user-friendly display name from the document type
+        const displayName = doc.documentType
+          ? doc.documentType.replace(/_/g, ' ').replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+          : 'Unknown Document';
+        
+        return {
+          id: doc.id,
+          name: displayName,
+          file_name: doc.fileName || 'Unknown Document',
+          file_type: doc.mimeType || 'application/octet-stream',
+          size: doc.fileSize || 0,
+          url: ensureHttps(doc.filePath),
+          mime_type: doc.mimeType || '',
+          document_type: doc.documentType || '',
+          description: doc.description || '',
+          created_at: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
+          updated_at: doc.updatedAt ? new Date(doc.updatedAt).toISOString() : new Date().toISOString(),
+          // Also include the original field names for backward compatibility
+          fileName: doc.fileName,
+          filePath: doc.filePath,
+          fileSize: doc.fileSize,
+          mimeType: doc.mimeType,
+          documentType: doc.documentType,
+          createdAt: doc.createdAt,
+          updatedAt: doc.updatedAt,
+          typeLabel: displayName,
+        };
+      } catch (docError) {
+        console.error('Error formatting document:', doc, docError);
+        return {
+          id: doc.id,
+          name: 'Unknown Document',
+          file_name: 'Unknown Document',
+          file_type: 'application/octet-stream',
+          size: 0,
+          url: '',
+          mime_type: '',
+          document_type: '',
+          description: '',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          fileName: doc.fileName,
+          filePath: doc.filePath,
+          fileSize: doc.fileSize,
+          mimeType: doc.mimeType,
+          documentType: doc.documentType,
+          createdAt: doc.createdAt,
+          updatedAt: doc.updatedAt,
+          typeLabel: 'Unknown Document',
+        };
+      }
+    });
+
+    // Cache the formatted documents for 5 minutes
+    await cacheService.set(cacheKey, formattedDocuments, {
+      ttl: 300,
+      prefix: 'documents',
+      tags: [`project:${projectId}`, 'documents']
+    });
+
+    return NextResponse.json(formattedDocuments);
   } catch (error) {
-    
-    return NextResponse.json({ error: 'Failed to create project document' }, { status: 500 });
+    let errorMessage = 'Internal server error';
+    let errorDetails = '';
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      errorDetails = error.stack || '';
+    }
+
+    console.error('Error in getProjectDocumentsHandler:', {
+      error: errorMessage,
+      details: errorDetails,
+      timestamp: new Date().toISOString(),
+      projectId: projectId
+    });
+
+    return NextResponse.json(
+      {
+        error: errorMessage,
+        details: errorDetails,
+        timestamp: new Date().toISOString(),
+        projectId: projectId
+      },
+      { status: 500 }
+    );
   }
-}
+});

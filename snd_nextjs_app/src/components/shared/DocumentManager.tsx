@@ -12,6 +12,8 @@ import { useDropzone } from 'react-dropzone';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
 import PdfThumbnail from './PdfThumbnail';
+import ImageThumbnail from './ImageThumbnail';
+import PdfViewer from './PdfViewer';
 
 export interface DocumentItem {
   id: number;
@@ -24,6 +26,7 @@ export interface DocumentItem {
   typeLabel?: string;
   employee_file_number?: string | number;
   document_type?: string;
+  project_id?: number; // For project documents
 }
 
 interface DocumentManagerProps {
@@ -272,8 +275,100 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
 
       // If the URL is a MinIO URL (starts with http), handle it directly
       if (doc.url.startsWith('http')) {
+        // For project documents, try using the download endpoint first if available
+        if (doc.project_id && doc.url.includes('/project-documents/')) {
+          try {
+            const downloadResponse = await fetch(`/api/projects/${doc.project_id}/documents/${doc.id}/download`, {
+              method: 'GET',
+              credentials: 'include',
+            });
+            
+            if (downloadResponse.ok) {
+              const blob = await downloadResponse.blob();
+              const url = window.URL.createObjectURL(blob);
+              
+              // Get filename from Content-Disposition header or use default
+              const contentDisposition = downloadResponse.headers.get('Content-Disposition');
+              let filename = doc.file_name || doc.name || 'document.pdf';
+              if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                if (filenameMatch && filenameMatch[1]) {
+                  filename = filenameMatch[1].replace(/['"]/g, '');
+                  try {
+                    filename = decodeURIComponent(filename);
+                  } catch (e) {
+                    // If decoding fails, use as is
+                  }
+                }
+              }
+              
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = filename;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              window.URL.revokeObjectURL(url);
+              
+              toast.success(t('employee.documents.downloadStarted'));
+              return;
+            }
+          } catch (downloadError) {
+            // Fall through to try direct fetch
+            console.warn('Download endpoint failed, trying direct fetch:', downloadError);
+          }
+        }
         
-        // For MinIO URLs, we need to fetch the file and create a blob download
+        // For MinIO URLs, try using the PDF proxy for authenticated access
+        if (doc.url.includes('minio') || doc.url.includes('s3')) {
+          try {
+            const proxyResponse = await fetch(`/api/pdf-proxy?url=${encodeURIComponent(doc.url)}`, {
+              method: 'GET',
+              credentials: 'include',
+            });
+            
+            if (proxyResponse.ok) {
+              const blob = await proxyResponse.blob();
+              const url = window.URL.createObjectURL(blob);
+              
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = doc.file_name || doc.name;
+              
+              // Determine preferred prefix (employee file number)
+              const prefixFromProp =
+                typeof downloadPrefix === 'function' ? downloadPrefix(doc) : downloadPrefix;
+              const fileNumber =
+                prefixFromProp || (doc.employee_file_number ? String(doc.employee_file_number) : '');
+              
+              // Human-readable type label for display
+              const printableType = (doc.typeLabel || 'Document').trim();
+              // Determine extension from file_name or URL
+              let ext = (doc.file_name || '').split('.').pop();
+              if (!ext || ext.length > 5) {
+                const urlMatch = doc.url.match(/\.([a-zA-Z0-9]{2,5})(?:\?|#|$)/);
+                if (urlMatch) ext = urlMatch[1];
+              }
+              const fallback = doc.file_name || doc.name;
+              // Desired pattern: "Type (File 123).ext"
+              link.download = fileNumber && ext ? `${printableType} (File ${fileNumber}).${ext}` : fallback;
+              
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              
+              // Clean up the blob URL
+              window.URL.revokeObjectURL(url);
+              toast.success(t('employee.documents.downloadStarted'));
+              return;
+            }
+          } catch (proxyError) {
+            // Fall through to try direct fetch
+            console.warn('PDF proxy failed, trying direct fetch:', proxyError);
+          }
+        }
+        
+        // Fallback: For MinIO URLs, we need to fetch the file and create a blob download
         const response = await fetch(doc.url);
         if (!response.ok) {
           throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
@@ -549,42 +644,29 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
                         : 'group relative bg-white border border-gray-200 rounded-lg p-3 hover:shadow-lg hover:border-gray-300 transition-all duration-200 cursor-pointer'
                     }
                    onClick={() => {
-                     if (isImageFile(fileType)) {
-                       setPreviewImage(document);
-                     } else if (fileType.includes('pdf') || fileType.includes('text')) {
-                       window.open(docUrl, '_blank');
-                     }
-                   }}
+                    if (isImageFile(fileType) || fileType.includes('pdf')) {
+                      // Show in modal for both images and PDFs
+                      setPreviewImage(document);
+                    } else if (fileType.includes('text')) {
+                      // Text files still open in new tab
+                      const previewUrl = document.project_id 
+                        ? `/api/projects/${document.project_id}/documents/${document.id}/preview`
+                        : docUrl;
+                      window.open(previewUrl, '_blank');
+                    }
+                  }}
                  >
                                        {/* Card Layout - Image and Details in One Row */}
                                          <div className="flex flex-col h-full">
                                                  {/* Image/Icon Section - Simple and clean like preview */}
                          <div className="flex-1 flex items-center justify-center mb-3">
                            {isImageFile(fileType) ? (
-                                                           <div className="relative w-full">
-                                <img
-                                  src={docUrl}
-                                  alt={fileName}
-                                  className="w-full object-contain rounded border border-gray-200"
-                                  style={{ transformOrigin: 'center center' }}
-                                  onLoad={(e) => {
-                                    const img = e.target as HTMLImageElement;
-                                    
-                                    // Auto-size to fit image naturally - no rotation
-                                    img.style.transform = 'rotate(0deg)';
-                                    img.style.objectFit = 'contain';
-                                    
-                                    // Ensure smooth transitions
-                                    img.style.transition = 'all 0.3s ease-in-out';
-                                  }}
-                                 onError={e => {
-                                   const target = e.target as HTMLImageElement;
-                                   target.style.display = 'none';
-                                   const fallbackDiv = target.nextElementSibling as HTMLElement;
-                                   if (fallbackDiv) {
-                                     fallbackDiv.style.display = 'flex';
-                                   }
-                                 }}
+                             <div className="relative w-full">
+                               <ImageThumbnail
+                                 url={docUrl}
+                                 alt={fileName}
+                                 className="w-full object-contain rounded border border-gray-200"
+                                 downloadUrl={document.project_id ? `/api/projects/${document.project_id}/documents/${document.id}/download` : undefined}
                                />
                                {/* Simple fallback icon */}
                                <div 
@@ -597,7 +679,12 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
                                </div>
                              </div>
                            ) : fileType.toLowerCase().includes('pdf') ? (
-                             <PdfThumbnail url={docUrl} alt={fileName} className="w-full" />
+                             <PdfThumbnail 
+                               url={docUrl} 
+                               alt={fileName} 
+                               className="w-full"
+                               downloadUrl={document.project_id ? `/api/projects/${document.project_id}/documents/${document.id}/download` : undefined}
+                             />
                            ) : (
                                                            <div 
                                 className="w-full min-h-20 flex items-center justify-center rounded border border-gray-200 bg-gray-50"
@@ -654,14 +741,19 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
                          <Button
                            variant="secondary"
                            size="sm"
-                           onClick={(e) => {
-                             e.stopPropagation();
-                             if (isImageFile(fileType)) {
-                               setPreviewImage(document);
-                             } else if (fileType.includes('pdf') || fileType.includes('text')) {
-                               window.open(docUrl, '_blank');
-                             }
-                           }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isImageFile(fileType) || fileType.includes('pdf')) {
+                              // Show in modal for both images and PDFs
+                              setPreviewImage(document);
+                            } else if (fileType.includes('text')) {
+                              // Text files still open in new tab
+                              const previewUrl = document.project_id 
+                                ? `/api/projects/${document.project_id}/documents/${document.id}/preview`
+                                : docUrl;
+                              window.open(previewUrl, '_blank');
+                            }
+                          }}
                            className="h-8 w-8 p-0 shadow-lg"
                            title={isImageFile(fileType) ? t('employee.documents.previewImage') : t('employee.documents.openDocument')}
                          >
@@ -712,7 +804,7 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
       {/* Document Preview Modal */}
       {previewImage && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-4 max-w-4xl max-h-[90vh] overflow-auto">
+          <div className={`bg-white rounded-lg p-4 max-h-[90vh] overflow-auto ${previewImage.file_type.includes('pdf') ? 'w-[90vw] max-w-6xl' : 'max-w-4xl'}`}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <h3 className="text-lg font-semibold">{previewImage.name}</h3>
@@ -732,30 +824,27 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
             <div className="flex justify-center">
               {isImageFile(previewImage.file_type) ? (
                 <div className="relative">
-                  <img
-                    src={previewImage.url}
+                  <ImageThumbnail
+                    url={previewImage.url}
                     alt={previewImage.name}
                     className="max-w-full max-h-[70vh] object-contain rounded"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                      // Show error message when image fails to load
-                      const errorDiv = target.nextElementSibling as HTMLElement;
-                      if (errorDiv) {
-                        errorDiv.style.display = 'flex';
-                      }
-                    }}
+                    downloadUrl={previewImage.project_id ? `/api/projects/${previewImage.project_id}/documents/${previewImage.id}/download` : undefined}
                   />
                   {/* Error fallback when image fails to load */}
                   <div className="hidden w-full h-[70vh] flex items-center justify-center flex-col gap-4">
                     <div className="text-6xl">🖼️</div>
                     <div className="text-center">
                       <p className="text-lg font-medium text-gray-600">{previewImage.name}</p>
-                                             <p className="text-sm text-gray-500 mt-2">
-                         {t('employee.documents.failedToLoadImage')}
-                       </p>
+                      <p className="text-sm text-gray-500 mt-2">
+                        {t('employee.documents.failedToLoadImage')}
+                      </p>
                       <Button
-                        onClick={() => window.open(previewImage.url, '_blank')}
+                        onClick={() => {
+                          const downloadUrl = previewImage.project_id 
+                            ? `/api/projects/${previewImage.project_id}/documents/${previewImage.id}/download`
+                            : previewImage.url;
+                          window.open(downloadUrl, '_blank');
+                        }}
                         className="mt-4"
                       >
                         {t('employee.documents.openInNewTab')}
@@ -764,11 +853,13 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
                   </div>
                 </div>
               ) : previewImage.file_type.includes('pdf') ? (
-                <div className="w-full h-[70vh] flex items-center justify-center">
-                  <iframe
-                    src={previewImage.url}
-                    className="w-full h-full border rounded"
-                    title={previewImage.name}
+                <div className="w-full h-[70vh]">
+                  <PdfViewer
+                    url={previewImage.url}
+                    downloadUrl={previewImage.project_id 
+                      ? `/api/projects/${previewImage.project_id}/documents/${previewImage.id}/download`
+                      : undefined}
+                    className="w-full h-full"
                   />
                 </div>
               ) : (
@@ -780,7 +871,12 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
                       {t('employee.documents.cannotPreviewFileType')}
                     </p>
                     <Button
-                      onClick={() => window.open(previewImage.url, '_blank')}
+                      onClick={() => {
+                        const openUrl = previewImage.project_id 
+                          ? `/api/projects/${previewImage.project_id}/documents/${previewImage.id}/preview`
+                          : previewImage.url;
+                        window.open(openUrl, '_blank');
+                      }}
                       className="mt-4"
                     >
                       {t('employee.documents.openInNewTab')}

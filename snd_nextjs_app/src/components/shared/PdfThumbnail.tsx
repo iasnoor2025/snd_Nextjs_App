@@ -10,14 +10,16 @@ interface PdfThumbnailProps {
   url: string;
   alt?: string;
   className?: string;
+  downloadUrl?: string; // Optional download endpoint URL for authenticated access
 }
 
-export default function PdfThumbnail({ url, alt = 'PDF Document', className = '' }: PdfThumbnailProps) {
+export default function PdfThumbnail({ url, alt = 'PDF Document', className = '', downloadUrl }: PdfThumbnailProps) {
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [pdfjsLoaded, setPdfjsLoaded] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fetchedRef = useRef(false);
 
   // Load PDF.js on client side
   useEffect(() => {
@@ -49,6 +51,10 @@ export default function PdfThumbnail({ url, alt = 'PDF Document', className = ''
 
   useEffect(() => {
     if (!pdfjsLoaded || !pdfjsLib) return;
+    
+    // Prevent duplicate fetches (React Strict Mode)
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
 
     let isMounted = true;
     let timeoutId: NodeJS.Timeout;
@@ -58,73 +64,83 @@ export default function PdfThumbnail({ url, alt = 'PDF Document', className = ''
         setLoading(true);
         setError(false);
 
-        // Set a timeout (15 seconds) to prevent infinite loading
+        // Set a timeout (20 seconds) to prevent infinite loading
         timeoutId = setTimeout(() => {
           if (isMounted) {
             console.error('⏱️ PDF thumbnail loading timeout');
             setError(true);
             setLoading(false);
           }
-        }, 15000);
+        }, 20000);
 
-        // Use proxy API route for external URLs to avoid CORS issues
-        let pdfData: ArrayBuffer | Uint8Array | string = url;
+        let pdfData: Uint8Array;
         
-        // If URL is external (MinIO/S3), use proxy
-        if (url.startsWith('http://') || url.startsWith('https://')) {
-          try {
-
-            // Use our proxy API route
-            const proxyUrl = `/api/pdf-proxy?url=${encodeURIComponent(url)}`;
-            const response = await fetch(proxyUrl, {
-              method: 'GET',
-              headers: {
-                'Cache-Control': 'no-cache',
-              },
-            });
-            
-            if (!response.ok) {
-              const errorText = await response.text();
-              console.error('❌ Proxy fetch failed:', response.status, errorText);
-              throw new Error(`Failed to fetch PDF: ${response.status} ${response.statusText}`);
-            }
-            
-            const arrayBuffer = await response.arrayBuffer();
-
-            pdfData = new Uint8Array(arrayBuffer);
-          } catch (fetchError) {
-            console.error('❌ Failed to fetch PDF via proxy, trying direct fetch:', fetchError);
-            // Fallback: try direct fetch
-            try {
-              const directResponse = await fetch(url, {
-                method: 'GET',
-                headers: {
-                  'Cache-Control': 'no-cache',
-                },
-              });
-              
-              if (!directResponse.ok) {
-                throw new Error(`Direct fetch failed: ${directResponse.status}`);
-              }
-              
-              const blob = await directResponse.blob();
-              const arrayBuffer = await blob.arrayBuffer();
-              pdfData = new Uint8Array(arrayBuffer);
-
-            } catch (directError) {
-              console.error('❌ Both proxy and direct fetch failed:', directError);
-              throw directError;
-            }
+        // Build the fetch URL - use /preview endpoint for project documents
+        // Add base64 parameter to get JSON response (bypasses IDM completely)
+        let fetchUrl: string;
+        if (downloadUrl) {
+          // Replace /download with /preview in the URL and add base64 flag
+          fetchUrl = downloadUrl.replace('/download', '/preview');
+          fetchUrl = `${fetchUrl}${fetchUrl.includes('?') ? '&' : '?'}base64=1`;
+        } else {
+          fetchUrl = `/api/pdf-proxy?url=${encodeURIComponent(url)}`;
+        }
+        
+        // Add cache-busting timestamp
+        const cacheBustUrl = `${fetchUrl}${fetchUrl.includes('?') ? '&' : '?'}_t=${Date.now()}`;
+        
+        console.log('📥 Fetching PDF (base64) from:', cacheBustUrl);
+        
+        // Fetch as JSON - IDM doesn't intercept JSON responses!
+        const response = await fetch(cacheBustUrl, {
+          method: 'GET',
+          credentials: 'include',
+          cache: 'no-store',
+          headers: {
+            'Accept': 'application/json',
+          },
+        });
+        
+        console.log('📄 PDF Response:', {
+          status: response.status,
+          statusText: response.statusText,
+          contentType: response.headers.get('content-type'),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch PDF: ${response.status} ${response.statusText}`);
+        }
+        
+        // Check if response is JSON (base64 encoded)
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          // Decode base64 response
+          const jsonData = await response.json();
+          if (!jsonData.data) {
+            throw new Error('No data in JSON response');
           }
+          
+          // Decode base64 to Uint8Array
+          const binaryString = atob(jsonData.data);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          pdfData = bytes;
+          console.log(`✅ Received PDF data (base64 decoded): ${pdfData.length} bytes`);
+        } else {
+          // Fallback to binary response
+          const blob = await response.blob();
+          if (blob.size === 0) {
+            throw new Error('Received empty PDF blob');
+          }
+          const arrayBuffer = await blob.arrayBuffer();
+          pdfData = new Uint8Array(arrayBuffer);
+          console.log(`✅ Received PDF data (binary): ${pdfData.length} bytes`);
         }
 
-        // Load the PDF - use data for ArrayBuffer/Uint8Array, url for string
-        const loadingTask = pdfjsLib.getDocument(
-          pdfData instanceof Uint8Array || pdfData instanceof ArrayBuffer
-            ? { data: pdfData }
-            : { url: pdfData as string }
-        );
-
+        // Load the PDF
+        const loadingTask = pdfjsLib.getDocument({ data: pdfData });
         const pdf = await loadingTask.promise;
 
         if (!isMounted) return;
@@ -139,12 +155,10 @@ export default function PdfThumbnail({ url, alt = 'PDF Document', className = ''
         }
 
         if (!canvas) {
-          console.error('❌ Canvas not found after waiting');
           throw new Error('Canvas element not available');
         }
 
         // Get the first page
-
         const page = await pdf.getPage(1);
 
         // Set up canvas
@@ -155,7 +169,6 @@ export default function PdfThumbnail({ url, alt = 'PDF Document', className = ''
         // Render the page
         const context = canvas.getContext('2d');
         if (!context) {
-          console.error('❌ Canvas context not found');
           throw new Error('Canvas context not available');
         }
 
@@ -173,11 +186,10 @@ export default function PdfThumbnail({ url, alt = 'PDF Document', className = ''
         if (isMounted) {
           setThumbnailUrl(dataUrl);
           setLoading(false);
+          console.log('✅ PDF thumbnail rendered successfully');
         }
       } catch (err) {
         console.error('❌ Error loading PDF thumbnail:', err);
-        console.error('📄 PDF URL:', url);
-        console.error('🔍 Error details:', err instanceof Error ? err.message : String(err));
         
         // Clear timeout on error
         if (timeoutId) clearTimeout(timeoutId);
@@ -195,7 +207,12 @@ export default function PdfThumbnail({ url, alt = 'PDF Document', className = ''
       isMounted = false;
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [url, pdfjsLoaded]);
+  }, [url, downloadUrl, pdfjsLoaded]);
+
+  // Reset fetchedRef when url or downloadUrl changes
+  useEffect(() => {
+    fetchedRef.current = false;
+  }, [url, downloadUrl]);
 
   if (error || (!loading && !thumbnailUrl && pdfjsLoaded)) {
     return (
