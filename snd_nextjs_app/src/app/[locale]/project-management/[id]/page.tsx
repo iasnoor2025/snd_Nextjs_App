@@ -882,138 +882,170 @@ export default function ProjectDetailPage() {
         </Card>
       </div>
 
-      {/* Project Overview Section */}
-      <div>
-        <div className="mb-3 flex items-center gap-2 rounded-lg bg-blue-50 p-4 dark:bg-blue-900/10">
-          <FileText className="h-5 w-5 text-blue-600" />
-          <div>
-            <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-500">
-              Project Overview
-            </h3>
-            <p className="text-sm text-blue-600/70 dark:text-blue-400/70">
-              Description and timeline details
-            </p>
-          </div>
-        </div>
+      {/* Project Details Tabs - Moved to top for easy access */}
+      <Tabs defaultValue="documents" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="milestones">Milestones</TabsTrigger>
+          <TabsTrigger value="documents">Documents</TabsTrigger>
+        </TabsList>
 
-        <div className="rounded-lg border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
-          {/* Project Description */}
-          <div className="border-b border-gray-100 p-4 dark:border-gray-800">
-            <h3 className="mb-2 text-base font-semibold">Project Description</h3>
-            {project.description ? (
-              <p className="text-sm text-gray-600 dark:text-gray-300">{project.description}</p>
-            ) : (
-              <p className="text-sm text-gray-400">No description provided for this project.</p>
-            )}
-          </div>
+        {/* Documents Tab - First for easy access */}
+        <TabsContent value="documents" className="space-y-4">
+          <ProjectDocumentsTab projectId={parseInt(projectId)} />
+        </TabsContent>
 
-                     {/* Project Timeline */}
-           <div className="border-b border-gray-100 p-4 dark:border-gray-800">
-             <h3 className="mb-3 text-base font-semibold">Project Timeline</h3>
-             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-               <div>
-                 <p className="mb-1 text-sm text-gray-500">Start Date</p>
-                 <p className="text-base font-medium">{formatDate(project.start_date)}</p>
-               </div>
-               <div>
-                 <p className="mb-1 text-sm text-gray-500">End Date</p>
-                 <p className="text-base font-medium">{formatDate(project.end_date)}</p>
-               </div>
-               <div>
-                 <p className="mb-1 text-sm text-gray-500">Duration</p>
-                 <p className="text-base font-medium">
-                   {project.start_date ? (
-                     project.end_date ? (
-                       `${(() => {
+        {/* Overview Tab - Contains all project overview information */}
+        <TabsContent value="overview" className="space-y-4">
+          <div className="rounded-lg border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            {/* Project Description */}
+            <div className="border-b border-gray-100 p-4 dark:border-gray-800">
+              <h3 className="mb-2 text-base font-semibold">Project Description</h3>
+              {project.description ? (
+                <p className="text-sm text-gray-600 dark:text-gray-300">{project.description}</p>
+              ) : (
+                <p className="text-sm text-gray-400">No description provided for this project.</p>
+              )}
+            </div>
+
+            {/* Project Timeline */}
+            <div className="border-b border-gray-100 p-4 dark:border-gray-800">
+              <h3 className="mb-3 text-base font-semibold">Project Timeline</h3>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div>
+                  <p className="mb-1 text-sm text-gray-500">Start Date</p>
+                  <p className="text-base font-medium">{formatDate(project.start_date)}</p>
+                </div>
+                <div>
+                  <p className="mb-1 text-sm text-gray-500">End Date</p>
+                  <p className="text-base font-medium">{formatDate(project.end_date)}</p>
+                </div>
+                <div>
+                  <p className="mb-1 text-sm text-gray-500">Duration</p>
+                  <p className="text-base font-medium">
+                    {project.start_date ? (
+                      project.end_date ? (
+                        `${(() => {
                           const start = parseLocalDate(project.start_date);
                           const end = parseLocalDate(project.end_date);
                           if (!start || !end) return '0';
                           return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
                         })()} days`
-                     ) : (
-                       <span className="text-blue-600">Ongoing</span>
-                     )
-                   ) : (
-                     'Not started'
-                   )}
-                 </p>
-               </div>
-             </div>
-           </div>
-
-          {/* Project Location */}
-          <div className="border-b border-gray-100 p-4 dark:border-gray-800">
-            <h3 className="mb-3 text-base font-semibold">Project Location</h3>
-            <div className="flex items-center space-x-3">
-              <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
-                <Building2 className="h-4 w-4 text-indigo-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">Location</p>
-                <p className="text-sm text-gray-500">
-                  {project.location || 'Location not specified'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Project Team */}
-          <div className="border-b border-gray-100 p-4 dark:border-gray-800">
-            <h3 className="mb-3 text-base font-semibold">Project Team</h3>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <div className="flex items-center space-x-3">
-                <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                  <User className="h-4 w-4 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Project Manager</p>
-                  <p className="text-sm text-gray-500">
-                    {project.project_manager?.name || 'Not assigned'}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-3">
-                <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
-                  <User className="h-4 w-4 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Project Engineer</p>
-                  <p className="text-sm text-gray-500">
-                    {project.project_engineer?.name || 'Not assigned'}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-3">
-                <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center">
-                  <User className="h-4 w-4 text-amber-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Project Foreman</p>
-                  <p className="text-sm text-gray-500">
-                    {project.project_foreman?.name || 'Not assigned'}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-3">
-                <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
-                  <User className="h-4 w-4 text-purple-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Supervisor</p>
-                  <p className="text-sm text-gray-500">
-                    {project.supervisor?.name || 'Not assigned'}
+                      ) : (
+                        <span className="text-blue-600">Ongoing</span>
+                      )
+                    ) : (
+                      'Not started'
+                    )}
                   </p>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Project Milestones */}
-          <div className="p-4">
-            <h3 className="mb-3 text-base font-semibold">Project Milestones</h3>
+            {/* Project Location */}
+            <div className="border-b border-gray-100 p-4 dark:border-gray-800">
+              <h3 className="mb-3 text-base font-semibold">Project Location</h3>
+              <div className="flex items-center space-x-3">
+                <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                  <Building2 className="h-4 w-4 text-indigo-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Location</p>
+                  <p className="text-sm text-gray-500">
+                    {project.location || 'Location not specified'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Project Team */}
+            <div className="border-b border-gray-100 p-4 dark:border-gray-800">
+              <h3 className="mb-3 text-base font-semibold">Project Team</h3>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div className="flex items-center space-x-3">
+                  <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                    <User className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Project Manager</p>
+                    <p className="text-sm text-gray-500">
+                      {project.project_manager?.name || 'Not assigned'}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-3">
+                  <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                    <User className="h-4 w-4 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Project Engineer</p>
+                    <p className="text-sm text-gray-500">
+                      {project.project_engineer?.name || 'Not assigned'}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-3">
+                  <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center">
+                    <User className="h-4 w-4 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Project Foreman</p>
+                    <p className="text-sm text-gray-500">
+                      {project.project_foreman?.name || 'Not assigned'}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-3">
+                  <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
+                    <User className="h-4 w-4 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Supervisor</p>
+                    <p className="text-sm text-gray-500">
+                      {project.supervisor?.name || 'Not assigned'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Client Information */}
+            <div className="border-b border-gray-100 p-4 dark:border-gray-800">
+              <h3 className="mb-3 text-base font-semibold">Client Information</h3>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                <div>
+                  <p className="text-sm font-medium">Client Name</p>
+                  <p className="text-sm text-gray-600">{project.client_name || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Contact</p>
+                  <p className="text-sm text-gray-600">{project.client_contact || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Priority</p>
+                  <Badge className={getPriorityColor(project.priority)}>{project.priority}</Badge>
+                </div>
+              </div>
+            </div>
+
+            {/* Project Notes */}
+            {project.notes && (
+              <div className="border-b border-gray-100 p-4 dark:border-gray-800">
+                <h3 className="mb-2 text-base font-semibold">Project Notes</h3>
+                <p className="text-sm text-gray-600">{project.notes}</p>
+              </div>
+            )}
+
+          </div>
+        </TabsContent>
+
+        {/* Milestones Tab */}
+        <TabsContent value="milestones" className="space-y-4">
+          <div className="rounded-lg border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 p-4">
+            <h3 className="mb-4 text-lg font-semibold">Project Milestones</h3>
             <div className="flex flex-col gap-3 sm:flex-row">
               {/* Start Milestone */}
               <div className="flex-1 rounded-lg bg-blue-50/50 p-4">
@@ -1074,165 +1106,6 @@ export default function ProjectDetailPage() {
               )}
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Project Details Tabs */}
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          {/* <TabsTrigger value="tasks">Tasks</TabsTrigger> */}
-          {/* <TabsTrigger value="resources">Resources</TabsTrigger> */}
-          <TabsTrigger value="milestones">Milestones</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
-        </TabsList>
-
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Client Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <User className="h-5 w-5" />
-                  <span>Client Information</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div>
-                    <p className="text-sm font-medium">Client Name</p>
-                    <p className="text-sm text-gray-600">{project.client_name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Contact</p>
-                    <p className="text-sm text-gray-600">{project.client_contact || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Location</p>
-                    <p className="text-sm text-gray-600">{project.location || 'N/A'}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Project Notes */}
-            {project.notes && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <FileText className="h-5 w-5" />
-                    <span>Project Notes</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600">{project.notes}</p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Project Timeline */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Calendar className="h-5 w-5" />
-                  <span>Project Timeline</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div>
-                    <p className="text-sm font-medium">Start Date</p>
-                    <p className="text-sm text-gray-600">
-                      {formatDate(project.start_date)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">End Date</p>
-                    <p className="text-sm text-gray-600">
-                      {project.end_date
-                        ? formatDate(project.end_date)
-                        : 'Ongoing'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Priority</p>
-                    <Badge className={getPriorityColor(project.priority)}>{project.priority}</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Tasks Tab */}
-        <TabsContent value="tasks" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Project Tasks</CardTitle>
-                  <CardDescription>{tasks.length} tasks in this project</CardDescription>
-                </div>
-                <Button asChild>
-                  <Link href={`/${locale}/project-management/${projectId}/resources?tab=tasks`}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Task
-                  </Link>
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {tasks.map(task => (
-                  <div
-                    key={task.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <h4 className="font-medium">{task.name}</h4>
-                        <Badge className={getStatusColor(task.status)}>{task.status}</Badge>
-                        <Badge className={getPriorityColor(task.priority)}>{task.priority}</Badge>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-2">{task.description}</p>
-                      <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <span>Assigned to: {task.assigned_to}</span>
-                        {task.due_date && (
-                          <span>Due: {new Date(task.due_date).toLocaleDateString()}</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium">{task.progress}%</span>
-                      <Progress value={task.progress} className="w-20" />
-                    </div>
-                  </div>
-                ))}
-                {tasks.length === 0 && (
-                  <p className="text-center text-gray-500 py-8">No tasks found</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Milestones Tab */}
-        <TabsContent value="milestones" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Project Milestones</CardTitle>
-              <CardDescription>No milestones found</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-center text-gray-500 py-8">No milestones found</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Documents Tab */}
-        <TabsContent value="documents" className="space-y-4">
-          <ProjectDocumentsTab projectId={parseInt(projectId)} />
         </TabsContent>
       </Tabs>
 
