@@ -228,7 +228,7 @@ export class ERPNextInvoiceService {
       // Add rental items to invoice
       if (rentalItems.length > 0) {
         // Filter items to only include those active in the billing month (if specified)
-        // This matches the report logic - only items that appear in the report should be in the invoice
+        // This matches the report logic - include ALL items that appear in the report (no deduplication)
         let filteredItems = rentalItems;
         
         if (billingMonth && rental.customFrom && rental.customTo) {
@@ -253,81 +253,54 @@ export class ERPNextInvoiceService {
             }
             
             // Item must start before or during the month, and end after or during the month
+            // This matches the report logic exactly - no deduplication
             return itemStartDate <= monthEnd && itemEndDate >= monthStart;
           });
         }
         
-        // Deduplicate items - use a unique key combining equipmentId and item ID
-        // This prevents true duplicates while allowing handovers (same equipment, different operators)
-        const itemKeyMap = new Map<string, any>();
-        filteredItems.forEach((item: any) => {
-          // Create unique key: equipmentId-itemId to handle handovers properly
-          // For handovers, we want to include both the original and handover items if they're both in the month
-          const itemKey = `${item.equipmentId}-${item.id}`;
-          
-          if (!itemKeyMap.has(itemKey)) {
-            itemKeyMap.set(itemKey, item);
+        // No deduplication - include all items as they appear in the report
+        // Sort items by equipment name (like the report does)
+        // Group by equipment, sort equipment groups alphabetically, then sort items within each group
+        const groupedByEquipment = filteredItems.reduce((acc: any, item: any) => {
+          const equipmentName = item.equipmentName || `Equipment ${item.equipmentId}`;
+          if (!acc[equipmentName]) {
+            acc[equipmentName] = [];
           }
+          acc[equipmentName].push(item);
+          return acc;
+        }, {});
+        
+        // Sort items within each equipment group by active status first, then by start date
+        Object.keys(groupedByEquipment).forEach(key => {
+          groupedByEquipment[key].sort((a: any, b: any) => {
+            // First sort by active status (active items first, then completed)
+            const aIsActive = a.status === 'active';
+            const bIsActive = b.status === 'active';
+            
+            if (aIsActive && !bIsActive) return -1; // Active comes first
+            if (!aIsActive && bIsActive) return 1; // Active comes first
+            
+            // If both have same status, sort by start date
+            const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
+            const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
+            if (dateA !== dateB) return dateA - dateB;
+            
+            return 0;
+          });
         });
         
-        // Now check for duplicate equipment (same equipmentId but different item IDs)
-        // This handles cases where the same equipment appears multiple times
-        // Group by equipmentId and keep only items that are active in the billing month
-        if (billingMonth && rental.customFrom && rental.customTo) {
-          const [year, month] = billingMonth.split('-');
-          const monthStart = new Date(parseInt(year), parseInt(month) - 1, 1);
-          const monthEnd = new Date(parseInt(year), parseInt(month), 0);
-          monthEnd.setHours(23, 59, 59, 999);
-          
-          const equipmentMap = new Map<number, any>();
-          itemKeyMap.forEach((item: any) => {
-            const equipmentId = item.equipmentId;
-            const itemStartDate = item.startDate ? new Date(item.startDate) : null;
-            const itemCompletedDate = item.completedDate || (item as any).completed_date;
-            
-            // Check if this item is actually active in this month
-            let itemEndDate: Date;
-            if (itemCompletedDate) {
-              itemEndDate = new Date(itemCompletedDate);
-            } else {
-              itemEndDate = new Date();
-            }
-            
-            const isActiveInMonth = itemStartDate && itemStartDate <= monthEnd && itemEndDate >= monthStart;
-            
-            if (isActiveInMonth) {
-              if (!equipmentMap.has(equipmentId)) {
-                equipmentMap.set(equipmentId, item);
-              } else {
-                // If we already have this equipment, prefer the one that's more active in the month
-                const existing = equipmentMap.get(equipmentId);
-                const existingStart = existing.startDate ? new Date(existing.startDate) : null;
-                const existingEnd = existing.completedDate ? new Date(existing.completedDate) : new Date();
-                
-                // Prefer item that spans more of the month
-                const existingDays = Math.min(existingEnd.getTime(), monthEnd.getTime()) - 
-                                   Math.max(existingStart?.getTime() || 0, monthStart.getTime());
-                const currentDays = Math.min(itemEndDate.getTime(), monthEnd.getTime()) - 
-                                 Math.max(itemStartDate.getTime(), monthStart.getTime());
-                
-                if (currentDays > existingDays) {
-                  equipmentMap.set(equipmentId, item);
-                }
-              }
-            }
-          });
-          
-          filteredItems = Array.from(equipmentMap.values());
-        } else {
-          // For non-monthly billing, just use unique items
-          filteredItems = Array.from(itemKeyMap.values());
-        }
+        // Flatten and sort equipment groups alphabetically
+        const equipmentKeys = Object.keys(groupedByEquipment).sort();
+        const sortedItems: any[] = [];
+        equipmentKeys.forEach(key => {
+          sortedItems.push(...groupedByEquipment[key]);
+        });
         
         // Get available items from ERPNext to match item codes
         const availableItems = await this.getAvailableItems();
         
         invoiceData.items = await Promise.all(
-          filteredItems.map(async (item, index) => {
+          sortedItems.map(async (item, index) => {
             // Try to find matching item in ERPNext by name or code
             const equipmentName = item.equipmentName || `Equipment ${item.equipmentId}`;
             const potentialItemCode = item.equipmentName || `EQ-${item.equipmentId}`;
