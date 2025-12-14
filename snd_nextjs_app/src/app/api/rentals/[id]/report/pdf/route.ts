@@ -432,14 +432,20 @@ function generateReportHTML(rental: any, rentalItems: any[], selectedMonth: stri
       const displayEquipmentName = equipmentPlate 
         ? `${equipmentName} (${equipmentPlate})`
         : equipmentName;
-      const operatorName = (item?.operatorFirstName && item?.operatorLastName) 
+      const operatorBaseName = (item?.operatorFirstName && item?.operatorLastName) 
         ? `${item.operatorFirstName} ${item.operatorLastName}` 
         : (item?.operatorId ? `Employee ${item.operatorId}` : 'N/A');
+      const operatorName = item?.operatorFileNumber && operatorBaseName !== 'N/A'
+        ? `${operatorBaseName} (File: ${item.operatorFileNumber})`
+        : operatorBaseName;
       
       // Get supervisor name
-      const supervisorName = (item?.supervisorFirstName && item?.supervisorLastName)
+      const supervisorBaseName = (item?.supervisorFirstName && item?.supervisorLastName)
         ? getShortName(`${item.supervisorFirstName} ${item.supervisorLastName}`)
         : (item?.supervisorId ? `Employee ${item.supervisorId}` : 'N/A');
+      const supervisorName = item?.supervisorFileNumber && supervisorBaseName !== 'N/A'
+        ? `${supervisorBaseName} (File: ${item.supervisorFileNumber})`
+        : supervisorBaseName;
       
       // Check if this is a handover (previous item was completed and this is a new operator for same equipment)
       const isHandover = itemIndex > 0 && (() => {

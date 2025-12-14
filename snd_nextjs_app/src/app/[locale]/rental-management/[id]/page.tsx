@@ -91,9 +91,11 @@ interface RentalItem {
   operatorId?: string;
   operatorFirstName?: string;
   operatorLastName?: string;
+  operatorFileNumber?: string;
   supervisorId?: string;
   supervisorFirstName?: string;
   supervisorLastName?: string;
+  supervisorFileNumber?: string;
   status?: string;
   notes?: string;
   startDate?: string;
@@ -1127,9 +1129,13 @@ export default function RentalDetailPage() {
       
       if (operatorDuplicates.length > 0 && !warnings.some(w => w.includes('operator'))) {
         const firstDuplicate = operatorDuplicates[0] as any;
-        const operatorName = firstDuplicate.operatorFirstName && firstDuplicate.operatorLastName
-          ? `${firstDuplicate.operatorFirstName} ${firstDuplicate.operatorLastName}`
-          : `Operator ${firstDuplicate.operatorId}`;
+        let operatorName = `Operator ${firstDuplicate.operatorId}`;
+        if (firstDuplicate.operatorFirstName && firstDuplicate.operatorLastName) {
+          const name = `${firstDuplicate.operatorFirstName} ${firstDuplicate.operatorLastName}`;
+          operatorName = firstDuplicate.operatorFileNumber 
+            ? `${name} (File: ${firstDuplicate.operatorFileNumber})`
+            : name;
+        }
         warnings.push(`Operator "${operatorName}" already assigned to ${operatorDuplicates.length} active item(s) in this rental`);
       }
     }
@@ -3060,7 +3066,10 @@ export default function RentalDetailPage() {
                         let operatorName = 'N/A';
                         
                         if (item?.operatorId && item?.operatorFirstName && item?.operatorLastName) {
-                          operatorName = `${item.operatorFirstName} ${item.operatorLastName}`;
+                          const name = `${item.operatorFirstName} ${item.operatorLastName}`;
+                          operatorName = item?.operatorFileNumber 
+                            ? `${name} (File: ${item.operatorFileNumber})`
+                            : name;
                         } else if (item?.operatorId) {
                           operatorName = `Employee ${item.operatorId}`;
                         }
@@ -3068,7 +3077,10 @@ export default function RentalDetailPage() {
                         // Supervisor name
                         let supervisorName = '-';
                         if (item?.supervisorId && (item as any).supervisorFirstName && (item as any).supervisorLastName) {
-                          supervisorName = getShortName(`${(item as any).supervisorFirstName} ${(item as any).supervisorLastName}`);
+                          const name = getShortName(`${(item as any).supervisorFirstName} ${(item as any).supervisorLastName}`);
+                          supervisorName = item?.supervisorFileNumber 
+                            ? `${name} (File: ${item.supervisorFileNumber})`
+                            : name;
                         } else if (item?.supervisorId) {
                           supervisorName = `Employee ${item.supervisorId}`;
                         }
@@ -3587,11 +3599,17 @@ export default function RentalDetailPage() {
                             
                             // Group items by supervisor
                             const groupedBySupervisor = monthData.items.reduce((acc: any, item: any) => {
-                              const supervisorKey = item?.supervisorId 
-                                ? (item?.supervisorFirstName && item?.supervisorLastName
-                                  ? getShortName(`${item.supervisorFirstName} ${item.supervisorLastName}`)
-                                  : `Employee ${item.supervisorId}`)
-                                : 'No Supervisor';
+                              let supervisorKey = 'No Supervisor';
+                              if (item?.supervisorId) {
+                                if (item?.supervisorFirstName && item?.supervisorLastName) {
+                                  const name = getShortName(`${item.supervisorFirstName} ${item.supervisorLastName}`);
+                                  supervisorKey = item?.supervisorFileNumber 
+                                    ? `${name} (File: ${item.supervisorFileNumber})`
+                                    : name;
+                                } else {
+                                  supervisorKey = `Employee ${item.supervisorId}`;
+                                }
+                              }
                               
                               if (!acc[supervisorKey]) {
                                 acc[supervisorKey] = [];
@@ -3625,7 +3643,10 @@ export default function RentalDetailPage() {
                               
                               let operatorName = 'N/A';
                               if (item?.operatorId && item?.operatorFirstName && item?.operatorLastName) {
-                                operatorName = `${item.operatorFirstName} ${item.operatorLastName}`;
+                                const name = `${item.operatorFirstName} ${item.operatorLastName}`;
+                                operatorName = item?.operatorFileNumber 
+                                  ? `${name} (File: ${item.operatorFileNumber})`
+                                  : name;
                               } else if (item?.operatorId) {
                                 operatorName = `Employee ${item.operatorId}`;
                               }
@@ -3633,7 +3654,10 @@ export default function RentalDetailPage() {
                               // Get supervisor name
                               let supervisorName = 'N/A';
                               if (item?.supervisorId && item?.supervisorFirstName && item?.supervisorLastName) {
-                                supervisorName = getShortName(`${item.supervisorFirstName} ${item.supervisorLastName}`);
+                                const name = getShortName(`${item.supervisorFirstName} ${item.supervisorLastName}`);
+                                supervisorName = item?.supervisorFileNumber 
+                                  ? `${name} (File: ${item.supervisorFileNumber})`
+                                  : name;
                               } else if (item?.supervisorId) {
                                 supervisorName = `Employee ${item.supervisorId}`;
                               }
@@ -4321,7 +4345,10 @@ export default function RentalDetailPage() {
                                       // Get operator name directly from API response
                                       let operatorName = 'N/A';
                                       if (item?.operatorId && item?.operatorFirstName && item?.operatorLastName) {
-                                        operatorName = `${item.operatorFirstName} ${item.operatorLastName}`;
+                                        const name = `${item.operatorFirstName} ${item.operatorLastName}`;
+                                        operatorName = item?.operatorFileNumber 
+                                          ? `${name} (File: ${item.operatorFileNumber})`
+                                          : name;
                                       } else if (item?.operatorId) {
                                         operatorName = `Employee ${item.operatorId}`;
                                       }
@@ -4329,7 +4356,10 @@ export default function RentalDetailPage() {
                                                   // Get supervisor name
                                                   let supervisorName = 'N/A';
                                                   if (item?.supervisorId && item?.supervisorFirstName && item?.supervisorLastName) {
-                                                    supervisorName = getShortName(`${item.supervisorFirstName} ${item.supervisorLastName}`);
+                                                    const name = getShortName(`${item.supervisorFirstName} ${item.supervisorLastName}`);
+                                                    supervisorName = item?.supervisorFileNumber 
+                                                      ? `${name} (File: ${item.supervisorFileNumber})`
+                                                      : name;
                                                   } else if (item?.supervisorId) {
                                                     supervisorName = `Employee ${item.supervisorId}`;
                                                   }

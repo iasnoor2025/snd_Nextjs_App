@@ -821,9 +821,11 @@ export class RentalService {
         // Operator fields
         operatorFirstName: employees.firstName,
         operatorLastName: employees.lastName,
+        operatorFileNumber: employees.fileNumber,
         // Supervisor fields
         supervisorFirstName: supervisorEmp.firstName,
         supervisorLastName: supervisorEmp.lastName,
+        supervisorFileNumber: supervisorEmp.fileNumber,
       })
       .from(rentalItems)
       .leftJoin(equipment, eq(rentalItems.equipmentId, equipment.id))
