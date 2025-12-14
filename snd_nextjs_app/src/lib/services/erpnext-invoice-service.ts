@@ -194,26 +194,72 @@ export class ERPNextInvoiceService {
         },
       ];
 
+      // Calculate dates based on billing month if provided
+      let postingDate: string;
+      let dueDate: string;
+      let fromDate: string;
+      let toDate: string;
+      let invoiceSubject: string;
+      
+      if (billingMonth) {
+        // Parse the billing month (format: YYYY-MM)
+        const [year, month] = billingMonth.split('-');
+        const billingYear = parseInt(year);
+        const billingMonthNum = parseInt(month);
+        
+        // Calculate dates for the billing month - use UTC to avoid timezone issues
+        const monthStart = new Date(Date.UTC(billingYear, billingMonthNum - 1, 1, 0, 0, 0, 0)); // First day of billing month
+        const monthEnd = new Date(Date.UTC(billingYear, billingMonthNum, 0, 23, 59, 59, 999)); // Last day of billing month
+        
+        // For monthly invoices, From date should ALWAYS be the first day of the billing month
+        // This ensures consistency and matches the report period
+        const calculatedFromDate = monthStart;
+        
+        // To date: End of billing month
+        const calculatedToDate = monthEnd;
+        
+        // Invoice date (posting date): End of billing month
+        postingDate = monthEnd.toISOString().split('T')[0];
+        
+        // Payment due date: 30 days after end of billing month
+        const calculatedDueDate = new Date(monthEnd);
+        calculatedDueDate.setUTCDate(calculatedDueDate.getUTCDate() + 30);
+        dueDate = calculatedDueDate.toISOString().split('T')[0];
+        
+        // From/To dates for the billing period - format as YYYY-MM-DD
+        fromDate = monthStart.toISOString().split('T')[0];
+        toDate = monthEnd.toISOString().split('T')[0];
+        
+        // Invoice subject - use full month name and year
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                           'July', 'August', 'September', 'October', 'November', 'December'];
+        const monthName = monthNames[billingMonthNum - 1];
+        invoiceSubject = `Invoice for ${rental.rentalNumber} - ${monthName} ${billingYear}`;
+      } else {
+        // For non-monthly billing, use provided dates or defaults
+        postingDate = rental.invoiceDate || new Date().toISOString().split('T')[0];
+        dueDate = rental.paymentDueDate || new Date(Date.now() + (rental.paymentTermsDays || 30) * 24 * 60 * 60 * 1000)
+            .toISOString().split('T')[0];
+        fromDate = rental.customFrom || rental.invoiceDate || new Date().toISOString().split('T')[0];
+        toDate = rental.customTo || rental.paymentDueDate || new Date(Date.now() + (rental.paymentTermsDays || 30) * 24 * 60 * 60 * 1000)
+            .toISOString().split('T')[0];
+        invoiceSubject = rental.customSubject || `Invoice for ${rental.rentalNumber} - ${rental.invoiceMonth || 'Monthly Billing'}`;
+      }
+
       // Prepare invoice data
       const invoiceData: ERPNextInvoiceData = {
         doctype: 'Sales Invoice',
         customer: rental.customer?.name || rental.customerName || `CUST-${rental.customerId}`,
         customer_name: rental.customer?.name || rental.customerName,
-        posting_date: rental.invoiceDate || new Date().toISOString().split('T')[0],
-        due_date: rental.paymentDueDate || new Date(Date.now() + (rental.paymentTermsDays || 30) * 24 * 60 * 60 * 1000)
-            .toISOString()
-            .split('T')[0],
+        posting_date: postingDate,
+        due_date: dueDate,
         set_posting_time: 1, // Enable "Edit Posting Date and Time"
         // Use the correct ERPNext field names for From/To dates
-        custom_from: rental.customFrom || rental.invoiceDate || new Date().toISOString().split('T')[0], // ERPNext custom From date
-        custom_to: rental.customTo || rental.paymentDueDate || new Date(Date.now() + (rental.paymentTermsDays || 30) * 24 * 60 * 60 * 1000)
-            .toISOString()
-            .split('T')[0], // ERPNext custom To date
-        from_date: rental.customFrom || rental.invoiceDate || new Date().toISOString().split('T')[0], // ERPNext from_date field
-        to_date: rental.customTo || rental.paymentDueDate || new Date(Date.now() + (rental.paymentTermsDays || 30) * 24 * 60 * 60 * 1000)
-            .toISOString()
-            .split('T')[0], // ERPNext to_date field
-        custom_subject: rental.customSubject || `Invoice for ${rental.rentalNumber} - ${rental.invoiceMonth || 'Monthly Billing'}`, // ERPNext custom subject field
+        custom_from: fromDate, // ERPNext custom From date
+        custom_to: toDate, // ERPNext custom To date
+        from_date: fromDate, // ERPNext from_date field
+        to_date: toDate, // ERPNext to_date field
+        custom_subject: invoiceSubject, // ERPNext custom subject field
         items: [],
         currency: 'SAR',
         company: 'Samhan Naser Al-Dosri Est',
