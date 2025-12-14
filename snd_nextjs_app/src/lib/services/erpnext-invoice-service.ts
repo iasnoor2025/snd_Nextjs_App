@@ -227,11 +227,107 @@ export class ERPNextInvoiceService {
 
       // Add rental items to invoice
       if (rentalItems.length > 0) {
+        // Filter items to only include those active in the billing month (if specified)
+        // This matches the report logic - only items that appear in the report should be in the invoice
+        let filteredItems = rentalItems;
+        
+        if (billingMonth && rental.customFrom && rental.customTo) {
+          const [year, month] = billingMonth.split('-');
+          const monthStart = new Date(parseInt(year), parseInt(month) - 1, 1);
+          const monthEnd = new Date(parseInt(year), parseInt(month), 0);
+          monthEnd.setHours(23, 59, 59, 999);
+          
+          filteredItems = rentalItems.filter((item: any) => {
+            const itemStartDate = item.startDate ? new Date(item.startDate) : null;
+            if (!itemStartDate) return false;
+            
+            const itemCompletedDate = item.completedDate || (item as any).completed_date;
+            let itemEndDate: Date;
+            
+            if (itemCompletedDate) {
+              itemEndDate = new Date(itemCompletedDate);
+            } else if (rental.status === 'completed' && rental.actualEndDate) {
+              itemEndDate = new Date(rental.actualEndDate);
+            } else {
+              itemEndDate = new Date(); // Current date for active items
+            }
+            
+            // Item must start before or during the month, and end after or during the month
+            return itemStartDate <= monthEnd && itemEndDate >= monthStart;
+          });
+        }
+        
+        // Deduplicate items - use a unique key combining equipmentId and item ID
+        // This prevents true duplicates while allowing handovers (same equipment, different operators)
+        const itemKeyMap = new Map<string, any>();
+        filteredItems.forEach((item: any) => {
+          // Create unique key: equipmentId-itemId to handle handovers properly
+          // For handovers, we want to include both the original and handover items if they're both in the month
+          const itemKey = `${item.equipmentId}-${item.id}`;
+          
+          if (!itemKeyMap.has(itemKey)) {
+            itemKeyMap.set(itemKey, item);
+          }
+        });
+        
+        // Now check for duplicate equipment (same equipmentId but different item IDs)
+        // This handles cases where the same equipment appears multiple times
+        // Group by equipmentId and keep only items that are active in the billing month
+        if (billingMonth && rental.customFrom && rental.customTo) {
+          const [year, month] = billingMonth.split('-');
+          const monthStart = new Date(parseInt(year), parseInt(month) - 1, 1);
+          const monthEnd = new Date(parseInt(year), parseInt(month), 0);
+          monthEnd.setHours(23, 59, 59, 999);
+          
+          const equipmentMap = new Map<number, any>();
+          itemKeyMap.forEach((item: any) => {
+            const equipmentId = item.equipmentId;
+            const itemStartDate = item.startDate ? new Date(item.startDate) : null;
+            const itemCompletedDate = item.completedDate || (item as any).completed_date;
+            
+            // Check if this item is actually active in this month
+            let itemEndDate: Date;
+            if (itemCompletedDate) {
+              itemEndDate = new Date(itemCompletedDate);
+            } else {
+              itemEndDate = new Date();
+            }
+            
+            const isActiveInMonth = itemStartDate && itemStartDate <= monthEnd && itemEndDate >= monthStart;
+            
+            if (isActiveInMonth) {
+              if (!equipmentMap.has(equipmentId)) {
+                equipmentMap.set(equipmentId, item);
+              } else {
+                // If we already have this equipment, prefer the one that's more active in the month
+                const existing = equipmentMap.get(equipmentId);
+                const existingStart = existing.startDate ? new Date(existing.startDate) : null;
+                const existingEnd = existing.completedDate ? new Date(existing.completedDate) : new Date();
+                
+                // Prefer item that spans more of the month
+                const existingDays = Math.min(existingEnd.getTime(), monthEnd.getTime()) - 
+                                   Math.max(existingStart?.getTime() || 0, monthStart.getTime());
+                const currentDays = Math.min(itemEndDate.getTime(), monthEnd.getTime()) - 
+                                 Math.max(itemStartDate.getTime(), monthStart.getTime());
+                
+                if (currentDays > existingDays) {
+                  equipmentMap.set(equipmentId, item);
+                }
+              }
+            }
+          });
+          
+          filteredItems = Array.from(equipmentMap.values());
+        } else {
+          // For non-monthly billing, just use unique items
+          filteredItems = Array.from(itemKeyMap.values());
+        }
+        
         // Get available items from ERPNext to match item codes
         const availableItems = await this.getAvailableItems();
         
         invoiceData.items = await Promise.all(
-          rentalItems.map(async (item, index) => {
+          filteredItems.map(async (item, index) => {
             // Try to find matching item in ERPNext by name or code
             const equipmentName = item.equipmentName || `Equipment ${item.equipmentId}`;
             const potentialItemCode = item.equipmentName || `EQ-${item.equipmentId}`;
@@ -308,7 +404,8 @@ export class ERPNextInvoiceService {
               
               // If we have timesheet data, use actual hours as quantity (like the report shows)
               // For daily rates: quantity = 230 hours (not 23 days)
-              if (timesheets.length > 0) {
+              // EXCEPTION: Monthly rates should remain as monthly, not convert to hourly
+              if (timesheets.length > 0 && rateType !== 'monthly') {
                 const totalHours = timesheets.reduce((sum, ts) => {
                   const regular = parseFloat(ts.regularHours?.toString() || '0') || 0;
                   const overtime = parseFloat(ts.overtimeHours?.toString() || '0') || 0;
@@ -378,7 +475,7 @@ export class ERPNextInvoiceService {
                 uom = 'Week';
               } else if (rateType === 'monthly') {
                 duration = Math.max(1, Math.ceil(durationMs / (1000 * 60 * 60 * 24 * 30)));
-                uom = 'Month';
+                uom = 'Nos'; // Use "Nos" for monthly rates since ERPNext doesn't support "Month" UOM
               } else {
                 // Daily rate - calculate days
                 duration = Math.max(1, Math.ceil(durationMs / (1000 * 60 * 60 * 24)));
@@ -391,15 +488,66 @@ export class ERPNextInvoiceService {
             let amount = 0;
             let rate = unitPrice; // Default rate
             
-            // If we're using hours from timesheet, convert rate to hourly for calculation
-            if (uom === 'Hour' && duration > 1) {
+            // For monthly rates, always use monthly calculation regardless of timesheet hours
+            if (rateType === 'monthly') {
+              // Ensure we have proper monthly duration
+              // For monthly rates, use "Nos" as UOM since ERPNext doesn't support "Month" UOM
+              if (uom === 'Hour' || uom === 'Nos' || uom === 'Month') {
+                // Recalculate months from dates if we ended up with hours or need to recalculate
+                if (itemStartDate) {
+                  let startDate = new Date(itemStartDate);
+                  let endDate: Date;
+                  
+                  if (billingMonth && rental.customFrom && rental.customTo) {
+                    startDate = new Date(rental.customFrom);
+                    endDate = new Date(rental.customTo);
+                    
+                    const itemStart = new Date(itemStartDate);
+                    if (startDate < itemStart) {
+                      startDate = itemStart;
+                    }
+                    
+                    if (itemCompletedDate) {
+                      const itemEnd = new Date(itemCompletedDate);
+                      if (endDate > itemEnd) {
+                        endDate = itemEnd;
+                      }
+                    }
+                  } else {
+                    if (itemCompletedDate) {
+                      endDate = new Date(itemCompletedDate);
+                    } else if (rental.status === 'completed' && rental.expectedEndDate) {
+                      endDate = new Date(rental.expectedEndDate);
+                    } else if (rental.customTo) {
+                      endDate = new Date(rental.customTo);
+                    } else {
+                      endDate = new Date();
+                    }
+                  }
+                  
+                  if (endDate < startDate) {
+                    endDate = startDate;
+                  }
+                  
+                  const durationMs = endDate.getTime() - startDate.getTime();
+                  duration = Math.max(1, Math.ceil(durationMs / (1000 * 60 * 60 * 24 * 30)));
+                } else {
+                  // Fallback: use 1 month minimum
+                  duration = 1;
+                }
+              }
+              // For monthly rates, use "Nos" as UOM (ERPNext doesn't support "Month")
+              // qty = number of months, rate = monthly rate, amount = monthly rate * months
+              uom = 'Nos';
+              rate = unitPrice; // Monthly rate per month
+              amount = unitPrice * duration; // Total = monthly rate * number of months
+            } else if (uom === 'Hour' && duration > 1) {
+              // If we're using hours from timesheet, convert rate to hourly for calculation
               // Convert rate to hourly equivalent based on rate type
               if (rateType === 'daily') {
                 rate = unitPrice / 10; // Daily rate / 10 hours = hourly rate
               } else if (rateType === 'weekly') {
                 rate = unitPrice / (7 * 10); // Weekly rate / (7 days * 10 hours) = hourly rate
-              } else if (rateType === 'monthly') {
-                rate = unitPrice / (30 * 10); // Monthly rate / (30 days * 10 hours) = hourly rate
               }
               // If rateType is already 'hourly', rate stays as unitPrice
               amount = rate * duration; // hourly rate * hours
@@ -408,14 +556,24 @@ export class ERPNextInvoiceService {
               amount = unitPrice * duration;
             }
             
+            // Build description based on rate type
+            let description = item.notes;
+            if (!description) {
+              if (rateType === 'monthly') {
+                description = `Monthly rental for ${equipmentName} (${duration} month${duration !== 1 ? 's' : ''})`;
+              } else {
+                description = `Rental of ${equipmentName} (${duration} ${uom}${duration !== 1 ? 's' : ''})`;
+              }
+            }
+            
             const mappedItem = {
               item_code: itemCode,
               item_name: equipmentName,
-              description: item.notes || `Rental of ${equipmentName} (${duration} ${uom}${duration !== 1 ? 's' : ''})`,
-              qty: duration, // Use hours as quantity (e.g., 230 hours) to match report
-              rate: rate, // Hourly rate when using timesheet hours, otherwise unit price
+              description: description,
+              qty: duration, // Hours for hourly/daily/weekly with timesheets, months for monthly, days/weeks otherwise
+              rate: rate, // Rate per unit (hourly rate when using timesheet hours, monthly rate for monthly, otherwise unit price)
               amount: amount, // Total amount = rate * quantity
-              uom: uom, // Unit of measure (Hour when timesheet available, otherwise Day/Week/Month)
+              uom: uom, // Unit of measure (Hour/Day/Week/Nos for monthly)
               income_account: incomeAccount, // Use dynamically found account
             };
             
