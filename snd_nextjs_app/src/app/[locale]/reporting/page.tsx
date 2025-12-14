@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -27,6 +28,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { PermissionContent } from '@/lib/rbac/rbac-components';
 import { ReportChart } from '@/components/report-chart';
 import { 
@@ -40,7 +49,10 @@ import {
   Clock,
   Shield,
   Target,
-  Activity
+  Activity,
+  Columns,
+  ChevronDown,
+  Printer
 } from 'lucide-react';
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
@@ -77,6 +89,9 @@ interface ReportData {
   customer_details?: any[];
   summary_stats?: any;
   customer_groups?: any[];
+  timesheet_stats?: any;
+  timesheet_details?: any[];
+  rental_summary?: any[];
 }
 
 interface MetricCard {
@@ -109,6 +124,38 @@ export default function ReportingDashboardPage() {
   const [supervisorFilter, setSupervisorFilter] = useState('all');
   const [supervisorsWithEquipment, setSupervisorsWithEquipment] = useState<any[]>([]);
   const [loadingSupervisors, setLoadingSupervisors] = useState(false);
+  const [monthFilter, setMonthFilter] = useState<string>('');
+  const [companyFilter, setCompanyFilter] = useState('all');
+  const [customersForTimesheet, setCustomersForTimesheet] = useState<any[]>([]);
+  const [loadingCustomersForTimesheet, setLoadingCustomersForTimesheet] = useState(false);
+  const [hasTimesheetFilter, setHasTimesheetFilter] = useState('all'); // 'all', 'yes', 'no'
+  
+  // Column visibility for rental timesheet report
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
+    si: true,
+    equipment: true,
+    unitPrice: true,
+    rate: true,
+    startDate: true,
+    operator: true,
+    supervisor: true,
+    duration: true,
+    total: true,
+    completedDate: true,
+  });
+  
+  const rentalTimesheetColumns = [
+    { id: 'si', label: 'SI#' },
+    { id: 'equipment', label: 'Equipment' },
+    { id: 'unitPrice', label: 'Unit Price' },
+    { id: 'rate', label: 'Rate' },
+    { id: 'startDate', label: 'Start Date' },
+    { id: 'operator', label: 'Operator' },
+    { id: 'supervisor', label: 'Supervisor' },
+    { id: 'duration', label: 'Duration' },
+    { id: 'total', label: 'Total' },
+    { id: 'completedDate', label: 'Completed Date' },
+  ];
 
   const reportTypes = [
     { id: 'overview', name: t('reporting.overview_report'), icon: Building },
@@ -122,6 +169,7 @@ export default function ReportingDashboardPage() {
     { id: 'safety_analytics', name: t('reporting.safety_analytics'), icon: Shield },
     { id: 'performance_analytics', name: t('reporting.performance_analytics'), icon: TrendingUp },
     { id: 'rental_analytics', name: t('reporting.rental_analytics'), icon: Car },
+    { id: 'rental_timesheet', name: 'Rental Timesheet Report', icon: Clock },
     { id: 'customer_analytics', name: t('reporting.customer_analytics'), icon: Building },
     { id: 'customer_equipment', name: 'Customer Equipment Report', icon: Car },
     { id: 'supervisor_equipment', name: 'Supervisor Equipment Report', icon: Users },
@@ -179,6 +227,39 @@ export default function ReportingDashboardPage() {
     }
   };
 
+  // Fetch customers for rental timesheet report (filtered by month and hasTimesheet)
+  const fetchCustomersForTimesheet = async () => {
+    if (selectedReport !== 'rental_timesheet') return;
+    
+    try {
+      setLoadingCustomersForTimesheet(true);
+      
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (monthFilter) {
+        params.append('month', monthFilter);
+      }
+      if (hasTimesheetFilter !== 'all') {
+        params.append('hasTimesheet', hasTimesheetFilter);
+      }
+      
+      const url = `/api/customers/with-rentals${params.toString() ? `?${params.toString()}` : ''}`;
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        setCustomersForTimesheet(data.data || []);
+      } else {
+        console.error('Failed to fetch customers for timesheet');
+        setCustomersForTimesheet([]);
+      }
+    } catch (error) {
+      console.error('Error fetching customers for timesheet:', error);
+      setCustomersForTimesheet([]);
+    } finally {
+      setLoadingCustomersForTimesheet(false);
+    }
+  };
+
   // Fetch equipment categories when equipment report is selected
   const fetchEquipmentCategories = async () => {
     if (selectedReport !== 'equipment_by_category') return;
@@ -211,6 +292,8 @@ export default function ReportingDashboardPage() {
       setStatusFilter('all');
       setIncludeInactive(false);
       setSupervisorFilter('all');
+      setMonthFilter('');
+      setCompanyFilter('all');
     } else if (selectedReport === 'supervisor_equipment') {
       fetchSupervisorsWithEquipment();
       // Reset filters when switching to supervisor equipment report
@@ -218,16 +301,45 @@ export default function ReportingDashboardPage() {
       setStatusFilter('all');
       setIncludeInactive(false);
       setCustomerFilter('all');
+      setMonthFilter('');
+      setCompanyFilter('all');
     } else if (selectedReport === 'equipment_by_category') {
       fetchEquipmentCategories();
       // Reset customer filter when switching to equipment report
       setCustomerFilter('all');
+      setMonthFilter('');
+      setCompanyFilter('all');
+    } else if (selectedReport === 'rental_timesheet') {
+      fetchCustomersForTimesheet();
+      // Reset other filters when switching to rental timesheet report
+      setCustomerFilter('all');
+      setCategoryFilter('all');
+      setStatusFilter('all');
+      setIncludeInactive(false);
+      setSupervisorFilter('all');
+      setHasTimesheetFilter('all');
+      // Reset column visibility to default (all visible)
+      setVisibleColumns({
+        si: true,
+        equipment: true,
+        unitPrice: true,
+        rate: true,
+        startDate: true,
+        operator: true,
+        supervisor: true,
+        duration: true,
+        total: true,
+        completedDate: true,
+      });
     } else {
       // Reset all filters when switching to other report types
       setCustomerFilter('all');
       setCategoryFilter('all');
       setStatusFilter('all');
       setIncludeInactive(false);
+      setMonthFilter('');
+      setCompanyFilter('all');
+      setHasTimesheetFilter('all');
     }
   }, [selectedReport]);
 
@@ -270,6 +382,26 @@ export default function ReportingDashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, selectedReport]);
 
+  // Re-fetch customers when month or hasTimesheet filter changes
+  React.useEffect(() => {
+    if (selectedReport === 'rental_timesheet') {
+      fetchCustomersForTimesheet();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [monthFilter, hasTimesheetFilter, selectedReport]);
+
+  // Auto-regenerate report when month, company, or hasTimesheet filter changes for rental timesheet (only if report already exists)
+  React.useEffect(() => {
+    if (selectedReport === 'rental_timesheet' && reportData && reportGeneratedRef.current) {
+      // Small delay to ensure state is updated
+      const timer = setTimeout(() => {
+        generateReport();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [monthFilter, companyFilter, hasTimesheetFilter, selectedReport]);
+
   const generateReport = async () => {
       try {
         setLoading(true);
@@ -277,9 +409,18 @@ export default function ReportingDashboardPage() {
 
         const paramsObj: any = {
         report_type: selectedReport,
-        startDate: new Date(Date.now() - parseInt(dateRange) * 24 * 60 * 60 * 1000).toISOString(),
-        endDate: new Date().toISOString(),
       };
+      
+      // For rental timesheet, use month filter if provided, otherwise don't send date range
+      if (selectedReport === 'rental_timesheet') {
+        if (monthFilter) {
+          paramsObj.month = monthFilter;
+        }
+        // Don't send startDate/endDate for rental timesheet - show all data if no month filter
+      } else {
+        paramsObj.startDate = new Date(Date.now() - parseInt(dateRange) * 24 * 60 * 60 * 1000).toISOString();
+        paramsObj.endDate = new Date().toISOString();
+      }
       
       if (departmentFilter !== 'all') paramsObj.departmentId = departmentFilter;
       if (customerFilter !== 'all') paramsObj.customerId = customerFilter;
@@ -288,6 +429,8 @@ export default function ReportingDashboardPage() {
       if (selectedReport === 'equipment_by_category') paramsObj.status = statusFilter;
       if (supervisorFilter !== 'all' && selectedReport === 'supervisor_equipment') paramsObj.supervisorId = supervisorFilter;
       if (includeInactive) paramsObj.includeInactive = 'true';
+      if (selectedReport === 'rental_timesheet' && companyFilter !== 'all') paramsObj.customerId = companyFilter;
+      if (selectedReport === 'rental_timesheet' && hasTimesheetFilter !== 'all') paramsObj.hasTimesheet = hasTimesheetFilter;
       
       const params = new URLSearchParams(paramsObj);
 
@@ -512,6 +655,18 @@ export default function ReportingDashboardPage() {
             { title: 'Total Equipment', value: supervisorStats.total_equipment || 0, icon: Car, color: 'purple' },
             { title: 'Total Items', value: supervisorStats.total_items || 0, icon: Car, color: 'green' },
             { title: 'Avg Equipment/Supervisor', value: supervisorStats.average_equipment_per_supervisor || 0, icon: TrendingUp, color: 'emerald' }
+          );
+        }
+        break;
+      case 'rental_timesheet':
+        if (data.timesheet_stats) {
+          cards.push(
+            { title: 'Total Timesheet Entries', value: data.timesheet_stats.total_entries || 0, icon: Clock, color: 'blue' },
+            { title: 'Total Regular Hours', value: `${Number(data.timesheet_stats.total_regular_hours || 0).toFixed(1)}h`, icon: Clock, color: 'green' },
+            { title: 'Total Overtime Hours', value: `${Number(data.timesheet_stats.total_overtime_hours || 0).toFixed(1)}h`, icon: Clock, color: 'orange' },
+            { title: 'Total Hours', value: `${Number(data.timesheet_stats.total_hours || 0).toFixed(1)}h`, icon: Clock, color: 'purple' },
+            { title: 'Active Rentals', value: data.timesheet_stats.active_rentals || 0, icon: Car, color: 'emerald' },
+            { title: 'Equipment Items', value: data.timesheet_stats.equipment_items || 0, icon: Car, color: 'cyan' }
           );
         }
         break;
@@ -977,6 +1132,362 @@ export default function ReportingDashboardPage() {
           );
         }
         break;
+      case 'rental_timesheet':
+        if (data.monthly_items && Array.isArray(data.monthly_items) && data.monthly_items.length > 0) {
+          return (
+            <div className="space-y-8">
+              {data.monthly_items.map((monthData: any, monthIndex: number) => {
+                // Calculate duration for each item
+                const itemsWithDuration = monthData.items.map((item: any) => {
+                  let duration = 'N/A';
+                  let durationValue = 0;
+                  
+                  if (item.start_date) {
+                    const startDate = new Date(item.start_date);
+                    const endDate = item.completed_date ? new Date(item.completed_date) : new Date();
+                    
+                    // Calculate duration based on month filter if present
+                    let diffDays = 0;
+                    
+                    if (monthFilter) {
+                      // Calculate days within the selected month
+                      const [year, monthNum] = monthFilter.split('-').map(Number);
+                      const monthStart = new Date(year, monthNum - 1, 1);
+                      const monthEnd = new Date(year, monthNum, 0, 23, 59, 59, 999);
+                      
+                      // Find the overlap between item period and selected month
+                      const effectiveStart = startDate > monthStart ? startDate : monthStart;
+                      const effectiveEnd = endDate < monthEnd ? endDate : monthEnd;
+                      
+                      if (effectiveStart <= effectiveEnd) {
+                        const diffTime = Math.abs(effectiveEnd.getTime() - effectiveStart.getTime());
+                        diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+                      } else {
+                        diffDays = 0;
+                      }
+                    } else {
+                      // No month filter - calculate total days
+                      const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+                      diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    }
+                    
+                    if (item.total_hours && parseFloat(item.total_hours.toString()) > 0) {
+                      // If we have timesheet hours, show hours
+                      const totalHours = parseFloat(item.total_hours.toString());
+                      duration = `${totalHours.toFixed(0)} hours`;
+                      durationValue = totalHours;
+                    } else if (diffDays > 0) {
+                      // Otherwise show days
+                      duration = `${diffDays} days`;
+                      durationValue = diffDays;
+                    } else {
+                      duration = '0 days';
+                      durationValue = 0;
+                    }
+                  }
+                  
+                  // Calculate total based on unit price, rate type, and timesheet hours
+                  // Convert rate to hourly equivalent, then multiply by hours (matches rental service logic)
+                  const unitPrice = parseFloat(item.unit_price?.toString() || '0') || 0;
+                  const totalHours = parseFloat(item.total_hours?.toString() || '0') || 0;
+                  const rateType = item.rate_type || 'daily';
+                  
+                  let total = 0;
+                  if (totalHours > 0) {
+                    // Convert rate to hourly equivalent based on rate type
+                    let hourlyRate = unitPrice;
+                    if (rateType === 'daily') {
+                      hourlyRate = unitPrice / 10; // Daily rate / 10 hours
+                    } else if (rateType === 'weekly') {
+                      hourlyRate = unitPrice / (7 * 10); // Weekly rate / (7 days * 10 hours)
+                    } else if (rateType === 'monthly') {
+                      hourlyRate = unitPrice / (30 * 10); // Monthly rate / (30 days * 10 hours)
+                    }
+                    // If rateType is 'hourly', hourlyRate = unitPrice
+                    total = hourlyRate * totalHours;
+                  } else {
+                    // If no timesheet hours, calculate based on date duration
+                    if (item.start_date) {
+                      const startDate = new Date(item.start_date);
+                      const endDate = item.completed_date ? new Date(item.completed_date) : new Date();
+                      
+                      let diffDays = 0;
+                      
+                      if (monthFilter) {
+                        // Calculate days within the selected month
+                        const [year, monthNum] = monthFilter.split('-').map(Number);
+                        const monthStart = new Date(year, monthNum - 1, 1);
+                        const monthEnd = new Date(year, monthNum, 0, 23, 59, 59, 999);
+                        
+                        // Find the overlap between item period and selected month
+                        const effectiveStart = startDate > monthStart ? startDate : monthStart;
+                        const effectiveEnd = endDate < monthEnd ? endDate : monthEnd;
+                        
+                        if (effectiveStart <= effectiveEnd) {
+                          const diffTime = Math.abs(effectiveEnd.getTime() - effectiveStart.getTime());
+                          diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+                        } else {
+                          diffDays = 0;
+                        }
+                      } else {
+                        // No month filter - calculate total days
+                        const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+                        diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+                      }
+                      
+                      if (diffDays > 0) {
+                        if (rateType === 'daily') {
+                          total = unitPrice * diffDays;
+                        } else if (rateType === 'hourly') {
+                          total = unitPrice * (diffDays * 10); // Assume 10 hours per day
+                        } else if (rateType === 'weekly') {
+                          total = unitPrice * Math.ceil(diffDays / 7);
+                        } else if (rateType === 'monthly') {
+                          total = unitPrice * Math.ceil(diffDays / 30);
+                        } else {
+                          total = unitPrice;
+                        }
+                      } else {
+                        total = 0;
+                      }
+                    } else {
+                      total = unitPrice;
+                    }
+                  }
+
+                  return {
+                    ...item,
+                    duration,
+                    total,
+                  };
+                });
+
+                // Sort items by equipment name
+                const sortedItems = [...itemsWithDuration].sort((a: any, b: any) => {
+                  const nameA = (a.equipment_name || '').toLowerCase();
+                  const nameB = (b.equipment_name || '').toLowerCase();
+                  
+                  // Try to extract numeric prefix (e.g., "1404-DOZER" -> "1404")
+                  const extractNumber = (name: string) => {
+                    const match = name.match(/^(\d+)/);
+                    return match ? parseInt(match[1]) : null;
+                  };
+                  
+                  const numA = extractNumber(nameA);
+                  const numB = extractNumber(nameB);
+                  
+                  // If both have numeric prefixes, compare numerically
+                  if (numA !== null && numB !== null) {
+                    if (numA !== numB) {
+                      return numA - numB;
+                    }
+                    // If numbers are equal, compare full names
+                    return nameA.localeCompare(nameB);
+                  }
+                  
+                  // If one has numeric prefix and the other doesn't, numeric comes first
+                  if (numA !== null && numB === null) return -1;
+                  if (numA === null && numB !== null) return 1;
+                  
+                  // Both are non-numeric, sort alphabetically
+                  return nameA.localeCompare(nameB);
+                });
+
+                return (
+                  <div key={monthData.month} className="bg-white rounded-lg shadow">
+                    {/* Month Header */}
+                    <div className="px-6 py-4 border-b border-gray-200">
+                      <h2 className="text-xl font-semibold text-gray-900">{monthData.monthLabel}</h2>
+                      <div className="flex items-center gap-4 mt-2">
+                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                          <span><strong>Items:</strong> {monthData.totalItems}</span>
+                          <span><strong>Active:</strong> {monthData.activeItems}</span>
+                          <span><strong>Value:</strong> SAR {Number(monthData.totalValue || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Monthly Items Table */}
+                    <div className="space-y-4">
+                      {/* Column Selection Dropdown */}
+                      <div className="flex justify-end">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="flex items-center gap-2">
+                              <Columns className="h-4 w-4" />
+                              <span>Select Columns</span>
+                              <ChevronDown className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <div className="p-2 space-y-2">
+                              {rentalTimesheetColumns.map((column) => {
+                                const isChecked = visibleColumns[column.id];
+                                const visibleCount = Object.values(visibleColumns).filter(v => v).length;
+                                const isLastVisible = isChecked && visibleCount === 1;
+                                
+                                return (
+                                  <div
+                                    key={column.id}
+                                    className="flex items-center space-x-2 px-2 py-1.5 rounded-sm hover:bg-accent cursor-pointer"
+                                    onClick={() => {
+                                      // Prevent unchecking if it's the last visible column
+                                      if (!isChecked && visibleCount === 1) {
+                                        return;
+                                      }
+                                      if (!isLastVisible) {
+                                        setVisibleColumns(prev => ({
+                                          ...prev,
+                                          [column.id]: !prev[column.id]
+                                        }));
+                                      }
+                                    }}
+                                  >
+                                    <Checkbox
+                                      checked={isChecked}
+                                      disabled={isLastVisible}
+                                      onCheckedChange={(checked) => {
+                                        // Prevent unchecking if it's the last visible column
+                                        if (!checked && visibleCount === 1) {
+                                          return;
+                                        }
+                                        setVisibleColumns(prev => ({
+                                          ...prev,
+                                          [column.id]: checked as boolean
+                                        }));
+                                      }}
+                                      onClick={(e) => e.stopPropagation()}
+                                    />
+                                    <Label
+                                      className="text-sm font-normal cursor-pointer flex-1"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      {column.label}
+                                    </Label>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                      
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              {visibleColumns.si && <TableHead className="w-12">SI#</TableHead>}
+                              {visibleColumns.equipment && <TableHead>Equipment</TableHead>}
+                              {visibleColumns.unitPrice && <TableHead>Unit Price</TableHead>}
+                              {visibleColumns.rate && <TableHead>Rate</TableHead>}
+                              {visibleColumns.startDate && <TableHead>Start Date</TableHead>}
+                              {visibleColumns.operator && <TableHead>Operator</TableHead>}
+                              {visibleColumns.supervisor && <TableHead>Supervisor</TableHead>}
+                              {visibleColumns.duration && <TableHead>Duration</TableHead>}
+                              {visibleColumns.total && <TableHead>Total</TableHead>}
+                              {visibleColumns.completedDate && <TableHead>Completed Date</TableHead>}
+                            </TableRow>
+                          </TableHeader>
+                        <TableBody>
+                          {sortedItems.map((item: any, itemIndex: number) => (
+                              <TableRow key={`${item.rental_item_id}-${item.rental_id}-${itemIndex}`}>
+                                {visibleColumns.si && (
+                                  <TableCell className="text-center">{item.serial_number || itemIndex + 1}</TableCell>
+                                )}
+                                {visibleColumns.equipment && (
+                                  <TableCell className="font-medium">{item.equipment_name || 'N/A'}</TableCell>
+                                )}
+                                {visibleColumns.unitPrice && (
+                                  <TableCell>SAR {Number(item.unit_price || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                )}
+                                {visibleColumns.rate && (
+                                  <TableCell>
+                                    <Badge variant="outline">{item.rate_type || 'N/A'}</Badge>
+                                  </TableCell>
+                                )}
+                                {visibleColumns.startDate && (
+                                  <TableCell>{item.start_date ? new Date(item.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}</TableCell>
+                                )}
+                                {visibleColumns.operator && (
+                                  <TableCell>{item.operator_display || '-'}</TableCell>
+                                )}
+                                {visibleColumns.supervisor && (
+                                  <TableCell>{item.supervisor_display || '-'}</TableCell>
+                                )}
+                                {visibleColumns.duration && (
+                                  <TableCell>{item.duration}</TableCell>
+                                )}
+                                {visibleColumns.total && (
+                                  <TableCell className="font-medium">SAR {Number(item.total || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                )}
+                                {visibleColumns.completedDate && (
+                                  <TableCell>{item.completed_date ? new Date(item.completed_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}</TableCell>
+                                )}
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        } else if (data.timesheet_details && Array.isArray(data.timesheet_details) && data.timesheet_details.length > 0) {
+          // Fallback to detailed entries if monthly items not available
+          return (
+            <div className="bg-white rounded-lg shadow">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900">Detailed Timesheet Entries</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Rental Number</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Equipment</TableHead>
+                      <TableHead>Regular Hours</TableHead>
+                      <TableHead>Overtime Hours</TableHead>
+                      <TableHead>Total Hours</TableHead>
+                      <TableHead>Notes</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {data.timesheet_details.map((entry: any, index: number) => (
+                      <TableRow key={entry.id || index}>
+                        <TableCell className="font-medium">{entry.date || 'N/A'}</TableCell>
+                        <TableCell>{entry.rental_number || 'N/A'}</TableCell>
+                        <TableCell>{entry.customer_name || 'N/A'}</TableCell>
+                        <TableCell>{entry.equipment_name || 'N/A'}</TableCell>
+                        <TableCell>{Number(entry.regular_hours || 0).toFixed(2)}h</TableCell>
+                        <TableCell>{Number(entry.overtime_hours || 0).toFixed(2)}h</TableCell>
+                        <TableCell className="font-medium">
+                          {Number((parseFloat(entry.regular_hours?.toString() || '0') + parseFloat(entry.overtime_hours?.toString() || '0')).toFixed(2))}h
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate">{entry.notes || '-'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          );
+        } else {
+          return (
+            <div className="text-center py-8">
+              <p className="text-gray-500">No rental timesheet data found.</p>
+              <p className="text-sm text-gray-400 mt-2">
+                Make sure there are rental timesheet entries in the selected date range.
+              </p>
+            </div>
+          );
+        }
+        break;
     }
 
     return null;
@@ -995,6 +1506,349 @@ export default function ReportingDashboardPage() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  // Print rental timesheet report
+  const handlePrintRentalTimesheet = () => {
+    if (!reportData || selectedReport !== 'rental_timesheet') return;
+    
+    const data = reportData.monthly_items || [];
+    const formatDate = (date: Date, formatStr: string) => {
+      const d = new Date(date);
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      
+      if (formatStr === 'MMM dd, yyyy') {
+        return `${months[d.getMonth()]} ${String(d.getDate()).padStart(2, '0')}, ${d.getFullYear()}`;
+      }
+      if (formatStr === 'MMMM yyyy') {
+        return `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+      }
+      if (formatStr === 'MMMM dd, yyyy') {
+        return `${monthNames[d.getMonth()]} ${String(d.getDate()).padStart(2, '0')}, ${d.getFullYear()}`;
+      }
+      return d.toLocaleDateString();
+    };
+
+    let html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Rental Timesheet Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 10px; margin: 0; font-size: 12px; }
+            h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 5px; margin-bottom: 10px; font-size: 20px; }
+            h2 { color: #666; margin-top: 15px; margin-bottom: 5px; font-size: 16px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; page-break-inside: auto; font-size: 12px; }
+            th, td { border: 1px solid #ddd; padding: 3px 5px; text-align: left; }
+            th { background-color: #f2f2f2; font-weight: bold; font-size: 12px; }
+            td { font-size: 12px; }
+            .sl-col { width: 35px; text-align: center; }
+            .equipment-col { min-width: 120px; }
+            .price-col { width: 80px; text-align: right; }
+            .rate-col { width: 60px; text-align: center; }
+            .date-col { width: 95px; }
+            .operator-col { min-width: 110px; }
+            .duration-col { width: 75px; text-align: center; }
+            .total-col { width: 100px; text-align: right; font-weight: bold; }
+            .completed-col { width: 100px; }
+            .summary { background-color: #f9f9f9; padding: 8px; margin: 10px 0; border-radius: 4px; font-size: 12px; }
+            .month-section { page-break-after: auto; margin-bottom: 15px; }
+            @media print {
+              body { padding: 6px; font-size: 11px; }
+              .no-print { display: none; }
+              table { font-size: 11px; }
+              th, td { padding: 2px 4px; font-size: 11px; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Rental Timesheet Report</h1>
+          <div class="summary">
+            <strong>Report Date:</strong> ${formatDate(new Date(), 'MMMM dd, yyyy')}<br/>
+            ${companyFilter && companyFilter !== 'all' ? (() => {
+              const selectedCustomer = customersForTimesheet.find(c => c.id.toString() === companyFilter);
+              return selectedCustomer ? `<strong>Company:</strong> ${selectedCustomer.name}<br/>` : '';
+            })() : ''}
+            ${monthFilter ? `<strong>Month:</strong> ${formatDate(new Date(`${monthFilter}-01`), 'MMMM yyyy')}<br/>` : ''}
+            ${hasTimesheetFilter !== 'all' ? `<strong>Has Timesheet:</strong> ${hasTimesheetFilter === 'yes' ? 'Yes' : 'No'}<br/>` : ''}
+          </div>
+    `;
+
+    data.forEach((monthData: any) => {
+      html += `
+        <div class="month-section">
+          <h2>${monthData.monthLabel}</h2>
+          <div class="summary">
+            <strong>Items:</strong> ${monthData.totalItems} | 
+            <strong>Active:</strong> ${monthData.activeItems} | 
+            <strong>Value:</strong> SAR ${Number(monthData.totalValue || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <table>
+            <thead>
+              <tr>
+                ${visibleColumns.si ? '<th class="sl-col">SI#</th>' : ''}
+                ${visibleColumns.equipment ? '<th class="equipment-col">Equipment</th>' : ''}
+                ${visibleColumns.unitPrice ? '<th class="price-col">Unit Price</th>' : ''}
+                ${visibleColumns.rate ? '<th class="rate-col">Rate</th>' : ''}
+                ${visibleColumns.startDate ? '<th class="date-col">Start Date</th>' : ''}
+                ${visibleColumns.operator ? '<th class="operator-col">Operator</th>' : ''}
+                ${visibleColumns.supervisor ? '<th class="operator-col">Supervisor</th>' : ''}
+                ${visibleColumns.duration ? '<th class="duration-col">Duration</th>' : ''}
+                ${visibleColumns.total ? '<th class="total-col">Total</th>' : ''}
+                ${visibleColumns.completedDate ? '<th class="completed-col">Completed Date</th>' : ''}
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      // Sort items by equipment name
+      const sortedItems = [...monthData.items].sort((a: any, b: any) => {
+        const nameA = ((a.equipment_name || '')).toLowerCase();
+        const nameB = ((b.equipment_name || '')).toLowerCase();
+        
+        // Try to extract numeric prefix (e.g., "1404-DOZER" -> "1404")
+        const extractNumber = (name: string) => {
+          const match = name.match(/^(\d+)/);
+          return match ? parseInt(match[1]) : null;
+        };
+        
+        const numA = extractNumber(nameA);
+        const numB = extractNumber(nameB);
+        
+        // If both have numeric prefixes, compare numerically
+        if (numA !== null && numB !== null) {
+          if (numA !== numB) {
+            return numA - numB;
+          }
+          // If numbers are equal, compare full names
+          return nameA.localeCompare(nameB);
+        }
+        
+        // If one has numeric prefix and the other doesn't, numeric comes first
+        if (numA !== null && numB === null) return -1;
+        if (numA === null && numB !== null) return 1;
+        
+        // Both are non-numeric, sort alphabetically
+        return nameA.localeCompare(nameB);
+      });
+
+      sortedItems.forEach((item: any, index: number) => {
+        const equipmentName = item.equipment_name || 'N/A';
+        const unitPrice = parseFloat(item.unit_price || 0) || 0;
+        const rateType = item.rate_type || 'daily';
+        const startDate = item.start_date ? formatDate(new Date(item.start_date), 'MMM dd, yyyy') : 'N/A';
+        const operatorName = item.operator_display || item.operator_name || '-';
+        const supervisorName = item.supervisor_display || item.supervisor_name || '-';
+        
+        // Calculate duration for print view
+        let duration = '-';
+        if (item.start_date) {
+          const itemStartDate = new Date(item.start_date);
+          const itemEndDate = item.completed_date ? new Date(item.completed_date) : new Date();
+          
+          if (monthFilter) {
+            // Calculate days within the selected month
+            const [year, monthNum] = monthFilter.split('-').map(Number);
+            const monthStart = new Date(year, monthNum - 1, 1);
+            const monthEnd = new Date(year, monthNum, 0, 23, 59, 59, 999);
+            
+            // Find the overlap between item period and selected month
+            const effectiveStart = itemStartDate > monthStart ? itemStartDate : monthStart;
+            const effectiveEnd = itemEndDate < monthEnd ? itemEndDate : monthEnd;
+            
+            if (effectiveStart <= effectiveEnd) {
+              const diffTime = Math.abs(effectiveEnd.getTime() - effectiveStart.getTime());
+              const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+              duration = `${diffDays} days`;
+            } else {
+              duration = '0 days';
+            }
+          } else {
+            // No month filter - calculate total days
+            const diffTime = Math.abs(itemEndDate.getTime() - itemStartDate.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            duration = `${diffDays} days`;
+          }
+        }
+        
+        // Calculate total for print view
+        let total = 0;
+        const totalHours = parseFloat(item.total_hours?.toString() || '0') || 0;
+        
+        if (totalHours > 0) {
+          // Convert rate to hourly equivalent based on rate type
+          let hourlyRate = unitPrice;
+          if (rateType === 'daily') {
+            hourlyRate = unitPrice / 10; // Daily rate / 10 hours
+          } else if (rateType === 'weekly') {
+            hourlyRate = unitPrice / (7 * 10); // Weekly rate / (7 days * 10 hours)
+          } else if (rateType === 'monthly') {
+            hourlyRate = unitPrice / (30 * 10); // Monthly rate / (30 days * 10 hours)
+          }
+          total = hourlyRate * totalHours;
+        } else {
+          // If no timesheet hours, calculate based on date duration
+          if (item.start_date) {
+            const itemStartDate = new Date(item.start_date);
+            const itemEndDate = item.completed_date ? new Date(item.completed_date) : new Date();
+            
+            let diffDays = 0;
+            
+            if (monthFilter) {
+              // Calculate days within the selected month
+              const [year, monthNum] = monthFilter.split('-').map(Number);
+              const monthStart = new Date(year, monthNum - 1, 1);
+              const monthEnd = new Date(year, monthNum, 0, 23, 59, 59, 999);
+              
+              // Find the overlap between item period and selected month
+              const effectiveStart = itemStartDate > monthStart ? itemStartDate : monthStart;
+              const effectiveEnd = itemEndDate < monthEnd ? itemEndDate : monthEnd;
+              
+              if (effectiveStart <= effectiveEnd) {
+                const diffTime = Math.abs(effectiveEnd.getTime() - effectiveStart.getTime());
+                diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+              } else {
+                diffDays = 0;
+              }
+            } else {
+              // No month filter - calculate total days
+              const diffTime = Math.abs(itemEndDate.getTime() - itemStartDate.getTime());
+              diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+            }
+            
+            if (diffDays > 0) {
+              if (rateType === 'daily') {
+                total = unitPrice * diffDays;
+              } else if (rateType === 'hourly') {
+                total = unitPrice * (diffDays * 10); // Assume 10 hours per day
+              } else if (rateType === 'weekly') {
+                total = unitPrice * Math.ceil(diffDays / 7);
+              } else if (rateType === 'monthly') {
+                total = unitPrice * Math.ceil(diffDays / 30);
+              } else {
+                total = unitPrice;
+              }
+            } else {
+              total = 0;
+            }
+          } else {
+            total = unitPrice;
+          }
+        }
+        
+        let completedDate = '-';
+        
+        if (item.completed_date) {
+          const completedDateObj = new Date(item.completed_date);
+          const [monthName, yearStr] = monthData.monthLabel.split(' ');
+          const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+          const reportMonth = monthNames.indexOf(monthName);
+          const reportYear = parseInt(yearStr);
+          
+          const reportMonthStart = new Date(reportYear, reportMonth, 1);
+          reportMonthStart.setHours(0, 0, 0, 0);
+          const reportMonthEnd = new Date(reportYear, reportMonth + 1, 0);
+          reportMonthEnd.setHours(23, 59, 59, 999);
+          
+          if (completedDateObj >= reportMonthStart && completedDateObj <= reportMonthEnd) {
+            completedDate = formatDate(completedDateObj, 'MMM dd, yyyy');
+          }
+        }
+
+        html += `
+          <tr>
+            ${visibleColumns.si ? `<td class="sl-col">${index + 1}</td>` : ''}
+            ${visibleColumns.equipment ? `<td class="equipment-col">${equipmentName}</td>` : ''}
+            ${visibleColumns.unitPrice ? `<td class="price-col">SAR ${unitPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>` : ''}
+            ${visibleColumns.rate ? `<td class="rate-col">${rateType}</td>` : ''}
+            ${visibleColumns.startDate ? `<td class="date-col">${startDate}</td>` : ''}
+            ${visibleColumns.operator ? `<td class="operator-col">${operatorName}</td>` : ''}
+            ${visibleColumns.supervisor ? `<td class="operator-col">${supervisorName}</td>` : ''}
+            ${visibleColumns.duration ? `<td class="duration-col">${duration}</td>` : ''}
+            ${visibleColumns.total ? `<td class="total-col">SAR ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>` : ''}
+            ${visibleColumns.completedDate ? `<td class="completed-col">${completedDate}</td>` : ''}
+          </tr>
+        `;
+      });
+
+      html += `
+            </tbody>
+          </table>
+        </div>
+      `;
+    });
+
+    html += `
+        </body>
+      </html>
+    `;
+
+    // Open print window
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+      setTimeout(() => printWindow.print(), 250);
+    }
+  };
+
+  // Download rental timesheet PDF
+  const handleDownloadRentalTimesheetPDF = async () => {
+    if (!reportData || selectedReport !== 'rental_timesheet') return;
+    
+    try {
+      const loadingToastId = toast.loading('Generating PDF report...');
+      
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (monthFilter) {
+        params.append('month', monthFilter);
+      }
+      if (companyFilter && companyFilter !== 'all') {
+        params.append('customerId', companyFilter);
+      }
+      if (hasTimesheetFilter !== 'all') {
+        params.append('hasTimesheet', hasTimesheetFilter);
+      }
+      
+      // Add visible columns as JSON string
+      params.append('visibleColumns', JSON.stringify(visibleColumns));
+      
+      const url = `/api/reports/rental-timesheet/pdf?${params.toString()}`;
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        toast.dismiss(loadingToastId);
+        toast.error('Failed to generate PDF');
+        return;
+      }
+      
+      // Get the PDF blob
+      const blob = await response.blob();
+      
+      // Create download link
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      
+      // Generate filename
+      const dateStr = new Date().toISOString().split('T')[0];
+      const monthStr = monthFilter ? `_${monthFilter}` : '';
+      link.download = `Rental_Timesheet_Report${monthStr}_${dateStr}.pdf`;
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+      
+      toast.dismiss(loadingToastId);
+      toast.success('PDF report downloaded successfully');
+    } catch (error) {
+      console.error('Error downloading PDF report:', error);
+      toast.error('Failed to download PDF report');
+    }
   };
 
   const downloadPDFReport = async () => {
@@ -1104,35 +1958,41 @@ export default function ReportingDashboardPage() {
                   </Select>
                 </div>
 
-                <div className="space-y-2 min-w-[150px]">
-                  <Label htmlFor="date-range">{t('reporting.date_range')}</Label>
-                  <Select value={dateRange} onValueChange={setDateRange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('reporting.date_range')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="7">{t('reporting.last_7_days')}</SelectItem>
-                      <SelectItem value="30">{t('reporting.last_30_days')}</SelectItem>
-                      <SelectItem value="90">{t('reporting.last_90_days')}</SelectItem>
-                      <SelectItem value="365">{t('reporting.last_year')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {/* Date Range - Hide for rental timesheet report */}
+                {selectedReport !== 'rental_timesheet' && (
+                  <div className="space-y-2 min-w-[150px]">
+                    <Label htmlFor="date-range">{t('reporting.date_range')}</Label>
+                    <Select value={dateRange} onValueChange={setDateRange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('reporting.date_range')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="7">{t('reporting.last_7_days')}</SelectItem>
+                        <SelectItem value="30">{t('reporting.last_30_days')}</SelectItem>
+                        <SelectItem value="90">{t('reporting.last_90_days')}</SelectItem>
+                        <SelectItem value="365">{t('reporting.last_year')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
-                <div className="space-y-2 min-w-[180px]">
-                  <Label htmlFor="department-filter">{t('reporting.department_filter')}</Label>
-                  <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('reporting.department_filter')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('reporting.all_departments')}</SelectItem>
-                      <SelectItem value="hr">{t('reporting.hr_department')}</SelectItem>
-                      <SelectItem value="finance">{t('reporting.finance_department')}</SelectItem>
-                      <SelectItem value="operations">{t('reporting.operations_department')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {/* Department Filter - Hide for rental timesheet report */}
+                {selectedReport !== 'rental_timesheet' && (
+                  <div className="space-y-2 min-w-[180px]">
+                    <Label htmlFor="department-filter">{t('reporting.department_filter')}</Label>
+                    <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('reporting.department_filter')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t('reporting.all_departments')}</SelectItem>
+                        <SelectItem value="hr">{t('reporting.hr_department')}</SelectItem>
+                        <SelectItem value="finance">{t('reporting.finance_department')}</SelectItem>
+                        <SelectItem value="operations">{t('reporting.operations_department')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 {/* Customer Filter - Only show for customer equipment report */}
                 {selectedReport === 'customer_equipment' && (
@@ -1260,6 +2120,75 @@ export default function ReportingDashboardPage() {
                     </Label>
                   </div>
                 )}
+
+                {/* Month Filter - Only show for rental timesheet report */}
+                {selectedReport === 'rental_timesheet' && (
+                  <div className="space-y-2 min-w-[200px]">
+                    <Label htmlFor="month-filter">Month Filter</Label>
+                    <Input
+                      id="month-filter"
+                      type="month"
+                      value={monthFilter}
+                      onChange={(e) => setMonthFilter(e.target.value)}
+                      placeholder="Select month (optional)"
+                    />
+                    {monthFilter && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setMonthFilter('')}
+                        className="h-6 px-2 text-xs"
+                      >
+                        Clear
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {/* Company Filter - Only show for rental timesheet report */}
+                {selectedReport === 'rental_timesheet' && (
+                  <div className="space-y-2 min-w-[250px]">
+                    <Label htmlFor="company-filter">Company</Label>
+                    <Select 
+                      value={companyFilter} 
+                      onValueChange={setCompanyFilter}
+                      disabled={loadingCustomersForTimesheet}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={loadingCustomersForTimesheet ? "Loading..." : "Select company"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Companies</SelectItem>
+                        {customersForTimesheet.map((customer) => (
+                          <SelectItem key={customer.id} value={customer.id.toString()}>
+                            {customer.name}
+                            {customer.total_rentals > 0 && ` (${customer.total_rentals} rental${customer.total_rentals !== 1 ? 's' : ''})`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Has Timesheet Filter - Only show for rental timesheet report */}
+                {selectedReport === 'rental_timesheet' && (
+                  <div className="space-y-2 min-w-[200px]">
+                    <Label htmlFor="has-timesheet-filter">Has Timesheet</Label>
+                    <Select 
+                      value={hasTimesheetFilter} 
+                      onValueChange={setHasTimesheetFilter}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select filter" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Rentals</SelectItem>
+                        <SelectItem value="yes">Has Timesheet</SelectItem>
+                        <SelectItem value="no">No Timesheet</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-4">
@@ -1269,20 +2198,43 @@ export default function ReportingDashboardPage() {
                 </Button>
                 {reportData && (
                   <>
-                    <Button onClick={exportReport} variant="outline" className="flex items-center gap-2">
-                      <Download className="h-4 w-4" />
-                      {t('reporting.export_report')}
-                    </Button>
-                    {(selectedReport === 'equipment_by_category' || selectedReport === 'supervisor_equipment') && (
+                    {selectedReport === 'rental_timesheet' ? (
                       <>
-                        <Button onClick={downloadPDFReport} variant="outline" className="flex items-center gap-2">
+                        <Button 
+                          onClick={handlePrintRentalTimesheet} 
+                          variant="outline" 
+                          className="flex items-center gap-2"
+                        >
+                          <Printer className="h-4 w-4" />
+                          Print
+                        </Button>
+                        <Button 
+                          onClick={handleDownloadRentalTimesheetPDF} 
+                          variant="outline" 
+                          className="flex items-center gap-2"
+                        >
                           <Download className="h-4 w-4" />
                           Download PDF
                         </Button>
-                        <Button onClick={downloadExcelReport} variant="outline" className="flex items-center gap-2">
+                      </>
+                    ) : (
+                      <>
+                        <Button onClick={exportReport} variant="outline" className="flex items-center gap-2">
                           <Download className="h-4 w-4" />
-                          Download Excel
+                          {t('reporting.export_report')}
                         </Button>
+                        {(selectedReport === 'equipment_by_category' || selectedReport === 'supervisor_equipment') && (
+                          <>
+                            <Button onClick={downloadPDFReport} variant="outline" className="flex items-center gap-2">
+                              <Download className="h-4 w-4" />
+                              Download PDF
+                            </Button>
+                            <Button onClick={downloadExcelReport} variant="outline" className="flex items-center gap-2">
+                              <Download className="h-4 w-4" />
+                              Download Excel
+                            </Button>
+                          </>
+                        )}
                       </>
                     )}
                   </>

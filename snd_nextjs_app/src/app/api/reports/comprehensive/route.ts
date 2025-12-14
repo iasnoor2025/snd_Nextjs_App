@@ -19,9 +19,13 @@ import {
   designations,
   locations,
   companies,
-  trainings
+  trainings,
+  rentalEquipmentTimesheets,
+  rentalItems,
+  rentalTimesheetReceived
 } from '@/lib/drizzle/schema';
-import { sql, count, sum, avg, max, min, desc, asc, eq, and, gte, lte, or } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
+import { sql, count, sum, avg, max, min, desc, asc, eq, and, gte, lte, or, inArray, notInArray } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
@@ -78,6 +82,12 @@ export async function GET(request: NextRequest) {
         break;
       case 'customer_analytics':
         reportData = await generateCustomerAnalyticsReport(startDate, endDate);
+        break;
+      case 'rental_timesheet':
+        const month = searchParams.get('month');
+        const customerId = searchParams.get('customerId');
+        const hasTimesheet = searchParams.get('hasTimesheet');
+        reportData = await generateRentalTimesheetReport(startDate, endDate, month, customerId, hasTimesheet);
         break;
       default:
         return NextResponse.json({ error: 'Invalid report type' }, { status: 400 });
@@ -604,6 +614,629 @@ async function generateCustomerAnalyticsReport(startDate?: string | null, endDat
       customer_projects: [],
       generated_at: new Date().toISOString(),
       error: 'Failed to generate customer analytics report'
+    };
+  }
+}
+
+export async function generateRentalTimesheetReport(startDate?: string | null, endDate?: string | null, month?: string | null, customerId?: string | null, hasTimesheet?: string | null) {
+  try {
+    // Build date filter conditions
+    const dateConditions = [];
+    
+    // If month is provided, use it instead of startDate/endDate
+    if (month) {
+      const [year, monthNum] = month.split('-').map(Number);
+      const startDateStr = `${year}-${String(monthNum).padStart(2, '0')}-01`;
+      const lastDay = new Date(year, monthNum, 0).getDate();
+      const endDateStr = `${year}-${String(monthNum).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+      dateConditions.push(gte(rentalEquipmentTimesheets.date, startDateStr));
+      dateConditions.push(lte(rentalEquipmentTimesheets.date, endDateStr));
+    } else if (startDate || endDate) {
+      // Use startDate/endDate if month is not provided and dates are provided
+      if (startDate) {
+        dateConditions.push(gte(rentalEquipmentTimesheets.date, startDate));
+      }
+      if (endDate) {
+        dateConditions.push(lte(rentalEquipmentTimesheets.date, endDate));
+      }
+    }
+    // If no month and no dates provided, show all data (dateFilter will be undefined)
+    
+    const dateFilter = dateConditions.length > 0 ? and(...dateConditions) : undefined;
+    
+    // Handle hasTimesheet filter - this requires a subquery approach
+    // If hasTimesheet is 'yes', we only want rentals that have timesheet entries
+    // If hasTimesheet is 'no', we only want rentals that don't have timesheet entries
+    let rentalIdFilter: any = undefined;
+    if (hasTimesheet === 'yes' || hasTimesheet === 'no') {
+      // Get rental IDs that have timesheet entries (with or without date filter)
+      const rentalsWithTimesheets = await db
+        .selectDistinct({ rentalId: rentalEquipmentTimesheets.rentalId })
+        .from(rentalEquipmentTimesheets)
+        .where(dateFilter || undefined);
+      const rentalIds = rentalsWithTimesheets.map(r => r.rentalId).filter((id): id is number => id !== null);
+      
+      if (hasTimesheet === 'yes') {
+        if (rentalIds.length > 0) {
+          rentalIdFilter = inArray(rentals.id, rentalIds);
+        } else {
+          // No rentals have timesheets, return empty results
+          rentalIdFilter = sql`1 = 0`; // Always false condition
+        }
+      } else if (hasTimesheet === 'no') {
+        if (rentalIds.length > 0) {
+          rentalIdFilter = notInArray(rentals.id, rentalIds);
+        }
+        // If no rentals have timesheets and we want "no timesheet", show all rentals (no filter needed)
+      }
+    }
+    
+    // Build customer filter conditions for joins
+    const customerConditions = [];
+    if (dateFilter) {
+      customerConditions.push(dateFilter);
+    }
+    if (customerId) {
+      customerConditions.push(eq(rentals.customerId, parseInt(customerId)));
+    }
+    if (rentalIdFilter) {
+      customerConditions.push(rentalIdFilter);
+    }
+    const whereFilter = customerConditions.length > 0 ? and(...customerConditions) : dateFilter;
+
+    // Get detailed timesheet entries with related data
+    const timesheetDetails = await db
+      .select({
+        id: rentalEquipmentTimesheets.id,
+        date: rentalEquipmentTimesheets.date,
+        regular_hours: rentalEquipmentTimesheets.regularHours,
+        overtime_hours: rentalEquipmentTimesheets.overtimeHours,
+        notes: rentalEquipmentTimesheets.notes,
+        rental_id: rentals.id,
+        rental_number: rentals.rentalNumber,
+        customer_name: customers.name,
+        equipment_name: rentalItems.equipmentName,
+        equipment_id: rentalItems.equipmentId,
+      })
+      .from(rentalEquipmentTimesheets)
+      .leftJoin(rentals, eq(rentalEquipmentTimesheets.rentalId, rentals.id))
+      .leftJoin(customers, eq(rentals.customerId, customers.id))
+      .leftJoin(rentalItems, eq(rentalEquipmentTimesheets.rentalItemId, rentalItems.id))
+      .where(whereFilter)
+      .orderBy(desc(rentalEquipmentTimesheets.date));
+
+    // Get summary statistics
+    const timesheetStats = await db
+      .select({
+        total_entries: count(),
+        total_regular_hours: sum(sql`COALESCE(${rentalEquipmentTimesheets.regularHours}, 0)`),
+        total_overtime_hours: sum(sql`COALESCE(${rentalEquipmentTimesheets.overtimeHours}, 0)`),
+        total_hours: sum(sql`COALESCE(${rentalEquipmentTimesheets.regularHours}, 0) + COALESCE(${rentalEquipmentTimesheets.overtimeHours}, 0)`),
+      })
+      .from(rentalEquipmentTimesheets)
+      .leftJoin(rentals, eq(rentalEquipmentTimesheets.rentalId, rentals.id))
+      .where(whereFilter);
+
+    // Get active rentals count
+    const activeRentalsConditions = [eq(rentals.status, 'active')];
+    if (dateFilter) {
+      activeRentalsConditions.push(dateFilter);
+    }
+    if (customerId) {
+      activeRentalsConditions.push(eq(rentals.customerId, parseInt(customerId)));
+    }
+    if (rentalIdFilter) {
+      activeRentalsConditions.push(rentalIdFilter);
+    }
+    const activeRentalsWhere = and(...activeRentalsConditions);
+    
+    const activeRentalsCount = await db
+      .select({
+        count: count(sql`DISTINCT ${rentals.id}`)
+      })
+      .from(rentals)
+      .innerJoin(rentalEquipmentTimesheets, eq(rentals.id, rentalEquipmentTimesheets.rentalId))
+      .where(activeRentalsWhere);
+
+    // Get unique equipment items count
+    const equipmentItemsCount = await db
+      .select({
+        count: count(sql`DISTINCT ${rentalItems.id}`)
+      })
+      .from(rentalItems)
+      .innerJoin(rentalEquipmentTimesheets, eq(rentalItems.id, rentalEquipmentTimesheets.rentalItemId))
+      .leftJoin(rentals, eq(rentalEquipmentTimesheets.rentalId, rentals.id))
+      .where(whereFilter);
+
+    // Get summary by rental
+    const rentalSummary = await db
+      .select({
+        rental_id: rentals.id,
+        rental_number: rentals.rentalNumber,
+        customer_name: customers.name,
+        start_date: rentals.startDate,
+        status: rentals.status,
+        regular_hours: sum(sql`COALESCE(${rentalEquipmentTimesheets.regularHours}, 0)`),
+        overtime_hours: sum(sql`COALESCE(${rentalEquipmentTimesheets.overtimeHours}, 0)`),
+        total_hours: sum(sql`COALESCE(${rentalEquipmentTimesheets.regularHours}, 0) + COALESCE(${rentalEquipmentTimesheets.overtimeHours}, 0)`),
+        equipment_count: count(sql`DISTINCT ${rentalItems.id}`),
+      })
+      .from(rentalEquipmentTimesheets)
+      .leftJoin(rentals, eq(rentalEquipmentTimesheets.rentalId, rentals.id))
+      .leftJoin(customers, eq(rentals.customerId, customers.id))
+      .leftJoin(rentalItems, eq(rentalEquipmentTimesheets.rentalItemId, rentalItems.id))
+      .where(whereFilter)
+      .groupBy(rentals.id, rentals.rentalNumber, customers.name, rentals.startDate, rentals.status)
+      .orderBy(desc(rentals.startDate));
+
+    // Get summary by rental item
+    const rentalItemSummary = await db
+      .select({
+        rental_id: rentals.id,
+        rental_number: rentals.rentalNumber,
+        customer_name: customers.name,
+        rental_item_id: rentalItems.id,
+        equipment_name: rentalItems.equipmentName,
+        equipment_id: rentalItems.equipmentId,
+        start_date: rentalItems.startDate,
+        completed_date: rentalItems.completedDate,
+        status: rentalItems.status,
+        regular_hours: sum(sql`COALESCE(${rentalEquipmentTimesheets.regularHours}, 0)`),
+        overtime_hours: sum(sql`COALESCE(${rentalEquipmentTimesheets.overtimeHours}, 0)`),
+        total_hours: sum(sql`COALESCE(${rentalEquipmentTimesheets.regularHours}, 0) + COALESCE(${rentalEquipmentTimesheets.overtimeHours}, 0)`),
+        timesheet_entries: count(rentalEquipmentTimesheets.id),
+        first_date: min(rentalEquipmentTimesheets.date),
+        last_date: max(rentalEquipmentTimesheets.date),
+      })
+      .from(rentalEquipmentTimesheets)
+      .leftJoin(rentals, eq(rentalEquipmentTimesheets.rentalId, rentals.id))
+      .leftJoin(customers, eq(rentals.customerId, customers.id))
+      .leftJoin(rentalItems, eq(rentalEquipmentTimesheets.rentalItemId, rentalItems.id))
+      .where(whereFilter)
+      .groupBy(
+        rentals.id,
+        rentals.rentalNumber,
+        customers.name,
+        rentalItems.id,
+        rentalItems.equipmentName,
+        rentalItems.equipmentId,
+        rentalItems.startDate,
+        rentalItems.completedDate,
+        rentalItems.status
+      )
+      .orderBy(desc(rentals.startDate), rentalItems.equipmentName);
+
+    // Get monthly items data - group by month with all item details
+    // Create aliases for operator and supervisor employees
+    const operatorEmp = alias(employees, 'operator_emp');
+    const supervisorEmp = alias(employees, 'supervisor_emp');
+
+    let monthlyItemsData: any[] = [];
+
+    // If hasTimesheet is 'no', we need to query rental items directly (not from timesheets)
+    // because we want items that don't have timesheet entries
+    if (hasTimesheet === 'no') {
+      // Build conditions for rental items without timesheets
+      const itemConditions = [];
+      if (customerId) {
+        itemConditions.push(eq(rentals.customerId, parseInt(customerId)));
+      }
+      if (rentalIdFilter) {
+        itemConditions.push(rentalIdFilter);
+      }
+      
+      // If month filter is provided, filter items that were active during that month
+      if (month) {
+        const [year, monthNum] = month.split('-').map(Number);
+        const filterStartDate = `${year}-${String(monthNum).padStart(2, '0')}-01`;
+        const lastDay = new Date(year, monthNum, 0).getDate();
+        const filterEndDate = `${year}-${String(monthNum).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+        
+        // Item must be active during the selected month
+        // Item is active if: (start_date <= filterEndDate) AND (completed_date IS NULL OR completed_date >= filterStartDate)
+        itemConditions.push(
+          sql`(COALESCE(${rentalItems.startDate}, '1900-01-01')::date <= ${filterEndDate}::date)`
+        );
+        itemConditions.push(
+          sql`(${rentalItems.completedDate} IS NULL OR ${rentalItems.completedDate}::date >= ${filterStartDate}::date)`
+        );
+      }
+      
+      const itemWhereFilter = itemConditions.length > 0 ? and(...itemConditions) : undefined;
+
+      // Get rental items that don't have timesheet entries
+      const rentalItemsWithoutTimesheets = await db
+        .select({
+          rental_id: rentals.id,
+          rental_number: rentals.rentalNumber,
+          customer_name: customers.name,
+          rental_item_id: rentalItems.id,
+          equipment_name: rentalItems.equipmentName,
+          equipment_id: rentalItems.equipmentId,
+          unit_price: rentalItems.unitPrice,
+          rate_type: rentalItems.rateType,
+          start_date: rentalItems.startDate,
+          completed_date: rentalItems.completedDate,
+          status: rentalItems.status,
+          operator_id: rentalItems.operatorId,
+          operator_first_name: operatorEmp.firstName,
+          operator_last_name: operatorEmp.lastName,
+          operator_file_number: operatorEmp.fileNumber,
+          supervisor_id: rentalItems.supervisorId,
+          supervisor_first_name: supervisorEmp.firstName,
+          supervisor_last_name: supervisorEmp.lastName,
+          supervisor_file_number: supervisorEmp.fileNumber,
+        })
+        .from(rentalItems)
+        .leftJoin(rentals, eq(rentalItems.rentalId, rentals.id))
+        .leftJoin(customers, eq(rentals.customerId, customers.id))
+        .leftJoin(operatorEmp, eq(rentalItems.operatorId, operatorEmp.id))
+        .leftJoin(supervisorEmp, eq(rentalItems.supervisorId, supervisorEmp.id))
+        .where(itemWhereFilter);
+
+      // Filter out items that have timesheet entries
+      // Apply date filter to timesheet check if month filter is provided
+      const timesheetCheckFilter = month ? (() => {
+        const [year, monthNum] = month.split('-').map(Number);
+        const startDateStr = `${year}-${String(monthNum).padStart(2, '0')}-01`;
+        const lastDay = new Date(year, monthNum, 0).getDate();
+        const endDateStr = `${year}-${String(monthNum).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+        return and(
+          gte(rentalEquipmentTimesheets.date, startDateStr),
+          lte(rentalEquipmentTimesheets.date, endDateStr)
+        );
+      })() : undefined;
+
+      const itemsWithTimesheets = await db
+        .selectDistinct({ rentalItemId: rentalEquipmentTimesheets.rentalItemId })
+        .from(rentalEquipmentTimesheets)
+        .where(timesheetCheckFilter || undefined);
+      
+      const itemsWithTimesheetsSet = new Set(
+        itemsWithTimesheets.map(r => r.rentalItemId).filter((id): id is number => id !== null)
+      );
+
+      const filteredItems = rentalItemsWithoutTimesheets.filter(
+        (item: any) => !itemsWithTimesheetsSet.has(item.rental_item_id)
+      );
+
+      // Get rental start dates for items that don't have start_date
+      const rentalIdsForStartDate = filteredItems
+        .map((item: any) => item.rental_id)
+        .filter((id): id is number => id !== null && id !== undefined);
+      
+      const rentalStartDateMap = new Map<number, string | null>();
+      if (rentalIdsForStartDate.length > 0) {
+        const rentalStartDates = await db
+          .select({
+            id: rentals.id,
+            startDate: rentals.startDate,
+          })
+          .from(rentals)
+          .where(inArray(rentals.id, rentalIdsForStartDate));
+        
+        rentalStartDates.forEach(r => {
+          rentalStartDateMap.set(r.id, r.startDate);
+        });
+      }
+
+      // Group by month based on start_date or rental start_date
+      // If month filter is provided, only include items that were active during that month
+      const itemsByMonth: Record<string, any[]> = {};
+      filteredItems.forEach((item: any) => {
+        const dateToUse = item.start_date || rentalStartDateMap.get(item.rental_id);
+        if (dateToUse) {
+          const date = new Date(dateToUse);
+          const itemStartDate = new Date(date);
+          const itemEndDate = item.completed_date ? new Date(item.completed_date) : new Date();
+          
+          // If month filter is provided, check if item was active during that month
+          if (month) {
+            const [year, monthNum] = month.split('-').map(Number);
+            const filterStartDate = new Date(year, monthNum - 1, 1);
+            const filterEndDate = new Date(year, monthNum, 0, 23, 59, 59, 999);
+            
+            // Item must overlap with the selected month
+            if (itemEndDate < filterStartDate || itemStartDate > filterEndDate) {
+              return; // Skip this item - not active during selected month
+            }
+            
+            // Use the selected month as the month key
+            const monthKey = month;
+            if (!itemsByMonth[monthKey]) {
+              itemsByMonth[monthKey] = [];
+            }
+            itemsByMonth[monthKey].push({
+              ...item,
+              month: monthKey,
+              regular_hours: 0,
+              overtime_hours: 0,
+              total_hours: 0,
+              timesheet_entries: 0,
+            });
+          } else {
+            // No month filter - group by item's start month
+            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            if (!itemsByMonth[monthKey]) {
+              itemsByMonth[monthKey] = [];
+            }
+            itemsByMonth[monthKey].push({
+              ...item,
+              month: monthKey,
+              regular_hours: 0,
+              overtime_hours: 0,
+              total_hours: 0,
+              timesheet_entries: 0,
+            });
+          }
+        }
+      });
+
+      // Convert to array format
+      monthlyItemsData = Object.entries(itemsByMonth).flatMap(([monthKey, items]) =>
+        items.map(item => ({ ...item, month: monthKey }))
+      );
+    } else {
+      // Get all rental items with timesheet entries, grouped by month
+      monthlyItemsData = await db
+        .select({
+          month: sql<string>`TO_CHAR(${rentalEquipmentTimesheets.date}, 'YYYY-MM')`,
+          rental_id: rentals.id,
+          rental_number: rentals.rentalNumber,
+          customer_name: customers.name,
+          rental_item_id: rentalItems.id,
+          equipment_name: rentalItems.equipmentName,
+          equipment_id: rentalItems.equipmentId,
+          unit_price: rentalItems.unitPrice,
+          rate_type: rentalItems.rateType,
+          start_date: rentalItems.startDate,
+          completed_date: rentalItems.completedDate,
+          status: rentalItems.status,
+          operator_id: rentalItems.operatorId,
+          operator_first_name: operatorEmp.firstName,
+          operator_last_name: operatorEmp.lastName,
+          operator_file_number: operatorEmp.fileNumber,
+          supervisor_id: rentalItems.supervisorId,
+          supervisor_first_name: supervisorEmp.firstName,
+          supervisor_last_name: supervisorEmp.lastName,
+          supervisor_file_number: supervisorEmp.fileNumber,
+          regular_hours: sum(sql`COALESCE(${rentalEquipmentTimesheets.regularHours}, 0)`),
+          overtime_hours: sum(sql`COALESCE(${rentalEquipmentTimesheets.overtimeHours}, 0)`),
+          total_hours: sum(sql`COALESCE(${rentalEquipmentTimesheets.regularHours}, 0) + COALESCE(${rentalEquipmentTimesheets.overtimeHours}, 0)`),
+          timesheet_entries: count(rentalEquipmentTimesheets.id),
+        })
+        .from(rentalEquipmentTimesheets)
+        .leftJoin(rentals, eq(rentalEquipmentTimesheets.rentalId, rentals.id))
+        .leftJoin(customers, eq(rentals.customerId, customers.id))
+        .leftJoin(rentalItems, eq(rentalEquipmentTimesheets.rentalItemId, rentalItems.id))
+        .leftJoin(operatorEmp, eq(rentalItems.operatorId, operatorEmp.id))
+        .leftJoin(supervisorEmp, eq(rentalItems.supervisorId, supervisorEmp.id))
+        .where(whereFilter)
+        .groupBy(
+          sql`TO_CHAR(${rentalEquipmentTimesheets.date}, 'YYYY-MM')`,
+          rentals.id,
+          rentals.rentalNumber,
+          customers.name,
+          rentalItems.id,
+          rentalItems.equipmentName,
+          rentalItems.equipmentId,
+          rentalItems.unitPrice,
+          rentalItems.rateType,
+          rentalItems.startDate,
+          rentalItems.completedDate,
+          rentalItems.status,
+          rentalItems.operatorId,
+          operatorEmp.firstName,
+          operatorEmp.lastName,
+          operatorEmp.fileNumber,
+          rentalItems.supervisorId,
+          supervisorEmp.firstName,
+          supervisorEmp.lastName,
+          supervisorEmp.fileNumber
+        )
+        .orderBy(
+          sql`TO_CHAR(${rentalEquipmentTimesheets.date}, 'YYYY-MM') DESC`,
+          rentalItems.equipmentName
+        );
+    }
+
+    // Get timesheet received status for each month and item
+    // Get rental IDs from monthly items data
+    const rentalIdsFromMonthly = monthlyItemsData.map((item: any) => item.rental_id).filter((id): id is number => id !== null && id !== undefined);
+    const uniqueRentalIds = Array.from(new Set(rentalIdsFromMonthly));
+    
+    const timesheetReceivedData = uniqueRentalIds.length > 0 ? await db
+      .select({
+        month: rentalTimesheetReceived.month,
+        rental_id: rentalTimesheetReceived.rentalId,
+        rental_item_id: rentalTimesheetReceived.rentalItemId,
+        received: rentalTimesheetReceived.received,
+      })
+      .from(rentalTimesheetReceived)
+      .where(inArray(rentalTimesheetReceived.rentalId, uniqueRentalIds)) : [];
+
+    // Group monthly items by month
+    // If month filter is provided, only include that month
+    const monthlyGroups: Record<string, any[]> = {};
+    monthlyItemsData.forEach((item: any) => {
+      const monthKey = item.month;
+      
+      // If month filter is provided, only include items from that month
+      if (month && monthKey !== month) {
+        return; // Skip items not in the selected month
+      }
+      
+      if (!monthlyGroups[monthKey]) {
+        monthlyGroups[monthKey] = [];
+      }
+      monthlyGroups[monthKey].push(item);
+    });
+
+    // Process monthly groups to create summary
+    const monthlySummary = Object.keys(monthlyGroups).map((monthKey) => {
+      const items = monthlyGroups[monthKey];
+      const uniqueItems = Array.from(
+        new Map(items.map((item: any) => [item.rental_item_id, item])).values()
+      );
+      
+      const totalItems = uniqueItems.length;
+      const activeItems = uniqueItems.filter((item: any) => item.status === 'active').length;
+      const totalValue = uniqueItems.reduce((sum: number, item: any) => {
+        const unitPrice = parseFloat(item.unit_price?.toString() || '0') || 0;
+        const totalHours = parseFloat(item.total_hours?.toString() || '0') || 0;
+        const rateType = item.rate_type || 'daily';
+        
+        // Calculate total based on rate type and hours (convert rate to hourly, then multiply by hours)
+        let itemTotal = 0;
+        if (totalHours > 0) {
+          // Convert rate to hourly equivalent based on rate type
+          let hourlyRate = unitPrice;
+          if (rateType === 'daily') {
+            hourlyRate = unitPrice / 10; // Daily rate / 10 hours
+          } else if (rateType === 'weekly') {
+            hourlyRate = unitPrice / (7 * 10); // Weekly rate / (7 days * 10 hours)
+          } else if (rateType === 'monthly') {
+            hourlyRate = unitPrice / (30 * 10); // Monthly rate / (30 days * 10 hours)
+          }
+          // If rateType is 'hourly', hourlyRate = unitPrice
+          itemTotal = hourlyRate * totalHours;
+        } else {
+          // Fallback to unit price if no hours
+          itemTotal = unitPrice;
+        }
+        
+        return sum + itemTotal;
+      }, 0);
+
+      // Check if all timesheets received for this month
+      // Check if there's a received record for the month (per item or per rental)
+      const allReceived = uniqueItems.every((item: any) => {
+        const received = timesheetReceivedData.find(
+          (tr: any) => tr.month === monthKey && (
+            (tr.rental_item_id === item.rental_item_id) || 
+            (tr.rental_item_id === null && tr.rental_id === item.rental_id)
+          )
+        );
+        return received?.received === true;
+      });
+
+      // Sort items by equipment name
+      const sortedItems = [...uniqueItems].sort((a: any, b: any) => {
+        const nameA = (a.equipment_name || '').toLowerCase();
+        const nameB = (b.equipment_name || '').toLowerCase();
+        
+        // Try to extract numeric prefix (e.g., "1404-DOZER" -> "1404")
+        const extractNumber = (name: string) => {
+          const match = name.match(/^(\d+)/);
+          return match ? parseInt(match[1]) : null;
+        };
+        
+        const numA = extractNumber(nameA);
+        const numB = extractNumber(nameB);
+        
+        // If both have numeric prefixes, compare numerically
+        if (numA !== null && numB !== null) {
+          if (numA !== numB) {
+            return numA - numB;
+          }
+          // If numbers are equal, compare full names
+          return nameA.localeCompare(nameB);
+        }
+        
+        // If one has numeric prefix and the other doesn't, numeric comes first
+        if (numA !== null && numB === null) return -1;
+        if (numA === null && numB !== null) return 1;
+        
+        // Both are non-numeric, sort alphabetically
+        return nameA.localeCompare(nameB);
+      });
+      
+      return {
+        month: monthKey,
+        monthLabel: new Date(`${monthKey}-01`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+        items: sortedItems.map((item: any, index: number) => ({
+          ...item,
+          serial_number: index + 1,
+          operator_name: item.operator_first_name && item.operator_last_name
+            ? `${item.operator_first_name} ${item.operator_last_name}`
+            : null,
+          operator_display: item.operator_file_number
+            ? `${item.operator_first_name || ''} ${item.operator_last_name || ''} (${item.operator_file_number})`.trim()
+            : item.operator_first_name && item.operator_last_name
+            ? `${item.operator_first_name} ${item.operator_last_name}`
+            : null,
+          supervisor_name: item.supervisor_first_name && item.supervisor_last_name
+            ? `${item.supervisor_first_name} ${item.supervisor_last_name}`
+            : null,
+          supervisor_display: (() => {
+            // Get the full name parts
+            const firstName = item.supervisor_first_name || '';
+            const lastName = item.supervisor_last_name || '';
+            const fileNumber = item.supervisor_file_number;
+            
+            // Combine first and last name, then take only first two words
+            const fullName = `${firstName} ${lastName}`.trim();
+            const nameParts = fullName.split(/\s+/).filter(part => part.length > 0);
+            
+            // Take only first two words (or just one if only one exists)
+            const shortName = nameParts.slice(0, 2).join(' ');
+            
+            if (fileNumber) {
+              return `${shortName} (${fileNumber})`;
+            } else if (shortName) {
+              return shortName;
+            }
+            return null;
+          })(),
+          timesheet_received: (() => {
+            const received = timesheetReceivedData.find(
+              (tr: any) => tr.month === monthKey && (
+                (tr.rental_item_id === item.rental_item_id) || 
+                (tr.rental_item_id === null && tr.rental_id === item.rental_id)
+              )
+            );
+            return received?.received === true;
+          })(),
+        })),
+        totalItems,
+        activeItems,
+        totalValue,
+        allTimesheetReceived: allReceived,
+      };
+    }).sort((a, b) => b.month.localeCompare(a.month)); // Sort by month descending
+
+    return {
+      timesheet_stats: {
+        total_entries: timesheetStats[0]?.total_entries || 0,
+        total_regular_hours: timesheetStats[0]?.total_regular_hours || 0,
+        total_overtime_hours: timesheetStats[0]?.total_overtime_hours || 0,
+        total_hours: timesheetStats[0]?.total_hours || 0,
+        active_rentals: activeRentalsCount[0]?.count || 0,
+        equipment_items: equipmentItemsCount[0]?.count || 0,
+      },
+      timesheet_details: timesheetDetails || [],
+      rental_summary: rentalSummary || [],
+      rental_item_summary: rentalItemSummary || [],
+      monthly_items: monthlySummary || [],
+      generated_at: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Error in generateRentalTimesheetReport:', error);
+    return {
+      timesheet_stats: {
+        total_entries: 0,
+        total_regular_hours: 0,
+        total_overtime_hours: 0,
+        total_hours: 0,
+        active_rentals: 0,
+        equipment_items: 0,
+      },
+      timesheet_details: [],
+      rental_summary: [],
+      rental_item_summary: [],
+      monthly_items: [],
+      generated_at: new Date().toISOString(),
+      error: 'Failed to generate rental timesheet report'
     };
   }
 }
