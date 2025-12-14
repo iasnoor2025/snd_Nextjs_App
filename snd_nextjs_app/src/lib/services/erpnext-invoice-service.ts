@@ -335,9 +335,13 @@ export class ERPNextInvoiceService {
             
             // For all rate types, try to use actual timesheet hours if available
             // This matches the report which shows hours (e.g., "230 hours")
+            // IMPORTANT: Must check timesheet received status first (like the report does)
+            let timesheetReceived = false;
+            let totalHours = 0;
+            
             try {
               const { db } = await import('@/lib/db');
-              const { rentalEquipmentTimesheets } = await import('@/lib/drizzle/schema');
+              const { rentalEquipmentTimesheets, rentalTimesheetReceived } = await import('@/lib/drizzle/schema');
               const { eq, and, gte, lte } = await import('drizzle-orm');
               
               let startDateStr: string;
@@ -345,9 +349,29 @@ export class ERPNextInvoiceService {
               
               // Determine date range for timesheet query
               if (billingMonth && rental.customFrom && rental.customTo) {
-                // For monthly billing, use billing month period
-                startDateStr = rental.customFrom;
-                endDateStr = rental.customTo;
+                // For monthly billing, use exact month boundaries (matches report logic)
+                // The report uses monthStart to monthEnd, not customFrom/customTo
+                const [year, month] = billingMonth.split('-');
+                const monthStart = new Date(parseInt(year), parseInt(month) - 1, 1);
+                const monthEnd = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59, 999);
+                
+                startDateStr = monthStart.toISOString().split('T')[0];
+                endDateStr = monthEnd.toISOString().split('T')[0];
+                
+                // Check timesheet received status for this item and month (matches report logic)
+                const statusRecord = await db
+                  .select()
+                  .from(rentalTimesheetReceived)
+                  .where(
+                    and(
+                      eq(rentalTimesheetReceived.rentalId, rental.id),
+                      eq(rentalTimesheetReceived.rentalItemId, item.id),
+                      eq(rentalTimesheetReceived.month, billingMonth)
+                    )
+                  )
+                  .limit(1);
+                
+                timesheetReceived = statusRecord[0]?.received || false;
               } else if (itemStartDate) {
                 // For non-monthly billing, use item date range
                 startDateStr = new Date(itemStartDate).toISOString().split('T')[0];
@@ -375,26 +399,26 @@ export class ERPNextInvoiceService {
                   )
                 );
               
-              // If we have timesheet data, use actual hours as quantity (like the report shows)
-              // For daily rates: quantity = 230 hours (not 23 days)
-              // EXCEPTION: Monthly rates should remain as monthly, not convert to hourly
-              if (timesheets.length > 0 && rateType !== 'monthly') {
-                const totalHours = timesheets.reduce((sum, ts) => {
-                  const regular = parseFloat(ts.regularHours?.toString() || '0') || 0;
-                  const overtime = parseFloat(ts.overtimeHours?.toString() || '0') || 0;
-                  return sum + regular + overtime;
-                }, 0);
-                
-                if (totalHours > 0) {
-                  duration = totalHours; // Use hours directly (e.g., 230 hours)
-                  uom = 'Hour'; // Always use hours when timesheet data is available
-                }
+              // Calculate total hours
+              totalHours = timesheets.reduce((sum, ts) => {
+                const regular = parseFloat(ts.regularHours?.toString() || '0') || 0;
+                const overtime = parseFloat(ts.overtimeHours?.toString() || '0') || 0;
+                return sum + regular + overtime;
+              }, 0);
+              
+              // If timesheet was received and we have hours, use timesheet-based calculation (matches report)
+              // This applies to ALL rate types including monthly (report converts monthly to hourly too)
+              if (timesheetReceived && totalHours > 0) {
+                duration = totalHours; // Use hours directly (e.g., 179 hours) - this becomes qty in invoice
+                uom = 'Hour'; // Always use hours when timesheet data is available
               }
             } catch (error) {
               // If timesheet fetch fails, fall through to date-based calculation
+              console.error(`Error fetching timesheet for item ${item.id}:`, error);
             }
             
             // If duration is still 1 (default) or not set from timesheet, calculate from dates
+            // Only do this if we didn't get timesheet hours (duration should be > 1 if we have hours)
             if (duration === 1 && uom === 'Nos' && itemStartDate) {
               let startDate = new Date(itemStartDate);
               let endDate: Date;
@@ -457,44 +481,43 @@ export class ERPNextInvoiceService {
             }
             
             // Calculate amount based on unit price and duration
+            // IMPORTANT: Match report calculation exactly
             const unitPrice = parseFloat(item.unitPrice?.toString() || '0') || 0;
             let amount = 0;
             let rate = unitPrice; // Default rate
             
-            // For monthly rates, always use monthly calculation regardless of timesheet hours
-            if (rateType === 'monthly') {
-              // Ensure we have proper monthly duration
-              // For monthly rates, use "Nos" as UOM since ERPNext doesn't support "Month" UOM
-              if (uom === 'Hour' || uom === 'Nos' || uom === 'Month') {
-                // Recalculate months from dates if we ended up with hours or need to recalculate
-                if (itemStartDate) {
-                  let startDate = new Date(itemStartDate);
-                  let endDate: Date;
+            // If timesheet was received and we have hours, use timesheet-based calculation (matches report)
+            // This applies to ALL rate types including monthly (report converts monthly to hourly too)
+            // IMPORTANT: Use the exact hours we calculated (duration should already be set to totalHours)
+            if (timesheetReceived && totalHours > 0 && uom === 'Hour' && duration === totalHours) {
+              // Convert rate to hourly equivalent based on rate type (matches report logic)
+              if (rateType === 'daily') {
+                rate = unitPrice / 10; // Daily rate / 10 hours = hourly rate
+              } else if (rateType === 'weekly') {
+                rate = unitPrice / (7 * 10); // Weekly rate / (7 days * 10 hours) = hourly rate
+              } else if (rateType === 'monthly') {
+                rate = unitPrice / (30 * 10); // Monthly rate / (30 days * 10 hours) = hourly rate (matches report)
+              }
+              // If rateType is already 'hourly', rate stays as unitPrice
+              // Use duration (which equals totalHours) as the quantity - this matches report exactly
+              amount = rate * duration; // hourly rate * hours (duration = totalHours from timesheet)
+            } else {
+              // Fallback to date-based calculation (matches report when no timesheet or not received)
+              if (rateType === 'monthly') {
+                // For monthly rates without timesheet, calculate months from dates
+                if (billingMonth && rental.customFrom && rental.customTo && itemStartDate) {
+                  let startDate = new Date(rental.customFrom);
+                  let endDate = new Date(rental.customTo);
                   
-                  if (billingMonth && rental.customFrom && rental.customTo) {
-                    startDate = new Date(rental.customFrom);
-                    endDate = new Date(rental.customTo);
-                    
-                    const itemStart = new Date(itemStartDate);
-                    if (startDate < itemStart) {
-                      startDate = itemStart;
-                    }
-                    
-                    if (itemCompletedDate) {
-                      const itemEnd = new Date(itemCompletedDate);
-                      if (endDate > itemEnd) {
-                        endDate = itemEnd;
-                      }
-                    }
-                  } else {
-                    if (itemCompletedDate) {
-                      endDate = new Date(itemCompletedDate);
-                    } else if (rental.status === 'completed' && rental.expectedEndDate) {
-                      endDate = new Date(rental.expectedEndDate);
-                    } else if (rental.customTo) {
-                      endDate = new Date(rental.customTo);
-                    } else {
-                      endDate = new Date();
+                  const itemStart = new Date(itemStartDate);
+                  if (startDate < itemStart) {
+                    startDate = itemStart;
+                  }
+                  
+                  if (itemCompletedDate) {
+                    const itemEnd = new Date(itemCompletedDate);
+                    if (endDate > itemEnd) {
+                      endDate = itemEnd;
                     }
                   }
                   
@@ -504,29 +527,42 @@ export class ERPNextInvoiceService {
                   
                   const durationMs = endDate.getTime() - startDate.getTime();
                   duration = Math.max(1, Math.ceil(durationMs / (1000 * 60 * 60 * 24 * 30)));
+                  uom = 'Nos'; // Use "Nos" for monthly rates since ERPNext doesn't support "Month" UOM
                 } else {
-                  // Fallback: use 1 month minimum
                   duration = 1;
+                  uom = 'Nos';
                 }
+                amount = unitPrice * duration; // monthly rate * number of months
+              } else {
+                // For other rate types, use date-based calculation
+                // Calculate days for the billing month period
+                if (billingMonth && rental.customFrom && rental.customTo && itemStartDate) {
+                  let startDate = new Date(rental.customFrom);
+                  let endDate = new Date(rental.customTo);
+                  
+                  const itemStart = new Date(itemStartDate);
+                  if (startDate < itemStart) {
+                    startDate = itemStart;
+                  }
+                  
+                  if (itemCompletedDate) {
+                    const itemEnd = new Date(itemCompletedDate);
+                    if (endDate > itemEnd) {
+                      endDate = itemEnd;
+                    }
+                  }
+                  
+                  if (endDate < startDate) {
+                    endDate = startDate;
+                  }
+                  
+                  const startDay = startDate.getDate();
+                  const endDay = endDate.getDate();
+                  const days = endDay - startDay + 1; // +1 inclusive (matches report)
+                  duration = Math.max(days, 0);
+                }
+                amount = unitPrice * duration; // unit price * days
               }
-              // For monthly rates, use "Nos" as UOM (ERPNext doesn't support "Month")
-              // qty = number of months, rate = monthly rate, amount = monthly rate * months
-              uom = 'Nos';
-              rate = unitPrice; // Monthly rate per month
-              amount = unitPrice * duration; // Total = monthly rate * number of months
-            } else if (uom === 'Hour' && duration > 1) {
-              // If we're using hours from timesheet, convert rate to hourly for calculation
-              // Convert rate to hourly equivalent based on rate type
-              if (rateType === 'daily') {
-                rate = unitPrice / 10; // Daily rate / 10 hours = hourly rate
-              } else if (rateType === 'weekly') {
-                rate = unitPrice / (7 * 10); // Weekly rate / (7 days * 10 hours) = hourly rate
-              }
-              // If rateType is already 'hourly', rate stays as unitPrice
-              amount = rate * duration; // hourly rate * hours
-            } else {
-              // For date-based calculation, use unit price directly
-              amount = unitPrice * duration;
             }
             
             // Build description based on rate type
