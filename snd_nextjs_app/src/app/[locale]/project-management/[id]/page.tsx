@@ -1,9 +1,8 @@
 'use client';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ApiService from '@/lib/api-service';
@@ -13,15 +12,18 @@ import {
   ArrowLeft,
   BarChart2,
   Building2,
-  Calendar,
+  CheckCircle,
   CheckSquare,
   ClipboardList,
   Clock,
   DollarSign,
   Edit,
   FileText,
+  MapPin,
   Package,
+  Phone,
   Plus,
+  StickyNote,
   Target,
   Trash2,
   User,
@@ -29,7 +31,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { toast } from 'sonner';
 
 interface Project {
@@ -104,34 +106,7 @@ export default function ProjectDetailPage() {
       
       if (response.success) {
         toast.success('Sample project created successfully!');
-        // Refresh project data instead of full page reload
-        const fetchProjectData = async () => {
-          try {
-            setLoading(true);
-            setError(null);
-            const projectResponse = await ApiService.get<Project>(`/projects/${projectId}`);
-            setProject(projectResponse.data);
-            const [manpowerRes, equipmentRes, materialsRes, fuelRes, expensesRes] = await Promise.all([
-              ApiService.getProjectManpower(Number(projectId)),
-              ApiService.getProjectEquipment(Number(projectId)),
-              ApiService.getProjectMaterials(Number(projectId)),
-              ApiService.getProjectFuel(Number(projectId)),
-              ApiService.getProjectExpenses(Number(projectId)),
-            ]);
-            const allResources = [
-              ...(manpowerRes.data || []).map((r: any) => ({ ...r, type: 'manpower' })),
-              ...(equipmentRes.data || []).map((r: any) => ({ ...r, type: 'equipment' })),
-              ...(materialsRes.data || []).map((r: any) => ({ ...r, type: 'material' })),
-              ...(fuelRes.data || []).map((r: any) => ({ ...r, type: 'fuel' })),
-              ...(expensesRes.data || []).map((r: any) => ({ ...r, type: 'expense' })),
-            ];
-            setResources(allResources);
-          } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to load project details');
-          } finally {
-            setLoading(false);
-          }
-        };
+        // Refresh project data
         await fetchProjectData();
       } else {
         throw new Error(response.error || 'Failed to create sample project');
@@ -238,30 +213,59 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const getResourceTypeIcon = (type: string) => {
-    switch (type.toLowerCase()) {
-      case 'equipment':
-        return <Building2 className="h-4 w-4" />;
-      case 'manpower':
-        return <Users className="h-4 w-4" />;
-      case 'material':
-        return <FileText className="h-4 w-4" />;
-      case 'fuel':
-        return <Clock className="h-4 w-4" />;
-      case 'expense':
-        return <DollarSign className="h-4 w-4" />;
-      default:
-        return <Target className="h-4 w-4" />;
-    }
-  };
-
-  const calculateGrandTotal = () => {
-    const total = resources.reduce((total, resource) => {
+  // Memoize grand total calculation
+  const grandTotal = useMemo(() => {
+    return resources.reduce((total, resource) => {
       const cost = resource.total_cost || 0;
-            return total + cost;
+      return total + cost;
     }, 0);
-    return total;
-  };
+  }, [resources]);
+
+  // Extract fetchProjectData to avoid duplication
+  const fetchProjectData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch project details
+      const projectResponse = await ApiService.get<Project>(`/projects/${projectId}`);
+      setProject(projectResponse.data);
+
+      // Fetch project resources
+      const [manpowerRes, equipmentRes, materialsRes, fuelRes, expensesRes] = await Promise.all([
+        ApiService.getProjectManpower(Number(projectId)),
+        ApiService.getProjectEquipment(Number(projectId)),
+        ApiService.getProjectMaterials(Number(projectId)),
+        ApiService.getProjectFuel(Number(projectId)),
+        ApiService.getProjectExpenses(Number(projectId)),
+      ]);
+      
+      // Combine all resources
+      const allResources = [
+        ...(manpowerRes.data || []).map((r: any) => ({ ...r, type: 'manpower' })),
+        ...(equipmentRes.data || []).map((r: any) => ({ ...r, type: 'equipment' })),
+        ...(materialsRes.data || []).map((r: any) => ({ ...r, type: 'material' })),
+        ...(fuelRes.data || []).map((r: any) => ({ ...r, type: 'fuel' })),
+        ...(expensesRes.data || []).map((r: any) => ({ ...r, type: 'expense' })),
+      ];
+      setResources(allResources);
+
+      // Fetch tasks
+      const tasksResponse = await ApiService.getProjectTasks(Number(projectId));
+      if (tasksResponse.success) {
+        setTasks(tasksResponse.data || []);
+      } else {
+        setTasks([]);
+      }
+    } catch (error) {
+      console.error('Error fetching project data:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load project details';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [projectId]);
 
   const generateReport = async () => {
     try {
@@ -286,7 +290,7 @@ export default function ProjectDetailPage() {
 
       toast.success('Report generated successfully');
     } catch (error) {
-      
+      console.error('Error generating report:', error);
       toast.error('Failed to generate report');
     } finally {
       setIsGeneratingReport(false);
@@ -299,67 +303,22 @@ export default function ProjectDetailPage() {
       toast.success('Project deleted successfully');
       router.push(`/${locale}/project-management`);
     } catch (error) {
-      
+      console.error('Error deleting project:', error);
       toast.error('Failed to delete project');
     }
   };
 
-  const grandTotal = calculateGrandTotal();
-
-  // Debug logging
+  // Fetch project data on mount
   useEffect(() => {
-    const fetchProjectData = async () => {
-      // Skip fetch if data already exists
-      if (project && resources.length > 0) {
-        return;
-      }
-
-      try {
-        setLoading(true);
-
-        // Fetch project details
-        const projectResponse = await ApiService.get<Project>(`/projects/${projectId}`);
-        setProject(projectResponse.data);
-
-        // Fetch project resources
-        const [manpowerRes, equipmentRes, materialsRes, fuelRes, expensesRes] = await Promise.all([
-          ApiService.getProjectManpower(Number(projectId)),
-          ApiService.getProjectEquipment(Number(projectId)),
-          ApiService.getProjectMaterials(Number(projectId)),
-          ApiService.getProjectFuel(Number(projectId)),
-          ApiService.getProjectExpenses(Number(projectId)),
-        ]);
-        // Combine all resources
-        const allResources = [
-          ...(manpowerRes.data || []).map((r: any) => ({ ...r, type: 'manpower' })),
-          ...(equipmentRes.data || []).map((r: any) => ({ ...r, type: 'equipment' })),
-          ...(materialsRes.data || []).map((r: any) => ({ ...r, type: 'material' })),
-          ...(fuelRes.data || []).map((r: any) => ({ ...r, type: 'fuel' })),
-          ...(expensesRes.data || []).map((r: any) => ({ ...r, type: 'expense' })),
-        ];
-        setResources(allResources);
-
-        // Fetch tasks
-        const tasksResponse = await ApiService.getProjectTasks(Number(projectId));
-        if (tasksResponse.success) {
-          setTasks(tasksResponse.data || []);
-        } else {
-          setTasks([]);
-        }
-      } catch (error) {
-        console.error('Error fetching project data:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Failed to load project details';
-        setError(errorMessage);
-        toast.error(errorMessage);
-      } finally {
-        setLoading(false);
-      }
-    };
+    // Skip fetch if data already exists
+    if (project && resources.length > 0) {
+      return;
+    }
 
     if (projectId) {
       fetchProjectData();
     }
-  }, [projectId]);
+  }, [projectId, fetchProjectData]);
 
   if (loading) {
     return (
@@ -378,37 +337,7 @@ export default function ProjectDetailPage() {
               <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
               <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Project</h2>
               <p className="text-gray-500 mb-4">{error}</p>
-              <Button onClick={() => {
-                // Refresh project data instead of full page reload
-                const fetchProjectData = async () => {
-                  try {
-                    setLoading(true);
-                    setError(null);
-                    const projectResponse = await ApiService.get<Project>(`/projects/${projectId}`);
-                    setProject(projectResponse.data);
-                    const [manpowerRes, equipmentRes, materialsRes, fuelRes, expensesRes] = await Promise.all([
-                      ApiService.getProjectManpower(Number(projectId)),
-                      ApiService.getProjectEquipment(Number(projectId)),
-                      ApiService.getProjectMaterials(Number(projectId)),
-                      ApiService.getProjectFuel(Number(projectId)),
-                      ApiService.getProjectExpenses(Number(projectId)),
-                    ]);
-                    const allResources = [
-                      ...(manpowerRes.data || []).map((r: any) => ({ ...r, type: 'manpower' })),
-                      ...(equipmentRes.data || []).map((r: any) => ({ ...r, type: 'equipment' })),
-                      ...(materialsRes.data || []).map((r: any) => ({ ...r, type: 'material' })),
-                      ...(fuelRes.data || []).map((r: any) => ({ ...r, type: 'fuel' })),
-                      ...(expensesRes.data || []).map((r: any) => ({ ...r, type: 'expense' })),
-                    ];
-                    setResources(allResources);
-                  } catch (err) {
-                    setError(err instanceof Error ? err.message : 'Failed to load project details');
-                  } finally {
-                    setLoading(false);
-                  }
-                };
-                fetchProjectData();
-              }}>Retry</Button>
+              <Button onClick={() => fetchProjectData()}>Retry</Button>
             </div>
           </CardContent>
         </Card>
@@ -451,37 +380,7 @@ export default function ProjectDetailPage() {
                     Create New Project
                   </Link>
                 </Button>
-                <Button variant="outline" onClick={() => {
-                  // Refresh project data instead of full page reload
-                  const fetchProjectData = async () => {
-                    try {
-                      setLoading(true);
-                      setError(null);
-                      const projectResponse = await ApiService.get<Project>(`/projects/${projectId}`);
-                      setProject(projectResponse.data);
-                      const [manpowerRes, equipmentRes, materialsRes, fuelRes, expensesRes] = await Promise.all([
-                        ApiService.getProjectManpower(Number(projectId)),
-                        ApiService.getProjectEquipment(Number(projectId)),
-                        ApiService.getProjectMaterials(Number(projectId)),
-                        ApiService.getProjectFuel(Number(projectId)),
-                        ApiService.getProjectExpenses(Number(projectId)),
-                      ]);
-                      const allResources = [
-                        ...(manpowerRes.data || []).map((r: any) => ({ ...r, type: 'manpower' })),
-                        ...(equipmentRes.data || []).map((r: any) => ({ ...r, type: 'equipment' })),
-                        ...(materialsRes.data || []).map((r: any) => ({ ...r, type: 'material' })),
-                        ...(fuelRes.data || []).map((r: any) => ({ ...r, type: 'fuel' })),
-                        ...(expensesRes.data || []).map((r: any) => ({ ...r, type: 'expense' })),
-                      ];
-                      setResources(allResources);
-                    } catch (err) {
-                      setError(err instanceof Error ? err.message : 'Failed to load project details');
-                    } finally {
-                      setLoading(false);
-                    }
-                  };
-                  fetchProjectData();
-                }}>
+                <Button variant="outline" onClick={() => fetchProjectData()}>
                   Retry
                 </Button>
               </div>
@@ -734,8 +633,6 @@ export default function ProjectDetailPage() {
               {(() => {
                 const budget = Number(project.budget) || 1;
                 const budgetPercentage = Math.min(Math.round((grandTotal / budget) * 100), 100);
-                const remainingPercentage = 100 - budgetPercentage;
-                const isProfitable = Number(project.budget) - grandTotal >= 0;
                 return (
                   <div className="space-y-2 rounded-lg bg-gray-50 p-3">
                     <div className="flex items-center justify-between">
@@ -869,40 +766,143 @@ export default function ProjectDetailPage() {
 
         {/* Overview Tab - Contains all project overview information */}
         <TabsContent value="overview" className="space-y-4">
+          {/* Quick Stats Cards */}
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <Card className="border border-gray-100 shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 mb-1">Tasks</p>
+                    <p className="text-2xl font-bold text-gray-900">{tasks.length}</p>
+                    <p className="text-xs text-green-600 mt-1">
+                      {getTaskCountByStatus('completed')} completed
+                    </p>
+                  </div>
+                  <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                    <CheckSquare className="h-5 w-5 text-blue-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border border-gray-100 shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 mb-1">Resources</p>
+                    <p className="text-2xl font-bold text-gray-900">{resources.length}</p>
+                    <p className="text-xs text-gray-600 mt-1">Total items</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                    <Package className="h-5 w-5 text-green-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border border-gray-100 shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 mb-1">Progress</p>
+                    <p className="text-2xl font-bold text-gray-900">{calculateProjectProgress(project)}%</p>
+                    <p className="text-xs text-gray-600 mt-1">
+                      {calculateDaysRemaining(project) > 0 
+                        ? `${calculateDaysRemaining(project)} days left`
+                        : 'Deadline reached'}
+                    </p>
+                  </div>
+                  <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center">
+                    <BarChart2 className="h-5 w-5 text-amber-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border border-gray-100 shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 mb-1">Budget Used</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {(() => {
+                        const budget = Number(project.budget) || 1;
+                        return Math.min(Math.round((grandTotal / budget) * 100), 100);
+                      })()}%
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1">
+                      {formatCurrency(grandTotal)} spent
+                    </p>
+                  </div>
+                  <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
+                    <DollarSign className="h-5 w-5 text-purple-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Main Overview Card */}
           <div className="rounded-lg border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
             {/* Project Description */}
-            <div className="border-b border-gray-100 p-4 dark:border-gray-800">
-              <h3 className="mb-2 text-base font-semibold">Project Description</h3>
+            <div className="border-b border-gray-100 p-5 dark:border-gray-800">
+              <div className="flex items-center gap-2 mb-3">
+                <FileText className="h-5 w-5 text-gray-600" />
+                <h3 className="text-base font-semibold">Project Description</h3>
+              </div>
               {project.description ? (
-                <p className="text-sm text-gray-600 dark:text-gray-300">{project.description}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                  {project.description}
+                </p>
               ) : (
-                <p className="text-sm text-gray-400">No description provided for this project.</p>
+                <p className="text-sm text-gray-400 italic">No description provided for this project.</p>
               )}
             </div>
 
             {/* Project Timeline */}
-            <div className="border-b border-gray-100 p-4 dark:border-gray-800">
-              <h3 className="mb-3 text-base font-semibold">Project Timeline</h3>
+            <div className="border-b border-gray-100 p-5 dark:border-gray-800">
+              <div className="flex items-center gap-2 mb-4">
+                <Clock className="h-5 w-5 text-gray-600" />
+                <h3 className="text-base font-semibold">Project Timeline</h3>
+              </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div>
-                  <p className="mb-1 text-sm text-gray-500">Start Date</p>
-                  <p className="text-base font-medium">{formatDate(project.start_date)}</p>
+                <div className="rounded-lg bg-blue-50/50 p-4 border border-blue-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Start Date</p>
+                  </div>
+                  <p className="text-base font-semibold text-gray-900">
+                    {formatDate(project.start_date, 'short')}
+                  </p>
+                  {project.start_date && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      {formatDate(project.start_date)}
+                    </p>
+                  )}
                 </div>
-                <div>
-                  <p className="mb-1 text-sm text-gray-500">End Date</p>
-                  <p className="text-base font-medium">{formatDate(project.end_date)}</p>
+                <div className="rounded-lg bg-green-50/50 p-4 border border-green-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">End Date</p>
+                  </div>
+                  <p className="text-base font-semibold text-gray-900">
+                    {project.end_date ? formatDate(project.end_date, 'short') : 'Not set'}
+                  </p>
+                  {project.end_date && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      {formatDate(project.end_date)}
+                    </p>
+                  )}
                 </div>
-                <div>
-                  <p className="mb-1 text-sm text-gray-500">Duration</p>
-                  <p className="text-base font-medium">
+                <div className="rounded-lg bg-amber-50/50 p-4 border border-amber-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-2 w-2 rounded-full bg-amber-500"></div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Duration</p>
+                  </div>
+                  <p className="text-base font-semibold text-gray-900">
                     {project.start_date ? (
                       project.end_date ? (
-                        `${(() => {
-                          const start = parseLocalDate(project.start_date);
-                          const end = parseLocalDate(project.end_date);
-                          if (!start || !end) return '0';
-                          return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-                        })()} days`
+                        calculateProjectDuration(project)
                       ) : (
                         <span className="text-blue-600">Ongoing</span>
                       )
@@ -910,20 +910,30 @@ export default function ProjectDetailPage() {
                       'Not started'
                     )}
                   </p>
+                  {project.start_date && project.end_date && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      {calculateDaysRemaining(project) > 0 
+                        ? `${calculateDaysRemaining(project)} days remaining`
+                        : 'Deadline reached'}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* Project Location */}
-            <div className="border-b border-gray-100 p-4 dark:border-gray-800">
-              <h3 className="mb-3 text-base font-semibold">Project Location</h3>
-              <div className="flex items-center space-x-3">
-                <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
-                  <Building2 className="h-4 w-4 text-indigo-600" />
+            <div className="border-b border-gray-100 p-5 dark:border-gray-800">
+              <div className="flex items-center gap-2 mb-4">
+                <MapPin className="h-5 w-5 text-gray-600" />
+                <h3 className="text-base font-semibold">Project Location</h3>
+              </div>
+              <div className="flex items-center space-x-3 rounded-lg bg-gray-50 p-4 border border-gray-100">
+                <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                  <Building2 className="h-5 w-5 text-indigo-600" />
                 </div>
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900">Location</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-600 truncate">
                     {project.location || 'Location not specified'}
                   </p>
                 </div>
@@ -931,52 +941,55 @@ export default function ProjectDetailPage() {
             </div>
 
             {/* Project Team */}
-            <div className="border-b border-gray-100 p-4 dark:border-gray-800">
-              <h3 className="mb-3 text-base font-semibold">Project Team</h3>
+            <div className="border-b border-gray-100 p-5 dark:border-gray-800">
+              <div className="flex items-center gap-2 mb-4">
+                <Users className="h-5 w-5 text-gray-600" />
+                <h3 className="text-base font-semibold">Project Team</h3>
+              </div>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <div className="flex items-center space-x-3">
-                  <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                    <User className="h-4 w-4 text-blue-600" />
+                <div className="flex items-center space-x-3 rounded-lg bg-gray-50 p-3 border border-gray-100 hover:bg-gray-100 transition-colors">
+                  <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <User className="h-5 w-5 text-blue-600" />
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Project Manager</p>
-                    <p className="text-sm text-gray-500">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-gray-500 mb-0.5">Project Manager</p>
+                    <p className="text-sm font-semibold text-gray-900 truncate">
                       {project.project_manager?.name || 'Not assigned'}
                     </p>
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-3">
-                  <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
-                    <User className="h-4 w-4 text-green-600" />
+                <div className="flex items-center space-x-3 rounded-lg bg-gray-50 p-3 border border-gray-100 hover:bg-gray-100 transition-colors">
+                  <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                    <User className="h-5 w-5 text-green-600" />
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Project Engineer</p>
-                    <p className="text-sm text-gray-500">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-gray-500 mb-0.5">Project Engineer</p>
+                    <p className="text-sm font-semibold text-gray-900 truncate">
                       {project.project_engineer?.name || 'Not assigned'}
                     </p>
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-3">
-                  <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center">
-                    <User className="h-4 w-4 text-amber-600" />
+                <div className="flex items-center space-x-3 rounded-lg bg-gray-50 p-3 border border-gray-100 hover:bg-gray-100 transition-colors">
+                  <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                    <User className="h-5 w-5 text-amber-600" />
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Project Foreman</p>
-                    <p className="text-sm text-gray-500">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-gray-500 mb-0.5">Project Foreman</p>
+                    <p className="text-sm font-semibold text-gray-900 truncate">
                       {project.project_foreman?.name || 'Not assigned'}
                     </p>
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-3">
-                  <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
-                    <User className="h-4 w-4 text-purple-600" />
+                <div className="flex items-center space-x-3 rounded-lg bg-gray-50 p-3 border border-gray-100 hover:bg-gray-100 transition-colors">
+                  <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                    <User className="h-5 w-5 text-purple-600" />
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Supervisor</p>
-                    <p className="text-sm text-gray-500">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-gray-500 mb-0.5">Supervisor</p>
+                    <p className="text-sm font-semibold text-gray-900 truncate">
                       {project.supervisor?.name || 'Not assigned'}
                     </p>
                   </div>
@@ -985,29 +998,46 @@ export default function ProjectDetailPage() {
             </div>
 
             {/* Client Information */}
-            <div className="border-b border-gray-100 p-4 dark:border-gray-800">
-              <h3 className="mb-3 text-base font-semibold">Client Information</h3>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                <div>
-                  <p className="text-sm font-medium">Client Name</p>
-                  <p className="text-sm text-gray-600">{project.client_name || 'N/A'}</p>
+            <div className="border-b border-gray-100 p-5 dark:border-gray-800">
+              <div className="flex items-center gap-2 mb-4">
+                <Building2 className="h-5 w-5 text-gray-600" />
+                <h3 className="text-base font-semibold">Client Information</h3>
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="rounded-lg bg-gray-50 p-4 border border-gray-100">
+                  <p className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Client Name</p>
+                  <p className="text-sm font-semibold text-gray-900">{project.client_name || 'N/A'}</p>
                 </div>
-                <div>
-                  <p className="text-sm font-medium">Contact</p>
-                  <p className="text-sm text-gray-600">{project.client_contact || 'N/A'}</p>
+                <div className="rounded-lg bg-gray-50 p-4 border border-gray-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Phone className="h-4 w-4 text-gray-500" />
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Contact</p>
+                  </div>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {project.client_contact || 'N/A'}
+                  </p>
                 </div>
-                <div>
-                  <p className="text-sm font-medium">Priority</p>
-                  <Badge className={getPriorityColor(project.priority)}>{project.priority}</Badge>
+                <div className="rounded-lg bg-gray-50 p-4 border border-gray-100">
+                  <p className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Priority</p>
+                  <Badge className={getPriorityColor(project.priority)}>
+                    {project.priority}
+                  </Badge>
                 </div>
               </div>
             </div>
 
             {/* Project Notes */}
             {project.notes && (
-              <div className="border-b border-gray-100 p-4 dark:border-gray-800">
-                <h3 className="mb-2 text-base font-semibold">Project Notes</h3>
-                <p className="text-sm text-gray-600">{project.notes}</p>
+              <div className="p-5 dark:border-gray-800">
+                <div className="flex items-center gap-2 mb-3">
+                  <StickyNote className="h-5 w-5 text-gray-600" />
+                  <h3 className="text-base font-semibold">Project Notes</h3>
+                </div>
+                <div className="rounded-lg bg-amber-50/50 p-4 border border-amber-100">
+                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                    {project.notes}
+                  </p>
+                </div>
               </div>
             )}
 
@@ -1016,67 +1046,269 @@ export default function ProjectDetailPage() {
 
         {/* Milestones Tab */}
         <TabsContent value="milestones" className="space-y-4">
-          <div className="rounded-lg border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 p-4">
-            <h3 className="mb-4 text-lg font-semibold">Project Milestones</h3>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              {/* Start Milestone */}
-              <div className="flex-1 rounded-lg bg-blue-50/50 p-4">
-                <div className="mb-2 flex justify-end">
-                  <span className="text-xs text-blue-700">
-                    {formatDate(project.start_date, 'short')}
-                  </span>
-                </div>
-                <div className="mb-2 flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-blue-500"></div>
-                  <h4 className="text-sm font-medium text-blue-700">Project Started</h4>
-                </div>
-                <p className="pl-5 text-xs text-gray-600">
-                  Project was initiated with initial requirements and planning.
-                </p>
-              </div>
-
-              {/* Current Status Milestone */}
-              <div className="flex-1 rounded-lg bg-green-50/50 p-4">
-                <div className="mb-2 flex justify-end">
-                  <span className="text-xs text-green-700">
-                    {new Date().toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
-                  </span>
-                </div>
-                <div className="mb-2 flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-green-500"></div>
-                  <h4 className="text-sm font-medium text-green-700">Current Status: Active</h4>
-                </div>
-                <p className="pl-5 text-xs text-gray-600">
-                  Project is {calculateProjectProgress(project)}% complete based on timeline.
-                </p>
-                <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-green-100">
-                  <div
-                    className="h-full bg-green-500"
-                    style={{ width: `${calculateProjectProgress(project)}%` }}
-                  ></div>
-                </div>
-              </div>
-
-              {/* Completion Milestone */}
-              {project.end_date && (
-                <div className="flex-1 rounded-lg bg-gray-50 p-4">
-                  <div className="mb-2 flex justify-end">
-                    <span className="text-xs text-gray-700">
-                      {formatDate(project.end_date, 'short')}
-                    </span>
-                  </div>
-                  <div className="mb-2 flex items-center gap-2">
-                    <div className="h-3 w-3 rounded-full bg-gray-400"></div>
-                    <h4 className="text-sm font-medium text-gray-700">Expected Completion</h4>
-                  </div>
-                  <p className="pl-5 text-xs text-gray-600">Planned project completion date.</p>
-                </div>
-              )}
+          <div className="rounded-lg border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <Target className="h-5 w-5 text-gray-600" />
+              <h3 className="text-lg font-semibold">Project Milestones</h3>
             </div>
+
+            {/* Timeline View */}
+            <div className="relative">
+              {/* Timeline Line */}
+              <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gray-200 hidden md:block"></div>
+
+              <div className="space-y-8">
+                {/* Start Milestone */}
+                <div className="relative flex items-start gap-6">
+                  {/* Timeline Dot */}
+                  <div className="relative z-10 flex-shrink-0">
+                    <div className="h-16 w-16 rounded-full bg-blue-100 border-4 border-white shadow-md flex items-center justify-center">
+                      <CheckCircle className="h-8 w-8 text-blue-600" />
+                    </div>
+                    <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 h-3 w-3 rounded-full bg-blue-500 border-2 border-white"></div>
+                  </div>
+
+                  {/* Milestone Content */}
+                  <div className="flex-1 rounded-lg bg-blue-50/50 border-2 border-blue-200 p-5 shadow-sm">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="text-base font-semibold text-blue-900">Project Started</h4>
+                          <Badge className="bg-blue-600 text-white text-xs">Completed</Badge>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-3">
+                          Project was initiated with initial requirements and planning phase.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 border-t border-blue-200">
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 mb-1">Start Date</p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {formatDate(project.start_date, 'short')}
+                        </p>
+                        {project.start_date && (
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {formatDate(project.start_date)}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 mb-1">Days Elapsed</p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {project.start_date ? (
+                            (() => {
+                              const start = parseLocalDate(project.start_date);
+                              const today = new Date();
+                              today.setHours(0, 0, 0, 0);
+                              if (!start) return 'N/A';
+                              const days = Math.ceil((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+                              return days >= 0 ? `${days} days` : 'Not started';
+                            })()
+                          ) : 'Not started'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Current Status Milestone */}
+                <div className="relative flex items-start gap-6">
+                  {/* Timeline Dot */}
+                  <div className="relative z-10 flex-shrink-0">
+                    <div className="h-16 w-16 rounded-full bg-green-100 border-4 border-white shadow-md flex items-center justify-center">
+                      <Clock className="h-8 w-8 text-green-600" />
+                    </div>
+                    <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 h-3 w-3 rounded-full bg-green-500 border-2 border-white animate-pulse"></div>
+                  </div>
+
+                  {/* Milestone Content */}
+                  <div className="flex-1 rounded-lg bg-green-50/50 border-2 border-green-200 p-5 shadow-sm">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="text-base font-semibold text-green-900">Current Status</h4>
+                          <Badge className={getStatusColor(project.status)}>
+                            {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-3">
+                          Project is actively in progress with {calculateProjectProgress(project)}% completion based on timeline.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mb-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-gray-700">Progress</span>
+                        <span className="text-xs font-semibold text-green-700">
+                          {calculateProjectProgress(project)}%
+                        </span>
+                      </div>
+                      <div className="h-2.5 w-full overflow-hidden rounded-full bg-green-100">
+                        <div
+                          className="h-full bg-green-500 rounded-full transition-all duration-300"
+                          style={{ width: `${calculateProjectProgress(project)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 border-t border-green-200">
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 mb-1">Today's Date</p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {new Date().toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 mb-1">Days Remaining</p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {project.end_date ? (
+                            calculateDaysRemaining(project) > 0 
+                              ? `${calculateDaysRemaining(project)} days`
+                              : 'Deadline reached'
+                          ) : 'Not set'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Completion Milestone */}
+                {project.end_date ? (
+                  <div className="relative flex items-start gap-6">
+                    {/* Timeline Dot */}
+                    <div className="relative z-10 flex-shrink-0">
+                      <div className="h-16 w-16 rounded-full bg-gray-100 border-4 border-white shadow-md flex items-center justify-center">
+                        <Target className="h-8 w-8 text-gray-600" />
+                      </div>
+                      <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 h-3 w-3 rounded-full bg-gray-400 border-2 border-white"></div>
+                    </div>
+
+                    {/* Milestone Content */}
+                    <div className={`flex-1 rounded-lg border-2 p-5 shadow-sm ${
+                      calculateDaysRemaining(project) <= 0 
+                        ? 'bg-red-50/50 border-red-200' 
+                        : 'bg-gray-50/50 border-gray-200'
+                    }`}>
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className={`text-base font-semibold ${
+                              calculateDaysRemaining(project) <= 0 
+                                ? 'text-red-900' 
+                                : 'text-gray-900'
+                            }`}>
+                              Expected Completion
+                            </h4>
+                            {calculateDaysRemaining(project) <= 0 ? (
+                              <Badge className="bg-red-600 text-white text-xs">Overdue</Badge>
+                            ) : calculateDaysRemaining(project) <= 7 ? (
+                              <Badge className="bg-amber-600 text-white text-xs">Due Soon</Badge>
+                            ) : (
+                              <Badge className="bg-gray-600 text-white text-xs">Upcoming</Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-600 mb-3">
+                            {calculateDaysRemaining(project) <= 0 
+                              ? 'Project deadline has been reached. Please review project status.'
+                              : 'Planned project completion date and final milestone.'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 border-t border-gray-200">
+                        <div>
+                          <p className="text-xs font-medium text-gray-500 mb-1">End Date</p>
+                          <p className="text-sm font-semibold text-gray-900">
+                            {formatDate(project.end_date, 'short')}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {formatDate(project.end_date)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-gray-500 mb-1">Project Duration</p>
+                          <p className="text-sm font-semibold text-gray-900">
+                            {calculateProjectDuration(project)}
+                          </p>
+                          {project.start_date && project.end_date && (
+                            <p className="text-xs text-gray-500 mt-0.5">
+                              Total project timeline
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative flex items-start gap-6">
+                    {/* Timeline Dot */}
+                    <div className="relative z-10 flex-shrink-0">
+                      <div className="h-16 w-16 rounded-full bg-gray-100 border-4 border-white shadow-md flex items-center justify-center opacity-50">
+                        <Target className="h-8 w-8 text-gray-400" />
+                      </div>
+                    </div>
+
+                    {/* Milestone Content */}
+                    <div className="flex-1 rounded-lg bg-gray-50/30 border-2 border-dashed border-gray-300 p-5">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h4 className="text-base font-semibold text-gray-500">Expected Completion</h4>
+                        <Badge className="bg-gray-400 text-white text-xs">Not Set</Badge>
+                      </div>
+                      <p className="text-sm text-gray-500 italic">
+                        End date has not been set for this project.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Summary Stats */}
+            {project.start_date && project.end_date && (
+              <div className="mt-8 pt-6 border-t border-gray-200">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-4 rounded-lg bg-blue-50 border border-blue-100">
+                    <p className="text-2xl font-bold text-blue-700">
+                      {(() => {
+                        const start = parseLocalDate(project.start_date);
+                        const end = parseLocalDate(project.end_date);
+                        if (!start || !end) return '0';
+                        return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+                      })()}
+                    </p>
+                    <p className="text-xs font-medium text-blue-600 mt-1">Total Days</p>
+                  </div>
+                  <div className="text-center p-4 rounded-lg bg-green-50 border border-green-100">
+                    <p className="text-2xl font-bold text-green-700">
+                      {(() => {
+                        const start = parseLocalDate(project.start_date);
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        if (!start) return '0';
+                        const days = Math.max(0, Math.ceil((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+                        return days;
+                      })()}
+                    </p>
+                    <p className="text-xs font-medium text-green-600 mt-1">Days Elapsed</p>
+                  </div>
+                  <div className="text-center p-4 rounded-lg bg-amber-50 border border-amber-100">
+                    <p className="text-2xl font-bold text-amber-700">
+                      {calculateDaysRemaining(project)}
+                    </p>
+                    <p className="text-xs font-medium text-amber-600 mt-1">Days Remaining</p>
+                  </div>
+                  <div className="text-center p-4 rounded-lg bg-purple-50 border border-purple-100">
+                    <p className="text-2xl font-bold text-purple-700">
+                      {calculateProjectProgress(project)}%
+                    </p>
+                    <p className="text-xs font-medium text-purple-600 mt-1">Progress</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </TabsContent>
       </Tabs>
