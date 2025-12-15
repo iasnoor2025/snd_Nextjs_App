@@ -817,13 +817,14 @@ export async function generateRentalTimesheetReport(startDate?: string | null, e
     // because we want items that don't have timesheet entries
     if (hasTimesheet === 'no') {
       // Build conditions for rental items without timesheets
+      // NOTE: We do NOT use rentalIdFilter here because we want to check at the item level,
+      // not the rental level. A rental might have some items with timesheets and some without,
+      // and we want to include items without timesheets even if the rental has other items with timesheets.
       const itemConditions = [];
       if (customerId) {
         itemConditions.push(eq(rentals.customerId, parseInt(customerId)));
       }
-      if (rentalIdFilter) {
-        itemConditions.push(rentalIdFilter);
-      }
+      // Do NOT apply rentalIdFilter here - we filter at item level below
       
       // If month filter is provided, filter items that were active during that month
       if (month) {

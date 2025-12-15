@@ -129,6 +129,7 @@ export default function ReportingDashboardPage() {
   const [customersForTimesheet, setCustomersForTimesheet] = useState<any[]>([]);
   const [loadingCustomersForTimesheet, setLoadingCustomersForTimesheet] = useState(false);
   const [hasTimesheetFilter, setHasTimesheetFilter] = useState('all'); // 'all', 'yes', 'no'
+  const [showOnlyCompanyName, setShowOnlyCompanyName] = useState(false); // Show only company name when checked
   
   // Column visibility for rental timesheet report
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
@@ -318,6 +319,7 @@ export default function ReportingDashboardPage() {
       setIncludeInactive(false);
       setSupervisorFilter('all');
       setHasTimesheetFilter('all');
+      setShowOnlyCompanyName(false);
       // Reset column visibility to default (all visible)
       setVisibleColumns({
         si: true,
@@ -340,6 +342,7 @@ export default function ReportingDashboardPage() {
       setMonthFilter('');
       setCompanyFilter('all');
       setHasTimesheetFilter('all');
+      setShowOnlyCompanyName(false);
     }
   }, [selectedReport]);
 
@@ -1133,6 +1136,38 @@ export default function ReportingDashboardPage() {
         }
         break;
       case 'rental_timesheet':
+        // Handle case when "Show Only Company Name" is checked and "No Timesheet" is selected
+        // Even if no items are returned, show the selected company name
+        if (showOnlyCompanyName && hasTimesheetFilter === 'no' && companyFilter !== 'all') {
+          const selectedCustomer = customersForTimesheet.find(c => c.id.toString() === companyFilter);
+          if (selectedCustomer && (!data.monthly_items || data.monthly_items.length === 0 || 
+              (data.monthly_items.length > 0 && data.monthly_items[0].items.length === 0))) {
+            return (
+              <div className="bg-white rounded-lg shadow">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    {monthFilter ? new Date(`${monthFilter}-01`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'All Months'}
+                  </h2>
+                </div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Company Name</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell className="font-medium">{selectedCustomer.name}</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            );
+          }
+        }
+        
         if (data.monthly_items && Array.isArray(data.monthly_items) && data.monthly_items.length > 0) {
           return (
             <div className="space-y-8">
@@ -1378,20 +1413,61 @@ export default function ReportingDashboardPage() {
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              {visibleColumns.si && <TableHead className="w-12">SI#</TableHead>}
-                              {visibleColumns.equipment && <TableHead>Equipment</TableHead>}
-                              {visibleColumns.unitPrice && <TableHead>Unit Price</TableHead>}
-                              {visibleColumns.rate && <TableHead>Rate</TableHead>}
-                              {visibleColumns.startDate && <TableHead>Start Date</TableHead>}
-                              {visibleColumns.operator && <TableHead>Operator</TableHead>}
-                              {visibleColumns.supervisor && <TableHead>Supervisor</TableHead>}
-                              {visibleColumns.duration && <TableHead>Duration</TableHead>}
-                              {visibleColumns.total && <TableHead>Total</TableHead>}
-                              {visibleColumns.completedDate && <TableHead>Completed Date</TableHead>}
+                              {showOnlyCompanyName ? (
+                                <TableHead>Company Name</TableHead>
+                              ) : (
+                                <>
+                                  {visibleColumns.si && <TableHead className="w-12">SI#</TableHead>}
+                                  {visibleColumns.equipment && <TableHead>Equipment</TableHead>}
+                                  {visibleColumns.unitPrice && <TableHead>Unit Price</TableHead>}
+                                  {visibleColumns.rate && <TableHead>Rate</TableHead>}
+                                  {visibleColumns.startDate && <TableHead>Start Date</TableHead>}
+                                  {visibleColumns.operator && <TableHead>Operator</TableHead>}
+                                  {visibleColumns.supervisor && <TableHead>Supervisor</TableHead>}
+                                  {visibleColumns.duration && <TableHead>Duration</TableHead>}
+                                  {visibleColumns.total && <TableHead>Total</TableHead>}
+                                  {visibleColumns.completedDate && <TableHead>Completed Date</TableHead>}
+                                </>
+                              )}
                             </TableRow>
                           </TableHeader>
                         <TableBody>
-                          {sortedItems.map((item: any, itemIndex: number) => (
+                          {showOnlyCompanyName ? (
+                            // Show only unique company names
+                            // When "No Timesheet" filter is active, show all companies that have items without timesheets
+                            (() => {
+                              // Extract unique company names from items
+                              // When hasTimesheetFilter === 'no', the API already filters to only return items without timesheets
+                              // So we just need to show all unique company names from the filtered results
+                              const uniqueCompanies = Array.from(
+                                new Set(
+                                  sortedItems
+                                    .map((item: any) => item.customer_name)
+                                    .filter((name: string) => name)
+                                )
+                              ).sort();
+                              
+                              // If no companies found in items but a specific company is selected with "No Timesheet" filter,
+                              // show that company name
+                              if (uniqueCompanies.length === 0 && hasTimesheetFilter === 'no' && companyFilter !== 'all') {
+                                const selectedCustomer = customersForTimesheet.find(c => c.id.toString() === companyFilter);
+                                if (selectedCustomer) {
+                                  return (
+                                    <TableRow>
+                                      <TableCell className="font-medium">{selectedCustomer.name}</TableCell>
+                                    </TableRow>
+                                  );
+                                }
+                              }
+                              
+                              return uniqueCompanies.map((companyName: string, index: number) => (
+                                <TableRow key={`company-${index}`}>
+                                  <TableCell className="font-medium">{companyName}</TableCell>
+                                </TableRow>
+                              ));
+                            })()
+                          ) : (
+                            sortedItems.map((item: any, itemIndex: number) => (
                               <TableRow key={`${item.rental_item_id}-${item.rental_id}-${itemIndex}`}>
                                 {visibleColumns.si && (
                                   <TableCell className="text-center">{item.serial_number || itemIndex + 1}</TableCell>
@@ -1426,7 +1502,8 @@ export default function ReportingDashboardPage() {
                                   <TableCell>{item.completed_date ? new Date(item.completed_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}</TableCell>
                                 )}
                               </TableRow>
-                            ))}
+                            ))
+                          )}
                           </TableBody>
                         </Table>
                       </div>
@@ -1478,6 +1555,37 @@ export default function ReportingDashboardPage() {
             </div>
           );
         } else {
+          // Handle case when "Show Only Company Name" is checked and "No Timesheet" is selected
+          // Show the selected company name even if no items are returned
+          if (showOnlyCompanyName && hasTimesheetFilter === 'no' && companyFilter !== 'all') {
+            const selectedCustomer = customersForTimesheet.find(c => c.id.toString() === companyFilter);
+            if (selectedCustomer) {
+              return (
+                <div className="bg-white rounded-lg shadow">
+                  <div className="px-6 py-4 border-b border-gray-200">
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      {monthFilter ? new Date(`${monthFilter}-01`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'All Months'}
+                    </h2>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Company Name</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell className="font-medium">{selectedCustomer.name}</TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              );
+            }
+          }
+          
           return (
             <div className="text-center py-8">
               <p className="text-gray-500">No rental timesheet data found.</p>
@@ -1576,32 +1684,60 @@ export default function ReportingDashboardPage() {
           </div>
     `;
 
-    data.forEach((monthData: any) => {
-      html += `
-        <div class="month-section">
-          <h2>${monthData.monthLabel}</h2>
-          <div class="summary">
-            <strong>Items:</strong> ${monthData.totalItems} | 
-            <strong>Active:</strong> ${monthData.activeItems} | 
-            <strong>Value:</strong> SAR ${Number(monthData.totalValue || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+    // Handle case when data is empty but a specific company is selected with "No Timesheet" filter
+    if (data.length === 0 && showOnlyCompanyName && hasTimesheetFilter === 'no' && companyFilter !== 'all') {
+      const selectedCustomer = customersForTimesheet.find(c => c.id.toString() === companyFilter);
+      if (selectedCustomer) {
+        const monthLabel = monthFilter 
+          ? formatDate(new Date(`${monthFilter}-01`), 'MMMM yyyy')
+          : 'All Months';
+        html += `
+          <div class="month-section">
+            <h2>${monthLabel}</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Company Name</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>${selectedCustomer.name}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          <table>
-            <thead>
-              <tr>
-                ${visibleColumns.si ? '<th class="sl-col">SI#</th>' : ''}
-                ${visibleColumns.equipment ? '<th class="equipment-col">Equipment</th>' : ''}
-                ${visibleColumns.unitPrice ? '<th class="price-col">Unit Price</th>' : ''}
-                ${visibleColumns.rate ? '<th class="rate-col">Rate</th>' : ''}
-                ${visibleColumns.startDate ? '<th class="date-col">Start Date</th>' : ''}
-                ${visibleColumns.operator ? '<th class="operator-col">Operator</th>' : ''}
-                ${visibleColumns.supervisor ? '<th class="operator-col">Supervisor</th>' : ''}
-                ${visibleColumns.duration ? '<th class="duration-col">Duration</th>' : ''}
-                ${visibleColumns.total ? '<th class="total-col">Total</th>' : ''}
-                ${visibleColumns.completedDate ? '<th class="completed-col">Completed Date</th>' : ''}
-              </tr>
-            </thead>
-            <tbody>
-      `;
+        `;
+      }
+    } else {
+      data.forEach((monthData: any) => {
+        html += `
+          <div class="month-section">
+            <h2>${monthData.monthLabel}</h2>
+            <div class="summary">
+              <strong>Items:</strong> ${monthData.totalItems} | 
+              <strong>Active:</strong> ${monthData.activeItems} | 
+              <strong>Value:</strong> SAR ${Number(monthData.totalValue || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  ${showOnlyCompanyName ? '<th>Company Name</th>' : `
+                    ${visibleColumns.si ? '<th class="sl-col">SI#</th>' : ''}
+                    ${visibleColumns.equipment ? '<th class="equipment-col">Equipment</th>' : ''}
+                    ${visibleColumns.unitPrice ? '<th class="price-col">Unit Price</th>' : ''}
+                    ${visibleColumns.rate ? '<th class="rate-col">Rate</th>' : ''}
+                    ${visibleColumns.startDate ? '<th class="date-col">Start Date</th>' : ''}
+                    ${visibleColumns.operator ? '<th class="operator-col">Operator</th>' : ''}
+                    ${visibleColumns.supervisor ? '<th class="operator-col">Supervisor</th>' : ''}
+                    ${visibleColumns.duration ? '<th class="duration-col">Duration</th>' : ''}
+                    ${visibleColumns.total ? '<th class="total-col">Total</th>' : ''}
+                    ${visibleColumns.completedDate ? '<th class="completed-col">Completed Date</th>' : ''}
+                  `}
+                </tr>
+              </thead>
+              <tbody>
+        `;
 
       // Sort items by equipment name
       const sortedItems = [...monthData.items].sort((a: any, b: any) => {
@@ -1634,67 +1770,52 @@ export default function ReportingDashboardPage() {
         return nameA.localeCompare(nameB);
       });
 
-      sortedItems.forEach((item: any, index: number) => {
-        const equipmentName = item.equipment_name || 'N/A';
-        const unitPrice = parseFloat(item.unit_price || 0) || 0;
-        const rateType = item.rate_type || 'daily';
-        const startDate = item.start_date ? formatDate(new Date(item.start_date), 'MMM dd, yyyy') : 'N/A';
-        const operatorName = item.operator_display || item.operator_name || '-';
-        const supervisorName = item.supervisor_display || item.supervisor_name || '-';
+      if (showOnlyCompanyName) {
+        // Show only unique company names
+        // When "No Timesheet" filter is active, the API already filters to only return items without timesheets
+        // So we just need to show all unique company names from the filtered results
+        const uniqueCompanies = Array.from(
+          new Set(
+            sortedItems
+              .map((item: any) => item.customer_name)
+              .filter((name: string) => name)
+          )
+        ).sort();
         
-        // Calculate duration for print view
-        let duration = '-';
-        if (item.start_date) {
-          const itemStartDate = new Date(item.start_date);
-          const itemEndDate = item.completed_date ? new Date(item.completed_date) : new Date();
-          
-          if (monthFilter) {
-            // Calculate days within the selected month
-            const [year, monthNum] = monthFilter.split('-').map(Number);
-            const monthStart = new Date(year, monthNum - 1, 1);
-            const monthEnd = new Date(year, monthNum, 0, 23, 59, 59, 999);
-            
-            // Find the overlap between item period and selected month
-            const effectiveStart = itemStartDate > monthStart ? itemStartDate : monthStart;
-            const effectiveEnd = itemEndDate < monthEnd ? itemEndDate : monthEnd;
-            
-            if (effectiveStart <= effectiveEnd) {
-              const diffTime = Math.abs(effectiveEnd.getTime() - effectiveStart.getTime());
-              const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-              duration = `${diffDays} days`;
-            } else {
-              duration = '0 days';
-            }
-          } else {
-            // No month filter - calculate total days
-            const diffTime = Math.abs(itemEndDate.getTime() - itemStartDate.getTime());
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            duration = `${diffDays} days`;
+        // If no companies found in items but a specific company is selected with "No Timesheet" filter,
+        // show that company name
+        if (uniqueCompanies.length === 0 && hasTimesheetFilter === 'no' && companyFilter !== 'all') {
+          const selectedCustomer = customersForTimesheet.find(c => c.id.toString() === companyFilter);
+          if (selectedCustomer) {
+            html += `
+              <tr>
+                <td>${selectedCustomer.name}</td>
+              </tr>
+            `;
           }
-        }
-        
-        // Calculate total for print view
-        let total = 0;
-        const totalHours = parseFloat(item.total_hours?.toString() || '0') || 0;
-        
-        if (totalHours > 0) {
-          // Convert rate to hourly equivalent based on rate type
-          let hourlyRate = unitPrice;
-          if (rateType === 'daily') {
-            hourlyRate = unitPrice / 10; // Daily rate / 10 hours
-          } else if (rateType === 'weekly') {
-            hourlyRate = unitPrice / (7 * 10); // Weekly rate / (7 days * 10 hours)
-          } else if (rateType === 'monthly') {
-            hourlyRate = unitPrice / (30 * 10); // Monthly rate / (30 days * 10 hours)
-          }
-          total = hourlyRate * totalHours;
         } else {
-          // If no timesheet hours, calculate based on date duration
+          uniqueCompanies.forEach((companyName: string) => {
+            html += `
+              <tr>
+                <td>${companyName}</td>
+              </tr>
+            `;
+          });
+        }
+      } else {
+        sortedItems.forEach((item: any, index: number) => {
+          const equipmentName = item.equipment_name || 'N/A';
+          const unitPrice = parseFloat(item.unit_price || 0) || 0;
+          const rateType = item.rate_type || 'daily';
+          const startDate = item.start_date ? formatDate(new Date(item.start_date), 'MMM dd, yyyy') : 'N/A';
+          const operatorName = item.operator_display || item.operator_name || '-';
+          const supervisorName = item.supervisor_display || item.supervisor_name || '-';
+          
+          // Calculate duration for print view
+          let duration = '-';
           if (item.start_date) {
             const itemStartDate = new Date(item.start_date);
             const itemEndDate = item.completed_date ? new Date(item.completed_date) : new Date();
-            
-            let diffDays = 0;
             
             if (monthFilter) {
               // Calculate days within the selected month
@@ -1708,77 +1829,127 @@ export default function ReportingDashboardPage() {
               
               if (effectiveStart <= effectiveEnd) {
                 const diffTime = Math.abs(effectiveEnd.getTime() - effectiveStart.getTime());
-                diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+                const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+                duration = `${diffDays} days`;
               } else {
-                diffDays = 0;
+                duration = '0 days';
               }
             } else {
               // No month filter - calculate total days
               const diffTime = Math.abs(itemEndDate.getTime() - itemStartDate.getTime());
-              diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              duration = `${diffDays} days`;
             }
-            
-            if (diffDays > 0) {
-              if (rateType === 'daily') {
-                total = unitPrice * diffDays;
-              } else if (rateType === 'hourly') {
-                total = unitPrice * (diffDays * 10); // Assume 10 hours per day
-              } else if (rateType === 'weekly') {
-                total = unitPrice * Math.ceil(diffDays / 7);
-              } else if (rateType === 'monthly') {
-                total = unitPrice * Math.ceil(diffDays / 30);
+          }
+          
+          // Calculate total for print view
+          let total = 0;
+          const totalHours = parseFloat(item.total_hours?.toString() || '0') || 0;
+          
+          if (totalHours > 0) {
+            // Convert rate to hourly equivalent based on rate type
+            let hourlyRate = unitPrice;
+            if (rateType === 'daily') {
+              hourlyRate = unitPrice / 10; // Daily rate / 10 hours
+            } else if (rateType === 'weekly') {
+              hourlyRate = unitPrice / (7 * 10); // Weekly rate / (7 days * 10 hours)
+            } else if (rateType === 'monthly') {
+              hourlyRate = unitPrice / (30 * 10); // Monthly rate / (30 days * 10 hours)
+            }
+            total = hourlyRate * totalHours;
+          } else {
+            // If no timesheet hours, calculate based on date duration
+            if (item.start_date) {
+              const itemStartDate = new Date(item.start_date);
+              const itemEndDate = item.completed_date ? new Date(item.completed_date) : new Date();
+              
+              let diffDays = 0;
+              
+              if (monthFilter) {
+                // Calculate days within the selected month
+                const [year, monthNum] = monthFilter.split('-').map(Number);
+                const monthStart = new Date(year, monthNum - 1, 1);
+                const monthEnd = new Date(year, monthNum, 0, 23, 59, 59, 999);
+                
+                // Find the overlap between item period and selected month
+                const effectiveStart = itemStartDate > monthStart ? itemStartDate : monthStart;
+                const effectiveEnd = itemEndDate < monthEnd ? itemEndDate : monthEnd;
+                
+                if (effectiveStart <= effectiveEnd) {
+                  const diffTime = Math.abs(effectiveEnd.getTime() - effectiveStart.getTime());
+                  diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+                } else {
+                  diffDays = 0;
+                }
               } else {
-                total = unitPrice;
+                // No month filter - calculate total days
+                const diffTime = Math.abs(itemEndDate.getTime() - itemStartDate.getTime());
+                diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+              }
+              
+              if (diffDays > 0) {
+                if (rateType === 'daily') {
+                  total = unitPrice * diffDays;
+                } else if (rateType === 'hourly') {
+                  total = unitPrice * (diffDays * 10); // Assume 10 hours per day
+                } else if (rateType === 'weekly') {
+                  total = unitPrice * Math.ceil(diffDays / 7);
+                } else if (rateType === 'monthly') {
+                  total = unitPrice * Math.ceil(diffDays / 30);
+                } else {
+                  total = unitPrice;
+                }
+              } else {
+                total = 0;
               }
             } else {
-              total = 0;
+              total = unitPrice;
             }
-          } else {
-            total = unitPrice;
           }
-        }
-        
-        let completedDate = '-';
-        
-        if (item.completed_date) {
-          const completedDateObj = new Date(item.completed_date);
-          const [monthName, yearStr] = monthData.monthLabel.split(' ');
-          const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-          const reportMonth = monthNames.indexOf(monthName);
-          const reportYear = parseInt(yearStr);
           
-          const reportMonthStart = new Date(reportYear, reportMonth, 1);
-          reportMonthStart.setHours(0, 0, 0, 0);
-          const reportMonthEnd = new Date(reportYear, reportMonth + 1, 0);
-          reportMonthEnd.setHours(23, 59, 59, 999);
+          let completedDate = '-';
           
-          if (completedDateObj >= reportMonthStart && completedDateObj <= reportMonthEnd) {
-            completedDate = formatDate(completedDateObj, 'MMM dd, yyyy');
+          if (item.completed_date) {
+            const completedDateObj = new Date(item.completed_date);
+            const [monthName, yearStr] = monthData.monthLabel.split(' ');
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            const reportMonth = monthNames.indexOf(monthName);
+            const reportYear = parseInt(yearStr);
+            
+            const reportMonthStart = new Date(reportYear, reportMonth, 1);
+            reportMonthStart.setHours(0, 0, 0, 0);
+            const reportMonthEnd = new Date(reportYear, reportMonth + 1, 0);
+            reportMonthEnd.setHours(23, 59, 59, 999);
+            
+            if (completedDateObj >= reportMonthStart && completedDateObj <= reportMonthEnd) {
+              completedDate = formatDate(completedDateObj, 'MMM dd, yyyy');
+            }
           }
-        }
+
+          html += `
+            <tr>
+              ${visibleColumns.si ? `<td class="sl-col">${index + 1}</td>` : ''}
+              ${visibleColumns.equipment ? `<td class="equipment-col">${equipmentName}</td>` : ''}
+              ${visibleColumns.unitPrice ? `<td class="price-col">SAR ${unitPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>` : ''}
+              ${visibleColumns.rate ? `<td class="rate-col">${rateType}</td>` : ''}
+              ${visibleColumns.startDate ? `<td class="date-col">${startDate}</td>` : ''}
+              ${visibleColumns.operator ? `<td class="operator-col">${operatorName}</td>` : ''}
+              ${visibleColumns.supervisor ? `<td class="operator-col">${supervisorName}</td>` : ''}
+              ${visibleColumns.duration ? `<td class="duration-col">${duration}</td>` : ''}
+              ${visibleColumns.total ? `<td class="total-col">SAR ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>` : ''}
+              ${visibleColumns.completedDate ? `<td class="completed-col">${completedDate}</td>` : ''}
+            </tr>
+          `;
+        });
+      }
 
         html += `
-          <tr>
-            ${visibleColumns.si ? `<td class="sl-col">${index + 1}</td>` : ''}
-            ${visibleColumns.equipment ? `<td class="equipment-col">${equipmentName}</td>` : ''}
-            ${visibleColumns.unitPrice ? `<td class="price-col">SAR ${unitPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>` : ''}
-            ${visibleColumns.rate ? `<td class="rate-col">${rateType}</td>` : ''}
-            ${visibleColumns.startDate ? `<td class="date-col">${startDate}</td>` : ''}
-            ${visibleColumns.operator ? `<td class="operator-col">${operatorName}</td>` : ''}
-            ${visibleColumns.supervisor ? `<td class="operator-col">${supervisorName}</td>` : ''}
-            ${visibleColumns.duration ? `<td class="duration-col">${duration}</td>` : ''}
-            ${visibleColumns.total ? `<td class="total-col">SAR ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>` : ''}
-            ${visibleColumns.completedDate ? `<td class="completed-col">${completedDate}</td>` : ''}
-          </tr>
+              </tbody>
+            </table>
+          </div>
         `;
       });
-
-      html += `
-            </tbody>
-          </table>
-        </div>
-      `;
-    });
+    }
 
     html += `
         </body>
@@ -1815,6 +1986,9 @@ export default function ReportingDashboardPage() {
       
       // Add visible columns as JSON string
       params.append('visibleColumns', JSON.stringify(visibleColumns));
+      
+      // Add showOnlyCompanyName flag
+      params.append('showOnlyCompanyName', showOnlyCompanyName.toString());
       
       const url = `/api/reports/rental-timesheet/pdf?${params.toString()}`;
       const response = await fetch(url);
@@ -2187,6 +2361,20 @@ export default function ReportingDashboardPage() {
                         <SelectItem value="no">No Timesheet</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                )}
+
+                {/* Show Only Company Name Checkbox - Only show for rental timesheet report */}
+                {selectedReport === 'rental_timesheet' && (
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="show-only-company-name" 
+                      checked={showOnlyCompanyName}
+                      onCheckedChange={(checked) => setShowOnlyCompanyName(checked as boolean)}
+                    />
+                    <Label htmlFor="show-only-company-name" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      Show Only Company Name
+                    </Label>
                   </div>
                 )}
               </div>
