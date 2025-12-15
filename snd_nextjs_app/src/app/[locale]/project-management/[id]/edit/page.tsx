@@ -198,18 +198,17 @@ export default function EditProjectPage() {
           );
 
           activeAssignments.forEach((assignment: any) => {
-            // Check if assignment is to a project (including current project if different assignment)
+            // Check if assignment is to a project - only warn if it's a DIFFERENT project
             if (assignment.project_id) {
+              // Skip if assigned to THIS project - that's expected
+              if (assignment.project_id.toString() === projectId) {
+                return; // Don't show warning for assignments to current project
+              }
+              // Assignment to a different project - show warning
               const projectName = assignment.project?.name || `Project ${assignment.project_id}`;
               const startDate = assignment.start_date;
               const dateStr = startDate ? new Date(startDate).toLocaleDateString() : 'unknown date';
-              if (assignment.project_id.toString() !== projectId) {
-                // Assignment to a different project
-                warnings.push(`Already assigned to project "${projectName}" (started: ${dateStr})`);
-              } else if (assignment.name) {
-                // Assignment to current project via assignment service (not as team role)
-                warnings.push(`Already assigned to this project via assignment service: "${assignment.name}" (started: ${dateStr})`);
-              }
+              warnings.push(`Already assigned to project "${projectName}" (started: ${dateStr})`);
             } else if (assignment.rental_id) {
               // Assignment to a rental - track to avoid duplicate warnings
               const rentalId = assignment.rental_id;
@@ -869,6 +868,7 @@ export default function EditProjectPage() {
                   value={formData.project_manager_id}
                   onValueChange={value => handleInputChange('project_manager_id', value)}
                   placeholder={t('project.roles.selectManager')}
+                  projectId={projectId}
                 />
                 {employeeWarnings.project_manager_id && employeeWarnings.project_manager_id.length > 0 && (
                   <div className="rounded-md bg-yellow-50 border border-yellow-200 p-3 space-y-2">
@@ -897,6 +897,7 @@ export default function EditProjectPage() {
                   value={formData.project_engineer_id}
                   onValueChange={value => handleInputChange('project_engineer_id', value)}
                   placeholder={t('project.roles.selectEngineer')}
+                  projectId={projectId}
                 />
                 {employeeWarnings.project_engineer_id && employeeWarnings.project_engineer_id.length > 0 && (
                   <div className="rounded-md bg-yellow-50 border border-yellow-200 p-3 space-y-2">
@@ -927,6 +928,7 @@ export default function EditProjectPage() {
                   value={formData.project_foreman_id}
                   onValueChange={value => handleInputChange('project_foreman_id', value)}
                   placeholder={t('project.roles.selectForeman')}
+                  projectId={projectId}
                 />
                 {employeeWarnings.project_foreman_id && employeeWarnings.project_foreman_id.length > 0 && (
                   <div className="rounded-md bg-yellow-50 border border-yellow-200 p-3 space-y-2">
@@ -955,6 +957,7 @@ export default function EditProjectPage() {
                   value={formData.supervisor_id}
                   onValueChange={value => handleInputChange('supervisor_id', value)}
                   placeholder={t('project.roles.selectSupervisor')}
+                  projectId={projectId}
                 />
                 {employeeWarnings.supervisor_id && employeeWarnings.supervisor_id.length > 0 && (
                   <div className="rounded-md bg-yellow-50 border border-yellow-200 p-3 space-y-2">

@@ -38,6 +38,7 @@ interface EmployeeDropdownProps {
   error?: string;
   loading?: boolean;
   onLoadingChange?: (loading: boolean) => void;
+  projectId?: number | string; // If provided, only show employees from project manpower
 }
 
 export function EmployeeDropdown({
@@ -52,6 +53,7 @@ export function EmployeeDropdown({
   error,
   loading: externalLoading,
   onLoadingChange,
+  projectId,
 }: EmployeeDropdownProps) {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
@@ -68,7 +70,44 @@ export function EmployeeDropdown({
     setErrorMessage(null);
 
     try {
-      // Check if employees are already cached
+      // If projectId is provided, load from project manpower instead
+      if (projectId) {
+        const response = await fetch(`/api/projects/${projectId}/manpower`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const manpowerData = data.data || data || [];
+
+        // Transform manpower data to employee format
+        const employeeData = manpowerData.map((item: any) => ({
+          id: item.employeeId?.toString() || item.id?.toString(),
+          first_name: item.employeeFirstName || item.workerName?.split(' ')[0] || '',
+          last_name: item.employeeLastName || item.workerName?.split(' ').slice(1).join(' ') || '',
+          file_number: item.employeeFileNumber || '',
+          designation: item.jobTitle || '',
+          employee_number: item.employeeFileNumber || '',
+        })).filter((emp: any) => emp.id); // Filter out entries without employee ID
+
+        if (employeeData.length === 0) {
+          setErrorMessage('No employees assigned to this project. Add manpower first.');
+        }
+
+        setEmployees(employeeData);
+        setLoading(false);
+        onLoadingChange?.(false);
+        return;
+      }
+
+      // Check if employees are already cached (only for non-project-specific requests)
       const cachedEmployees = sessionStorage.getItem('employeesCache');
       const cacheTimestamp = sessionStorage.getItem('employeesCacheTimestamp');
       const now = Date.now();
@@ -130,7 +169,7 @@ export function EmployeeDropdown({
       setLoading(currentLoading);
       onLoadingChange?.(currentLoading);
     }
-  }, [onLoadingChange]);
+  }, [onLoadingChange, projectId]);
 
   // Load employees when component mounts
   useEffect(() => {
