@@ -115,6 +115,39 @@ const getProjectsHandler = async (request: NextRequest) => {
     
     const total = countRows.length;
     
+    // Helper function to calculate progress based on dates
+    const calculateProgress = (startDate: any, endDate: any, status: string): number => {
+      // If project is completed, return 100%
+      if (status === 'completed') return 100;
+      
+      // If no dates, return 0
+      if (!startDate || !endDate) return 0;
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Parse dates
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(endDate);
+      end.setHours(0, 0, 0, 0);
+      
+      // If project hasn't started yet, return 0
+      if (today < start) return 0;
+      
+      // If project is past end date, return 100% (unless already completed)
+      if (today > end) return 100;
+      
+      // Calculate progress based on elapsed time
+      const totalDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      const daysElapsed = Math.ceil((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (totalDays <= 0) return 0;
+      
+      const progress = Math.round((daysElapsed / totalDays) * 100);
+      return Math.min(100, Math.max(0, progress));
+    };
+    
     // Transform the data to match the frontend expectations
     const enhancedRows = rows.map(project => {
       // Format dates as YYYY-MM-DD to avoid timezone issues
@@ -137,7 +170,7 @@ const getProjectsHandler = async (request: NextRequest) => {
         start_date: formatDateString(project.startDate),
         end_date: formatDateString(project.endDate),
       budget: Number(project.budget) || 0,
-      progress: 0,
+      progress: calculateProgress(project.startDate, project.endDate, project.status),
       team_size: 0,
       location: project.locationId && project.locationName ? `${project.locationName}, ${project.locationCity}, ${project.locationState}` : 'Project Location',
       notes: project.notes || '',
