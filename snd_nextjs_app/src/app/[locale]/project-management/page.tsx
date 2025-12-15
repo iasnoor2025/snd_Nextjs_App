@@ -102,6 +102,7 @@ export default function ProjectManagementPage() {
   const params = useParams();
   const locale = params?.locale as string || 'en';
   const [projects, setProjects] = useState<PaginatedResponse | null>(null);
+  const [stats, setStats] = useState({ total: 0, active: 0, completed: 0, delayed: 0 });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
@@ -113,6 +114,22 @@ export default function ProjectManagementPage() {
 
   // Get allowed actions for project management
   const allowedActions = getAllowedActions('Project');
+
+  // Fetch project statistics
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await ApiService.get('/projects/stats');
+        if (response.success && response.data) {
+          setStats(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching project stats:', error);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -148,6 +165,14 @@ export default function ProjectManagementPage() {
     // Add event listener for refetch (used by sync function)
     const handleRefetch = () => {
       fetchProjects();
+      // Also refetch stats when projects are refetched
+      ApiService.get('/projects/stats')
+        .then(response => {
+          if (response.success && response.data) {
+            setStats(response.data);
+          }
+        })
+        .catch(error => console.error('Error fetching project stats:', error));
     };
 
     window.addEventListener('refetch', handleRefetch);
@@ -289,19 +314,6 @@ export default function ProjectManagementPage() {
   };
 
   const priorities = ['high', 'medium', 'low', 'critical'];
-
-  const calculateStats = () => {
-    if (!projects?.data) return { total: 0, active: 0, completed: 0, delayed: 0 };
-
-    const total = projects.data.length;
-    const active = projects.data.filter(p => p.status === 'in_progress').length;
-    const completed = projects.data.filter(p => p.status === 'completed').length;
-    const delayed = projects.data.filter(p => p.progress < 50 && p.status === 'in_progress').length;
-
-    return { total, active, completed, delayed };
-  };
-
-  const stats = calculateStats();
 
   if (loading) {
     return (
@@ -497,35 +509,38 @@ export default function ProjectManagementPage() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('project.project_name')}</TableHead>
-                    <TableHead>{t('project.client')}</TableHead>
-                    <TableHead>{t('project.project_team')}</TableHead>
-                    <TableHead>{t('project.status')}</TableHead>
-                    <TableHead>{t('project.priority')}</TableHead>
-                    <TableHead>{t('project.progress')}</TableHead>
-                    <TableHead>{t('project.budget')}</TableHead>
-                    <TableHead>{t('project.timeline')}</TableHead>
-                    <TableHead className="text-right">{t('project.actionsLabel')}</TableHead>
-                  </TableRow>
-                </TableHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table className="w-full table-fixed border-collapse">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[18%]">{t('project.project_name')}</TableHead>
+                      <TableHead className="w-[14%]">{t('project.client')}</TableHead>
+                      <TableHead className="w-[11%]">{t('project.project_team')}</TableHead>
+                      <TableHead className="w-[8%]">{t('project.status')}</TableHead>
+                      <TableHead className="w-[8%]">{t('project.priority')}</TableHead>
+                      <TableHead className="w-[9%]">{t('project.progress')}</TableHead>
+                      <TableHead className="w-[9%]">{t('project.budget')}</TableHead>
+                      <TableHead className="w-[12%]">{t('project.timeline')}</TableHead>
+                      <TableHead className="text-right w-[11%] min-w-[100px]">{t('project.actionsLabel')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
                 <TableBody>
                   {projects?.data.map(project => (
                     <TableRow key={project.id}>
                       <TableCell>
                         <div>
-                          <div className="font-medium">{project.name}</div>
+                          <div className="font-medium truncate" title={project.name}>{project.name}</div>
                           {project.description && (
-                            <div className="text-sm text-muted-foreground truncate max-w-xs">
+                            <div className="text-sm text-muted-foreground truncate" title={project.description}>
                               {project.description}
                             </div>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>{project.client}</TableCell>
+                      <TableCell>
+                        <div className="truncate" title={project.client}>{project.client}</div>
+                      </TableCell>
                       <TableCell>
                         <div className="space-y-1">
                           {project.project_manager_id && (
@@ -563,10 +578,10 @@ export default function ProjectManagementPage() {
                         </div>
                       </TableCell>
                       <TableCell>SAR {project.budget.toLocaleString()}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Calendar className="h-3 w-3" />
-                          <span className="text-sm">
+                      <TableCell className="overflow-hidden">
+                        <div className="flex items-center space-x-1 min-w-0">
+                          <Calendar className="h-3 w-3 flex-shrink-0" />
+                          <span className="text-sm truncate min-w-0" title={`${project.start_date || 'Not set'} - ${project.end_date || 'Not set'}`}>
                             {project.start_date 
                               ? (() => {
                                   // Parse date string as local date to avoid timezone issues
@@ -609,21 +624,22 @@ export default function ProjectManagementPage() {
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end space-x-2">
+                      <TableCell className="text-right pr-4 min-w-[100px]">
+                        <div className="flex items-center justify-end space-x-1 flex-shrink-0">
                           <Link href={`/${locale}/project-management/${project.id}`}>
-                            <Button variant="ghost" size="sm">
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                               <Eye className="h-4 w-4" />
                             </Button>
                           </Link>
                           <Link href={`/${locale}/project-management/${project.id}/edit`}>
-                            <Button variant="ghost" size="sm">
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                               <Edit className="h-4 w-4" />
                             </Button>
                           </Link>
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="h-8 w-8 p-0"
                             onClick={() => handleDelete(project.id)}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -634,6 +650,7 @@ export default function ProjectManagementPage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         ) : !loading && viewMode === 'cards' ? (

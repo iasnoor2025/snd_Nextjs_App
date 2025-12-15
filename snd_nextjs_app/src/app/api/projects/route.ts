@@ -46,6 +46,9 @@ const getProjectsHandler = async (request: NextRequest) => {
     if (status && status !== 'all') {
       filters.push(eq(projectsTable.status, status));
     }
+    if (priority && priority !== 'all') {
+      filters.push(eq(projectsTable.priority, priority));
+    }
     const whereExpr = filters.length ? and(...filters) : undefined;
 
     const rows = await db
@@ -54,6 +57,7 @@ const getProjectsHandler = async (request: NextRequest) => {
           name: projectsTable.name,
           description: projectsTable.description,
           status: projectsTable.status,
+          priority: projectsTable.priority,
           budget: projectsTable.budget,
           startDate: projectsTable.startDate,
           endDate: projectsTable.endDate,
@@ -129,7 +133,7 @@ const getProjectsHandler = async (request: NextRequest) => {
         description: project.description || '',
         client: project.customerName || 'No Client Assigned',
         status: project.status,
-        priority: 'medium',
+        priority: project.priority || 'medium',
         start_date: formatDateString(project.startDate),
         end_date: formatDateString(project.endDate),
       budget: Number(project.budget) || 0,

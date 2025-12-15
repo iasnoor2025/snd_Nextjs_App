@@ -169,9 +169,16 @@ export default function EditProjectPage() {
     supervisor_id: '',
   });
 
+  const [dateError, setDateError] = useState<string | null>(null);
+
   useEffect(() => {
     fetchProjectData();
   }, [projectId]);
+
+  // Debug: Log priority changes
+  useEffect(() => {
+    console.log('[Edit Page] formData.priority changed to:', formData.priority);
+  }, [formData.priority]);
 
   // Check employee assignments when any employee field changes
   const checkEmployeeAssignments = useCallback(async (employeeId: string | undefined, fieldName: string) => {
@@ -360,11 +367,10 @@ export default function EditProjectPage() {
         if (customersResponse.customers) {
           setCustomers(customersResponse.customers || []);
         } else {
-          
           setCustomers([]);
         }
       } catch (error) {
-        
+        console.error('Error fetching customers:', error);
         setCustomers([]);
       }
 
@@ -374,11 +380,10 @@ export default function EditProjectPage() {
         if (locationsResponse.success && locationsResponse.data) {
           setLocations(locationsResponse.data || []);
         } else {
-          
           setLocations([]);
         }
       } catch (error) {
-        
+        console.error('Error fetching locations:', error);
         setLocations([]);
       }
     } catch (error) {
@@ -412,10 +417,33 @@ export default function EditProjectPage() {
   };
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
+    if (field === 'priority') {
+      console.log('[Edit Page] Priority changed to:', value);
+    }
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        [field]: value,
+      };
+      if (field === 'priority') {
+        console.log('[Edit Page] Updated formData.priority:', updated.priority);
+      }
+      
+      // Validate dates when either date changes
+      if (field === 'start_date' || field === 'end_date') {
+        validateDates(field === 'start_date' ? value : prev.start_date, field === 'end_date' ? value : prev.end_date);
+      }
+      
+      return updated;
+    });
+  };
+
+  const validateDates = (startDate: Date | undefined, endDate: Date | undefined) => {
+    if (startDate && endDate && endDate < startDate) {
+      setDateError('End date must be after start date');
+    } else {
+      setDateError(null);
+    }
   };
 
   const handleBudgetChange = (field: 'budget' | 'initial_budget', value: string) => {
@@ -426,6 +454,14 @@ export default function EditProjectPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate dates before submission
+    if (formData.start_date && formData.end_date && formData.end_date < formData.start_date) {
+      setDateError('End date must be after start date');
+      toast.error('Please fix the date validation error before saving');
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -451,6 +487,8 @@ export default function EditProjectPage() {
         end_date: formatDateForSubmit(formData.end_date),
         budget: parseBudgetValue(formData.budget),
         initial_budget: parseBudgetValue(formData.initial_budget),
+        status: formData.status,
+        priority: formData.priority,
         // Project team roles
         project_manager_id: formData.project_manager_id || null,
         project_engineer_id: formData.project_engineer_id || null,
@@ -458,7 +496,12 @@ export default function EditProjectPage() {
         supervisor_id: formData.supervisor_id || null,
       };
 
+      console.log('[Edit Page] Submitting project update with priority:', submitData.priority);
+      console.log('[Edit Page] Full submitData:', JSON.stringify(submitData, null, 2));
+
       const response = await ApiService.put(`/projects/${projectId}`, submitData);
+      
+      console.log('[Edit Page] Update response:', response);
       
       if (response.success) {
         toast.success(t('project.messages.updateSuccess'));
@@ -489,6 +532,28 @@ export default function EditProjectPage() {
     { value: 'critical', label: 'Critical', color: 'bg-purple-100 text-purple-800' },
   ];
 
+  // Reusable Employee Warning Component
+  const EmployeeWarning = ({ warnings }: { warnings: string[] }) => (
+    <div className="rounded-md bg-yellow-50 border border-yellow-200 p-3 space-y-2">
+      <div className="flex items-start">
+        <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" />
+        <div className="flex-1">
+          <h4 className="text-sm font-semibold text-yellow-800 mb-1">
+            {t('project.warnings.employeeAlreadyAssigned')}
+          </h4>
+          <ul className="list-disc list-inside space-y-1 text-xs text-yellow-700">
+            {warnings.map((warning, index) => (
+              <li key={index}>{warning}</li>
+            ))}
+          </ul>
+          <p className="text-xs text-yellow-600 mt-2">
+            {t('project.warnings.employeeAlreadyAssignedMessage')}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="container mx-auto py-6">
@@ -518,20 +583,29 @@ export default function EditProjectPage() {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto py-6 space-y-6 px-4 sm:px-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Link href={`/${locale}/project-management/${projectId}`}>
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              {t('project.actions.backToProject')}
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-3xl font-bold">{t('project.actions.editProject')}</h1>
-            <p className="text-muted-foreground">{t('project.edit.description')}</p>
+      <div className="rounded-lg border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center space-x-4">
+            <Link href={`/${locale}/project-management/${projectId}`}>
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                {t('project.actions.backToProject')}
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold">{t('project.actions.editProject')}</h1>
+              <p className="text-sm text-muted-foreground mt-1">{t('project.edit.description')}</p>
+            </div>
           </div>
+          {project && (
+            <div className="flex items-center gap-2">
+              <Badge className={statusOptions.find(s => s.value === project.status)?.color || 'bg-gray-100 text-gray-800'}>
+                {statusOptions.find(s => s.value === project.status)?.label || project.status}
+              </Badge>
+            </div>
+          )}
         </div>
       </div>
 
@@ -637,7 +711,9 @@ export default function EditProjectPage() {
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
-                      className="w-full justify-start text-left font-normal"
+                      className={`w-full justify-start text-left font-normal ${
+                        dateError ? 'border-red-500' : ''
+                      }`}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {formData.start_date ? format(formData.start_date, 'PPP') : t('project.fields.pickDate')}
@@ -659,7 +735,9 @@ export default function EditProjectPage() {
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
-                      className="w-full justify-start text-left font-normal"
+                      className={`w-full justify-start text-left font-normal ${
+                        dateError ? 'border-red-500' : ''
+                      }`}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {formData.end_date ? format(formData.end_date, 'PPP') : t('project.fields.pickDate')}
@@ -670,10 +748,17 @@ export default function EditProjectPage() {
                       mode="single"
                       selected={formData.end_date}
                       onSelect={date => handleInputChange('end_date', date)}
+                      disabled={formData.start_date ? (date) => date < formData.start_date : undefined}
                       initialFocus
                     />
                   </PopoverContent>
                 </Popover>
+                {dateError && (
+                  <p className="text-sm text-red-600 flex items-center gap-1">
+                    <AlertTriangle className="h-4 w-4" />
+                    {dateError}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -685,7 +770,15 @@ export default function EditProjectPage() {
                   onValueChange={value => handleInputChange('status', value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={t('project.statusLabels.selectStatus')} />
+                    {formData.status ? (
+                      <div className="flex items-center">
+                        <Badge className={statusOptions.find(s => s.value === formData.status)?.color || 'bg-gray-100 text-gray-800'}>
+                          {statusOptions.find(s => s.value === formData.status)?.label || formData.status}
+                        </Badge>
+                      </div>
+                    ) : (
+                      <SelectValue placeholder={t('project.statusLabels.selectStatus')} />
+                    )}
                   </SelectTrigger>
                   <SelectContent className="max-h-60 overflow-y-auto">
                     {statusOptions.map(option => (
@@ -705,7 +798,15 @@ export default function EditProjectPage() {
                   onValueChange={value => handleInputChange('priority', value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={t('project.statusLabels.selectPriority')} />
+                    {formData.priority ? (
+                      <div className="flex items-center">
+                        <Badge className={priorityOptions.find(p => p.value === formData.priority)?.color || 'bg-gray-100 text-gray-800'}>
+                          {priorityOptions.find(p => p.value === formData.priority)?.label || formData.priority}
+                        </Badge>
+                      </div>
+                    ) : (
+                      <SelectValue placeholder={t('project.statusLabels.selectPriority')} />
+                    )}
                   </SelectTrigger>
                   <SelectContent className="max-h-60 overflow-y-auto">
                     {priorityOptions.map(option => (
@@ -871,24 +972,7 @@ export default function EditProjectPage() {
                   projectId={projectId}
                 />
                 {employeeWarnings.project_manager_id && employeeWarnings.project_manager_id.length > 0 && (
-                  <div className="rounded-md bg-yellow-50 border border-yellow-200 p-3 space-y-2">
-                    <div className="flex items-start">
-                      <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" />
-                      <div className="flex-1">
-                        <h4 className="text-sm font-semibold text-yellow-800 mb-1">
-                          {t('project.warnings.employeeAlreadyAssigned')}
-                        </h4>
-                        <ul className="list-disc list-inside space-y-1 text-xs text-yellow-700">
-                          {employeeWarnings.project_manager_id.map((warning, index) => (
-                            <li key={index}>{warning}</li>
-                          ))}
-                        </ul>
-                        <p className="text-xs text-yellow-600 mt-2">
-                          {t('project.warnings.employeeAlreadyAssignedMessage')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                  <EmployeeWarning warnings={employeeWarnings.project_manager_id} />
                 )}
               </div>
               <div className="space-y-2">
@@ -900,24 +984,7 @@ export default function EditProjectPage() {
                   projectId={projectId}
                 />
                 {employeeWarnings.project_engineer_id && employeeWarnings.project_engineer_id.length > 0 && (
-                  <div className="rounded-md bg-yellow-50 border border-yellow-200 p-3 space-y-2">
-                    <div className="flex items-start">
-                      <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" />
-                      <div className="flex-1">
-                        <h4 className="text-sm font-semibold text-yellow-800 mb-1">
-                          {t('project.warnings.employeeAlreadyAssigned')}
-                        </h4>
-                        <ul className="list-disc list-inside space-y-1 text-xs text-yellow-700">
-                          {employeeWarnings.project_engineer_id.map((warning, index) => (
-                            <li key={index}>{warning}</li>
-                          ))}
-                        </ul>
-                        <p className="text-xs text-yellow-600 mt-2">
-                          {t('project.warnings.employeeAlreadyAssignedMessage')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                  <EmployeeWarning warnings={employeeWarnings.project_engineer_id} />
                 )}
               </div>
             </div>
@@ -931,24 +998,7 @@ export default function EditProjectPage() {
                   projectId={projectId}
                 />
                 {employeeWarnings.project_foreman_id && employeeWarnings.project_foreman_id.length > 0 && (
-                  <div className="rounded-md bg-yellow-50 border border-yellow-200 p-3 space-y-2">
-                    <div className="flex items-start">
-                      <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" />
-                      <div className="flex-1">
-                        <h4 className="text-sm font-semibold text-yellow-800 mb-1">
-                          {t('project.warnings.employeeAlreadyAssigned')}
-                        </h4>
-                        <ul className="list-disc list-inside space-y-1 text-xs text-yellow-700">
-                          {employeeWarnings.project_foreman_id.map((warning, index) => (
-                            <li key={index}>{warning}</li>
-                          ))}
-                        </ul>
-                        <p className="text-xs text-yellow-600 mt-2">
-                          {t('project.warnings.employeeAlreadyAssignedMessage')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                  <EmployeeWarning warnings={employeeWarnings.project_foreman_id} />
                 )}
               </div>
               <div className="space-y-2">
@@ -960,24 +1010,7 @@ export default function EditProjectPage() {
                   projectId={projectId}
                 />
                 {employeeWarnings.supervisor_id && employeeWarnings.supervisor_id.length > 0 && (
-                  <div className="rounded-md bg-yellow-50 border border-yellow-200 p-3 space-y-2">
-                    <div className="flex items-start">
-                      <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" />
-                      <div className="flex-1">
-                        <h4 className="text-sm font-semibold text-yellow-800 mb-1">
-                          {t('project.warnings.employeeAlreadyAssigned')}
-                        </h4>
-                        <ul className="list-disc list-inside space-y-1 text-xs text-yellow-700">
-                          {employeeWarnings.supervisor_id.map((warning, index) => (
-                            <li key={index}>{warning}</li>
-                          ))}
-                        </ul>
-                        <p className="text-xs text-yellow-600 mt-2">
-                          {t('project.warnings.employeeAlreadyAssignedMessage')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                  <EmployeeWarning warnings={employeeWarnings.supervisor_id} />
                 )}
               </div>
             </div>
@@ -985,15 +1018,28 @@ export default function EditProjectPage() {
         </Card>
 
         {/* Submit Button */}
-        <div className="flex justify-end space-x-4">
-          <Link href={`/${locale}/project-management/${projectId}`}>
-            <Button variant="outline" type="button">
-              {t('project.buttons.cancel')}
+        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 -mx-4 sm:-mx-6 mt-6 shadow-lg">
+          <div className="container mx-auto flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
+            <Link href={`/${locale}/project-management/${projectId}`} className="w-full sm:w-auto">
+              <Button variant="outline" type="button" className="w-full sm:w-auto">
+                {t('project.buttons.cancel')}
+              </Button>
+            </Link>
+            <Button 
+              type="submit" 
+              disabled={saving || !!dateError}
+              className="w-full sm:w-auto"
+            >
+              {saving ? (
+                <>
+                  <span className="mr-2 animate-spin">⏳</span>
+                  {t('project.messages.saving')}
+                </>
+              ) : (
+                t('project.save')
+              )}
             </Button>
-          </Link>
-          <Button type="submit" disabled={saving}>
-            {saving ? t('project.messages.saving') : t('project.save')}
-          </Button>
+          </div>
         </div>
       </form>
     </div>

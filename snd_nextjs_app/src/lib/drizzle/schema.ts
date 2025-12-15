@@ -1544,6 +1544,7 @@ export const projects = pgTable(
     startDate: date('start_date'),
     endDate: date('end_date'),
     status: text().default('active').notNull(),
+    priority: text().default('medium').notNull(),
     budget: numeric({ precision: 12, scale: 2 }),
     notes: text(),
     // Project team roles
