@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { projectManpower, projects, employees, employeeAssignments } from '@/lib/drizzle/schema';
+import { projectManpower, projects, employees, employeeAssignments, projectEquipment } from '@/lib/drizzle/schema';
 import { CentralAssignmentService } from '@/lib/services/central-assignment-service';
 import { eq, and, desc, asc, like } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
@@ -50,15 +50,46 @@ const getProjectManpowerHandler = async (request: NextRequest, { params }: { par
       .where(eq(projectManpower.projectId, parseInt(projectId)))
       .orderBy(desc(projectManpower.createdAt));
 
+    // Fetch all equipment assignments for this project to check which manpower entries are assigned as operators
+    const equipmentAssignments = await db
+      .select({
+        operatorId: projectEquipment.operatorId,
+      })
+      .from(projectEquipment)
+      .where(
+        and(
+          eq(projectEquipment.projectId, parseInt(projectId)),
+          eq(projectEquipment.status, 'active')
+        )
+      );
+
+    // Create a set of manpower IDs that are assigned to equipment
+    const manpowerAssignedToEquipment = new Set(
+      equipmentAssignments
+        .map(eq => eq.operatorId)
+        .filter((id): id is number => id !== null)
+    );
+
     // Calculate total cost for each manpower entry
+    // If manpower is assigned to equipment, set effective rate to 0 (equipment rate includes operator cost)
     const manpowerWithCost = manpower.map(item => {
       const daysWorked = item.actualDays || item.totalDays || 0;
-      const dailyRate = Number(item.dailyRate) || 0;
-      const totalCost = daysWorked * dailyRate;
+      const originalDailyRate = Number(item.dailyRate) || 0;
+      
+      // Check if this manpower entry is assigned to equipment
+      const isAssignedToEquipment = manpowerAssignedToEquipment.has(item.id);
+      
+      // If assigned to equipment, use 0 rate (equipment rate already includes operator)
+      // Otherwise, use the original daily rate
+      const effectiveDailyRate = isAssignedToEquipment ? 0 : originalDailyRate;
+      const totalCost = daysWorked * effectiveDailyRate;
       
       return {
         ...item,
+        dailyRate: originalDailyRate, // Keep original rate for display
+        effectiveDailyRate: effectiveDailyRate, // Effective rate for calculation (0 if assigned to equipment)
         total_cost: totalCost,
+        isAssignedToEquipment: isAssignedToEquipment, // Flag to indicate if assigned to equipment
         type: 'manpower' // Add type for frontend categorization
       };
     });

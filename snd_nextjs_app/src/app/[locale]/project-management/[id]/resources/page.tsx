@@ -104,6 +104,8 @@ interface ProjectResource {
   worker_name?: string;
   job_title?: string;
   daily_rate?: number;
+  effective_daily_rate?: number;
+  is_assigned_to_equipment?: boolean;
   days_worked?: number;
   start_date?: string;
   end_date?: string;
@@ -259,7 +261,15 @@ export default function ProjectResourcesPage() {
           'Unnamed Resource',
         description: resource.description,
         quantity: resource.quantity,
-        unit_cost: resource.unitCost ? parseFloat(resource.unitCost) : resource.hourlyRate ? parseFloat(resource.hourlyRate) : resource.dailyRate ? parseFloat(resource.dailyRate) : undefined,
+        unit_cost: resource.unitCost 
+          ? parseFloat(resource.unitCost) 
+          : resource.hourlyRate 
+            ? parseFloat(resource.hourlyRate) 
+            : resource.effectiveDailyRate !== undefined
+              ? parseFloat(resource.effectiveDailyRate)
+              : resource.dailyRate 
+                ? parseFloat(resource.dailyRate) 
+                : undefined,
         date: resource.date || resource.startDate || resource.purchaseDate || resource.expenseDate,
         status: resource.status,
         notes: resource.notes,
@@ -300,6 +310,10 @@ export default function ProjectResourcesPage() {
         worker_name: resource.workerName,
         job_title: resource.jobTitle,
         daily_rate: resource.dailyRate ? parseFloat(resource.dailyRate) : undefined,
+        effective_daily_rate: resource.effectiveDailyRate !== undefined 
+          ? parseFloat(resource.effectiveDailyRate) 
+          : (resource.dailyRate ? parseFloat(resource.dailyRate) : undefined),
+        is_assigned_to_equipment: resource.isAssignedToEquipment || false,
         days_worked: resource.daysWorked,
         start_date: resource.startDate,
         end_date: resource.endDate,
@@ -383,10 +397,14 @@ export default function ProjectResourcesPage() {
                return resource.totalDays ? resource.totalDays : 0;
              })();
              
-             const dailyRate = resource.dailyRate ? parseFloat(resource.dailyRate) : 0;
+             // Use effective daily rate if available (0 if assigned to equipment), otherwise use dailyRate
+             const effectiveDailyRate = resource.effectiveDailyRate !== undefined 
+               ? parseFloat(resource.effectiveDailyRate) 
+               : (resource.dailyRate ? parseFloat(resource.dailyRate) : 0);
              
-             // Calculate total cost: daily rate * calculated total days
-             return dailyRate * calculatedTotalDays;
+             // Calculate total cost: effective daily rate * calculated total days
+             // If assigned to equipment, cost is 0 (included in equipment rate)
+             return effectiveDailyRate * calculatedTotalDays;
            } else if (resource.type === 'equipment') {
              // For equipment, calculate usage hours from dates first, then calculate cost
              const calculatedUsageHours = (() => {
@@ -807,10 +825,16 @@ export default function ProjectResourcesPage() {
           ? calculatedTotalDays 
           : (resource.totalDays ? resource.totalDays : 0);
         
-        const dailyRate = resource.dailyRate ? parseFloat(resource.dailyRate) : 0;
+        // Use effectiveDailyRate if available (0 if assigned to equipment), otherwise use dailyRate
+        const effectiveDailyRate = resource.effectiveDailyRate !== undefined 
+          ? parseFloat(resource.effectiveDailyRate) 
+          : (resource.dailyRate ? parseFloat(resource.dailyRate) : 0);
+        const originalDailyRate = resource.dailyRate ? parseFloat(resource.dailyRate) : 0;
+        const isAssignedToEquipment = resource.isAssignedToEquipment || false;
         
-        // Calculate total cost: daily rate * calculated total days
-        const totalCost = dailyRate * totalDays;
+        // Calculate total cost: effective daily rate * calculated total days
+        // If assigned to equipment, cost is 0 (included in equipment rate)
+        const totalCost = effectiveDailyRate * totalDays;
         
         // Handle employee data - check for employeeFirstName/employeeLastName from JOIN (same as initial fetchData)
         const employee = (resource.employeeFirstName || resource.employeeLastName)
@@ -850,7 +874,7 @@ export default function ProjectResourcesPage() {
           name: resource.name || resource.title || resource.workerName || resource.equipmentName || resource.materialName || resource.jobTitle || resource.companyName || 'Unnamed Resource',
           description: resource.description,
           quantity: resource.quantity,
-          unit_cost: dailyRate || undefined,
+          unit_cost: originalDailyRate || undefined,
           total_cost: totalCost > 0 ? totalCost : undefined,
           date: resource.startDate,
           status: resource.status,
@@ -862,7 +886,9 @@ export default function ProjectResourcesPage() {
           employee_file_number: resource.employeeFileNumber || '-',
           worker_name: resource.workerName,
           job_title: resource.jobTitle,
-          daily_rate: dailyRate || undefined,
+          daily_rate: originalDailyRate || undefined,
+          effective_daily_rate: effectiveDailyRate || undefined,
+          is_assigned_to_equipment: isAssignedToEquipment,
           days_worked: resource.daysWorked,
           start_date: resource.startDate,
           end_date: resource.endDate,
@@ -1703,7 +1729,18 @@ export default function ProjectResourcesPage() {
                               {/* Rates Column */}
                               <TableCell>
                                 <div className="text-sm">
-                                  {resource.daily_rate ? `SAR ${resource.daily_rate}/day` : '-'}
+                                  {resource.is_assigned_to_equipment ? (
+                                    <div className="flex flex-col">
+                                      <span className="text-muted-foreground line-through">
+                                        {resource.daily_rate ? `SAR ${resource.daily_rate}/day` : '-'}
+                                      </span>
+                                      <span className="text-xs text-blue-600 font-medium">
+                                        Included in Equipment
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    resource.daily_rate ? `SAR ${resource.daily_rate}/day` : '-'
+                                  )}
                                 </div>
                               </TableCell>
 
@@ -1950,9 +1987,20 @@ export default function ProjectResourcesPage() {
                           {/* Cost Column - Common for all types (except expenses, which already show Amount) */}
                           {type !== 'expense' && (
                             <TableCell>
-                              <div className="text-sm font-medium">
-                                SAR {(resource.total_cost || 0).toLocaleString()}
-                              </div>
+                              {type === 'manpower' && resource.is_assigned_to_equipment ? (
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-medium text-muted-foreground line-through">
+                                    SAR {(resource.daily_rate && resource.total_days ? (resource.daily_rate * resource.total_days).toLocaleString() : '0')}
+                                  </span>
+                                  <span className="text-xs text-blue-600 font-medium">
+                                    Included in Equipment
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="text-sm font-medium">
+                                  SAR {(resource.total_cost || 0).toLocaleString()}
+                                </div>
+                              )}
                             </TableCell>
                           )}
 
