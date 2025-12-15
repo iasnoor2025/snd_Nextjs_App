@@ -660,81 +660,105 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* Resource Summary Cards */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* Project Financial Summary */}
         <Card className="border border-gray-100 shadow-sm dark:border-gray-800">
-          <CardContent className="p-4">
-            <h3 className="mb-3 flex items-center text-base font-medium">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center text-base font-semibold">
               <DollarSign className="mr-2 h-4 w-4 text-green-600" />
               Financial Summary
-            </h3>
-            <div className="space-y-3">
-              <div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Total Cost</span>
-                  <span className="text-sm font-medium">{formatCurrency(grandTotal)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Budget</span>
-                  <span className="text-sm font-medium">
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-4">
+              {/* Financial Metrics */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                  <span className="text-sm font-medium text-gray-600">Budget</span>
+                  <span className="text-sm font-semibold text-gray-900">
                     {formatCurrency(Number(project.budget))}
                   </span>
                 </div>
-
+                <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                  <span className="text-sm font-medium text-gray-600">Total Spent</span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    {formatCurrency(grandTotal)}
+                  </span>
+                </div>
                 {(() => {
                   const balance = Number(project.budget) - grandTotal;
                   const isProfitable = balance >= 0;
+                  const budget = Number(project.budget) || 1;
+                  const profitPercentage = budget > 0 
+                    ? Math.round((balance / budget) * 100) 
+                    : 0;
                   return (
-                    <div className="mt-1 flex justify-between">
-                      <span className="text-sm text-gray-500">Balance</span>
-                      <span
-                        className={`text-sm font-medium ${isProfitable ? 'text-green-600' : 'text-red-600'}`}
-                      >
-                        {formatCurrency(balance)}
-                      </span>
-                    </div>
+                    <>
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-sm font-semibold text-gray-900">Remaining</span>
+                        <span
+                          className={`text-sm font-bold ${isProfitable ? 'text-green-600' : 'text-red-600'}`}
+                        >
+                          {formatCurrency(balance)}
+                        </span>
+                      </div>
+                      <div className="pt-2 border-t border-gray-100 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold text-gray-900">
+                            {isProfitable ? 'Profit' : 'Loss'} Margin
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`text-sm font-bold ${isProfitable ? 'text-green-600' : 'text-red-600'}`}
+                            >
+                              {isProfitable ? '+' : ''}{formatCurrency(Math.abs(balance))}
+                            </span>
+                            <Badge
+                              className={
+                                isProfitable
+                                  ? 'bg-green-100 text-green-800 border-green-200 font-semibold'
+                                  : 'bg-red-100 text-red-800 border-red-200 font-semibold'
+                              }
+                            >
+                              {isProfitable ? '+' : ''}{profitPercentage}%
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </>
                   );
                 })()}
               </div>
 
+              {/* Budget Utilization */}
               {(() => {
                 const budget = Number(project.budget) || 1;
                 const budgetPercentage = Math.min(Math.round((grandTotal / budget) * 100), 100);
-                const profitPercentage =
-                  Number(project.budget) > 0
-                    ? Math.round(
-                        (Math.abs(Number(project.budget) - grandTotal) / Number(project.budget)) *
-                          100
-                      )
-                    : 0;
+                const remainingPercentage = 100 - budgetPercentage;
                 const isProfitable = Number(project.budget) - grandTotal >= 0;
                 return (
-                  <>
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-xs">
-                        <span>Budget Utilization</span>
-                        <span>{budgetPercentage}%</span>
-                      </div>
-                      <div className="relative h-2 w-full overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          className={`absolute top-0 left-0 h-full ${isProfitable ? 'bg-green-500' : 'bg-red-500'} rounded-full`}
-                          style={{ width: `${budgetPercentage}%` }}
-                        />
-                      </div>
+                  <div className="space-y-2 rounded-lg bg-gray-50 p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-gray-700">Budget Used</span>
+                      <span className="text-xs font-semibold text-gray-900">
+                        {budgetPercentage}%
+                      </span>
                     </div>
-
-                    <div className="flex items-center justify-center">
-                      <Badge
-                        className={
-                          isProfitable
-                            ? 'border-green-200 bg-green-100 text-green-800'
-                            : 'border-red-200 bg-red-100 text-red-800'
-                        }
-                      >
-                        {isProfitable ? 'Profit' : 'Loss'}: {profitPercentage}%
-                      </Badge>
+                    <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-gray-200">
+                      <div
+                        className="absolute top-0 left-0 h-full bg-blue-500 rounded-full transition-all"
+                        style={{ width: `${budgetPercentage}%` }}
+                      />
                     </div>
-                  </>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-600">
+                        {formatCurrency(grandTotal)} spent
+                      </span>
+                      <span className="font-medium text-gray-700">
+                        {formatCurrency(Number(project.budget) - grandTotal)} remaining
+                      </span>
+                    </div>
+                  </div>
                 );
               })()}
             </div>
@@ -828,58 +852,6 @@ export default function ProjectDetailPage() {
           </CardContent>
         </Card>
 
-        {/* Project Progress Card */}
-        <Card className="border border-gray-100 shadow-sm dark:border-gray-800">
-          <CardContent className="p-4">
-            <h3 className="mb-3 flex items-center text-base font-medium">
-              <BarChart2 className="mr-2 h-4 w-4 text-indigo-600" />
-              Project Progress
-            </h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-500">Overall Progress</span>
-                <span className="text-sm font-medium">
-                  {tasks.length > 0
-                    ? Math.round((getTaskCountByStatus('completed') / tasks.length) * 100)
-                    : 0}
-                  %
-                </span>
-              </div>
-              <Progress
-                value={
-                  tasks.length > 0
-                    ? Math.round((getTaskCountByStatus('completed') / tasks.length) * 100)
-                    : 0
-                }
-                className="h-2"
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">
-                    {getTaskCountByStatus('completed')}
-                  </div>
-                  <p className="text-xs text-gray-500">Completed</p>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {getTaskCountByStatus('in_progress')}
-                  </div>
-                  <p className="text-xs text-gray-500">In Progress</p>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-yellow-600">
-                    {getTaskCountByStatus('pending')}
-                  </div>
-                  <p className="text-xs text-gray-500">Pending</p>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">{getOverdueTasksCount()}</div>
-                  <p className="text-xs text-gray-500">Overdue</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Project Details Tabs - Moved to top for easy access */}
