@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 
-export async function GET({ params }: { params: { id: string } }) {
+export async function GET(_request: any, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     return NextResponse.json({
       success: true,
       message: 'Simple route working',

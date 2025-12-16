@@ -9,12 +9,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import {
   Table,
   TableBody,
@@ -36,12 +34,7 @@ import {
 import ApiService from '@/lib/api-service';
 import { format } from 'date-fns';
 import {
-  AlertCircle,
   ArrowLeft,
-  Building2,
-  CheckCircle,
-  Clock,
-  DollarSign,
   Download,
   Edit,
   FileText,
@@ -50,12 +43,8 @@ import {
   Package,
   Plus,
   Receipt,
-  Search,
   Target,
   Trash2,
-  TrendingDown,
-  TrendingUp,
-  User,
   Users,
   Wrench,
 } from 'lucide-react';
@@ -72,7 +61,6 @@ import {
   TaskDialog,
   TaskList,
 } from './components';
-import { ProjectTask } from './components/TaskList';
 import { ProjectResourcesReportService, ProjectResourceReportData } from '@/lib/services/project-resources-report-service';
 
 type ResourceType = 'manpower' | 'equipment' | 'material' | 'fuel' | 'expense' | 'tasks';
@@ -123,14 +111,18 @@ interface ProjectResource {
   hours_worked?: number;
   usage_hours?: number;
   maintenance_cost?: number;
-  start_date?: string;
-  end_date?: string;
+  equipment_start_date?: string;
+  equipment_end_date?: string;
 
   // Material specific fields
   material_name?: string;
   unit?: string;
   unit_price?: number;
   material_id?: string;
+  orderDate?: string;
+  date_used?: string;
+  dateUsed?: string;
+  order_date?: string;
 
   // Fuel specific fields
   fuel_type?: string;
@@ -141,6 +133,8 @@ interface ProjectResource {
   category?: string;
   expense_description?: string;
   amount?: number;
+  expenseDate?: string;
+  expense_date?: string;
 
   // Task specific fields
   title?: string;
@@ -163,17 +157,6 @@ interface Project {
   budget?: number;
 }
 
-interface ResourceFilters {
-  search?: string;
-  status?: string;
-  dateRange?: { start: Date | null; end: Date | null };
-  employeeId?: string;
-  equipmentId?: string;
-  minRate?: number;
-  maxRate?: number;
-  category?: string;
-  priority?: string;
-}
 
 export default function ProjectResourcesPage() {
   const params = useParams();
@@ -182,7 +165,6 @@ export default function ProjectResourcesPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [resources, setResources] = useState<ProjectResource[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<ResourceFilters>({});
   const locale = params?.locale as string || 'en';
   
   // Pagination state for each tab
@@ -349,7 +331,7 @@ export default function ProjectResourcesPage() {
               const diffTime = Math.abs(end.getTime() - start.getTime());
               const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
               return diffDays;
-            } catch (e) {
+            } catch {
               return resource.totalDays ? resource.totalDays : undefined;
             }
           }
@@ -390,7 +372,7 @@ export default function ProjectResourcesPage() {
                    const diffTime = Math.abs(end.getTime() - start.getTime());
                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
                    return diffDays;
-                 } catch (e) {
+                 } catch {
                    return resource.totalDays ? resource.totalDays : 0;
                  }
                }
@@ -438,7 +420,7 @@ export default function ProjectResourcesPage() {
                    const diffTime = Math.abs(end.getTime() - start.getTime());
                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
                    return diffDays * 10; // 10 hours per day
-                 } catch (e) {
+                 } catch {
                    return resource.estimatedHours ? parseFloat(resource.estimatedHours) : 0;
                  }
                }
@@ -518,7 +500,7 @@ export default function ProjectResourcesPage() {
               const diffTime = Math.abs(end.getTime() - start.getTime());
               const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
               return diffDays * 10; // 10 hours per day
-            } catch (e) {
+            } catch {
               return resource.estimatedHours ? parseFloat(resource.estimatedHours) : undefined;
             }
           }
@@ -527,9 +509,8 @@ export default function ProjectResourcesPage() {
         maintenance_cost: resource.maintenanceCost
           ? parseFloat(resource.maintenanceCost)
           : undefined,
-        start_date: resource.startDate,
-        end_date: resource.endDate,
-        notes: resource.notes,
+        equipment_start_date: resource.startDate,
+        equipment_end_date: resource.endDate,
 
         // Material specific fields
         material_name: resource.name,
@@ -1241,35 +1222,6 @@ export default function ProjectResourcesPage() {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'in_progress':
-        return 'bg-blue-100 text-blue-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'critical':
-        return 'bg-red-100 text-red-800';
-      case 'high':
-        return 'bg-orange-100 text-orange-800';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'low':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
 
   const filterResourcesByType = (type: ResourceType) => {
     return resources.filter(resource => resource.type === type);
@@ -1410,13 +1362,6 @@ export default function ProjectResourcesPage() {
     }
   };
 
-  // Function to update statistics without full page refresh
-  const updateStatistics = () => {
-    // This will trigger a re-render of the statistics cards
-    // The existing filterResourcesByType and calculateTotalCost functions
-    // will automatically use the updated resources state
-    setResources(prevResources => [...prevResources]);
-  };
 
   if (loading) {
     return (

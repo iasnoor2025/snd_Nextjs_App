@@ -35,63 +35,90 @@ export function QuickActions({ userRole, className = '' }: QuickActionsProps) {
       subtitle: 'Manage users, roles & permissions',
       icon: <Users className="h-6 w-6" />,
       variant: 'default',
-      action: () =>     },
+      action: () => {
+        // TODO: Implement navigation
+      }
+    },
     {
       id: 'analytics',
       title: 'Analytics',
       subtitle: 'Business intelligence & reports',
       icon: <BarChart3 className="h-6 w-6" />,
       variant: 'secondary',
-      action: () =>     },
+      action: () => {
+        // TODO: Implement navigation
+      }
+    },
     {
       id: 'payroll',
       title: 'Payroll',
       subtitle: 'Salary & compensation management',
       icon: <DollarSign className="h-6 w-6" />,
       variant: 'outline',
-      action: () =>     },
+      action: () => {
+        // TODO: Implement navigation
+      }
+    },
     {
       id: 'settings',
       title: 'Settings',
       subtitle: 'System configuration',
       icon: <Settings className="h-6 w-6" />,
       variant: 'ghost',
-      action: () =>     },
+      action: () => {
+        // TODO: Implement navigation
+      }
+    },
     {
       id: 'equipment',
       title: 'Equipment',
       subtitle: 'Manage equipment & maintenance',
       icon: <Wrench className="h-6 w-6" />,
       variant: 'default',
-      action: () =>     },
+      action: () => {
+        // TODO: Implement navigation
+      }
+    },
     {
       id: 'rentals',
       title: 'Rentals',
       subtitle: 'Equipment rental tracking',
       icon: <Truck className="h-6 w-6" />,
       variant: 'secondary',
-      action: () =>     },
+      action: () => {
+        // TODO: Implement navigation
+      }
+    },
     {
       id: 'documents',
       title: 'Documents',
       subtitle: 'File & document management',
       icon: <FileText className="h-6 w-6" />,
       variant: 'outline',
-      action: () =>     },
+      action: () => {
+        // TODO: Implement navigation
+      }
+    },
     {
       id: 'projects',
       title: 'Projects',
       subtitle: 'Project planning & tracking',
       icon: <FolderOpen className="h-6 w-6" />,
       variant: 'ghost',
-      action: () =>     },
+      action: () => {
+        // TODO: Implement navigation
+      }
+    },
     {
       id: 'employee-management',
       title: 'Employee Management',
       subtitle: 'Manage employee information & profiles',
       icon: <UserCheck className="h-6 w-6" />,
       variant: 'default',
-      action: () =>     }
+      action: () => {
+        // TODO: Implement navigation
+      }
+    }
   ];
 
   return (
