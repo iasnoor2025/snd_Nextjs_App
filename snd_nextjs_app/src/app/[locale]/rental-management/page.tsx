@@ -1251,7 +1251,8 @@ export default function RentalManagementPage() {
                 <SearchableSelect
                   value={formData.customerId}
                   onValueChange={value => {
-                                        setFormErrors(prev => ({ ...prev, customerId: '' }));
+                    setFormData(prev => ({ ...prev, customerId: value }));
+                    setFormErrors(prev => ({ ...prev, customerId: '' }));
                   }}
                   options={customers.map(customer => ({
                     value: customer.id.toString(),
