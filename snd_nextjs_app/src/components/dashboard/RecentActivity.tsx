@@ -83,11 +83,11 @@ export function RecentActivity({ activities, onHideSection, currentUser, onRefre
       if (diffInMinutes < 1) {
         return t('dashboard.justNow');
       } else if (diffInMinutes < 60) {
-        return t('dashboard.minutesAgo', { minutes: diffInMinutes });
+        return t('dashboard.minutesAgo', { minutes: String(diffInMinutes) });
       } else if (diffInHours < 24) {
-        return t('dashboard.hoursAgo', { hours: diffInHours });
+        return t('dashboard.hoursAgo', { hours: String(diffInHours) });
       } else if (diffInDays < 7) {
-        return t('dashboard.daysAgo', { days: diffInDays });
+        return t('dashboard.daysAgo', { days: String(diffInDays) });
       } else {
         // Show full date and time for older entries with Saudi Arabia timezone
         return date.toLocaleString(isRTL ? 'ar-SA' : 'en-US', {

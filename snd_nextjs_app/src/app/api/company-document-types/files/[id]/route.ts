@@ -1,7 +1,7 @@
 import { PermissionConfigs, withPermission } from '@/lib/rbac/api-middleware';
 import { NextRequest, NextResponse } from 'next/server';
 
-export const DELETE = withPermission(async (
+export const DELETE = withPermission(PermissionConfigs.company.manage)(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) => {
@@ -37,4 +37,4 @@ export const DELETE = withPermission(async (
       { status: 500 }
     );
   }
-}, PermissionConfigs.company.manage);
+});

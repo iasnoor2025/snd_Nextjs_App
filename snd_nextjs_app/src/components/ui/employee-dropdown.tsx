@@ -18,6 +18,7 @@ export interface Employee {
   hourly_rate?: number;
   employee_number?: string;
   file_number?: string;
+  iqama_number?: string;
   email?: string;
   phone?: string;
   department?: string | { name: string };

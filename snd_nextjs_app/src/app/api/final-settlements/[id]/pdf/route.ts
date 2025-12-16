@@ -41,7 +41,10 @@ export async function GET(
     }
 
     const { searchParams } = new URL(request.url);
-    language = searchParams.get('language') || 'bilingual'; // 'en', 'ar', or 'bilingual'
+    const langParam = searchParams.get('language') || 'bilingual';
+    language = (langParam === 'en' || langParam === 'ar' || langParam === 'bilingual') 
+      ? langParam 
+      : 'bilingual';
 
     // Fetch settlement data
     const settlement = await db
@@ -72,8 +75,8 @@ export async function GET(
       totalServiceMonths: settlementData.totalServiceMonths,
       totalServiceDays: settlementData.totalServiceDays,
       lastBasicSalary: parseFloat(settlementData.lastBasicSalary),
-      unpaidSalaryMonths: settlementData.unpaidSalaryAmount > 0 && parseFloat(settlementData.lastBasicSalary) > 0 
-        ? Math.round((parseFloat(settlementData.unpaidSalaryAmount) / parseFloat(settlementData.lastBasicSalary)) * 10) / 10
+      unpaidSalaryMonths: parseFloat(settlementData.unpaidSalaryAmount || '0') > 0 && parseFloat(settlementData.lastBasicSalary) > 0 
+        ? Math.round((parseFloat(settlementData.unpaidSalaryAmount || '0') / parseFloat(settlementData.lastBasicSalary)) * 10) / 10
         : parseFloat(settlementData.unpaidSalaryMonths || '0'),
       unpaidSalaryAmount: parseFloat(settlementData.unpaidSalaryAmount || '0'),
       endOfServiceBenefit: parseFloat(settlementData.endOfServiceBenefit),
@@ -82,8 +85,6 @@ export async function GET(
       accruedVacationAmount: parseFloat(settlementData.accruedVacationAmount || '0'),
       otherBenefits: parseFloat(settlementData.otherBenefits || '0'),
       otherBenefitsDescription: settlementData.otherBenefitsDescription || undefined,
-      overtimeHours: parseFloat(settlementData.overtimeHours || '0'),
-      overtimeAmount: parseFloat(settlementData.overtimeAmount || '0'),
       pendingAdvances: parseFloat(settlementData.pendingAdvances || '0'),
       equipmentDeductions: parseFloat(settlementData.equipmentDeductions || '0'),
       otherDeductions: parseFloat(settlementData.otherDeductions || '0'),
@@ -264,8 +265,8 @@ export async function POST(
       totalServiceMonths: settlementData.totalServiceMonths,
       totalServiceDays: settlementData.totalServiceDays,
       lastBasicSalary: parseFloat(settlementData.lastBasicSalary),
-      unpaidSalaryMonths: settlementData.unpaidSalaryAmount > 0 && parseFloat(settlementData.lastBasicSalary) > 0 
-        ? Math.round((parseFloat(settlementData.unpaidSalaryAmount) / parseFloat(settlementData.lastBasicSalary)) * 10) / 10
+      unpaidSalaryMonths: parseFloat(settlementData.unpaidSalaryAmount || '0') > 0 && parseFloat(settlementData.lastBasicSalary) > 0 
+        ? Math.round((parseFloat(settlementData.unpaidSalaryAmount || '0') / parseFloat(settlementData.lastBasicSalary)) * 10) / 10
         : parseFloat(settlementData.unpaidSalaryMonths || '0'),
       unpaidSalaryAmount: parseFloat(settlementData.unpaidSalaryAmount || '0'),
       endOfServiceBenefit: parseFloat(settlementData.endOfServiceBenefit),
@@ -274,8 +275,6 @@ export async function POST(
       accruedVacationAmount: parseFloat(settlementData.accruedVacationAmount || '0'),
       otherBenefits: parseFloat(settlementData.otherBenefits || '0'),
       otherBenefitsDescription: settlementData.otherBenefitsDescription || undefined,
-      overtimeHours: parseFloat(settlementData.overtimeHours || '0'),
-      overtimeAmount: parseFloat(settlementData.overtimeAmount || '0'),
       pendingAdvances: parseFloat(settlementData.pendingAdvances || '0'),
       equipmentDeductions: parseFloat(settlementData.equipmentDeductions || '0'),
       otherDeductions: parseFloat(settlementData.otherDeductions || '0'),

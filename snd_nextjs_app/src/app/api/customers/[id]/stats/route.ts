@@ -77,8 +77,11 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       `);
 
       if (invoiceResult.rows && invoiceResult.rows.length > 0) {
-        invoiceCount = parseInt(invoiceResult.rows[0].count || '0', 10);
-        totalInvoiced = parseFloat(invoiceResult.rows[0].total || '0');
+        const row = invoiceResult.rows[0] as { count?: string | number; total?: string | number };
+        const countValue = row?.count;
+        const totalValue = row?.total;
+        invoiceCount = typeof countValue === 'number' ? countValue : parseInt(String(countValue ?? '0'), 10);
+        totalInvoiced = typeof totalValue === 'number' ? totalValue : parseFloat(String(totalValue ?? '0'));
       }
     } catch (error) {
       console.warn('Could not fetch invoice count:', error);

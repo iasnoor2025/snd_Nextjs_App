@@ -186,7 +186,7 @@ export function EquipmentDropdown({
   }
 
   return (
-    <div className={`space-y-2 ${className}`}>
+    <div className={className || ''}>
       {label && (
         <Label
           htmlFor="equipment-select"
@@ -240,32 +240,9 @@ export function EquipmentDropdown({
                     key={item.id}
                     value={item.id}
                     className="cursor-pointer hover:bg-gray-100"
+                    textValue={item.name}
                   >
-                    <div className="flex flex-col">
-                      <span className="font-medium">
-                        {item.name}
-                      </span>
-                      {item.model && (
-                        <span className="text-sm text-blue-600">
-                          Model: {item.model}
-                        </span>
-                      )}
-                      {item.manufacturer && (
-                        <span className="text-xs text-gray-500">
-                          {item.manufacturer}
-                        </span>
-                      )}
-                      {item.doorNumber && (
-                        <span className="text-xs text-green-600 font-mono">
-                          Door: {item.doorNumber}
-                        </span>
-                      )}
-                      {(item.dailyRate || item.daily_rate) && (
-                        <span className="text-xs text-purple-600">
-                          Daily Rate: SAR {item.dailyRate || item.daily_rate}
-                        </span>
-                      )}
-                    </div>
+                    {item.name}
                   </SelectItem>
                 ))}
               {!searchTerm && equipment.length > 100 && (
@@ -287,12 +264,11 @@ export function EquipmentDropdown({
         </SelectContent>
       </Select>
 
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
 
-      {selectedEquipment && (
-        <div className="text-xs text-gray-500">
+      {selectedEquipment && label && (
+        <div className="text-xs text-gray-500 mt-1">
           Selected: {selectedEquipment.name}
-          {selectedEquipment.model && ` (${selectedEquipment.model})`}
           {selectedEquipment.doorNumber && ` - Door: ${selectedEquipment.doorNumber}`}
         </div>
       )}

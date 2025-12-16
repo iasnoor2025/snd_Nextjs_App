@@ -37,6 +37,8 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useParams } from 'next/navigation';
+import { useI18n } from '@/hooks/use-i18n';
+import { EquipmentDropdown } from '@/components/ui/equipment-dropdown';
 interface Customer {
   id: number;
   name: string;
@@ -100,6 +102,7 @@ interface FormData {
 export default function CreateQuotationPage() {
   const params = useParams();
   const locale = params?.locale as string || 'en';
+  const { t } = useI18n();
   const [formData, setFormData] = useState<FormData>({
     customer_id: 0,
     quotation_number: '',
@@ -225,7 +228,7 @@ export default function CreateQuotationPage() {
     e.preventDefault();
 
     if (formData.quotation_items.length === 0) {
-      toast.error('Please add at least one quotation item');
+      toast.error(t('quotation.quotation_management.please_add_item'));
       return;
     }
 
@@ -240,33 +243,32 @@ export default function CreateQuotationPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create quotation');
+        throw new Error(t('quotation.quotation_management.failed_to_create_quotation'));
       }
 
       const result = await response.json();
-      toast.success('Quotation created successfully');
+      toast.success(t('quotation.quotation_management.quotation_created_successfully'));
 
       // Redirect to the new quotation
       window.location.href = `/${locale}/quotation-management/${result.data.id}`;
     } catch (error) {
       
-      toast.error('Failed to create quotation');
+      toast.error(t('quotation.quotation_management.failed_to_create_quotation'));
     } finally {
       setLoading(false);
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-  };
+  const formatCurrency = (amount: number) =>
+    `SAR ${amount.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Loading form data...</div>
+        <div className="text-lg">{t('quotation.quotation_management.loading_form_data')}</div>
       </div>
     );
   }
@@ -278,12 +280,12 @@ export default function CreateQuotationPage() {
           <Link href={`/${locale}/quotation-management`}>
             <Button variant="outline" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Quotations
+              {t('quotation.quotation_management.back_to_quotations')}
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold">Create Quotation</h1>
-            <p className="text-muted-foreground">Create a new quotation for equipment rental</p>
+            <h1 className="text-2xl font-bold">{t('quotation.quotation_management.create_quotation')}</h1>
+            <p className="text-muted-foreground">{t('quotation.quotation_management.create_quotation_description')}</p>
           </div>
         </div>
       </div>
@@ -297,24 +299,24 @@ export default function CreateQuotationPage() {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <FileText className="h-5 w-5" />
-                  <span>Basic Information</span>
+                  <span>{t('quotation.quotation_management.basic_information')}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="quotation_number">Quotation Number</Label>
+                    <Label htmlFor="quotation_number">{t('quotation.quotation_management.quotation_number')}</Label>
                     <Input
                       id="quotation_number"
                       value={formData.quotation_number}
                       onChange={e =>
                         setFormData(prev => ({ ...prev, quotation_number: e.target.value }))
                       }
-                      placeholder="Auto-generated"
+                      placeholder={t('quotation.quotation_management.auto_generated')}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="customer_id">Customer</Label>
+                    <Label htmlFor="customer_id">{t('quotation.quotation_management.customer')}</Label>
                     <Select
                       value={formData.customer_id.toString()}
                       onValueChange={value =>
@@ -322,7 +324,7 @@ export default function CreateQuotationPage() {
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select customer" />
+                        <SelectValue placeholder={t('quotation.quotation_management.select_customer')} />
                       </SelectTrigger>
                       <SelectContent>
                         {customers.map(customer => (
@@ -334,7 +336,7 @@ export default function CreateQuotationPage() {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="issue_date">Issue Date</Label>
+                    <Label htmlFor="issue_date">{t('quotation.quotation_management.issue_date')}</Label>
                     <Input
                       id="issue_date"
                       type="date"
@@ -343,7 +345,7 @@ export default function CreateQuotationPage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="valid_until">Valid Until</Label>
+                    <Label htmlFor="valid_until">{t('quotation.quotation_management.valid_until')}</Label>
                     <Input
                       id="valid_until"
                       type="date"
@@ -354,7 +356,7 @@ export default function CreateQuotationPage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="status">Status</Label>
+                    <Label htmlFor="status">{t('quotation.quotation_management.status')}</Label>
                     <Select
                       value={formData.status}
                       onValueChange={value => setFormData(prev => ({ ...prev, status: value }))}
@@ -363,10 +365,10 @@ export default function CreateQuotationPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="sent">Sent</SelectItem>
-                        <SelectItem value="approved">Approved</SelectItem>
-                        <SelectItem value="rejected">Rejected</SelectItem>
+                        <SelectItem value="draft">{t('quotation.status.draft')}</SelectItem>
+                        <SelectItem value="sent">{t('quotation.status.sent')}</SelectItem>
+                        <SelectItem value="approved">{t('quotation.status.approved')}</SelectItem>
+                        <SelectItem value="rejected">{t('quotation.status.rejected')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -380,73 +382,43 @@ export default function CreateQuotationPage() {
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center space-x-2">
                     <Package className="h-5 w-5" />
-                    <span>Quotation Items</span>
+                    <span>{t('quotation.quotation_management.quotation_items')}</span>
                   </CardTitle>
                   <Button type="button" onClick={addQuotationItem}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Item
+                    {t('quotation.quotation_management.add_item')}
                   </Button>
                 </div>
               </CardHeader>
               <CardContent>
                 {formData.quotation_items.length === 0 ? (
                   <p className="text-muted-foreground text-center py-8">
-                    No items added yet. Click &quot;Add Item&quot; to get started.
+                    {t('quotation.quotation_management.no_items_added')}
                   </p>
                 ) : (
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Equipment</TableHead>
-                        <TableHead>Operator</TableHead>
-                        <TableHead>Quantity</TableHead>
-                        <TableHead>Rate</TableHead>
-                        <TableHead>Rate Type</TableHead>
-                        <TableHead>Total</TableHead>
-                        <TableHead>Actions</TableHead>
+                        <TableHead>{t('quotation.quotation_management.equipment')}</TableHead>
+                        <TableHead>{t('quotation.quotation_management.quantity')}</TableHead>
+                        <TableHead>{t('quotation.quotation_management.rate')}</TableHead>
+                        <TableHead>{t('quotation.quotation_management.rate_type')}</TableHead>
+                        <TableHead>{t('quotation.quotation_management.total_amount')}</TableHead>
+                        <TableHead>{t('quotation.quotation_management.actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {formData.quotation_items.map((item, index) => (
                         <TableRow key={index}>
-                          <TableCell>
-                            <Select
-                              value={item.equipment_id.toString()}
+                          <TableCell className="w-[300px]">
+                            <EquipmentDropdown
+                              value={item.equipment_id > 0 ? item.equipment_id.toString() : undefined}
                               onValueChange={value =>
                                 updateQuotationItem(index, 'equipment_id', parseInt(value))
                               }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select equipment" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {equipment.map(eq => (
-                                  <SelectItem key={eq.id} value={eq.id.toString()}>
-                                    {eq.name} - {eq.model}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell>
-                            <Select
-                              value={item.operator_id?.toString() || 'none'}
-                              onValueChange={value =>
-                                updateQuotationItem(index, 'operator_id', value === 'none' ? null : parseInt(value))
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select operator" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">No operator</SelectItem>
-                                {operators.map(op => (
-                                  <SelectItem key={op.id} value={op.id.toString()}>
-                                    {op.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                              placeholder={t('quotation.quotation_management.select_equipment')}
+                              showSearch={true}
+                            />
                           </TableCell>
                           <TableCell>
                             <Input
@@ -480,10 +452,10 @@ export default function CreateQuotationPage() {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="hourly">Hourly</SelectItem>
-                                <SelectItem value="daily">Daily</SelectItem>
-                                <SelectItem value="weekly">Weekly</SelectItem>
-                                <SelectItem value="monthly">Monthly</SelectItem>
+                                <SelectItem value="hourly">{t('quotation.quotation_management.hourly')}</SelectItem>
+                                <SelectItem value="daily">{t('quotation.quotation_management.daily')}</SelectItem>
+                                <SelectItem value="weekly">{t('quotation.quotation_management.weekly')}</SelectItem>
+                                <SelectItem value="monthly">{t('quotation.quotation_management.monthly')}</SelectItem>
                               </SelectContent>
                             </Select>
                           </TableCell>
@@ -513,28 +485,28 @@ export default function CreateQuotationPage() {
             {/* Notes and Terms */}
             <Card>
               <CardHeader>
-                <CardTitle>Notes & Terms</CardTitle>
+                <CardTitle>{t('quotation.quotation_management.notes_terms')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="notes">Notes</Label>
+                  <Label htmlFor="notes">{t('quotation.quotation_management.notes')}</Label>
                   <Textarea
                     id="notes"
                     value={formData.notes}
                     onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                    placeholder="Additional notes for the quotation..."
+                    placeholder={t('quotation.quotation_management.additional_notes')}
                     rows={3}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="terms_and_conditions">Terms & Conditions</Label>
+                  <Label htmlFor="terms_and_conditions">{t('quotation.quotation_management.terms_conditions')}</Label>
                   <Textarea
                     id="terms_and_conditions"
                     value={formData.terms_and_conditions}
                     onChange={e =>
                       setFormData(prev => ({ ...prev, terms_and_conditions: e.target.value }))
                     }
-                    placeholder="Terms and conditions..."
+                    placeholder={t('quotation.quotation_management.terms_conditions_placeholder')}
                     rows={6}
                   />
                 </div>
@@ -549,13 +521,13 @@ export default function CreateQuotationPage() {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <DollarSign className="h-5 w-5" />
-                  <span>Summary</span>
+                  <span>{t('quotation.quotation_management.summary')}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 gap-4">
                   <div className="bg-green-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600">Subtotal</p>
+                    <p className="text-sm text-gray-600">{t('quotation.quotation_management.subtotal')}</p>
                     <p className="text-2xl font-bold text-green-600">
                       {formatCurrency(formData.subtotal)}
                     </p>
@@ -563,7 +535,7 @@ export default function CreateQuotationPage() {
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-gray-600">Discount</p>
+                        <p className="text-sm text-gray-600">{t('quotation.quotation_management.discount')}</p>
                         <p className="text-lg font-semibold text-blue-600">
                           {formData.discount_percentage}%
                         </p>
@@ -590,7 +562,7 @@ export default function CreateQuotationPage() {
                   <div className="bg-yellow-50 p-4 rounded-lg">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-gray-600">Tax</p>
+                        <p className="text-sm text-gray-600">{t('quotation.quotation_management.tax')}</p>
                         <p className="text-lg font-semibold text-yellow-600">
                           {formData.tax_percentage}%
                         </p>
@@ -613,7 +585,7 @@ export default function CreateQuotationPage() {
                     <p className="text-sm text-yellow-600">{formatCurrency(formData.tax_amount)}</p>
                   </div>
                   <div className="bg-purple-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600">Total</p>
+                    <p className="text-sm text-gray-600">{t('quotation.quotation_management.total_amount')}</p>
                     <p className="text-2xl font-bold text-purple-600">
                       {formatCurrency(formData.total_amount)}
                     </p>
@@ -625,20 +597,20 @@ export default function CreateQuotationPage() {
             {/* Actions */}
             <Card>
               <CardHeader>
-                <CardTitle>Actions</CardTitle>
+                <CardTitle>{t('quotation.quotation_management.actions')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <Button type="submit" className="w-full" disabled={loading}>
                   <Save className="h-4 w-4 mr-2" />
-                  {loading ? 'Creating...' : 'Create Quotation'}
+                  {loading ? t('quotation.quotation_management.creating') : t('quotation.quotation_management.create_quotation')}
                 </Button>
                 <Button type="button" variant="outline" className="w-full">
                   <FileText className="h-4 w-4 mr-2" />
-                  Save as Draft
+                  {t('quotation.quotation_management.save_as_draft')}
                 </Button>
                 <Button type="button" variant="outline" className="w-full">
                   <Calendar className="h-4 w-4 mr-2" />
-                  Schedule Send
+                  {t('quotation.quotation_management.schedule_send')}
                 </Button>
               </CardContent>
             </Card>

@@ -100,7 +100,7 @@ export async function GET(
         const downloadFileName = `${customer.companyName || 'Customer'}-${formattedDocumentType}.${fileExtension}`;
         
         // Return the file with proper download headers
-        return new NextResponse(buffer, {
+        return new NextResponse(new Uint8Array(buffer) as BodyInit, {
           headers: {
             'Content-Type': documentRecord.mimeType || 'application/octet-stream',
             'Content-Disposition': `attachment; filename="${encodeURIComponent(downloadFileName)}"`,

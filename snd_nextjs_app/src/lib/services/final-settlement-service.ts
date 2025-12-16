@@ -471,8 +471,21 @@ export class FinalSettlementService {
         // Use actual days in the month of vacation start date
         const vacationStart = new Date(vacationStartDate);
         const daysInMonth = this.getDaysInMonth(vacationStart);
-        const hourlyRate = parseFloat(employeeData.basicSalary?.toString() || '0') / daysInMonth / 8; // Daily rate / 8 hours
-        const overtimeRate = parseFloat(employeeData.overtimeRateMultiplier?.toString() || '1.5');
+        const hourlyRate = currentBasicSalary / daysInMonth / 8; // Daily rate / 8 hours
+        
+        // Get employee's overtime rate multiplier
+        const employeeOvertime = await db
+          .select({
+            overtimeRateMultiplier: employees.overtimeRateMultiplier,
+          })
+          .from(employees)
+          .where(eq(employees.id, employeeId))
+          .limit(1);
+        
+        const overtimeRate = employeeOvertime.length > 0 && employeeOvertime[0]?.overtimeRateMultiplier
+          ? parseFloat(employeeOvertime[0].overtimeRateMultiplier)
+          : 1.5;
+        
         overtimeAmount = additionalData.overtimeHours * hourlyRate * overtimeRate;
       }
 
@@ -596,21 +609,7 @@ export class FinalSettlementService {
       const hireDate = new Date(emp.hireDate!);
       const lastWorking = new Date(lastWorkingDate);
 
-      // Get unpaid salary information
-      const salaryInfo = await this.getUnpaidSalaryInfo(employeeId);
-      
-      // Override unpaid salary amount if manual value is provided
-      if (additionalData?.manualUnpaidSalary && additionalData.manualUnpaidSalary > 0) {
-        salaryInfo.unpaidAmount = additionalData.manualUnpaidSalary;
-        // Calculate months based on manual amount and current salary
-        const currentSalary = currentBasicSalary + currentAllowances;
-        if (currentSalary > 0) {
-          salaryInfo.unpaidMonths = Math.round((additionalData.manualUnpaidSalary / currentSalary) * 10) / 10; // Round to 1 decimal
-          salaryInfo.totalUnpaidMonths = salaryInfo.unpaidMonths;
-        }
-      }
-
-      // Get latest salary information
+      // Get latest salary information first (needed for calculations)
       const latestSalary = await db
         .select({
           basicSalary: employeeSalaries.basicSalary,
@@ -628,6 +627,20 @@ export class FinalSettlementService {
       const currentAllowances = latestSalary.length > 0 
         ? parseFloat(latestSalary[0]!.allowances || '0') 
         : 0;
+
+      // Get unpaid salary information
+      const salaryInfo = await this.getUnpaidSalaryInfo(employeeId);
+      
+      // Override unpaid salary amount if manual value is provided
+      if (additionalData?.manualUnpaidSalary && additionalData.manualUnpaidSalary > 0) {
+        salaryInfo.unpaidAmount = additionalData.manualUnpaidSalary;
+        // Calculate months based on manual amount and current salary
+        const currentSalary = currentBasicSalary + currentAllowances;
+        if (currentSalary > 0) {
+          salaryInfo.unpaidMonths = Math.round((additionalData.manualUnpaidSalary / currentSalary) * 10) / 10; // Round to 1 decimal
+          salaryInfo.totalUnpaidMonths = salaryInfo.unpaidMonths;
+        }
+      }
 
       // Calculate end of service benefits using current basic salary
       const endOfServiceBenefit = this.calculateEndOfServiceBenefit(
@@ -671,8 +684,21 @@ export class FinalSettlementService {
         // Calculate overtime based on hours and employee's overtime rate
         // Use actual days in the month of last working date
         const overtimeDaysInMonth = this.getDaysInMonth(lastWorking);
-        const hourlyRate = parseFloat(employeeData.basicSalary?.toString() || '0') / overtimeDaysInMonth / 8; // Daily rate / 8 hours
-        const overtimeRate = parseFloat(employeeData.overtimeRateMultiplier?.toString() || '1.5');
+        const hourlyRate = currentBasicSalary / overtimeDaysInMonth / 8; // Daily rate / 8 hours
+        
+        // Get employee's overtime rate multiplier
+        const employeeOvertime = await db
+          .select({
+            overtimeRateMultiplier: employees.overtimeRateMultiplier,
+          })
+          .from(employees)
+          .where(eq(employees.id, employeeId))
+          .limit(1);
+        
+        const overtimeRate = employeeOvertime.length > 0 && employeeOvertime[0]?.overtimeRateMultiplier
+          ? parseFloat(employeeOvertime[0].overtimeRateMultiplier)
+          : 1.5;
+        
         overtimeAmount = additionalData.overtimeHours * hourlyRate * overtimeRate;
       }
 

@@ -448,7 +448,7 @@ export function EquipmentSection({
                 onClick={handleDownloadExpiredPDF}
                 disabled={expiredEquipmentData.length === 0}
                 className="flex items-center gap-2"
-                title={expiredEquipmentData.length === 0 ? t('equipment.istimara.noExpiredRecordsToDownload') : t('equipment.istimara.downloadPdfReport', { count: expiredEquipmentData.length })}
+                title={expiredEquipmentData.length === 0 ? t('equipment.istimara.noExpiredRecordsToDownload') : t('equipment.istimara.downloadPdfReport', { count: String(expiredEquipmentData.length) })}
               >
                 <Download className="h-4 w-4" />
                 {t('equipment.istimara.downloadPdf')} ({expiredEquipmentData.length})
@@ -673,8 +673,8 @@ export function EquipmentSection({
                                 }`}
                               >
                                 {item.daysRemaining < 0
-                                  ? t('equipment.istimara.daysOverdue', { days: Math.abs(item.daysRemaining) })
-                                  : t('equipment.istimara.daysRemaining', { days: item.daysRemaining })}
+                                  ? t('equipment.istimara.daysOverdue', { days: String(Math.abs(item.daysRemaining)) })
+                                  : t('equipment.istimara.daysRemaining', { days: String(item.daysRemaining) })}
                               </div>
                             )}
                           </div>
@@ -836,7 +836,7 @@ export function EquipmentSection({
               </div>
 
               <div className="text-sm text-muted-foreground">
-                {t('equipment.pagination.page', { current: currentPage, total: totalPages })}
+                {t('equipment.pagination.page', { current: String(currentPage), total: String(totalPages) })}
               </div>
             </div>
           </>

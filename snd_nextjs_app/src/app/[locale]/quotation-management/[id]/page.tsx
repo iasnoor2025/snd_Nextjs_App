@@ -35,6 +35,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useParams } from 'next/navigation';
+import { useI18n } from '@/hooks/use-i18n';
 // Types based on Laravel data structure
 interface Customer {
   id: number;
@@ -129,6 +130,7 @@ interface ApiResponse {
 function QuotationDetailClient({ quotationId }: { quotationId: string }) {
   const params = useParams();
   const locale = params?.locale as string || 'en';
+  const { t } = useI18n();
   const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error] = useState<string | null>(null);
@@ -269,12 +271,11 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
     );
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-  };
+  const formatCurrency = (amount: number) =>
+    `SAR ${amount.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
@@ -286,18 +287,18 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
 
   const handleAction = async (action: string) => {
     try {
-      toast.loading(`Processing ${action}...`);
+      toast.loading(t('quotation.quotation_management.processing', { action }));
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success(`${action} completed successfully`);
+      toast.success(t('quotation.quotation_management.completed_successfully', { action }));
     } catch {
-      toast.error(`Failed to ${action}`);
+      toast.error(t('quotation.quotation_management.failed_to', { action }));
     }
   };
 
   const handleApprove = async () => {
     try {
-      toast.loading('Approving quotation...');
+      toast.loading(t('quotation.quotation_management.approving_quotation'));
       const response = await fetch(`/api/quotations/${quotationId}/approve`, {
         method: 'POST',
         headers: {
@@ -306,20 +307,20 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to approve quotation');
+        throw new Error(t('quotation.quotation_management.failed_to_approve_quotation'));
       }
 
-      toast.success('Quotation approved successfully');
+      toast.success(t('quotation.quotation_management.quotation_approved_successfully'));
       // Refresh quotation data instead of full page reload
       await fetchQuotationData();
     } catch (error) {
-      toast.error('Failed to approve quotation');
+      toast.error(t('quotation.quotation_management.failed_to_approve_quotation'));
     }
   };
 
   const handleReject = async () => {
     try {
-      toast.loading('Rejecting quotation...');
+      toast.loading(t('quotation.quotation_management.rejecting_quotation'));
       const response = await fetch(`/api/quotations/${quotationId}/reject`, {
         method: 'POST',
         headers: {
@@ -328,20 +329,20 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to reject quotation');
+        throw new Error(t('quotation.quotation_management.failed_to_reject_quotation'));
       }
 
-      toast.success('Quotation rejected successfully');
+      toast.success(t('quotation.quotation_management.quotation_rejected_successfully'));
       // Refresh quotation data instead of full page reload
       await fetchQuotationData();
     } catch (error) {
-      toast.error('Failed to reject quotation');
+      toast.error(t('quotation.quotation_management.failed_to_reject_quotation'));
     }
   };
 
   const handleSendEmail = async () => {
     try {
-      toast.loading('Sending quotation...');
+      toast.loading(t('quotation.quotation_management.sending_quotation'));
       const response = await fetch(`/api/quotations/${quotationId}/email`, {
         method: 'POST',
         headers: {
@@ -350,19 +351,19 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to send quotation');
+        throw new Error(t('quotation.quotation_management.failed_to_send_quotation'));
       }
 
-      toast.success('Quotation sent successfully');
+      toast.success(t('quotation.quotation_management.quotation_sent_successfully'));
     } catch (error) {
-      toast.error('Failed to send quotation');
+      toast.error(t('quotation.quotation_management.failed_to_send_quotation'));
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Loading quotation details...</div>
+        <div className="text-lg">{t('quotation.quotation_management.loading_quotation_details')}</div>
       </div>
     );
   }
@@ -370,7 +371,7 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
   if (error || !data) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg text-red-600">Error loading quotation details</div>
+        <div className="text-lg text-red-600">{t('quotation.quotation_management.error_loading_quotation')}</div>
       </div>
     );
   }
@@ -384,12 +385,12 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
           <Link href={`/${locale}/quotation-management`}>
             <Button variant="outline" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Quotations
+              {t('quotation.quotation_management.back_to_quotations')}
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold">Quotation Details</h1>
-            <p className="text-gray-500">Quotation #{quotation.quotation_number}</p>
+            <h1 className="text-2xl font-bold">{t('quotation.quotation_management.quotation_details')}</h1>
+            <p className="text-gray-500">{t('quotation.quotation_management.quotation_number')} {quotation.quotation_number}</p>
           </div>
         </div>
         <div className="flex items-center space-x-2">
@@ -397,17 +398,17 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
             <Link href={`/${locale}/quotation-management/${quotation.id}/edit`}>
               <Button>
                 <Edit className="h-4 w-4 mr-2" />
-                Edit Quotation
+                {t('quotation.quotation_management.edit_quotation')}
               </Button>
             </Link>
           )}
           <Button variant="outline">
             <Download className="h-4 w-4 mr-2" />
-            Download PDF
+            {t('quotation.quotation_management.download_pdf')}
           </Button>
           <Button variant="outline">
             <Printer className="h-4 w-4 mr-2" />
-            Print
+            {t('quotation.quotation_management.print')}
           </Button>
         </div>
       </div>
@@ -419,47 +420,47 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <FileText className="h-5 w-5" />
-                <span>Quotation Information</span>
+                <span>{t('quotation.quotation_management.quotation_information')}</span>
                 {getStatusBadge(quotation.status)}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Quotation Number</label>
+                  <label className="text-sm font-medium text-gray-500">{t('quotation.quotation_management.quotation_number')}</label>
                   <p className="text-lg font-semibold">{quotation.quotation_number}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Customer</label>
+                  <label className="text-sm font-medium text-gray-500">{t('quotation.quotation_management.customer')}</label>
                   <p className="text-lg">{quotation.customer.companyName || quotation.customer.name}</p>
                   <p className="text-sm text-gray-500">{quotation.customer.contactPerson}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Issue Date</label>
+                  <label className="text-sm font-medium text-gray-500">{t('quotation.quotation_management.issue_date')}</label>
                   <p className="text-lg">{formatDate(quotation.issue_date)}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Valid Until</label>
+                  <label className="text-sm font-medium text-gray-500">{t('quotation.quotation_management.valid_until')}</label>
                   <p className="text-lg">{formatDate(quotation.valid_until)}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Subtotal</label>
+                  <label className="text-sm font-medium text-gray-500">{t('quotation.quotation_management.subtotal')}</label>
                   <p className="text-lg">{formatCurrency(quotation.subtotal)}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Discount</label>
+                  <label className="text-sm font-medium text-gray-500">{t('quotation.quotation_management.discount')}</label>
                   <p className="text-lg">
                     {quotation.discount_percentage}% ({formatCurrency(quotation.discount_amount)})
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Tax</label>
+                  <label className="text-sm font-medium text-gray-500">{t('quotation.quotation_management.tax')}</label>
                   <p className="text-lg">
                     {quotation.tax_percentage}% ({formatCurrency(quotation.tax_amount)})
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Total Amount</label>
+                  <label className="text-sm font-medium text-gray-500">{t('quotation.quotation_management.total_amount')}</label>
                   <p className="text-lg font-semibold text-green-600">
                     {formatCurrency(quotation.total_amount)}
                   </p>
@@ -467,7 +468,7 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
               </div>
               {quotation.notes && (
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Notes</label>
+                  <label className="text-sm font-medium text-gray-500">{t('quotation.quotation_management.notes')}</label>
                   <p className="text-sm bg-gray-50 p-3 rounded-md mt-1">{quotation.notes}</p>
                 </div>
               )}
@@ -476,8 +477,8 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
 
           <Tabs defaultValue="items" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="items">Quotation Items</TabsTrigger>
-              <TabsTrigger value="terms">Terms & Conditions</TabsTrigger>
+              <TabsTrigger value="items">{t('quotation.quotation_management.quotation_items')}</TabsTrigger>
+              <TabsTrigger value="terms">{t('quotation.quotation_management.terms_conditions')}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="items" className="space-y-4">
@@ -485,19 +486,19 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <Package className="h-5 w-5" />
-                    <span>Quotation Items</span>
+                    <span>{t('quotation.quotation_management.quotation_items')}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Equipment</TableHead>
-                        <TableHead>Operator</TableHead>
-                        <TableHead>Quantity</TableHead>
-                        <TableHead>Rate</TableHead>
-                        <TableHead>Rate Type</TableHead>
-                        <TableHead>Total Amount</TableHead>
+                        <TableHead>{t('quotation.quotation_management.equipment')}</TableHead>
+                        <TableHead>{t('quotation.quotation_management.operator')}</TableHead>
+                        <TableHead>{t('quotation.quotation_management.quantity')}</TableHead>
+                        <TableHead>{t('quotation.quotation_management.rate')}</TableHead>
+                        <TableHead>{t('quotation.quotation_management.rate_type')}</TableHead>
+                        <TableHead>{t('quotation.quotation_management.total_amount')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -518,7 +519,7 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
                                 </div>
                               </div>
                             ) : (
-                              <span className="text-gray-400">No operator</span>
+                              <span className="text-gray-400">{t('quotation.quotation_management.no_operator')}</span>
                             )}
                           </TableCell>
                           <TableCell>{item.quantity}</TableCell>
@@ -542,7 +543,7 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <FileText className="h-5 w-5" />
-                    <span>Terms & Conditions</span>
+                    <span>{t('quotation.quotation_management.terms_conditions')}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -563,35 +564,35 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <User className="h-5 w-5" />
-                <span>Customer Info</span>
+                <span>{t('quotation.quotation_management.customer_info')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-500">Company</label>
+                <label className="text-sm font-medium text-gray-500">{t('quotation.quotation_management.company')}</label>
                 <p className="text-lg font-semibold">{quotation.customer.companyName || quotation.customer.name}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Contact Person</label>
+                <label className="text-sm font-medium text-gray-500">{t('quotation.quotation_management.contact_person')}</label>
                 <p className="text-lg">{quotation.customer.contactPerson}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Email</label>
+                <label className="text-sm font-medium text-gray-500">{t('quotation.quotation_management.email')}</label>
                 <p className="text-sm">{quotation.customer.email}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Phone</label>
+                <label className="text-sm font-medium text-gray-500">{t('quotation.quotation_management.phone')}</label>
                 <p className="text-sm">{quotation.customer.phone}</p>
               </div>
               <Button variant="outline" className="w-full">
-                View Customer Details
+                {t('quotation.quotation_management.view_customer_details')}
               </Button>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
+              <CardTitle>{t('quotation.quotation_management.quick_actions')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {canApprove && quotation.status === 'sent' && (
@@ -601,7 +602,7 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
                   onClick={handleApprove}
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
-                  Approve Quotation
+                  {t('quotation.quotation_management.approve_quotation')}
                 </Button>
               )}
               {canReject && quotation.status === 'sent' && (
@@ -611,25 +612,25 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
                   onClick={handleReject}
                 >
                   <XCircle className="h-4 w-4 mr-2" />
-                  Reject Quotation
+                  {t('quotation.quotation_management.reject_quotation')}
                 </Button>
               )}
               <Button variant="outline" className="w-full justify-start" onClick={handleSendEmail}>
                 <Send className="h-4 w-4 mr-2" />
-                Send by Email
+                {t('quotation.quotation_management.send_by_email')}
               </Button>
               <Button variant="outline" className="w-full justify-start">
                 <Download className="h-4 w-4 mr-2" />
-                Download PDF
+                {t('quotation.quotation_management.download_pdf')}
               </Button>
               <Button variant="outline" className="w-full justify-start">
                 <Printer className="h-4 w-4 mr-2" />
-                Print Quotation
+                {t('quotation.quotation_management.print_quotation')}
               </Button>
               {quotation.status === 'approved' && (
                 <Button variant="outline" className="w-full justify-start">
                   <Package className="h-4 w-4 mr-2" />
-                  Convert to Rental
+                  {t('quotation.quotation_management.convert_to_rental')}
                 </Button>
               )}
             </CardContent>
@@ -637,30 +638,30 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
 
           <Card>
             <CardHeader>
-              <CardTitle>Quotation Summary</CardTitle>
+              <CardTitle>{t('quotation.quotation_management.quotation_summary')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 gap-4">
                 <div className="bg-green-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Subtotal</p>
+                  <p className="text-sm text-gray-600">{t('quotation.quotation_management.subtotal')}</p>
                   <p className="text-2xl font-bold text-green-600">
                     {formatCurrency(quotation.subtotal)}
                   </p>
                 </div>
                 <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Discount</p>
+                  <p className="text-sm text-gray-600">{t('quotation.quotation_management.discount')}</p>
                   <p className="text-2xl font-bold text-blue-600">
                     {formatCurrency(quotation.discount_amount)}
                   </p>
                 </div>
                 <div className="bg-yellow-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Tax</p>
+                  <p className="text-sm text-gray-600">{t('quotation.quotation_management.tax')}</p>
                   <p className="text-2xl font-bold text-yellow-600">
                     {formatCurrency(quotation.tax_amount)}
                   </p>
                 </div>
                 <div className="bg-purple-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Total</p>
+                  <p className="text-sm text-gray-600">{t('quotation.quotation_management.total_amount')}</p>
                   <p className="text-2xl font-bold text-purple-600">
                     {formatCurrency(quotation.total_amount)}
                   </p>

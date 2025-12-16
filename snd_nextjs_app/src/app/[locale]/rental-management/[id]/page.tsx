@@ -4106,7 +4106,7 @@ export default function RentalDetailPage() {
                                       
                                       // If timesheet was received and we have hours, use timesheet-based calculation
                                       if (handoverTimesheetReceived && handoverTimesheetHours && handoverTimesheetHours > 0) {
-                                        const unitPrice = parseFloat(handoverItem.unitPrice || 0) || 0;
+                                        const unitPrice = typeof handoverItem.unitPrice === 'string' ? parseFloat(handoverItem.unitPrice) : (Number(handoverItem.unitPrice) || 0);
                                         const rateType = handoverItem.rateType || 'daily';
                                         
                                         // Convert rate to hourly equivalent
@@ -5473,8 +5473,8 @@ export default function RentalDetailPage() {
           onOpenChange={(open) =>
             setEquipmentTimesheetDialog((prev) => ({ ...prev, open }))
           }
-          rentalId={rentalId}
-          rentalItemId={equipmentTimesheetDialog.rentalItemId}
+          rentalId={typeof rentalId === 'string' ? parseInt(rentalId, 10) : rentalId}
+          rentalItemId={typeof equipmentTimesheetDialog.rentalItemId === 'string' ? parseInt(equipmentTimesheetDialog.rentalItemId, 10) : equipmentTimesheetDialog.rentalItemId}
           equipmentName={equipmentTimesheetDialog.equipmentName}
           month={equipmentTimesheetDialog.month}
           onSuccess={async () => {

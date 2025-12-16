@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // For now, we'll use a simple in-memory store to demonstrate the functionality
 const companyDocuments = new Map<number, any[]>();
 
-export const DELETE = withPermission(async (_request: NextRequest, ...args: unknown[]) => {
+export const DELETE = withPermission(PermissionConfigs.company.update)(async (_request: NextRequest, ...args: unknown[]) => {
   try {
     const { params } = args[0] as { params: Promise<{ id: string; documentId: string }> };
     const resolvedParams = await params;
@@ -76,4 +76,4 @@ export const DELETE = withPermission(async (_request: NextRequest, ...args: unkn
       { status: 500 }
     );
   }
-}, PermissionConfigs.company.update);
+});

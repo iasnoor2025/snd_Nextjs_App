@@ -7,8 +7,12 @@ import { withPermission } from '@/lib/rbac/api-middleware';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
-export const POST = withPermission(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+export const POST = withPermission({
+  action: 'update',
+  subject: 'Maintenance',
+  fallbackAction: 'update',
+  fallbackSubject: 'Equipment',
+})(async (request: NextRequest, { params }: { params: { id: string } }) => {
     try {
       const id = parseInt(params.id);
       if (!id) return NextResponse.json({ success: false, message: 'Invalid ID' }, { status: 400 });
@@ -69,11 +73,5 @@ export const POST = withPermission(
         { status: 500 }
       );
     }
-  },
-  {
-    action: 'update',
-    subject: 'Maintenance',
-    fallbackAction: 'update',
-    fallbackSubject: 'Equipment',
   }
 );

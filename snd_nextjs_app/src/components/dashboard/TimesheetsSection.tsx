@@ -590,7 +590,7 @@ export function TimesheetsSection({
                 /* Navigate to Timesheet management */
               }}
             >
-              {t('timesheet.viewAllTimesheets', { count: safeTimesheetData.length })}
+              {t('timesheet.viewAllTimesheets', { count: String(safeTimesheetData.length) })}
             </Button>
           </>
         )}

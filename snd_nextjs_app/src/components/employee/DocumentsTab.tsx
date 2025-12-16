@@ -783,7 +783,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
                   }
 
                   if (errorCount === 0) {
-                    toast.success(t('employee.documents.uploadSuccessMultiple', { count: successCount }));
+                    toast.success(t('employee.documents.uploadSuccessMultiple', { count: String(successCount) }));
                     setPendingFiles(null);
                     setShowDetailsDialog(false);
                     setUploadForm({
@@ -795,7 +795,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
                     setUploadProgress({});
                     fetchDocuments();
                   } else if (successCount > 0) {
-                    toast.success(t('employee.documents.uploadPartialSuccess', { success: successCount, failed: errorCount }));
+                    toast.success(t('employee.documents.uploadPartialSuccess', { success: String(successCount), failed: String(errorCount) }));
                     setPendingFiles(null);
                     setShowDetailsDialog(false);
                     setUploadForm({

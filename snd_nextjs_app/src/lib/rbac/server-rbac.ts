@@ -387,7 +387,8 @@ export async function hasPermission(user: User, action: Action, subject: Subject
     }
 
     // Check for specific permission using dynamic mapping
-    const mappedPermissions = getPermissionMappings(action, subject);
+    const permissionKey = `${action}.${subject}`;
+    const mappedPermissions = PERMISSION_MAPPING[permissionKey] || [permissionKey];
     
     // Check if user has any of the mapped permissions
     const hasPermission = mappedPermissions.some(permission => userPermissions.includes(permission));

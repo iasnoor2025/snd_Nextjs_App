@@ -95,6 +95,9 @@ interface RentalItem {
   operatorId?: string;
   status?: string;
   notes?: string;
+  startDate?: string;
+  completedDate?: string;
+  completed_date?: string;
 }
 
 interface Customer {

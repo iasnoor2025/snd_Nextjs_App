@@ -66,7 +66,15 @@ const createInvoiceHandler = async (request: NextRequest, { params }: { params: 
       return NextResponse.json({ error: 'Rental not found after recalculation' }, { status: 404 });
     }
     // Create invoiceRental object (always needed)
-    let invoiceRental = { ...updatedRental };
+    let invoiceRental = { ...updatedRental } as typeof updatedRental & {
+      invoiceDate?: string;
+      paymentDueDate?: string;
+      customFrom?: string;
+      customTo?: string;
+      invoiceMonth?: string;
+      customSubject?: string;
+      customerName?: string;
+    };
     
     // Create ERPNext invoice with billing month information
     let erpnextInvoice;

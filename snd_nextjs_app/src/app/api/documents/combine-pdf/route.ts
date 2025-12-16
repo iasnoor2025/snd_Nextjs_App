@@ -22,12 +22,16 @@ export async function POST(_request: NextRequest) {
 
     const documents: Array<{
       id: number;
-      name: string;
       url: string;
-      type: string;
+      type: 'employee' | 'equipment';
       fileName: string;
       filePath: string;
       mimeType: string;
+      employeeName?: string;
+      employeeFileNumber?: string;
+      equipmentName?: string;
+      equipmentModel?: string;
+      equipmentSerial?: string;
     }> = [];
 
     // Fetch employee documents
@@ -52,9 +56,8 @@ export async function POST(_request: NextRequest) {
         .where(inArray(employeeDocuments.id, documentIds));
       documents.push(
         ...employeeDocs.map(doc => ({
-          ...doc,
-          type: 'employee',
-          name: doc.fileName,
+          id: doc.id,
+          type: 'employee' as const,
           url: (doc.filePath || '').replace(/^http:/, 'https:'), // Force HTTPS to prevent Mixed Content errors
           fileName: doc.fileName,
           filePath: doc.filePath,
@@ -86,9 +89,8 @@ export async function POST(_request: NextRequest) {
         .where(inArray(equipmentDocuments.id, documentIds));
       documents.push(
         ...equipmentDocs.map(doc => ({
-          ...doc,
-          type: 'equipment',
-          name: doc.fileName,
+          id: doc.id,
+          type: 'equipment' as const,
           url: (doc.filePath || '').replace(/^http:/, 'https:'), // Force HTTPS to prevent Mixed Content errors
           fileName: doc.fileName,
           filePath: doc.filePath,
@@ -96,7 +98,6 @@ export async function POST(_request: NextRequest) {
           equipmentName: doc.equipmentName,
           equipmentModel: doc.equipmentModel,
           equipmentSerial: doc.equipmentSerial,
-          equipmentDoorNumber: doc.equipmentDoorNumber,
         }))
       );
     }

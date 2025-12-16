@@ -183,8 +183,9 @@ export default function ManpowerDialog({
         // This provides more detailed equipment information that might not be in the assignment service
         try {
           const previousAssignmentsResponse = await ApiService.get(`/employees/${employeeId}/previous-assignments`);
-          if (previousAssignmentsResponse && previousAssignmentsResponse.assignments) {
-            const activeRentalAssignments = previousAssignmentsResponse.assignments.filter((assignment: any) => 
+          const assignments = (previousAssignmentsResponse as any)?.assignments || (previousAssignmentsResponse as any)?.data?.assignments || [];
+          if (assignments && assignments.length > 0) {
+            const activeRentalAssignments = assignments.filter((assignment: any) => 
               assignment.role === 'operator' && 
               (assignment.status === 'active' || !assignment.completedDate)
             );

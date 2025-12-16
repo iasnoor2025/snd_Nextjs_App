@@ -87,7 +87,7 @@ export async function GET(
 
         const buffer = await response.Body.transformToByteArray();
         
-        return new NextResponse(buffer, {
+        return new NextResponse(new Uint8Array(buffer) as BodyInit, {
           headers: {
             'Content-Type': documentRecord.mimeType || 'application/octet-stream',
             'Content-Disposition': `inline; filename="${encodeURIComponent(documentRecord.fileName || 'document')}"`,

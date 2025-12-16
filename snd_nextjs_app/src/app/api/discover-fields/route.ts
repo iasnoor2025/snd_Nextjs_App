@@ -13,21 +13,19 @@ export async function GET() {
     }
     
     // 2. Get a sample employee to see all available fields
-    const existingEmployees = await erpnextClient.makeRequest('/api/resource/Employee?limit_page_length=1');
+    const allEmployees = await erpnextClient.fetchAllEmployees();
     
-    if (!existingEmployees.data || existingEmployees.data.length === 0) {
+    if (!allEmployees || allEmployees.length === 0) {
       return NextResponse.json({
         success: false,
         message: 'No existing employees found to analyze'
       });
     }
 
-    const sampleEmployee = existingEmployees.data[0];
-    // 3. Get detailed employee data
-    const detailedEmployee = await erpnextClient.getCurrentEmployee(sampleEmployee.name);
-    
+    const sampleEmployee = allEmployees[0];
+    // 3. Get detailed employee data - sampleEmployee already has all fields from fetchAllEmployees
     // 4. Analyze all fields
-    const allFields = detailedEmployee.data;
+    const allFields = sampleEmployee;
     const fieldNames = Object.keys(allFields);
     // 5. Look for potential custom employee number fields
     const potentialFields = fieldNames.filter(field => 
@@ -38,7 +36,7 @@ export async function GET() {
       field.toLowerCase().includes('custom')
     );
     // 6. Check field values for potential matches
-    const fieldAnalysis = {};
+    const fieldAnalysis: Record<string, { value: any; type: string; isCustom: boolean; description: string }> = {};
     potentialFields.forEach(field => {
       fieldAnalysis[field] = {
         value: allFields[field],

@@ -179,7 +179,7 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
     } else if (daysDiff === 1) {
       dateText = t('dashboard.myTeam.timesheetStatus.yesterday');
     } else {
-      dateText = t('dashboard.myTeam.timesheetStatus.daysAgo', { days: daysDiff });
+      dateText = t('dashboard.myTeam.timesheetStatus.daysAgo', { days: String(daysDiff) });
     }
 
     // Show status with date
@@ -275,11 +275,11 @@ export default function MyTeamSection({ onHideSection }: MyTeamSectionProps) {
               {currentEmployee ? (
                 <>
                   {teamMembers.length === 0
-                    ? t('dashboard.myTeam.noEmployees', { id: currentEmployee.id })
+                    ? t('dashboard.myTeam.noEmployees', { id: String(currentEmployee.id) })
                     : t('dashboard.myTeam.employeesCount', {
-                      count: teamMembers.length, 
+                      count: String(teamMembers.length), 
                       plural: teamMembers.length !== 1 ? 's' : '',
-                      id: currentEmployee.id
+                      id: String(currentEmployee.id)
                     })
                   }
                 </>

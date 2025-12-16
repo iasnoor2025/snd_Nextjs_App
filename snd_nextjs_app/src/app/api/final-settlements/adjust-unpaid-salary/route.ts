@@ -16,13 +16,26 @@ export async function POST(request: NextRequest) {
     // Get the current unpaid salary info
     const unpaidSalaryInfo = await FinalSettlementService.getUnpaidSalaryInfo(employeeId);
 
-    // Adjust the unpaid salary info
-    const adjustedInfo = FinalSettlementService.adjustUnpaidSalaryInfo(
-      unpaidSalaryInfo,
-      lastPaidUpToMonth,
-      lastPaidUpToYear,
-      adjustmentReason
-    );
+    // Adjust the unpaid salary info based on manual adjustment
+    // Calculate months from the adjusted "last paid" date to today
+    const lastPaidDate = new Date(lastPaidUpToYear, lastPaidUpToMonth - 1, 1);
+    const today = new Date();
+    const monthsDiff = (today.getFullYear() - lastPaidDate.getFullYear()) * 12 + 
+                       (today.getMonth() - lastPaidDate.getMonth());
+    
+    // Calculate monthly salary from unpaid amount and months
+    const monthlySalary = unpaidSalaryInfo.unpaidMonths > 0 
+      ? unpaidSalaryInfo.unpaidAmount / unpaidSalaryInfo.unpaidMonths 
+      : 0;
+    
+    const adjustedInfo = {
+      ...unpaidSalaryInfo,
+      unpaidMonths: Math.max(0, monthsDiff),
+      unpaidAmount: monthlySalary * Math.max(0, monthsDiff),
+      lastPaidMonth: lastPaidUpToMonth,
+      lastPaidYear: lastPaidUpToYear,
+      lastPaidDate: lastPaidDate.toISOString().split('T')[0],
+    };
 
     return NextResponse.json({
       success: true,

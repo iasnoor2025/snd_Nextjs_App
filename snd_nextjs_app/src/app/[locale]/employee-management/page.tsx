@@ -257,6 +257,7 @@ export default function EmployeeManagementPage() {
           setStatistics({
             totalEmployees: 1,
             currentlyAssigned: ownEmployee.current_assignment ? 1 : 0,
+            unassignedActive: ownEmployee.current_assignment ? 0 : 1,
             projectAssignments: ownEmployee.current_assignment?.type === 'project' ? 1 : 0,
             rentalAssignments: ownEmployee.current_assignment?.type === 'rental' ? 1 : 0,
             employeesOnLeave: 0, // Employee users can't see leave statistics
@@ -266,6 +267,7 @@ export default function EmployeeManagementPage() {
           setStatistics({
             totalEmployees: 0,
             currentlyAssigned: 0,
+            unassignedActive: 0,
             projectAssignments: 0,
             rentalAssignments: 0,
             employeesOnLeave: 0,
@@ -286,6 +288,7 @@ export default function EmployeeManagementPage() {
           setStatistics({
             totalEmployees: employees.length,
             currentlyAssigned: employees.filter(emp => emp.current_assignment).length,
+            unassignedActive: employees.filter(emp => !emp.current_assignment && emp.status === 'active').length,
             projectAssignments: employees.filter(emp => emp.current_assignment?.type === 'project')
               .length,
             rentalAssignments: employees.filter(emp => emp.current_assignment?.type === 'rental')
@@ -301,6 +304,7 @@ export default function EmployeeManagementPage() {
       setStatistics({
         totalEmployees: employees.length,
         currentlyAssigned: employees.filter(emp => emp.current_assignment).length,
+        unassignedActive: employees.filter(emp => !emp.current_assignment && emp.status === 'active').length,
         projectAssignments: employees.filter(emp => emp.current_assignment?.type === 'project')
           .length,
         rentalAssignments: employees.filter(emp => emp.current_assignment?.type === 'rental')

@@ -233,10 +233,10 @@ const updateProjectMaterialHandler = async (
       .set({
         ...(name !== undefined && { name }),
         ...(materialName !== undefined && { name: materialName }),
-        ...(quantity !== undefined && { quantity: parseFloat(quantity) }),
+        ...(quantity !== undefined && { quantity: parseFloat(quantity).toString() }),
         ...(unit !== undefined && { unit }),
-        ...(unitPrice !== undefined && { unitPrice: parseFloat(unitPrice) }),
-        ...(totalCost !== undefined && { totalCost: parseFloat(totalCost) }),
+        ...(unitPrice !== undefined && { unitPrice: parseFloat(unitPrice).toString() }),
+        ...(totalCost !== undefined && { totalCost: parseFloat(totalCost).toString() }),
         ...(supplier !== undefined && { supplier }),
         // Store dates as YYYY-MM-DD strings to avoid timezone issues
         ...(orderDate !== undefined && { orderDate: orderDate ? orderDate.split('T')[0] : null }),

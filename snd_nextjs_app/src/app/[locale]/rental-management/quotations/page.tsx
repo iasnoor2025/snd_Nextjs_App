@@ -61,6 +61,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useParams } from 'next/navigation';
+import { useI18n } from '@/hooks/use-i18n';
 interface Customer {
   id: number;
   name: string;
@@ -130,6 +131,7 @@ export default function QuotationsPage() {
   const [startDate, setStartDate] = useState('');
   const params = useParams();
   const locale = params?.locale as string || 'en';
+  const { t } = useI18n();
   const [endDate, setEndDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const { printRef, handlePrint } = usePrint({
@@ -150,14 +152,14 @@ export default function QuotationsPage() {
         const mockData = getMockQuotationsData(search, status, startDate, endDate, currentPage);
         setQuotations(mockData);
       } catch (error) {
-        toast.error('Failed to fetch quotations');
+        toast.error(t('quotation.quotation_management.failed_to_load_quotations'));
       } finally {
         setLoading(false);
       }
     };
 
     fetchQuotations();
-  }, [search, status, startDate, endDate, currentPage]);
+  }, [search, status, startDate, endDate, currentPage, t]);
 
   const getMockQuotationsData = (
     search: string = '',
@@ -346,39 +348,38 @@ export default function QuotationsPage() {
 
   const handleDelete = async (id: number) => {
     try {
-      toast.loading('Deleting quotation...');
+      toast.loading(t('quotation.quotation_management.deleting_quotation'));
       await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Quotation deleted successfully');
+      toast.success(t('quotation.quotation_management.quotation_deleted_successfully'));
       const mockData = getMockQuotationsData(search, status, startDate, endDate, currentPage);
       setQuotations(mockData);
     } catch (error) {
-      toast.error('Failed to delete quotation');
+      toast.error(t('quotation.quotation_management.failed_to_delete_quotation'));
     }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800">{t('quotation.status.pending')}</Badge>;
       case 'approved':
-        return <Badge className="bg-green-100 text-green-800">Approved</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t('quotation.quotation_management.status.approved')}</Badge>;
       case 'rejected':
-        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t('quotation.quotation_management.status.rejected')}</Badge>;
       case 'expired':
-        return <Badge className="bg-gray-100 text-gray-800">Expired</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t('quotation.quotation_management.status.expired')}</Badge>;
       case 'converted':
-        return <Badge className="bg-blue-100 text-blue-800">Converted</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800">{t('quotation.status.converted')}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-  };
+  const formatCurrency = (amount: number) =>
+    `SAR ${amount.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -391,24 +392,24 @@ export default function QuotationsPage() {
   const handleRefresh = () => {
     const mockData = getMockQuotationsData(search, status, startDate, endDate, currentPage);
     setQuotations(mockData);
-    toast.success('Quotations refreshed');
+    toast.success(t('quotation.quotation_management.refresh'));
   };
 
   const handleWorkflowAction = async (quotationId: number, action: string) => {
     try {
-      toast.loading(`Processing ${action}...`);
+      toast.loading(t('quotation.quotation_management.processing', { action }));
       await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success(`${action} completed successfully`);
+      toast.success(t('quotation.quotation_management.completed_successfully', { action }));
       handleRefresh();
     } catch (error) {
-      toast.error(`Failed to ${action}`);
+      toast.error(t('quotation.quotation_management.failed_to', { action }));
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Loading quotations...</div>
+        <div className="text-lg">{t('quotation.quotation_management.loading_quotation_details')}</div>
       </div>
     );
   }
@@ -419,22 +420,22 @@ export default function QuotationsPage() {
       <div ref={printRef} className="hidden print:block">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold">Quotations</h1>
+            <h1 className="text-3xl font-bold">{t('quotation.quotation_management.quotations')}</h1>
           </div>
           <Card>
             <CardHeader>
-              <CardTitle>Quotations</CardTitle>
+              <CardTitle>{t('quotation.quotation_management.quotations')}</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Quotation #</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Issue Date</TableHead>
-                    <TableHead>Valid Until</TableHead>
-                    <TableHead>Total Amount</TableHead>
+                    <TableHead>{t('quotation.quotation_management.quotation_number')}</TableHead>
+                    <TableHead>{t('quotation.quotation_management.customer')}</TableHead>
+                    <TableHead>{t('quotation.quotation_management.status')}</TableHead>
+                    <TableHead>{t('quotation.quotation_management.issue_date')}</TableHead>
+                    <TableHead>{t('quotation.quotation_management.valid_until')}</TableHead>
+                    <TableHead>{t('quotation.quotation_management.total_amount')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -480,26 +481,26 @@ export default function QuotationsPage() {
       <div className="block print:hidden">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold">Quotations</h1>
-            <p className="text-muted-foreground">Manage equipment rental quotations and proposals</p>
+            <h1 className="text-3xl font-bold">{t('quotation.quotation_management.quotations')}</h1>
+            <p className="text-muted-foreground">{t('quotation.quotation_management.manage_quotations_description')}</p>
           </div>
           <div className="flex space-x-2">
             <Button variant="outline" onClick={handleRefresh}>
               <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
+              {t('quotation.quotation_management.refresh')}
             </Button>
             <Button variant="outline">
               <Download className="h-4 w-4 mr-2" />
-              Export
+              {t('quotation.quotation_management.export')}
             </Button>
             <Button variant="outline">
               <Printer className="h-4 w-4 mr-2" />
-              Print
+              {t('quotation.quotation_management.print')}
             </Button>
             <Link href={`/${locale}/rental-management/quotations/create`}>
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
-                New Quotation
+                {t('quotation.quotation_management.create_quotation')}
               </Button>
             </Link>
           </div>
@@ -522,35 +523,35 @@ export default function QuotationsPage() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
-                  <label className="text-sm font-medium">Search</label>
+                  <label className="text-sm font-medium">{t('quotation.quotation_management.search_placeholder')}</label>
                   <Input
-                    placeholder="Search quotations..."
+                    placeholder={t('quotation.quotation_management.search_placeholder')}
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Status</label>
+                  <label className="text-sm font-medium">{t('quotation.quotation_management.status')}</label>
                   <Select value={status} onValueChange={setStatus}>
                     <SelectTrigger>
-                      <SelectValue placeholder="All statuses" />
+                      <SelectValue placeholder={t('quotation.quotation_management.all_status')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Statuses</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="approved">Approved</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                      <SelectItem value="expired">Expired</SelectItem>
-                      <SelectItem value="converted">Converted</SelectItem>
+                      <SelectItem value="all">{t('quotation.quotation_management.all_status')}</SelectItem>
+                      <SelectItem value="pending">{t('quotation.status.pending')}</SelectItem>
+                      <SelectItem value="approved">{t('quotation.quotation_management.status.approved')}</SelectItem>
+                      <SelectItem value="rejected">{t('quotation.quotation_management.status.rejected')}</SelectItem>
+                      <SelectItem value="expired">{t('quotation.quotation_management.status.expired')}</SelectItem>
+                      <SelectItem value="converted">{t('quotation.status.converted')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">From Date</label>
+                  <label className="text-sm font-medium">{t('quotation.quotation_management.from_date_placeholder')}</label>
                   <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">To Date</label>
+                  <label className="text-sm font-medium">{t('quotation.quotation_management.to_date_placeholder')}</label>
                   <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
                 </div>
               </div>
@@ -561,23 +562,26 @@ export default function QuotationsPage() {
         {/* Quotations Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Quotations</CardTitle>
+            <CardTitle>{t('quotation.quotation_management.quotations')}</CardTitle>
             <CardDescription>
-              Showing {quotations?.from || 0} to {quotations?.to || 0} of {quotations?.total || 0}{' '}
-              quotations
+              {t('quotation.quotation_management.showing_quotations', {
+                from: String(quotations?.from || 0),
+                to: String(quotations?.to || 0),
+                total: String(quotations?.total || 0),
+              })}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Quotation #</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Issue Date</TableHead>
-                  <TableHead>Valid Until</TableHead>
-                  <TableHead>Total Amount</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead>{t('quotation.quotation_management.quotation_number')}</TableHead>
+                  <TableHead>{t('quotation.quotation_management.customer')}</TableHead>
+                  <TableHead>{t('quotation.quotation_management.status')}</TableHead>
+                  <TableHead>{t('quotation.quotation_management.issue_date')}</TableHead>
+                  <TableHead>{t('quotation.quotation_management.valid_until')}</TableHead>
+                  <TableHead>{t('quotation.quotation_management.total_amount')}</TableHead>
+                  <TableHead>{t('quotation.quotation_management.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -629,19 +633,19 @@ export default function QuotationsPage() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => handleWorkflowAction(quotation.id, 'approve')}>
                               <CheckCircle className="h-4 w-4 mr-2" />
-                              Approve
+                              {t('quotation.quotation_management.approve_quotation')}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleWorkflowAction(quotation.id, 'reject')}>
                               <XCircle className="h-4 w-4 mr-2" />
-                              Reject
+                              {t('quotation.quotation_management.reject_quotation')}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleWorkflowAction(quotation.id, 'send-email')}>
                               <Mail className="h-4 w-4 mr-2" />
-                              Send Email
+                              {t('quotation.quotation_management.send_by_email')}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleDelete(quotation.id)} className="text-red-600">
                               <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
+                              {t('common.delete') || 'Delete'}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -657,9 +661,11 @@ export default function QuotationsPage() {
               <div className="mt-4">
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-gray-500">
-                    Showing {(currentPage - 1) * quotations.per_page + 1} to{' '}
-                    {Math.min(currentPage * quotations.per_page, quotations.total)} of{' '}
-                    {quotations.total} results
+                    {t('quotation.quotation_management.showing_results', {
+                      from: String((currentPage - 1) * quotations.per_page + 1),
+                      to: String(Math.min(currentPage * quotations.per_page, quotations.total)),
+                      total: String(quotations.total),
+                    })}
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
@@ -669,7 +675,7 @@ export default function QuotationsPage() {
                       disabled={currentPage === 1}
                     >
                       <ChevronLeft className="h-4 w-4 mr-1" />
-                      Previous
+                      {t('quotation.quotation_management.previous')}
                     </Button>
 
                     <div className="flex items-center gap-1">
@@ -735,7 +741,7 @@ export default function QuotationsPage() {
                       onClick={() => setCurrentPage(Math.min(quotations.last_page, currentPage + 1))}
                       disabled={currentPage === quotations.last_page}
                     >
-                      Next
+                      {t('quotation.quotation_management.next')}
                       <ChevronRight className="h-4 w-4 ml-1" />
                     </Button>
                   </div>

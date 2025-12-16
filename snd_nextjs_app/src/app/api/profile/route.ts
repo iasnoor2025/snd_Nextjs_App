@@ -20,33 +20,8 @@ const getProfileHandler = async (_request: NextRequest) => {
   try {
     const userId = session.user.id;
 
-    // Debug: Check what employees exist in the database
-        const allEmployees = await db
-          .select({
-            id: employees.id,
-            firstName: employees.firstName,
-            lastName: employees.lastName,
-            email: employees.email,
-            userId: employees.userId,
-            iqamaNumber: employees.iqamaNumber,
-          })
-          .from(employees)
-          .limit(10);
-
-                // Debug: Check if there's an employee linked to this user
-        const userLinkedEmployees = await db
-          .select({
-            id: employees.id,
-            firstName: employees.firstName,
-            lastName: employees.lastName,
-            email: employees.email,
-            userId: employees.userId,
-            iqamaNumber: employees.iqamaNumber,
-          })
-          .from(employees)
-          .where(eq(employees.userId, parseInt(userId)));
-        // Generate cache key for user profile
-        const cacheKey = generateCacheKey('profile', 'user', { userId });
+    // Generate cache key for user profile
+    const cacheKey = generateCacheKey('profile', 'user', { userId });
     
     return await cacheQueryResult(
       cacheKey,
@@ -79,20 +54,8 @@ const getProfileHandler = async (_request: NextRequest) => {
         if (!user) {
           return NextResponse.json({ error: 'User not found in database' }, { status: 404 });
         }
-        // Debug: Check what employees exist in the database
-        const allEmployees = await db
-          .select({
-            id: employees.id,
-            firstName: employees.firstName,
-            lastName: employees.lastName,
-            email: employees.email,
-            userId: employees.userId,
-            iqamaNumber: employees.iqamaNumber,
-          })
-          .from(employees)
-          .limit(10);
 
-                // Get employee data if exists (direct user_id match)
+        // Get employee data if exists (direct user_id match)
         let employee = null;
         
         // First try to find employee by National ID match (this should be the primary method)
@@ -208,7 +171,7 @@ const getProfileHandler = async (_request: NextRequest) => {
           phone: bestEmployee?.phone || '',
           avatar: user.avatar || '',
           role: user.roleId,
-          department: bestEmployee?.department?.name || 'General',
+          department: bestEmployee?.department || 'General',
           location:
             bestEmployee?.city && bestEmployee?.state
               ? `${bestEmployee.city}, ${bestEmployee.state}`
@@ -222,7 +185,7 @@ const getProfileHandler = async (_request: NextRequest) => {
           firstName: bestEmployee?.firstName || '',
           middleName: bestEmployee?.middleName || '',
           lastName: bestEmployee?.lastName || '',
-          designation: bestEmployee?.designation?.name || '',
+          designation: bestEmployee?.designation || '',
           address: bestEmployee?.address || '',
           city: bestEmployee?.city || '',
           state: bestEmployee?.state || '',
@@ -237,7 +200,7 @@ const getProfileHandler = async (_request: NextRequest) => {
         return NextResponse.json(profile);
       },
       {
-        tags: [CACHE_TAGS.PROFILE, CACHE_TAGS.USER],
+        tags: [CACHE_TAGS.USERS],
         ttl: 300, // Cache for 5 minutes
       }
     );
@@ -263,8 +226,11 @@ const getProfileHandler = async (_request: NextRequest) => {
   }
 }
 
-// PUT /api/profile - Update user profile
-export async function POST(_request: NextRequest) {
+// Export GET handler with permission middleware
+export const GET = withPermission(PermissionConfigs['own-profile'].read)(getProfileHandler);
+
+// Export POST handler with permission middleware
+export const POST = withPermission(PermissionConfigs['own-profile'].update)(async (_request: NextRequest) => {
   try {
     // Get the current user session (for user ID in handler)
     const session = await getServerSession();
@@ -400,6 +366,7 @@ export async function POST(_request: NextRequest) {
               state: state || '',
               country: country || '',
               email: email || '',
+              updatedAt: new Date().toISOString().split('T')[0],
             })
             .returning();
 
@@ -452,4 +419,4 @@ export async function POST(_request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

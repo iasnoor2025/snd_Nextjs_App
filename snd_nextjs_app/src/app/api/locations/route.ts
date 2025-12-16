@@ -68,7 +68,7 @@ export const GET = withPermission(PermissionConfigs.location.read)(async (reques
     console.error('Error fetching locations:', error);
     return NextResponse.json({ error: 'Failed to fetch locations' }, { status: 500 });
   }
-}, PermissionConfigs.location.read);
+});
 
 export const POST = withPermission(PermissionConfigs.location.create)(async (request: NextRequest) => {
   try {
@@ -104,4 +104,4 @@ export const POST = withPermission(PermissionConfigs.location.create)(async (req
     
     return NextResponse.json({ error: 'Failed to create location' }, { status: 500 });
   }
-}, PermissionConfigs.location.create);
+});

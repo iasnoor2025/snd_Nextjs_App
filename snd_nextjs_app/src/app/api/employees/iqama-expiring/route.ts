@@ -4,7 +4,7 @@ import { PermissionConfigs, withReadPermission } from '@/lib/rbac/api-middleware
 import { and, asc, eq, gte, ilike, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
-export const GET = withReadPermission(async (request: NextRequest) => {
+export const GET = withReadPermission('Employee')(async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const daysParam = parseInt(searchParams.get('days') || '30', 10);
@@ -133,4 +133,4 @@ export const GET = withReadPermission(async (request: NextRequest) => {
     
     return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
   }
-}, PermissionConfigs.employee.read);
+});

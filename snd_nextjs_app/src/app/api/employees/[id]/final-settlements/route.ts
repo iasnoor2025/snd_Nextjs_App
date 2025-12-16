@@ -210,8 +210,8 @@ export async function POST(
     // Create the settlement record
     const newSettlement = await FinalSettlementService.createFinalSettlement(
       settlementData,
-      session.user.id,
-      resignationId,
+      typeof session.user.id === 'string' ? parseInt(session.user.id) : session.user.id,
+      resignationId ? (typeof resignationId === 'string' ? parseInt(resignationId) : resignationId) : undefined,
       {
         vacationDurationMonths: settlementType === 'vacation' ? vacationDurationMonths : undefined,
         overtimeHours,
@@ -227,18 +227,19 @@ export async function POST(
       const start = new Date(vacationStartDate);
       const end = new Date(vacationEndDate);
       const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      const userId = typeof session.user.id === 'string' ? parseInt(session.user.id) : session.user.id;
       await db.insert(employeeLeaves).values({
-        employeeId,
+        employeeId: employeeId,
         leaveType: 'Annual Leave',
         startDate: vacationStartDate,
         endDate: vacationEndDate,
         days,
         reason: `Auto-created from vacation settlement ${newSettlement.settlementNumber}`,
         status: 'approved',
-        approvedBy: session.user.id,
+        approvedBy: userId,
         approvedAt: new Date().toISOString().split('T')[0],
-        createdAt: new Date().toISOString().split('T')[0],
         updatedAt: new Date().toISOString().split('T')[0],
+        createdAt: new Date().toISOString().split('T')[0],
       });
     }
 

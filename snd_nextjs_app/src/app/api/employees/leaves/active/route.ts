@@ -9,7 +9,7 @@ import { PermissionConfigs, withReadPermission } from '@/lib/rbac/api-middleware
 import { and, asc, eq, gte, ilike, isNull, lte, or, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
-export const GET = withReadPermission(async (request: NextRequest) => {
+export const GET = withReadPermission('Leave')(async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
@@ -117,4 +117,4 @@ export const GET = withReadPermission(async (request: NextRequest) => {
     
     return NextResponse.json({ error: 'Failed to fetch active leaves' }, { status: 500 });
   }
-}, PermissionConfigs.leave.read);
+});

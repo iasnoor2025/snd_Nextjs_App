@@ -3,7 +3,7 @@ import { getServerSession } from '@/lib/auth';
 import { checkUserPermission } from './permission-service';
 import { eq } from 'drizzle-orm';
 
-export type Action = 'create' | 'read' | 'update' | 'delete' | 'manage' | 'approve' | 'reject' | 'export' | 'import' | 'sync' | 'reset';
+export type Action = 'create' | 'read' | 'update' | 'delete' | 'manage' | 'approve' | 'reject' | 'export' | 'import' | 'sync' | 'reset' | 'upload' | 'download';
 export type Subject = string;
 
 export interface PermissionConfig {
@@ -41,6 +41,7 @@ export const PermissionConfigs = {
     update: { action: 'update' as Action, subject: 'Customer' },
     delete: { action: 'delete' as Action, subject: 'Customer' },
     manage: { action: 'manage' as Action, subject: 'Customer' },
+    sync: { action: 'sync' as Action, subject: 'Customer' },
   },
   equipment: {
     read: { action: 'read' as Action, subject: 'Equipment' },

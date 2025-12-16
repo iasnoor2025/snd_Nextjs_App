@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
         const contentType = response.ContentType || 'application/pdf';
 
         // Return the PDF with proper headers
-        return new NextResponse(buffer, {
+        return new NextResponse(new Uint8Array(buffer) as BodyInit, {
           headers: {
             'Content-Type': contentType,
             'Cache-Control': 'public, max-age=3600',

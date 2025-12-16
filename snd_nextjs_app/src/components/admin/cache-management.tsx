@@ -12,10 +12,11 @@ import {
   Trash2, 
   RefreshCw, 
   Database, 
-  Memory, 
+  HardDrive, 
   Wifi, 
   WifiOff,
   Users,
+  User,
   UserCheck,
   Settings,
   Shield,
@@ -34,7 +35,7 @@ import {
   Key,
   Server
 } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 
 export function CacheManagement() {
   const {
@@ -125,7 +126,7 @@ export function CacheManagement() {
     return (
       <Alert variant="destructive">
         <AlertDescription>
-          Failed to load cache statistics: {error.message}
+          Failed to load cache statistics: {error instanceof Error ? error.message : String(error)}
         </AlertDescription>
       </Alert>
     );
@@ -183,7 +184,7 @@ export function CacheManagement() {
             </div>
             
             <div className="flex items-center gap-3">
-              <Memory className="h-4 w-4 text-purple-500" />
+              <HardDrive className="h-4 w-4 text-purple-500" />
               <div>
                 <p className="text-sm font-medium">Memory Usage</p>
                 <p className="text-2xl font-bold">{cacheStats?.memory || 'Unknown'}</p>

@@ -175,26 +175,25 @@ export default function QuotationManagementPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'draft':
-        return <Badge className="bg-gray-100 text-gray-800">{t('status.draft')}</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t('quotation.status.draft')}</Badge>;
       case 'sent':
-        return <Badge className="bg-blue-100 text-blue-800">{t('status.sent')}</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800">{t('quotation.status.sent')}</Badge>;
       case 'approved':
-        return <Badge className="bg-green-100 text-green-800">{t('status.approved')}</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t('quotation.status.approved')}</Badge>;
       case 'rejected':
-        return <Badge className="bg-red-100 text-red-800">{t('status.rejected')}</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t('quotation.status.rejected')}</Badge>;
       case 'expired':
-        return <Badge className="bg-orange-100 text-orange-800">{t('status.expired')}</Badge>;
+        return <Badge className="bg-orange-100 text-orange-800">{t('quotation.status.expired')}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-  };
+  const formatCurrency = (amount: number) =>
+    `SAR ${amount.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
@@ -231,23 +230,23 @@ export default function QuotationManagementPage() {
         <div ref={printRef} className="hidden print:block">
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
-              <h1 className="text-2xl font-bold">{t('quotation_management.title')}</h1>
+              <h1 className="text-2xl font-bold">{t('quotation.quotation.quotation_management.title')}</h1>
             </div>
             <Card>
               <CardHeader>
-                <CardTitle>{t('quotation_management.quotations')}</CardTitle>
+                <CardTitle>{t('quotation.quotation_management.quotations')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('quotation_management.quotation_number')}</TableHead>
-                      <TableHead>{t('quotation_management.customer')}</TableHead>
-                      <TableHead>{t('quotation_management.status')}</TableHead>
-                      <TableHead>{t('quotation_management.issue_date')}</TableHead>
-                      <TableHead>{t('quotation_management.valid_until')}</TableHead>
-                      <TableHead>{t('quotation_management.total_amount')}</TableHead>
-                      <TableHead>{t('quotation_management.items')}</TableHead>
+                      <TableHead>{t('quotation.quotation_management.quotation_number')}</TableHead>
+                      <TableHead>{t('quotation.quotation_management.customer')}</TableHead>
+                      <TableHead>{t('quotation.quotation_management.status')}</TableHead>
+                      <TableHead>{t('quotation.quotation_management.issue_date')}</TableHead>
+                      <TableHead>{t('quotation.quotation_management.valid_until')}</TableHead>
+                      <TableHead>{t('quotation.quotation_management.total_amount')}</TableHead>
+                      <TableHead>{t('quotation.quotation_management.items')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -282,7 +281,7 @@ export default function QuotationManagementPage() {
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">
-                            {quotation.quotationItems.length} {t('quotation_management.items_count')}
+                            {quotation.quotationItems.length} {t('quotation.quotation_management.items_count')}
                           </Badge>
                         </TableCell>
                       </TableRow>
@@ -297,24 +296,24 @@ export default function QuotationManagementPage() {
         {/* Main content - visible normally, hidden when printing */}
         <div className="block print:hidden">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold">{t('quotation_management.title')}</h1>
+            <h1 className="text-2xl font-bold">{t('quotation.quotation_management.title')}</h1>
             <div className="flex space-x-2">
               <Button variant="outline" size="sm" onClick={handleRefresh}>
                 <RefreshCw className="h-4 w-4 mr-2" />
-                {t('quotation_management.refresh')}
+                {t('quotation.quotation_management.refresh')}
               </Button>
               <Button variant="outline" size="sm" onClick={handleExport}>
                 <Download className="h-4 w-4 mr-2" />
-                {t('quotation_management.export')}
+                {t('quotation.quotation_management.export')}
               </Button>
               <Button variant="outline" size="sm" onClick={handlePrint}>
                 <Printer className="h-4 w-4 mr-2" />
-                {t('quotation_management.print')}
+                {t('quotation.quotation_management.print')}
               </Button>
               <Link href={`/${locale}/quotation-management/create`}>
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
-                  {t('quotation_management.create_quotation')}
+                  {t('quotation.quotation_management.create_quotation')}
                 </Button>
               </Link>
             </div>
@@ -326,7 +325,7 @@ export default function QuotationManagementPage() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
-                    placeholder={t('quotation_management.search_placeholder')}
+                    placeholder={t('quotation.quotation_management.search_placeholder')}
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                     className="pl-10"
@@ -335,27 +334,27 @@ export default function QuotationManagementPage() {
               </div>
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder={t('quotation_management.filter_status_placeholder')} />
+                  <SelectValue placeholder={t('quotation.quotation_management.filter_status_placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('quotation_management.all_status')}</SelectItem>
-                  <SelectItem value="draft">{t('quotation_management.status.draft')}</SelectItem>
-                  <SelectItem value="sent">{t('quotation_management.status.sent')}</SelectItem>
-                  <SelectItem value="approved">{t('quotation_management.status.approved')}</SelectItem>
-                  <SelectItem value="rejected">{t('quotation_management.status.rejected')}</SelectItem>
-                  <SelectItem value="expired">{t('quotation_management.status.expired')}</SelectItem>
+                  <SelectItem value="all">{t('quotation.quotation_management.all_status')}</SelectItem>
+                  <SelectItem value="draft">{t('quotation.quotation_management.status.draft')}</SelectItem>
+                  <SelectItem value="sent">{t('quotation.quotation_management.status.sent')}</SelectItem>
+                  <SelectItem value="approved">{t('quotation.quotation_management.status.approved')}</SelectItem>
+                  <SelectItem value="rejected">{t('quotation.quotation_management.status.rejected')}</SelectItem>
+                  <SelectItem value="expired">{t('quotation.quotation_management.status.expired')}</SelectItem>
                 </SelectContent>
               </Select>
               <Input
                 type="date"
-                placeholder={t('quotation_management.from_date_placeholder')}
+                placeholder={t('quotation.quotation_management.from_date_placeholder')}
                 value={startDate}
                 onChange={e => setStartDate(e.target.value)}
                 className="w-full sm:w-40"
               />
               <Input
                 type="date"
-                placeholder={t('quotation_management.to_date_placeholder')}
+                placeholder={t('quotation.quotation_management.to_date_placeholder')}
                 value={endDate}
                 onChange={e => setEndDate(e.target.value)}
                 className="w-full sm:w-40"
@@ -367,14 +366,14 @@ export default function QuotationManagementPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>{t('quotation_management.quotations')}</CardTitle>
+                  <CardTitle>{t('quotation.quotation_management.quotations')}</CardTitle>
                   <CardDescription>
-                    {t('quotation_management.manage_quotations_description')}
+                    {t('quotation.quotation_management.manage_quotations_description')}
                   </CardDescription>
                 </div>
                 <div className="flex items-center space-x-2">
                     <span className="text-sm text-gray-500">
-                     {t('quotation_management.showing_quotations', {
+                     {t('quotation.quotation_management.showing_quotations', {
                        from: String(quotations?.from || 0),
                        to: String(quotations?.to || 0),
                        total: String(quotations?.total || 0),
@@ -387,14 +386,14 @@ export default function QuotationManagementPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('quotation_management.quotation_number')}</TableHead>
-                    <TableHead>{t('quotation_management.customer')}</TableHead>
-                    <TableHead>{t('quotation_management.status')}</TableHead>
-                    <TableHead>{t('quotation_management.issue_date')}</TableHead>
-                    <TableHead>{t('quotation_management.valid_until')}</TableHead>
-                    <TableHead>{t('quotation_management.total_amount')}</TableHead>
-                    <TableHead>{t('quotation_management.items')}</TableHead>
-                    <TableHead className="text-right">{t('quotation_management.actions')}</TableHead>
+                    <TableHead>{t('quotation.quotation_management.quotation_number')}</TableHead>
+                    <TableHead>{t('quotation.quotation_management.customer')}</TableHead>
+                    <TableHead>{t('quotation.quotation_management.status')}</TableHead>
+                    <TableHead>{t('quotation.quotation_management.issue_date')}</TableHead>
+                    <TableHead>{t('quotation.quotation_management.valid_until')}</TableHead>
+                    <TableHead>{t('quotation.quotation_management.total_amount')}</TableHead>
+                    <TableHead>{t('quotation.quotation_management.items')}</TableHead>
+                    <TableHead className="text-right">{t('quotation.quotation_management.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -429,7 +428,7 @@ export default function QuotationManagementPage() {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">
-                          {quotation.quotationItems.length} {t('quotation_management.items_count')}
+                          {quotation.quotationItems.length} {t('quotation.quotation_management.items_count')}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
@@ -477,7 +476,7 @@ export default function QuotationManagementPage() {
               {quotations && quotations.last_page > 1 && (
                 <div className="flex items-center justify-between mt-6">
                     <div className="text-sm text-gray-500">
-                     {t('quotation_management.showing_results', {
+                     {t('quotation.quotation_management.showing_results', {
                        from: String(quotations.from),
                        to: String(quotations.to),
                        total: String(quotations.total),
@@ -490,10 +489,10 @@ export default function QuotationManagementPage() {
                       disabled={!quotations.prev_page_url}
                       onClick={() => setCurrentPage(quotations.current_page - 1)}
                     >
-                      {t('quotation_management.previous')}
+                      {t('quotation.quotation_management.previous')}
                     </Button>
                     <span className="text-sm">
-                      {t('quotation_management.page_of', {
+                      {t('quotation.quotation_management.page_of', {
                         current: String(quotations.current_page),
                         total: String(quotations.last_page),
                       })}
@@ -504,7 +503,7 @@ export default function QuotationManagementPage() {
                       disabled={!quotations.next_page_url}
                       onClick={() => setCurrentPage(quotations.current_page + 1)}
                     >
-                      {t('quotation_management.next')}
+                      {t('quotation.quotation_management.next')}
                     </Button>
                   </div>
                 </div>

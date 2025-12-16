@@ -86,7 +86,7 @@ export async function POST(
         notes: notes || null,
         trainerName: trainerName || null,
         expiryDate: expiryDate ? new Date(expiryDate).toISOString().split('T')[0] : null,
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString().split('T')[0],
       })
       .returning();
 

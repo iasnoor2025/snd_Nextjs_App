@@ -1053,8 +1053,8 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                                 </div>
                                 <div className="text-sm text-muted-foreground">
                                     {t('dashboard.manualAssignments.assignmentsCount', { 
-                                        filtered: filteredAssignments.length, 
-                                        total: assignments.filter(a => a.status === 'active').length 
+                                        filtered: String(filteredAssignments.length), 
+                                        total: String(assignments.filter(a => a.status === 'active').length) 
                                     })}
                                 </div>
                             </div>

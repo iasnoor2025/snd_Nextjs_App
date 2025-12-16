@@ -164,7 +164,7 @@ export async function GET(
           .select({
             resourceId: projectMaterials.id,
             type: projectMaterials.category,
-            name: projectMaterials.materialName,
+            name: projectMaterials.name,
             totalCost: projectMaterials.totalCost,
             date: projectMaterials.createdAt,
             status: projectMaterials.status,

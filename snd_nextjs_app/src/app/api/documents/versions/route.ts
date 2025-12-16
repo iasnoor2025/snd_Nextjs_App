@@ -26,12 +26,8 @@ export async function GET(request: NextRequest) {
     
     if (search) {
       whereConditions.push(
-        like(documentVersions.title, `%${search}%`)
+        like(documentVersions.fileName, `%${search}%`)
       );
-    }
-    
-    if (status && status !== 'all') {
-      whereConditions.push(eq(documentVersions.status, status));
     }
     
     if (documentId) {
@@ -52,20 +48,18 @@ export async function GET(request: NextRequest) {
         id: documentVersions.id,
         documentId: documentVersions.documentId,
         version: documentVersions.version,
-        title: documentVersions.title,
-        content: documentVersions.content,
+        fileName: documentVersions.fileName,
         filePath: documentVersions.filePath,
         fileSize: documentVersions.fileSize,
         mimeType: documentVersions.mimeType,
-        status: documentVersions.status,
-        createdBy: documentVersions.createdBy,
+        changeNotes: documentVersions.changeNotes,
+        uploadedBy: documentVersions.uploadedBy,
         createdAt: documentVersions.createdAt,
-        updatedAt: documentVersions.updatedAt,
         // Related data
-        createdByName: users.name,
+        uploadedByName: users.name,
       })
       .from(documentVersions)
-      .leftJoin(users, eq(documentVersions.createdBy, users.id))
+      .leftJoin(users, eq(documentVersions.uploadedBy, users.id))
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
       .orderBy(desc(documentVersions.createdAt))
       .limit(limit)
@@ -100,12 +94,11 @@ export async function POST(request: NextRequest) {
     const {
       documentId,
       version,
-      title,
-      content,
+      fileName,
       filePath,
       fileSize,
       mimeType,
-      status = 'draft',
+      changeNotes,
     } = body;
 
     // Validation
@@ -115,24 +108,30 @@ export async function POST(request: NextRequest) {
     if (!version) {
       return NextResponse.json({ error: 'Version is required' }, { status: 400 });
     }
-    if (!title) {
-      return NextResponse.json({ error: 'Title is required' }, { status: 400 });
+    if (!fileName) {
+      return NextResponse.json({ error: 'File name is required' }, { status: 400 });
+    }
+    if (!filePath) {
+      return NextResponse.json({ error: 'File path is required' }, { status: 400 });
     }
 
     // Create document version
+    const docId = parseInt(documentId);
+    if (isNaN(docId)) {
+      return NextResponse.json({ error: 'Invalid document ID' }, { status: 400 });
+    }
+    
     const [newVersion] = await db
       .insert(documentVersions)
       .values({
-        documentId: parseInt(documentId),
+        documentId: docId,
         version,
-        title,
-        content,
+        fileName,
         filePath,
-        fileSize: fileSize ? parseInt(fileSize) : null,
-        mimeType,
-        status,
-        createdBy: session.user.id,
-        updatedAt: new Date(),
+        fileSize: fileSize ? parseInt(fileSize) : 0,
+        mimeType: mimeType || 'application/octet-stream',
+        changeNotes,
+        uploadedBy: session.user.id,
       })
       .returning();
 

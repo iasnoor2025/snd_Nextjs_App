@@ -62,7 +62,7 @@ export const GET = withPermission(PermissionConfigs.designation.read)(async (_re
       { status: 500 }
     );
   }
-}, PermissionConfigs.designation.read);
+});
 
 export const POST = withPermission(PermissionConfigs.designation.create)(async (request: NextRequest) => {
   try {

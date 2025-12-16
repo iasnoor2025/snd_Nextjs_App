@@ -242,8 +242,9 @@ export default function EditProjectPage() {
       // 2. Check rental items where employee is operator (via previous-assignments endpoint for detailed info)
       try {
         const previousAssignmentsResponse = await ApiService.get(`/employees/${employeeIdNum}/previous-assignments`);
-        if (previousAssignmentsResponse && previousAssignmentsResponse.assignments) {
-          const activeRentalAssignments = previousAssignmentsResponse.assignments.filter((assignment: any) => 
+        const assignments = (previousAssignmentsResponse as any)?.assignments || (previousAssignmentsResponse as any)?.data?.assignments || [];
+        if (assignments && assignments.length > 0) {
+          const activeRentalAssignments = assignments.filter((assignment: any) => 
             assignment.role === 'operator' && 
             (assignment.status === 'active' || !assignment.completedDate)
           );

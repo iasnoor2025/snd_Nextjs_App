@@ -1,5 +1,3 @@
-import { ERPNextService } from './erpnext-service';
-
 export class ERPNextPaymentService {
   private static baseUrl = process.env.ERP_NEXT_URL;
   private static apiKey = process.env.ERP_NEXT_API_KEY;

@@ -89,9 +89,9 @@ interface ReportData {
   customer_details?: any[];
   summary_stats?: any;
   customer_groups?: any[];
-  timesheet_stats?: any;
   timesheet_details?: any[];
   rental_summary?: any[];
+  monthly_items?: any[];
 }
 
 interface MetricCard {

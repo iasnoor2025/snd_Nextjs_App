@@ -63,8 +63,8 @@ const syncCustomersHandler = async (_request: NextRequest) => {
             }
           }
 
-          await db.insert(customers).values({
-            name: customerData.name || customerData.customer_name || 'Unknown Customer',
+          const customerInsertData = {
+            name: String(customerData.name || customerData.customer_name || 'Unknown Customer'),
             companyName: customerData.company_name || customerData.name || 'Unknown Company',
             contactPerson: customerData.contact_person || customerData.contact_person_name || null,
             email: customerData.email || customerData.email_id || null,
@@ -77,13 +77,13 @@ const syncCustomersHandler = async (_request: NextRequest) => {
             website: customerData.website || null,
             taxNumber: customerData.tax_number || customerData.tax_id || null,
             vatNumber: customerData.vat_number || customerData.gst_number || null,
-            creditLimit: customerData.credit_limit ? parseFloat(customerData.credit_limit) : null,
-            creditLimitUsed: customerData.credit_limit_used ? parseFloat(customerData.credit_limit_used) : null,
-            creditLimitRemaining: customerData.credit_limit_remaining ? parseFloat(customerData.credit_limit_remaining) : null,
+            creditLimit: customerData.credit_limit ? String(parseFloat(customerData.credit_limit)) : null,
+            creditLimitUsed: customerData.credit_limit_used ? String(parseFloat(customerData.credit_limit_used)) : null,
+            creditLimitRemaining: customerData.credit_limit_remaining ? String(parseFloat(customerData.credit_limit_remaining)) : null,
             paymentTerms: customerData.payment_terms || (customerData.payment_terms_days ? `${customerData.payment_terms_days} days` : null),
-            currentDue: customerData.current_due ? parseFloat(customerData.current_due) : null,
-            totalValue: customerData.total_value ? parseFloat(customerData.total_value) : null,
-            outstandingAmount: customerData.outstanding_amount ? parseFloat(customerData.outstanding_amount) : null,
+            currentDue: customerData.current_due ? String(parseFloat(customerData.current_due)) : null,
+            totalValue: customerData.total_value ? String(parseFloat(customerData.total_value)) : null,
+            outstandingAmount: customerData.outstanding_amount ? String(parseFloat(customerData.outstanding_amount)) : null,
             currency: customerData.currency || customerData.default_currency || 'SAR',
             customerType: customerData.customer_type || customerData.customer_group || null,
             customerGroup: customerData.customer_group || customerData.customer_type || null,
@@ -97,9 +97,11 @@ const syncCustomersHandler = async (_request: NextRequest) => {
             isActive: customerData.is_active !== false,
             erpnextId: customerData.erpnext_id || customerData.name || null,
             status: customerData.status || 'active',
-            createdAt: new Date().toISOString().split('T')[0] || null,
-            updatedAt: new Date().toISOString().split('T')[0] || null,
-          });
+            createdAt: new Date().toISOString().split('T')[0],
+            updatedAt: new Date().toISOString().split('T')[0],
+          };
+          
+          await db.insert(customers).values(customerInsertData);
 
           createdCount++;
           processedCount++;
