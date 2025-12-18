@@ -1,7 +1,7 @@
 
 import { db } from '@/lib/db';
 import { advancePayments, employees as employeesTable } from '@/lib/drizzle/schema';
-import { eq, isNull } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
@@ -74,7 +74,10 @@ export async function GET(_request: NextRequest) {
       })
       .from(advancePayments)
       .where(
-        eq(advancePayments.employeeId, parseInt(employeeId)) && isNull(advancePayments.deletedAt)
+        and(
+          eq(advancePayments.employeeId, parseInt(employeeId)),
+          isNull(advancePayments.deletedAt)
+        )
       )
       .orderBy(advancePayments.createdAt);
 

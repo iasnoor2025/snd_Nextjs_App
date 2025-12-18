@@ -1712,14 +1712,14 @@ export default function EmployeeShowPage() {
                                     <div className="grid grid-cols-2 gap-2 text-sm">
                                       <div>
                                         Amount: SAR{' '}
-                                        {Number(selectedAdvanceForRepayment.amount).toFixed(2)}
+                                        {Number(selectedAdvanceForRepayment.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                       </div>
                                       <div>
                                         Monthly Deduction: SAR{' '}
                                         {selectedAdvanceForRepayment.monthly_deduction
                                           ? Number(
                                               selectedAdvanceForRepayment.monthly_deduction
-                                            ).toFixed(2)
+                                            ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                                           : 'Not set'}
                                       </div>
                                       <div>
@@ -1727,7 +1727,7 @@ export default function EmployeeShowPage() {
                                         {selectedAdvanceForRepayment.repaid_amount
                                           ? Number(
                                               selectedAdvanceForRepayment.repaid_amount
-                                            ).toFixed(2)
+                                            ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                                           : '0.00'}
                                       </div>
                                       <div>
@@ -1735,7 +1735,7 @@ export default function EmployeeShowPage() {
                                         {(
                                           Number(selectedAdvanceForRepayment.amount) -
                                           Number(selectedAdvanceForRepayment.repaid_amount || 0)
-                                        ).toFixed(2)}
+                                        ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                       </div>
                                     </div>
                                   </div>
@@ -1983,7 +1983,7 @@ export default function EmployeeShowPage() {
                   </div>
                   <div className="space-y-2">
                     <p className="text-3xl font-bold text-destructive">
-                      SAR {Number(currentBalance).toFixed(2)}
+                      SAR {Number(currentBalance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                     <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                       <div
@@ -2026,7 +2026,7 @@ export default function EmployeeShowPage() {
                     <div className="flex items-center justify-between text-sm text-muted-foreground">
                       <span>{t('employee.advances.currentMonthlyDeduction')}</span>
                       <span className="font-medium">
-                        {t('employee.currency.symbol')} {Number(monthlyDeduction || 0).toFixed(2)}
+                        {t('employee.currency.symbol')} {Number(monthlyDeduction || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground">
@@ -2132,13 +2132,13 @@ export default function EmployeeShowPage() {
                           advances.map(advance => (
                             <tr key={advance.id} className="hover:bg-muted/50">
                               <td className="px-6 py-4 whitespace-nowrap font-medium text-primary">
-                                SAR {Number(advance.amount).toFixed(2)}
+                                SAR {Number(advance.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                SAR {Number(advance.monthly_deduction || 0).toFixed(2)}
+                                SAR {Number(advance.monthly_deduction || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                SAR {Number(advance.repaid_amount || 0).toFixed(2)}
+                                SAR {Number(advance.repaid_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </td>
                               <td className="px-6 py-4 max-w-[200px] truncate">{advance.reason}</td>
                               <td className="px-6 py-4 whitespace-nowrap">
@@ -2339,7 +2339,7 @@ export default function EmployeeShowPage() {
                       payments.map((payment: any, i: number) => (
                         <tr key={payment.id || i} className="hover:bg-muted/20 transition-colors">
                           <td className="px-6 py-4 whitespace-nowrap font-medium text-primary">
-                            SAR {Number(payment.amount).toFixed(2)}
+                            SAR {Number(payment.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             {new Date(payment.payment_date).toLocaleDateString()}
