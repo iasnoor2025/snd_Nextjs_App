@@ -12,12 +12,52 @@ import { useTranslation } from 'react-i18next';
 import { LogOut, User } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import Link from 'next/link';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { getRoleColorByRoleName } from '@/lib/utils/role-colors';
 
 export function NavUser() {
   const { session, status } = useAuth();
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === 'ar';
+  const [roleColor, setRoleColor] = useState<string | null>(null);
+  const [userPreferredColor, setUserPreferredColor] = useState<string | null>(null);
+  const currentUserRole = (session?.user?.role as string) || 'USER';
+
+  // Fetch role color and user preferred color from database
+  useEffect(() => {
+    const fetchColorInfo = async () => {
+      if (!session?.user?.role) {
+        return;
+      }
+
+      try {
+        // Fetch user info to get preferred color
+        const userResponse = await fetch('/api/auth/me');
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          if (userData.user?.preferredColor) {
+            setUserPreferredColor(userData.user.preferredColor);
+          }
+        }
+
+        // Fetch role color
+        const rolesResponse = await fetch('/api/roles');
+        if (rolesResponse.ok) {
+          const roles = await rolesResponse.json();
+          const role = roles.find((r: { name: string }) => 
+            r.name.toUpperCase() === (session.user.role as string).toUpperCase()
+          );
+          if (role?.color) {
+            setRoleColor(role.color);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching color info:', error);
+      }
+    };
+
+    fetchColorInfo();
+  }, [session?.user?.role]);
 
   if (status === 'loading') {
     return (
@@ -46,12 +86,14 @@ export function NavUser() {
     signOut({ callbackUrl: '/login' });
   };
 
+  const avatarColorClass = getRoleColorByRoleName(currentUserRole, roleColor, 'avatar', userPreferredColor);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="flex items-center space-x-2 rounded-full p-1 hover:bg-gray-100 transition-colors">
           <Avatar className="h-8 w-8">
-            <AvatarFallback className="bg-blue-500 text-white text-sm font-medium">
+            <AvatarFallback className={`${avatarColorClass} text-white text-sm font-medium`}>
               {userInitials}
             </AvatarFallback>
           </Avatar>

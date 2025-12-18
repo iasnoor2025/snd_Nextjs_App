@@ -27,6 +27,7 @@ export interface DocumentItem {
   employee_file_number?: string | number;
   document_type?: string;
   project_id?: number; // For project documents
+  equipment_id?: number; // For equipment documents
 }
 
 interface DocumentManagerProps {
@@ -858,7 +859,12 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
                     url={previewImage.url}
                     downloadUrl={previewImage.project_id 
                       ? `/api/projects/${previewImage.project_id}/documents/${previewImage.id}/download`
+                      : previewImage.equipment_id
+                      ? `/api/equipment/${previewImage.equipment_id}/documents/${previewImage.id}/download`
                       : undefined}
+                    openInNewTabUrl={previewImage.project_id 
+                      ? `/api/projects/${previewImage.project_id}/documents/${previewImage.id}/preview`
+                      : previewImage.url}
                     className="w-full h-full"
                   />
                 </div>

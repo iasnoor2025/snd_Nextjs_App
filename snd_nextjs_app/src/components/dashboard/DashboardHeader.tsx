@@ -47,6 +47,7 @@ export function DashboardHeader({
 }: DashboardHeaderProps) {
   const { t } = useI18n();
   const [roleColor, setRoleColor] = useState<string | null>(null);
+  const [userPreferredColor, setUserPreferredColor] = useState<string | null>(null);
   const currentUserRole = (session?.user?.role as string) || 'USER';
 
   // Map color name to dashboard gradient classes
@@ -92,9 +93,15 @@ export function DashboardHeader({
     return 'text-white';
   };
 
-  // Get dashboard gradient based on role (with database color support)
-  const getDashboardGradientByRole = (role: string, roleColor?: string | null) => {
-    // First, try to use color from database
+  // Get dashboard gradient based on role (with database color support and user preference)
+  const getDashboardGradientByRole = (role: string, roleColor?: string | null, userPreferredColor?: string | null) => {
+    // First, check if user has a preferred color (highest priority)
+    if (userPreferredColor) {
+      const userGradient = getDashboardGradient(userPreferredColor);
+      if (userGradient) return userGradient;
+    }
+    
+    // Second, try to use color from database (role color)
     if (roleColor) {
       const dbGradient = getDashboardGradient(roleColor);
       if (dbGradient) return dbGradient;
@@ -132,14 +139,24 @@ export function DashboardHeader({
     return colorOptions[roleHash % colorOptions.length];
   };
 
-  // Fetch role color from database
+  // Fetch role color and user preferred color from database
   useEffect(() => {
-    const fetchRoleColor = async () => {
+    const fetchColorInfo = async () => {
       if (!session?.user?.role) {
         return;
       }
 
       try {
+        // Fetch user info to get preferred color
+        const userResponse = await fetch('/api/auth/me');
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          if (userData.user?.preferredColor) {
+            setUserPreferredColor(userData.user.preferredColor);
+          }
+        }
+
+        // Fetch role color
         const rolesResponse = await fetch('/api/roles');
         if (rolesResponse.ok) {
           const roles = await rolesResponse.json();
@@ -151,15 +168,15 @@ export function DashboardHeader({
           }
         }
       } catch (error) {
-        console.error('Error fetching role color:', error);
+        console.error('Error fetching color info:', error);
       }
     };
 
-    fetchRoleColor();
+    fetchColorInfo();
   }, [session?.user?.role]);
 
-  const gradientClass = getDashboardGradientByRole(currentUserRole, roleColor);
-  const textColorClass = getTextColorClasses(roleColor);
+  const gradientClass = getDashboardGradientByRole(currentUserRole, roleColor, userPreferredColor);
+  const textColorClass = getTextColorClasses(userPreferredColor || roleColor);
 
   return (
     <div className={`${gradientClass} text-white shadow-lg transition-colors duration-300`}>

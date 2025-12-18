@@ -37,6 +37,8 @@ import { validateLocale } from '@/lib/locale-utils';
 import { useParams } from 'next/navigation';
 import { useSettings } from '@/hooks/use-settings';
 import Image from 'next/image';
+import { useState, useEffect } from 'react';
+import { getRoleColorByRoleName } from '@/lib/utils/role-colors';
 
 // Define menu item type
 type MenuItem = {
@@ -52,9 +54,48 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { canAccessRoute, user, hasPermission } = useRBAC();
   const params = useParams();
   const [locale, setLocale] = React.useState('en');
+  const [roleColor, setRoleColor] = useState<string | null>(null);
+  const [userPreferredColor, setUserPreferredColor] = useState<string | null>(null);
   const { getSetting } = useSettings(['company.name', 'company.logo', 'app.name']);
   const appTitle = getSetting('company.name') || getSetting('app.name') || t('sidebar.appTitle');
   const companyLogo = getSetting('company.logo') || '/snd-logo.png';
+  const currentUserRole = user?.role || 'USER';
+
+  // Fetch role color and user preferred color from database
+  useEffect(() => {
+    const fetchColorInfo = async () => {
+      if (!user?.role) {
+        return;
+      }
+
+      try {
+        // Fetch user info to get preferred color
+        const userResponse = await fetch('/api/auth/me');
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          if (userData.user?.preferredColor) {
+            setUserPreferredColor(userData.user.preferredColor);
+          }
+        }
+
+        // Fetch role color
+        const rolesResponse = await fetch('/api/roles');
+        if (rolesResponse.ok) {
+          const roles = await rolesResponse.json();
+          const role = roles.find((r: { name: string }) => 
+            r.name.toUpperCase() === (user.role as string).toUpperCase()
+          );
+          if (role?.color) {
+            setRoleColor(role.color);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching color info:', error);
+      }
+    };
+
+    fetchColorInfo();
+  }, [user?.role]);
 
   React.useEffect(() => {
     const currentLocale = validateLocale(params?.locale as string);
@@ -223,12 +264,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     documents,
   }), [navMain, documents]);
 
+  const borderColorClass = getRoleColorByRoleName(currentUserRole, roleColor, 'border', userPreferredColor);
+
   return (
     <Sidebar
       collapsible="offcanvas"
       variant="sidebar"
       side={isRTL ? 'right' : 'left'}
-      className="w-64"
+      className={`w-64 border-l-2 ${borderColorClass}`}
       {...props}
     >
       <SidebarHeader>

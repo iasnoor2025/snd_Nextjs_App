@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 
 import { db } from '@/lib/drizzle';
-import { media } from '@/lib/drizzle/schema';
+import { equipmentDocuments } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { ensureHttps } from '@/lib/utils/url-utils';
 
@@ -17,12 +17,18 @@ export async function GET(
     }
 
     const { id: equipmentId, documentId } = await params;
+    const equipmentIdNum = parseInt(equipmentId);
+    const documentIdNum = parseInt(documentId);
+    
+    if (!equipmentIdNum || !documentIdNum) {
+      return NextResponse.json({ error: 'Invalid equipment ID or document ID' }, { status: 400 });
+    }
     
     // Get document record from database
     const documentResult = await db
       .select()
-      .from(media)
-      .where(eq(media.id, parseInt(documentId)))
+      .from(equipmentDocuments)
+      .where(eq(equipmentDocuments.id, documentIdNum))
       .limit(1);
 
     if (!documentResult[0]) {
@@ -30,6 +36,11 @@ export async function GET(
     }
 
     const documentRecord = documentResult[0];
+
+    // Verify the document belongs to the equipment
+    if (documentRecord.equipmentId !== equipmentIdNum) {
+      return NextResponse.json({ error: 'Document does not belong to this equipment' }, { status: 403 });
+    }
 
     // Check if user has permission to access this document
     if (session.user.role !== 'SUPER_ADMIN' && 

@@ -33,6 +33,7 @@ export function SiteHeader() {
   const currentUserRole = user?.role || 'USER';
   const [roleDisplayName, setRoleDisplayName] = useState<string>(currentUserRole);
   const [roleColor, setRoleColor] = useState<string | null>(null);
+  const [userPreferredColor, setUserPreferredColor] = useState<string | null>(null);
   const { getSetting } = useSettings(['app.name']);
   const appName = getSetting('app.name', t('common.app.name'));
 
@@ -149,9 +150,15 @@ export function SiteHeader() {
     return selectedColor;
   };
 
-  // Get header background color based on role (with database color support)
-  const getHeaderColor = (role: string, roleColor?: string | null) => {
-    // First, try to use color from database
+  // Get header background color based on role (with database color support and user preference)
+  const getHeaderColor = (role: string, roleColor?: string | null, userPreferredColor?: string | null) => {
+    // First, check if user has a preferred color (highest priority)
+    if (userPreferredColor) {
+      const userColor = getColorClasses(userPreferredColor, 'header');
+      if (userColor) return userColor;
+    }
+    
+    // Second, try to use color from database (role color)
     if (roleColor) {
       const dbColor = getColorClasses(roleColor, 'header');
       if (dbColor) return dbColor;
@@ -202,9 +209,9 @@ export function SiteHeader() {
     return getRoleBadgeStyle(role);
   };
 
-  // Calculate badge style and header color using current state
+  // Calculate badge style and header color using current state (with user preference)
   const badgeStyle = getRoleBadgeStyleWithColor(roleDisplayName, roleColor);
-  const headerColorClass = getHeaderColor(roleDisplayName, roleColor);
+  const headerColorClass = getHeaderColor(roleDisplayName, roleColor, userPreferredColor);
 
   // Fetch role name and color from database
   useEffect(() => {
@@ -219,6 +226,10 @@ export function SiteHeader() {
         if (userResponse.ok) {
           const userData = await userResponse.json();
           const actualRole = userData.user?.role;
+          const preferredColor = userData.user?.preferredColor;
+          
+          // Set user preferred color (can be null/empty/undefined to use role color)
+          setUserPreferredColor(preferredColor || null);
           
           if (actualRole) {
             // Now fetch all roles to get the original casing and color

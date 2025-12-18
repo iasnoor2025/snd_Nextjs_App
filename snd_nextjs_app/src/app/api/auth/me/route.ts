@@ -22,6 +22,7 @@ export async function GET() {
         email: usersTable.email,
         name: usersTable.name,
         role_id: usersTable.roleId,
+        preferredColor: usersTable.preferredColor,
       })
       .from(usersTable)
       .where(eq(usersTable.email, session.user.email))
@@ -141,6 +142,7 @@ export async function GET() {
         email: user.email,
         name: user.name,
         role: role,
+        preferredColor: user.preferredColor,
         employee: employeeData,
       },
     });

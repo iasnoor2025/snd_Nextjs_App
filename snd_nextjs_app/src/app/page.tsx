@@ -78,6 +78,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo, useCallback, memo } from 'react';
 import { getUserAccessibleSectionsClient } from '@/lib/rbac/client-permission-service';
 import { useLoginRedirect } from '@/hooks/use-login-redirect';
+import { getRoleColorByRoleName } from '@/lib/utils/role-colors';
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -862,10 +863,13 @@ export default function DashboardPage() {
 
   // Show loading state only for initial load, not for data fetching
   if (!session) {
+    // Use default spinner color when session is not available
+    const spinnerColorClass = getRoleColorByRoleName('USER', null, 'spinner');
+    
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <div className={`animate-spin rounded-full h-32 w-32 border-b-2 ${spinnerColorClass} mx-auto`}></div>
           <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">{t('dashboard.loading')}</p>
         </div>
       </div>

@@ -114,7 +114,8 @@ export default function EquipmentDocumentUpload({
             file_type: doc.mimeType || 'application/octet-stream',
             size: doc.fileSize || 0,
             url: doc.url || doc.filePath,
-            created_at: doc.createdAt || doc.created_at
+            created_at: doc.createdAt || doc.created_at,
+            equipment_id: equipmentId
           })) as DocumentItem[];
 
           setDocuments(docs);

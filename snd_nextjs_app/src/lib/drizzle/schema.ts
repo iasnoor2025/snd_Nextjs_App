@@ -1728,6 +1728,7 @@ export const users = pgTable(
     isActive: boolean().default(true).notNull(),
     locale: text(),
     avatar: text(),
+    preferredColor: text('preferred_color'), // User's preferred UI color (overrides role color)
     lastLoginAt: date('last_login_at'),
     createdAt: date('created_at')
       .default(sql`CURRENT_DATE`)

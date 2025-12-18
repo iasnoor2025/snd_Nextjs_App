@@ -16,7 +16,8 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Eye, EyeOff, Lock, User, Save, X } from 'lucide-react';
+import { Eye, EyeOff, Lock, User, Save, X, Palette } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLoginRedirect } from '@/hooks/use-login-redirect';
 
 export default function ProfilePage() {
@@ -38,6 +39,7 @@ export default function ProfilePage() {
     phone: '',
     nationalId: '',
     avatar: '',
+    preferredColor: '',
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
@@ -144,6 +146,7 @@ export default function ProfilePage() {
           phone: data.phone || '',
           nationalId: data.nationalId || '',
           avatar: data.avatar || '',
+          preferredColor: data.preferredColor || '',
           currentPassword: '',
           newPassword: '',
           confirmPassword: '',
@@ -276,6 +279,7 @@ export default function ProfilePage() {
           lastName: formData.lastName.trim(),
           email: formData.email.trim(),
           phone: formData.phone?.trim() || '',
+          preferredColor: formData.preferredColor || null,
         }),
       });
 
@@ -284,6 +288,8 @@ export default function ProfilePage() {
         setEditing(false);
         // Refresh profile data
         await fetchProfileData();
+        // Trigger a page refresh to apply color changes across all components
+        window.location.reload();
       } else {
         const errorData = await response.json();
         toast.error(errorData.error || 'Failed to update profile');
@@ -635,6 +641,42 @@ export default function ProfilePage() {
                      />
                      <p className="text-xs text-gray-500">
                        This field is automatically populated when you set your National ID.
+                     </p>
+                   </div>
+                   <div className="space-y-2 md:col-span-2">
+                     <Label htmlFor="preferredColor" className="flex items-center gap-2">
+                       <Palette className="h-4 w-4" />
+                       Preferred UI Color
+                     </Label>
+                     <Select
+                       value={formData.preferredColor ? formData.preferredColor : 'default'}
+                       onValueChange={(value) => handleInputChange('preferredColor', value === 'default' ? '' : value)}
+                       disabled={!editing}
+                     >
+                       <SelectTrigger>
+                         <SelectValue placeholder="Use role color (default)" />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="default">Use role color (default)</SelectItem>
+                         <SelectItem value="red">Red</SelectItem>
+                         <SelectItem value="blue">Blue</SelectItem>
+                         <SelectItem value="purple">Purple</SelectItem>
+                         <SelectItem value="orange">Orange</SelectItem>
+                         <SelectItem value="green">Green</SelectItem>
+                         <SelectItem value="gray">Gray</SelectItem>
+                         <SelectItem value="slate">Slate</SelectItem>
+                         <SelectItem value="indigo">Indigo</SelectItem>
+                         <SelectItem value="teal">Teal</SelectItem>
+                         <SelectItem value="pink">Pink</SelectItem>
+                         <SelectItem value="cyan">Cyan</SelectItem>
+                         <SelectItem value="amber">Amber</SelectItem>
+                         <SelectItem value="emerald">Emerald</SelectItem>
+                         <SelectItem value="violet">Violet</SelectItem>
+                         <SelectItem value="rose">Rose</SelectItem>
+                       </SelectContent>
+                     </Select>
+                     <p className="text-xs text-gray-500">
+                       Choose your preferred color for the UI. This will override your role color. Select "Use role color (default)" to use your role's default color.
                      </p>
                    </div>
                  </div>

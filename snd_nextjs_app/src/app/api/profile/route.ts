@@ -35,6 +35,7 @@ const getProfileHandler = async (_request: NextRequest) => {
             roleId: users.roleId,
             avatar: users.avatar,
             locale: users.locale,
+            preferredColor: users.preferredColor,
             lastLoginAt: users.lastLoginAt,
             isActive: users.isActive,
             createdAt: users.createdAt,
@@ -170,6 +171,7 @@ const getProfileHandler = async (_request: NextRequest) => {
           email: user.email,
           phone: bestEmployee?.phone || '',
           avatar: user.avatar || '',
+          preferredColor: user.preferredColor || '',
           role: user.roleId,
           department: bestEmployee?.department || 'General',
           location:
@@ -257,6 +259,7 @@ export const POST = withPermission(PermissionConfigs['own-profile'].update)(asyn
       // designation,
       // department,
       nationalId,
+      preferredColor,
     } = body;
 
     // Check if user exists using Drizzle
@@ -303,6 +306,7 @@ export const POST = withPermission(PermissionConfigs['own-profile'].update)(asyn
         name: name || existingUser.name,
         email: email || existingUser.email,
         nationalId: nationalId || existingUser.nationalId,
+        preferredColor: preferredColor !== undefined ? preferredColor : existingUser.preferredColor,
         updatedAt: new Date().toISOString(),
       })
       .where(eq(users.id, parseInt(userId)))

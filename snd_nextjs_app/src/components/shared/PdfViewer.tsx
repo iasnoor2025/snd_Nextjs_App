@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { FileText, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
+import { FileText, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 // Dynamic import for PDF.js to avoid SSR issues
@@ -11,9 +11,10 @@ interface PdfViewerProps {
   url: string;
   downloadUrl?: string; // Optional download endpoint URL for authenticated access
   className?: string;
+  openInNewTabUrl?: string; // URL to open in new tab (if different from url)
 }
 
-export default function PdfViewer({ url, downloadUrl, className = '' }: PdfViewerProps) {
+export default function PdfViewer({ url, downloadUrl, className = '', openInNewTabUrl }: PdfViewerProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pdfjsLoaded, setPdfjsLoaded] = useState(false);
@@ -145,12 +146,20 @@ export default function PdfViewer({ url, downloadUrl, className = '' }: PdfViewe
         const context = canvas.getContext('2d');
         if (!context) return;
 
+        // Clear the canvas before rendering
+        context.clearRect(0, 0, canvas.width, canvas.height);
+
         // Calculate viewport with scale and rotation
         const viewport = page.getViewport({ scale, rotation });
         
+        // Set canvas dimensions
         canvas.height = viewport.height;
         canvas.width = viewport.width;
 
+        // Clear again after resizing
+        context.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Render the page
         await page.render({
           canvasContext: context,
           viewport: viewport,
@@ -229,6 +238,19 @@ export default function PdfViewer({ url, downloadUrl, className = '' }: PdfViewe
           <Button variant="outline" size="sm" onClick={rotate} title="Rotate">
             <RotateCw className="h-4 w-4" />
           </Button>
+          {(openInNewTabUrl || url) && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                const openUrl = openInNewTabUrl || url;
+                window.open(openUrl, '_blank');
+              }} 
+              title="Open in new tab"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
       
