@@ -11,6 +11,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionProvider } from 'next-auth/react';
 import { ThemeProvider } from 'next-themes';
 import { lazy, Suspense, useEffect, useMemo } from 'react';
+import { ThemeColorProvider } from '@/components/providers/theme-color-provider';
 
 // Dynamic imports for heavy components with better chunking
 const ReactQueryDevtools = lazy(() =>
@@ -110,7 +111,8 @@ export function Providers({ children }: ProvidersProps) {
             disableTransitionOnChange
             storageKey="theme"
           >
-            <QueryClientProvider client={queryClient}>
+            <ThemeColorProvider>
+              <QueryClientProvider client={queryClient}>
               <SSEProvider>
                 <I18nProvider>
                   <ConfirmationProvider>
@@ -127,6 +129,7 @@ export function Providers({ children }: ProvidersProps) {
                 )}
               </SSEProvider>
             </QueryClientProvider>
+            </ThemeColorProvider>
           </ThemeProvider>
         </RBACProvider>
       </SessionProvider>
