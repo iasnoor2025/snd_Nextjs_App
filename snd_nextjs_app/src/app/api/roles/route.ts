@@ -14,6 +14,10 @@ export async function GET() {
       cacheKey,
       async () => {
         // Fetch roles
+        // NOTE: we intentionally do NOT select the optional color column here.
+        // If the runtime schema or database gets out of sync, selecting a column
+        // that isn't recognized can cause \"undefined\" column errors. The UI can
+        // still work without color, and we can re-introduce it later in a safe way.
         const roles = await db
           .select({
             id: rolesTable.id,
@@ -52,6 +56,7 @@ export async function GET() {
           guardName: role.guard_name,
           priority: role.priority,
           isActive: role.is_active,
+          // color is optional for now; can be added back once schema is fully aligned
           createdAt: role.created_at,
           updatedAt: role.updated_at,
           userCount: roleIdToCount.get(role.id as number) || 0,
@@ -72,7 +77,16 @@ export async function GET() {
     );
   } catch (error) {
     console.error('Error fetching roles:', error);
-    return NextResponse.json({ error: 'Failed to fetch roles' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('Error details:', { errorMessage, errorStack });
+    return NextResponse.json(
+      { 
+        error: 'Failed to fetch roles',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      }, 
+      { status: 500 }
+    );
   }
 }
 
@@ -80,7 +94,7 @@ export async function GET() {
 export async function POST(_request: NextRequest) {
   try {
     const body = await _request.json();
-    const { name, guard_name } = body;
+    const { name, guard_name, color } = body;
 
     // Validate required fields
     if (!name) {
@@ -100,11 +114,17 @@ export async function POST(_request: NextRequest) {
     // Create role
     const inserted = await db
       .insert(rolesTable)
-      .values({ name, guardName: guard_name || 'web', updatedAt: new Date().toISOString() })
+      .values({ 
+        name, 
+        guardName: guard_name || 'web', 
+        color: color || null, // Auto-assign color if not provided
+        updatedAt: new Date().toISOString() 
+      })
       .returning({
         id: rolesTable.id,
         name: rolesTable.name,
         guard_name: rolesTable.guardName,
+        color: rolesTable.color,
         created_at: rolesTable.createdAt,
         updated_at: rolesTable.updatedAt,
       });
@@ -114,6 +134,7 @@ export async function POST(_request: NextRequest) {
       id: role!.id,
       name: role!.name,
       guard_name: role!.guard_name,
+      color: role!.color,
       createdAt: role!.created_at,
       updatedAt: role!.updated_at,
       userCount: 0,
@@ -130,7 +151,7 @@ export async function POST(_request: NextRequest) {
 export async function PUT(_request: NextRequest) {
   try {
     const body = await _request.json();
-    const { id, name, guard_name, priority } = body;
+    const { id, name, guard_name, priority, color } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'Role ID is required' }, { status: 400 });
@@ -166,6 +187,7 @@ export async function PUT(_request: NextRequest) {
         name: name ?? undefined,
         guardName: guard_name ?? undefined,
         priority: priority !== undefined ? priority : undefined,
+        color: color !== undefined ? color : undefined,
         updatedAt: new Date().toISOString(),
       })
       .where(eq(rolesTable.id, id))
@@ -175,6 +197,7 @@ export async function PUT(_request: NextRequest) {
         guardName: rolesTable.guardName,
         priority: rolesTable.priority,
         isActive: rolesTable.isActive,
+        color: rolesTable.color,
         createdAt: rolesTable.createdAt,
         updatedAt: rolesTable.updatedAt,
       });
@@ -193,6 +216,7 @@ export async function PUT(_request: NextRequest) {
       guardName: role!.guardName,
       priority: role!.priority,
       isActive: role!.isActive,
+      color: role!.color,
       createdAt: role!.createdAt,
       updatedAt: role!.updatedAt,
       userCount,

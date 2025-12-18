@@ -31,7 +31,14 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     // Check if RBAC system is already initialized by checking the database directly
-    const existingRoles = await db.select().from(roles).limit(1);
+    // Select only essential columns to avoid issues with schema changes
+    const existingRoles = await db
+      .select({
+        id: roles.id,
+        name: roles.name,
+      })
+      .from(roles)
+      .limit(1);
     const isInitialized = existingRoles.length > 0;
     return NextResponse.json({
       success: true,
@@ -45,7 +52,7 @@ export async function GET(request: NextRequest) {
     // Provide more detailed error information
     const errorDetails = error instanceof Error ? {
       message: error.message,
-      stack: error.stack,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
       name: error.name
     } : 'Unknown error type';
     

@@ -2357,6 +2357,7 @@ export const roles = pgTable(
     guardName: text('guard_name').default('web').notNull(),
     priority: integer().default(999).notNull(),
     isActive: boolean('is_active').default(true).notNull(),
+    color: text(), // Role color for header and badge (e.g., 'red', 'blue', 'purple')
     createdAt: date('created_at')
       .default(sql`CURRENT_DATE`)
       .notNull(),

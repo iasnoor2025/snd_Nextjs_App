@@ -22,6 +22,7 @@ import { ThemeToggle } from './theme-toggle';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
+import { useSettings } from '@/hooks/use-settings';
 
 export function SiteHeader() {
   const { data: session, status } = useSession();
@@ -31,9 +32,83 @@ export function SiteHeader() {
   const { user, refreshPermissions } = useRBAC();
   const currentUserRole = user?.role || 'USER';
   const [roleDisplayName, setRoleDisplayName] = useState<string>(currentUserRole);
+  const [roleColor, setRoleColor] = useState<string | null>(null);
+  const { getSetting } = useSettings(['app.name']);
+  const appName = getSetting('app.name', t('common.app.name'));
 
   // Check if user is an employee - use RBAC context role
   const isEmployee = currentUserRole === 'EMPLOYEE';
+
+  // Map color name to Tailwind classes
+  const getColorClasses = (colorName: string | null | undefined, type: 'header' | 'badge' = 'header') => {
+    if (!colorName) return null;
+
+    const colorMap: Record<string, { header: string; badge: string }> = {
+      'red': {
+        header: 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800',
+        badge: 'bg-red-600 text-white border-red-700'
+      },
+      'blue': {
+        header: 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800',
+        badge: 'bg-blue-600 text-white border-blue-700'
+      },
+      'purple': {
+        header: 'bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800',
+        badge: 'bg-purple-600 text-white border-purple-700'
+      },
+      'orange': {
+        header: 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800',
+        badge: 'bg-orange-100 text-orange-800 border-orange-300'
+      },
+      'green': {
+        header: 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800',
+        badge: 'bg-green-100 text-green-800 border-green-300'
+      },
+      'gray': {
+        header: 'bg-gray-50 dark:bg-gray-950/20 border-gray-200 dark:border-gray-800',
+        badge: 'bg-gray-100 text-gray-800 border-gray-300'
+      },
+      'slate': {
+        header: 'bg-slate-50 dark:bg-slate-950/20 border-slate-200 dark:border-slate-800',
+        badge: 'bg-slate-100 text-slate-700 border-slate-300'
+      },
+      'indigo': {
+        header: 'bg-indigo-50 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-800',
+        badge: 'bg-indigo-100 text-indigo-800 border-indigo-300'
+      },
+      'teal': {
+        header: 'bg-teal-50 dark:bg-teal-950/20 border-teal-200 dark:border-teal-800',
+        badge: 'bg-teal-100 text-teal-800 border-teal-300'
+      },
+      'pink': {
+        header: 'bg-pink-50 dark:bg-pink-950/20 border-pink-200 dark:border-pink-800',
+        badge: 'bg-pink-100 text-pink-800 border-pink-300'
+      },
+      'cyan': {
+        header: 'bg-cyan-50 dark:bg-cyan-950/20 border-cyan-200 dark:border-cyan-800',
+        badge: 'bg-cyan-100 text-cyan-800 border-cyan-300'
+      },
+      'amber': {
+        header: 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800',
+        badge: 'bg-amber-100 text-amber-800 border-amber-300'
+      },
+      'emerald': {
+        header: 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800',
+        badge: 'bg-emerald-100 text-emerald-800 border-emerald-300'
+      },
+      'violet': {
+        header: 'bg-violet-50 dark:bg-violet-950/20 border-violet-200 dark:border-violet-800',
+        badge: 'bg-violet-100 text-violet-800 border-violet-300'
+      },
+      'rose': {
+        header: 'bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800',
+        badge: 'bg-rose-100 text-rose-800 border-rose-300'
+      },
+    };
+
+    const normalizedColor = colorName.toLowerCase();
+    return colorMap[normalizedColor]?.[type] || null;
+  };
 
   // Get badge color and variant based on role
   const getRoleBadgeStyle = (role: string) => {
@@ -74,9 +149,64 @@ export function SiteHeader() {
     return selectedColor;
   };
 
-  const badgeStyle = getRoleBadgeStyle(roleDisplayName);
+  // Get header background color based on role (with database color support)
+  const getHeaderColor = (role: string, roleColor?: string | null) => {
+    // First, try to use color from database
+    if (roleColor) {
+      const dbColor = getColorClasses(roleColor, 'header');
+      if (dbColor) return dbColor;
+    }
 
-  // Fetch role name from database
+    // Fallback to hardcoded colors for known roles
+    const roleUpper = role.toUpperCase();
+    const roleHeaderColors: Record<string, string> = {
+      'SUPER_ADMIN': 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800',
+      'ADMIN': 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800',
+      'MANAGER': 'bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800',
+      'SUPERVISOR': 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800',
+      'OPERATOR': 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800',
+      'EMPLOYEE': 'bg-gray-50 dark:bg-gray-950/20 border-gray-200 dark:border-gray-800',
+      'USER': 'bg-slate-50 dark:bg-slate-950/20 border-slate-200 dark:border-slate-800',
+    };
+
+    if (roleHeaderColors[roleUpper]) {
+      return roleHeaderColors[roleUpper];
+    }
+
+    // For custom roles without color, use hash-based auto-assignment
+    const roleHash = role.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const colorOptions = [
+      'bg-indigo-50 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-800',
+      'bg-teal-50 dark:bg-teal-950/20 border-teal-200 dark:border-teal-800',
+      'bg-pink-50 dark:bg-pink-950/20 border-pink-200 dark:border-pink-800',
+      'bg-cyan-50 dark:bg-cyan-950/20 border-cyan-200 dark:border-cyan-800',
+      'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800',
+      'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800',
+      'bg-violet-50 dark:bg-violet-950/20 border-violet-200 dark:border-violet-800',
+      'bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800',
+    ];
+    
+    return colorOptions[roleHash % colorOptions.length];
+  };
+
+  // Get badge style with database color support
+  const getRoleBadgeStyleWithColor = (role: string, roleColor?: string | null) => {
+    // First, try to use color from database
+    if (roleColor) {
+      const dbColor = getColorClasses(roleColor, 'badge');
+      if (dbColor) {
+        return { variant: 'default' as const, className: dbColor };
+      }
+    }
+    // Fallback to original function
+    return getRoleBadgeStyle(role);
+  };
+
+  // Calculate badge style and header color using current state
+  const badgeStyle = getRoleBadgeStyleWithColor(roleDisplayName, roleColor);
+  const headerColorClass = getHeaderColor(roleDisplayName, roleColor);
+
+  // Fetch role name and color from database
   useEffect(() => {
     const fetchRoleName = async () => {
       if (!user?.id) {
@@ -91,7 +221,7 @@ export function SiteHeader() {
           const actualRole = userData.user?.role;
           
           if (actualRole) {
-            // Now fetch all roles to get the original casing
+            // Now fetch all roles to get the original casing and color
             const rolesResponse = await fetch('/api/roles');
             if (rolesResponse.ok) {
               const roles = await rolesResponse.json();
@@ -102,6 +232,10 @@ export function SiteHeader() {
               if (role?.name) {
                 // Use the actual role name from database (preserves original casing like "workshop")
                 setRoleDisplayName(role.name);
+                // Set role color from database if available
+                if (role.color) {
+                  setRoleColor(role.color);
+                }
                 return;
               }
             }
@@ -232,7 +366,10 @@ export function SiteHeader() {
   );
 
   return (
-    <header className="flex h-14 sm:h-16 shrink-0 items-center gap-2 border-b bg-background">
+    <header className={cn(
+      "flex h-14 sm:h-16 shrink-0 items-center gap-2 border-b transition-colors duration-200",
+      headerColorClass
+    )}>
       <div className={cn(
         "flex w-full items-center gap-1 px-2 sm:px-4 lg:gap-2 lg:px-6",
         isRTL && "flex-row-reverse"
@@ -253,7 +390,7 @@ export function SiteHeader() {
         
         {/* Title - grows to fill space */}
         <h1 className="text-sm sm:text-base font-medium truncate flex-1">
-          {t('common.app.name')}
+          {appName}
         </h1>
         
         {/* User controls - right in LTR, left in RTL */}

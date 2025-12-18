@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
 import { useI18n } from '@/hooks/use-i18n';
@@ -26,7 +26,31 @@ export default function SignUpPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [companyName, setCompanyName] = useState(t('auth.app_name'));
+  const [companyLogo, setCompanyLogo] = useState('/snd-logo.png');
   const router = useRouter();
+
+  // Load public settings
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await fetch('/api/settings?public=true');
+        const data = await response.json();
+        if (data.settings) {
+          if (data.settings['company.name']) {
+            setCompanyName(data.settings['company.name']);
+          }
+          if (data.settings['company.logo']) {
+            setCompanyLogo(data.settings['company.logo']);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading settings:', error);
+        // Use defaults if fetch fails
+      }
+    };
+    loadSettings();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -113,15 +137,15 @@ export default function SignUpPage() {
         <a href="/" className="flex items-center gap-3 self-center font-medium">
           <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background">
             <Image
-              src="/snd-logo.png"
-              alt={t('auth.app_name')}
+              src={companyLogo}
+              alt={companyName}
               width={36}
               height={36}
               className="h-8 w-8 object-contain"
               priority
             />
           </div>
-          <span className="text-lg font-semibold tracking-tight">{t('auth.app_name')}</span>
+          <span className="text-lg font-semibold tracking-tight">{companyName}</span>
         </a>
 
         {/* Sign Up Card */}

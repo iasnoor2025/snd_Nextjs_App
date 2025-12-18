@@ -2,6 +2,7 @@ import { db } from '@/lib/drizzle';
 import { employeeTraining, employees, trainings, employeeDocuments } from '@/lib/drizzle/schema';
 import { eq, and, or, ilike, isNotNull } from 'drizzle-orm';
 import { QRCodeService } from './qrcode-service';
+import { SettingsService } from './settings-service';
 
 export interface H2SCardData {
   id: number;
@@ -21,6 +22,32 @@ export interface H2SCardData {
 }
 
 export class H2SCardService {
+  /**
+   * Get company name from settings
+   */
+  static async getCompanyName(): Promise<string> {
+    try {
+      const name = await SettingsService.getSetting('company.name');
+      return name || 'SND Rental';
+    } catch (error) {
+      console.error('Error fetching company name:', error);
+      return 'SND Rental';
+    }
+  }
+
+  /**
+   * Get company logo from settings
+   */
+  static async getCompanyLogo(): Promise<string> {
+    try {
+      const logo = await SettingsService.getSetting('company.logo');
+      return logo || '/snd-logo.png';
+    } catch (error) {
+      console.error('Error fetching company logo:', error);
+      return '/snd-logo.png';
+    }
+  }
+
   /**
    * Find employee iqama photo from documents
    */
@@ -173,8 +200,8 @@ export class H2SCardService {
       trainerName: training.trainerName || 'Mohsin Mushtaque',
       trainerSignature: training.trainerSignature,
       qrCodeUrl,
-      companyName: 'SAMHAN NASER AL - DOSRI EST.',
-      companyLogo: '/snd-logo.png',
+      companyName: await this.getCompanyName(),
+      companyLogo: await this.getCompanyLogo(),
     };
   }
 

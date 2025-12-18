@@ -18,6 +18,7 @@ import {
   Users,
   Wrench,
   Car,
+  Settings,
   type LucideIcon,
 } from 'lucide-react';
 import * as React from 'react';
@@ -34,6 +35,8 @@ import { useI18n } from '@/hooks/use-i18n';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { validateLocale } from '@/lib/locale-utils';
 import { useParams } from 'next/navigation';
+import { useSettings } from '@/hooks/use-settings';
+import Image from 'next/image';
 
 // Define menu item type
 type MenuItem = {
@@ -49,6 +52,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { canAccessRoute, user, hasPermission } = useRBAC();
   const params = useParams();
   const [locale, setLocale] = React.useState('en');
+  const { getSetting } = useSettings(['company.name', 'company.logo', 'app.name']);
+  const appTitle = getSetting('company.name') || getSetting('app.name') || t('sidebar.appTitle');
+  const companyLogo = getSetting('company.logo') || '/snd-logo.png';
 
   React.useEffect(() => {
     const currentLocale = validateLocale(params?.locale as string);
@@ -158,6 +164,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: Users,
     },
     {
+      title: 'Settings',
+      url: `/${locale}/settings`,
+      icon: Settings,
+      requiredRole: 'SUPER_ADMIN'
+    },
+    {
       title: t('sidebar.databaseBackup'),
       url: `/${locale}/admin/backup`,
       icon: Database,
@@ -174,25 +186,30 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     // Always show items without specific routes (like help, search)
     const essentialItems = items.filter(item => item.url === '#' || !item.url);
     
-    // Filter route-based items by permissions
-    const routeItems = items.filter(item => {
-      // Skip essential items (already handled above)
-      if (item.url === '#' || !item.url) return false;
-      
-      // Check for specific permission requirements first
-      if (item.requiredPermission) {
-        return hasPermission(item.requiredPermission.action, item.requiredPermission.subject);
-      }
-      
-      // Hide employee dashboard for non-EMPLOYEE users
-      if (item.url === `/${locale}/employee-dashboard`) {
-        return hasPermission('read', 'mydashboard');
-      }
-      
-      // For all other routes, check if user can access them
-      const routeWithoutLocale = item.url.replace(`/${locale}`, '');
-      return canAccessRoute(routeWithoutLocale);
-    });
+      // Filter route-based items by permissions
+      const routeItems = items.filter(item => {
+        // Skip essential items (already handled above)
+        if (item.url === '#' || !item.url) return false;
+        
+        // Check for specific role requirements first
+        if (item.requiredRole) {
+          return user.role === item.requiredRole;
+        }
+        
+        // Check for specific permission requirements
+        if (item.requiredPermission) {
+          return hasPermission(item.requiredPermission.action, item.requiredPermission.subject);
+        }
+        
+        // Hide employee dashboard for non-EMPLOYEE users
+        if (item.url === `/${locale}/employee-dashboard`) {
+          return hasPermission('read', 'mydashboard');
+        }
+        
+        // For all other routes, check if user can access them
+        const routeWithoutLocale = item.url.replace(`/${locale}`, '');
+        return canAccessRoute(routeWithoutLocale);
+      });
     
     return [...essentialItems, ...routeItems];
   }, [user, locale, hasPermission, canAccessRoute]);
@@ -218,9 +235,29 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
-              <a href="#">
-                <Layers className="!size-5" />
-                <span className="text-base font-semibold">{t('sidebar.appTitle')}</span>
+              <a href="#" className="flex items-center gap-2">
+                {companyLogo ? (
+                  <div className="relative h-8 w-8 flex-shrink-0">
+                    {companyLogo.startsWith('http') ? (
+                      <img
+                        src={companyLogo}
+                        alt={appTitle}
+                        className="h-8 w-8 object-contain"
+                      />
+                    ) : (
+                      <Image
+                        src={companyLogo}
+                        alt={appTitle}
+                        width={32}
+                        height={32}
+                        className="object-contain"
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <Layers className="!size-5" />
+                )}
+                <span className="text-base font-semibold truncate">{appTitle}</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
