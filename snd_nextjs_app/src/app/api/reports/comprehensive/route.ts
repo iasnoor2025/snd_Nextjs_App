@@ -25,7 +25,7 @@ import {
   rentalTimesheetReceived
 } from '@/lib/drizzle/schema';
 import { alias } from 'drizzle-orm/pg-core';
-import { sql, count, sum, avg, max, min, desc, asc, eq, and, gte, lte, or, inArray, notInArray } from 'drizzle-orm';
+import { sql, count, sum, avg, max, min, desc, asc, eq, and, gte, lte, or, inArray, notInArray, isNull } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
@@ -88,6 +88,11 @@ export async function GET(request: NextRequest) {
         const customerId = searchParams.get('customerId');
         const hasTimesheet = searchParams.get('hasTimesheet');
         reportData = await generateRentalTimesheetReport(startDate, endDate, month, customerId, hasTimesheet);
+        break;
+      case 'employee_advance':
+        const employeeId = searchParams.get('employeeId');
+        const status = searchParams.get('status');
+        reportData = await generateEmployeeAdvanceReport(startDate, endDate, employeeId, status);
         break;
       default:
         return NextResponse.json({ error: 'Invalid report type' }, { status: 400 });
@@ -1238,6 +1243,190 @@ export async function generateRentalTimesheetReport(startDate?: string | null, e
       monthly_items: [],
       generated_at: new Date().toISOString(),
       error: 'Failed to generate rental timesheet report'
+    };
+  }
+}
+
+async function generateEmployeeAdvanceReport(startDate?: string | null, endDate?: string | null, employeeId?: string | null, status?: string | null) {
+  try {
+    // Build date filter conditions - only if dates are provided
+    const dateConditions = [];
+    if (startDate) {
+      dateConditions.push(gte(advancePayments.createdAt, startDate));
+    }
+    if (endDate) {
+      dateConditions.push(lte(advancePayments.createdAt, endDate));
+    }
+    const dateFilter = dateConditions.length > 0 ? and(...dateConditions) : undefined;
+
+    // Build where conditions - always exclude deleted
+    const whereConditions = [isNull(advancePayments.deletedAt)];
+    
+    // Only add date filter if dates are provided
+    if (dateFilter) {
+      whereConditions.push(dateFilter);
+    }
+    
+    // Add employee filter if provided
+    if (employeeId && employeeId !== 'all' && employeeId !== '' && employeeId !== undefined) {
+      const empId = parseInt(employeeId);
+      if (!isNaN(empId) && empId > 0) {
+        whereConditions.push(eq(advancePayments.employeeId, empId));
+      }
+    }
+    
+    // Add status filter if provided
+    if (status && status !== 'all' && status !== '' && status !== undefined) {
+      whereConditions.push(eq(advancePayments.status, status));
+    }
+    
+    // Build where filter - use and() only if we have multiple conditions
+    const whereFilter = whereConditions.length > 1 ? and(...whereConditions) : whereConditions[0];
+
+    // Get summary statistics
+    const summaryQuery = db.select({
+      total_advances: count(),
+      total_amount: sum(sql`COALESCE(${advancePayments.amount}, 0)`),
+      total_repaid: sum(sql`COALESCE(${advancePayments.repaidAmount}, 0)`),
+      total_remaining: sum(sql`COALESCE(${advancePayments.amount}, 0) - COALESCE(${advancePayments.repaidAmount}, 0)`),
+      avg_advance: avg(sql`COALESCE(${advancePayments.amount}, 0)`),
+      pending_count: count(sql`CASE WHEN ${advancePayments.status} = 'pending' THEN 1 END`),
+      approved_count: count(sql`CASE WHEN ${advancePayments.status} = 'approved' THEN 1 END`),
+      rejected_count: count(sql`CASE WHEN ${advancePayments.status} = 'rejected' THEN 1 END`),
+      paid_count: count(sql`CASE WHEN ${advancePayments.status} = 'paid' THEN 1 END`),
+    }).from(advancePayments);
+    
+    if (whereFilter) {
+      summaryQuery.where(whereFilter);
+    }
+    
+    const [summaryStats] = await Promise.all([summaryQuery]);
+
+    // Get advances by status
+    const statusQuery = db
+      .select({
+        status: advancePayments.status,
+        count: count(),
+        total_amount: sum(sql`COALESCE(${advancePayments.amount}, 0)`),
+        total_repaid: sum(sql`COALESCE(${advancePayments.repaidAmount}, 0)`),
+      })
+      .from(advancePayments);
+    
+    if (whereFilter) {
+      statusQuery.where(whereFilter);
+    }
+    
+    const advancesByStatus = await statusQuery.groupBy(advancePayments.status);
+
+    // Get detailed advance list with employee information
+    const detailsQuery = db
+      .select({
+        id: advancePayments.id,
+        employee_id: advancePayments.employeeId,
+        employee_name: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
+        employee_file_number: employees.fileNumber,
+        amount: advancePayments.amount,
+        purpose: advancePayments.purpose,
+        reason: advancePayments.reason,
+        status: advancePayments.status,
+        repaid_amount: advancePayments.repaidAmount,
+        remaining_balance: sql<number>`COALESCE(${advancePayments.amount}, 0) - COALESCE(${advancePayments.repaidAmount}, 0)`,
+        monthly_deduction: advancePayments.monthlyDeduction,
+        estimated_months: advancePayments.estimatedMonths,
+        created_at: advancePayments.createdAt,
+        payment_date: advancePayments.paymentDate,
+        repayment_date: advancePayments.repaymentDate,
+        approved_at: advancePayments.approvedAt,
+        approved_by: advancePayments.approvedBy,
+        notes: advancePayments.notes,
+      })
+      .from(advancePayments)
+      .leftJoin(employees, eq(advancePayments.employeeId, employees.id));
+    
+    if (whereFilter) {
+      detailsQuery.where(whereFilter);
+    }
+    
+    const advanceDetails = await detailsQuery.orderBy(desc(advancePayments.createdAt));
+
+    // Get advances by employee (summary)
+    const employeeSummaryQuery = db
+      .select({
+        employee_id: advancePayments.employeeId,
+        employee_name: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
+        employee_file_number: employees.fileNumber,
+        total_advances: count(),
+        total_amount: sum(sql`COALESCE(${advancePayments.amount}, 0)`),
+        total_repaid: sum(sql`COALESCE(${advancePayments.repaidAmount}, 0)`),
+        total_remaining: sum(sql`COALESCE(${advancePayments.amount}, 0) - COALESCE(${advancePayments.repaidAmount}, 0)`),
+      })
+      .from(advancePayments)
+      .leftJoin(employees, eq(advancePayments.employeeId, employees.id));
+    
+    if (whereFilter) {
+      employeeSummaryQuery.where(whereFilter);
+    }
+    
+    const advancesByEmployee = await employeeSummaryQuery
+      .groupBy(advancePayments.employeeId, employees.firstName, employees.lastName, employees.fileNumber)
+      .orderBy(desc(sql`sum(COALESCE(${advancePayments.amount}, 0))`));
+
+    // Get monthly trend data
+    const monthlyTrendsQuery = db
+      .select({
+        month: sql<string>`TO_CHAR(${advancePayments.createdAt}, 'YYYY-MM')`,
+        count: count(),
+        total_amount: sum(sql`COALESCE(${advancePayments.amount}, 0)`),
+        total_repaid: sum(sql`COALESCE(${advancePayments.repaidAmount}, 0)`),
+      })
+      .from(advancePayments);
+    
+    if (whereFilter) {
+      monthlyTrendsQuery.where(whereFilter);
+    }
+    
+    const monthlyTrends = await monthlyTrendsQuery
+      .groupBy(sql`TO_CHAR(${advancePayments.createdAt}, 'YYYY-MM')`)
+      .orderBy(sql`TO_CHAR(${advancePayments.createdAt}, 'YYYY-MM') DESC`);
+
+    return {
+      summary_stats: summaryStats[0] || {
+        total_advances: 0,
+        total_amount: 0,
+        total_repaid: 0,
+        total_remaining: 0,
+        avg_advance: 0,
+        pending_count: 0,
+        approved_count: 0,
+        rejected_count: 0,
+        paid_count: 0,
+      },
+      advances_by_status: advancesByStatus || [],
+      advance_details: advanceDetails || [],
+      advances_by_employee: advancesByEmployee || [],
+      monthly_trends: monthlyTrends || [],
+      generated_at: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Error in generateEmployeeAdvanceReport:', error);
+    return {
+      summary_stats: {
+        total_advances: 0,
+        total_amount: 0,
+        total_repaid: 0,
+        total_remaining: 0,
+        avg_advance: 0,
+        pending_count: 0,
+        approved_count: 0,
+        rejected_count: 0,
+        paid_count: 0,
+      },
+      advances_by_status: [],
+      advance_details: [],
+      advances_by_employee: [],
+      monthly_trends: [],
+      generated_at: new Date().toISOString(),
+      error: 'Failed to generate employee advance report'
     };
   }
 }

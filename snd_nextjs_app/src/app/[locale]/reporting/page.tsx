@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { PermissionContent } from '@/lib/rbac/rbac-components';
 import { ReportChart } from '@/components/report-chart';
+import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
 import { 
   Download, 
   RefreshCw, 
@@ -52,7 +53,8 @@ import {
   Activity,
   Columns,
   ChevronDown,
-  Printer
+  Printer,
+  Wallet
 } from 'lucide-react';
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
@@ -63,6 +65,7 @@ import { EquipmentReportPDFService, EquipmentReportData } from '@/lib/services/e
 import { EquipmentReportExcelService } from '@/lib/services/equipment-report-excel-service';
 import { SupervisorEquipmentReportPDFService, SupervisorEquipmentReportData } from '@/lib/services/supervisor-equipment-report-pdf-service';
 import { SupervisorEquipmentReportExcelService } from '@/lib/services/supervisor-equipment-report-excel-service';
+import { EmployeeAdvanceReportPDFService, EmployeeAdvanceReportData } from '@/lib/services/employee-advance-report-pdf-service';
 
 interface ReportData {
   success: boolean;
@@ -130,6 +133,7 @@ export default function ReportingDashboardPage() {
   const [loadingCustomersForTimesheet, setLoadingCustomersForTimesheet] = useState(false);
   const [hasTimesheetFilter, setHasTimesheetFilter] = useState('all'); // 'all', 'yes', 'no'
   const [showOnlyCompanyName, setShowOnlyCompanyName] = useState(false); // Show only company name when checked
+  const [employeeFilter, setEmployeeFilter] = useState('all'); // For employee advance report
   
   // Column visibility for rental timesheet report
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
@@ -174,6 +178,7 @@ export default function ReportingDashboardPage() {
     { id: 'customer_analytics', name: t('reporting.customer_analytics'), icon: Building },
     { id: 'customer_equipment', name: 'Customer Equipment Report', icon: Car },
     { id: 'supervisor_equipment', name: 'Supervisor Equipment Report', icon: Users },
+    { id: 'employee_advance', name: 'Employee Advance Report', icon: Wallet },
   ];
 
   // Fetch supervisors with equipment when supervisor equipment report is selected
@@ -321,6 +326,12 @@ export default function ReportingDashboardPage() {
       setHasTimesheetFilter('all');
       setShowOnlyCompanyName(false);
       // Reset column visibility to default (all visible)
+    } else if (selectedReport === 'employee_advance') {
+      // Reset other filters when switching to employee advance report
+      setCustomerFilter('all');
+      setCategoryFilter('all');
+      setSupervisorFilter('all');
+      setDepartmentFilter('all');
       setVisibleColumns({
         si: true,
         equipment: true,
@@ -420,10 +431,12 @@ export default function ReportingDashboardPage() {
           paramsObj.month = monthFilter;
         }
         // Don't send startDate/endDate for rental timesheet - show all data if no month filter
-      } else {
+      } else if (selectedReport !== 'employee_advance') {
+        // For employee advance, don't send date range - show all data
         paramsObj.startDate = new Date(Date.now() - parseInt(dateRange) * 24 * 60 * 60 * 1000).toISOString();
         paramsObj.endDate = new Date().toISOString();
       }
+      // For employee_advance, don't send date filters - show all advances
       
       if (departmentFilter !== 'all') paramsObj.departmentId = departmentFilter;
       if (customerFilter !== 'all') paramsObj.customerId = customerFilter;
@@ -434,6 +447,10 @@ export default function ReportingDashboardPage() {
       if (includeInactive) paramsObj.includeInactive = 'true';
       if (selectedReport === 'rental_timesheet' && companyFilter !== 'all') paramsObj.customerId = companyFilter;
       if (selectedReport === 'rental_timesheet' && hasTimesheetFilter !== 'all') paramsObj.hasTimesheet = hasTimesheetFilter;
+      if (selectedReport === 'employee_advance' && employeeFilter && employeeFilter !== 'all' && employeeFilter !== '') {
+        paramsObj.employeeId = employeeFilter;
+      }
+      if (selectedReport === 'employee_advance' && statusFilter !== 'all') paramsObj.status = statusFilter;
       
       const params = new URLSearchParams(paramsObj);
 
@@ -550,6 +567,32 @@ export default function ReportingDashboardPage() {
             { title: 'Average Salary', value: `SAR ${Number(data.payroll_stats?.avg_salary || 0).toFixed(0)}`, icon: DollarSign, color: 'green' },
             { title: 'Total Revenue', value: `SAR ${Number(data.rental_stats?.total_revenue || 0).toLocaleString()}`, icon: DollarSign, color: 'emerald' },
             { title: 'Total Advances', value: `SAR ${Number(data.advance_stats?.total_advances || 0).toLocaleString()}`, icon: DollarSign, color: 'orange' }
+          );
+        }
+        break;
+
+      case 'employee_advance':
+        if (data.summary_stats) {
+          cards.push(
+            { title: 'Total Advances', value: data.summary_stats.total_advances || 0, icon: Wallet, color: 'blue' },
+            { title: 'Total Amount', value: `SAR ${Number(data.summary_stats.total_amount || 0).toLocaleString()}`, icon: DollarSign, color: 'green' },
+            { title: 'Total Repaid', value: `SAR ${Number(data.summary_stats.total_repaid || 0).toLocaleString()}`, icon: DollarSign, color: 'emerald' },
+            { title: 'Total Remaining', value: `SAR ${Number(data.summary_stats.total_remaining || 0).toLocaleString()}`, icon: Wallet, color: 'orange' },
+            { title: 'Pending', value: data.summary_stats.pending_count || 0, icon: Clock, color: 'yellow' },
+            { title: 'Approved', value: data.summary_stats.approved_count || 0, icon: TrendingUp, color: 'green' }
+          );
+        }
+        break;
+
+      case 'employee_advance':
+        if (data.summary_stats) {
+          cards.push(
+            { title: 'Total Advances', value: data.summary_stats.total_advances || 0, icon: Wallet, color: 'blue' },
+            { title: 'Total Amount', value: `SAR ${Number(data.summary_stats.total_amount || 0).toLocaleString()}`, icon: DollarSign, color: 'green' },
+            { title: 'Total Repaid', value: `SAR ${Number(data.summary_stats.total_repaid || 0).toLocaleString()}`, icon: DollarSign, color: 'emerald' },
+            { title: 'Total Remaining', value: `SAR ${Number(data.summary_stats.total_remaining || 0).toLocaleString()}`, icon: Wallet, color: 'orange' },
+            { title: 'Pending', value: data.summary_stats.pending_count || 0, icon: Clock, color: 'yellow' },
+            { title: 'Approved', value: data.summary_stats.approved_count || 0, icon: TrendingUp, color: 'green' }
           );
         }
         break;
@@ -1596,6 +1639,66 @@ export default function ReportingDashboardPage() {
           );
         }
         break;
+
+      case 'employee_advance':
+        if (data.advance_details && Array.isArray(data.advance_details) && data.advance_details.length > 0) {
+          return (
+            <div className="bg-white rounded-lg shadow">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900">Advance Details</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Employee</TableHead>
+                      <TableHead>File Number</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Purpose</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Repaid</TableHead>
+                      <TableHead>Remaining</TableHead>
+                      <TableHead>Created Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {data.advance_details.map((advance: any, index: number) => (
+                      <TableRow key={advance.id || index}>
+                        <TableCell className="font-medium">{advance.employee_name || 'N/A'}</TableCell>
+                        <TableCell>{advance.employee_file_number || 'N/A'}</TableCell>
+                        <TableCell>SAR {Number(advance.amount || 0).toLocaleString()}</TableCell>
+                        <TableCell>{advance.purpose || advance.reason || 'N/A'}</TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={
+                              advance.status === 'approved' || advance.status === 'paid' ? 'default' :
+                              advance.status === 'pending' ? 'secondary' : 'destructive'
+                            }
+                          >
+                            {advance.status || 'N/A'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>SAR {Number(advance.repaid_amount || 0).toLocaleString()}</TableCell>
+                        <TableCell>SAR {Number(advance.remaining_balance || 0).toLocaleString()}</TableCell>
+                        <TableCell>{advance.created_at ? new Date(advance.created_at).toLocaleDateString() : 'N/A'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          );
+        } else {
+          return (
+            <div className="text-center py-8">
+              <p className="text-gray-500">No employee advance data found.</p>
+              <p className="text-sm text-gray-400 mt-2">
+                Make sure there are advance payments in the selected date range.
+              </p>
+            </div>
+          );
+        }
+        break;
     }
 
     return null;
@@ -1965,6 +2068,26 @@ export default function ReportingDashboardPage() {
     }
   };
 
+  // Download employee advance PDF
+  const handleDownloadEmployeeAdvancePDF = async () => {
+    if (!reportData || selectedReport !== 'employee_advance') return;
+    
+    try {
+      const loadingToastId = toast.loading('Generating PDF report...');
+      
+      await EmployeeAdvanceReportPDFService.downloadEmployeeAdvanceReportPDF(
+        reportData as unknown as EmployeeAdvanceReportData,
+        `employee-advance-report-${new Date().toISOString().split('T')[0]}.pdf`
+      );
+      
+      toast.dismiss(loadingToastId);
+      toast.success('PDF report downloaded successfully');
+    } catch (error) {
+      console.error('Error downloading employee advance PDF:', error);
+      toast.error('Failed to download PDF report');
+    }
+  };
+
   // Download rental timesheet PDF
   const handleDownloadRentalTimesheetPDF = async () => {
     if (!reportData || selectedReport !== 'rental_timesheet') return;
@@ -2132,8 +2255,8 @@ export default function ReportingDashboardPage() {
                   </Select>
                 </div>
 
-                {/* Date Range - Hide for rental timesheet report */}
-                {selectedReport !== 'rental_timesheet' && (
+                {/* Date Range - Hide for rental timesheet and employee advance reports */}
+                {selectedReport !== 'rental_timesheet' && selectedReport !== 'employee_advance' && (
                   <div className="space-y-2 min-w-[150px]">
                     <Label htmlFor="date-range">{t('reporting.date_range')}</Label>
                     <Select value={dateRange} onValueChange={setDateRange}>
@@ -2150,8 +2273,8 @@ export default function ReportingDashboardPage() {
                   </div>
                 )}
 
-                {/* Department Filter - Hide for rental timesheet report */}
-                {selectedReport !== 'rental_timesheet' && (
+                {/* Department Filter - Hide for rental timesheet and employee advance reports */}
+                {selectedReport !== 'rental_timesheet' && selectedReport !== 'employee_advance' && (
                   <div className="space-y-2 min-w-[180px]">
                     <Label htmlFor="department-filter">{t('reporting.department_filter')}</Label>
                     <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
@@ -2364,6 +2487,40 @@ export default function ReportingDashboardPage() {
                   </div>
                 )}
 
+                {/* Employee Filter - Only show for employee advance report */}
+                {selectedReport === 'employee_advance' && (
+                  <div className="space-y-2 min-w-[250px]">
+                    <EmployeeDropdown
+                      value={employeeFilter === 'all' ? undefined : employeeFilter}
+                      onValueChange={(value) => setEmployeeFilter(value || 'all')}
+                      placeholder="All Employees"
+                      label="Employee"
+                    />
+                  </div>
+                )}
+
+                {/* Status Filter - Only show for employee advance report */}
+                {selectedReport === 'employee_advance' && (
+                  <div className="space-y-2 min-w-[150px]">
+                    <Label htmlFor="status-filter">Status</Label>
+                    <Select 
+                      value={statusFilter} 
+                      onValueChange={setStatusFilter}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="approved">Approved</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                        <SelectItem value="paid">Paid</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
                 {/* Show Only Company Name Checkbox - Only show for rental timesheet report */}
                 {selectedReport === 'rental_timesheet' && (
                   <div className="flex items-center space-x-2">
@@ -2405,6 +2562,15 @@ export default function ReportingDashboardPage() {
                           Download PDF
                         </Button>
                       </>
+                    ) : selectedReport === 'employee_advance' ? (
+                      <Button 
+                        onClick={handleDownloadEmployeeAdvancePDF} 
+                        variant="outline" 
+                        className="flex items-center gap-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        Download PDF
+                      </Button>
                     ) : (
                       <>
                         <Button onClick={exportReport} variant="outline" className="flex items-center gap-2">
