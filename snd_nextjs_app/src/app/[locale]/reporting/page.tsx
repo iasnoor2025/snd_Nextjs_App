@@ -1648,43 +1648,45 @@ export default function ReportingDashboardPage() {
                 <h3 className="text-lg font-medium text-gray-900">Advance Details</h3>
               </div>
               <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Employee</TableHead>
-                      <TableHead>File Number</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Purpose</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Repaid</TableHead>
-                      <TableHead>Remaining</TableHead>
-                      <TableHead>Created Date</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.advance_details.map((advance: any, index: number) => (
-                      <TableRow key={advance.id || index}>
-                        <TableCell className="font-medium">{advance.employee_name || 'N/A'}</TableCell>
-                        <TableCell>{advance.employee_file_number || 'N/A'}</TableCell>
-                        <TableCell>SAR {Number(advance.amount || 0).toLocaleString()}</TableCell>
-                        <TableCell>{advance.purpose || advance.reason || 'N/A'}</TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={
-                              advance.status === 'approved' || advance.status === 'paid' ? 'default' :
-                              advance.status === 'pending' ? 'secondary' : 'destructive'
-                            }
-                          >
-                            {advance.status || 'N/A'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>SAR {Number(advance.repaid_amount || 0).toLocaleString()}</TableCell>
-                        <TableCell>SAR {Number(advance.remaining_balance || 0).toLocaleString()}</TableCell>
-                        <TableCell>{advance.created_at ? new Date(advance.created_at).toLocaleDateString() : 'N/A'}</TableCell>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>SI#</TableHead>
+                        <TableHead>File Number</TableHead>
+                        <TableHead>Employee</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Purpose</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Repaid</TableHead>
+                        <TableHead>Remaining</TableHead>
+                        <TableHead>Created Date</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {data.advance_details.map((advance: any, index: number) => (
+                        <TableRow key={advance.id || index}>
+                          <TableCell>{index + 1}</TableCell>
+                          <TableCell>{advance.employee_file_number || 'N/A'}</TableCell>
+                          <TableCell className="font-medium">{advance.employee_name || 'N/A'}</TableCell>
+                          <TableCell>SAR {Number(advance.amount || 0).toLocaleString()}</TableCell>
+                          <TableCell>{advance.purpose || advance.reason || 'N/A'}</TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={
+                                advance.status === 'approved' || advance.status === 'paid' ? 'default' :
+                                advance.status === 'pending' ? 'secondary' : 'destructive'
+                              }
+                            >
+                              {advance.status || 'N/A'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>SAR {Number(advance.repaid_amount || 0).toLocaleString()}</TableCell>
+                          <TableCell>SAR {Number(advance.remaining_balance || 0).toLocaleString()}</TableCell>
+                          <TableCell>{advance.created_at ? new Date(advance.created_at).toLocaleDateString() : 'N/A'}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
               </div>
             </div>
           );

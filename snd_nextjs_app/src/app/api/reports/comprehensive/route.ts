@@ -1347,7 +1347,30 @@ async function generateEmployeeAdvanceReport(startDate?: string | null, endDate?
       detailsQuery.where(whereFilter);
     }
     
-    const advanceDetails = await detailsQuery.orderBy(desc(advancePayments.createdAt));
+    // Get all advance details first
+    let advanceDetails = await detailsQuery;
+    
+    // Sort by file number numerically (handle nulls and non-numeric)
+    advanceDetails = advanceDetails.sort((a, b) => {
+      const fileA = a.employee_file_number || '';
+      const fileB = b.employee_file_number || '';
+      
+      // Extract numeric part
+      const numA = parseInt(fileA.replace(/\D/g, '')) || 0;
+      const numB = parseInt(fileB.replace(/\D/g, '')) || 0;
+      
+      // If both have numeric parts, sort numerically
+      if (numA > 0 && numB > 0) {
+        return numA - numB;
+      }
+      
+      // If one is numeric and other is not, numeric comes first
+      if (numA > 0 && numB === 0) return -1;
+      if (numA === 0 && numB > 0) return 1;
+      
+      // Both are non-numeric or empty, sort alphabetically
+      return fileA.localeCompare(fileB);
+    });
 
     // Get advances by employee (summary)
     const employeeSummaryQuery = db
