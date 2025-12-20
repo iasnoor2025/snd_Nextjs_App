@@ -5,11 +5,12 @@ import { db } from '@/lib/drizzle';
 import { equipmentDocuments } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { ensureHttps } from '@/lib/utils/url-utils';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-export async function GET(
+const handler = async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string; documentId: string }> }
-) {
+) => {
   try {
     const session = await getServerSession();
     if (!session?.user) {
@@ -40,15 +41,6 @@ export async function GET(
     // Verify the document belongs to the equipment
     if (documentRecord.equipmentId !== equipmentIdNum) {
       return NextResponse.json({ error: 'Document does not belong to this equipment' }, { status: 403 });
-    }
-
-    // Check if user has permission to access this document
-    if (session.user.role !== 'SUPER_ADMIN' && 
-        session.user.role !== 'ADMIN' && 
-        session.user.role !== 'MANAGER' &&
-        session.user.role !== 'SUPERVISOR' &&
-        session.user.role !== 'OPERATOR') {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
     // If the document is stored in Supabase (URL starts with http/https)
@@ -87,4 +79,6 @@ export async function GET(
       { status: 500 }
     );
   }
-}
+};
+
+export const GET = withPermission(PermissionConfigs['equipment-document'].read)(handler);

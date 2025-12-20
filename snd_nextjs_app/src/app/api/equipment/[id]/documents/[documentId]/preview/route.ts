@@ -4,13 +4,14 @@ import { db } from '@/lib/drizzle';
 import { equipmentDocuments, equipment } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 // Preview endpoint - returns document data for inline preview
 // Uses different path from /download to avoid IDM interception
-export async function GET(
+const handler = async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string; documentId: string }> }
-) {
+) => {
   console.log('🔵🔵🔵 EQUIPMENT DOCUMENT PREVIEW: Handler STARTED', request.url);
   
   try {
@@ -43,15 +44,6 @@ export async function GET(
     // Verify the document belongs to the equipment
     if (documentRecord.equipmentId !== equipmentIdNum) {
       return NextResponse.json({ error: 'Document does not belong to this equipment' }, { status: 403 });
-    }
-
-    // Check if user has permission to access this document
-    if (session.user.role !== 'SUPER_ADMIN' && 
-        session.user.role !== 'ADMIN' && 
-        session.user.role !== 'MANAGER' &&
-        session.user.role !== 'SUPERVISOR' &&
-        session.user.role !== 'OPERATOR') {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
     // Get equipment information
@@ -171,13 +163,10 @@ export async function GET(
       { status: 500 }
     );
   }
-}
+};
+
+export const GET = withPermission(PermissionConfigs['equipment-document'].read)(handler);
 
 // POST handler - same as GET, used to bypass IDM interception
-export async function POST(
-  request: NextRequest,
-  context: { params: Promise<{ id: string; documentId: string }> }
-) {
-  return GET(request, context);
-}
+export const POST = withPermission(PermissionConfigs['equipment-document'].read)(handler);
 
