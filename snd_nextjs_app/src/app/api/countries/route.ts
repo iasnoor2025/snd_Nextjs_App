@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { COUNTRIES, mapCountryToResponse } from '@/lib/data/countries';
-import { withReadPermission } from '@/lib/rbac/api-middleware';
+import { withAuth } from '@/lib/rbac/api-middleware';
 
 // Simple in-memory cache
 let cachedAll: any[] | null = null;
@@ -25,11 +25,11 @@ const getCountriesHandler = async (request: NextRequest) => {
 
     const filtered = search
       ? all.filter(c =>
-          c.name.toLowerCase().includes(search) ||
-          c.officialName.toLowerCase().includes(search) ||
-          c.nationality.toLowerCase().includes(search) ||
-          c.code.toLowerCase().includes(search)
-        )
+        c.name.toLowerCase().includes(search) ||
+        c.officialName.toLowerCase().includes(search) ||
+        c.nationality.toLowerCase().includes(search) ||
+        c.code.toLowerCase().includes(search)
+      )
       : all;
 
     const data = filtered.slice(0, Math.max(1, Math.min(limit, 500)));
@@ -43,5 +43,5 @@ const getCountriesHandler = async (request: NextRequest) => {
   }
 };
 
-export const GET = withReadPermission('Settings')(getCountriesHandler);
+export const GET = withAuth(getCountriesHandler);
 
