@@ -128,6 +128,7 @@ interface ProjectResource {
   fuel_type?: string;
   liters?: number;
   price_per_liter?: number;
+  purchaseDate?: string;
 
   // Expense specific fields
   category?: string;
@@ -166,7 +167,7 @@ export default function ProjectResourcesPage() {
   const [resources, setResources] = useState<ProjectResource[]>([]);
   const [loading, setLoading] = useState(true);
   const locale = params?.locale as string || 'en';
-  
+
   // Pagination state for each tab
   const [currentPages, setCurrentPages] = useState<Record<ResourceType, number>>({
     manpower: 1,
@@ -243,14 +244,14 @@ export default function ProjectResourcesPage() {
           'Unnamed Resource',
         description: resource.description,
         quantity: resource.quantity,
-        unit_cost: resource.unitCost 
-          ? parseFloat(resource.unitCost) 
-          : resource.hourlyRate 
-            ? parseFloat(resource.hourlyRate) 
+        unit_cost: resource.unitCost
+          ? parseFloat(resource.unitCost)
+          : resource.hourlyRate
+            ? parseFloat(resource.hourlyRate)
             : resource.effectiveDailyRate !== undefined
               ? parseFloat(resource.effectiveDailyRate)
-              : resource.dailyRate 
-                ? parseFloat(resource.dailyRate) 
+              : resource.dailyRate
+                ? parseFloat(resource.dailyRate)
                 : undefined,
         date: resource.date || resource.startDate || resource.purchaseDate || resource.expenseDate,
         status: resource.status,
@@ -260,19 +261,19 @@ export default function ProjectResourcesPage() {
         employee_id: resource.employeeId?.toString(),
         employee: (resource.employeeFirstName || resource.employeeLastName)
           ? {
-              id: resource.employeeId?.toString() || '',
-              first_name: resource.employeeFirstName || '',
-              middle_name: resource.employeeMiddleName || undefined,
-              last_name: resource.employeeLastName || '',
-              full_name: (() => {
-                const nameParts = [
-                  resource.employeeFirstName,
-                  resource.employeeMiddleName,
-                  resource.employeeLastName
-                ].filter(Boolean);
-                return nameParts.join(' ').trim();
-              })(),
-            }
+            id: resource.employeeId?.toString() || '',
+            first_name: resource.employeeFirstName || '',
+            middle_name: resource.employeeMiddleName || undefined,
+            last_name: resource.employeeLastName || '',
+            full_name: (() => {
+              const nameParts = [
+                resource.employeeFirstName,
+                resource.employeeMiddleName,
+                resource.employeeLastName
+              ].filter(Boolean);
+              return nameParts.join(' ').trim();
+            })(),
+          }
           : resource.employee || undefined,
         // Handle both employee names (from JOIN) and worker names
         // Combine firstName, middleName, and lastName if they exist
@@ -292,8 +293,8 @@ export default function ProjectResourcesPage() {
         worker_name: resource.workerName,
         job_title: resource.jobTitle,
         daily_rate: resource.dailyRate ? parseFloat(resource.dailyRate) : undefined,
-        effective_daily_rate: resource.effectiveDailyRate !== undefined 
-          ? parseFloat(resource.effectiveDailyRate) 
+        effective_daily_rate: resource.effectiveDailyRate !== undefined
+          ? parseFloat(resource.effectiveDailyRate)
           : (resource.dailyRate ? parseFloat(resource.dailyRate) : undefined),
         is_assigned_to_equipment: resource.isAssignedToEquipment || false,
         days_worked: resource.daysWorked,
@@ -307,11 +308,11 @@ export default function ProjectResourcesPage() {
               const [year, month, day] = dateStr.split('-').map(Number);
               return new Date(year, month - 1, day);
             };
-            
+
             try {
               const start = parseLocalDate(resource.startDate);
               if (isNaN(start.getTime())) return resource.totalDays ? resource.totalDays : undefined;
-              
+
               let end: Date;
               if (resource.endDate) {
                 const parsedEnd = parseLocalDate(resource.endDate);
@@ -327,7 +328,7 @@ export default function ProjectResourcesPage() {
                 end = new Date();
                 end.setHours(0, 0, 0, 0);
               }
-              
+
               const diffTime = Math.abs(end.getTime() - start.getTime());
               const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
               return diffDays;
@@ -337,110 +338,110 @@ export default function ProjectResourcesPage() {
           }
           return resource.totalDays ? resource.totalDays : undefined;
         })(),
-         // Calculate total cost based on resource type
-         total_cost: (() => {
-           if (resource.type === 'manpower') {
-             // For manpower, calculate total days from dates first, then calculate cost
-             const calculatedTotalDays = (() => {
-               if (resource.startDate) {
-                 const parseLocalDate = (dateString: string): Date => {
-                   const dateStr = dateString.split('T')[0];
-                   const [year, month, day] = dateStr.split('-').map(Number);
-                   return new Date(year, month - 1, day);
-                 };
-                 
-                 try {
-                   const start = parseLocalDate(resource.startDate);
-                   if (isNaN(start.getTime())) return resource.totalDays ? resource.totalDays : 0;
-                   
-                   let end: Date;
-                   if (resource.endDate) {
-                     const parsedEnd = parseLocalDate(resource.endDate);
-                     if (!isNaN(parsedEnd.getTime())) {
-                       const today = new Date();
-                       today.setHours(0, 0, 0, 0);
-                       end = parsedEnd > today ? today : parsedEnd;
-                     } else {
-                       end = new Date();
-                       end.setHours(0, 0, 0, 0);
-                     }
-                   } else {
-                     end = new Date();
-                     end.setHours(0, 0, 0, 0);
-                   }
-                   
-                   const diffTime = Math.abs(end.getTime() - start.getTime());
-                   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-                   return diffDays;
-                 } catch {
-                   return resource.totalDays ? resource.totalDays : 0;
-                 }
-               }
-               return resource.totalDays ? resource.totalDays : 0;
-             })();
-             
-             // Use effective daily rate if available (0 if assigned to equipment), otherwise use dailyRate
-             const effectiveDailyRate = resource.effectiveDailyRate !== undefined 
-               ? parseFloat(resource.effectiveDailyRate) 
-               : (resource.dailyRate ? parseFloat(resource.dailyRate) : 0);
-             
-             // Calculate total cost: effective daily rate * calculated total days
-             // If assigned to equipment, cost is 0 (included in equipment rate)
-             return effectiveDailyRate * calculatedTotalDays;
-           } else if (resource.type === 'equipment') {
-             // For equipment, calculate usage hours from dates first, then calculate cost
-             const calculatedUsageHours = (() => {
-               if (resource.startDate) {
-                 const parseLocalDate = (dateString: string): Date => {
-                   const dateStr = dateString.split('T')[0];
-                   const [year, month, day] = dateStr.split('-').map(Number);
-                   return new Date(year, month - 1, day);
-                 };
-                 
-                 try {
-                   const start = parseLocalDate(resource.startDate);
-                   if (isNaN(start.getTime())) return resource.estimatedHours ? parseFloat(resource.estimatedHours) : 0;
-                   
-                   let end: Date;
-                   if (resource.endDate) {
-                     const parsedEnd = parseLocalDate(resource.endDate);
-                     if (!isNaN(parsedEnd.getTime())) {
-                       const today = new Date();
-                       today.setHours(0, 0, 0, 0);
-                       end = parsedEnd > today ? today : parsedEnd;
-                     } else {
-                       end = new Date();
-                       end.setHours(0, 0, 0, 0);
-                     }
-                   } else {
-                     end = new Date();
-                     end.setHours(0, 0, 0, 0);
-                   }
-                   
-                   const diffTime = Math.abs(end.getTime() - start.getTime());
-                   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-                   return diffDays * 10; // 10 hours per day
-                 } catch {
-                   return resource.estimatedHours ? parseFloat(resource.estimatedHours) : 0;
-                 }
-               }
-               return resource.estimatedHours ? parseFloat(resource.estimatedHours) : 0;
-             })();
-             
-             const hourlyRate = resource.hourlyRate ? parseFloat(resource.hourlyRate) : 0;
-             const maintenanceCost = resource.maintenanceCost ? parseFloat(resource.maintenanceCost) : 0;
-             
-             // Calculate total cost: (hourly rate * calculated usage hours) + maintenance cost
-             return hourlyRate * calculatedUsageHours + maintenanceCost;
-           } else if (resource.type === 'material' && resource.unitPrice && resource.quantity) {
-             return parseFloat(resource.unitPrice) * parseFloat(resource.quantity);
-           } else if (resource.type === 'fuel' && resource.unitPrice && resource.quantity) {
-             return parseFloat(resource.unitPrice) * parseFloat(resource.quantity);
-           } else if (resource.type === 'expense' && resource.amount) {
-             return parseFloat(resource.amount);
-           }
-           return undefined;
-         })(),
+        // Calculate total cost based on resource type
+        total_cost: (() => {
+          if (resource.type === 'manpower') {
+            // For manpower, calculate total days from dates first, then calculate cost
+            const calculatedTotalDays = (() => {
+              if (resource.startDate) {
+                const parseLocalDate = (dateString: string): Date => {
+                  const dateStr = dateString.split('T')[0];
+                  const [year, month, day] = dateStr.split('-').map(Number);
+                  return new Date(year, month - 1, day);
+                };
+
+                try {
+                  const start = parseLocalDate(resource.startDate);
+                  if (isNaN(start.getTime())) return resource.totalDays ? resource.totalDays : 0;
+
+                  let end: Date;
+                  if (resource.endDate) {
+                    const parsedEnd = parseLocalDate(resource.endDate);
+                    if (!isNaN(parsedEnd.getTime())) {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      end = parsedEnd > today ? today : parsedEnd;
+                    } else {
+                      end = new Date();
+                      end.setHours(0, 0, 0, 0);
+                    }
+                  } else {
+                    end = new Date();
+                    end.setHours(0, 0, 0, 0);
+                  }
+
+                  const diffTime = Math.abs(end.getTime() - start.getTime());
+                  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                  return diffDays;
+                } catch {
+                  return resource.totalDays ? resource.totalDays : 0;
+                }
+              }
+              return resource.totalDays ? resource.totalDays : 0;
+            })();
+
+            // Use effective daily rate if available (0 if assigned to equipment), otherwise use dailyRate
+            const effectiveDailyRate = resource.effectiveDailyRate !== undefined
+              ? parseFloat(resource.effectiveDailyRate)
+              : (resource.dailyRate ? parseFloat(resource.dailyRate) : 0);
+
+            // Calculate total cost: effective daily rate * calculated total days
+            // If assigned to equipment, cost is 0 (included in equipment rate)
+            return effectiveDailyRate * calculatedTotalDays;
+          } else if (resource.type === 'equipment') {
+            // For equipment, calculate usage hours from dates first, then calculate cost
+            const calculatedUsageHours = (() => {
+              if (resource.startDate) {
+                const parseLocalDate = (dateString: string): Date => {
+                  const dateStr = dateString.split('T')[0];
+                  const [year, month, day] = dateStr.split('-').map(Number);
+                  return new Date(year, month - 1, day);
+                };
+
+                try {
+                  const start = parseLocalDate(resource.startDate);
+                  if (isNaN(start.getTime())) return resource.estimatedHours ? parseFloat(resource.estimatedHours) : 0;
+
+                  let end: Date;
+                  if (resource.endDate) {
+                    const parsedEnd = parseLocalDate(resource.endDate);
+                    if (!isNaN(parsedEnd.getTime())) {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      end = parsedEnd > today ? today : parsedEnd;
+                    } else {
+                      end = new Date();
+                      end.setHours(0, 0, 0, 0);
+                    }
+                  } else {
+                    end = new Date();
+                    end.setHours(0, 0, 0, 0);
+                  }
+
+                  const diffTime = Math.abs(end.getTime() - start.getTime());
+                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                  return diffDays * 10; // 10 hours per day
+                } catch {
+                  return resource.estimatedHours ? parseFloat(resource.estimatedHours) : 0;
+                }
+              }
+              return resource.estimatedHours ? parseFloat(resource.estimatedHours) : 0;
+            })();
+
+            const hourlyRate = resource.hourlyRate ? parseFloat(resource.hourlyRate) : 0;
+            const maintenanceCost = resource.maintenanceCost ? parseFloat(resource.maintenanceCost) : 0;
+
+            // Calculate total cost: (hourly rate * calculated usage hours) + maintenance cost
+            return hourlyRate * calculatedUsageHours + maintenanceCost;
+          } else if (resource.type === 'material' && resource.unitPrice && resource.quantity) {
+            return parseFloat(resource.unitPrice) * parseFloat(resource.quantity);
+          } else if (resource.type === 'fuel' && resource.unitPrice && resource.quantity) {
+            return parseFloat(resource.unitPrice) * parseFloat(resource.quantity);
+          } else if (resource.type === 'expense' && resource.amount) {
+            return parseFloat(resource.amount);
+          }
+          return undefined;
+        })(),
 
         // Equipment specific fields
         equipment_id: resource.equipmentId?.toString(),
@@ -461,11 +462,11 @@ export default function ProjectResourcesPage() {
         })(),
         operator_middle_name: resource.operatorMiddleName || undefined,
         operator_file_number: resource.operatorFileNumber || undefined,
-        hourly_rate: resource.hourlyRate !== undefined && resource.hourlyRate !== null 
-          ? parseFloat(resource.hourlyRate) 
+        hourly_rate: resource.hourlyRate !== undefined && resource.hourlyRate !== null
+          ? parseFloat(resource.hourlyRate)
           : undefined,
-        hours_worked: resource.hoursWorked !== undefined && resource.hoursWorked !== null 
-          ? parseFloat(resource.hoursWorked) 
+        hours_worked: resource.hoursWorked !== undefined && resource.hoursWorked !== null
+          ? parseFloat(resource.hoursWorked)
           : undefined,
         // Calculate usage hours from dates (auto-updates as days pass)
         usage_hours: (() => {
@@ -476,11 +477,11 @@ export default function ProjectResourcesPage() {
               const [year, month, day] = dateStr.split('-').map(Number);
               return new Date(year, month - 1, day);
             };
-            
+
             try {
               const start = parseLocalDate(resource.startDate);
               if (isNaN(start.getTime())) return resource.estimatedHours ? parseFloat(resource.estimatedHours) : undefined;
-              
+
               let end: Date;
               if (resource.endDate) {
                 const parsedEnd = parseLocalDate(resource.endDate);
@@ -496,7 +497,7 @@ export default function ProjectResourcesPage() {
                 end = new Date();
                 end.setHours(0, 0, 0, 0);
               }
-              
+
               const diffTime = Math.abs(end.getTime() - start.getTime());
               const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
               return diffDays * 10; // 10 hours per day
@@ -537,9 +538,9 @@ export default function ProjectResourcesPage() {
         completion_percentage: resource.completionPercentage,
         assigned_to: resource.assignedToId
           ? {
-              id: resource.assignedToId.toString(),
-              name: `${resource.assignedToName || ''} ${resource.assignedToLastName || ''}`.trim() || 'Unassigned',
-            }
+            id: resource.assignedToId.toString(),
+            name: `${resource.assignedToName || ''} ${resource.assignedToLastName || ''}`.trim() || 'Unassigned',
+          }
           : undefined,
         assigned_to_id: resource.assignedToId?.toString(),
 
@@ -595,7 +596,7 @@ export default function ProjectResourcesPage() {
     try {
       // Don't set loading state - we want to update only the specific tab
       const resourceType = deleteResource.type;
-      
+
       // Use appropriate delete endpoint based on resource type
       switch (resourceType) {
         case 'manpower':
@@ -619,9 +620,9 @@ export default function ProjectResourcesPage() {
         default:
           throw new Error(`Unknown resource type: ${resourceType}`);
       }
-      
+
       toast.success('Resource deleted successfully');
-      
+
       // Update only the specific tab that was deleted, not the entire page
       if (resourceType === 'tasks') {
         await updateTasksData();
@@ -688,7 +689,7 @@ export default function ProjectResourcesPage() {
       // When dialog closes, clear editing state
       setEditingResource(null);
     }
-    
+
     // Update the appropriate dialog state
     switch (type) {
       case 'manpower':
@@ -742,9 +743,9 @@ export default function ProjectResourcesPage() {
   const updateTasksData = async () => {
     try {
       const tasksResponse = await ApiService.getProjectTasks(Number(projectId));
-      const tasksData = (tasksResponse.data || []).map((resource: any) => ({ 
-        ...resource, 
-        type: 'tasks' 
+      const tasksData = (tasksResponse.data || []).map((resource: any) => ({
+        ...resource,
+        type: 'tasks'
       }));
 
       // Transform tasks data to match frontend structure
@@ -765,9 +766,9 @@ export default function ProjectResourcesPage() {
         completion_percentage: resource.completionPercentage,
         assigned_to: resource.assignedToId
           ? {
-              id: resource.assignedToId.toString(),
-              name: `${resource.assignedToName || ''} ${resource.assignedToLastName || ''}`.trim() || 'Unassigned',
-            }
+            id: resource.assignedToId.toString(),
+            name: `${resource.assignedToName || ''} ${resource.assignedToLastName || ''}`.trim() || 'Unassigned',
+          }
           : undefined,
         assigned_to_id: resource.assignedToId?.toString(),
         created_at: resource.createdAt,
@@ -779,7 +780,7 @@ export default function ProjectResourcesPage() {
         const nonTaskResources = prevResources.filter(r => r.type !== 'tasks');
         return [...nonTaskResources, ...transformedTasks];
       });
-      
+
       // Statistics will update automatically from the resources state
     } catch (error) {
       console.error('Error updating tasks data:', error);
@@ -790,9 +791,9 @@ export default function ProjectResourcesPage() {
   const updateManpowerData = async () => {
     try {
       const manpowerResponse = await ApiService.getProjectManpower(Number(projectId));
-      const manpowerData = (manpowerResponse.data || []).map((resource: any) => ({ 
-        ...resource, 
-        type: 'manpower' 
+      const manpowerData = (manpowerResponse.data || []).map((resource: any) => ({
+        ...resource,
+        type: 'manpower'
       }));
 
       // Transform manpower data to match frontend structure
@@ -800,41 +801,41 @@ export default function ProjectResourcesPage() {
         // Always calculate total days from dates if dates are available
         // This ensures the table shows the correct days that update automatically as days pass
         const calculatedTotalDays = calculateTotalDaysFromDates(resource.startDate, resource.endDate);
-        
+
         // Use calculated days if dates are present, otherwise fall back to stored totalDays
-        const totalDays = (resource.startDate && calculatedTotalDays > 0) 
-          ? calculatedTotalDays 
+        const totalDays = (resource.startDate && calculatedTotalDays > 0)
+          ? calculatedTotalDays
           : (resource.totalDays ? resource.totalDays : 0);
-        
+
         // Use effectiveDailyRate if available (0 if assigned to equipment), otherwise use dailyRate
-        const effectiveDailyRate = resource.effectiveDailyRate !== undefined 
-          ? parseFloat(resource.effectiveDailyRate) 
+        const effectiveDailyRate = resource.effectiveDailyRate !== undefined
+          ? parseFloat(resource.effectiveDailyRate)
           : (resource.dailyRate ? parseFloat(resource.dailyRate) : 0);
         const originalDailyRate = resource.dailyRate ? parseFloat(resource.dailyRate) : 0;
         const isAssignedToEquipment = resource.isAssignedToEquipment || false;
-        
+
         // Calculate total cost: effective daily rate * calculated total days
         // If assigned to equipment, cost is 0 (included in equipment rate)
         const totalCost = effectiveDailyRate * totalDays;
-        
+
         // Handle employee data - check for employeeFirstName/employeeLastName from JOIN (same as initial fetchData)
         const employee = (resource.employeeFirstName || resource.employeeLastName)
           ? {
-              id: resource.employeeId?.toString() || '',
-              first_name: resource.employeeFirstName || '',
-              middle_name: resource.employeeMiddleName || undefined,
-              last_name: resource.employeeLastName || '',
-              full_name: (() => {
-                const nameParts = [
-                  resource.employeeFirstName,
-                  resource.employeeMiddleName,
-                  resource.employeeLastName
-                ].filter(Boolean);
-                return nameParts.join(' ').trim();
-              })(),
-            }
+            id: resource.employeeId?.toString() || '',
+            first_name: resource.employeeFirstName || '',
+            middle_name: resource.employeeMiddleName || undefined,
+            last_name: resource.employeeLastName || '',
+            full_name: (() => {
+              const nameParts = [
+                resource.employeeFirstName,
+                resource.employeeMiddleName,
+                resource.employeeLastName
+              ].filter(Boolean);
+              return nameParts.join(' ').trim();
+            })(),
+          }
           : resource.employee || undefined;
-        
+
         // Handle both employee names (from JOIN) and worker names
         // Combine firstName, middleName, and lastName if they exist
         const employeeName = (() => {
@@ -848,7 +849,7 @@ export default function ProjectResourcesPage() {
           }
           return resource.employeeFirstName || resource.employeeLastName || resource.employeeName || resource.workerName || `Employee ${resource.employeeId || 'Unknown'}`;
         })();
-        
+
         return {
           id: resource.id.toString(),
           type: resource.type,
@@ -884,7 +885,7 @@ export default function ProjectResourcesPage() {
         const nonManpowerResources = prevResources.filter(r => r.type !== 'manpower');
         return [...nonManpowerResources, ...transformedManpower];
       });
-      
+
       // Statistics will update automatically from the resources state
     } catch (error) {
       console.error('Error updating manpower data:', error);
@@ -894,7 +895,7 @@ export default function ProjectResourcesPage() {
   // Helper function to calculate total days from dates for manpower (same logic as ManpowerDialog)
   const calculateTotalDaysFromDates = (startDate: string | null | undefined, endDate: string | null | undefined): number => {
     if (!startDate) return 0;
-    
+
     try {
       // Parse dates as local dates (avoid timezone issues)
       const parseLocalDate = (dateString: string): Date => {
@@ -902,10 +903,10 @@ export default function ProjectResourcesPage() {
         const [year, month, day] = dateStr.split('-').map(Number);
         return new Date(year, month - 1, day);
       };
-      
+
       const start = parseLocalDate(startDate);
       if (isNaN(start.getTime())) return 0;
-      
+
       // Use end date if provided and not in the future, otherwise use today
       let end: Date;
       if (endDate) {
@@ -924,11 +925,11 @@ export default function ProjectResourcesPage() {
         end = new Date();
         end.setHours(0, 0, 0, 0);
       }
-      
+
       // Calculate difference in days (inclusive of both start and end dates)
       const diffTime = Math.abs(end.getTime() - start.getTime());
       const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end dates
-      
+
       return diffDays;
     } catch (error) {
       console.error('Error calculating total days from dates:', error);
@@ -939,7 +940,7 @@ export default function ProjectResourcesPage() {
   // Helper function to calculate usage hours from dates (same logic as EquipmentDialog)
   const calculateUsageHoursFromDates = (startDate: string | null | undefined, endDate: string | null | undefined): number => {
     if (!startDate) return 0;
-    
+
     try {
       // Parse dates as local dates (avoid timezone issues)
       const parseLocalDate = (dateString: string): Date => {
@@ -947,10 +948,10 @@ export default function ProjectResourcesPage() {
         const [year, month, day] = dateStr.split('-').map(Number);
         return new Date(year, month - 1, day);
       };
-      
+
       const start = parseLocalDate(startDate);
       if (isNaN(start.getTime())) return 0;
-      
+
       // Use end date if provided and not in the future, otherwise use today
       let end: Date;
       if (endDate) {
@@ -969,14 +970,14 @@ export default function ProjectResourcesPage() {
         end = new Date();
         end.setHours(0, 0, 0, 0);
       }
-      
+
       // Calculate difference in days (inclusive of both start and end dates)
       const diffTime = Math.abs(end.getTime() - start.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end dates
-      
+
       // 10 hours per day (same as EquipmentDialog)
       const usageHours = diffDays * 10;
-      
+
       return usageHours;
     } catch (error) {
       console.error('Error calculating usage hours from dates:', error);
@@ -988,9 +989,9 @@ export default function ProjectResourcesPage() {
   const updateEquipmentData = async () => {
     try {
       const equipmentResponse = await ApiService.getProjectEquipment(Number(projectId));
-      const equipmentData = (equipmentResponse.data || []).map((resource: any) => ({ 
-        ...resource, 
-        type: 'equipment' 
+      const equipmentData = (equipmentResponse.data || []).map((resource: any) => ({
+        ...resource,
+        type: 'equipment'
       }));
 
       // Transform equipment data to match frontend structure
@@ -998,18 +999,18 @@ export default function ProjectResourcesPage() {
         // Always calculate usage hours from dates if dates are available
         // This ensures the table shows the correct hours that update automatically as days pass
         const calculatedUsageHours = calculateUsageHoursFromDates(resource.startDate, resource.endDate);
-        
+
         // Use calculated hours if dates are present, otherwise fall back to stored estimatedHours
-        const usageHours = (resource.startDate && calculatedUsageHours > 0) 
-          ? calculatedUsageHours 
+        const usageHours = (resource.startDate && calculatedUsageHours > 0)
+          ? calculatedUsageHours
           : (resource.estimatedHours ? parseFloat(resource.estimatedHours) : 0);
-        
+
         const hourlyRate = resource.hourlyRate ? parseFloat(resource.hourlyRate) : 0;
         const maintenanceCost = resource.maintenanceCost ? parseFloat(resource.maintenanceCost) : 0;
-        
+
         // Calculate total cost: (hourly rate * usage hours) + maintenance cost
         const totalCost = hourlyRate * usageHours + maintenanceCost;
-        
+
         return {
           id: resource.id.toString(),
           type: resource.type,
@@ -1055,7 +1056,7 @@ export default function ProjectResourcesPage() {
         const nonEquipmentResources = prevResources.filter(r => r.type !== 'equipment');
         return [...nonEquipmentResources, ...transformedEquipment];
       });
-      
+
       // Statistics will update automatically from the resources state
     } catch (error) {
       console.error('Error updating equipment data:', error);
@@ -1066,22 +1067,22 @@ export default function ProjectResourcesPage() {
   const updateMaterialsData = async () => {
     try {
       const materialsResponse = await ApiService.getProjectMaterials(Number(projectId));
-      const materialsData = (materialsResponse.data || []).map((resource: any) => ({ 
-        ...resource, 
-        type: 'material' 
+      const materialsData = (materialsResponse.data || []).map((resource: any) => ({
+        ...resource,
+        type: 'material'
       }));
 
       // Transform materials data to match frontend structure
       const transformedMaterials = materialsData.map((resource: any) => {
         // Get date from all possible field names
-        const materialDate = resource.orderDate 
-          || resource.date 
-          || resource.dateUsed 
+        const materialDate = resource.orderDate
+          || resource.date
+          || resource.dateUsed
           || resource.date_used
           || resource.order_date
           || resource.dateUsed
           || '';
-        
+
         return {
           id: resource.id.toString(),
           type: resource.type,
@@ -1089,7 +1090,7 @@ export default function ProjectResourcesPage() {
           description: resource.description,
           quantity: resource.quantity,
           unit_cost: resource.unitPrice ? parseFloat(resource.unitPrice) : undefined,
-          total_cost: resource.unitPrice && resource.quantity ? 
+          total_cost: resource.unitPrice && resource.quantity ?
             parseFloat(resource.unitPrice) * parseFloat(resource.quantity) : undefined,
           date: materialDate,
           orderDate: materialDate,
@@ -1110,7 +1111,7 @@ export default function ProjectResourcesPage() {
         const nonMaterialResources = prevResources.filter(r => r.type !== 'material');
         return [...nonMaterialResources, ...transformedMaterials];
       });
-      
+
       // Statistics will update automatically from the resources state
     } catch (error) {
       console.error('Error updating materials data:', error);
@@ -1121,9 +1122,9 @@ export default function ProjectResourcesPage() {
   const updateFuelData = async () => {
     try {
       const fuelResponse = await ApiService.getProjectFuel(Number(projectId));
-      const fuelData = (fuelResponse.data || []).map((resource: any) => ({ 
-        ...resource, 
-        type: 'fuel' 
+      const fuelData = (fuelResponse.data || []).map((resource: any) => ({
+        ...resource,
+        type: 'fuel'
       }));
 
       // Transform fuel data to match frontend structure
@@ -1134,7 +1135,7 @@ export default function ProjectResourcesPage() {
         description: resource.usageNotes,
         quantity: resource.quantity,
         unit_cost: resource.unitPrice ? parseFloat(resource.unitPrice) : undefined,
-        total_cost: resource.unitPrice && resource.quantity ? 
+        total_cost: resource.unitPrice && resource.quantity ?
           parseFloat(resource.unitPrice) * parseFloat(resource.quantity) : undefined,
         date: resource.purchaseDate || resource.date,
         status: resource.status,
@@ -1153,7 +1154,7 @@ export default function ProjectResourcesPage() {
         const nonFuelResources = prevResources.filter(r => r.type !== 'fuel');
         return [...nonFuelResources, ...transformedFuel];
       });
-      
+
       // Statistics will update automatically from the resources state
     } catch (error) {
       console.error('Error updating fuel data:', error);
@@ -1164,9 +1165,9 @@ export default function ProjectResourcesPage() {
   const updateExpensesData = async () => {
     try {
       const expensesResponse = await ApiService.getProjectExpenses(Number(projectId));
-      const expensesData = (expensesResponse.data || []).map((resource: any) => ({ 
-        ...resource, 
-        type: 'expense' 
+      const expensesData = (expensesResponse.data || []).map((resource: any) => ({
+        ...resource,
+        type: 'expense'
       }));
 
       // Transform expenses data to match frontend structure
@@ -1196,7 +1197,7 @@ export default function ProjectResourcesPage() {
         const nonExpenseResources = prevResources.filter(r => r.type !== 'expense');
         return [...nonExpenseResources, ...transformedExpenses];
       });
-      
+
       // Statistics will update automatically from the resources state
     } catch (error) {
       console.error('Error updating expenses data:', error);
@@ -1230,13 +1231,13 @@ export default function ProjectResourcesPage() {
   // Helper function to extract door number from equipment name
   const extractDoorNumberFromName = (equipmentName: string | undefined): string | undefined => {
     if (!equipmentName) return undefined;
-    
+
     // Try to extract numeric prefix (e.g., "1404-DOZER" -> "1404")
     const match = equipmentName.match(/^(\d+)/);
     if (match) {
       return match[1];
     }
-    
+
     return undefined;
   };
 
@@ -1254,22 +1255,22 @@ export default function ProjectResourcesPage() {
   // Pagination helper functions
   const getPaginatedResources = (type: ResourceType) => {
     let allResources = filterResourcesByType(type);
-    
+
     // Sort manpower by file number
     if (type === 'manpower') {
       allResources = [...allResources].sort((a, b) => {
         const fileA = a.employee_file_number || '-';
         const fileB = b.employee_file_number || '-';
-        
+
         // Handle numeric file numbers
         const numA = parseInt(fileA);
         const numB = parseInt(fileB);
-        
+
         // If both are numeric, compare numerically
         if (!isNaN(numA) && !isNaN(numB)) {
           return numA - numB;
         }
-        
+
         // If one is numeric and the other is not, numeric comes first
         if (!isNaN(numA) && isNaN(numB)) {
           return -1;
@@ -1277,27 +1278,27 @@ export default function ProjectResourcesPage() {
         if (isNaN(numA) && !isNaN(numB)) {
           return 1;
         }
-        
+
         // Both are non-numeric (e.g., "-", "EXT-S-14"), sort alphabetically
         return fileA.localeCompare(fileB);
       });
     }
-    
+
     // Sort equipment by door number
     if (type === 'equipment') {
       allResources = [...allResources].sort((a, b) => {
         const doorA = a.door_number || '';
         const doorB = b.door_number || '';
-        
+
         // Handle numeric door numbers
         const numA = parseInt(doorA);
         const numB = parseInt(doorB);
-        
+
         // If both are numeric, compare numerically
         if (!isNaN(numA) && !isNaN(numB)) {
           return numA - numB;
         }
-        
+
         // If one is numeric and the other is not, numeric comes first
         if (!isNaN(numA) && isNaN(numB)) {
           return -1;
@@ -1305,12 +1306,26 @@ export default function ProjectResourcesPage() {
         if (isNaN(numA) && !isNaN(numB)) {
           return 1;
         }
-        
+
         // Both are non-numeric or empty, sort alphabetically
         return doorA.localeCompare(doorB);
       });
     }
-    
+
+    // Sort fuel by equipment name
+    if (type === 'fuel') {
+      allResources = [...allResources].sort((a, b) => {
+        const equipA = a.equipment_name || '';
+        const equipB = b.equipment_name || '';
+
+        // Put items with equipment first
+        if (equipA && !equipB) return -1;
+        if (!equipA && equipB) return 1;
+
+        return equipA.localeCompare(equipB);
+      });
+    }
+
     const currentPage = currentPages[type];
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
@@ -1333,7 +1348,7 @@ export default function ProjectResourcesPage() {
     try {
       const filteredResources = filterResourcesByType(type);
       const totalCost = calculateTotalCost(type);
-      
+
       const reportData: ProjectResourceReportData = {
         project: {
           id: projectId,
@@ -1348,7 +1363,7 @@ export default function ProjectResourcesPage() {
       };
 
       const loadingToastId = toast.loading('Generating report...');
-      
+
       await ProjectResourcesReportService.downloadPDFReport(
         reportData,
         `${type}-report-${project?.name?.replace(/\s+/g, '-') || projectId}-${format(new Date(), 'yyyy-MM-dd')}.pdf`
@@ -1526,8 +1541,8 @@ export default function ProjectResourcesPage() {
                     <span className="text-sm text-muted-foreground">
                       {getResourceCount(type)} items
                     </span>
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       variant="outline"
                       onClick={() => handleGenerateReport(type)}
                       disabled={getResourceCount(type) === 0}
@@ -1577,6 +1592,8 @@ export default function ProjectResourcesPage() {
                         </>
                       ) : type === 'fuel' ? (
                         <>
+                          <TableHead>Equipment</TableHead>
+                          <TableHead>Date</TableHead>
                           <TableHead>Fuel Type</TableHead>
                           <TableHead>Liters</TableHead>
                           <TableHead>Price/Liter</TableHead>
@@ -1611,7 +1628,7 @@ export default function ProjectResourcesPage() {
                                 : type === 'material'
                                   ? 7
                                   : type === 'fuel'
-                                    ? 5
+                                    ? 7
                                     : type === 'expense'
                                       ? 5
                                       : 4
@@ -1815,8 +1832,8 @@ export default function ProjectResourcesPage() {
                               {/* Unit Price Column */}
                               <TableCell>
                                 <div className="text-sm">
-                                  {resource.unit_price !== undefined && resource.unit_price !== null 
-                                    ? `SAR ${resource.unit_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
+                                  {resource.unit_price !== undefined && resource.unit_price !== null
+                                    ? `SAR ${resource.unit_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                                     : '-'}
                                 </div>
                               </TableCell>
@@ -1826,19 +1843,19 @@ export default function ProjectResourcesPage() {
                                 <div className="text-sm">
                                   {(() => {
                                     // Check all possible date field names
-                                    const materialDate = resource.date 
-                                      || resource.orderDate 
-                                      || resource.date_used 
+                                    const materialDate = resource.date
+                                      || resource.orderDate
+                                      || resource.date_used
                                       || (resource as any).dateUsed
                                       || (resource as any).order_date;
-                                    
+
                                     if (materialDate) {
                                       try {
                                         // Handle both string and Date object
-                                        const date = typeof materialDate === 'string' 
-                                          ? new Date(materialDate) 
+                                        const date = typeof materialDate === 'string'
+                                          ? new Date(materialDate)
                                           : materialDate;
-                                        
+
                                         if (!isNaN(date.getTime())) {
                                           return date.toLocaleDateString();
                                         }
@@ -1853,6 +1870,31 @@ export default function ProjectResourcesPage() {
                             </>
                           ) : type === 'fuel' ? (
                             <>
+                              {/* Equipment Column */}
+                              <TableCell>
+                                <div className="font-medium">{resource.equipment_name || '-'}</div>
+                              </TableCell>
+
+                              {/* Date Column */}
+                              <TableCell>
+                                <div className="text-sm">
+                                  {(() => {
+                                    const dateStr = resource.date || resource.purchaseDate;
+                                    if (dateStr) {
+                                      try {
+                                        const date = new Date(dateStr);
+                                        if (!isNaN(date.getTime())) {
+                                          return date.toLocaleDateString();
+                                        }
+                                      } catch (e) {
+                                        console.error('Invalid date:', dateStr, e);
+                                      }
+                                    }
+                                    return '-';
+                                  })()}
+                                </div>
+                              </TableCell>
+
                               {/* Fuel Type Column */}
                               <TableCell>
                                 <div className="font-medium">{resource.fuel_type || '-'}</div>
@@ -1972,7 +2014,7 @@ export default function ProjectResourcesPage() {
                     )}
                   </TableBody>
                 </Table>
-                
+
                 {/* Pagination Controls */}
                 {getTotalPages(type) > 1 && (
                   <div className="mt-4 flex items-center justify-between">
@@ -1989,11 +2031,11 @@ export default function ProjectResourcesPage() {
                             className={currentPages[type] === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
                           />
                         </PaginationItem>
-                        
+
                         {Array.from({ length: getTotalPages(type) }, (_, i) => i + 1).map(page => {
                           const totalPages = getTotalPages(type);
                           const currentPage = currentPages[type];
-                          
+
                           // Show first page, last page, current page, and pages around current
                           if (
                             page === 1 ||
@@ -2023,7 +2065,7 @@ export default function ProjectResourcesPage() {
                           }
                           return null;
                         })}
-                        
+
                         <PaginationItem>
                           <PaginationNext
                             onClick={() =>
@@ -2061,8 +2103,8 @@ export default function ProjectResourcesPage() {
                   <span className="text-sm text-muted-foreground">
                     {getResourceCount('tasks')} items
                   </span>
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     variant="outline"
                     onClick={() => handleGenerateReport('tasks')}
                     disabled={getResourceCount('tasks') === 0}
@@ -2104,42 +2146,42 @@ export default function ProjectResourcesPage() {
                     handleDeleteResource(resource);
                   }
                 }}
-                                 onStatusChange={async (task, status) => {
-                   try {
-                     const response = await ApiService.put(`/projects/${projectId}/tasks/${task.id}`, {
-                       status
-                     });
-                     
-                     if (response.success) {
-                       toast.success('Task status updated successfully');
-                       // Update only tasks data instead of entire page
-                       await updateTasksData();
-                     } else {
-                       toast.error(response.message || 'Failed to update task status');
-                     }
-                   } catch (error) {
-                     console.error('Error updating task status:', error);
-                     toast.error('Failed to update task status');
-                   }
-                 }}
-                                 onCompletionChange={async (task, percentage) => {
-                   try {
-                     const response = await ApiService.put(`/projects/${projectId}/tasks/${task.id}`, {
-                       completionPercentage: percentage
-                     });
-                     
-                     if (response.success) {
-                       toast.success('Task completion updated successfully');
-                       // Update only tasks data instead of entire page
-                       await updateTasksData();
-                     } else {
-                       toast.error(response.message || 'Failed to update task completion');
-                     }
-                   } catch (error) {
-                     console.error('Error updating task completion:', error);
-                     toast.error('Failed to update task completion');
-                   }
-                 }}
+                onStatusChange={async (task, status) => {
+                  try {
+                    const response = await ApiService.put(`/projects/${projectId}/tasks/${task.id}`, {
+                      status
+                    });
+
+                    if (response.success) {
+                      toast.success('Task status updated successfully');
+                      // Update only tasks data instead of entire page
+                      await updateTasksData();
+                    } else {
+                      toast.error(response.message || 'Failed to update task status');
+                    }
+                  } catch (error) {
+                    console.error('Error updating task status:', error);
+                    toast.error('Failed to update task status');
+                  }
+                }}
+                onCompletionChange={async (task, percentage) => {
+                  try {
+                    const response = await ApiService.put(`/projects/${projectId}/tasks/${task.id}`, {
+                      completionPercentage: percentage
+                    });
+
+                    if (response.success) {
+                      toast.success('Task completion updated successfully');
+                      // Update only tasks data instead of entire page
+                      await updateTasksData();
+                    } else {
+                      toast.error(response.message || 'Failed to update task completion');
+                    }
+                  } catch (error) {
+                    console.error('Error updating task completion:', error);
+                    toast.error('Failed to update task completion');
+                  }
+                }}
               />
             </CardContent>
           </Card>
@@ -2147,21 +2189,21 @@ export default function ProjectResourcesPage() {
       </Tabs>
 
       {/* Separate Dialogs for each resource type */}
-             <ManpowerDialog
-         open={manpowerDialogOpen}
-         onOpenChange={(open) => handleDialogOpenChange('manpower', open)}
-         projectId={projectId}
-         initialData={editingResource}
-         onSuccess={() => handleResourceSuccess('manpower')}
-       />
+      <ManpowerDialog
+        open={manpowerDialogOpen}
+        onOpenChange={(open) => handleDialogOpenChange('manpower', open)}
+        projectId={projectId}
+        initialData={editingResource}
+        onSuccess={() => handleResourceSuccess('manpower')}
+      />
 
-       <EquipmentDialog
-         open={equipmentDialogOpen}
-         onOpenChange={(open) => handleDialogOpenChange('equipment', open)}
-         projectId={projectId}
-         initialData={editingResource}
-         onSuccess={() => handleResourceSuccess('equipment')}
-       />
+      <EquipmentDialog
+        open={equipmentDialogOpen}
+        onOpenChange={(open) => handleDialogOpenChange('equipment', open)}
+        projectId={projectId}
+        initialData={editingResource}
+        onSuccess={() => handleResourceSuccess('equipment')}
+      />
 
       <MaterialDialog
         open={materialDialogOpen}
@@ -2187,24 +2229,24 @@ export default function ProjectResourcesPage() {
         onSuccess={() => handleResourceSuccess('expense')}
       />
 
-             <TaskDialog
-         open={taskDialogOpen}
-         onOpenChange={(open) => handleDialogOpenChange('tasks', open)}
-         projectId={projectId}
-         initialData={editingResource && editingResource.type === 'tasks' ? {
-           id: editingResource.id,
-           title: editingResource.title || editingResource.name || '',
-           description: editingResource.description || '',
-           status: editingResource.status,
-           priority: editingResource.priority || 'medium',
-           due_date: editingResource.due_date || '',
-           completion_percentage: editingResource.completion_percentage || 0,
-           assigned_to_id: editingResource.assigned_to_id || 'none',
-           assigned_to: editingResource.assigned_to,
-           notes: editingResource.notes || '',
-         } : null}
-         onSuccess={() => handleResourceSuccess('tasks')}
-       />
+      <TaskDialog
+        open={taskDialogOpen}
+        onOpenChange={(open) => handleDialogOpenChange('tasks', open)}
+        projectId={projectId}
+        initialData={editingResource && editingResource.type === 'tasks' ? {
+          id: editingResource.id,
+          title: editingResource.title || editingResource.name || '',
+          description: editingResource.description || '',
+          status: editingResource.status,
+          priority: editingResource.priority || 'medium',
+          due_date: editingResource.due_date || '',
+          completion_percentage: editingResource.completion_percentage || 0,
+          assigned_to_id: editingResource.assigned_to_id || 'none',
+          assigned_to: editingResource.assigned_to,
+          notes: editingResource.notes || '',
+        } : null}
+        onSuccess={() => handleResourceSuccess('tasks')}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
