@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Textarea } from '@/components/ui/textarea';
 import ApiService from '@/lib/api-service';
 import { format } from 'date-fns';
@@ -334,8 +335,8 @@ export default function MaterialDialog({
           {/* Material and Unit Selection */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="material_id">Material</Label>
+              <div className="flex items-center justify-between h-5">
+                <Label htmlFor="material_id" className="h-5 flex items-center leading-none">Material</Label>
                 <Button
                   type="button"
                   variant="ghost"
@@ -352,42 +353,35 @@ export default function MaterialDialog({
                 <Input
                   value={formData.material_name}
                   readOnly
-                  className="bg-muted cursor-not-allowed"
+                  className="bg-muted cursor-not-allowed h-9"
                 />
               ) : (
-                // Show dropdown when adding new material - always controlled with string value
-                <Select
+                // Show searchable dropdown when adding new material - always controlled with string value
+                <SearchableSelect
                   value={formData.material_id && typeof formData.material_id === 'string' ? formData.material_id : ''}
                   onValueChange={value => handleInputChange('material_id', value || '')}
+                  options={materialsList.map(material => ({
+                    value: material.id.toString(),
+                    label: material.name,
+                  }))}
+                  placeholder={loadingMaterials ? "Loading..." : "Select material"}
+                  searchPlaceholder="Search materials..."
+                  emptyMessage={loadingMaterials ? "Loading materials..." : "No materials found"}
                   disabled={loadingMaterials}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={loadingMaterials ? "Loading..." : "Select material"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {materialsList.length === 0 && !loadingMaterials ? (
-                      <SelectItem value="no-materials" disabled>
-                        No materials available
-                      </SelectItem>
-                    ) : (
-                      materialsList.map(material => (
-                        <SelectItem key={material.id} value={material.id.toString()}>
-                          {material.name}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+                  loading={loadingMaterials}
+                />
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="unit">Unit</Label>
+              <div className="h-5 flex items-center">
+                <Label htmlFor="unit" className="h-5 flex items-center leading-none">Unit</Label>
+              </div>
               <Select
                 value={formData.unit || undefined}
                 onValueChange={value => handleInputChange('unit', value)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full h-9">
                   <SelectValue placeholder="Select unit" />
                 </SelectTrigger>
                 <SelectContent>
