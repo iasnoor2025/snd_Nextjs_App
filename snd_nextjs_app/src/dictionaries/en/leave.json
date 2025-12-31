@@ -216,6 +216,7 @@
   "approved": "Approved",
   "rejected": "Rejected",
   "cancelled": "Cancelled",
+  "returned": "Returned",
   "employee": "Employee",
   "leave_type": "Leave Type",
   "status": "Status",
@@ -366,5 +367,8 @@
   "early_return_info_1": "Employees can return early - the return date will become the actual end date",
   "early_return_info_2": "Days will be automatically recalculated based on actual return date",
   "early_return_info_3": "No restrictions on return dates - flexible leave management",
-  "start_date_too_far_future": "Start date cannot be more than 1 year in the future"
+  "start_date_too_far_future": "Start date cannot be more than 1 year in the future",
+  "export_report": "Export Report",
+  "please_select_status_for_report": "Please select a status to generate report",
+  "report_downloaded_successfully": "Report downloaded successfully"
 }

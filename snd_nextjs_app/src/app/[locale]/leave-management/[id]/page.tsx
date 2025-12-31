@@ -189,6 +189,7 @@ function LeaveRequestDetailPage() {
   const [returnDate, setReturnDate] = useState('');
   const [returnReason, setReturnReason] = useState('');
   const [returning, setReturning] = useState(false);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
 
   const fetchLeaveRequest = useCallback(async () => {
     setLoading(true);
@@ -355,7 +356,41 @@ function LeaveRequestDetailPage() {
     } finally {
       setReturning(false);
     }
-  }, [leaveRequest, leaveId, returnDate, returnReason, fetchLeaveRequest]);
+  }, [leaveRequest, leaveId, returnDate, returnReason, fetchLeaveRequest, t]);
+
+  const handleDownloadPDF = useCallback(async () => {
+    if (!leaveRequest) return;
+
+    setDownloadingPDF(true);
+    try {
+      const currentLang = locale === 'ar' ? 'ar' : 'en';
+      const response = await fetch(`/api/leave-requests/${leaveId}/pdf?lang=${currentLang}`, {
+        method: 'GET',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF');
+      }
+
+      // Get the PDF blob
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Leave_Report_${leaveRequest.id}_${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success(t('leave.export_details') + ' downloaded');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to download PDF';
+      toast.error(errorMessage);
+    } finally {
+      setDownloadingPDF(false);
+    }
+  }, [leaveRequest, leaveId, locale, t]);
 
   const getStatusBadge = useCallback((status: string) => {
     // Normalize status to handle both uppercase and lowercase
@@ -520,9 +555,9 @@ function LeaveRequestDetailPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleDownloadPDF} disabled={downloadingPDF}>
                   <Download className="h-4 w-4 mr-2" />
-                  {t('leave.export_details')}
+                  {downloadingPDF ? t('leave.loading') : t('leave.export_details')}
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <Share2 className="h-4 w-4 mr-2" />

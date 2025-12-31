@@ -419,31 +419,39 @@ function EditLeaveRequestPage() {
   }, [router, locale, leaveId]);
 
   const getStatusBadge = useCallback((status: string) => {
+    const s = status.toLowerCase();
     const statusConfig = {
-      Pending: {
+      pending: {
         variant: 'secondary' as const,
         icon: Clock,
         color: 'bg-yellow-100 text-yellow-800',
       },
-      Approved: {
+      approved: {
         variant: 'default' as const,
         icon: CheckCircle,
         color: 'bg-green-100 text-green-800',
       },
-      Rejected: {
+      rejected: {
         variant: 'destructive' as const,
         icon: XCircle,
         color: 'bg-red-100 text-red-800',
       },
+      returned: {
+        variant: 'default' as const,
+        icon: CheckCircle,
+        color: 'bg-blue-100 text-blue-800',
+      },
     };
 
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.Pending;
+    const config = statusConfig[s as keyof typeof statusConfig] || statusConfig.pending;
     const Icon = config.icon;
+    // Capitalize first letter for display
+    const displayStatus = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
 
     return (
       <Badge variant={config.variant} className={`flex items-center gap-1 ${config.color}`}>
         <Icon className="h-3 w-3" />
-        {status}
+        {displayStatus}
       </Badge>
     );
   }, []);
@@ -696,9 +704,10 @@ function EditLeaveRequestPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="Pending">Pending</SelectItem>
-                            <SelectItem value="Approved">Approved</SelectItem>
-                            <SelectItem value="Rejected">Rejected</SelectItem>
+                            <SelectItem value="pending">{t('leave.pending')}</SelectItem>
+                            <SelectItem value="approved">{t('leave.approved')}</SelectItem>
+                            <SelectItem value="rejected">{t('leave.rejected')}</SelectItem>
+                            <SelectItem value="returned">{t('leave.returned')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />

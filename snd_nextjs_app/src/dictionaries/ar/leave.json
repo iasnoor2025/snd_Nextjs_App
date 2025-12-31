@@ -225,6 +225,7 @@
   "approved": "موافق عليه",
   "rejected": "مرفوض",
   "cancelled": "ملغي",
+  "returned": "عاد",
   "showing_results": "عرض {{start}} إلى {{end}} من {{total}} نتيجة",
   "previous": "السابق",
   "next": "التالي",
@@ -370,5 +371,8 @@
   "early_return_info_1": "يمكن للموظفين العودة مبكراً - تاريخ العودة سيصبح تاريخ الانتهاء الفعلي",
   "early_return_info_2": "سيتم إعادة حساب الأيام تلقائياً بناءً على تاريخ العودة الفعلي",
   "early_return_info_3": "لا توجد قيود على تواريخ العودة - إدارة مرنة للإجازات",
-  "start_date_too_far_future": "لا يمكن أن يكون تاريخ البداية أكثر من سنة في المستقبل"
+  "start_date_too_far_future": "لا يمكن أن يكون تاريخ البداية أكثر من سنة في المستقبل",
+  "export_report": "تصدير التقرير",
+  "please_select_status_for_report": "يرجى اختيار حالة لإنشاء التقرير",
+  "report_downloaded_successfully": "تم تنزيل التقرير بنجاح"
 }

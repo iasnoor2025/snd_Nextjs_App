@@ -40,6 +40,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Download,
   Edit,
   Eye,
   Plus,
@@ -103,6 +104,7 @@ export default function LeaveManagementPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
   const isFetchingRef = useRef(false);
 
   // Get allowed actions for leave management
@@ -239,6 +241,44 @@ export default function LeaveManagementPage() {
     setCurrentPage(1); // Reset to first page when filter changes
   };
 
+  const handleDownloadStatusReport = async () => {
+    if (status === 'all') {
+      toast.error(t('leave.please_select_status_for_report') || 'Please select a status to generate report');
+      return;
+    }
+
+    setDownloadingPDF(true);
+    try {
+      const currentLang = locale === 'ar' ? 'ar' : 'en';
+      const response = await fetch(`/api/leave-requests/status/pdf?status=${status}&lang=${currentLang}`, {
+        method: 'GET',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF');
+      }
+
+      // Get the PDF blob
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const formattedStatus = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+      a.download = `Leave_Report_${formattedStatus}_${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success(t('leave.report_downloaded_successfully') || 'Report downloaded successfully');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to download report';
+      toast.error(errorMessage);
+    } finally {
+      setDownloadingPDF(false);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     setDeleteId(id);
     setShowDeleteDialog(true);
@@ -316,19 +356,22 @@ export default function LeaveManagementPage() {
   };
 
   const getStatusBadge = (status: string) => {
+    const s = status.toLowerCase();
     const statusColors = {
-      Pending: 'bg-yellow-100 text-yellow-800',
-      Approved: 'bg-green-100 text-green-800',
-      Rejected: 'bg-red-100 text-red-800',
-      Cancelled: 'bg-gray-100 text-gray-800',
-      Returned: 'bg-blue-100 text-blue-800',
-      Active: 'bg-green-100 text-green-800',
+      pending: 'bg-yellow-100 text-yellow-800',
+      approved: 'bg-green-100 text-green-800',
+      rejected: 'bg-red-100 text-red-800',
+      cancelled: 'bg-gray-100 text-gray-800',
+      returned: 'bg-blue-100 text-blue-800',
+      active: 'bg-green-100 text-green-800',
     };
+    // Capitalize first letter for display
+    const displayStatus = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
     return (
       <Badge
-        className={statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}
+        className={statusColors[s as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}
       >
-        {status}
+        {displayStatus}
       </Badge>
     );
   };
@@ -391,12 +434,25 @@ export default function LeaveManagementPage() {
                   </SelectTrigger>
                   <SelectContent>
                                          <SelectItem value="all">{t('leave.all_status')}</SelectItem>
-                     <SelectItem value="Pending">{t('leave.pending')}</SelectItem>
-                     <SelectItem value="Approved">{t('leave.approved')}</SelectItem>
-                     <SelectItem value="Rejected">{t('leave.rejected')}</SelectItem>
-                     <SelectItem value="Cancelled">{t('leave.cancelled')}</SelectItem>
+                     <SelectItem value="pending">{t('leave.pending')}</SelectItem>
+                     <SelectItem value="approved">{t('leave.approved')}</SelectItem>
+                     <SelectItem value="rejected">{t('leave.rejected')}</SelectItem>
+                     <SelectItem value="cancelled">{t('leave.cancelled')}</SelectItem>
+                     <SelectItem value="returned">{t('leave.returned')}</SelectItem>
                   </SelectContent>
                 </Select>
+                {status !== 'all' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadStatusReport}
+                    disabled={downloadingPDF}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    {downloadingPDF ? t('leave.loading') : t('leave.export_report')}
+                  </Button>
+                )}
                 <Select value={leaveType} onValueChange={handleLeaveTypeChange}>
                   <SelectTrigger className="w-40">
                     <SelectValue />
