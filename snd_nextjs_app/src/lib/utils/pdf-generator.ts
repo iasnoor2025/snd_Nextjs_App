@@ -241,7 +241,8 @@ export class PDFGenerator {
   static async generateExpiredEquipmentReport(
     expiredEquipmentData: EquipmentData[],
     documentType: string = 'istimara',
-    documentLabel: string = 'Plate #'
+    documentLabel: string = 'Plate #',
+    status: 'available' | 'expired' | 'expiring' | 'missing' | 'all' = 'expired'
   ): Promise<void> {
     const documentTypeLabels: Record<string, string> = {
       istimara: 'Plate #',
@@ -253,10 +254,20 @@ export class PDFGenerator {
     };
 
     const label = documentLabel || documentTypeLabels[documentType] || 'Document';
-    const filename = `Expired_Equipment_${label.replace(/\s+/g, '_')}_Report_${new Date()
+    
+    const statusLabels: Record<string, string> = {
+      available: 'Available',
+      expired: 'Expired',
+      expiring: 'Expiring Soon',
+      missing: 'Missing',
+      all: 'All',
+    };
+    
+    const statusLabel = statusLabels[status] || 'All';
+    const filename = `${statusLabel.replace(/\s+/g, '_')}_Equipment_${label.replace(/\s+/g, '_')}_Report_${new Date()
       .toISOString()
       .split("T")[0]}.pdf`;
-    const title = `EXPIRED EQUIPMENT ${label.toUpperCase()} REPORT`;
+    const title = `${statusLabel.toUpperCase()} EQUIPMENT ${label.toUpperCase()} REPORT`;
     
     generateEquipmentTablePDF(
       expiredEquipmentData,

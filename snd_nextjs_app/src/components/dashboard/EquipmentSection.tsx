@@ -345,32 +345,78 @@ export function EquipmentSection({
     hasUnassigned: driverOptionsData.some(item => !item.driverName),
   };
 
-  const totalPages = Math.ceil(filteredData.length / pageSize);
+  // Sort filtered data by equipment name
+  const sortedFilteredData = [...filteredData].sort((a, b) => {
+    const nameA = a.equipmentName || "";
+    const nameB = b.equipmentName || "";
+    return nameA.localeCompare(nameB);
+  });
+
+  const totalPages = Math.ceil(sortedFilteredData.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
-  const paginatedData = filteredData.slice(startIndex, startIndex + pageSize);
+  const paginatedData = sortedFilteredData.slice(startIndex, startIndex + pageSize);
 
-  // Get expired equipment data for PDF generation based on current document type
-  const expiredEquipmentData = filteredData.filter(item => item.status === 'expired');
+  // Get equipment data by status for PDF generation (sorted by equipment name)
+  const getEquipmentDataByStatus = (status: 'available' | 'expired' | 'expiring' | 'missing' | 'all') => {
+    if (status === 'all') {
+      return sortedFilteredData;
+    }
+    return sortedFilteredData.filter(item => item.status === status);
+  };
 
-  // Handle PDF download for expired equipment
-  const handleDownloadExpiredPDF = async () => {
-    if (expiredEquipmentData.length === 0) {
-      alert(t('equipment.istimara.noExpiredRecords'));
+  // Generic handler for PDF download based on status
+  const handleDownloadPDF = async (status: 'available' | 'expired' | 'expiring' | 'missing' | 'all') => {
+    const dataToDownload = getEquipmentDataByStatus(status);
+    
+    if (dataToDownload.length === 0) {
+      const statusLabels: Record<string, string> = {
+        available: t('equipment.istimara.noAvailableRecords') || 'No available records to download',
+        expired: t('equipment.istimara.noExpiredRecords') || 'No expired records to download',
+        expiring: t('equipment.istimara.noExpiringRecords') || 'No expiring records to download',
+        missing: t('equipment.istimara.noMissingRecords') || 'No missing records to download',
+        all: t('equipment.istimara.noRecordsToDownload') || 'No records to download',
+      };
+      alert(statusLabels[status] || 'No records to download');
       return;
     }
+    
     try {
       const docType = documentTypes[safeSelectedDocumentType];
       const documentLabel = docType?.label.replace(' Management', '') || 'Document';
       await PDFGenerator.generateExpiredEquipmentReport(
-        expiredEquipmentData,
+        dataToDownload,
         safeSelectedDocumentType,
-        documentLabel
+        documentLabel,
+        status === 'all' ? 'all' : status
       );
     } catch (error) {
       console.error('Failed to generate PDF:', error);
       alert(t('equipment.istimara.pdfGenerationFailed'));
     }
   };
+
+  // Determine which data to show in download button based on current filter
+  const getDownloadData = () => {
+    const currentStatus = statusFilter === 'all' ? 'all' : statusFilter as 'available' | 'expired' | 'expiring' | 'missing';
+    const dataForStatus = getEquipmentDataByStatus(currentStatus);
+    
+    const statusLabels: Record<string, string> = {
+      available: t('equipment.istimara.available') || 'Available',
+      expired: t('equipment.istimara.expired') || 'Expired',
+      expiring: t('equipment.istimara.expiringSoon') || 'Expiring Soon',
+      missing: t('equipment.istimara.missing') || 'Missing',
+      all: t('equipment.istimara.allStatuses') || 'All',
+    };
+    
+    return {
+      data: dataForStatus,
+      handler: () => handleDownloadPDF(currentStatus),
+      count: dataForStatus.length,
+      label: statusLabels[currentStatus] || 'All'
+    };
+  };
+
+  const downloadInfo = getDownloadData();
 
   return (
     <Card>
@@ -384,9 +430,9 @@ export function EquipmentSection({
                 return <IconComponent className="h-5 w-5" />;
               })()}
               {documentTypes[safeSelectedDocumentType]?.label || 'Equipment Document Management'}
-              {expiredEquipmentData.length > 0 && (
+              {downloadInfo.count > 0 && (
                 <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
-                  {expiredEquipmentData.length}
+                  {downloadInfo.count}
                 </span>
               )}
             </CardTitle>
@@ -445,13 +491,15 @@ export function EquipmentSection({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleDownloadExpiredPDF}
-                disabled={expiredEquipmentData.length === 0}
+                onClick={downloadInfo.handler}
+                disabled={downloadInfo.count === 0}
                 className="flex items-center gap-2"
-                title={expiredEquipmentData.length === 0 ? t('equipment.istimara.noExpiredRecordsToDownload') : t('equipment.istimara.downloadPdfReport', { count: String(expiredEquipmentData.length) })}
+                title={downloadInfo.count === 0 
+                  ? `No ${downloadInfo.label.toLowerCase()} records to download`
+                  : `Download PDF for ${downloadInfo.count} ${downloadInfo.label.toLowerCase()} ${documentTypes[safeSelectedDocumentType]?.label.replace(' Management', '') || 'documents'}`}
               >
                 <Download className="h-4 w-4" />
-                {t('equipment.istimara.downloadPdf')} ({expiredEquipmentData.length})
+                {t('equipment.istimara.downloadPdf')} ({downloadInfo.count})
               </Button>
               <Button
                 variant="outline"
@@ -552,7 +600,7 @@ export function EquipmentSection({
         </div>
 
         {/* Equipment Table or Empty State */}
-        {filteredData.length > 0 ? (
+        {sortedFilteredData.length > 0 ? (
           <>
             <div className="rounded-lg border">
               <div className="p-4 border-b bg-muted/50">
