@@ -13,9 +13,10 @@ export async function GET(_request: NextRequest) {
     const all = searchParams.get('all') === 'true';
 
     // Build filters
-    // Include all employees except those who have left/exited and those soft-deleted
+    // Only include active and internal employees (not soft-deleted)
     const filters: any[] = [
-      notInArray(employeesTable.status, ['left', 'exit', 'terminated', 'resigned']),
+      eq(employeesTable.status, 'active'),
+      eq(employeesTable.isExternal, false),
       isNull(employeesTable.deletedAt)
     ];
     if (search) {
