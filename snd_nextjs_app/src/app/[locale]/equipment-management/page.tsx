@@ -111,6 +111,8 @@ interface Equipment {
       id: number;
       name: string;
       location: string | null;
+      customer_id?: number;
+      customer_name?: string;
     } | null;
     rental?: {
       id: number;
@@ -501,6 +503,29 @@ export default function EquipmentManagementPage() {
     return <Badge className={config.className}>{config.label}</Badge>;
   };
 
+  const getAssignmentTypeBadge = (type: string) => {
+    const typeConfig = {
+      project: {
+        className: 'bg-indigo-100 text-indigo-800 border-indigo-200 hover:bg-indigo-200',
+        label: t('equipment.assignmentHistory.type.project'),
+      },
+      rental: {
+        className: 'bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-200',
+        label: t('equipment.assignmentHistory.type.rental'),
+      },
+      manual: {
+        className: 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200',
+        label: t('equipment.assignmentHistory.type.manual'),
+      },
+    };
+
+    const config = typeConfig[type as keyof typeof typeConfig] || {
+      className: 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200',
+      label: type,
+    };
+    return <Badge className={config.className}>{config.label}</Badge>;
+  };
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
@@ -875,6 +900,7 @@ export default function EquipmentManagementPage() {
                         <TableHead>{t('equipment.fields.type')}</TableHead>
                         <TableHead>{t('equipment.equipment_management.status')}</TableHead>
                         <TableHead>{t('equipment.equipment_management.current_assignment')}</TableHead>
+                        <TableHead>{t('equipment.equipment_management.driver_operator')}</TableHead>
                         <TableHead>
                           <div className="flex items-center gap-2">
                             <span>{t('equipment.equipment_management.istimara')}</span>
@@ -898,7 +924,7 @@ export default function EquipmentManagementPage() {
                     <TableBody>
                       {currentEquipment.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                             {equipment.length === 0 ? (
                               <div className="flex flex-col items-center space-y-2">
                                 <Package className="h-8 w-8 text-muted-foreground" />
@@ -1001,83 +1027,84 @@ export default function EquipmentManagementPage() {
                             <TableCell>
                               {item.current_assignment ? (() => {
                                 const assignment = item.current_assignment;
-                                const rawCompanyName = assignment.rental?.customer_name;
-                                const companyName = getShortCompanyName(rawCompanyName);
-                                const mainText =
-                                  companyName ||
-                                  assignment.employee?.full_name ||
-                                  assignment.project?.name ||
-                                  assignment.rental?.rental_number ||
-                                  t('equipment.equipment_management.assigned');
-
-                                const subtitleItems: ReactNode[] = [];
-
-                                if (assignment.project?.name === mainText && assignment.employee?.full_name) {
-                                  subtitleItems.push(
-                                    <div key="employee-from-project" className="text-xs text-muted-foreground">
-                                      Employee: {assignment.employee.full_name}
-                                    </div>
-                                  );
-                                }
-
-                                if (assignment.employee?.full_name === mainText && assignment.rental?.rental_number) {
-                                  subtitleItems.push(
-                                    <div key="rental-from-employee" className="text-xs text-muted-foreground">
-                                      Rental: {assignment.rental.rental_number}
-                                    </div>
-                                  );
-                                }
-
-                                if (assignment.employee?.full_name === mainText && assignment.project?.name) {
-                                  subtitleItems.push(
-                                    <div key="project-from-employee" className="text-xs text-muted-foreground">
-                                      Project: {assignment.project.name}
-                                    </div>
-                                  );
-                                }
-
-                                if (assignment.rental?.rental_number === mainText && assignment.employee?.full_name) {
-                                  subtitleItems.push(
-                                    <div key="employee-from-rental" className="text-xs text-muted-foreground">
-                                      Employee: {assignment.employee.full_name}
-                                    </div>
-                                  );
-                                }
-
-                                if (assignment.rental?.rental_number === mainText && assignment.project?.name) {
-                                  subtitleItems.push(
-                                    <div key="project-from-rental" className="text-xs text-muted-foreground">
-                                      Project: {assignment.project.name}
-                                    </div>
-                                  );
-                                }
-
-                                if (companyName && assignment.rental?.customer_name && companyName !== mainText) {
-                                  subtitleItems.push(
-                                    <div key="company-name" className="text-xs text-muted-foreground" title={assignment.rental.customer_name}>
-                                      {companyName}
-                                    </div>
-                                  );
-                                }
-
-                                if (!mainText && assignment.name) {
-                                  subtitleItems.push(
-                                    <div key="assignment-name" className="text-xs text-muted-foreground">
-                                      {assignment.name}
-                                    </div>
-                                  );
+                                const assignmentType = assignment.type || 'manual';
+                                
+                                // Get additional details based on type
+                                const details: ReactNode[] = [];
+                                
+                                if (assignmentType === 'rental') {
+                                  // Show customer name for rental
+                                  const rawCompanyName = assignment.rental?.customer_name;
+                                  const companyName = getShortCompanyName(rawCompanyName);
+                                  if (companyName) {
+                                    details.push(
+                                      <div key="customer" className="text-xs text-muted-foreground mt-1" title={rawCompanyName || undefined}>
+                                        {companyName}
+                                      </div>
+                                    );
+                                  } else if (assignment.rental?.rental_number) {
+                                    details.push(
+                                      <div key="rental-number" className="text-xs text-muted-foreground mt-1">
+                                        {assignment.rental.rental_number}
+                                      </div>
+                                    );
+                                  }
+                                  // Also show project name if rental has a project
+                                  if (assignment.rental?.project?.name) {
+                                    details.push(
+                                      <div key="rental-project" className="text-xs text-muted-foreground">
+                                        {t('equipment.equipment_management.project')}: {assignment.rental.project.name}
+                                      </div>
+                                    );
+                                  }
+                                } else if (assignmentType === 'project') {
+                                  // Show customer name for project assignment (instead of project name which is long)
+                                  const rawCustomerName = assignment.project?.customer_name;
+                                  const customerName = getShortCompanyName(rawCustomerName);
+                                  if (customerName) {
+                                    details.push(
+                                      <div key="customer" className="text-xs text-muted-foreground mt-1" title={rawCustomerName || undefined}>
+                                        {customerName}
+                                      </div>
+                                    );
+                                  } else if (assignment.project?.name) {
+                                    // Fallback to project name if no customer name
+                                    details.push(
+                                      <div key="project" className="text-xs text-muted-foreground mt-1">
+                                        {assignment.project.name}
+                                      </div>
+                                    );
+                                  }
+                                } else if (assignmentType === 'manual') {
+                                  // Show assignment name for manual assignment
+                                  if (assignment.name) {
+                                    details.push(
+                                      <div key="manual" className="text-xs text-muted-foreground mt-1">
+                                        {assignment.name}
+                                      </div>
+                                    );
+                                  }
                                 }
 
                                 return (
                                   <div className="space-y-1">
-                                    <div className="text-sm font-medium" title={companyName ? rawCompanyName || undefined : undefined}>
-                                      {mainText}
-                                    </div>
-                                    {subtitleItems.length > 0 ? <>{subtitleItems}</> : null}
+                                    {getAssignmentTypeBadge(assignmentType)}
+                                    {details.length > 0 && <>{details}</>}
                                   </div>
                                 );
                               })() : (
                                 <span className="text-muted-foreground">
+                                  {t('equipment.equipment_management.no_assignment')}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {item.current_assignment?.employee?.full_name ? (
+                                <div className="text-sm font-medium">
+                                  {item.current_assignment.employee.full_name}
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground text-sm">
                                   {t('equipment.equipment_management.no_assignment')}
                                 </span>
                               )}

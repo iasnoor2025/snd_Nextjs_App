@@ -7,11 +7,14 @@ import {
   equipmentDocuments,
   projects,
   projectEquipment,
+  projectManpower,
   rentals,
+  rentalItems,
   customers,
 } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { asc, eq, or, ilike, sql, desc, and, inArray } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { NextRequest, NextResponse } from 'next/server';
 import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
 import { autoExtractDoorNumber } from '@/lib/utils/equipment-utils';
@@ -141,15 +144,21 @@ const getEquipmentHandler = async (request: NextRequest) => {
             }
 
             // Optimized: Fetch assignments and maintenance in parallel, filtered by equipment IDs
+            // Create aliases for employees to handle both rentalItems operator and equipmentRentalHistory employee
+            const rentalOperator = alias(employees, 'rental_operator');
+            const rentalHistoryEmployee = alias(employees, 'rental_history_employee');
+            
             const [rawRentalAssignments, rawProjectAssignments, maintenanceRecords] = await Promise.all([
               // Get active assignments from equipmentRentalHistory with related data (filtered by equipment IDs)
+              // Also join with rentalItems to get operator information
               db
                 .select({
                   equipment_id: equipmentRentalHistory.equipmentId,
                   assignment_id: equipmentRentalHistory.id,
-                  employee_id: employees.id,
-                  employee_first_name: employees.firstName,
-                  employee_last_name: employees.lastName,
+                  // Prefer operator from rentalItems, fallback to employeeId from equipmentRentalHistory
+                  employee_id: sql<number | null>`COALESCE(${rentalItems.operatorId}, ${equipmentRentalHistory.employeeId})`.as('employee_id'),
+                  employee_first_name: sql<string | null>`COALESCE(${rentalOperator.firstName}, ${rentalHistoryEmployee.firstName})`.as('employee_first_name'),
+                  employee_last_name: sql<string | null>`COALESCE(${rentalOperator.lastName}, ${rentalHistoryEmployee.lastName})`.as('employee_last_name'),
                   project_id: projects.id,
                   project_name: projects.name,
                   rental_id: rentals.id,
@@ -163,9 +172,15 @@ const getEquipmentHandler = async (request: NextRequest) => {
                   notes: equipmentRentalHistory.notes,
                 })
                 .from(equipmentRentalHistory)
-                .leftJoin(employees, eq(equipmentRentalHistory.employeeId, employees.id))
-                .leftJoin(projects, eq(equipmentRentalHistory.projectId, projects.id))
                 .leftJoin(rentals, eq(equipmentRentalHistory.rentalId, rentals.id))
+                .leftJoin(rentalItems, and(
+                  eq(rentalItems.rentalId, rentals.id),
+                  eq(rentalItems.equipmentId, equipmentRentalHistory.equipmentId),
+                  eq(rentalItems.status, 'active')
+                ))
+                .leftJoin(rentalOperator, eq(rentalItems.operatorId, rentalOperator.id))
+                .leftJoin(rentalHistoryEmployee, eq(equipmentRentalHistory.employeeId, rentalHistoryEmployee.id))
+                .leftJoin(projects, eq(equipmentRentalHistory.projectId, projects.id))
                 .leftJoin(customers, eq(rentals.customerId, customers.id))
                 .where(
                   and(
@@ -180,6 +195,12 @@ const getEquipmentHandler = async (request: NextRequest) => {
                   assignment_id: projectEquipment.id,
                   project_id: projectEquipment.projectId,
                   project_name: projects.name,
+                  project_customer_id: projects.customerId,
+                  project_customer_name: customers.name,
+                  operator_id: projectManpower.employeeId,
+                  operator_first_name: employees.firstName,
+                  operator_last_name: employees.lastName,
+                  operator_worker_name: projectManpower.workerName,
                   assignment_type: sql<string>`'project'`,
                   assignment_date: projectEquipment.startDate,
                   return_date: projectEquipment.endDate,
@@ -188,6 +209,9 @@ const getEquipmentHandler = async (request: NextRequest) => {
                 })
                 .from(projectEquipment)
                 .leftJoin(projects, eq(projectEquipment.projectId, projects.id))
+                .leftJoin(customers, eq(projects.customerId, customers.id))
+                .leftJoin(projectManpower, eq(projectEquipment.operatorId, projectManpower.id))
+                .leftJoin(employees, eq(projectManpower.employeeId, employees.id))
                 .where(
                   and(
                     inArray(projectEquipment.equipmentId, equipmentIds),
@@ -227,18 +251,46 @@ const getEquipmentHandler = async (request: NextRequest) => {
             // Transform the flat data to nested objects expected by frontend
             currentAssignments = rawAssignments.map(assignment => {
               const assignmentAny = assignment as any;
-              return {
-                equipment_id: assignment.equipment_id,
-                assignment_id: assignment.assignment_id,
-                employee: assignmentAny.employee_id ? {
+              
+              // Determine employee/operator information
+              // For rental assignments: use employee_id directly
+              // For project assignments: use operator_id (from projectManpower.employeeId) or operator_worker_name
+              let employeeInfo = null;
+              if (assignmentAny.employee_id) {
+                // Rental assignment - direct employee
+                employeeInfo = {
                   id: assignmentAny.employee_id,
                   full_name: [assignmentAny.employee_first_name, assignmentAny.employee_last_name].filter(Boolean).join(' '),
                   first_name: assignmentAny.employee_first_name,
                   last_name: assignmentAny.employee_last_name,
-                } : null,
+                };
+              } else if (assignmentAny.operator_id) {
+                // Project assignment - operator from projectManpower (employee)
+                employeeInfo = {
+                  id: assignmentAny.operator_id,
+                  full_name: [assignmentAny.operator_first_name, assignmentAny.operator_last_name].filter(Boolean).join(' '),
+                  first_name: assignmentAny.operator_first_name,
+                  last_name: assignmentAny.operator_last_name,
+                };
+              } else if (assignmentAny.operator_worker_name) {
+                // Project assignment - operator is a worker (not an employee)
+                employeeInfo = {
+                  id: null,
+                  full_name: assignmentAny.operator_worker_name,
+                  first_name: assignmentAny.operator_worker_name,
+                  last_name: null,
+                };
+              }
+              
+              return {
+                equipment_id: assignment.equipment_id,
+                assignment_id: assignment.assignment_id,
+                employee: employeeInfo,
                 project: assignmentAny.project_id ? {
                   id: assignmentAny.project_id,
                   name: assignmentAny.project_name,
+                  customer_id: assignmentAny.project_customer_id,
+                  customer_name: assignmentAny.project_customer_name,
                 } : null,
                 rental: assignmentAny.rental_id ? {
                   id: assignmentAny.rental_id,
