@@ -125,15 +125,18 @@ interface Equipment {
       } | null;
     } | null;
     employee?: {
-      id: number;
-      name: string;
-      file_number: string;
+      id: number | null;
+      name?: string;
+      file_number?: string | null;
       full_name?: string; // Added for translated name
+      first_name?: string;
+      last_name?: string;
     } | null;
   } | null;
 }
 
 const MAX_COMPANY_DISPLAY_LENGTH = 40;
+const MAX_NAME_DISPLAY_LENGTH = 30;
 
 const getShortCompanyName = (name?: string | null): string | null => {
   if (!name) return null;
@@ -148,6 +151,21 @@ const getShortCompanyName = (name?: string | null): string | null => {
   }
 
   return `${primary.slice(0, MAX_COMPANY_DISPLAY_LENGTH - 3).trim()}...`;
+};
+
+const getShortName = (name?: string | null): { short: string; full: string } => {
+  if (!name) return { short: '', full: '' };
+  const trimmed = name.trim();
+  if (!trimmed) return { short: '', full: '' };
+
+  if (trimmed.length <= MAX_NAME_DISPLAY_LENGTH) {
+    return { short: trimmed, full: trimmed };
+  }
+
+  return {
+    short: `${trimmed.slice(0, MAX_NAME_DISPLAY_LENGTH - 3).trim()}...`,
+    full: trimmed,
+  };
 };
 
 export default function EquipmentManagementPage() {
@@ -1099,11 +1117,24 @@ export default function EquipmentManagementPage() {
                               )}
                             </TableCell>
                             <TableCell>
-                              {item.current_assignment?.employee?.full_name ? (
-                                <div className="text-sm font-medium">
-                                  {item.current_assignment.employee.full_name}
-                                </div>
-                              ) : (
+                              {item.current_assignment?.employee?.full_name ? (() => {
+                                const nameInfo = getShortName(item.current_assignment.employee.full_name);
+                                return (
+                                  <div className="space-y-0.5">
+                                    <div 
+                                      className="text-sm font-medium" 
+                                      title={nameInfo.full !== nameInfo.short ? nameInfo.full : undefined}
+                                    >
+                                      {nameInfo.short}
+                                    </div>
+                                    {item.current_assignment.employee.file_number && (
+                                      <div className="text-xs text-muted-foreground">
+                                        #{item.current_assignment.employee.file_number}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })() : (
                                 <span className="text-muted-foreground text-sm">
                                   {t('equipment.equipment_management.no_assignment')}
                                 </span>

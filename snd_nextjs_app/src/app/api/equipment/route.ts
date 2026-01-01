@@ -159,6 +159,7 @@ const getEquipmentHandler = async (request: NextRequest) => {
                   employee_id: sql<number | null>`COALESCE(${rentalItems.operatorId}, ${equipmentRentalHistory.employeeId})`.as('employee_id'),
                   employee_first_name: sql<string | null>`COALESCE(${rentalOperator.firstName}, ${rentalHistoryEmployee.firstName})`.as('employee_first_name'),
                   employee_last_name: sql<string | null>`COALESCE(${rentalOperator.lastName}, ${rentalHistoryEmployee.lastName})`.as('employee_last_name'),
+                  employee_file_number: sql<string | null>`COALESCE(${rentalOperator.fileNumber}, ${rentalHistoryEmployee.fileNumber})`.as('employee_file_number'),
                   project_id: projects.id,
                   project_name: projects.name,
                   rental_id: rentals.id,
@@ -200,6 +201,7 @@ const getEquipmentHandler = async (request: NextRequest) => {
                   operator_id: projectManpower.employeeId,
                   operator_first_name: employees.firstName,
                   operator_last_name: employees.lastName,
+                  operator_file_number: employees.fileNumber,
                   operator_worker_name: projectManpower.workerName,
                   assignment_type: sql<string>`'project'`,
                   assignment_date: projectEquipment.startDate,
@@ -263,6 +265,7 @@ const getEquipmentHandler = async (request: NextRequest) => {
                   full_name: [assignmentAny.employee_first_name, assignmentAny.employee_last_name].filter(Boolean).join(' '),
                   first_name: assignmentAny.employee_first_name,
                   last_name: assignmentAny.employee_last_name,
+                  file_number: assignmentAny.employee_file_number,
                 };
               } else if (assignmentAny.operator_id) {
                 // Project assignment - operator from projectManpower (employee)
@@ -271,6 +274,7 @@ const getEquipmentHandler = async (request: NextRequest) => {
                   full_name: [assignmentAny.operator_first_name, assignmentAny.operator_last_name].filter(Boolean).join(' '),
                   first_name: assignmentAny.operator_first_name,
                   last_name: assignmentAny.operator_last_name,
+                  file_number: assignmentAny.operator_file_number,
                 };
               } else if (assignmentAny.operator_worker_name) {
                 // Project assignment - operator is a worker (not an employee)
@@ -279,6 +283,7 @@ const getEquipmentHandler = async (request: NextRequest) => {
                   full_name: assignmentAny.operator_worker_name,
                   first_name: assignmentAny.operator_worker_name,
                   last_name: null,
+                  file_number: null,
                 };
               }
               
