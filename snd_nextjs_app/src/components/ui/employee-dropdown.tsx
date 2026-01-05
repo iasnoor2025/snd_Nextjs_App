@@ -122,8 +122,8 @@ export function EmployeeDropdown({
         return;
       }
 
-      // Use the public API endpoint that doesn't require authentication
-      const response = await fetch('/api/employees/public?all=true&limit=1000', {
+      // Use the dropdown API endpoint that returns all employees (internal and external)
+      const response = await fetch('/api/employees/dropdown?all=true&limit=1000', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -474,7 +474,7 @@ export function useEmployees() {
         return;
       }
 
-      const response = await fetch('/api/employees/public?all=true&limit=1000', {
+      const response = await fetch('/api/employees/dropdown?all=true&limit=1000', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
