@@ -15,19 +15,38 @@ export async function PUT(
     const rentalId = id;
     const newOperatorId = body.operatorId ? parseInt(body.operatorId) : null;
 
-    // Validate required fields
-    const missingFields: string[] = [];
-    if (!body.equipmentName) missingFields.push('equipmentName');
-    if (!body.unitPrice) missingFields.push('unitPrice');
+    // If only updating completedDate, skip other validations
+    const isOnlyUpdatingCompletedDate = body.completedDate && 
+      !body.equipmentName && 
+      !body.unitPrice && 
+      !body.equipmentId && 
+      !body.operatorId && 
+      !body.status && 
+      !body.actionType;
 
-    if (missingFields.length > 0) {
-      return NextResponse.json(
-        {
-          error: `Missing required fields: ${missingFields.join(', ')}`,
-          receivedData: body,
-        },
-        { status: 400 }
-      );
+    // Validate required fields (skip if only updating completedDate)
+    if (!isOnlyUpdatingCompletedDate) {
+      const missingFields: string[] = [];
+      if (!body.equipmentName) missingFields.push('equipmentName');
+      if (!body.unitPrice) missingFields.push('unitPrice');
+
+      if (missingFields.length > 0) {
+        return NextResponse.json(
+          {
+            error: `Missing required fields: ${missingFields.join(', ')}`,
+            receivedData: body,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // If only updating completedDate, handle it separately
+    if (isOnlyUpdatingCompletedDate) {
+      rentalItem = await RentalService.updateRentalItem(parseInt(itemId), {
+        completedDate: body.completedDate,
+      });
+      return NextResponse.json(rentalItem);
     }
 
     // Handle different operator change scenarios
@@ -54,6 +73,7 @@ export async function PUT(
         status: body.status || 'active',
         notes: body.notes || '',
         startDate: body.startDate && body.startDate !== '' ? body.startDate : null,
+        completedDate: body.completedDate || undefined,
       });
 
       // Handle other operator change scenarios

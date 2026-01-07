@@ -818,6 +818,7 @@ export default function RentalDetailPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
   const [isEditItemDialogOpen, setIsEditItemDialogOpen] = useState(false);
+  const [isEditCompletedDateDialogOpen, setIsEditCompletedDateDialogOpen] = useState(false);
   const [isAddPaymentDialogOpen, setIsAddPaymentDialogOpen] = useState(false);
   const [isMonthSelectionOpen, setIsMonthSelectionOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState('');
@@ -867,6 +868,12 @@ export default function RentalDetailPage() {
     notes: '',
     actionType: 'update', // 'handover', 'remove', 'add', 'update'
     startDate: '', // New field for item start date
+  });
+
+  const [completedDateFormData, setCompletedDateFormData] = useState({
+    itemId: '',
+    equipmentName: '',
+    completedDate: '',
   });
 
   const [duplicateWarnings, setDuplicateWarnings] = useState<string[]>([]);
@@ -2404,6 +2411,29 @@ export default function RentalDetailPage() {
   };
 
   const openEditItemDialog = (item: any) => {
+    // If item is completed, open completed date edit dialog instead
+    if (item.status === 'completed') {
+      // Format completed date for input field (YYYY-MM-DD format)
+      let formattedCompletedDate = '';
+      if (item.completedDate || item.completed_date) {
+        const dateValue = item.completedDate || item.completed_date;
+        if (dateValue) {
+          const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
+          if (!isNaN(date.getTime())) {
+            formattedCompletedDate = date.toISOString().split('T')[0];
+          }
+        }
+      }
+
+      setCompletedDateFormData({
+        itemId: item.id,
+        equipmentName: item.equipment_name || item.equipmentName || '',
+        completedDate: formattedCompletedDate,
+      });
+      setIsEditCompletedDateDialogOpen(true);
+      return;
+    }
+
     // Format start date for input field (YYYY-MM-DD format)
     let formattedStartDate = '';
     if (item.startDate || item.start_date) {
@@ -2489,6 +2519,46 @@ export default function RentalDetailPage() {
       fetchRentalItems();
     } catch (err) {
       toast.error('Failed to update rental item');
+    }
+  };
+
+  const updateCompletedDate = async () => {
+    if (!rental) return;
+
+    // Validate required fields
+    if (!completedDateFormData.completedDate) {
+      toast.error('Please select a completed date');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/rentals/${rental.id}/items/${completedDateFormData.itemId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          completedDate: completedDateFormData.completedDate,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update completed date');
+      }
+
+      toast.success('Completed date updated successfully');
+      setIsEditCompletedDateDialogOpen(false);
+
+      // Reset form
+      setCompletedDateFormData({
+        itemId: '',
+        equipmentName: '',
+        completedDate: '',
+      });
+
+      // Refresh only rental items (no full page refresh)
+      fetchRentalItems();
+    } catch (err) {
+      toast.error('Failed to update completed date');
     }
   };
 
@@ -5355,6 +5425,42 @@ export default function RentalDetailPage() {
               {t('rental.cancel')}
             </Button>
             <Button onClick={updateRentalItem}>{t('rental.updateRental')}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Completed Date Dialog */}
+      <Dialog open={isEditCompletedDateDialogOpen} onOpenChange={setIsEditCompletedDateDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Completed Date</DialogTitle>
+            <DialogDescription>
+              Update the completed date for {completedDateFormData.equipmentName || 'this rental item'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="editCompletedDate">Completed Date</Label>
+              <Input
+                id="editCompletedDate"
+                type="date"
+                value={completedDateFormData.completedDate || ''}
+                onChange={e => setCompletedDateFormData(prev => ({ ...prev, completedDate: e.target.value }))}
+                min={rental?.startDate ? rental.startDate.split('T')[0] : undefined}
+                max={new Date().toISOString().split('T')[0]}
+              />
+              {completedDateFormData.completedDate && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Selected: {new Date(completedDateFormData.completedDate).toLocaleDateString()}
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditCompletedDateDialogOpen(false)}>
+              {t('rental.cancel')}
+            </Button>
+            <Button onClick={updateCompletedDate}>Update Completed Date</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
