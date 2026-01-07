@@ -5284,8 +5284,7 @@ export default function RentalDetailPage() {
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="editEquipment">Equipment</Label>
-              <Select
+              <EquipmentDropdown
                 value={itemFormData.equipmentId}
                 onValueChange={value => {
                   const selectedEquipment = equipment.find(eq => eq.id.toString() === value);
@@ -5296,18 +5295,10 @@ export default function RentalDetailPage() {
                     unitPrice: selectedEquipment?.dailyRate || selectedEquipment?.daily_rate || 0,
                   }));
                 }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select equipment" />
-                </SelectTrigger>
-                <SelectContent>
-                  {equipment.map(eq => (
-                    <SelectItem key={eq.id} value={eq.id.toString()}>
-                      {eq.name} - ${eq.daily_rate}/day
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder={t('rental.selectEquipment')}
+                label={t('rental.equipment')}
+                required
+              />
             </div>
             <div>
               <EmployeeDropdown
