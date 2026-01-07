@@ -5284,6 +5284,7 @@ export default function RentalDetailPage() {
                 onValueChange={value => setItemFormData(prev => ({ ...prev, operatorId: value }))}
                 placeholder="Select operator (optional)"
                 label="Operator"
+                hideSelectedText={true}
               />
             </div>
             <div>
@@ -5292,6 +5293,7 @@ export default function RentalDetailPage() {
                 onValueChange={value => setItemFormData(prev => ({ ...prev, supervisorId: value }))}
                 placeholder="Select supervisor (optional)"
                 label="Supervisor/Foreman"
+                hideSelectedText={true}
               />
             </div>
             <div>
