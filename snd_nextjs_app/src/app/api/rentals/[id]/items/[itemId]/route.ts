@@ -41,6 +41,10 @@ export async function PUT(
       }
     }
 
+    // Handle different operator change scenarios
+    const actionType = body.actionType;
+    let rentalItem;
+
     // If only updating completedDate, handle it separately
     if (isOnlyUpdatingCompletedDate) {
       rentalItem = await RentalService.updateRentalItem(parseInt(itemId), {
@@ -48,10 +52,6 @@ export async function PUT(
       });
       return NextResponse.json(rentalItem);
     }
-
-    // Handle different operator change scenarios
-    const actionType = body.actionType;
-    let rentalItem;
 
     if (actionType === 'handover' && newOperatorId !== previousOperatorId) {
       // Scenario 1: Operator Changes with handover - Don't update the old item, complete it and create new one
@@ -103,7 +103,7 @@ export async function PUT(
 
     return NextResponse.json(rentalItem);
   } catch (error) {
-    
+    console.error('Error updating rental item:', error);
     return NextResponse.json(
       {
         error: 'Failed to update rental item',
