@@ -1844,6 +1844,37 @@ export default function RentalDetailPage() {
     }
   };
 
+  // Get translated status for rental items
+  const getTranslatedStatus = (status?: string): string => {
+    const statusValue = (status || 'active').toLowerCase().trim();
+    const translationKey = `rental.status.${statusValue}`;
+    let translated = t(translationKey);
+    
+    // If translation returns the key itself (translation not found), use fallback mapping
+    if (translated === translationKey || translated.startsWith('rental.status.')) {
+      // Fallback mapping with English defaults (will be overridden by actual translations if available)
+      const statusFallbacks: Record<string, string> = {
+        'active': 'Active',
+        'completed': 'Completed',
+        'pending': 'Pending',
+        'cancelled': 'Cancelled',
+      };
+      
+      // Try individual status translations
+      const individualKey = `rental.status.${statusValue}`;
+      const individualTranslated = t(individualKey);
+      
+      // If individual translation works, use it; otherwise use fallback
+      if (individualTranslated !== individualKey && !individualTranslated.startsWith('rental.status.')) {
+        return individualTranslated;
+      }
+      
+      return statusFallbacks[statusValue] || statusValue.charAt(0).toUpperCase() + statusValue.slice(1);
+    }
+    
+    return translated;
+  };
+
   // Fetch ERPNext invoice amount
   const fetchErpnextInvoiceAmount = async (invoiceId: string) => {
     try {
@@ -3123,7 +3154,7 @@ export default function RentalDetailPage() {
                           <RentalItemSortableHeader column="supervisor" label={t('rental.fields.supervisor')} />
                         </TableHead>
                         <TableHead>
-                          <RentalItemSortableHeader column="status" label={t('rental.status')} />
+                          <RentalItemSortableHeader column="status" label={t('rental.fields.status')} />
                         </TableHead>
                         <TableHead>{t('rental.table.headers.actions')}</TableHead>
                       </TableRow>
@@ -3192,7 +3223,7 @@ export default function RentalDetailPage() {
                             <TableCell className="text-sm">{supervisorName}</TableCell>
                             <TableCell>
                               <Badge variant={item?.status === 'active' ? 'default' : 'secondary'}>
-                                {item?.status || 'active'}
+                                {getTranslatedStatus(item?.status)}
                               </Badge>
                             </TableCell>
                             <TableCell>
