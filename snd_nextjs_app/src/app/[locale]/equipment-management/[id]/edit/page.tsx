@@ -51,6 +51,8 @@ interface Equipment {
   gps_expiry_date?: string;
   periodic_examination_date?: string;
   periodic_examination_expiry_date?: string;
+  driving_authorization_start_date?: string;
+  driving_authorization_end_date?: string;
 }
 
 interface EquipmentCategory {
@@ -97,6 +99,8 @@ export default function EquipmentEditPage() {
     gps_expiry_date: '',
     periodic_examination_date: '',
     periodic_examination_expiry_date: '',
+    driving_authorization_start_date: '',
+    driving_authorization_end_date: '',
   });
 
   const equipmentId = params.id as string;
@@ -146,6 +150,8 @@ export default function EquipmentEditPage() {
           gps_expiry_date: response.data.gps_expiry_date || '',
           periodic_examination_date: response.data.periodic_examination_date || '',
           periodic_examination_expiry_date: response.data.periodic_examination_expiry_date || '',
+          driving_authorization_start_date: response.data.driving_authorization_start_date || '',
+          driving_authorization_end_date: response.data.driving_authorization_end_date || '',
         });
       } else {
         toast.error(t('equipment.messages.loadingError'));
@@ -210,6 +216,8 @@ export default function EquipmentEditPage() {
         gps_expiry_date: formData.gps_expiry_date,
         periodic_examination_date: formData.periodic_examination_date,
         periodic_examination_expiry_date: formData.periodic_examination_expiry_date,
+        driving_authorization_start_date: formData.driving_authorization_start_date,
+        driving_authorization_end_date: formData.driving_authorization_end_date,
       };
 
       const response = await ApiService.updateEquipment(equipment.id, updateData);
@@ -592,6 +600,36 @@ export default function EquipmentEditPage() {
                     arabicLabel="تاريخ انتهاء الفحص الدوري (هجري)"
                     englishLabel="Periodic Examination Expiry Date (Gregorian)"
                   />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Driving Authorization Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('equipment.fields.drivingAuthorizationInfo')}</CardTitle>
+                <CardDescription>{t('equipment.messages.drivingAuthorizationDescription')}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="driving_authorization_start_date">{t('equipment.fields.drivingAuthorizationStartDate')}</Label>
+                    <Input
+                      id="driving_authorization_start_date"
+                      type="date"
+                      value={formData.driving_authorization_start_date}
+                      onChange={e => handleInputChange('driving_authorization_start_date', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="driving_authorization_end_date">{t('equipment.fields.drivingAuthorizationEndDate')}</Label>
+                    <Input
+                      id="driving_authorization_end_date"
+                      type="date"
+                      value={formData.driving_authorization_end_date}
+                      onChange={e => handleInputChange('driving_authorization_end_date', e.target.value)}
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>

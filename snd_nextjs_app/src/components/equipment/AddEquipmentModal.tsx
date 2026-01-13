@@ -57,6 +57,8 @@ interface EquipmentFormData {
   gps_expiry_date: string;
   periodic_examination_date: string;
   periodic_examination_expiry_date: string;
+  driving_authorization_start_date: string;
+  driving_authorization_end_date: string;
 }
 
 interface EquipmentCategory {
@@ -104,6 +106,8 @@ export default function AddEquipmentModal({
     gps_expiry_date: '',
     periodic_examination_date: '',
     periodic_examination_expiry_date: '',
+    driving_authorization_start_date: '',
+    driving_authorization_end_date: '',
   });
 
   // Fetch categories when modal opens
@@ -169,6 +173,8 @@ export default function AddEquipmentModal({
         gps_expiry_date: formData.gps_expiry_date || undefined,
         periodic_examination_date: formData.periodic_examination_date || undefined,
         periodic_examination_expiry_date: formData.periodic_examination_expiry_date || undefined,
+        driving_authorization_start_date: formData.driving_authorization_start_date || undefined,
+        driving_authorization_end_date: formData.driving_authorization_end_date || undefined,
         erpnextId: formData.erpnextId.trim() || undefined,
       };
 
@@ -213,6 +219,8 @@ export default function AddEquipmentModal({
           gps_expiry_date: '',
           periodic_examination_date: '',
           periodic_examination_expiry_date: '',
+          driving_authorization_start_date: '',
+          driving_authorization_end_date: '',
         });
       } else {
         toast.error(response.message || t('messages.createError'));
@@ -586,6 +594,33 @@ export default function AddEquipmentModal({
                 arabicLabel="تاريخ انتهاء الفحص الدوري (هجري)"
                 englishLabel="Periodic Examination Expiry Date (Gregorian)"
               />
+            </div>
+          </div>
+
+          {/* Driving Authorization Information */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">{t('fields.drivingAuthorizationInfo')}</h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="driving_authorization_start_date">{t('fields.drivingAuthorizationStartDate')}</Label>
+                <Input
+                  id="driving_authorization_start_date"
+                  type="date"
+                  value={formData.driving_authorization_start_date}
+                  onChange={e => handleInputChange('driving_authorization_start_date', e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="driving_authorization_end_date">{t('fields.drivingAuthorizationEndDate')}</Label>
+                <Input
+                  id="driving_authorization_end_date"
+                  type="date"
+                  value={formData.driving_authorization_end_date}
+                  onChange={e => handleInputChange('driving_authorization_end_date', e.target.value)}
+                />
+              </div>
             </div>
           </div>
 

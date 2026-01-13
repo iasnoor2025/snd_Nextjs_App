@@ -219,7 +219,7 @@ async function deleteOperatorAssignment(rentalId: number, operatorId: number) {
           eq(employeeAssignments.rentalId, rentalId)
         )
       );
-  } catch (error) {
+  } catch (error) { 
     console.error('Error in deleteOperatorAssignment:', error);
     throw error;
   }

@@ -50,6 +50,8 @@ export async function GET(
         gps_expiry_date: equipment.gpsExpiryDate,
         periodic_examination_date: equipment.periodicExaminationDate,
         periodic_examination_expiry_date: equipment.periodicExaminationExpiryDate,
+        driving_authorization_start_date: equipment.drivingAuthorizationStartDate,
+        driving_authorization_end_date: equipment.drivingAuthorizationEndDate,
         category_id: equipment.categoryId,
         assigned_to: equipment.assignedTo,
       })

@@ -548,6 +548,8 @@ const createEquipmentHandler = async (request: NextRequest) => {
       gps_expiry_date,
       periodic_examination_date,
       periodic_examination_expiry_date,
+      driving_authorization_start_date,
+      driving_authorization_end_date,
     } = body;
 
     // Auto-extract door number from equipment name if not provided
@@ -595,6 +597,12 @@ const createEquipmentHandler = async (request: NextRequest) => {
           : null,
         periodicExaminationExpiryDate: periodic_examination_expiry_date
           ? new Date(periodic_examination_expiry_date).toISOString()
+          : null,
+        drivingAuthorizationStartDate: driving_authorization_start_date
+          ? new Date(driving_authorization_start_date).toISOString()
+          : null,
+        drivingAuthorizationEndDate: driving_authorization_end_date
+          ? new Date(driving_authorization_end_date).toISOString()
           : null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -653,6 +661,8 @@ const updateEquipmentHandler = async (request: NextRequest) => {
       gps_expiry_date,
       periodic_examination_date,
       periodic_examination_expiry_date,
+      driving_authorization_start_date,
+      driving_authorization_end_date,
     } = body;
 
     // Auto-extract door number from equipment name if not provided
@@ -700,6 +710,12 @@ const updateEquipmentHandler = async (request: NextRequest) => {
           : null,
         periodicExaminationExpiryDate: periodic_examination_expiry_date
           ? new Date(periodic_examination_expiry_date).toISOString()
+          : null,
+        drivingAuthorizationStartDate: driving_authorization_start_date
+          ? new Date(driving_authorization_start_date).toISOString()
+          : null,
+        drivingAuthorizationEndDate: driving_authorization_end_date
+          ? new Date(driving_authorization_end_date).toISOString()
           : null,
         updatedAt: new Date().toISOString(),
       })
