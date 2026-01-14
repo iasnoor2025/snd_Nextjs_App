@@ -104,26 +104,62 @@ export class ERPNextInvoiceService {
           errorMessage += `Please check your ERPNext instance and API key permissions.`;
         }
         
+        // For 417 errors, provide guidance about data validation
+        if (response.status === 417) {
+          errorMessage += ` - Expectation Failed. `;
+          errorMessage += `This usually means: 1) Required fields are missing or invalid, `;
+          errorMessage += `2) Data validation failed on ERPNext side, `;
+          errorMessage += `3) The invoice data structure doesn't match ERPNext requirements. `;
+          errorMessage += `Please check the invoice data and ensure all required fields are present and valid.`;
+        }
+        
         // Try to parse error details if available
         try {
           const errorJson = JSON.parse(errorText);
-          console.error('Parsed Error JSON:', JSON.stringify(errorJson, null, 2));
+          console.error('=== Full ERPNext Error Response ===');
+          console.error(JSON.stringify(errorJson, null, 2));
           
-          if (errorJson.message || errorJson.exc) {
-            const excMessage = errorJson.exc || errorJson.message;
-            // Extract meaningful error from exception
-            if (typeof excMessage === 'string' && excMessage.length > 0) {
-              errorMessage += ` Details: ${excMessage.substring(0, 500)}`;
-            } else {
-              errorMessage += ` Details: ${JSON.stringify(errorJson).substring(0, 200)}`;
+          // Extract the full exception traceback if available
+          if (errorJson.exc) {
+            const excMessage = errorJson.exc;
+            console.error('=== Full Exception Traceback ===');
+            console.error(excMessage);
+            
+            // Try to extract the specific field that's causing the issue
+            if (typeof excMessage === 'string') {
+              // Look for field names in the error
+              const fieldMatch = excMessage.match(/Field\s+['"]([^'"]+)['"]/i) || 
+                                 excMessage.match(/['"]([^'"]+)['"]\s+is\s+required/i) ||
+                                 excMessage.match(/['"]([^'"]+)['"]\s+is\s+invalid/i);
+              if (fieldMatch) {
+                console.error(`=== Problematic Field: ${fieldMatch[1]} ===`);
+              }
+              
+              // Look for item-related errors
+              if (excMessage.includes('Item') || excMessage.includes('item')) {
+                console.error('=== Item-related error detected ===');
+                const itemMatch = excMessage.match(/Item[^@]*@node\s*\((\d+)-(\d+)\)/i);
+                if (itemMatch) {
+                  console.error(`Item node range: ${itemMatch[1]}-${itemMatch[2]}`);
+                  console.error('This suggests an issue with a specific item in the items array');
+                }
+              }
+              
+              errorMessage += ` Details: ${excMessage.substring(0, 1500)}`;
             }
+          } else if (errorJson.message) {
+            console.error('=== Error Message ===');
+            console.error(errorJson.message);
+            errorMessage += ` Details: ${errorJson.message.substring(0, 500)}`;
           } else if (errorJson.error) {
             errorMessage += ` Details: ${errorJson.error}`;
           } else {
-            errorMessage += ` Response: ${errorText.substring(0, 200)}`;
+            errorMessage += ` Response: ${errorText.substring(0, 500)}`;
           }
         } catch {
-          errorMessage += ` Response: ${errorText.substring(0, 200)}`;
+          console.error('=== Raw Error Response (not JSON) ===');
+          console.error(errorText);
+          errorMessage += ` Response: ${errorText.substring(0, 500)}`;
         }
         
         throw new Error(errorMessage);
@@ -169,6 +205,67 @@ export class ERPNextInvoiceService {
         throw new Error('Rental must have a valid total amount');
       }
 
+      // Validate customer exists in ERPNext
+      // First, try to get the customer's ERPNext ID from the database
+      let validatedCustomerName: string;
+      let customerName = rental.customer?.name || rental.customerName || `CUST-${rental.customerId}`;
+      
+      // Fetch customer's erpnextId from database if available
+      try {
+        const { db } = await import('@/lib/db');
+        const { customers } = await import('@/lib/drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        
+        const customerRecord = await db
+          .select({ erpnextId: customers.erpnextId, name: customers.name })
+          .from(customers)
+          .where(eq(customers.id, rental.customerId || rental.customer?.id || 0))
+          .limit(1);
+        
+        if (customerRecord.length > 0 && customerRecord[0].erpnextId) {
+          validatedCustomerName = customerRecord[0].erpnextId;
+          console.log(`Using ERPNext ID for customer: ${validatedCustomerName} (from database)`);
+        } else {
+          // If no erpnextId, try to find customer in ERPNext by name
+          validatedCustomerName = customerName;
+          console.log(`No ERPNext ID found, will search by name: ${customerName}`);
+        }
+      } catch (dbError) {
+        console.warn('Could not fetch customer ERPNext ID from database:', dbError);
+        validatedCustomerName = customerName;
+      }
+      
+      // If we don't have an ERPNext ID, try to find customer in ERPNext by name
+      if (!validatedCustomerName || validatedCustomerName === customerName) {
+        // Try to find customer in ERPNext
+        try {
+          const customerCheck = await this.makeERPNextRequest(`/api/resource/Customer/${encodeURIComponent(customerName)}`);
+          if (customerCheck.data?.name) {
+            validatedCustomerName = customerCheck.data.name;
+            console.log(`Customer validated in ERPNext: ${validatedCustomerName}`);
+          } else if (customerCheck.name) {
+            validatedCustomerName = customerCheck.name;
+            console.log(`Customer validated in ERPNext: ${validatedCustomerName}`);
+          } else {
+            // Try searching by name
+            const searchFilters = encodeURIComponent(JSON.stringify([['customer_name', 'like', `%${customerName}%`]]));
+            const searchResult = await this.makeERPNextRequest(`/api/resource/Customer?filters=${searchFilters}&limit_page_length=1`);
+            if (searchResult.data && searchResult.data.length > 0) {
+              validatedCustomerName = searchResult.data[0].name;
+              console.log(`Customer found via search in ERPNext: ${validatedCustomerName}`);
+            } else {
+              throw new Error(`Customer "${customerName}" not found in ERPNext`);
+            }
+          }
+        } catch (customerError) {
+          if (customerError instanceof Error && (customerError.message.includes('404') || customerError.message.includes('not found'))) {
+            throw new Error(`Customer "${customerName}" not found in ERPNext. Please create the customer in ERPNext first or sync it from your local database. Original error: ${customerError.message}`);
+          }
+          // If it's a different error, log it but continue (might be a permissions issue)
+          console.warn('Could not validate customer in ERPNext, proceeding anyway:', customerError);
+        }
+      }
+
       // Get rental items from the rental service
       
       const rentalItems = await RentalService.getRentalItems(rental.id);
@@ -176,23 +273,24 @@ export class ERPNextInvoiceService {
       // Get a suitable income account for the company
       
       const incomeAccount = await this.findSuitableIncomeAccount();
+      
+      // Get the actual company name from ERPNext to ensure it matches
+      let companyName = 'Samhan Naser Al-Dosri Est';
+      try {
+        const companyResponse = await this.makeERPNextRequest('/api/resource/Company?limit_page_length=1');
+        if (companyResponse.data && companyResponse.data.length > 0) {
+          companyName = companyResponse.data[0].name;
+          console.log(`Using company name from ERPNext: ${companyName}`);
+        } else {
+          console.warn('Could not fetch company from ERPNext, using default:', companyName);
+        }
+      } catch (companyError) {
+        console.warn('Could not fetch company name from ERPNext, using default:', companyName, companyError);
+      }
 
-      // Get tax template data
-      // const taxTemplateData = await this.getTaxTemplateData('ضريبة القيمة المضافة 15 % - SND');
-
-      // Create proper tax table structure for KSA compliance based on existing template
-      const ksaTaxTable = [
-        {
-          idx: 1,
-          charge_type: 'On Net Total',
-          account_head: 'VAT - SND',
-          description: 'VAT',
-          rate: 15,
-          tax_amount: 0, // Will be calculated by ERPNext
-          total: 0, // Will be calculated by ERPNext
-          doctype: 'Sales Taxes and Charges',
-        },
-      ];
+      // Don't set taxes manually - let ERPNext handle tax calculation
+      // If you need specific taxes, use a tax template name instead
+      // const taxTemplateName = 'VAT 15%'; // Use if you have a tax template in ERPNext
 
       // Calculate dates based on billing month if provided
       let postingDate: string;
@@ -246,30 +344,42 @@ export class ERPNextInvoiceService {
         invoiceSubject = rental.customSubject || `Invoice for ${rental.rentalNumber} - ${rental.invoiceMonth || 'Monthly Billing'}`;
       }
 
-      // Prepare invoice data
-      const invoiceData: ERPNextInvoiceData = {
+      // Prepare invoice data - use only standard ERPNext fields
+      // Use the validated customer name and company name
+      const invoiceData: any = {
         doctype: 'Sales Invoice',
-        customer: rental.customer?.name || rental.customerName || `CUST-${rental.customerId}`,
-        customer_name: rental.customer?.name || rental.customerName,
+        customer: validatedCustomerName, // Use validated customer name (ERPNext ID if available)
         posting_date: postingDate,
         due_date: dueDate,
-        set_posting_time: 1, // Enable "Edit Posting Date and Time"
-        // Use the correct ERPNext field names for From/To dates
-        custom_from: fromDate, // ERPNext custom From date
-        custom_to: toDate, // ERPNext custom To date
-        from_date: fromDate, // ERPNext from_date field
-        to_date: toDate, // ERPNext to_date field
-        custom_subject: invoiceSubject, // ERPNext custom subject field
         items: [],
         currency: 'SAR',
-        company: 'Samhan Naser Al-Dosri Est',
-        selling_price_list: 'Standard Selling',
-        price_list_currency: 'SAR',
-        plc_conversion_rate: 1,
-        conversion_rate: 1,
-        taxes: ksaTaxTable, // Use 'taxes' field
-        tax_amount: 0, // Include tax amount field
+        company: companyName, // Use company name from ERPNext
+        custom_subject: invoiceSubject, // Add invoice subject (custom field in ERPNext)
       };
+      
+      console.log('=== Invoice Data Prepared ===');
+      console.log('Customer:', validatedCustomerName);
+      console.log('Posting Date:', postingDate);
+      console.log('Due Date:', dueDate);
+      console.log('Company:', invoiceData.company);
+      
+      // KSA Compliance: MUST include tax rate in Sales Taxes and Charges Table
+      // This is REQUIRED - ERPNext will reject invoices without taxes
+      // Find the correct tax account for the company
+      const taxAccount = await this.findSuitableTaxAccount(companyName);
+      console.log(`Using tax account: ${taxAccount} for company: ${companyName}`);
+      
+      // Add VAT 15% tax table (required by KSA compliance)
+      // Structure matches ERPNext UI: Type="On Net Total", Account Head="Output VAT 15% - SND", Rate=15
+      invoiceData.taxes = [
+        {
+          charge_type: 'On Net Total',
+          account_head: taxAccount,
+          description: 'VAT 15%',
+          rate: 15,
+        }
+      ];
+      console.log('Added KSA compliance tax table (VAT 15%)');
 
       // Add rental items to invoice
       if (rentalItems.length > 0) {
@@ -277,7 +387,7 @@ export class ERPNextInvoiceService {
         // This matches the report logic - include ALL items that appear in the report (no deduplication)
         let filteredItems = rentalItems;
         
-        if (billingMonth && rental.customFrom && rental.customTo) {
+        if (billingMonth) {
           const [year, month] = billingMonth.split('-');
           const monthStart = new Date(parseInt(year), parseInt(month) - 1, 1);
           const monthEnd = new Date(parseInt(year), parseInt(month), 0);
@@ -342,33 +452,222 @@ export class ERPNextInvoiceService {
           sortedItems.push(...groupedByEquipment[key]);
         });
         
-        // Get available items from ERPNext to match item codes
-        const availableItems = await this.getAvailableItems();
+        // Validate that we have items after filtering
+        if (sortedItems.length === 0) {
+          throw new Error(
+            `No rental items found for billing month ${billingMonth}. ` +
+            `Please ensure the rental has active items during this period.`
+          );
+        }
+        
+         // Get or create a generic service item from ERPNext
+         // Using a single item for all equipment is more reliable than trying to match each equipment name
+         let serviceItemCode: string;
+         let serviceItemName: string | undefined;
+         
+         const STANDARD_SERVICE_ITEM_CODE = 'RENTAL-SERVICE';
+         
+         try {
+           // First, try to find an existing service/rental item
+           serviceItemCode = await this.findSuitableItemCode();
+           console.log(`Found existing service item code: ${serviceItemCode}`);
+           
+           // Fetch the actual item name from ERPNext to ensure it matches
+           try {
+             const itemResponse = await this.makeERPNextRequest(`/api/resource/Item/${encodeURIComponent(serviceItemCode)}`);
+             serviceItemName = itemResponse.data?.item_name || itemResponse.data?.name;
+             console.log(`Service item name from ERPNext: ${serviceItemName}`);
+           } catch (itemError) {
+             console.warn('Could not fetch item name from ERPNext, will omit item_name:', itemError);
+           }
+         } catch (codeError) {
+           // No suitable item found, try to use or create the standard service item
+           console.log(`No suitable service item found, checking for standard item: ${STANDARD_SERVICE_ITEM_CODE}`);
+           
+           try {
+             // Check if the standard item exists
+             const checkResponse = await this.makeERPNextRequest(`/api/resource/Item/${encodeURIComponent(STANDARD_SERVICE_ITEM_CODE)}`);
+             if (checkResponse.data) {
+               serviceItemCode = STANDARD_SERVICE_ITEM_CODE;
+               serviceItemName = checkResponse.data.item_name || checkResponse.data.name || 'Rental Service';
+               console.log(`Standard service item already exists: ${serviceItemCode}`);
+             }
+           } catch (checkError) {
+             // Item doesn't exist, create it
+             console.log(`Standard service item doesn't exist, creating: ${STANDARD_SERVICE_ITEM_CODE}`);
+             
+             try {
+               // Create the item in ERPNext with all required fields
+               const newItemData = {
+                 doctype: 'Item',
+                 item_code: STANDARD_SERVICE_ITEM_CODE,
+                 item_name: 'Rental Service',
+                 item_group: 'Services',
+                 stock_uom: 'Nos',
+                 is_stock_item: 0, // Service item, not stock item
+                 has_variants: 0,
+                 include_item_in_manufacturing: 0,
+                 description: 'Equipment rental service',
+               };
+               
+               const createResponse = await this.makeERPNextRequest('/api/resource/Item', {
+                 method: 'POST',
+                 body: JSON.stringify(newItemData),
+               });
+               
+               serviceItemCode = STANDARD_SERVICE_ITEM_CODE;
+               serviceItemName = createResponse.data?.item_name || createResponse.data?.name || 'Rental Service';
+               console.log(`Created new rental service item in ERPNext: ${serviceItemCode}`);
+               
+               // Verify the item was created by fetching it
+               try {
+                 const verifyResponse = await this.makeERPNextRequest(`/api/resource/Item/${encodeURIComponent(serviceItemCode)}`);
+                 if (verifyResponse.data) {
+                   serviceItemName = verifyResponse.data.item_name || verifyResponse.data.name || serviceItemName;
+                   console.log(`Verified service item exists: ${serviceItemCode}, name: ${serviceItemName}`);
+                 }
+               } catch (verifyError) {
+                 console.warn('Could not verify created item, but continuing:', verifyError);
+               }
+             } catch (createError) {
+               console.error('Failed to create service item in ERPNext:', createError);
+               throw new Error(`Failed to create service item in ERPNext: ${createError instanceof Error ? createError.message : String(createError)}. Please create an item manually in ERPNext.`);
+             }
+           }
+         }
+         
+         // Final validation - ensure we have a valid item code
+         if (!serviceItemCode || serviceItemCode.trim() === '') {
+           throw new Error('Failed to get or create a service item. Please create at least one Item in ERPNext before creating invoices.');
+         }
+         
+         // CRITICAL: Verify the item actually exists in ERPNext and get its exact code
+         // If verification fails, try to create it, or use ANY available item as fallback
+         let itemVerified = false;
+         try {
+           const verifyItem = await this.makeERPNextRequest(`/api/resource/Item/${encodeURIComponent(serviceItemCode)}`);
+           if (!verifyItem.data) {
+             throw new Error(`Item "${serviceItemCode}" does not exist in ERPNext`);
+           }
+           
+           // Use the exact item code from ERPNext (might be different due to naming rules)
+           const exactItemCode = verifyItem.data.name || verifyItem.data.item_code || serviceItemCode;
+           if (exactItemCode !== serviceItemCode) {
+             console.log(`Item code adjusted from "${serviceItemCode}" to "${exactItemCode}" (ERPNext naming rules)`);
+             serviceItemCode = exactItemCode;
+           }
+           
+           // Verify item is enabled and can be used
+           if (verifyItem.data.disabled === 1) {
+             throw new Error(`Item "${serviceItemCode}" is disabled in ERPNext`);
+           }
+           
+           console.log(`✓ Verified item exists in ERPNext: ${serviceItemCode}`);
+           console.log(`Item details:`, {
+             name: verifyItem.data.name,
+             item_code: verifyItem.data.item_code,
+             item_name: verifyItem.data.item_name,
+             item_group: verifyItem.data.item_group,
+             is_stock_item: verifyItem.data.is_stock_item,
+             stock_uom: verifyItem.data.stock_uom,
+             disabled: verifyItem.data.disabled,
+             company: verifyItem.data.company
+           });
+           
+           // Verify item belongs to the company (if company is specified)
+           if (companyName && verifyItem.data.company && verifyItem.data.company !== companyName) {
+             console.warn(`Item "${serviceItemCode}" belongs to company "${verifyItem.data.company}" but invoice is for "${companyName}". This may cause issues.`);
+           }
+           
+           // Update serviceItemName from verified item
+           serviceItemName = verifyItem.data.item_name || verifyItem.data.name;
+           itemVerified = true;
+         } catch (verifyError) {
+           console.error(`✗ Item verification failed for ${serviceItemCode}:`, verifyError);
+           
+           // Try to create the item if it doesn't exist
+           if (verifyError instanceof Error && verifyError.message.includes('does not exist')) {
+             console.log(`Attempting to create missing item: ${serviceItemCode}`);
+             try {
+               const newItemData = {
+                 doctype: 'Item',
+                 item_code: serviceItemCode,
+                 item_name: serviceItemName || 'Rental Service',
+                 item_group: 'Services',
+                 stock_uom: 'Nos',
+                 is_stock_item: 0,
+                 has_variants: 0,
+                 include_item_in_manufacturing: 0,
+                 description: 'Equipment rental service',
+               };
+               
+               const createResponse = await this.makeERPNextRequest('/api/resource/Item', {
+                 method: 'POST',
+                 body: JSON.stringify(newItemData),
+               });
+               
+               console.log(`✓ Created missing item: ${serviceItemCode}`);
+               itemVerified = true;
+             } catch (createError) {
+               console.warn(`Failed to create item ${serviceItemCode}, will try fallback:`, createError);
+             }
+           }
+           
+           // If still not verified, use ANY available item as fallback
+           if (!itemVerified) {
+             try {
+               const availableItems = await this.getAvailableItems();
+               if (availableItems.length > 0) {
+                 // Prefer service items, but use any item if needed
+                 const serviceItem = availableItems.find(item => 
+                   item.item_group?.toLowerCase().includes('service') ||
+                   item.item_name?.toLowerCase().includes('service') ||
+                   item.item_name?.toLowerCase().includes('rental')
+                 );
+                 
+                 const fallbackItem = serviceItem || availableItems[0];
+                 serviceItemCode = fallbackItem.item_code || fallbackItem.name;
+                 serviceItemName = fallbackItem.item_name || fallbackItem.name;
+                 console.warn(`Using fallback item: ${serviceItemCode} (${serviceItem ? 'service item' : 'first available item'})`);
+                 
+                 // Verify the fallback item exists
+                 const fallbackVerify = await this.makeERPNextRequest(`/api/resource/Item/${encodeURIComponent(serviceItemCode)}`);
+                 if (fallbackVerify.data && fallbackVerify.data.disabled !== 1) {
+                   itemVerified = true;
+                   console.log(`✓ Fallback item verified: ${serviceItemCode}`);
+                 }
+               }
+             } catch (fallbackError) {
+               console.error('Fallback item selection failed:', fallbackError);
+             }
+           }
+           
+           // Final check - if still not verified, throw error
+           if (!itemVerified) {
+             throw new Error(`Item "${serviceItemCode}" does not exist in ERPNext and could not be created or found. Please create at least one Item in ERPNext manually. Original error: ${verifyError instanceof Error ? verifyError.message : String(verifyError)}`);
+           }
+         }
         
         invoiceData.items = await Promise.all(
           sortedItems.map(async (item, index) => {
-            // Try to find matching item in ERPNext by name or code
-            const equipmentName = item.equipmentName || `Equipment ${item.equipmentId}`;
-            const potentialItemCode = item.equipmentName || `EQ-${item.equipmentId}`;
+            // Ensure equipmentName is not empty or undefined from the start
+            const equipmentName = (item.equipmentName && item.equipmentName.trim() !== '') 
+              ? item.equipmentName.trim()
+              : `Equipment ${item.equipmentId || item.id || 'Unknown'}`;
             
-            // Look for exact match first
-            let matchedItem = availableItems.find(
-              ai => ai.item_code === potentialItemCode || 
-                    ai.item_name === equipmentName ||
-                    ai.item_code?.toLowerCase() === equipmentName.toLowerCase() ||
-                    ai.item_name?.toLowerCase() === equipmentName.toLowerCase()
-            );
+            console.log(`Processing item ${index + 1}/${sortedItems.length}: ${equipmentName} (ID: ${item.id || item.equipmentId})`);
             
-            // If no exact match, try to find similar item
-            if (!matchedItem) {
-              matchedItem = availableItems.find(
-                ai => ai.item_name?.toLowerCase().includes(equipmentName.toLowerCase().split(' ')[0]) ||
-                      ai.item_code?.toLowerCase().includes(equipmentName.toLowerCase().split(' ')[0])
-              );
+            // Sync equipment to ERPNext - this will find existing or create new
+            // This ensures all rental equipment has corresponding items in ERPNext
+            let itemCode: string;
+            try {
+              itemCode = await this.syncEquipmentToERPNext(equipmentName, item.equipmentId);
+              console.log(`✓ Equipment synced to ERPNext: ${equipmentName} -> ${itemCode}`);
+            } catch (syncError) {
+              console.warn(`Failed to sync equipment ${equipmentName} to ERPNext, using fallback:`, syncError);
+              // Fall back to generic service item
+              itemCode = serviceItemCode;
             }
-            
-            // Use matched item code if found, otherwise use findSuitableItemCode
-            const itemCode = matchedItem?.item_code || await this.findSuitableItemCode();
             
             // Calculate duration based on rate type (this will be used as quantity)
             // IMPORTANT: Quantity should be hours (like the report shows), not days
@@ -611,6 +910,15 @@ export class ERPNextInvoiceService {
               }
             }
             
+            // Final validation - ensure item_code is set
+            if (!itemCode || itemCode.trim() === '') {
+              console.error(`Item validation failed - missing item_code:`, { item, equipmentName, itemCode });
+              throw new Error(`Missing item_code for equipment: ${equipmentName || 'Unknown'}`);
+            }
+            
+            // equipmentName is guaranteed to be set from initialization above, so no need to check it again
+            console.log(`Item ${index + 1} validated: item_code=${itemCode}, item_name=${equipmentName}`);
+            
             // Build description based on rate type
             let description = item.notes;
             if (!description) {
@@ -621,20 +929,394 @@ export class ERPNextInvoiceService {
               }
             }
             
-            const mappedItem = {
-              item_code: itemCode,
-              item_name: equipmentName,
-              description: description,
-              qty: duration, // Hours for hourly/daily/weekly with timesheets, months for monthly, days/weeks otherwise
-              rate: rate, // Rate per unit (hourly rate when using timesheet hours, monthly rate for monthly, otherwise unit price)
-              amount: amount, // Total amount = rate * quantity
-              uom: uom, // Unit of measure (Hour/Day/Week/Nos for monthly)
-              income_account: incomeAccount, // Use dynamically found account
+            // Ensure qty, rate, and amount are valid numbers
+            const finalQty = Math.max(0, duration || 1);
+            const finalRate = Math.max(0, rate || 0);
+            const finalAmount = Math.max(0, amount || (finalRate * finalQty));
+            
+            // Build the item object - use absolute minimal structure
+            // ERPNext requires: item_code, qty, rate
+            // Validate all values are valid numbers
+            if (isNaN(finalQty) || finalQty <= 0) {
+              throw new Error(`Invalid quantity for item ${equipmentName}: ${finalQty}`);
+            }
+            if (isNaN(finalRate) || finalRate < 0) {
+              throw new Error(`Invalid rate for item ${equipmentName}: ${finalRate}`);
+            }
+            if (isNaN(finalAmount) || finalAmount < 0) {
+              throw new Error(`Invalid amount for item ${equipmentName}: ${finalAmount}`);
+            }
+            
+            // Use minimal structure - only required fields
+            // IMPORTANT: Don't use toFixed() as it returns a string - use Math.round for precision
+            const mappedItem: any = {
+              item_code: itemCode.trim(), // String
+              qty: Math.round(finalQty * 100) / 100, // Round to 2 decimals, keep as number
+              rate: Math.round(finalRate * 100) / 100, // Round to 2 decimals, keep as number
+              amount: Math.round(finalAmount * 100) / 100, // Round to 2 decimals, keep as number
+              _originalEquipmentName: equipmentName, // Store original equipment name for final check
             };
+            
+            // Final validation - ensure all values are valid
+            if (!mappedItem.item_code || mappedItem.item_code.trim() === '') {
+              throw new Error(`Empty item_code for item ${equipmentName}`);
+            }
+            if (mappedItem.qty <= 0 || isNaN(mappedItem.qty) || !isFinite(mappedItem.qty)) {
+              throw new Error(`Invalid qty for item ${equipmentName}: ${mappedItem.qty}`);
+            }
+            if (mappedItem.rate < 0 || isNaN(mappedItem.rate) || !isFinite(mappedItem.rate)) {
+              throw new Error(`Invalid rate for item ${equipmentName}: ${mappedItem.rate}`);
+            }
+            if (mappedItem.amount < 0 || isNaN(mappedItem.amount) || !isFinite(mappedItem.amount)) {
+              throw new Error(`Invalid amount for item ${equipmentName}: ${mappedItem.amount}`);
+            }
+            
+            console.log(`Item ${index + 1} structure:`, JSON.stringify(mappedItem));
+            console.log(`Item ${index + 1} validation:`, {
+              item_code: mappedItem.item_code,
+              item_code_length: mappedItem.item_code.length,
+              qty: mappedItem.qty,
+              qty_type: typeof mappedItem.qty,
+              rate: mappedItem.rate,
+              rate_type: typeof mappedItem.rate,
+              amount: mappedItem.amount,
+              amount_type: typeof mappedItem.amount
+            });
             
             return mappedItem;
           })
         );
+        
+        // Validate that all items were created successfully
+        if (!invoiceData.items || invoiceData.items.length === 0) {
+          throw new Error('Failed to create invoice items. No valid items were generated.');
+        }
+        
+        // CRITICAL: Verify ALL items exist in ERPNext before sending
+        // Match the exact structure that works in the test endpoint
+        console.log(`=== Verifying ${invoiceData.items.length} items exist in ERPNext ===`);
+        const verifiedItems: any[] = [];
+        
+        for (let i = 0; i < invoiceData.items.length; i++) {
+          const item = invoiceData.items[i];
+          let verifiedItemCode = item.item_code;
+          
+          try {
+            // Step 1: Try direct lookup with the exact item code
+            let verifyItem;
+            try {
+              verifyItem = await this.makeERPNextRequest(`/api/resource/Item/${encodeURIComponent(item.item_code)}`);
+              
+              if (verifyItem.data && verifyItem.data.disabled !== 1) {
+                // CRITICAL: Check if item is a fixed asset - find or create non-fixed asset version
+                if (verifyItem.data.is_fixed_asset === 1 || verifyItem.data.is_fixed_asset === true) {
+                  console.warn(`⚠ Item "${item.item_code}" is a fixed asset. Searching for non-fixed asset version...`);
+                  
+                  // Search for non-fixed asset version with same name
+                  const itemName = verifyItem.data.item_name || verifyItem.data.name || item.item_code;
+                  const searchResponse = await this.makeERPNextRequest(
+                    `/api/resource/Item?filters=[["item_name","=","${encodeURIComponent(itemName)}"],["is_fixed_asset","=",0]]&limit_page_length=5`
+                  );
+                  
+                  if (searchResponse.data && searchResponse.data.length > 0) {
+                    // Found non-fixed asset version - use it
+                    const nonFixedAsset = searchResponse.data.find((it: any) => 
+                      (it.item_name || it.name) === itemName && (it.is_fixed_asset === 0 || it.is_fixed_asset === false)
+                    ) || searchResponse.data[0];
+                    
+                    verifiedItemCode = nonFixedAsset.name || nonFixedAsset.item_code;
+                    console.log(`✓ Found non-fixed asset version: "${item.item_code}" -> "${verifiedItemCode}"`);
+                  } else {
+                    // No non-fixed asset version exists - create new one
+                    console.log(`Creating new non-fixed asset item for "${itemName}"...`);
+                    const normalizedName = itemName.replace(/_/g, ' ').trim();
+                    const newItemCode = await this.syncEquipmentToERPNext(normalizedName);
+                    verifiedItemCode = newItemCode;
+                    console.log(`✓ Created new non-fixed asset item: "${verifiedItemCode}"`);
+                  }
+                } else {
+                  // Item exists and is enabled and not a fixed asset - use the exact code from ERPNext
+                  verifiedItemCode = verifyItem.data.name || verifyItem.data.item_code;
+                  console.log(`✓ Item ${i + 1}/${invoiceData.items.length} verified (direct): ${verifiedItemCode}`);
+                }
+              } else if (verifyItem.data && verifyItem.data.disabled === 1) {
+                throw new Error(`Item "${item.item_code}" is disabled in ERPNext`);
+              } else {
+                throw new Error(`Item "${item.item_code}" not found in ERPNext`);
+              }
+            } catch {
+              // Step 2: Direct lookup failed, try searching by item_name
+              console.log(`Direct lookup failed for "${item.item_code}", trying search...`);
+              
+              // Normalize the item code for search (remove special chars, normalize spaces)
+              const searchTerm = item.item_code.replace(/[^a-zA-Z0-9\s]/g, ' ').trim();
+              
+              // Try exact match first
+              try {
+                const exactSearch = await this.makeERPNextRequest(
+                  `/api/resource/Item?filters=[["item_name","=","${encodeURIComponent(item.item_code)}"]]&limit_page_length=5`
+                );
+                
+                if (exactSearch.data && exactSearch.data.length > 0) {
+                  // Prioritize non-fixed asset items
+                  const nonFixedMatch = exactSearch.data.find((it: any) => 
+                    (it.item_name || it.name || '').trim() === item.item_code.trim() && 
+                    (it.is_fixed_asset === 0 || it.is_fixed_asset === false) && 
+                    it.disabled !== 1
+                  );
+                  
+                  const match = nonFixedMatch || exactSearch.data.find((it: any) => 
+                    (it.item_name || it.name || '').trim() === item.item_code.trim() && it.disabled !== 1
+                  ) || exactSearch.data[0];
+                  
+                  verifiedItemCode = match.name || match.item_code;
+                  
+                  // Verify it's not a fixed asset
+                  const matchDetails = await this.makeERPNextRequest(`/api/resource/Item/${encodeURIComponent(verifiedItemCode)}`);
+                  if (matchDetails.data && (matchDetails.data.is_fixed_asset === 1 || matchDetails.data.is_fixed_asset === true)) {
+                    // It's a fixed asset - search for non-fixed version or create new
+                    const itemName = matchDetails.data.item_name || matchDetails.data.name || verifiedItemCode;
+                    const nonFixedSearch = await this.makeERPNextRequest(
+                      `/api/resource/Item?filters=[["item_name","=","${encodeURIComponent(itemName)}"],["is_fixed_asset","=",0]]&limit_page_length=5`
+                    );
+                    
+                    if (nonFixedSearch.data && nonFixedSearch.data.length > 0) {
+                      const nonFixedAsset = nonFixedSearch.data.find((it: any) => 
+                        (it.item_name || it.name) === itemName && (it.is_fixed_asset === 0 || it.is_fixed_asset === false)
+                      ) || nonFixedSearch.data[0];
+                      verifiedItemCode = nonFixedAsset.name || nonFixedAsset.item_code;
+                      console.log(`✓ Found non-fixed asset version: "${item.item_code}" -> "${verifiedItemCode}"`);
+                    } else {
+                      // Create new non-fixed asset item
+                      const normalizedName = itemName.replace(/_/g, ' ').trim();
+                      verifiedItemCode = await this.syncEquipmentToERPNext(normalizedName);
+                      console.log(`✓ Created new non-fixed asset item: "${verifiedItemCode}"`);
+                    }
+                  } else {
+                    console.log(`✓ Item ${i + 1}/${invoiceData.items.length} found by exact name: ${verifiedItemCode}`);
+                  }
+                } else {
+                  throw new Error('No exact match');
+                }
+              } catch {
+                // Step 3: Try like search
+                const likeSearch = await this.makeERPNextRequest(
+                  `/api/resource/Item?filters=[["item_name","like","${encodeURIComponent(`%${searchTerm}%`)}"]]&limit_page_length=10`
+                );
+                
+                if (likeSearch.data && likeSearch.data.length > 0) {
+                  // Find best match (exact or closest)
+                  const normalizedSearch = searchTerm.toUpperCase().replace(/\s+/g, ' ');
+                  const bestMatch = likeSearch.data.find((it: any) => {
+                    const itName = (it.item_name || it.name || '').toUpperCase().replace(/\s+/g, ' ');
+                    return itName === normalizedSearch || itName.includes(normalizedSearch) || normalizedSearch.includes(itName);
+                  }) || likeSearch.data[0];
+                  
+                  verifiedItemCode = bestMatch.name || bestMatch.item_code;
+                  
+                  // Verify the found item is enabled
+                  const finalVerify = await this.makeERPNextRequest(`/api/resource/Item/${encodeURIComponent(verifiedItemCode)}`);
+                  if (finalVerify.data && finalVerify.data.disabled === 1) {
+                    throw new Error(`Found item "${verifiedItemCode}" but it is disabled`);
+                  }
+                  
+                  // CRITICAL: Check if item is a fixed asset - find or create non-fixed asset version
+                  if (finalVerify.data && (finalVerify.data.is_fixed_asset === 1 || finalVerify.data.is_fixed_asset === true)) {
+                    console.warn(`⚠ Item "${verifiedItemCode}" is a fixed asset. Searching for non-fixed asset version...`);
+                    
+                    // Search for non-fixed asset version with same name
+                    const itemName = finalVerify.data.item_name || finalVerify.data.name || verifiedItemCode;
+                    const searchResponse = await this.makeERPNextRequest(
+                      `/api/resource/Item?filters=[["item_name","=","${encodeURIComponent(itemName)}"],["is_fixed_asset","=",0]]&limit_page_length=5`
+                    );
+                    
+                    if (searchResponse.data && searchResponse.data.length > 0) {
+                      // Found non-fixed asset version - use it
+                      const nonFixedAsset = searchResponse.data.find((it: any) => 
+                        (it.item_name || it.name) === itemName && (it.is_fixed_asset === 0 || it.is_fixed_asset === false)
+                      ) || searchResponse.data[0];
+                      
+                      verifiedItemCode = nonFixedAsset.name || nonFixedAsset.item_code;
+                      console.log(`✓ Found non-fixed asset version: "${item.item_code}" -> "${verifiedItemCode}"`);
+                    } else {
+                      // No non-fixed asset version exists - create new one
+                      console.log(`Creating new non-fixed asset item for "${itemName}"...`);
+                      const normalizedName = itemName.replace(/_/g, ' ').trim();
+                      const newItemCode = await this.syncEquipmentToERPNext(normalizedName);
+                      verifiedItemCode = newItemCode;
+                      console.log(`✓ Created new non-fixed asset item: "${verifiedItemCode}"`);
+                    }
+                  } else {
+                    console.log(`✓ Item ${i + 1}/${invoiceData.items.length} found by search: "${item.item_code}" -> "${verifiedItemCode}"`);
+                  }
+                } else {
+                  throw new Error(`Item "${item.item_code}" not found in ERPNext (searched: "${searchTerm}")`);
+                }
+              }
+            }
+            
+            // Create verified item with ONLY the minimal fields (matching test endpoint)
+            // Store original equipment name for final check if needed
+            verifiedItems.push({
+              item_code: verifiedItemCode.trim(),
+              qty: Math.round(item.qty * 100) / 100,
+              rate: Math.round(item.rate * 100) / 100,
+              amount: Math.round(item.amount * 100) / 100,
+              _originalEquipmentName: item._originalEquipmentName || item.item_code, // Store original name
+            });
+            
+          } catch (verifyError) {
+            console.error(`✗ Item ${i + 1}/${invoiceData.items.length} verification failed: ${item.item_code}`);
+            console.error(`Error details:`, verifyError);
+            throw new Error(
+              `Item "${item.item_code}" does not exist or is invalid in ERPNext. ` +
+              `Please ensure the equipment exists in ERPNext or it will be created automatically. ` +
+              `Error: ${verifyError instanceof Error ? verifyError.message : String(verifyError)}`
+            );
+          }
+        }
+        
+        // CRITICAL: Ensure we have at least one item
+        if (verifiedItems.length === 0) {
+          throw new Error(
+            `No valid items found for invoice. All items were either fixed assets (which require asset selection) or invalid. ` +
+            `Please ensure at least one equipment item exists in ERPNext and is not a fixed asset.`
+          );
+        }
+        
+        // Replace items with verified items (using minimal structure)
+        const originalItemCount = invoiceData.items.length;
+        
+        // FINAL CHECK: Verify none of the verified items are fixed assets
+        // Store original equipment names BEFORE cleaning (from sortedItems)
+        const originalEquipmentNamesMap = new Map<string, string>();
+        for (let idx = 0; idx < sortedItems.length && idx < invoiceData.items.length; idx++) {
+          const origItem = sortedItems[idx];
+          const origEquipmentName = (origItem.equipmentName && origItem.equipmentName.trim() !== '') 
+            ? origItem.equipmentName.trim()
+            : `Equipment ${origItem.equipmentId || origItem.id || 'Unknown'}`;
+          const itemCode = invoiceData.items[idx]?.item_code;
+          if (itemCode) {
+            originalEquipmentNamesMap.set(itemCode, origEquipmentName);
+          }
+        }
+        
+        const finalVerifiedItems: any[] = [];
+        for (let i = 0; i < verifiedItems.length; i++) {
+          const verifiedItem = verifiedItems[i];
+          // Get original equipment name from map or fallback to sortedItems
+          const originalEquipmentName = originalEquipmentNamesMap.get(verifiedItem.item_code) ||
+            sortedItems[i]?.equipmentName?.trim() || 
+            verifiedItem.item_code;
+          
+          try {
+            const finalCheck = await this.makeERPNextRequest(`/api/resource/Item/${encodeURIComponent(verifiedItem.item_code)}`);
+            if (finalCheck.data && (finalCheck.data.is_fixed_asset === 1 || finalCheck.data.is_fixed_asset === true)) {
+              console.warn(`⚠ FINAL CHECK: Item "${verifiedItem.item_code}" is still a fixed asset. Searching for non-fixed asset version...`);
+              
+              // Use ORIGINAL equipment name (from rental item, not ERPNext item_name)
+              const normalizedName = originalEquipmentName.replace(/_/g, ' ').trim();
+              
+              // Search for non-fixed asset version with same name
+              const nonFixedSearch = await this.makeERPNextRequest(
+                `/api/resource/Item?filters=[["item_name","=","${encodeURIComponent(normalizedName)}"],["is_fixed_asset","=",0]]&limit_page_length=5`
+              );
+              
+              if (nonFixedSearch.data && nonFixedSearch.data.length > 0) {
+                // Found non-fixed asset version - use it
+                const nonFixedAsset = nonFixedSearch.data.find((it: any) => 
+                  (it.item_name || it.name) === normalizedName && (it.is_fixed_asset === 0 || it.is_fixed_asset === false)
+                ) || nonFixedSearch.data[0];
+                
+                const nonFixedCode = nonFixedAsset.name || nonFixedAsset.item_code;
+                finalVerifiedItems.push({
+                  item_code: nonFixedCode.trim(),
+                  qty: verifiedItem.qty,
+                  rate: verifiedItem.rate,
+                  amount: verifiedItem.amount,
+                });
+                console.log(`✓ FINAL CHECK: Replaced fixed asset "${verifiedItem.item_code}" with non-fixed asset "${nonFixedCode}"`);
+              } else {
+                // No non-fixed asset version exists - create new one with ORIGINAL equipment name
+                console.log(`Creating new non-fixed asset item with ORIGINAL equipment name: "${normalizedName}"...`);
+                const newItemCode = await this.syncEquipmentToERPNext(normalizedName);
+                finalVerifiedItems.push({
+                  item_code: newItemCode.trim(),
+                  qty: verifiedItem.qty,
+                  rate: verifiedItem.rate,
+                  amount: verifiedItem.amount,
+                });
+                console.log(`✓ FINAL CHECK: Created new non-fixed asset item "${newItemCode}" for ORIGINAL equipment "${normalizedName}"`);
+              }
+            } else {
+              finalVerifiedItems.push(verifiedItem);
+            }
+          } catch {
+            // If check fails, include the item anyway (it was already verified)
+            finalVerifiedItems.push(verifiedItem);
+          }
+        }
+        
+        // CRITICAL: Remove any internal fields before sending to ERPNext
+        const cleanedItems = finalVerifiedItems.map((item: any) => {
+          const cleaned: any = {
+            item_code: item.item_code,
+            qty: item.qty,
+            rate: item.rate,
+            amount: item.amount,
+          };
+          // Ensure all values are valid numbers
+          if (isNaN(cleaned.qty) || cleaned.qty <= 0) {
+            throw new Error(`Invalid qty for item ${item.item_code}: ${cleaned.qty}`);
+          }
+          if (isNaN(cleaned.rate) || cleaned.rate < 0) {
+            throw new Error(`Invalid rate for item ${item.item_code}: ${cleaned.rate}`);
+          }
+          if (isNaN(cleaned.amount) || cleaned.amount < 0) {
+            throw new Error(`Invalid amount for item ${item.item_code}: ${cleaned.amount}`);
+          }
+          return cleaned;
+        });
+        
+        invoiceData.items = cleanedItems;
+        const skippedCount = originalItemCount - cleanedItems.length;
+        if (skippedCount > 0) {
+          console.log(`=== ${cleanedItems.length} items verified (${skippedCount} items skipped as fixed assets) ===`);
+        } else {
+          console.log(`=== All ${cleanedItems.length} items verified and corrected ===`);
+        }
+        
+        // Log final cleaned items structure
+        console.log('=== FINAL CLEANED ITEMS (before sending to ERPNext) ===');
+        console.log(`Total items: ${cleanedItems.length}`);
+        cleanedItems.slice(0, 3).forEach((item: any, idx: number) => {
+          console.log(`Item ${idx + 1}:`, {
+            item_code: item.item_code,
+            item_code_type: typeof item.item_code,
+            qty: item.qty,
+            qty_type: typeof item.qty,
+            rate: item.rate,
+            rate_type: typeof item.rate,
+            amount: item.amount,
+            amount_type: typeof item.amount,
+          });
+        });
+        if (cleanedItems.length > 3) {
+          console.log(`... and ${cleanedItems.length - 3} more items`);
+        }
+        
+        // Validate item data
+        for (const item of invoiceData.items) {
+          if (!item.item_code) {
+            throw new Error(`Invalid invoice item: missing item_code`);
+          }
+          if (item.qty <= 0) {
+            throw new Error(`Invalid invoice item quantity for item_code ${item.item_code}: ${item.qty}`);
+          }
+          if (item.rate < 0 || item.amount < 0) {
+            throw new Error(`Invalid invoice item rate or amount for item_code ${item.item_code}`);
+          }
+        }
       } else {
         // If no rental items, create a single line item for the rental
         // Dynamically find a suitable item code
@@ -654,26 +1336,81 @@ export class ERPNextInvoiceService {
         ];
       }
 
-      // Use pre-calculated amounts from rental instead of recalculating
-      invoiceData.base_total = subtotal;
-      invoiceData.total = subtotal;
-      invoiceData.base_grand_total = totalAmount;
-      invoiceData.grand_total = totalAmount;
-      invoiceData.outstanding_amount = totalAmount;
-      invoiceData.base_total_taxes_and_charges = taxAmount;
-      invoiceData.total_taxes_and_charges = taxAmount;
-      invoiceData.base_rounded_total = totalAmount;
-      invoiceData.rounded_total = totalAmount;
+      // Don't set calculated amounts - let ERPNext calculate them
+      // ERPNext will calculate these automatically based on items and taxes
+      // Setting them manually can cause validation errors (417 Expectation Failed)
       // Create invoice in ERPNext
       // The endpoint exists (GET works), so 404 on POST usually means API key lacks create permissions
       // Try resource API first, then fallback to method-based API
       console.log('=== Creating Invoice in ERPNext ===');
       console.log('Invoice Data Keys:', Object.keys(invoiceData));
       console.log('Items Count:', invoiceData.items?.length || 0);
+      console.log('Customer:', invoiceData.customer);
+      console.log('Company:', invoiceData.company);
+      console.log('Currency:', invoiceData.currency);
+      
+      // Log each item for debugging
+      if (invoiceData.items && invoiceData.items.length > 0) {
+        console.log('Invoice Items:');
+        invoiceData.items.forEach((item: any, index: number) => {
+          console.log(`  Item ${index + 1}:`, {
+            item_code: item.item_code,
+            item_name: item.item_name,
+            qty: item.qty,
+            rate: item.rate,
+            amount: item.amount,
+            uom: item.uom
+          });
+        });
+      }
+      
+      // Log full invoice data for debugging - include EVERYTHING
+      console.log('=== FULL INVOICE DATA BEING SENT TO ERPNEXT ===');
+      console.log('Items count:', invoiceData.items?.length || 0);
+      console.log('Taxes count:', invoiceData.taxes?.length || 0);
+      console.log('Customer:', invoiceData.customer);
+      console.log('Company:', invoiceData.company);
+      console.log('Posting Date:', invoiceData.posting_date);
+      console.log('Due Date:', invoiceData.due_date);
+      
+      // Log first 3 items in detail (to avoid huge logs)
+      if (invoiceData.items && invoiceData.items.length > 0) {
+        console.log('=== FIRST 3 ITEMS DETAIL ===');
+        for (let i = 0; i < Math.min(3, invoiceData.items.length); i++) {
+          console.log(`Item ${i + 1}:`, JSON.stringify(invoiceData.items[i], null, 2));
+          console.log(`Item ${i + 1} types:`, {
+            item_code: typeof invoiceData.items[i].item_code,
+            qty: typeof invoiceData.items[i].qty,
+            rate: typeof invoiceData.items[i].rate,
+            amount: typeof invoiceData.items[i].amount
+          });
+        }
+        if (invoiceData.items.length > 3) {
+          console.log(`... and ${invoiceData.items.length - 3} more items`);
+        }
+      }
+      
+      // Log taxes detail
+      if (invoiceData.taxes && invoiceData.taxes.length > 0) {
+        console.log('=== TAXES DETAIL ===');
+        console.log(JSON.stringify(invoiceData.taxes, null, 2));
+      }
+      
+      // Full JSON (truncated if too large)
+      const fullJson = JSON.stringify(invoiceData, null, 2);
+      if (fullJson.length > 50000) {
+        console.log('=== INVOICE DATA (TRUNCATED - too large) ===');
+        console.log(fullJson.substring(0, 50000) + '... [truncated]');
+      } else {
+        console.log('=== FULL INVOICE DATA ===');
+        console.log(fullJson);
+      }
+      console.log('=== END OF INVOICE DATA ===');
       
       let response;
       try {
         console.log('Attempting Resource API: /api/resource/Sales Invoice');
+        
         response = await this.makeERPNextRequest('/api/resource/Sales Invoice', {
           method: 'POST',
           body: JSON.stringify(invoiceData),
@@ -682,8 +1419,8 @@ export class ERPNextInvoiceService {
       } catch (firstError) {
         console.error('Resource API Failed:', firstError instanceof Error ? firstError.message : String(firstError));
         
-        // If resource API fails with 404, try method-based API (sometimes has different permissions)
-        if (firstError instanceof Error && firstError.message.includes('404')) {
+        // If resource API fails with 404 or 417, try method-based API
+        if (firstError instanceof Error && (firstError.message.includes('404') || firstError.message.includes('417'))) {
           try {
             console.log('Attempting Method API: /api/method/frappe.client.insert');
             response = await this.makeERPNextRequest('/api/method/frappe.client.insert', {
@@ -695,13 +1432,37 @@ export class ERPNextInvoiceService {
             console.log('Method API Success:', response?.data?.name || response?.name || 'No name in response');
           } catch (secondError) {
             console.error('Method API Also Failed:', secondError instanceof Error ? secondError.message : String(secondError));
-            // Both methods failed - likely a permissions issue
-            throw new Error(
-              `Failed to create invoice in ERPNext. ` +
-              `The API key can read Sales Invoices but cannot create them. ` +
-              `Please check ERPNext API key permissions: Settings → Integrations → API Keys → Your Key → Ensure "Write" permission for Sales Invoice. ` +
-              `Original error: ${firstError instanceof Error ? firstError.message : String(firstError)}`
-            );
+            // Provide more specific error message
+            if (firstError.message.includes('417')) {
+              // Extract detailed error information
+              const errorDetails = {
+                customer: invoiceData.customer,
+                company: invoiceData.company,
+                itemsCount: invoiceData.items?.length || 0,
+                itemCodes: invoiceData.items?.map((i: any) => i.item_code) || [],
+                postingDate: invoiceData.posting_date,
+                dueDate: invoiceData.due_date,
+              };
+              
+              throw new Error(
+                `ERPNext rejected the invoice data (417 Expectation Failed). ` +
+                `Details: Customer="${errorDetails.customer}", Company="${errorDetails.company}", ` +
+                `Items=${errorDetails.itemsCount}, ItemCodes=[${errorDetails.itemCodes.join(', ')}]. ` +
+                `Common causes: 1) Customer name doesn't match ERPNext exactly, ` +
+                `2) Item codes don't exist in ERPNext, ` +
+                `3) Company name doesn't match ERPNext, ` +
+                `4) Required fields missing. ` +
+                `Check server logs for full error details. ` +
+                `Original error: ${firstError.message.substring(0, 500)}`
+              );
+            } else {
+              throw new Error(
+                `Failed to create invoice in ERPNext. ` +
+                `The API key can read Sales Invoices but cannot create them. ` +
+                `Please check ERPNext API key permissions: Settings → Integrations → API Keys → Your Key → Ensure "Write" permission for Sales Invoice. ` +
+                `Original error: ${firstError instanceof Error ? firstError.message : String(firstError)}`
+              );
+            }
           }
         } else {
           throw firstError;
@@ -751,7 +1512,14 @@ export class ERPNextInvoiceService {
       
       const response = await this.makeERPNextRequest('/api/resource/Item?limit_page_length=100');
       
-      return response.data || [];
+      const items = response.data || [];
+      
+      // Normalize item data - ERPNext uses 'name' as item_code
+      return items.map((item: any) => ({
+        ...item,
+        item_code: item.item_code || item.name, // Use name if item_code is not present
+        item_name: item.item_name || item.item_name || item.name, // Ensure item_name exists
+      }));
     } catch (error) {
       
       return [];
@@ -768,6 +1536,114 @@ export class ERPNextInvoiceService {
     } catch (error) {
       
       return [];
+    }
+  }
+
+  // Find a suitable tax account for the company
+  // Priority: "Output VAT 15%" accounts (as used in existing invoices)
+  static async findSuitableTaxAccount(companyName: string): Promise<string> {
+    try {
+      const accounts = await this.getAvailableAccounts();
+
+      // Look for tax accounts - prioritize by company match, then by name
+      const taxAccounts = accounts.filter(
+        account => account.account_type === 'Tax'
+      );
+
+      if (taxAccounts.length > 0) {
+        // First, try to find accounts that belong to the company
+        const companyTaxAccounts = taxAccounts.filter(
+          account => account.company === companyName || !account.company
+        );
+
+        if (companyTaxAccounts.length > 0) {
+          // HIGHEST PRIORITY: "Output VAT 15%" accounts (as used in existing invoices)
+          const outputVATAccount = companyTaxAccounts.find(
+            account =>
+              account.account_name?.toLowerCase().includes('output vat 15') ||
+              account.name?.toLowerCase().includes('output vat 15') ||
+              account.account_name?.toLowerCase().includes('output vat') ||
+              account.name?.toLowerCase().includes('output vat')
+          );
+          if (outputVATAccount) {
+            console.log(`Found Output VAT 15% account: ${outputVATAccount.name}`);
+            return outputVATAccount.name;
+          }
+
+          // Second priority: accounts with "VAT" in the name
+          const vatAccount = companyTaxAccounts.find(
+            account =>
+              account.account_name?.toLowerCase().includes('vat') ||
+              account.name?.toLowerCase().includes('vat')
+          );
+          if (vatAccount) {
+            console.log(`Found VAT account: ${vatAccount.name}`);
+            return vatAccount.name;
+          }
+
+          // Third priority: accounts with "Duties" in the name
+          const dutiesAccount = companyTaxAccounts.find(
+            account =>
+              account.account_name?.toLowerCase().includes('duties') ||
+              account.name?.toLowerCase().includes('duties')
+          );
+          if (dutiesAccount) {
+            console.log(`Found Duties account: ${dutiesAccount.name}`);
+            return dutiesAccount.name;
+          }
+          
+          // Use first company tax account
+          console.log(`Using first company tax account: ${companyTaxAccounts[0].name}`);
+          return companyTaxAccounts[0].name;
+        }
+
+        // If no company-specific account, search all tax accounts
+        // HIGHEST PRIORITY: "Output VAT 15%" accounts
+        const outputVATAccount = taxAccounts.find(
+          account =>
+            account.account_name?.toLowerCase().includes('output vat 15') ||
+            account.name?.toLowerCase().includes('output vat 15') ||
+            account.account_name?.toLowerCase().includes('output vat') ||
+            account.name?.toLowerCase().includes('output vat')
+        );
+        if (outputVATAccount) {
+          console.warn(`Using Output VAT 15% account from different company: ${outputVATAccount.name}`);
+          return outputVATAccount.name;
+        }
+
+        // Second priority: accounts with "VAT" in the name
+        const vatAccount = taxAccounts.find(
+          account =>
+            account.account_name?.toLowerCase().includes('vat') ||
+            account.name?.toLowerCase().includes('vat')
+        );
+        if (vatAccount) {
+          console.warn(`Using VAT account from different company: ${vatAccount.name}`);
+          return vatAccount.name;
+        }
+
+        // Third priority: accounts with "Duties" in the name
+        const dutiesAccount = taxAccounts.find(
+          account =>
+            account.account_name?.toLowerCase().includes('duties') ||
+            account.name?.toLowerCase().includes('duties')
+        );
+        if (dutiesAccount) {
+          console.warn(`Using Duties account from different company: ${dutiesAccount.name}`);
+          return dutiesAccount.name;
+        }
+
+        // Use first available tax account
+        console.warn(`Using first available tax account: ${taxAccounts[0].name}`);
+        return taxAccounts[0].name;
+      }
+
+      // Last resort: use "Output VAT 15% - SND" (as used in existing invoices)
+      console.warn('No tax account found, using fallback: Output VAT 15% - SND');
+      return 'Output VAT 15% - SND';
+    } catch (error) {
+      console.error('Error finding tax account:', error);
+      return 'Output VAT 15% - SND'; // Fallback - matches existing invoices
     }
   }
 
@@ -815,31 +1691,293 @@ export class ERPNextInvoiceService {
 
       // Look for common service-related items
       const serviceItems = items.filter(
-        item =>
-          item.item_name?.toLowerCase().includes('service') ||
-          item.item_name?.toLowerCase().includes('rental') ||
-          item.item_name?.toLowerCase().includes('equipment') ||
-          item.item_code?.toLowerCase().includes('service') ||
-          item.item_code?.toLowerCase().includes('rental')
+        item => {
+          const itemCode = item.item_code || item.name;
+          const itemName = item.item_name || item.item_name;
+          return itemName?.toLowerCase().includes('service') ||
+                 itemName?.toLowerCase().includes('rental') ||
+                 itemName?.toLowerCase().includes('equipment') ||
+                 itemCode?.toLowerCase().includes('service') ||
+                 itemCode?.toLowerCase().includes('rental');
+        }
       );
 
       if (serviceItems.length > 0) {
-        return serviceItems[0].item_code;
+        const code = serviceItems[0].item_code || serviceItems[0].name;
+        if (code) return code;
       }
 
       // If no service items, use the first available item
       if (items.length > 0) {
-        return items[0].item_code;
+        const code = items[0].item_code || items[0].name;
+        if (code) return code;
       }
 
       // This should never be reached due to the check above, but just in case
       throw new Error('No suitable item code found in ERPNext. Please create items in ERPNext before creating invoices.');
     } catch (error) {
       // Re-throw with better error message
-      if (error instanceof Error && error.message.includes('No items found') || error.message.includes('No suitable item')) {
-        throw error;
+      if (error instanceof Error) {
+        if (error.message.includes('No items found') || error.message.includes('No suitable item')) {
+          throw error;
+        }
+        throw new Error(`Failed to find suitable item code: ${error.message}. Please ensure items exist in ERPNext.`);
       }
-      throw new Error(`Failed to find suitable item code: ${error instanceof Error ? error.message : String(error)}. Please ensure items exist in ERPNext.`);
+      throw new Error(`Failed to find suitable item code: ${String(error)}. Please ensure items exist in ERPNext.`);
+    }
+  }
+
+  // Sync equipment to ERPNext - create Item if it doesn't exist
+  // IMPORTANT: This function ONLY writes to ERPNext. It does NOT modify your app's equipment database.
+  // It reads equipment names from your app and ensures corresponding items exist in ERPNext for invoicing.
+  // Your app's equipment list remains the original source of truth and is never modified.
+  static async syncEquipmentToERPNext(equipmentName: string, _equipmentId?: number): Promise<string> {
+    try {
+      // Normalize equipment name (ERPNext items use spaces, not underscores)
+      const normalizedName = equipmentName.replace(/_/g, ' ').trim();
+      
+      console.log(`Syncing equipment to ERPNext: ${normalizedName}`);
+      
+      // First, try to find existing item - PRIORITIZE non-fixed asset items
+      let existingItem = null;
+      try {
+        // Search by exact name - PRIORITIZE non-fixed assets
+        const searchResponse = await this.makeERPNextRequest(
+          `/api/resource/Item?filters=[["item_name","=","${encodeURIComponent(normalizedName)}"]]&limit_page_length=10`
+        );
+        
+        if (searchResponse.data && searchResponse.data.length > 0) {
+          // Prioritize non-fixed asset items
+          const nonFixedAsset = searchResponse.data.find((it: any) => 
+            (it.is_fixed_asset === 0 || it.is_fixed_asset === false) && it.disabled !== 1
+          );
+          
+          if (nonFixedAsset) {
+            existingItem = nonFixedAsset;
+          } else {
+            // If no non-fixed asset found, use first enabled item (might be fixed asset, will handle below)
+            existingItem = searchResponse.data.find((it: any) => it.disabled !== 1) || searchResponse.data[0];
+          }
+        } else {
+          // Try like search
+          const likeSearch = await this.makeERPNextRequest(
+            `/api/resource/Item?filters=[["item_name","like","${encodeURIComponent(`%${normalizedName.replace(/[^a-zA-Z0-9\s]/g, '')}%`)}"]]&limit_page_length=10`
+          );
+          
+          if (likeSearch.data && likeSearch.data.length > 0) {
+            // Find exact match - PRIORITIZE non-fixed assets
+            const exactMatches = likeSearch.data.filter((it: any) => 
+              (it.item_name || it.name || '').replace(/_/g, ' ').trim().toUpperCase() === normalizedName.toUpperCase()
+            );
+            
+            if (exactMatches.length > 0) {
+              // Prioritize non-fixed asset
+              const nonFixedAsset = exactMatches.find((it: any) => 
+                (it.is_fixed_asset === 0 || it.is_fixed_asset === false) && it.disabled !== 1
+              );
+              existingItem = nonFixedAsset || exactMatches.find((it: any) => it.disabled !== 1) || exactMatches[0];
+            } else {
+              // No exact match, use first enabled item
+              const nonFixedAsset = likeSearch.data.find((it: any) => 
+                (it.is_fixed_asset === 0 || it.is_fixed_asset === false) && it.disabled !== 1
+              );
+              existingItem = nonFixedAsset || likeSearch.data.find((it: any) => it.disabled !== 1) || likeSearch.data[0];
+            }
+          }
+        }
+      } catch (searchError) {
+        console.warn('Search for existing item failed, will create new:', searchError);
+      }
+      
+      // If item exists, check if it's a fixed asset
+      if (existingItem) {
+        const itemCode = existingItem.name || existingItem.item_code;
+        
+        // CRITICAL: Fetch full item details to check is_fixed_asset (search might not return this field)
+        let fullItemDetails = null;
+        try {
+          fullItemDetails = await this.makeERPNextRequest(`/api/resource/Item/${encodeURIComponent(itemCode)}`);
+        } catch {
+          // If fetch fails, use the search result
+          fullItemDetails = { data: existingItem };
+        }
+        
+        const isFixedAsset = fullItemDetails.data?.is_fixed_asset === 1 || fullItemDetails.data?.is_fixed_asset === true || existingItem.is_fixed_asset === 1 || existingItem.is_fixed_asset === true;
+        
+        // CRITICAL: Check if item is a fixed asset
+        if (isFixedAsset) {
+          console.warn(`⚠ Found item "${itemCode}" but it's a fixed asset. Searching for non-fixed asset version...`);
+          
+          // Search for non-fixed asset version with same name
+          try {
+            const nonFixedSearch = await this.makeERPNextRequest(
+              `/api/resource/Item?filters=[["item_name","=","${encodeURIComponent(normalizedName)}"],["is_fixed_asset","=",0]]&limit_page_length=5`
+            );
+            
+            if (nonFixedSearch.data && nonFixedSearch.data.length > 0) {
+              // Found non-fixed asset version - use it
+              const nonFixedAsset = nonFixedSearch.data.find((it: any) => 
+                (it.item_name || it.name) === normalizedName && (it.is_fixed_asset === 0 || it.is_fixed_asset === false)
+              ) || nonFixedSearch.data[0];
+              
+              const nonFixedCode = nonFixedAsset.name || nonFixedAsset.item_code;
+              console.log(`✓ Found non-fixed asset version: "${itemCode}" -> "${nonFixedCode}"`);
+              return nonFixedCode;
+            } else {
+              // No non-fixed asset version exists - will create new one below
+              console.log(`No non-fixed asset version found. Will create new item.`);
+              existingItem = null; // Reset to create new
+            }
+          } catch (searchError) {
+            console.warn('Search for non-fixed asset version failed, will create new:', searchError);
+            existingItem = null; // Reset to create new
+          }
+        } else {
+          // Item exists and is not a fixed asset - verify it's not a fixed asset by fetching full details
+          try {
+            const fullDetails = await this.makeERPNextRequest(`/api/resource/Item/${encodeURIComponent(itemCode)}`);
+            if (fullDetails.data && (fullDetails.data.is_fixed_asset === 1 || fullDetails.data.is_fixed_asset === true)) {
+              // It's actually a fixed asset - search for non-fixed version or create new
+              console.warn(`⚠ Item "${itemCode}" is actually a fixed asset. Searching for non-fixed asset version...`);
+              const itemName = fullDetails.data.item_name || fullDetails.data.name || normalizedName;
+              const nonFixedSearch = await this.makeERPNextRequest(
+                `/api/resource/Item?filters=[["item_name","=","${encodeURIComponent(itemName)}"],["is_fixed_asset","=",0]]&limit_page_length=5`
+              );
+              
+              if (nonFixedSearch.data && nonFixedSearch.data.length > 0) {
+                const nonFixedAsset = nonFixedSearch.data.find((it: any) => 
+                  (it.item_name || it.name) === itemName && (it.is_fixed_asset === 0 || it.is_fixed_asset === false)
+                ) || nonFixedSearch.data[0];
+                const nonFixedCode = nonFixedAsset.name || nonFixedAsset.item_code;
+                console.log(`✓ Found non-fixed asset version: "${itemCode}" -> "${nonFixedCode}"`);
+                return nonFixedCode;
+              } else {
+                // Will create new below
+                existingItem = null;
+              }
+            } else {
+              // Item exists and is not a fixed asset - use it
+              console.log(`✓ Equipment already exists in ERPNext (non-fixed asset): ${itemCode}`);
+              return itemCode;
+            }
+          } catch {
+            // If verification fails, proceed with the item code (might be okay)
+            console.log(`✓ Equipment already exists in ERPNext: ${itemCode}`);
+            return itemCode;
+          }
+        }
+      }
+      
+      // Item doesn't exist, create it
+      // Use ORIGINAL equipment name (not random) - preserve the exact name from rental
+      console.log(`Creating new equipment item in ERPNext with ORIGINAL name: ${normalizedName}`);
+      
+      // Generate item code from equipment name - use original format
+      // Try to match ERPNext format: "1392 DOZER" or "1392-DOZER" or "1392_DOZER"
+      // Use the normalized name (spaces) as item_name, and create a code from it
+      let itemCode = normalizedName;
+      
+      // Try different code formats that might work in ERPNext
+      // First try: Use normalized name as-is (ERPNext accepts spaces in item_code)
+      // If that fails, try with dashes
+      const codeVariants = [
+        normalizedName, // "1392 DOZER" (original format)
+        normalizedName.replace(/\s+/g, '-'), // "1392-DOZER"
+        normalizedName.replace(/\s+/g, '_'), // "1392_DOZER"
+        normalizedName.replace(/\s+/g, ''), // "1392DOZER"
+      ];
+      
+      const newItemData = {
+        doctype: 'Item',
+        item_code: codeVariants[0], // Try original format first
+        item_name: normalizedName, // Use original equipment name exactly
+        item_group: 'Equipment', // Match your ERPNext item group
+        stock_uom: 'Nos',
+        is_stock_item: 0, // Equipment rental, not stock item
+        is_fixed_asset: 0, // CRITICAL: Not a fixed asset (rental equipment, not company asset)
+        has_variants: 0,
+        include_item_in_manufacturing: 0,
+        description: `Equipment rental: ${normalizedName}`, // Use original name
+      };
+      
+      // Try creating with different code formats if first attempt fails
+      let createdItemCode = null;
+      let lastError = null;
+      
+      for (const codeVariant of codeVariants) {
+        try {
+          newItemData.item_code = codeVariant;
+          console.log(`Attempting to create item with code: "${codeVariant}"`);
+          
+          const createResponse = await this.makeERPNextRequest('/api/resource/Item', {
+            method: 'POST',
+            body: JSON.stringify(newItemData),
+          });
+          
+          createdItemCode = createResponse.data?.name || createResponse.data?.item_code || codeVariant;
+          console.log(`✓ Created equipment item in ERPNext: ${createdItemCode} (using code: "${codeVariant}")`);
+          
+          // Verify it was created
+          const verifyResponse = await this.makeERPNextRequest(`/api/resource/Item/${encodeURIComponent(createdItemCode)}`);
+          if (verifyResponse.data && verifyResponse.data.disabled !== 1) {
+            // Verify it's not a fixed asset
+            if (verifyResponse.data.is_fixed_asset === 1 || verifyResponse.data.is_fixed_asset === true) {
+              console.warn(`⚠ Created item "${createdItemCode}" is a fixed asset. This shouldn't happen.`);
+              // Continue to next variant
+              continue;
+            }
+            return createdItemCode;
+          } else {
+            throw new Error('Created item is invalid or disabled');
+          }
+        } catch (createError) {
+          lastError = createError;
+          console.warn(`Failed to create with code "${codeVariant}":`, createError);
+          // Try next variant
+          continue;
+        }
+      }
+      
+      // If all variants failed, throw the last error
+      if (!createdItemCode) {
+        console.error(`Failed to create equipment item with all code variants: ${lastError}`);
+        // If creation fails, try to find any similar NON-FIXED ASSET item as fallback
+        const fallbackItems = await this.getAvailableItems();
+        if (fallbackItems.length > 0) {
+          // Prioritize non-fixed asset equipment items
+          const nonFixedEquipment = fallbackItems.find((it: any) => 
+            (it.item_group?.toLowerCase().includes('equipment') || it.item_name?.toLowerCase().includes('equipment')) &&
+            (it.is_fixed_asset === 0 || it.is_fixed_asset === false)
+          );
+          
+          if (nonFixedEquipment) {
+            const fallbackCode = nonFixedEquipment.item_code || nonFixedEquipment.name;
+            console.warn(`Using non-fixed asset fallback item: ${fallbackCode}`);
+            return fallbackCode;
+          }
+          
+          // If no non-fixed equipment found, use first non-fixed asset item
+          const nonFixedItem = fallbackItems.find((it: any) => 
+            (it.is_fixed_asset === 0 || it.is_fixed_asset === false)
+          );
+          
+          if (nonFixedItem) {
+            const fallbackCode = nonFixedItem.item_code || nonFixedItem.name;
+            console.warn(`Using non-fixed asset fallback item: ${fallbackCode}`);
+            return fallbackCode;
+          }
+          
+          // Last resort: use any item (but warn)
+          const fallback = fallbackItems[0];
+          const fallbackCode = fallback.item_code || fallback.name;
+          console.warn(`⚠ Using fallback item (may be fixed asset): ${fallbackCode}`);
+          return fallbackCode;
+        }
+        throw lastError || new Error('Failed to create equipment item and no fallback available');
+      }
+    } catch (error) {
+      console.error(`Error syncing equipment to ERPNext: ${error}`);
+      throw error;
     }
   }
 

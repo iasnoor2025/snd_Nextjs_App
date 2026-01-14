@@ -162,9 +162,27 @@ const createInvoiceHandler = async (request: NextRequest, { params }: { params: 
         stack: erpnextError.stack?.substring(0, 1000) // Limit stack trace
       } : { raw: String(erpnextError) };
       
+      // Extract a user-friendly error message
+      let userMessage = 'ERPNext invoice creation failed';
+      if (errorMessage.includes('No rental items found')) {
+        userMessage = errorMessage;
+      } else if (errorMessage.includes('Configuration Error')) {
+        userMessage = errorMessage;
+      } else if (errorMessage.includes('Connection Error')) {
+        userMessage = errorMessage;
+      } else if (errorMessage.includes('API key')) {
+        userMessage = 'ERPNext API key permissions issue. Please check API key has "Write" permission for Sales Invoice.';
+      } else if (errorMessage.includes('Network error')) {
+        userMessage = 'Cannot connect to ERPNext server. Please check your network connection and ERPNext server status.';
+      } else if (errorMessage.includes('404')) {
+        userMessage = 'ERPNext endpoint not found. Please check your ERPNext configuration.';
+      } else {
+        userMessage = `Invoice creation failed: ${errorMessage.substring(0, 200)}`;
+      }
+      
       return NextResponse.json(
         {
-          error: 'ERPNext invoice creation failed',
+          error: userMessage,
           details: errorMessage,
           errorDetails: errorDetails,
           billingMonth: billingMonth,

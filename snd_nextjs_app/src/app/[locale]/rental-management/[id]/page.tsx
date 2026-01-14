@@ -78,6 +78,8 @@ import { useRentalItemConfirmation } from '@/hooks/use-rental-item-confirmation'
 import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
 import { EquipmentDropdown } from '@/components/ui/equipment-dropdown';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Progress } from '@/components/ui/progress';
+import { Loader2 } from 'lucide-react';
 
 interface RentalItem {
   id: string;
@@ -822,6 +824,8 @@ export default function RentalDetailPage() {
   const [isAddPaymentDialogOpen, setIsAddPaymentDialogOpen] = useState(false);
   const [isMonthSelectionOpen, setIsMonthSelectionOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState('');
+  const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false);
+  const [invoiceProgress, setInvoiceProgress] = useState(0);
   const [erpnextInvoiceAmount, setErpnextInvoiceAmount] = useState<number | null>(null);
   const [isManualInvoiceDialogOpen, setIsManualInvoiceDialogOpen] = useState(false);
   const [isManualPaymentDialogOpen, setIsManualPaymentDialogOpen] = useState(false);
@@ -2105,7 +2109,17 @@ export default function RentalDetailPage() {
   const generateInvoiceForMonth = async () => {
     if (!rental || !selectedMonth) return;
 
+    setIsGeneratingInvoice(true);
+    setInvoiceProgress(0);
+
     try {
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setInvoiceProgress((prev) => {
+          if (prev >= 90) return prev; // Don't go to 100% until done
+          return prev + 10;
+        });
+      }, 500);
 
       const response = await fetch(`/api/rentals/${rental.id}/invoice`, {
         method: 'POST',
@@ -2115,10 +2129,29 @@ export default function RentalDetailPage() {
         })
       });
 
+      clearInterval(progressInterval);
+      setInvoiceProgress(100);
+
       if (!response.ok) {
-        const errorData = await response.json();
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (parseError) {
+          const errorText = await response.text();
+          console.error('Invoice API error (non-JSON):', errorText);
+          throw new Error(`Failed to generate monthly invoice (${response.status}): ${errorText.substring(0, 200)}`);
+        }
+        
         console.error('Invoice API error:', errorData);
-        throw new Error(errorData.error || `Failed to generate monthly invoice (${response.status})`);
+        
+        // Extract error message from various possible formats
+        const errorMessage = errorData.error || 
+                           errorData.details || 
+                           errorData.message || 
+                           (errorData.errorDetails?.message) ||
+                           `Failed to generate monthly invoice (${response.status})`;
+        
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
@@ -2128,6 +2161,7 @@ export default function RentalDetailPage() {
       // Close dialog and refresh rental data
       setIsMonthSelectionOpen(false);
       setSelectedMonth('');
+      setInvoiceProgress(0);
       fetchRental();
     } catch (err) {
       console.error('Invoice generation error:', err);
@@ -2137,6 +2171,9 @@ export default function RentalDetailPage() {
       // Close dialog on error
       setIsMonthSelectionOpen(false);
       setSelectedMonth('');
+    } finally {
+      setIsGeneratingInvoice(false);
+      setInvoiceProgress(0);
     }
   };
 
@@ -5499,7 +5536,7 @@ export default function RentalDetailPage() {
           <div className="space-y-4">
             <div>
               <Label htmlFor="billingMonth">Billing Month</Label>
-              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={isGeneratingInvoice}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a month" />
                 </SelectTrigger>
@@ -5536,15 +5573,41 @@ export default function RentalDetailPage() {
                 </SelectContent>
               </Select>
             </div>
+            
+            {isGeneratingInvoice && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Generating invoice...</span>
+                  <span className="text-muted-foreground">{invoiceProgress}%</span>
+                </div>
+                <Progress value={invoiceProgress} className="h-2" />
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Processing rental items and syncing with ERPNext...</span>
+                </div>
+              </div>
+            )}
+            
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsMonthSelectionOpen(false)}>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsMonthSelectionOpen(false)}
+                disabled={isGeneratingInvoice}
+              >
                 Cancel
               </Button>
               <Button 
                 onClick={generateInvoiceForMonth}
-                disabled={!selectedMonth}
+                disabled={!selectedMonth || isGeneratingInvoice}
               >
-                Generate Invoice
+                {isGeneratingInvoice ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  'Generate Invoice'
+                )}
               </Button>
             </div>
           </div>
