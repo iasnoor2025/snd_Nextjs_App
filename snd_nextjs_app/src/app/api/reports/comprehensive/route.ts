@@ -23,7 +23,9 @@ import {
   rentalEquipmentTimesheets,
   rentalItems,
   rentalTimesheetReceived,
-  equipmentCategories
+  equipmentCategories,
+  finalSettlements,
+
 } from '@/lib/drizzle/schema';
 import { alias } from 'drizzle-orm/pg-core';
 import { sql, count, sum, avg, max, min, desc, asc, eq, and, gte, lte, or, inArray, notInArray, isNull } from 'drizzle-orm';
@@ -94,6 +96,13 @@ export async function GET(request: NextRequest) {
         const employeeId = searchParams.get('employeeId');
         const status = searchParams.get('status');
         reportData = await generateEmployeeAdvanceReport(startDate, endDate, employeeId, status);
+        break;
+      case 'leaving_report':
+        reportData = await generateLeavingReport(startDate, endDate);
+        break;
+      case 'on_leave_report':
+        reportData = await generateOnLeaveReport(startDate, endDate);
+        break;
         break;
       default:
         return NextResponse.json({ error: 'Invalid report type' }, { status: 400 });
@@ -1455,6 +1464,172 @@ async function generateEmployeeAdvanceReport(startDate?: string | null, endDate?
       monthly_trends: [],
       generated_at: new Date().toISOString(),
       error: 'Failed to generate employee advance report'
+    };
+  }
+}
+
+async function generateLeavingReport(startDate?: string | null, endDate?: string | null) {
+  try {
+    const whereConditions = [eq(finalSettlements.settlementType, 'exit')];
+
+    if (startDate) {
+      whereConditions.push(gte(finalSettlements.lastWorkingDate, startDate));
+    }
+    if (endDate) {
+      whereConditions.push(lte(finalSettlements.lastWorkingDate, endDate));
+    }
+
+    const whereExpr = and(...whereConditions);
+
+    const [
+      summaryStats,
+      leavingDetails
+    ] = await Promise.all([
+      // Summary Statistics for exiting employees
+      db.select({
+        total_exits: count(),
+        resigned_count: count(sql`CASE WHEN ${finalSettlements.benefitCalculationMethod} = 'resigned' THEN 1 END`),
+        terminated_count: count(sql`CASE WHEN ${finalSettlements.benefitCalculationMethod} = 'terminated' THEN 1 END`),
+        total_settlement_amount: sum(sql`COALESCE(${finalSettlements.netAmount}, 0)`)
+      })
+        .from(finalSettlements)
+        .where(whereExpr),
+
+      // Detailed list of exiting employees
+      db.select({
+        id: finalSettlements.id,
+        employee_id: finalSettlements.employeeId,
+        employee_name: finalSettlements.employeeName,
+        file_number: finalSettlements.fileNumber,
+        designation: finalSettlements.designation,
+        department: finalSettlements.department,
+        hire_date: finalSettlements.hireDate,
+        last_working_date: finalSettlements.lastWorkingDate,
+        reason: finalSettlements.benefitCalculationMethod,
+        net_amount: finalSettlements.netAmount,
+        status: finalSettlements.status,
+        settlement_number: finalSettlements.settlementNumber
+      })
+        .from(finalSettlements)
+        .where(whereExpr)
+        .orderBy(desc(finalSettlements.lastWorkingDate))
+    ]);
+
+    return {
+      summary_stats: summaryStats[0] || {
+        total_exits: 0,
+        resigned_count: 0,
+        terminated_count: 0,
+        total_settlement_amount: 0
+      },
+      leaving_details: leavingDetails || [],
+      generated_at: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Error in generateLeavingReport:', error);
+    return {
+      summary_stats: {
+        total_exits: 0,
+        resigned_count: 0,
+        terminated_count: 0,
+        total_settlement_amount: 0
+      },
+      leaving_details: [],
+      generated_at: new Date().toISOString(),
+      error: 'Failed to generate leaving report'
+    };
+  }
+}
+
+async function generateOnLeaveReport(startDate?: string | null, endDate?: string | null) {
+  try {
+    // Determine the reference date. If no date is provided, use current date.
+    // If a range is provided, we check if there's any overlap with the range.
+    // But for "On Leave" typically means "Currently On Leave" or "On Leave during Period".
+    // Let's assume:
+    // - If no dates: Active leaves as of TODAY.
+    // - If range: Any leave overlapping with the range.
+
+    const today = new Date().toISOString().split('T')[0];
+    const checkDate = startDate || today;
+    const checkEndDate = endDate || today;
+
+    const whereConditions = [
+      eq(employeeLeaves.status, 'approved'),
+      isNull(employeeLeaves.returnDate),
+      // Overlap logic: (StartA <= EndB) and (EndA >= StartB)
+      lte(employeeLeaves.startDate, checkEndDate),
+      gte(employeeLeaves.endDate, checkDate)
+    ];
+
+    const whereExpr = and(...whereConditions);
+
+    const [
+      summaryStats,
+      leaveDetails
+    ] = await Promise.all([
+      // Summary Statistics
+      db.select({
+        total_on_leave: count(),
+        annual_leave_count: count(sql`CASE WHEN ${employeeLeaves.leaveType} = 'Annual Leave' OR ${employeeLeaves.leaveType} = 'Vacation' THEN 1 END`),
+        sick_leave_count: count(sql`CASE WHEN ${employeeLeaves.leaveType} = 'Sick Leave' THEN 1 END`),
+        emergency_leave_count: count(sql`CASE WHEN ${employeeLeaves.leaveType} = 'Emergency Leave' THEN 1 END`),
+        other_leave_count: count(sql`CASE WHEN ${employeeLeaves.leaveType} NOT IN ('Annual Leave', 'Vacation', 'Sick Leave', 'Emergency Leave') THEN 1 END`),
+      })
+        .from(employeeLeaves)
+        .where(whereExpr),
+
+      // Detailed list
+      db.select({
+        id: employeeLeaves.id,
+        employee_id: employees.id,
+        employee_name: sql`CONCAT_WS(' ', ${employees.firstName}, ${employees.middleName}, ${employees.lastName})`,
+        file_number: employees.fileNumber,
+        designation: designations.name,
+        department: departments.name,
+        leave_type: employeeLeaves.leaveType,
+        start_date: employeeLeaves.startDate,
+        end_date: employeeLeaves.endDate,
+        days: employeeLeaves.days,
+        reason: employeeLeaves.reason,
+        status: employeeLeaves.status
+      })
+        .from(employeeLeaves)
+        .leftJoin(employees, eq(employeeLeaves.employeeId, employees.id))
+        .leftJoin(designations, eq(employees.designationId, designations.id))
+        .leftJoin(departments, eq(employees.departmentId, departments.id))
+        .where(whereExpr)
+        .orderBy(desc(employeeLeaves.startDate))
+    ]);
+
+    return {
+      summary_stats: summaryStats[0] || {
+        total_on_leave: 0,
+        annual_leave_count: 0,
+        sick_leave_count: 0,
+        emergency_leave_count: 0,
+        other_leave_count: 0
+      },
+      leave_details: leaveDetails || [],
+      generated_at: new Date().toISOString(),
+      date_range: {
+        start: checkDate,
+        end: checkEndDate
+      }
+    };
+  } catch (error) {
+    console.error('Error in generateOnLeaveReport:', error);
+    return {
+      summary_stats: {
+        total_on_leave: 0,
+        annual_leave_count: 0,
+        sick_leave_count: 0,
+        emergency_leave_count: 0,
+        other_leave_count: 0
+      },
+      leave_details: [],
+      generated_at: new Date().toISOString(),
+      error: 'Failed to generate on leave report'
     };
   }
 }

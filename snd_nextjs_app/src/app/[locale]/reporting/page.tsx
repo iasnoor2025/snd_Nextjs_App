@@ -39,13 +39,13 @@ import {
 import { PermissionContent } from '@/lib/rbac/rbac-components';
 import { ReportChart } from '@/components/report-chart';
 import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
-import { 
-  Download, 
-  RefreshCw, 
-  TrendingUp, 
-  Users, 
-  Building, 
-  Car, 
+import {
+  Download,
+  RefreshCw,
+  TrendingUp,
+  Users,
+  Building,
+  Car,
   DollarSign,
   Clock,
   Shield,
@@ -66,6 +66,8 @@ import { EquipmentReportExcelService } from '@/lib/services/equipment-report-exc
 import { SupervisorEquipmentReportPDFService, SupervisorEquipmentReportData } from '@/lib/services/supervisor-equipment-report-pdf-service';
 import { SupervisorEquipmentReportExcelService } from '@/lib/services/supervisor-equipment-report-excel-service';
 import { EmployeeAdvanceReportPDFService, EmployeeAdvanceReportData } from '@/lib/services/employee-advance-report-pdf-service';
+import { LeavingReportPDFService, LeavingReportData } from '@/lib/services/leaving-report-pdf-service';
+import { OnLeaveReportPDFService, OnLeaveReportData } from '@/lib/services/on-leave-report-pdf-service';
 
 interface ReportData {
   success: boolean;
@@ -134,7 +136,7 @@ export default function ReportingDashboardPage() {
   const [hasTimesheetFilter, setHasTimesheetFilter] = useState('all'); // 'all', 'yes', 'no'
   const [showOnlyCompanyName, setShowOnlyCompanyName] = useState(false); // Show only company name when checked
   const [employeeFilter, setEmployeeFilter] = useState('all'); // For employee advance report
-  
+
   // Column visibility for rental timesheet report
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
     si: true,
@@ -148,7 +150,7 @@ export default function ReportingDashboardPage() {
     total: true,
     completedDate: true,
   });
-  
+
   const rentalTimesheetColumns = [
     { id: 'si', label: 'SI#' },
     { id: 'equipment', label: 'Equipment' },
@@ -179,12 +181,13 @@ export default function ReportingDashboardPage() {
     { id: 'customer_equipment', name: 'Customer Equipment Report', icon: Car },
     { id: 'supervisor_equipment', name: 'Supervisor Equipment Report', icon: Users },
     { id: 'employee_advance', name: 'Employee Advance Report', icon: Wallet },
+    { id: 'on_leave_report', name: 'Employees On Leave Report', icon: Users },
   ];
 
   // Fetch supervisors with equipment when supervisor equipment report is selected
   const fetchSupervisorsWithEquipment = async () => {
     if (selectedReport !== 'supervisor_equipment') return;
-    
+
     try {
       setLoadingSupervisors(true);
       // Fetch the report data to get supervisors
@@ -214,7 +217,7 @@ export default function ReportingDashboardPage() {
   // Fetch customers with rentals when component mounts or when customer equipment report is selected
   const fetchCustomersWithRentals = async () => {
     if (selectedReport !== 'customer_equipment') return;
-    
+
     try {
       setLoadingCustomers(true);
       const response = await fetch('/api/customers/with-rentals');
@@ -236,10 +239,10 @@ export default function ReportingDashboardPage() {
   // Fetch customers for rental timesheet report (filtered by month and hasTimesheet)
   const fetchCustomersForTimesheet = async () => {
     if (selectedReport !== 'rental_timesheet') return;
-    
+
     try {
       setLoadingCustomersForTimesheet(true);
-      
+
       // Build query parameters
       const params = new URLSearchParams();
       if (monthFilter) {
@@ -248,7 +251,7 @@ export default function ReportingDashboardPage() {
       if (hasTimesheetFilter !== 'all') {
         params.append('hasTimesheet', hasTimesheetFilter);
       }
-      
+
       const url = `/api/customers/with-rentals${params.toString() ? `?${params.toString()}` : ''}`;
       const response = await fetch(url);
       if (response.ok) {
@@ -269,7 +272,7 @@ export default function ReportingDashboardPage() {
   // Fetch equipment categories when equipment report is selected
   const fetchEquipmentCategories = async () => {
     if (selectedReport !== 'equipment_by_category') return;
-    
+
     try {
       setLoadingCategories(true);
       const response = await fetch('/api/equipment/categories');
@@ -417,28 +420,28 @@ export default function ReportingDashboardPage() {
   }, [monthFilter, companyFilter, hasTimesheetFilter, selectedReport]);
 
   const generateReport = async () => {
-      try {
-        setLoading(true);
+    try {
+      setLoading(true);
       const loadingToastId = toast.loading(t('reporting.generating_comprehensive_report'));
 
-        const paramsObj: any = {
+      const paramsObj: any = {
         report_type: selectedReport,
       };
-      
+
       // For rental timesheet, use month filter if provided, otherwise don't send date range
       if (selectedReport === 'rental_timesheet') {
         if (monthFilter) {
           paramsObj.month = monthFilter;
         }
         // Don't send startDate/endDate for rental timesheet - show all data if no month filter
-      } else if (selectedReport !== 'employee_advance') {
+      } else if (selectedReport !== 'employee_advance' && selectedReport !== 'on_leave_report') {
         // For employee advance, don't send date range - show all data
         paramsObj.startDate = new Date(Date.now() - parseInt(dateRange) * 24 * 60 * 60 * 1000).toISOString();
         paramsObj.endDate = new Date().toISOString();
       }
       // For employee_advance, don't send date filters - show all advances
-      
-      if (departmentFilter !== 'all') paramsObj.departmentId = departmentFilter;
+
+      if (departmentFilter !== 'all' && selectedReport !== 'on_leave_report') paramsObj.departmentId = departmentFilter;
       if (customerFilter !== 'all') paramsObj.customerId = customerFilter;
       if (categoryFilter !== 'all') paramsObj.categoryId = categoryFilter;
       if (selectedReport === 'supervisor_equipment') paramsObj.status = statusFilter;
@@ -451,51 +454,53 @@ export default function ReportingDashboardPage() {
         paramsObj.employeeId = employeeFilter;
       }
       if (selectedReport === 'employee_advance' && statusFilter !== 'all') paramsObj.status = statusFilter;
-      
+
       const params = new URLSearchParams(paramsObj);
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-      const apiEndpoint = selectedReport === 'customer_equipment' 
+      const apiEndpoint = selectedReport === 'customer_equipment'
         ? `/api/reports/customer-equipment?${params}`
         : selectedReport === 'supervisor_equipment'
-        ? `/api/reports/supervisor-equipment?${params}`
-        : selectedReport === 'equipment_by_category'
-        ? `/api/reports/equipment?${params}`
-        : `/api/reports/comprehensive?${params}`;
-      
+          ? `/api/reports/supervisor-equipment?${params}`
+          : selectedReport === 'equipment_by_category'
+            ? `/api/reports/equipment?${params}`
+            : `/api/reports/comprehensive?${params}`;
+
       const response = await fetch(apiEndpoint, {
         signal: controller.signal
       });
 
       clearTimeout(timeoutId);
 
-        if (!response.ok) {
+      if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || `HTTP ${response.status}: Failed to generate report`);
-        }
+      }
 
-        const responseData = await response.json();
-      
+      const responseData = await response.json();
+
       // Extract the actual report data from the API response
       const data = responseData.data || responseData;
       setReportData(data);
       reportGeneratedRef.current = true; // Mark that report was generated
-      
+
       // Dismiss loading toast and show success
       toast.dismiss(loadingToastId);
       toast.success(t('reporting.comprehensive_report_generated_successfully'));
     } catch (error) {
       console.error('Error generating report:', error);
-      
+
       // Dismiss loading toast and show error
       toast.dismiss();
       toast.error(t('reporting.failed_to_generate_comprehensive_report'));
-      } finally {
-        setLoading(false);
-      }
-    };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
 
   const renderMetricCards = (data: any) => {
     const cards: MetricCard[] = [];
@@ -506,6 +511,27 @@ export default function ReportingDashboardPage() {
     }
 
     switch (selectedReport) {
+      case 'leaving_report':
+        if (data.summary_stats) {
+          cards.push(
+            { title: 'Total Exits', value: data.summary_stats.total_exits || 0, icon: Users, color: 'blue' },
+            { title: 'Resigned', value: data.summary_stats.resigned_count || 0, icon: Users, color: 'orange' },
+            { title: 'Terminated', value: data.summary_stats.terminated_count || 0, icon: Users, color: 'red' },
+            { title: 'Total Amount', value: `SAR ${Number(data.summary_stats.total_settlement_amount || 0).toLocaleString()}`, icon: DollarSign, color: 'green' }
+          );
+        }
+        break;
+      case 'on_leave_report':
+        if (data.summary_stats) {
+          cards.push(
+            { title: 'Total On Leave', value: data.summary_stats.total_on_leave || 0, icon: Users, color: 'blue' },
+            { title: 'Annual/Vacation', value: data.summary_stats.annual_leave_count || 0, icon: Users, color: 'green' },
+            { title: 'Sick Leave', value: data.summary_stats.sick_leave_count || 0, icon: Users, color: 'red' },
+            { title: 'Emergency', value: data.summary_stats.emergency_leave_count || 0, icon: Users, color: 'orange' },
+            { title: 'Other', value: data.summary_stats.other_leave_count || 0, icon: Users, color: 'purple' }
+          );
+        }
+        break;
       case 'overview':
         if (data.overview) {
           cards.push(
@@ -627,7 +653,7 @@ export default function ReportingDashboardPage() {
           const resolvedIncidents = data.incident_stats.resolved_incidents || 0;
           const pendingIncidents = data.incident_stats.pending_incidents || 0;
           const safetyScore = totalIncidents > 0 ? Math.round((resolvedIncidents / totalIncidents) * 100) : 100;
-          
+
           cards.push(
             { title: t('safety.stats.totalIncidents'), value: totalIncidents, icon: Shield, color: 'red' },
             { title: t('safety.stats.resolvedCases'), value: resolvedIncidents, icon: Shield, color: 'green' },
@@ -638,7 +664,7 @@ export default function ReportingDashboardPage() {
         break;
       case 'performance_analytics':
         if (data.project_performance || data.employee_performance || data.equipment_performance) {
-          const projectCompletionRate = data.project_performance?.total_projects > 0 
+          const projectCompletionRate = data.project_performance?.total_projects > 0
             ? Math.round((data.project_performance.completed_projects / data.project_performance.total_projects) * 100)
             : 0;
           const employeeActiveRate = data.employee_performance?.total_employees > 0
@@ -647,7 +673,7 @@ export default function ReportingDashboardPage() {
           const equipmentActiveRate = data.equipment_performance?.total_equipment > 0
             ? Math.round((data.equipment_performance.active_equipment / data.equipment_performance.total_equipment) * 100)
             : 0;
-          
+
           cards.push(
             { title: 'Project Completion Rate', value: `${projectCompletionRate}%`, icon: Target, color: 'blue' },
             { title: 'Employee Active Rate', value: `${employeeActiveRate}%`, icon: Users, color: 'green' },
@@ -728,6 +754,92 @@ export default function ReportingDashboardPage() {
     }
 
     switch (selectedReport) {
+      case 'leaving_report':
+        if (data.leaving_details && data.leaving_details.length > 0) {
+          return (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>#</TableHead>
+                  <TableHead>Employee Name</TableHead>
+                  <TableHead>File #</TableHead>
+                  <TableHead>Designation</TableHead>
+                  <TableHead>Department</TableHead>
+                  <TableHead>Hire Date</TableHead>
+                  <TableHead>Last Working</TableHead>
+                  <TableHead>Reason</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Net Amount</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.leaving_details.map((item: any, index: number) => (
+                  <TableRow key={index}>
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell className="font-medium">{item.employee_name}</TableCell>
+                    <TableCell>{item.file_number || '-'}</TableCell>
+                    <TableCell>{item.designation || '-'}</TableCell>
+                    <TableCell>{item.department || '-'}</TableCell>
+                    <TableCell>{new Date(item.hire_date).toLocaleDateString()}</TableCell>
+                    <TableCell>{new Date(item.last_working_date).toLocaleDateString()}</TableCell>
+                    <TableCell className="capitalize">{item.reason === 'resigned' ? 'Resignation' : 'Termination'}</TableCell>
+                    <TableCell>
+                      <Badge variant={item.status === 'paid' ? 'default' : item.status === 'approved' ? 'outline' : 'secondary'}>
+                        {item.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">SAR {Number(item.net_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          );
+        }
+        break;
+
+      case 'on_leave_report':
+        if (data.leave_details && data.leave_details.length > 0) {
+          return (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>#</TableHead>
+                  <TableHead>Employee Name</TableHead>
+                  <TableHead>File #</TableHead>
+                  <TableHead>Designation</TableHead>
+                  <TableHead>Department</TableHead>
+                  <TableHead>Leave Type</TableHead>
+                  <TableHead>Start Date</TableHead>
+                  <TableHead>End Date</TableHead>
+                  <TableHead>Days</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.leave_details.map((item: any, index: number) => (
+                  <TableRow key={index}>
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell className="font-medium">{item.employee_name}</TableCell>
+                    <TableCell>{item.file_number || '-'}</TableCell>
+                    <TableCell>{item.designation || '-'}</TableCell>
+                    <TableCell>{item.department || '-'}</TableCell>
+                    <TableCell>{item.leave_type}</TableCell>
+                    <TableCell>{new Date(item.start_date).toLocaleDateString()}</TableCell>
+                    <TableCell>{new Date(item.end_date).toLocaleDateString()}</TableCell>
+                    <TableCell>{item.days}</TableCell>
+                    <TableCell>
+                      <Badge variant={item.status === 'approved' ? 'default' : 'secondary'}>
+                        {item.status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          );
+        }
+        break;
+
       case 'employee_analytics':
         if (data.leave_analysis && data.leave_analysis.length > 0) {
           return (
@@ -760,7 +872,7 @@ export default function ReportingDashboardPage() {
           // Convert object to array if needed
           customerGroupsArray = Object.values(customerGroupsArray);
         }
-        
+
         if (customerGroupsArray && Array.isArray(customerGroupsArray) && customerGroupsArray.length > 0) {
 
           return (
@@ -962,58 +1074,58 @@ export default function ReportingDashboardPage() {
                                   return nameA.localeCompare(nameB);
                                 })
                                 .map((equipment: any, equipmentIndex: number) => {
-                                // Calculate global serial number
-                                let globalSerial = 1;
-                                for (let i = 0; i < supervisorIndex; i++) {
-                                  if (supervisorGroups[i]?.equipment) {
-                                    globalSerial += supervisorGroups[i].equipment.length;
+                                  // Calculate global serial number
+                                  let globalSerial = 1;
+                                  for (let i = 0; i < supervisorIndex; i++) {
+                                    if (supervisorGroups[i]?.equipment) {
+                                      globalSerial += supervisorGroups[i].equipment.length;
+                                    }
                                   }
-                                }
-                                globalSerial += equipmentIndex;
-                                
-                                return (
-                                  <TableRow key={`${supervisor.supervisor_id}-${equipment.equipment_id}-${equipment.rental_id}-${equipmentIndex}`}>
-                                    <TableCell className="text-center font-medium">{globalSerial}</TableCell>
-                                    <TableCell className="font-medium">{equipment.display_name || equipment.equipment_name || 'N/A'}</TableCell>
-                                    <TableCell>
-                                      <TooltipProvider>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <div className="truncate max-w-[200px]">
-                                              {equipment.customer_name || 'N/A'}
-                                            </div>
-                                          </TooltipTrigger>
-                                          <TooltipContent>
-                                            <p>{equipment.customer_name || 'N/A'}</p>
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      </TooltipProvider>
-                                    </TableCell>
-                                    <TableCell>
-                                      <Badge variant={equipment.rental_status === 'active' ? 'default' : 'secondary'}>
-                                        {equipment.rental_status || 'N/A'}
-                                      </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                      {equipment.operator_name ? (
-                                        <span>
-                                          {equipment.operator_name}
-                                          {equipment.operator_file_number && ` (${equipment.operator_file_number})`}
-                                        </span>
-                                      ) : (
-                                        <span className="text-muted-foreground">No Operator</span>
-                                      )}
-                                    </TableCell>
-                                    <TableCell>
-                                      <Badge variant={equipment.item_status === 'active' ? 'default' : 'secondary'}>
-                                        {equipment.item_status || 'N/A'}
-                                      </Badge>
-                                    </TableCell>
-                                    <TableCell>{equipment.item_start_date || 'N/A'}</TableCell>
-                                    <TableCell>{equipment.item_completed_date || 'N/A'}</TableCell>
-                                  </TableRow>
-                                );
-                              })
+                                  globalSerial += equipmentIndex;
+
+                                  return (
+                                    <TableRow key={`${supervisor.supervisor_id}-${equipment.equipment_id}-${equipment.rental_id}-${equipmentIndex}`}>
+                                      <TableCell className="text-center font-medium">{globalSerial}</TableCell>
+                                      <TableCell className="font-medium">{equipment.display_name || equipment.equipment_name || 'N/A'}</TableCell>
+                                      <TableCell>
+                                        <TooltipProvider>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <div className="truncate max-w-[200px]">
+                                                {equipment.customer_name || 'N/A'}
+                                              </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                              <p>{equipment.customer_name || 'N/A'}</p>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+                                      </TableCell>
+                                      <TableCell>
+                                        <Badge variant={equipment.rental_status === 'active' ? 'default' : 'secondary'}>
+                                          {equipment.rental_status || 'N/A'}
+                                        </Badge>
+                                      </TableCell>
+                                      <TableCell>
+                                        {equipment.operator_name ? (
+                                          <span>
+                                            {equipment.operator_name}
+                                            {equipment.operator_file_number && ` (${equipment.operator_file_number})`}
+                                          </span>
+                                        ) : (
+                                          <span className="text-muted-foreground">No Operator</span>
+                                        )}
+                                      </TableCell>
+                                      <TableCell>
+                                        <Badge variant={equipment.item_status === 'active' ? 'default' : 'secondary'}>
+                                          {equipment.item_status || 'N/A'}
+                                        </Badge>
+                                      </TableCell>
+                                      <TableCell>{equipment.item_start_date || 'N/A'}</TableCell>
+                                      <TableCell>{equipment.item_completed_date || 'N/A'}</TableCell>
+                                    </TableRow>
+                                  );
+                                })
                             ) : (
                               <TableRow>
                                 <TableCell colSpan={8} className="text-center text-gray-500 py-4">
@@ -1137,11 +1249,11 @@ export default function ReportingDashboardPage() {
                             <TableCell>{equipment.serialNumber || 'N/A'}</TableCell>
                             <TableCell>{equipment.doorNumber || 'N/A'}</TableCell>
                             <TableCell>
-                              <Badge 
+                              <Badge
                                 variant={
                                   equipment.status === 'available' ? 'default' :
-                                  equipment.status === 'rented' ? 'secondary' :
-                                  equipment.status === 'maintenance' ? 'destructive' : 'outline'
+                                    equipment.status === 'rented' ? 'secondary' :
+                                      equipment.status === 'maintenance' ? 'destructive' : 'outline'
                                 }
                               >
                                 {equipment.status}
@@ -1183,8 +1295,8 @@ export default function ReportingDashboardPage() {
         // Even if no items are returned, show the selected company name
         if (showOnlyCompanyName && hasTimesheetFilter === 'no' && companyFilter !== 'all') {
           const selectedCustomer = customersForTimesheet.find(c => c.id.toString() === companyFilter);
-          if (selectedCustomer && (!data.monthly_items || data.monthly_items.length === 0 || 
-              (data.monthly_items.length > 0 && data.monthly_items[0].items.length === 0))) {
+          if (selectedCustomer && (!data.monthly_items || data.monthly_items.length === 0 ||
+            (data.monthly_items.length > 0 && data.monthly_items[0].items.length === 0))) {
             return (
               <div className="bg-white rounded-lg shadow">
                 <div className="px-6 py-4 border-b border-gray-200">
@@ -1210,7 +1322,7 @@ export default function ReportingDashboardPage() {
             );
           }
         }
-        
+
         if (data.monthly_items && Array.isArray(data.monthly_items) && data.monthly_items.length > 0) {
           return (
             <div className="space-y-8">
@@ -1219,24 +1331,24 @@ export default function ReportingDashboardPage() {
                 const itemsWithDuration = monthData.items.map((item: any) => {
                   let duration = 'N/A';
                   let durationValue = 0;
-                  
+
                   if (item.start_date) {
                     const startDate = new Date(item.start_date);
                     const endDate = item.completed_date ? new Date(item.completed_date) : new Date();
-                    
+
                     // Calculate duration based on month filter if present
                     let diffDays = 0;
-                    
+
                     if (monthFilter) {
                       // Calculate days within the selected month
                       const [year, monthNum] = monthFilter.split('-').map(Number);
                       const monthStart = new Date(year, monthNum - 1, 1);
                       const monthEnd = new Date(year, monthNum, 0, 23, 59, 59, 999);
-                      
+
                       // Find the overlap between item period and selected month
                       const effectiveStart = startDate > monthStart ? startDate : monthStart;
                       const effectiveEnd = endDate < monthEnd ? endDate : monthEnd;
-                      
+
                       if (effectiveStart <= effectiveEnd) {
                         const diffTime = Math.abs(effectiveEnd.getTime() - effectiveStart.getTime());
                         diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
@@ -1248,7 +1360,7 @@ export default function ReportingDashboardPage() {
                       const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
                       diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                     }
-                    
+
                     if (item.total_hours && parseFloat(item.total_hours.toString()) > 0) {
                       // If we have timesheet hours, show hours
                       const totalHours = parseFloat(item.total_hours.toString());
@@ -1263,13 +1375,13 @@ export default function ReportingDashboardPage() {
                       durationValue = 0;
                     }
                   }
-                  
+
                   // Calculate total based on unit price, rate type, and timesheet hours
                   // Convert rate to hourly equivalent, then multiply by hours (matches rental service logic)
                   const unitPrice = parseFloat(item.unit_price?.toString() || '0') || 0;
                   const totalHours = parseFloat(item.total_hours?.toString() || '0') || 0;
                   const rateType = item.rate_type || 'daily';
-                  
+
                   let total = 0;
                   if (totalHours > 0) {
                     // Convert rate to hourly equivalent based on rate type
@@ -1288,19 +1400,19 @@ export default function ReportingDashboardPage() {
                     if (item.start_date) {
                       const startDate = new Date(item.start_date);
                       const endDate = item.completed_date ? new Date(item.completed_date) : new Date();
-                      
+
                       let diffDays = 0;
-                      
+
                       if (monthFilter) {
                         // Calculate days within the selected month
                         const [year, monthNum] = monthFilter.split('-').map(Number);
                         const monthStart = new Date(year, monthNum - 1, 1);
                         const monthEnd = new Date(year, monthNum, 0, 23, 59, 59, 999);
-                        
+
                         // Find the overlap between item period and selected month
                         const effectiveStart = startDate > monthStart ? startDate : monthStart;
                         const effectiveEnd = endDate < monthEnd ? endDate : monthEnd;
-                        
+
                         if (effectiveStart <= effectiveEnd) {
                           const diffTime = Math.abs(effectiveEnd.getTime() - effectiveStart.getTime());
                           diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
@@ -1312,7 +1424,7 @@ export default function ReportingDashboardPage() {
                         const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
                         diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
                       }
-                      
+
                       if (diffDays > 0) {
                         if (rateType === 'daily') {
                           total = unitPrice * diffDays;
@@ -1344,16 +1456,16 @@ export default function ReportingDashboardPage() {
                 const sortedItems = [...itemsWithDuration].sort((a: any, b: any) => {
                   const nameA = (a.equipment_name || '').toLowerCase();
                   const nameB = (b.equipment_name || '').toLowerCase();
-                  
+
                   // Try to extract numeric prefix (e.g., "1404-DOZER" -> "1404")
                   const extractNumber = (name: string) => {
                     const match = name.match(/^(\d+)/);
                     return match ? parseInt(match[1]) : null;
                   };
-                  
+
                   const numA = extractNumber(nameA);
                   const numB = extractNumber(nameB);
-                  
+
                   // If both have numeric prefixes, compare numerically
                   if (numA !== null && numB !== null) {
                     if (numA !== numB) {
@@ -1362,11 +1474,11 @@ export default function ReportingDashboardPage() {
                     // If numbers are equal, compare full names
                     return nameA.localeCompare(nameB);
                   }
-                  
+
                   // If one has numeric prefix and the other doesn't, numeric comes first
                   if (numA !== null && numB === null) return -1;
                   if (numA === null && numB !== null) return 1;
-                  
+
                   // Both are non-numeric, sort alphabetically
                   return nameA.localeCompare(nameB);
                 });
@@ -1405,7 +1517,7 @@ export default function ReportingDashboardPage() {
                                 const isChecked = visibleColumns[column.id];
                                 const visibleCount = Object.values(visibleColumns).filter(v => v).length;
                                 const isLastVisible = isChecked && visibleCount === 1;
-                                
+
                                 return (
                                   <div
                                     key={column.id}
@@ -1451,7 +1563,7 @@ export default function ReportingDashboardPage() {
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
-                      
+
                       <div className="overflow-x-auto">
                         <Table>
                           <TableHeader>
@@ -1474,79 +1586,79 @@ export default function ReportingDashboardPage() {
                               )}
                             </TableRow>
                           </TableHeader>
-                        <TableBody>
-                          {showOnlyCompanyName ? (
-                            // Show only unique company names
-                            // When "No Timesheet" filter is active, show all companies that have items without timesheets
-                            (() => {
-                              // Extract unique company names from items
-                              // When hasTimesheetFilter === 'no', the API already filters to only return items without timesheets
-                              // So we just need to show all unique company names from the filtered results
-                              const uniqueCompanies = Array.from(
-                                new Set(
-                                  sortedItems
-                                    .map((item: any) => item.customer_name)
-                                    .filter((name: string) => name)
-                                )
-                              ).sort();
-                              
-                              // If no companies found in items but a specific company is selected with "No Timesheet" filter,
-                              // show that company name
-                              if (uniqueCompanies.length === 0 && hasTimesheetFilter === 'no' && companyFilter !== 'all') {
-                                const selectedCustomer = customersForTimesheet.find(c => c.id.toString() === companyFilter);
-                                if (selectedCustomer) {
-                                  return (
-                                    <TableRow>
-                                      <TableCell className="font-medium">{selectedCustomer.name}</TableCell>
-                                    </TableRow>
-                                  );
+                          <TableBody>
+                            {showOnlyCompanyName ? (
+                              // Show only unique company names
+                              // When "No Timesheet" filter is active, show all companies that have items without timesheets
+                              (() => {
+                                // Extract unique company names from items
+                                // When hasTimesheetFilter === 'no', the API already filters to only return items without timesheets
+                                // So we just need to show all unique company names from the filtered results
+                                const uniqueCompanies = Array.from(
+                                  new Set(
+                                    sortedItems
+                                      .map((item: any) => item.customer_name)
+                                      .filter((name: string) => name)
+                                  )
+                                ).sort();
+
+                                // If no companies found in items but a specific company is selected with "No Timesheet" filter,
+                                // show that company name
+                                if (uniqueCompanies.length === 0 && hasTimesheetFilter === 'no' && companyFilter !== 'all') {
+                                  const selectedCustomer = customersForTimesheet.find(c => c.id.toString() === companyFilter);
+                                  if (selectedCustomer) {
+                                    return (
+                                      <TableRow>
+                                        <TableCell className="font-medium">{selectedCustomer.name}</TableCell>
+                                      </TableRow>
+                                    );
+                                  }
                                 }
-                              }
-                              
-                              return uniqueCompanies.map((companyName: string, index: number) => (
-                                <TableRow key={`company-${index}`}>
-                                  <TableCell className="font-medium">{companyName}</TableCell>
+
+                                return uniqueCompanies.map((companyName: string, index: number) => (
+                                  <TableRow key={`company-${index}`}>
+                                    <TableCell className="font-medium">{companyName}</TableCell>
+                                  </TableRow>
+                                ));
+                              })()
+                            ) : (
+                              sortedItems.map((item: any, itemIndex: number) => (
+                                <TableRow key={`${item.rental_item_id}-${item.rental_id}-${itemIndex}`}>
+                                  {visibleColumns.si && (
+                                    <TableCell className="text-center">{item.serial_number || itemIndex + 1}</TableCell>
+                                  )}
+                                  {visibleColumns.equipment && (
+                                    <TableCell className="font-medium">{item.equipment_name || 'N/A'}</TableCell>
+                                  )}
+                                  {visibleColumns.unitPrice && (
+                                    <TableCell>SAR {Number(item.unit_price || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                  )}
+                                  {visibleColumns.rate && (
+                                    <TableCell>
+                                      <Badge variant="outline">{item.rate_type || 'N/A'}</Badge>
+                                    </TableCell>
+                                  )}
+                                  {visibleColumns.startDate && (
+                                    <TableCell>{item.start_date ? new Date(item.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}</TableCell>
+                                  )}
+                                  {visibleColumns.operator && (
+                                    <TableCell>{item.operator_display || '-'}</TableCell>
+                                  )}
+                                  {visibleColumns.supervisor && (
+                                    <TableCell>{item.supervisor_display || '-'}</TableCell>
+                                  )}
+                                  {visibleColumns.duration && (
+                                    <TableCell>{item.duration}</TableCell>
+                                  )}
+                                  {visibleColumns.total && (
+                                    <TableCell className="font-medium">SAR {Number(item.total || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                  )}
+                                  {visibleColumns.completedDate && (
+                                    <TableCell>{item.completed_date ? new Date(item.completed_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}</TableCell>
+                                  )}
                                 </TableRow>
-                              ));
-                            })()
-                          ) : (
-                            sortedItems.map((item: any, itemIndex: number) => (
-                              <TableRow key={`${item.rental_item_id}-${item.rental_id}-${itemIndex}`}>
-                                {visibleColumns.si && (
-                                  <TableCell className="text-center">{item.serial_number || itemIndex + 1}</TableCell>
-                                )}
-                                {visibleColumns.equipment && (
-                                  <TableCell className="font-medium">{item.equipment_name || 'N/A'}</TableCell>
-                                )}
-                                {visibleColumns.unitPrice && (
-                                  <TableCell>SAR {Number(item.unit_price || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                                )}
-                                {visibleColumns.rate && (
-                                  <TableCell>
-                                    <Badge variant="outline">{item.rate_type || 'N/A'}</Badge>
-                                  </TableCell>
-                                )}
-                                {visibleColumns.startDate && (
-                                  <TableCell>{item.start_date ? new Date(item.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}</TableCell>
-                                )}
-                                {visibleColumns.operator && (
-                                  <TableCell>{item.operator_display || '-'}</TableCell>
-                                )}
-                                {visibleColumns.supervisor && (
-                                  <TableCell>{item.supervisor_display || '-'}</TableCell>
-                                )}
-                                {visibleColumns.duration && (
-                                  <TableCell>{item.duration}</TableCell>
-                                )}
-                                {visibleColumns.total && (
-                                  <TableCell className="font-medium">SAR {Number(item.total || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                                )}
-                                {visibleColumns.completedDate && (
-                                  <TableCell>{item.completed_date ? new Date(item.completed_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}</TableCell>
-                                )}
-                              </TableRow>
-                            ))
-                          )}
+                              ))
+                            )}
                           </TableBody>
                         </Table>
                       </div>
@@ -1628,7 +1740,7 @@ export default function ReportingDashboardPage() {
               );
             }
           }
-          
+
           return (
             <div className="text-center py-8">
               <p className="text-gray-500">No rental timesheet data found.</p>
@@ -1648,45 +1760,45 @@ export default function ReportingDashboardPage() {
                 <h3 className="text-lg font-medium text-gray-900">Advance Details</h3>
               </div>
               <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>SI#</TableHead>
-                        <TableHead>File Number</TableHead>
-                        <TableHead>Employee</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Purpose</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Repaid</TableHead>
-                        <TableHead>Remaining</TableHead>
-                        <TableHead>Created Date</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {data.advance_details.map((advance: any, index: number) => (
-                        <TableRow key={advance.id || index}>
-                          <TableCell>{index + 1}</TableCell>
-                          <TableCell>{advance.employee_file_number || 'N/A'}</TableCell>
-                          <TableCell className="font-medium">{advance.employee_name || 'N/A'}</TableCell>
-                          <TableCell>SAR {Number(advance.amount || 0).toLocaleString()}</TableCell>
-                          <TableCell>{advance.purpose || advance.reason || 'N/A'}</TableCell>
-                          <TableCell>
-                            <Badge 
-                              variant={
-                                advance.status === 'approved' || advance.status === 'paid' ? 'default' :
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>SI#</TableHead>
+                      <TableHead>File Number</TableHead>
+                      <TableHead>Employee</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Purpose</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Repaid</TableHead>
+                      <TableHead>Remaining</TableHead>
+                      <TableHead>Created Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {data.advance_details.map((advance: any, index: number) => (
+                      <TableRow key={advance.id || index}>
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>{advance.employee_file_number || 'N/A'}</TableCell>
+                        <TableCell className="font-medium">{advance.employee_name || 'N/A'}</TableCell>
+                        <TableCell>SAR {Number(advance.amount || 0).toLocaleString()}</TableCell>
+                        <TableCell>{advance.purpose || advance.reason || 'N/A'}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              advance.status === 'approved' || advance.status === 'paid' ? 'default' :
                                 advance.status === 'pending' ? 'secondary' : 'destructive'
-                              }
-                            >
-                              {advance.status || 'N/A'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>SAR {Number(advance.repaid_amount || 0).toLocaleString()}</TableCell>
-                          <TableCell>SAR {Number(advance.remaining_balance || 0).toLocaleString()}</TableCell>
-                          <TableCell>{advance.created_at ? new Date(advance.created_at).toLocaleDateString() : 'N/A'}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                            }
+                          >
+                            {advance.status || 'N/A'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>SAR {Number(advance.repaid_amount || 0).toLocaleString()}</TableCell>
+                        <TableCell>SAR {Number(advance.remaining_balance || 0).toLocaleString()}</TableCell>
+                        <TableCell>{advance.created_at ? new Date(advance.created_at).toLocaleDateString() : 'N/A'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             </div>
           );
@@ -1708,7 +1820,7 @@ export default function ReportingDashboardPage() {
 
   const exportReport = () => {
     if (!reportData) return;
-    
+
     const dataStr = JSON.stringify(reportData.data, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
@@ -1724,13 +1836,13 @@ export default function ReportingDashboardPage() {
   // Print rental timesheet report
   const handlePrintRentalTimesheet = () => {
     if (!reportData || selectedReport !== 'rental_timesheet') return;
-    
+
     const data = reportData.monthly_items || [];
     const formatDate = (date: Date, formatStr: string) => {
       const d = new Date(date);
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-      
+
       if (formatStr === 'MMM dd, yyyy') {
         return `${months[d.getMonth()]} ${String(d.getDate()).padStart(2, '0')}, ${d.getFullYear()}`;
       }
@@ -1781,9 +1893,9 @@ export default function ReportingDashboardPage() {
           <div class="summary">
             <strong>Report Date:</strong> ${formatDate(new Date(), 'MMMM dd, yyyy')}<br/>
             ${companyFilter && companyFilter !== 'all' ? (() => {
-              const selectedCustomer = customersForTimesheet.find(c => c.id.toString() === companyFilter);
-              return selectedCustomer ? `<strong>Company:</strong> ${selectedCustomer.name}<br/>` : '';
-            })() : ''}
+        const selectedCustomer = customersForTimesheet.find(c => c.id.toString() === companyFilter);
+        return selectedCustomer ? `<strong>Company:</strong> ${selectedCustomer.name}<br/>` : '';
+      })() : ''}
             ${monthFilter ? `<strong>Month:</strong> ${formatDate(new Date(`${monthFilter}-01`), 'MMMM yyyy')}<br/>` : ''}
             ${hasTimesheetFilter !== 'all' ? `<strong>Has Timesheet:</strong> ${hasTimesheetFilter === 'yes' ? 'Yes' : 'No'}<br/>` : ''}
           </div>
@@ -1793,7 +1905,7 @@ export default function ReportingDashboardPage() {
     if (data.length === 0 && showOnlyCompanyName && hasTimesheetFilter === 'no' && companyFilter !== 'all') {
       const selectedCustomer = customersForTimesheet.find(c => c.id.toString() === companyFilter);
       if (selectedCustomer) {
-        const monthLabel = monthFilter 
+        const monthLabel = monthFilter
           ? formatDate(new Date(`${monthFilter}-01`), 'MMMM yyyy')
           : 'All Months';
         html += `
@@ -1844,194 +1956,194 @@ export default function ReportingDashboardPage() {
               <tbody>
         `;
 
-      // Sort items by equipment name
-      const sortedItems = [...monthData.items].sort((a: any, b: any) => {
-        const nameA = ((a.equipment_name || '')).toLowerCase();
-        const nameB = ((b.equipment_name || '')).toLowerCase();
-        
-        // Try to extract numeric prefix (e.g., "1404-DOZER" -> "1404")
-        const extractNumber = (name: string) => {
-          const match = name.match(/^(\d+)/);
-          return match ? parseInt(match[1]) : null;
-        };
-        
-        const numA = extractNumber(nameA);
-        const numB = extractNumber(nameB);
-        
-        // If both have numeric prefixes, compare numerically
-        if (numA !== null && numB !== null) {
-          if (numA !== numB) {
-            return numA - numB;
-          }
-          // If numbers are equal, compare full names
-          return nameA.localeCompare(nameB);
-        }
-        
-        // If one has numeric prefix and the other doesn't, numeric comes first
-        if (numA !== null && numB === null) return -1;
-        if (numA === null && numB !== null) return 1;
-        
-        // Both are non-numeric, sort alphabetically
-        return nameA.localeCompare(nameB);
-      });
+        // Sort items by equipment name
+        const sortedItems = [...monthData.items].sort((a: any, b: any) => {
+          const nameA = ((a.equipment_name || '')).toLowerCase();
+          const nameB = ((b.equipment_name || '')).toLowerCase();
 
-      if (showOnlyCompanyName) {
-        // Show only unique company names
-        // When "No Timesheet" filter is active, the API already filters to only return items without timesheets
-        // So we just need to show all unique company names from the filtered results
-        const uniqueCompanies = Array.from(
-          new Set(
-            sortedItems
-              .map((item: any) => item.customer_name)
-              .filter((name: string) => name)
-          )
-        ).sort();
-        
-        // If no companies found in items but a specific company is selected with "No Timesheet" filter,
-        // show that company name
-        if (uniqueCompanies.length === 0 && hasTimesheetFilter === 'no' && companyFilter !== 'all') {
-          const selectedCustomer = customersForTimesheet.find(c => c.id.toString() === companyFilter);
-          if (selectedCustomer) {
-            html += `
+          // Try to extract numeric prefix (e.g., "1404-DOZER" -> "1404")
+          const extractNumber = (name: string) => {
+            const match = name.match(/^(\d+)/);
+            return match ? parseInt(match[1]) : null;
+          };
+
+          const numA = extractNumber(nameA);
+          const numB = extractNumber(nameB);
+
+          // If both have numeric prefixes, compare numerically
+          if (numA !== null && numB !== null) {
+            if (numA !== numB) {
+              return numA - numB;
+            }
+            // If numbers are equal, compare full names
+            return nameA.localeCompare(nameB);
+          }
+
+          // If one has numeric prefix and the other doesn't, numeric comes first
+          if (numA !== null && numB === null) return -1;
+          if (numA === null && numB !== null) return 1;
+
+          // Both are non-numeric, sort alphabetically
+          return nameA.localeCompare(nameB);
+        });
+
+        if (showOnlyCompanyName) {
+          // Show only unique company names
+          // When "No Timesheet" filter is active, the API already filters to only return items without timesheets
+          // So we just need to show all unique company names from the filtered results
+          const uniqueCompanies = Array.from(
+            new Set(
+              sortedItems
+                .map((item: any) => item.customer_name)
+                .filter((name: string) => name)
+            )
+          ).sort();
+
+          // If no companies found in items but a specific company is selected with "No Timesheet" filter,
+          // show that company name
+          if (uniqueCompanies.length === 0 && hasTimesheetFilter === 'no' && companyFilter !== 'all') {
+            const selectedCustomer = customersForTimesheet.find(c => c.id.toString() === companyFilter);
+            if (selectedCustomer) {
+              html += `
               <tr>
                 <td>${selectedCustomer.name}</td>
               </tr>
             `;
-          }
-        } else {
-          uniqueCompanies.forEach((companyName: string) => {
-            html += `
+            }
+          } else {
+            uniqueCompanies.forEach((companyName: string) => {
+              html += `
               <tr>
                 <td>${companyName}</td>
               </tr>
             `;
-          });
-        }
-      } else {
-        sortedItems.forEach((item: any, index: number) => {
-          const equipmentName = item.equipment_name || 'N/A';
-          const unitPrice = parseFloat(item.unit_price || 0) || 0;
-          const rateType = item.rate_type || 'daily';
-          const startDate = item.start_date ? formatDate(new Date(item.start_date), 'MMM dd, yyyy') : 'N/A';
-          const operatorName = item.operator_display || item.operator_name || '-';
-          const supervisorName = item.supervisor_display || item.supervisor_name || '-';
-          
-          // Calculate duration for print view
-          let duration = '-';
-          if (item.start_date) {
-            const itemStartDate = new Date(item.start_date);
-            const itemEndDate = item.completed_date ? new Date(item.completed_date) : new Date();
-            
-            if (monthFilter) {
-              // Calculate days within the selected month
-              const [year, monthNum] = monthFilter.split('-').map(Number);
-              const monthStart = new Date(year, monthNum - 1, 1);
-              const monthEnd = new Date(year, monthNum, 0, 23, 59, 59, 999);
-              
-              // Find the overlap between item period and selected month
-              const effectiveStart = itemStartDate > monthStart ? itemStartDate : monthStart;
-              const effectiveEnd = itemEndDate < monthEnd ? itemEndDate : monthEnd;
-              
-              if (effectiveStart <= effectiveEnd) {
-                const diffTime = Math.abs(effectiveEnd.getTime() - effectiveStart.getTime());
-                const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-                duration = `${diffDays} days`;
-              } else {
-                duration = '0 days';
-              }
-            } else {
-              // No month filter - calculate total days
-              const diffTime = Math.abs(itemEndDate.getTime() - itemStartDate.getTime());
-              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-              duration = `${diffDays} days`;
-            }
+            });
           }
-          
-          // Calculate total for print view
-          let total = 0;
-          const totalHours = parseFloat(item.total_hours?.toString() || '0') || 0;
-          
-          if (totalHours > 0) {
-            // Convert rate to hourly equivalent based on rate type
-            let hourlyRate = unitPrice;
-            if (rateType === 'daily') {
-              hourlyRate = unitPrice / 10; // Daily rate / 10 hours
-            } else if (rateType === 'weekly') {
-              hourlyRate = unitPrice / (7 * 10); // Weekly rate / (7 days * 10 hours)
-            } else if (rateType === 'monthly') {
-              hourlyRate = unitPrice / (30 * 10); // Monthly rate / (30 days * 10 hours)
-            }
-            total = hourlyRate * totalHours;
-          } else {
-            // If no timesheet hours, calculate based on date duration
+        } else {
+          sortedItems.forEach((item: any, index: number) => {
+            const equipmentName = item.equipment_name || 'N/A';
+            const unitPrice = parseFloat(item.unit_price || 0) || 0;
+            const rateType = item.rate_type || 'daily';
+            const startDate = item.start_date ? formatDate(new Date(item.start_date), 'MMM dd, yyyy') : 'N/A';
+            const operatorName = item.operator_display || item.operator_name || '-';
+            const supervisorName = item.supervisor_display || item.supervisor_name || '-';
+
+            // Calculate duration for print view
+            let duration = '-';
             if (item.start_date) {
               const itemStartDate = new Date(item.start_date);
               const itemEndDate = item.completed_date ? new Date(item.completed_date) : new Date();
-              
-              let diffDays = 0;
-              
+
               if (monthFilter) {
                 // Calculate days within the selected month
                 const [year, monthNum] = monthFilter.split('-').map(Number);
                 const monthStart = new Date(year, monthNum - 1, 1);
                 const monthEnd = new Date(year, monthNum, 0, 23, 59, 59, 999);
-                
+
                 // Find the overlap between item period and selected month
                 const effectiveStart = itemStartDate > monthStart ? itemStartDate : monthStart;
                 const effectiveEnd = itemEndDate < monthEnd ? itemEndDate : monthEnd;
-                
+
                 if (effectiveStart <= effectiveEnd) {
                   const diffTime = Math.abs(effectiveEnd.getTime() - effectiveStart.getTime());
-                  diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+                  const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+                  duration = `${diffDays} days`;
                 } else {
-                  diffDays = 0;
+                  duration = '0 days';
                 }
               } else {
                 // No month filter - calculate total days
                 const diffTime = Math.abs(itemEndDate.getTime() - itemStartDate.getTime());
-                diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                duration = `${diffDays} days`;
               }
-              
-              if (diffDays > 0) {
-                if (rateType === 'daily') {
-                  total = unitPrice * diffDays;
-                } else if (rateType === 'hourly') {
-                  total = unitPrice * (diffDays * 10); // Assume 10 hours per day
-                } else if (rateType === 'weekly') {
-                  total = unitPrice * Math.ceil(diffDays / 7);
-                } else if (rateType === 'monthly') {
-                  total = unitPrice * Math.ceil(diffDays / 30);
+            }
+
+            // Calculate total for print view
+            let total = 0;
+            const totalHours = parseFloat(item.total_hours?.toString() || '0') || 0;
+
+            if (totalHours > 0) {
+              // Convert rate to hourly equivalent based on rate type
+              let hourlyRate = unitPrice;
+              if (rateType === 'daily') {
+                hourlyRate = unitPrice / 10; // Daily rate / 10 hours
+              } else if (rateType === 'weekly') {
+                hourlyRate = unitPrice / (7 * 10); // Weekly rate / (7 days * 10 hours)
+              } else if (rateType === 'monthly') {
+                hourlyRate = unitPrice / (30 * 10); // Monthly rate / (30 days * 10 hours)
+              }
+              total = hourlyRate * totalHours;
+            } else {
+              // If no timesheet hours, calculate based on date duration
+              if (item.start_date) {
+                const itemStartDate = new Date(item.start_date);
+                const itemEndDate = item.completed_date ? new Date(item.completed_date) : new Date();
+
+                let diffDays = 0;
+
+                if (monthFilter) {
+                  // Calculate days within the selected month
+                  const [year, monthNum] = monthFilter.split('-').map(Number);
+                  const monthStart = new Date(year, monthNum - 1, 1);
+                  const monthEnd = new Date(year, monthNum, 0, 23, 59, 59, 999);
+
+                  // Find the overlap between item period and selected month
+                  const effectiveStart = itemStartDate > monthStart ? itemStartDate : monthStart;
+                  const effectiveEnd = itemEndDate < monthEnd ? itemEndDate : monthEnd;
+
+                  if (effectiveStart <= effectiveEnd) {
+                    const diffTime = Math.abs(effectiveEnd.getTime() - effectiveStart.getTime());
+                    diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+                  } else {
+                    diffDays = 0;
+                  }
                 } else {
-                  total = unitPrice;
+                  // No month filter - calculate total days
+                  const diffTime = Math.abs(itemEndDate.getTime() - itemStartDate.getTime());
+                  diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+                }
+
+                if (diffDays > 0) {
+                  if (rateType === 'daily') {
+                    total = unitPrice * diffDays;
+                  } else if (rateType === 'hourly') {
+                    total = unitPrice * (diffDays * 10); // Assume 10 hours per day
+                  } else if (rateType === 'weekly') {
+                    total = unitPrice * Math.ceil(diffDays / 7);
+                  } else if (rateType === 'monthly') {
+                    total = unitPrice * Math.ceil(diffDays / 30);
+                  } else {
+                    total = unitPrice;
+                  }
+                } else {
+                  total = 0;
                 }
               } else {
-                total = 0;
+                total = unitPrice;
               }
-            } else {
-              total = unitPrice;
             }
-          }
-          
-          let completedDate = '-';
-          
-          if (item.completed_date) {
-            const completedDateObj = new Date(item.completed_date);
-            const [monthName, yearStr] = monthData.monthLabel.split(' ');
-            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-            const reportMonth = monthNames.indexOf(monthName);
-            const reportYear = parseInt(yearStr);
-            
-            const reportMonthStart = new Date(reportYear, reportMonth, 1);
-            reportMonthStart.setHours(0, 0, 0, 0);
-            const reportMonthEnd = new Date(reportYear, reportMonth + 1, 0);
-            reportMonthEnd.setHours(23, 59, 59, 999);
-            
-            if (completedDateObj >= reportMonthStart && completedDateObj <= reportMonthEnd) {
-              completedDate = formatDate(completedDateObj, 'MMM dd, yyyy');
-            }
-          }
 
-          html += `
+            let completedDate = '-';
+
+            if (item.completed_date) {
+              const completedDateObj = new Date(item.completed_date);
+              const [monthName, yearStr] = monthData.monthLabel.split(' ');
+              const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+              const reportMonth = monthNames.indexOf(monthName);
+              const reportYear = parseInt(yearStr);
+
+              const reportMonthStart = new Date(reportYear, reportMonth, 1);
+              reportMonthStart.setHours(0, 0, 0, 0);
+              const reportMonthEnd = new Date(reportYear, reportMonth + 1, 0);
+              reportMonthEnd.setHours(23, 59, 59, 999);
+
+              if (completedDateObj >= reportMonthStart && completedDateObj <= reportMonthEnd) {
+                completedDate = formatDate(completedDateObj, 'MMM dd, yyyy');
+              }
+            }
+
+            html += `
             <tr>
               ${visibleColumns.si ? `<td class="sl-col">${index + 1}</td>` : ''}
               ${visibleColumns.equipment ? `<td class="equipment-col">${equipmentName}</td>` : ''}
@@ -2045,8 +2157,8 @@ export default function ReportingDashboardPage() {
               ${visibleColumns.completedDate ? `<td class="completed-col">${completedDate}</td>` : ''}
             </tr>
           `;
-        });
-      }
+          });
+        }
 
         html += `
               </tbody>
@@ -2073,15 +2185,15 @@ export default function ReportingDashboardPage() {
   // Download employee advance PDF
   const handleDownloadEmployeeAdvancePDF = async () => {
     if (!reportData || selectedReport !== 'employee_advance') return;
-    
+
     try {
       const loadingToastId = toast.loading('Generating PDF report...');
-      
+
       await EmployeeAdvanceReportPDFService.downloadEmployeeAdvanceReportPDF(
         reportData as unknown as EmployeeAdvanceReportData,
         `employee-advance-report-${new Date().toISOString().split('T')[0]}.pdf`
       );
-      
+
       toast.dismiss(loadingToastId);
       toast.success('PDF report downloaded successfully');
     } catch (error) {
@@ -2090,13 +2202,64 @@ export default function ReportingDashboardPage() {
     }
   };
 
+  // Download leaving report PDF
+  const handleDownloadLeavingReportPDF = async () => {
+    if (!reportData || selectedReport !== 'leaving_report') return;
+
+    try {
+      const loadingToastId = toast.loading(t('reporting.generating_pdf'));
+
+      await LeavingReportPDFService.downloadLeavingReportPDF(
+        {
+          ...reportData,
+          generated_at: reportData.generated_at
+        } as unknown as LeavingReportData,
+        `leaving-report-${new Date().toISOString().split('T')[0]}.pdf`,
+        localeFromParams === 'ar' ? 'ar' : 'en'
+      );
+
+      toast.dismiss(loadingToastId);
+      toast.success(t('reporting.pdf_downloaded_successfully'));
+    } catch (error) {
+      console.error('Error downloading leaving report PDF:', error);
+      toast.dismiss();
+      toast.error(t('reporting.failed_to_download_pdf'));
+    }
+  };
+
+  // Download on leave report PDF
+  const handleDownloadOnLeaveReportPDF = async () => {
+    if (!reportData || selectedReport !== 'on_leave_report') return;
+
+    let loadingToastId;
+    try {
+      loadingToastId = toast.loading('Generating PDF report...');
+
+      await OnLeaveReportPDFService.downloadOnLeaveReportPDF(
+        {
+          ...reportData,
+          generated_at: reportData.generated_at
+        } as unknown as OnLeaveReportData,
+        `employees-on-leave-report-${new Date().toISOString().split('T')[0]}.pdf`,
+        localeFromParams === 'ar' ? 'ar' : 'en'
+      );
+
+      toast.dismiss(loadingToastId);
+      toast.success('PDF report downloaded successfully');
+    } catch (error) {
+      console.error('Error downloading on leave report PDF:', error);
+      if (loadingToastId) toast.dismiss(loadingToastId);
+      toast.error('Failed to download PDF report');
+    }
+  };
+
   // Download rental timesheet PDF
   const handleDownloadRentalTimesheetPDF = async () => {
     if (!reportData || selectedReport !== 'rental_timesheet') return;
-    
+
     try {
       const loadingToastId = toast.loading('Generating PDF report...');
-      
+
       // Build query parameters
       const params = new URLSearchParams();
       if (monthFilter) {
@@ -2108,40 +2271,40 @@ export default function ReportingDashboardPage() {
       if (hasTimesheetFilter !== 'all') {
         params.append('hasTimesheet', hasTimesheetFilter);
       }
-      
+
       // Add visible columns as JSON string
       params.append('visibleColumns', JSON.stringify(visibleColumns));
-      
+
       // Add showOnlyCompanyName flag
       params.append('showOnlyCompanyName', showOnlyCompanyName.toString());
-      
+
       const url = `/api/reports/rental-timesheet/pdf?${params.toString()}`;
       const response = await fetch(url);
-      
+
       if (!response.ok) {
         toast.dismiss(loadingToastId);
         toast.error('Failed to generate PDF');
         return;
       }
-      
+
       // Get the PDF blob
       const blob = await response.blob();
-      
+
       // Create download link
       const downloadUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = downloadUrl;
-      
+
       // Generate filename
       const dateStr = new Date().toISOString().split('T')[0];
       const monthStr = monthFilter ? `_${monthFilter}` : '';
       link.download = `Rental_Timesheet_Report${monthStr}_${dateStr}.pdf`;
-      
+
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(downloadUrl);
-      
+
       toast.dismiss(loadingToastId);
       toast.success('PDF report downloaded successfully');
     } catch (error) {
@@ -2152,11 +2315,11 @@ export default function ReportingDashboardPage() {
 
   const downloadPDFReport = async () => {
     if (!reportData || (selectedReport !== 'equipment_by_category' && selectedReport !== 'supervisor_equipment')) return;
-    
+
     let loadingToastId: string | number | undefined;
     try {
       loadingToastId = toast.loading('Generating PDF report...');
-      
+
       if (selectedReport === 'equipment_by_category') {
         await EquipmentReportPDFService.downloadEquipmentReportPDF(
           reportData as unknown as EquipmentReportData,
@@ -2169,10 +2332,10 @@ export default function ReportingDashboardPage() {
           { isRTL: pdfIsRTL }
         );
       }
-      
+
       // Small delay to ensure PDF generation completes
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
       toast.dismiss(loadingToastId);
       toast.success('PDF report downloaded successfully');
     } catch (error) {
@@ -2186,11 +2349,11 @@ export default function ReportingDashboardPage() {
 
   const downloadExcelReport = async () => {
     if (!reportData || (selectedReport !== 'equipment_by_category' && selectedReport !== 'supervisor_equipment')) return;
-    
+
     let loadingToastId: string | number | undefined;
     try {
       loadingToastId = toast.loading('Generating Excel report...');
-      
+
       if (selectedReport === 'equipment_by_category') {
         await EquipmentReportExcelService.downloadEquipmentReportExcel(
           reportData as unknown as EquipmentReportData,
@@ -2202,10 +2365,10 @@ export default function ReportingDashboardPage() {
           `supervisor-equipment-report-${new Date().toISOString().split('T')[0]}.xlsx`
         );
       }
-      
+
       // Small delay to ensure Excel generation completes
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
       toast.dismiss(loadingToastId);
       toast.success('Excel report downloaded successfully');
     } catch (error) {
@@ -2257,8 +2420,8 @@ export default function ReportingDashboardPage() {
                   </Select>
                 </div>
 
-                {/* Date Range - Hide for rental timesheet and employee advance reports */}
-                {selectedReport !== 'rental_timesheet' && selectedReport !== 'employee_advance' && (
+                {/* Date Range - Hide for rental timesheet, employee advance, and on leave reports */}
+                {selectedReport !== 'rental_timesheet' && selectedReport !== 'employee_advance' && selectedReport !== 'on_leave_report' && (
                   <div className="space-y-2 min-w-[150px]">
                     <Label htmlFor="date-range">{t('reporting.date_range')}</Label>
                     <Select value={dateRange} onValueChange={setDateRange}>
@@ -2275,8 +2438,8 @@ export default function ReportingDashboardPage() {
                   </div>
                 )}
 
-                {/* Department Filter - Hide for rental timesheet and employee advance reports */}
-                {selectedReport !== 'rental_timesheet' && selectedReport !== 'employee_advance' && (
+                {/* Department Filter - Hide for rental timesheet, employee advance, and on leave reports */}
+                {selectedReport !== 'rental_timesheet' && selectedReport !== 'employee_advance' && selectedReport !== 'on_leave_report' && (
                   <div className="space-y-2 min-w-[180px]">
                     <Label htmlFor="department-filter">{t('reporting.department_filter')}</Label>
                     <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
@@ -2297,8 +2460,8 @@ export default function ReportingDashboardPage() {
                 {selectedReport === 'customer_equipment' && (
                   <div className="space-y-2 min-w-[250px]">
                     <Label htmlFor="customer-filter">{t('reporting.select_customer')}</Label>
-                    <Select 
-                      value={customerFilter} 
+                    <Select
+                      value={customerFilter}
                       onValueChange={setCustomerFilter}
                       disabled={loadingCustomers}
                     >
@@ -2324,8 +2487,8 @@ export default function ReportingDashboardPage() {
                 {selectedReport === 'supervisor_equipment' && (
                   <div className="space-y-2 min-w-[250px]">
                     <Label htmlFor="supervisor-filter">Select Supervisor</Label>
-                    <Select 
-                      value={supervisorFilter} 
+                    <Select
+                      value={supervisorFilter}
                       onValueChange={setSupervisorFilter}
                       disabled={loadingSupervisors}
                     >
@@ -2349,8 +2512,8 @@ export default function ReportingDashboardPage() {
                 {selectedReport === 'equipment_by_category' && (
                   <div className="space-y-2 min-w-[200px]">
                     <Label htmlFor="category-filter">Equipment Category</Label>
-                    <Select 
-                      value={categoryFilter} 
+                    <Select
+                      value={categoryFilter}
                       onValueChange={setCategoryFilter}
                       disabled={loadingCategories}
                     >
@@ -2378,8 +2541,8 @@ export default function ReportingDashboardPage() {
                     <Label htmlFor="status-filter">
                       {selectedReport === 'supervisor_equipment' ? 'Item Status' : 'Equipment Status'}
                     </Label>
-                    <Select 
-                      value={statusFilter} 
+                    <Select
+                      value={statusFilter}
                       onValueChange={setStatusFilter}
                       disabled={loading}
                     >
@@ -2409,8 +2572,8 @@ export default function ReportingDashboardPage() {
                 {/* Include Inactive Checkbox - Only show for equipment by category report */}
                 {selectedReport === 'equipment_by_category' && (
                   <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="include-inactive" 
+                    <Checkbox
+                      id="include-inactive"
                       checked={includeInactive}
                       onCheckedChange={(checked) => setIncludeInactive(checked as boolean)}
                     />
@@ -2448,8 +2611,8 @@ export default function ReportingDashboardPage() {
                 {selectedReport === 'rental_timesheet' && (
                   <div className="space-y-2 min-w-[250px]">
                     <Label htmlFor="company-filter">Company</Label>
-                    <Select 
-                      value={companyFilter} 
+                    <Select
+                      value={companyFilter}
                       onValueChange={setCompanyFilter}
                       disabled={loadingCustomersForTimesheet}
                     >
@@ -2473,8 +2636,8 @@ export default function ReportingDashboardPage() {
                 {selectedReport === 'rental_timesheet' && (
                   <div className="space-y-2 min-w-[200px]">
                     <Label htmlFor="has-timesheet-filter">Has Timesheet</Label>
-                    <Select 
-                      value={hasTimesheetFilter} 
+                    <Select
+                      value={hasTimesheetFilter}
                       onValueChange={setHasTimesheetFilter}
                     >
                       <SelectTrigger>
@@ -2505,8 +2668,8 @@ export default function ReportingDashboardPage() {
                 {selectedReport === 'employee_advance' && (
                   <div className="space-y-2 min-w-[150px]">
                     <Label htmlFor="status-filter">Status</Label>
-                    <Select 
-                      value={statusFilter} 
+                    <Select
+                      value={statusFilter}
                       onValueChange={setStatusFilter}
                     >
                       <SelectTrigger>
@@ -2526,8 +2689,8 @@ export default function ReportingDashboardPage() {
                 {/* Show Only Company Name Checkbox - Only show for rental timesheet report */}
                 {selectedReport === 'rental_timesheet' && (
                   <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="show-only-company-name" 
+                    <Checkbox
+                      id="show-only-company-name"
                       checked={showOnlyCompanyName}
                       onCheckedChange={(checked) => setShowOnlyCompanyName(checked as boolean)}
                     />
@@ -2547,17 +2710,17 @@ export default function ReportingDashboardPage() {
                   <>
                     {selectedReport === 'rental_timesheet' ? (
                       <>
-                        <Button 
-                          onClick={handlePrintRentalTimesheet} 
-                          variant="outline" 
+                        <Button
+                          onClick={handlePrintRentalTimesheet}
+                          variant="outline"
                           className="flex items-center gap-2"
                         >
                           <Printer className="h-4 w-4" />
                           Print
                         </Button>
-                        <Button 
-                          onClick={handleDownloadRentalTimesheetPDF} 
-                          variant="outline" 
+                        <Button
+                          onClick={handleDownloadRentalTimesheetPDF}
+                          variant="outline"
                           className="flex items-center gap-2"
                         >
                           <Download className="h-4 w-4" />
@@ -2565,9 +2728,9 @@ export default function ReportingDashboardPage() {
                         </Button>
                       </>
                     ) : selectedReport === 'employee_advance' ? (
-                      <Button 
-                        onClick={handleDownloadEmployeeAdvancePDF} 
-                        variant="outline" 
+                      <Button
+                        onClick={handleDownloadEmployeeAdvancePDF}
+                        variant="outline"
                         className="flex items-center gap-2"
                       >
                         <Download className="h-4 w-4" />
@@ -2575,10 +2738,30 @@ export default function ReportingDashboardPage() {
                       </Button>
                     ) : (
                       <>
-                        <Button onClick={exportReport} variant="outline" className="flex items-center gap-2">
-                          <Download className="h-4 w-4" />
-                          {t('reporting.export_report')}
-                        </Button>
+                        {selectedReport === 'leaving_report' ? (
+                          <Button
+                            onClick={handleDownloadLeavingReportPDF}
+                            variant="outline"
+                            className="flex items-center gap-2"
+                          >
+                            <Download className="h-4 w-4" />
+                            Download PDF
+                          </Button>
+                        ) : selectedReport === 'on_leave_report' ? (
+                          <Button
+                            onClick={handleDownloadOnLeaveReportPDF}
+                            variant="outline"
+                            className="flex items-center gap-2"
+                          >
+                            <Download className="h-4 w-4" />
+                            Download PDF
+                          </Button>
+                        ) : (
+                          <Button onClick={exportReport} variant="outline" className="flex items-center gap-2">
+                            <Download className="h-4 w-4" />
+                            {t('reporting.export_report')}
+                          </Button>
+                        )}
                         {(selectedReport === 'equipment_by_category' || selectedReport === 'supervisor_equipment') && (
                           <>
                             <Button onClick={downloadPDFReport} variant="outline" className="flex items-center gap-2">
