@@ -59,8 +59,8 @@ import { useI18n } from '@/hooks/use-i18n';
 import { PDFGenerator } from '@/lib/utils/pdf-generator';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { ActiveProject, IqamaData, RecentActivity as RecentActivityType, EquipmentData, TimesheetData } from '@/lib/services/dashboard-service';
-import { 
-  SectionControlsPermission, 
+import {
+  SectionControlsPermission,
   ExportReportsPermission,
   ManualAssignmentsPermission,
   IqamaPermission,
@@ -188,10 +188,10 @@ export default function DashboardPage() {
         try {
           // Check cache first - getUserAccessibleSectionsClient now handles caching internally
           const accessibleSections = await getUserAccessibleSectionsClient(session.user.id);
-          
+
           // Get saved preferences from localStorage - default to true for first-time users
           let savedVisibility: Partial<typeof sectionVisibility> = {};
-          
+
           if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('dashboard-section-visibility');
             if (saved) {
@@ -203,7 +203,7 @@ export default function DashboardPage() {
               }
             }
           }
-          
+
           // Combine permissions with saved preferences
           // If user has permission, show section by default unless explicitly hidden in saved preferences
           // If no saved preferences, default to showing all sections user has permission for
@@ -221,7 +221,7 @@ export default function DashboardPage() {
             employeeAdvance: (!hasPermissions || accessibleSections.includes('employeeAdvance')) && (savedVisibility.employeeAdvance !== false),
             myTeam: (!hasPermissions || accessibleSections.includes('myTeam')) && (savedVisibility.myTeam !== false),
           };
-          
+
 
           setAccessibleSections(accessibleSections);
           setSectionVisibility(newVisibility);
@@ -245,7 +245,7 @@ export default function DashboardPage() {
           setSectionsLoaded(true);
         }
       };
-      
+
       loadUserSections();
     }
   }, [session?.user?.id, sectionsLoaded]);
@@ -254,7 +254,7 @@ export default function DashboardPage() {
   useEffect(() => {
     // Initialize current time on mount to prevent hydration mismatch
     setCurrentTime(new Date());
-    
+
     const interval = setInterval(() => {
       setCurrentTime(new Date());
     }, 60000);
@@ -390,10 +390,10 @@ export default function DashboardPage() {
 
   const memoizedFetchActivityData = useCallback(async () => {
     try {
-      const response = await fetch('/api/dashboard/activity?limit=10000');
+      const response = await fetch('/api/dashboard/activity?limit=10');
       if (response.ok) {
         const data = await response.json();
-        setActivities(data.activities || []);
+        setActivities(data.recentActivity || []);
       }
     } catch (error) {
       // Handle error silently for production
@@ -418,7 +418,7 @@ export default function DashboardPage() {
       if (showLoading) {
         setLoading(true);
       }
-      
+
       // Fetch all data in parallel for better performance
       await Promise.all([
         memoizedFetchDashboardStats(),
@@ -434,7 +434,7 @@ export default function DashboardPage() {
       // Show user-friendly message for any error
       setApprovalSuccess('Dashboard loaded with basic data. Some sections may be limited.');
       setTimeout(() => setApprovalSuccess(null), 5000);
-      
+
       // Set default stats to prevent null errors
       setStats({
         totalEmployees: 0,
@@ -513,13 +513,18 @@ export default function DashboardPage() {
       if (!stats.totalEmployees && !stats.totalProjects && !stats.totalEquipment) {
         fetchDashboardData();
       }
-      
+
       // If equipment section is visible, fetch equipment data immediately
       if (sectionVisibility.equipment && equipmentData.length === 0) {
         fetchEquipmentData();
       }
+
+      // If recent activity section is visible, fetch activity data immediately
+      if (sectionVisibility.recentActivity && activities.length === 0) {
+        fetchActivityData();
+      }
     }
-  }, [session, sectionVisibility.equipment]);
+  }, [session, sectionVisibility.equipment, sectionVisibility.recentActivity]);
 
 
 
@@ -527,7 +532,7 @@ export default function DashboardPage() {
   // This prevents unnecessary refetches when page is already loaded
   useEffect(() => {
     if (!session) return;
-    
+
     const interval = setInterval(() => {
       // Only refresh if data exists (already loaded) and sections are visible
       // This prevents fetching on initial load - initial load is handled separately
@@ -547,7 +552,7 @@ export default function DashboardPage() {
         fetchProjectData();
       }
     }, 30000); // Refresh every 30 seconds
-    
+
     return () => clearInterval(interval);
   }, [session, sectionVisibility, iqamaData.length, timesheetData.length, activities.length, equipmentData.length, projectData.length]);
 
@@ -659,7 +664,7 @@ export default function DashboardPage() {
       }
     } catch (error) {
       // Handle error silently for production
-              setApprovalSuccess(`Error: ${error instanceof Error ? error.message : t('dashboard.failedToUpdateEquipment')}`);
+      setApprovalSuccess(`Error: ${error instanceof Error ? error.message : t('dashboard.failedToUpdateEquipment')}`);
       setTimeout(() => setApprovalSuccess(null), 5000);
     } finally {
       setUpdatingEquipment(false);
@@ -829,12 +834,12 @@ export default function DashboardPage() {
   const handleDownloadCombinedExpiredPDF = async () => {
     const expiredIqamaData = iqamaData.filter(item => item.status === 'expired');
     const expiredEquipmentData = equipmentData.filter(item => item.status === 'expired');
-    
+
     if (expiredIqamaData.length === 0 && expiredEquipmentData.length === 0) {
       alert(t('dashboard.noExpiredDocumentsFound'));
       return;
     }
-    
+
     try {
       // Convert API data to PDFGenerator format (handle nullable fields)
       const pdfIqamaData = expiredIqamaData.map(item => ({
@@ -846,14 +851,14 @@ export default function DashboardPage() {
         location: item.location || 'N/A',
         expiryDate: item.expiryDate || 'N/A',
       }));
-      
+
       const pdfEquipmentData = expiredEquipmentData.map(item => ({
         ...item,
         equipmentNumber: item.equipmentNumber || 'N/A',
         istimara: 'N/A', // EquipmentData doesn't have istimara property
         istimaraExpiry: item.istimaraExpiry || 'N/A',
       }));
-      
+
       await PDFGenerator.generateCombinedExpiredReport(pdfIqamaData, pdfEquipmentData);
     } catch (error) {
       // Handle error silently for production
@@ -865,7 +870,7 @@ export default function DashboardPage() {
   if (!session) {
     // Use default spinner color when session is not available
     const spinnerColorClass = getRoleColorByRoleName('USER', null, 'spinner');
-    
+
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -909,29 +914,31 @@ export default function DashboardPage() {
                     </span>
                   ) : (
                     t('dashboard.sectionsVisible', {
-                      visible: Object.values(sectionVisibility).filter(visible => visible).length,
-                      total: Object.keys(sectionVisibility).length,
+                      visible: String(Object.values(sectionVisibility).filter(visible => visible).length),
+                      total: String(Object.keys(sectionVisibility).length),
                     })
                   )}
                 </div>
               </div>
               <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                 <ExportReportsPermission>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDownloadCombinedExpiredPDF}
-                  disabled={
-                    iqamaData.filter(item => item.status === 'expired').length === 0 &&
-                    equipmentData.filter(item => item.status === 'expired').length === 0
-                  }
-                  className="flex items-center gap-2 text-xs sm:text-sm"
-                  title={t('dashboard.downloadAllExpiredPdfTitle', { count: iqamaData.filter(item => item.status === 'expired').length + equipmentData.filter(item => item.status === 'expired').length })}
-                >
-                  <Download className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">{t('dashboard.downloadAllExpiredPdf', { count: iqamaData.filter(item => item.status === 'expired').length + equipmentData.filter(item => item.status === 'expired').length })}</span>
-                  <span className="sm:hidden">{t('dashboard.downloadAllExpiredPdf', { count: iqamaData.filter(item => item.status === 'expired').length + equipmentData.filter(item => item.status === 'expired').length }).split(' ')[0]}</span>
-                </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadCombinedExpiredPDF}
+                    disabled={
+                      iqamaData.filter(item => item.status === 'expired').length === 0 &&
+                      equipmentData.filter(item => item.status === 'expired').length === 0
+                    }
+                    className="flex items-center gap-2 text-xs sm:text-sm"
+                    title={t('dashboard.downloadAllExpiredPdfTitle', {
+                      count: String(iqamaData.filter(item => item.status === 'expired').length + equipmentData.filter(item => item.status === 'expired').length)
+                    })}
+                  >
+                    <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">{t('dashboard.downloadAllExpiredPdf', { count: String(iqamaData.filter(item => item.status === 'expired').length + equipmentData.filter(item => item.status === 'expired').length) })}</span>
+                    <span className="sm:hidden">{t('dashboard.downloadAllExpiredPdf', { count: String(iqamaData.filter(item => item.status === 'expired').length + equipmentData.filter(item => item.status === 'expired').length) }).split(' ')[0]}</span>
+                  </Button>
                 </ExportReportsPermission>
                 <Button
                   variant="outline"
@@ -1008,227 +1015,247 @@ export default function DashboardPage() {
 
           {/* My Team Section */}
           {sectionVisibility.myTeam && (
-            <MyTeamSection onHideSection={() => toggleSection('myTeam')} />
+            <div className="animate-slide-in" style={{ animationDelay: '100ms' }}>
+              <MyTeamSection onHideSection={() => toggleSection('myTeam')} />
+            </div>
           )}
 
           {/* Manual Assignments Section */}
           {sectionVisibility.manualAssignments && (
-            <ManualAssignmentsPermission>
-              <ManualAssignmentSection 
-                employeeId={session?.user?.id ? parseInt(session.user.id) : 0}
-                onHideSection={() => toggleSection('manualAssignments')}
-                allowAllEmployees={true}
-              />
-            </ManualAssignmentsPermission>
+            <div className="animate-slide-in" style={{ animationDelay: '200ms' }}>
+              <ManualAssignmentsPermission>
+                <ManualAssignmentSection
+                  employeeId={session?.user?.id ? parseInt(session.user.id) : 0}
+                  onHideSection={() => toggleSection('manualAssignments')}
+                  allowAllEmployees={true}
+                />
+              </ManualAssignmentsPermission>
+            </div>
           )}
 
           {/* Today's Attendance (Timesheets) Section */}
           {sectionVisibility.timesheets && (
-            <TimesheetsPermission>
-              <TimesheetsSection
-                timesheetData={timesheetData}
-                currentTime={currentTime}
-                session={session}
-                onApproveTimesheet={handleApproveTimesheet}
-                onRejectTimesheet={handleRejectTimesheet}
-                onMarkAbsent={handleMarkAbsent}
-                onEditHours={handleEditHours}
-                approvalSuccess={approvalSuccess}
-                approvingTimesheet={approvingTimesheet}
-                rejectingTimesheet={rejectingTimesheet}
-                markingAbsent={markingAbsent}
-                isRefreshing={refreshingTimesheets}
-                onHideSection={() => toggleSection('timesheets')}
-              />
-            </TimesheetsPermission>
+            <div className="animate-slide-in" style={{ animationDelay: '300ms' }}>
+              <TimesheetsPermission>
+                <TimesheetsSection
+                  timesheetData={timesheetData}
+                  currentTime={currentTime}
+                  session={session}
+                  onApproveTimesheet={handleApproveTimesheet}
+                  onRejectTimesheet={handleRejectTimesheet}
+                  onMarkAbsent={handleMarkAbsent}
+                  onEditHours={handleEditHours}
+                  approvalSuccess={approvalSuccess}
+                  approvingTimesheet={approvingTimesheet}
+                  rejectingTimesheet={rejectingTimesheet}
+                  markingAbsent={markingAbsent}
+                  isRefreshing={refreshingTimesheets}
+                  onHideSection={() => toggleSection('timesheets')}
+                />
+              </TimesheetsPermission>
+            </div>
           )}
 
           {/* Unified Iqama Section */}
           {sectionVisibility.iqama && (
-            <IqamaPermission>
-              <IqamaSection
-                iqamaData={iqamaData}
-                onUpdateIqama={handleOpenIqamaModal}
-                onHideSection={() => {
-                  toggleSection('iqama');
-                }}
-                selectedDocumentType={selectedDocumentType}
-                onDocumentTypeChange={setSelectedDocumentType}
-              />
-            </IqamaPermission>
+            <div className="animate-slide-in" style={{ animationDelay: '400ms' }}>
+              <IqamaPermission>
+                <IqamaSection
+                  iqamaData={iqamaData}
+                  onUpdateIqama={handleOpenIqamaModal}
+                  onHideSection={() => {
+                    toggleSection('iqama');
+                  }}
+                  selectedDocumentType={selectedDocumentType}
+                  onDocumentTypeChange={setSelectedDocumentType}
+                />
+              </IqamaPermission>
+            </div>
           )}
-          
-
 
           {/* Employee Advances & Repayments Section */}
           {sectionVisibility.employeeAdvance && (
-            <EmployeeAdvancePermission>
-              <EmployeeAdvanceSection onHideSection={() => toggleSection('employeeAdvance')} />
-            </EmployeeAdvancePermission>
+            <div className="animate-slide-in" style={{ animationDelay: '500ms' }}>
+              <EmployeeAdvancePermission>
+                <EmployeeAdvanceSection onHideSection={() => toggleSection('employeeAdvance')} />
+              </EmployeeAdvancePermission>
+            </div>
           )}
 
           {/* Equipment Section */}
           {sectionVisibility.equipment && (
-            <EquipmentPermission>
-              <EquipmentSection
-                equipmentData={equipmentData as any}
-                onUpdateEquipment={handleOpenEquipmentUpdateModal as any}
-                onHideSection={() => toggleSection('equipment')}
-                selectedDocumentType={selectedEquipmentDocumentType}
-                onDocumentTypeChange={setSelectedEquipmentDocumentType}
-              />
-            </EquipmentPermission>
+            <div className="animate-slide-in" style={{ animationDelay: '600ms' }}>
+              <EquipmentPermission>
+                <EquipmentSection
+                  equipmentData={equipmentData as any}
+                  onUpdateEquipment={handleOpenEquipmentUpdateModal as any}
+                  onHideSection={() => toggleSection('equipment')}
+                  selectedDocumentType={selectedEquipmentDocumentType}
+                  onDocumentTypeChange={setSelectedEquipmentDocumentType}
+                />
+              </EquipmentPermission>
+            </div>
           )}
 
           {/* Financial Overview Section */}
           {sectionVisibility.financial && (
-            <FinancialPermission>
-              <FinancialOverviewSection onHideSection={() => toggleSection('financial')} />
-            </FinancialPermission>
+            <div className="animate-slide-in" style={{ animationDelay: '700ms' }}>
+              <FinancialPermission>
+                <FinancialOverviewSection onHideSection={() => toggleSection('financial')} />
+              </FinancialPermission>
+            </div>
           )}
 
           {/* Project Overview Section */}
           {sectionVisibility.projectOverview && (
-            <ProjectOverviewPermission>
-              <ProjectOverviewSection
-                projectData={projectData}
-                onUpdateProject={handleOpenProjectModal}
-                onHideSection={() => toggleSection('projectOverview')}
-                isLoading={loading && projectData.length === 0}
-              />
-            </ProjectOverviewPermission>
+            <div className="animate-slide-in" style={{ animationDelay: '800ms' }}>
+              <ProjectOverviewPermission>
+                <ProjectOverviewSection
+                  projectData={projectData}
+                  onUpdateProject={handleOpenProjectModal}
+                  onHideSection={() => toggleSection('projectOverview')}
+                  isLoading={loading && projectData.length === 0}
+                />
+              </ProjectOverviewPermission>
+            </div>
           )}
 
           {/* Quick Actions */}
           {sectionVisibility.quickActions && (
-            <QuickActionsPermission>
-              <QuickActions onHideSection={() => toggleSection('quickActions')} />
-            </QuickActionsPermission>
+            <div className="animate-slide-in" style={{ animationDelay: '900ms' }}>
+              <QuickActionsPermission>
+                <QuickActions onHideSection={() => toggleSection('quickActions')} />
+              </QuickActionsPermission>
+            </div>
           )}
 
           {/* Recent Activity - Last Section */}
           {sectionVisibility.recentActivity && (
-            <RecentActivityPermission>
-              <RecentActivity
-                activities={activities}
-                onHideSection={() => toggleSection('recentActivity')}
-                currentUser={session?.user?.name || t('dashboard.unknownUser')}
-                onRefresh={fetchActivityData}
-              />
-            </RecentActivityPermission>
+            <div className="animate-slide-in" style={{ animationDelay: '1000ms' }}>
+              <RecentActivityPermission>
+                <RecentActivity
+                  activities={activities}
+                  onHideSection={() => toggleSection('recentActivity')}
+                  currentUser={session?.user?.name || t('dashboard.unknownUser')}
+                  onRefresh={fetchActivityData}
+                />
+              </RecentActivityPermission>
+            </div>
           )}
 
           {/* Hidden Sections Summary */}
           {Object.values(sectionVisibility).some(visible => !visible) && (
-            <SectionControlsPermission>
-              <div className="p-3 sm:p-4 rounded-lg border bg-muted/50">
-                <div className="flex items-center justify-between mb-2 sm:mb-3">
-                  <h3 className="text-base sm:text-lg font-semibold">{t('dashboard.hiddenSections')}</h3>
+            <div className="animate-slide-in" style={{ animationDelay: '1100ms' }}>
+              <SectionControlsPermission>
+                <div className="p-3 sm:p-4 rounded-lg border bg-muted/50 glass">
+                  <div className="flex items-center justify-between mb-2 sm:mb-3">
+                    <h3 className="text-base sm:text-lg font-semibold">{t('dashboard.hiddenSections')}</h3>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {!sectionVisibility.iqama && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleSection('iqama')}
+                        className="flex items-center gap-2 text-xs sm:text-sm"
+                      >
+                        {t('dashboard.showIqamaSection')}
+                      </Button>
+                    )}
+                    {!sectionVisibility.equipment && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleSection('equipment')}
+                        className="flex items-center gap-2 text-xs sm:text-sm"
+                      >
+                        {t('dashboard.showEquipmentSection')}
+                      </Button>
+                    )}
+                    {!sectionVisibility.financial && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleSection('financial')}
+                        className="flex items-center gap-2 text-xs sm:text-sm"
+                      >
+                        {t('dashboard.showFinancialSection')}
+                      </Button>
+                    )}
+                    {!sectionVisibility.timesheets && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleSection('timesheets')}
+                        className="flex items-center gap-2 text-xs sm:text-sm"
+                      >
+                        {t('dashboard.showTimesheetsSection')}
+                      </Button>
+                    )}
+                    {!sectionVisibility.projectOverview && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleSection('projectOverview')}
+                        className="flex items-center gap-2 text-xs sm:text-sm"
+                      >
+                        {t('dashboard.showProjectOverviewSection')}
+                      </Button>
+                    )}
+                    {!sectionVisibility.manualAssignments && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleSection('manualAssignments')}
+                        className="flex items-center gap-2 text-xs sm:text-sm"
+                      >
+                        {t('dashboard.showManualAssignments')}
+                      </Button>
+                    )}
+                    {!sectionVisibility.quickActions && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleSection('quickActions')}
+                        className="flex items-center gap-2 text-xs sm:text-sm"
+                      >
+                        {t('dashboard.showQuickActions')}
+                      </Button>
+                    )}
+                    {!sectionVisibility.recentActivity && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleSection('recentActivity')}
+                        className="flex items-center gap-2 text-xs sm:text-sm"
+                      >
+                        {t('dashboard.showRecentActivity')}
+                      </Button>
+                    )}
+                    {!sectionVisibility.employeeAdvance && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleSection('employeeAdvance')}
+                        className="flex items-center gap-2 text-xs sm:text-sm"
+                      >
+                        {t('dashboard.showEmployeeAdvanceSection')}
+                      </Button>
+                    )}
+                    {!sectionVisibility.myTeam && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleSection('myTeam')}
+                        className="flex items-center gap-2 text-xs sm:text-sm"
+                      >
+                        {t('dashboard.showMyTeamSection')}
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {!sectionVisibility.iqama && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleSection('iqama')}
-                      className="flex items-center gap-2 text-xs sm:text-sm"
-                    >
-                      {t('dashboard.showIqamaSection')}
-                    </Button>
-                  )}
-                  {!sectionVisibility.equipment && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleSection('equipment')}
-                      className="flex items-center gap-2 text-xs sm:text-sm"
-                    >
-                      {t('dashboard.showEquipmentSection')}
-                    </Button>
-                  )}
-                  {!sectionVisibility.financial && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleSection('financial')}
-                      className="flex items-center gap-2 text-xs sm:text-sm"
-                    >
-                      {t('dashboard.showFinancialSection')}
-                    </Button>
-                  )}
-                  {!sectionVisibility.timesheets && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleSection('timesheets')}
-                      className="flex items-center gap-2 text-xs sm:text-sm"
-                    >
-                      {t('dashboard.showTimesheetsSection')}
-                    </Button>
-                  )}
-                  {!sectionVisibility.projectOverview && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleSection('projectOverview')}
-                      className="flex items-center gap-2 text-xs sm:text-sm"
-                    >
-                      {t('dashboard.showProjectOverviewSection')}
-                    </Button>
-                  )}
-                  {!sectionVisibility.manualAssignments && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleSection('manualAssignments')}
-                      className="flex items-center gap-2 text-xs sm:text-sm"
-                    >
-                      {t('dashboard.showManualAssignments')}
-                    </Button>
-                  )}
-                  {!sectionVisibility.quickActions && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleSection('quickActions')}
-                      className="flex items-center gap-2 text-xs sm:text-sm"
-                    >
-                      {t('dashboard.showQuickActions')}
-                    </Button>
-                  )}
-                  {!sectionVisibility.recentActivity && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleSection('recentActivity')}
-                      className="flex items-center gap-2 text-xs sm:text-sm"
-                    >
-                      {t('dashboard.showRecentActivity')}
-                    </Button>
-                  )}
-                  {!sectionVisibility.employeeAdvance && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleSection('employeeAdvance')}
-                      className="flex items-center gap-2 text-xs sm:text-sm"
-                    >
-                      {t('dashboard.showEmployeeAdvanceSection')}
-                    </Button>
-                  )}
-                  {!sectionVisibility.myTeam && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleSection('myTeam')}
-                      className="flex items-center gap-2 text-xs sm:text-sm"
-                    >
-                      {t('dashboard.showMyTeamSection')}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </SectionControlsPermission>
+              </SectionControlsPermission>
+            </div>
           )}
         </div>
 

@@ -2,11 +2,11 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 
-const inter = Inter({ 
+const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-inter',
-}); 
+});
 
 // Force dynamic rendering to prevent SSR issues with authentication
 export const dynamic = 'force-dynamic';
@@ -22,6 +22,8 @@ export const viewport = {
   maximumScale: 5,
   userScalable: true,
 };
+
+import ErrorBoundary from '@/components/error-boundary';
 
 export default function RootLayout({
   children,
@@ -71,7 +73,9 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans antialiased touch-pan-y" suppressHydrationWarning>
-        {children}
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
       </body>
     </html>
   );

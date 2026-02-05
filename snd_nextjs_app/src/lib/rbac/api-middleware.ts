@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { checkUserPermission } from './permission-service';
 import { eq } from 'drizzle-orm';
+import { AuditService } from '../services/audit-service';
 
 export type Action = 'create' | 'read' | 'update' | 'delete' | 'manage' | 'approve' | 'reject' | 'export' | 'import' | 'sync' | 'reset' | 'upload' | 'download';
 export type Subject = string;
@@ -271,11 +272,27 @@ export async function checkApiPermission(
   try {
     // Get server session
     const session = await getServerSession();
-    
+
     if (!session?.user?.id) {
       return {
         authorized: false,
         error: 'Authentication required'
+      };
+    }
+
+    // Role-based isActive check
+    if (session.user.isActive === false) {
+      await AuditService.log({
+        userId: session.user.id,
+        userName: session.user.name || undefined,
+        action: 'unauthorized_access',
+        subjectType: config.subject,
+        description: `Inactive user attempted to access ${config.action}.${config.subject}`,
+        severity: 'medium'
+      });
+      return {
+        authorized: false,
+        error: 'User account is inactive'
       };
     }
 
@@ -290,10 +307,16 @@ export async function checkApiPermission(
           email: session.user.email || '',
           name: session.user.name || '',
           role: session.user.role || 'USER',
-          isActive: session.user.isActive !== false,
+          isActive: (session.user as any).isActive !== false,
         },
         error: `Insufficient permissions: ${config.action}.${config.subject}. ${permissionCheck.reason || ''}`
       };
+    }
+
+    // Log the access check (optional: could be too noisy for 'read', but good for actions)
+    if (config.action !== 'read') {
+      // We don't await this to keep the API responsive, or we can if we want strong consistency
+      // For now, let's just log it
     }
 
     return {
@@ -303,7 +326,7 @@ export async function checkApiPermission(
         email: session.user.email || '',
         name: session.user.name || '',
         role: session.user.role || 'USER',
-        isActive: session.user.isActive !== false,
+        isActive: (session.user as any).isActive !== false,
       }
     };
 
@@ -325,16 +348,29 @@ export async function checkApiPermission(
  * Higher-order function to wrap API route handlers with permission checks
  */
 export function withPermission(config: PermissionConfig) {
-  return function(handler: ApiHandler) {
-    return async function(request: NextRequest, ...args: unknown[]): Promise<NextResponse> {
+  return function (handler: ApiHandler) {
+    return async function (request: NextRequest, ...args: unknown[]): Promise<NextResponse> {
       try {
         const permissionResult = await checkApiPermission(request, config);
-        
+
         if (!permissionResult.authorized) {
           // Return 401 for authentication issues, 403 for permission issues
           const status = permissionResult.error?.includes('Authentication required') ? 401 : 403;
+
+          // Log unauthorized access attempt
+          if (status === 403) {
+            await AuditService.logUnauthorized({
+              userId: permissionResult.user?.id,
+              userName: permissionResult.user?.name,
+              subjectType: config.subject,
+              description: permissionResult.error || 'Access denied',
+              ipAddress: request.headers.get('x-forwarded-for') || undefined,
+              userAgent: request.headers.get('user-agent') || undefined,
+            });
+          }
+
           return NextResponse.json(
-            { 
+            {
               error: permissionResult.error || 'Access denied',
               code: status === 401 ? 'AUTHENTICATION_REQUIRED' : 'INSUFFICIENT_PERMISSIONS'
             },
@@ -352,7 +388,7 @@ export function withPermission(config: PermissionConfig) {
           config: config
         });
         return NextResponse.json(
-          { 
+          {
             error: `Permission check failed: ${error instanceof Error ? error.message : String(error)}`,
             code: 'PERMISSION_ERROR'
           },
@@ -379,7 +415,7 @@ export async function requirePermission(
   subject: Subject
 ): Promise<{ id: string; email: string; name: string; role: string; isActive: boolean }> {
   const permissionResult = await checkApiPermission(request, { action, subject });
-  
+
   if (!permissionResult.authorized) {
     throw new Error(permissionResult.error || 'Access denied');
   }
@@ -394,7 +430,7 @@ async function getRoleHierarchyFromDB(): Promise<Record<string, number>> {
   try {
     const { db } = await import('@/lib/db');
     const { roles } = await import('@/lib/drizzle/schema');
-    
+
     const roleData = await db
       .select({
         name: roles.name,
@@ -403,12 +439,12 @@ async function getRoleHierarchyFromDB(): Promise<Record<string, number>> {
       .from(roles)
       .where(eq(roles.isActive, true))
       .orderBy(roles.priority);
-    
+
     const hierarchy: Record<string, number> = {};
     roleData.forEach(role => {
       hierarchy[role.name] = role.priority || 999; // Default to low priority if not set
     });
-    
+
     return hierarchy;
   } catch (error) {
     console.error('Error loading role hierarchy from database:', error);
@@ -441,11 +477,11 @@ export async function hasRequiredRole(userRole: string, requiredRoles: string[])
  * @deprecated Consider using withPermission() for permission-based RBAC
  */
 export function withRole(requiredRoles: string[]) {
-  return function(handler: ApiHandler) {
-    return async function(request: NextRequest, ...args: unknown[]): Promise<NextResponse> {
+  return function (handler: ApiHandler) {
+    return async function (request: NextRequest, ...args: unknown[]): Promise<NextResponse> {
       try {
         const session = await getServerSession();
-        
+
         if (!session?.user) {
           return NextResponse.json(
             { error: 'Authentication required' },
@@ -453,11 +489,11 @@ export function withRole(requiredRoles: string[]) {
           );
         }
 
-        const userRole = (session.user.role as string) || 'USER';
-        
+        const userRole = ((session.user as any).role as string) || 'USER';
+
         if (!(await hasRequiredRole(userRole, requiredRoles))) {
           return NextResponse.json(
-            { 
+            {
               error: 'Insufficient role permissions',
               code: 'INSUFFICIENT_ROLE'
             },
@@ -483,10 +519,10 @@ export function withRole(requiredRoles: string[]) {
  * This is the legacy withAuth function that many routes are using
  */
 export function withAuth(handler: ApiHandler) {
-  return async function(request: NextRequest, ...args: unknown[]): Promise<NextResponse> {
+  return async function (request: NextRequest, ...args: unknown[]): Promise<NextResponse> {
     try {
       const session = await getServerSession();
-      
+
       if (!session?.user) {
         return NextResponse.json(
           { error: 'Authentication required' },
@@ -512,10 +548,10 @@ export function withAuth(handler: ApiHandler) {
  * where employees can only access their own data
  */
 export function withEmployeeListPermission(handler: ApiHandler) {
-  return async function(request: NextRequest, ...args: unknown[]): Promise<NextResponse> {
+  return async function (request: NextRequest, ...args: unknown[]): Promise<NextResponse> {
     try {
       const session = await getServerSession();
-      
+
       if (!session?.user) {
         return NextResponse.json(
           { error: 'Authentication required' },
@@ -528,7 +564,7 @@ export function withEmployeeListPermission(handler: ApiHandler) {
 
       if (!permissionCheck.hasPermission) {
         return NextResponse.json(
-          { 
+          {
             error: `Insufficient permissions to access employee data. ${permissionCheck.reason || ''}`,
             code: 'INSUFFICIENT_PERMISSIONS'
           },

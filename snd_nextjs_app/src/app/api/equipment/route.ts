@@ -18,6 +18,8 @@ import { alias } from 'drizzle-orm/pg-core';
 import { NextRequest, NextResponse } from 'next/server';
 import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
 import { autoExtractDoorNumber } from '@/lib/utils/equipment-utils';
+import { AuditService } from '@/lib/services/audit-service';
+import { getServerSession } from '@/lib/auth';
 
 // GET /api/equipment - List equipment with assignments
 const getEquipmentHandler = async (request: NextRequest) => {
@@ -30,12 +32,12 @@ const getEquipmentHandler = async (request: NextRequest) => {
     const status = url.searchParams.get('status') || '';
     const type = url.searchParams.get('type') || '';
     const category = url.searchParams.get('category') || '';
-    
+
     const offset = (page - 1) * limit;
-    
+
     // Generate cache key for equipment list with parameters
     const cacheKey = generateCacheKey('equipment', 'list', { page, limit, search, status, type, category });
-    
+
     try {
       return await cacheQueryResult(
         cacheKey,
@@ -69,7 +71,8 @@ const getEquipmentHandler = async (request: NextRequest) => {
               assigned_to: equipmentTable.assignedTo,
               status: equipmentTable.status, // Include status field from database
             })
-            .from(equipmentTable);
+            .from(equipmentTable)
+            .$dynamic();
 
           // Add search filter if provided
           if (search) {
@@ -103,7 +106,8 @@ const getEquipmentHandler = async (request: NextRequest) => {
           // Get total count for pagination
           let countQuery = db
             .select({ count: sql<number>`count(*)` })
-            .from(equipmentTable);
+            .from(equipmentTable)
+            .$dynamic();
 
           if (search) {
             countQuery = countQuery.where(
@@ -128,7 +132,7 @@ const getEquipmentHandler = async (request: NextRequest) => {
           try {
             // Get equipment IDs for filtering assignments
             const equipmentIds = equipment.map(e => e.id);
-            
+
             if (equipmentIds.length === 0) {
               // No equipment, return empty arrays
               return NextResponse.json({
@@ -147,7 +151,7 @@ const getEquipmentHandler = async (request: NextRequest) => {
             // Create aliases for employees to handle both rentalItems operator and equipmentRentalHistory employee
             const rentalOperator = alias(employees, 'rental_operator');
             const rentalHistoryEmployee = alias(employees, 'rental_history_employee');
-            
+
             const [rawRentalAssignments, rawProjectAssignments, maintenanceRecords] = await Promise.all([
               // Get active assignments from equipmentRentalHistory with related data (filtered by equipment IDs)
               // Also join with rentalItems to get operator information
@@ -253,7 +257,7 @@ const getEquipmentHandler = async (request: NextRequest) => {
             // Transform the flat data to nested objects expected by frontend
             currentAssignments = rawAssignments.map(assignment => {
               const assignmentAny = assignment as any;
-              
+
               // Determine employee/operator information
               // For rental assignments: use employee_id directly
               // For project assignments: use operator_id (from projectManpower.employeeId) or operator_worker_name
@@ -286,7 +290,7 @@ const getEquipmentHandler = async (request: NextRequest) => {
                   file_number: null,
                 };
               }
-              
+
               return {
                 equipment_id: assignment.equipment_id,
                 assignment_id: assignment.assignment_id,
@@ -333,7 +337,7 @@ const getEquipmentHandler = async (request: NextRequest) => {
 
             // Fetch equipment images/photos from documents
             const equipmentImages: Record<number, { url: string | null; isCard: boolean }> = {};
-            
+
             if (equipmentIds.length > 0) {
               // Fetch images/photos for each equipment, prioritizing photos
               const imageDocuments = await db
@@ -365,14 +369,14 @@ const getEquipmentHandler = async (request: NextRequest) => {
                 const bType = (b.documentType || '').toLowerCase();
                 const aName = (a.fileName || '').toLowerCase();
                 const bName = (b.fileName || '').toLowerCase();
-                
+
                 const aIsPhoto = aType.includes('photo') || aName.includes('photo');
                 const bIsPhoto = bType.includes('photo') || bName.includes('photo');
-                
+
                 // Photos come first
                 if (aIsPhoto && !bIsPhoto) return -1;
                 if (!aIsPhoto && bIsPhoto) return 1;
-                
+
                 // If both are photos or both are documents, newest first
                 const aDate = new Date(a.createdAt || 0).getTime();
                 const bDate = new Date(b.createdAt || 0).getTime();
@@ -386,13 +390,13 @@ const getEquipmentHandler = async (request: NextRequest) => {
                   const imageUrl = doc.filePath?.replace(/^http:\/\//, 'https://') || null;
                   const docType = (doc.documentType || '').toLowerCase();
                   const fileName = (doc.fileName || '').toLowerCase();
-                  
+
                   const isCard = docType.includes('istimara') ||
                     docType.includes('license') ||
                     docType.includes('card') ||
                     fileName.includes('istimara') ||
                     fileName.includes('license');
-                  
+
                   equipmentImages[doc.equipmentId] = { url: imageUrl, isCard };
                 }
               }
@@ -402,12 +406,12 @@ const getEquipmentHandler = async (request: NextRequest) => {
             const equipmentWithAssignments = equipment.map((item) => {
               const assignments = assignmentsByEquipment[item.id] || [];
               const maintenance = maintenanceByEquipment[item.id] || [];
-              
+
               // Use the actual equipment status from database (which is updated by EquipmentStatusService)
               // This ensures consistency with the status shown on detail pages
               // The status is already calculated correctly by EquipmentStatusService based on all assignments
               const status = item.status || 'available';
-              
+
               return {
                 ...item,
                 assignments,
@@ -434,7 +438,7 @@ const getEquipmentHandler = async (request: NextRequest) => {
             });
           } catch (error) {
             console.error('Error fetching equipment assignments:', error);
-            
+
             // Return equipment without assignments if there's an error
             const equipmentWithAssignments = equipment.map((item) => ({
               ...item,
@@ -464,7 +468,7 @@ const getEquipmentHandler = async (request: NextRequest) => {
       );
     } catch (error) {
       console.error('Cache error:', error);
-      
+
       // Fallback to direct database query
       const equipment = await db
         .select({
@@ -611,8 +615,19 @@ const createEquipmentHandler = async (request: NextRequest) => {
 
     const equipment = inserted?.[0];
 
-    return NextResponse.json({ 
-      success: true, 
+    // Log the creation
+    if (equipment) {
+      const session = await getServerSession();
+      await AuditService.logCRUD('create', 'Equipment', String(equipment.id), `Equipment "${name}" created`, {
+        userId: session?.user?.id,
+        userName: session?.user?.name || undefined,
+        changes: { after: equipment },
+        ipAddress: request.headers.get('x-forwarded-for') || undefined,
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
       data: equipment!,
       doorNumberExtracted: finalDoorNumber !== doorNumber,
       extractedDoorNumber: finalDoorNumber
@@ -723,8 +738,19 @@ const updateEquipmentHandler = async (request: NextRequest) => {
       .returning();
     const equipment = updated[0];
 
-    return NextResponse.json({ 
-      success: true, 
+    // Log the update
+    if (equipment) {
+      const session = await getServerSession();
+      await AuditService.logCRUD('update', 'Equipment', String(id), `Equipment "${equipment.name}" updated`, {
+        userId: session?.user?.id,
+        userName: session?.user?.name || undefined,
+        changes: { after: equipment },
+        ipAddress: request.headers.get('x-forwarded-for') || undefined,
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
       data: equipment,
       doorNumberExtracted: finalDoorNumber !== doorNumber,
       extractedDoorNumber: finalDoorNumber
@@ -748,6 +774,14 @@ const deleteEquipmentHandler = async (request: NextRequest) => {
     const { id } = body;
 
     await db.delete(equipmentTable).where(eq(equipmentTable.id, id));
+
+    // Log the deletion
+    const session = await getServerSession();
+    await AuditService.logCRUD('delete', 'Equipment', String(id), `Equipment ID ${id} deleted`, {
+      userId: session?.user?.id,
+      userName: session?.user?.name || undefined,
+      ipAddress: request.headers.get('x-forwarded-for') || undefined,
+    });
 
     return NextResponse.json({ success: true, message: 'Equipment deleted successfully' });
   } catch (error) {

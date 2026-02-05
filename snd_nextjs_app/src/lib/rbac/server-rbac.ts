@@ -3,7 +3,7 @@ import { db } from '@/lib/drizzle';
 import { permissions, roles, roleHasPermissions, modelHasRoles } from '@/lib/drizzle/schema';
 import { eq, inArray } from 'drizzle-orm';
 
-export type Action = 'create' | 'read' | 'update' | 'delete' | 'manage' | 'approve' | 'reject' | 'export' | 'import' | 'sync' | 'reset';
+export type Action = 'create' | 'read' | 'update' | 'delete' | 'manage' | 'approve' | 'reject' | 'export' | 'import' | 'sync' | 'reset' | 'upload' | 'download';
 export type Subject = string;
 export type UserRole = string;
 
@@ -97,7 +97,7 @@ export const PERMISSION_MAPPING: Record<string, string[]> = {
   'manage.Timesheet': ['manage.Timesheet', 'manage.timesheet'],
   'approve.Timesheet': ['approve.Timesheet', 'approve.timesheet'],
   'reject.Timesheet': ['reject.Timesheet', 'reject.timesheet'],
-  
+
   // Timesheet stage-specific approval permissions
   'approve.Timesheet.Foreman': ['approve.timesheet.foreman'],
   'approve.Timesheet.Incharge': ['approve.timesheet.incharge'],
@@ -366,17 +366,17 @@ export function createUserFromSession(session: { user: { id?: string; email?: st
  */
 export async function hasPermission(user: User, action: Action, subject: Subject): Promise<boolean> {
   try {
-    
+
     // Load user roles from database
     const userRoles = await loadUserRolesFromDB(user.id);
-    
+
     if (userRoles.length === 0) {
       return false;
     }
 
     // Load permissions for user's roles
     const userPermissions = await loadRolePermissionsFromDB(userRoles);
-    
+
     if (userPermissions.length === 0) {
       return false;
     }
@@ -389,10 +389,10 @@ export async function hasPermission(user: User, action: Action, subject: Subject
     // Check for specific permission using dynamic mapping
     const permissionKey = `${action}.${subject}`;
     const mappedPermissions = PERMISSION_MAPPING[permissionKey] || [permissionKey];
-    
+
     // Check if user has any of the mapped permissions
     const hasPermission = mappedPermissions.some(permission => userPermissions.includes(permission));
-    
+
     return hasPermission;
   } catch (error) {
     console.error('🔐 Error in hasPermission:', error);
@@ -411,9 +411,9 @@ function hasPermissionFallback(user: User, action: Action, subject: Subject): bo
   // Only SUPER_ADMIN has fallback permissions (wildcard access)
   // This is the only exception to the "no hardcoded permissions" rule
   if (user.role === 'SUPER_ADMIN') {
-      return true;
-    }
-    
+    return true;
+  }
+
   // For all other roles, deny access if database is unavailable
   // This ensures security: if we can't verify permissions from database, deny access
   console.error(`⚠️ Database unavailable - denying access for user ${user.id} (role: ${user.role})`);
@@ -500,14 +500,14 @@ export function hasRequiredRole(userRole: UserRole, requiredRoles: UserRole[]): 
  */
 export async function getAllowedActions(user: User, subject: Subject): Promise<Action[]> {
   const actions: Action[] = ['create', 'read', 'update', 'delete', 'approve', 'reject', 'export', 'import', 'sync', 'reset'];
-  
+
   const allowedActions: Action[] = [];
   for (const action of actions) {
     if (await hasPermission(user, action, subject)) {
       allowedActions.push(action);
     }
   }
-  
+
   return allowedActions;
 }
 
@@ -571,9 +571,9 @@ const dynamicRoutePermissions = new Map<string, { action: Action; subject: Subje
  * This allows new roles to access routes without code changes
  */
 export function addRoutePermission(
-  route: string, 
-  action: Action, 
-  subject: Subject, 
+  route: string,
+  action: Action,
+  subject: Subject,
   roles: UserRole[]
 ): void {
   dynamicRoutePermissions.set(route, { action, subject, roles });
@@ -702,10 +702,10 @@ export function autoGrantRouteAccess(roleName: string): void {
 export function addNewRoleWithRouteAccess(roleName: string, priority: number, permissions: string[]): void {
   // Add the role to the system
   addNewRole(roleName, priority, permissions);
-  
+
   // Automatically grant route access based on permissions
   autoGrantRouteAccess(roleName);
-  
+
 }
 
 /**
@@ -715,10 +715,10 @@ export function addNewRoleWithRouteAccess(roleName: string, priority: number, pe
 export function addNewRole(roleName: string, priority: number, permissions: string[]): void {
   // Add to role hierarchy
   DYNAMIC_ROLE_HIERARCHY[roleName] = priority;
-  
+
   // Add to fallback permissions
   DYNAMIC_FALLBACK_PERMISSIONS[roleName] = permissions;
-  
+
 }
 
 /**
@@ -727,7 +727,7 @@ export function addNewRole(roleName: string, priority: number, permissions: stri
 export function removeRole(roleName: string): void {
   delete DYNAMIC_ROLE_HIERARCHY[roleName];
   delete DYNAMIC_FALLBACK_PERMISSIONS[roleName];
-  
+
 }
 
 /**

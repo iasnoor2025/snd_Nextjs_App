@@ -180,15 +180,15 @@ export function EquipmentSection({
   const getCurrentDocumentData = () => {
     const docType = documentTypes[safeSelectedDocumentType];
     if (!docType) return safeEquipmentData;
-    
+
     const numberField = docType.numberField;
     const expiryField = docType.expiryField;
-    
+
     return safeEquipmentData.map(item => {
       // Get document-specific data
       const documentNumber = numberField ? (item[numberField as keyof EquipmentData] as string | null) : null;
       const documentExpiry = item[expiryField as keyof EquipmentData] as string | null;
-      
+
       // Calculate status based on expiry
       const today = new Date();
       let status: 'available' | 'expired' | 'expiring' | 'missing' = 'available';
@@ -253,17 +253,17 @@ export function EquipmentSection({
   // Filter and search logic
   const filteredData = currentDocumentData.filter(item => {
     const docType = documentTypes[safeSelectedDocumentType];
-    
+
     // Status filtering - show all expired items when "expired" is selected
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
-    
-    const matchesDriver = driverFilter === 'all' || 
+
+    const matchesDriver = driverFilter === 'all' ||
       (driverFilter === 'assigned' && item.driverName) ||
       (driverFilter === 'unassigned' && !item.driverName);
-    
-    const matchesType = typeFilter === 'all' || 
+
+    const matchesType = typeFilter === 'all' ||
       (item.categoryName && item.categoryName.toUpperCase().trim() === typeFilter.toUpperCase().trim());
-    
+
     const matchesSearch =
       !search ||
       item.equipmentName?.toLowerCase().includes(search.toLowerCase()) ||
@@ -280,25 +280,25 @@ export function EquipmentSection({
       // When searching, show all matches regardless of document status, but still respect type filter
       return matchesSearch && matchesType;
     }
-    
+
     if (statusFilter === 'missing') {
       // Show only equipment without this document type
-      const hasDocumentNumber = docType.numberField 
+      const hasDocumentNumber = docType.numberField
         ? (item.documentNumber && item.documentNumber !== 'N/A' && item.documentNumber.trim() !== '')
         : true; // For types without number fields, only check expiry
       const hasExpiryDate = item.documentExpiry && item.documentExpiry.trim() !== '';
       return !hasExpiryDate && item.status === 'missing' && matchesType && matchesDriver;
     }
-    
+
     if (statusFilter === 'all') {
       // Show only equipment that have this document type (excluding missing status)
-      const hasDocumentNumber = docType.numberField 
+      const hasDocumentNumber = docType.numberField
         ? (item.documentNumber && item.documentNumber !== 'N/A' && item.documentNumber.trim() !== '')
         : true; // For types without number fields, only check expiry
       const hasExpiryDate = item.documentExpiry && item.documentExpiry.trim() !== '';
       return hasExpiryDate && matchesType && matchesDriver; // Include type and driver filters
     }
-    
+
     // For specific status filters (expired, expiring, available)
     return matchesStatus && matchesDriver && matchesType && matchesSearch;
   });
@@ -306,10 +306,10 @@ export function EquipmentSection({
   // Calculate dynamic filter options based on data after applying other filters
   // Status options based on current type and driver filters (excluding search)
   const statusOptionsData = currentDocumentData.filter(item => {
-    const matchesDriver = driverFilter === 'all' || 
+    const matchesDriver = driverFilter === 'all' ||
       (driverFilter === 'assigned' && item.driverName) ||
       (driverFilter === 'unassigned' && !item.driverName);
-    const matchesType = typeFilter === 'all' || 
+    const matchesType = typeFilter === 'all' ||
       (item.categoryName && item.categoryName.toUpperCase().trim() === typeFilter.toUpperCase().trim());
     return matchesDriver && matchesType;
   });
@@ -320,7 +320,7 @@ export function EquipmentSection({
   // Type options based on current status and driver filters (excluding search)
   const typeOptionsData = currentDocumentData.filter(item => {
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
-    const matchesDriver = driverFilter === 'all' || 
+    const matchesDriver = driverFilter === 'all' ||
       (driverFilter === 'assigned' && item.driverName) ||
       (driverFilter === 'unassigned' && !item.driverName);
     return matchesStatus && matchesDriver;
@@ -336,7 +336,7 @@ export function EquipmentSection({
   // Driver options based on current status and type filters (excluding search)
   const driverOptionsData = currentDocumentData.filter(item => {
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
-    const matchesType = typeFilter === 'all' || 
+    const matchesType = typeFilter === 'all' ||
       (item.categoryName && item.categoryName.toUpperCase().trim() === typeFilter.toUpperCase().trim());
     return matchesStatus && matchesType;
   });
@@ -367,7 +367,7 @@ export function EquipmentSection({
   // Generic handler for PDF download based on status
   const handleDownloadPDF = async (status: 'available' | 'expired' | 'expiring' | 'missing' | 'all') => {
     const dataToDownload = getEquipmentDataByStatus(status);
-    
+
     if (dataToDownload.length === 0) {
       const statusLabels: Record<string, string> = {
         available: t('equipment.istimara.noAvailableRecords') || 'No available records to download',
@@ -379,7 +379,7 @@ export function EquipmentSection({
       alert(statusLabels[status] || 'No records to download');
       return;
     }
-    
+
     try {
       const docType = documentTypes[safeSelectedDocumentType];
       const documentLabel = docType?.label.replace(' Management', '') || 'Document';
@@ -399,7 +399,7 @@ export function EquipmentSection({
   const getDownloadData = () => {
     const currentStatus = statusFilter === 'all' ? 'all' : statusFilter as 'available' | 'expired' | 'expiring' | 'missing';
     const dataForStatus = getEquipmentDataByStatus(currentStatus);
-    
+
     const statusLabels: Record<string, string> = {
       available: t('equipment.istimara.available') || 'Available',
       expired: t('equipment.istimara.expired') || 'Expired',
@@ -407,7 +407,7 @@ export function EquipmentSection({
       missing: t('equipment.istimara.missing') || 'Missing',
       all: t('equipment.istimara.allStatuses') || 'All',
     };
-    
+
     return {
       data: dataForStatus,
       handler: () => handleDownloadPDF(currentStatus),
@@ -419,21 +419,25 @@ export function EquipmentSection({
   const downloadInfo = getDownloadData();
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <CardTitle className="flex items-center gap-2">
-              {(() => {
-                const currentDocType = documentTypes[safeSelectedDocumentType];
-                const IconComponent = currentDocType?.icon || FileText;
-                return <IconComponent className="h-5 w-5" />;
-              })()}
-              {documentTypes[safeSelectedDocumentType]?.label || 'Equipment Document Management'}
+    <Card glass className="animate-slide-in border-none shadow-2xl" style={{ animationDelay: '200ms' }}>
+      <CardHeader className="pb-0">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex-1 space-y-1">
+            <CardTitle className="text-2xl font-bold flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10 text-primary animate-float">
+                {(() => {
+                  const currentDocType = documentTypes[safeSelectedDocumentType];
+                  const IconComponent = currentDocType?.icon || FileText;
+                  return <IconComponent className="h-6 w-6" />;
+                })()}
+              </div>
+              <span className="text-gradient">
+                {documentTypes[safeSelectedDocumentType]?.label || 'Equipment Document Management'}
+              </span>
               {downloadInfo.count > 0 && (
-                <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                <Badge variant="destructive" className="ml-2 animate-pulse bg-red-500 border-none">
                   {downloadInfo.count}
-                </span>
+                </Badge>
               )}
             </CardTitle>
             <CardDescription>
@@ -494,7 +498,7 @@ export function EquipmentSection({
                 onClick={downloadInfo.handler}
                 disabled={downloadInfo.count === 0}
                 className="flex items-center gap-2"
-                title={downloadInfo.count === 0 
+                title={downloadInfo.count === 0
                   ? `No ${downloadInfo.label.toLowerCase()} records to download`
                   : `Download PDF for ${downloadInfo.count} ${downloadInfo.label.toLowerCase()} ${documentTypes[safeSelectedDocumentType]?.label.replace(' Management', '') || 'documents'}`}
               >
@@ -545,13 +549,13 @@ export function EquipmentSection({
               <option value="all">{t('equipment.istimara.allStatuses')}</option>
               {dynamicAvailableStatuses.map((status) => (
                 <option key={status} value={status}>
-                  {status === 'expired' 
+                  {status === 'expired'
                     ? t('equipment.istimara.expired')
                     : status === 'expiring'
-                    ? t('equipment.istimara.expiringSoon')
-                    : status === 'missing'
-                    ? t('equipment.istimara.missing')
-                    : t('equipment.istimara.available')}
+                      ? t('equipment.istimara.expiringSoon')
+                      : status === 'missing'
+                        ? t('equipment.istimara.missing')
+                        : t('equipment.istimara.available')}
                 </option>
               ))}
             </select>
@@ -689,13 +693,12 @@ export function EquipmentSection({
                                 ? 'secondary'
                                 : 'outline'
                           }
-                          className={`capitalize ${
-                            item.status === 'expired'
+                          className={`capitalize ${item.status === 'expired'
                               ? 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'
                               : item.status === 'expiring'
                                 ? 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800'
                                 : 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-800'
-                          }`}
+                            }`}
                         >
                           {item.status === 'expired'
                             ? t('equipment.istimara.expired')
@@ -712,13 +715,12 @@ export function EquipmentSection({
                             <div>{new Date(item.documentExpiry).toLocaleDateString()}</div>
                             {item.daysRemaining !== null && (
                               <div
-                                className={`text-xs ${
-                                  item.daysRemaining < 0
+                                className={`text-xs ${item.daysRemaining < 0
                                     ? 'text-red-600'
                                     : item.daysRemaining <= 30
                                       ? 'text-yellow-600'
                                       : 'text-muted-foreground'
-                                }`}
+                                  }`}
                               >
                                 {item.daysRemaining < 0
                                   ? t('equipment.istimara.daysOverdue', { days: String(Math.abs(item.daysRemaining)) })
@@ -792,7 +794,7 @@ export function EquipmentSection({
                   {(() => {
                     const pages = [];
                     const maxVisiblePages = 7;
-                    
+
                     if (totalPages <= maxVisiblePages) {
                       // Show all pages if total is small
                       for (let i = 1; i <= totalPages; i++) {
@@ -812,7 +814,7 @@ export function EquipmentSection({
                       // Show smart pagination for large numbers
                       const startPage = Math.max(1, currentPage - 2);
                       const endPage = Math.min(totalPages, currentPage + 2);
-                      
+
                       // Always show first page
                       if (startPage > 1) {
                         pages.push(
@@ -832,7 +834,7 @@ export function EquipmentSection({
                           );
                         }
                       }
-                      
+
                       // Show pages around current page
                       for (let i = startPage; i <= endPage; i++) {
                         pages.push(
@@ -847,7 +849,7 @@ export function EquipmentSection({
                           </Button>
                         );
                       }
-                      
+
                       // Always show last page
                       if (endPage < totalPages) {
                         if (endPage < totalPages - 1) {
@@ -868,7 +870,7 @@ export function EquipmentSection({
                         );
                       }
                     }
-                    
+
                     return pages;
                   })()}
                 </div>

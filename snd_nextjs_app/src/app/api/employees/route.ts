@@ -20,6 +20,8 @@ import { updateEmployeeStatusBasedOnLeave } from '@/lib/utils/employee-status';
 import { ERPNextSyncService } from '@/lib/services/erpnext-sync-service';
 import { and, asc, desc, eq, ilike, inArray, or, sql, isNull, gte } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { AuditService } from '@/lib/services/audit-service';
+import { getServerSession } from '@/lib/auth';
 
 // In-memory cache for employee list
 let employeesCache: any = null;
@@ -127,7 +129,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
 
     if (supervisor) {
 
-          }
+    }
 
     const countRow = await db
       .select({ count: sql<number>`count(*)` })
@@ -689,6 +691,24 @@ const createEmployeeHandler = async (request: NextRequest) => {
       })
       .returning();
     const employee = (inserted as any[])[0];
+
+    // Audit logging for employee creation
+    const session = await getServerSession();
+    if (session?.user && employee) {
+      await AuditService.logCRUD(
+        'create',
+        'Employee',
+        String(employee.id),
+        `Created new employee: ${employee.firstName} ${employee.lastName} (${employee.fileNumber})`,
+        {
+          userId: session.user.id,
+          userName: session.user.name || 'Unknown User',
+          changes: { after: employee },
+          ipAddress: request.headers.get('x-forwarded-for') || 'Internal',
+          userAgent: request.headers.get('user-agent') || 'Unknown',
+        }
+      );
+    }
 
     // Attempt ERPNext sync using the service (returns ERPNext ID string or null)
     // Run in background to avoid blocking the response

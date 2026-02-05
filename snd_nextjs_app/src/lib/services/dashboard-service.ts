@@ -11,15 +11,17 @@ import {
   projects,
   rentals,
   timesheets,
+  auditLogs,
 } from '@/lib/drizzle/schema';
 import { and, count, desc, eq, gte, isNotNull, lte, sql } from 'drizzle-orm';
-import { 
-  cacheQueryResult, 
-  generateCacheKey, 
-  CACHE_TAGS, 
+import {
+  cacheQueryResult,
+  generateCacheKey,
+  CACHE_TAGS,
   CACHE_PREFIXES,
-  invalidateCache 
+  invalidateCache
 } from '@/lib/redis';
+import { logger } from '@/lib/logger';
 
 export interface DashboardStats {
   totalEmployees: number;
@@ -58,8 +60,8 @@ export interface IqamaData {
   status: 'active' | 'expired' | 'expiring' | 'missing';
   nationality: string | null;
   position: string | null;
-  companyName?: string | null;
-  location?: string | null;
+  companyName: string | null;
+  location: string | null;
   // Additional document fields
   iqamaExpiry?: string | null;
   passportNumber?: string | null;
@@ -103,7 +105,14 @@ export interface TimesheetData {
   totalHours: number;
   overtimeHours: number;
   status: 'present' | 'absent' | 'late' | 'half-day';
-  approvalStatus: string;
+  approvalStatus:
+  | 'draft'
+  | 'submitted'
+  | 'foreman_approved'
+  | 'incharge_approved'
+  | 'checking_approved'
+  | 'manager_approved'
+  | 'rejected';
   date: string;
 }
 
@@ -163,6 +172,7 @@ export interface RecentActivity {
   user: string | null;
   timestamp: string | null;
   severity: 'low' | 'medium' | 'high';
+  changes?: any;
 }
 
 export class DashboardService {
@@ -194,51 +204,51 @@ export class DashboardService {
           .from(employees)
           .then(r => r[0] || { count: 0 })
           .catch(() => ({ count: 0 })),
-        
+
         // Active projects count
         db.select({ count: count() })
           .from(projects)
           .where(sql`${projects.status} IN ('active', 'in_progress', 'ongoing', 'running')`)
           .then(r => r[0] || { count: 0 })
           .catch(() => ({ count: 0 })),
-        
+
         // Total projects count
         db.select({ count: count() })
           .from(projects)
           .then(r => r[0] || { count: 0 })
           .catch(() => ({ count: 0 })),
-        
+
         // Total equipment count
         db.select({ count: count() })
           .from(equipment)
           .then(r => r[0] || { count: 0 })
           .catch(() => ({ count: 0 })),
-        
+
         // Available equipment (simplified - using total for now)
         db.select({ count: count() })
           .from(equipment)
           .then(r => r[0] || { count: 0 })
           .catch(() => ({ count: 0 })),
-        
+
         // Active rentals count
         db.select({ count: count() })
           .from(rentals)
           .where(sql`${rentals.status} IN ('active', 'in_progress', 'ongoing', 'running', 'rented')`)
           .then(r => r[0] || { count: 0 })
           .catch(() => ({ count: 0 })),
-        
+
         // Total rentals count
         db.select({ count: count() })
           .from(rentals)
           .then(r => r[0] || { count: 0 })
           .catch(() => ({ count: 0 })),
-        
+
         // Total companies count
         db.select({ count: count() })
           .from(customers)
           .then(r => r[0] || { count: 0 })
           .catch(() => ({ count: 0 })),
-        
+
         // Total documents count (placeholder)
         Promise.resolve({ count: 0 }),
       ]);
@@ -265,7 +275,7 @@ export class DashboardService {
           todayTimesheetsResult = result[0] || { count: 0 };
         }
       } catch (error) {
-        console.error('Error fetching today timesheets:', error);
+        logger.error('Error fetching today timesheets:', error);
       }
 
       // Get expired documents count
@@ -279,7 +289,7 @@ export class DashboardService {
           );
         expiredDocumentsResult = result[0] || { count: 0 };
       } catch (error) {
-        console.error('Error fetching expired documents:', error);
+        logger.error('Error fetching expired documents:', error);
       }
 
       // Get expiring documents count (within 30 days)
@@ -299,7 +309,7 @@ export class DashboardService {
           );
         expiringDocumentsResult = result[0] || { count: 0 };
       } catch (error) {
-        console.error('Error fetching expiring documents:', error);
+        logger.error('Error fetching expiring documents:', error);
       }
 
       // Get pending approvals (timesheets pending approval)
@@ -311,14 +321,14 @@ export class DashboardService {
           .where(eq(timesheets.status, 'pending'));
         pendingApprovalsResult = result[0] || { count: 0 };
       } catch (error) {
-        console.error('Error fetching pending approvals:', error);
+        logger.error('Error fetching pending approvals:', error);
       }
 
       // Calculate monthly revenue (placeholder - you can implement actual calculation)
       const monthlyRevenue = 0;
 
       // Calculate equipment utilization
-      const equipmentUtilization = totalEquipment > 0 
+      const equipmentUtilization = totalEquipment > 0
         ? Math.round((availableEquipment / totalEquipment) * 100)
         : 0;
 
@@ -338,16 +348,16 @@ export class DashboardService {
         financialMetrics.netProfit =
           financialMetrics.totalMoneyReceived - financialMetrics.totalMoneyLost;
       } catch (error) {
-        console.error('Error fetching financial metrics from ERPNext:', error);
+        logger.error('Error fetching financial metrics from ERPNext:', error);
         // Use default values if ERPNext is not available
       }
 
       // Get employees currently on leave
-      let employeesCurrentlyOnLeave: any[] = [];
+      let employeesCurrentlyOnLeave: LeaveRequest[] = [];
       try {
         employeesCurrentlyOnLeave = await this.getEmployeesCurrentlyOnLeave();
       } catch (error) {
-        console.error('Error fetching employees on leave:', error);
+        logger.error('Error fetching employees on leave:', error);
         employeesCurrentlyOnLeave = [];
       }
 
@@ -363,7 +373,7 @@ export class DashboardService {
         totalRentals,
         totalCompanies,
         totalDocuments,
-        equipmentUtilization: totalEquipment > 0 
+        equipmentUtilization: totalEquipment > 0
           ? Math.round((availableEquipment / totalEquipment) * 100)
           : 0,
         todayTimesheets: todayTimesheetsResult.count || 0,
@@ -379,7 +389,7 @@ export class DashboardService {
         currency: financialMetrics.currency || 'SAR',
       };
     } catch (error) {
-      console.error('Error in getDashboardStats:', error);
+      logger.error('Error in getDashboardStats:', error);
       throw error;
     }
   }
@@ -391,7 +401,7 @@ export class DashboardService {
         .from(equipment);
       return result[0]?.count || 0;
     } catch (error) {
-      console.error('Error fetching total equipment count:', error);
+      logger.error('Error fetching total equipment count:', error);
       return 0;
     }
   }
@@ -404,7 +414,7 @@ export class DashboardService {
         .where(eq(equipment.status, 'available'));
       return result[0]?.count || 0;
     } catch (error) {
-      console.error('Error fetching available equipment count:', error);
+      logger.error('Error fetching available equipment count:', error);
       return 0;
     }
   }
@@ -417,7 +427,7 @@ export class DashboardService {
         .where(eq(customers.status, 'active'));
       return result[0]?.count || 0;
     } catch (error) {
-      console.error('Error fetching total companies count:', error);
+      logger.error('Error fetching total companies count:', error);
       return 0;
     }
   }
@@ -429,7 +439,7 @@ export class DashboardService {
         .from(employeeDocuments);
       return result[0]?.count || 0;
     } catch (error) {
-      console.error('Error fetching total documents count:', error);
+      logger.error('Error fetching total documents count:', error);
       return 0;
     }
   }
@@ -441,7 +451,7 @@ export class DashboardService {
         .from(projects);
       return result[0]?.count || 0;
     } catch (error) {
-      console.error('Error fetching total projects count:', error);
+      logger.error('Error fetching total projects count:', error);
       return 0;
     }
   }
@@ -453,7 +463,7 @@ export class DashboardService {
         .from(rentals);
       return result[0]?.count || 0;
     } catch (error) {
-      console.error('Error fetching total rentals count:', error);
+      logger.error('Error fetching total rentals count:', error);
       return 0;
     }
   }
@@ -480,7 +490,7 @@ export class DashboardService {
         .from(rentals)
         .limit(10);
     } catch (error) {
-      console.error('Error debugging project and rental data:', error);
+      logger.error('Error debugging project and rental data:', error);
     }
   }
 
@@ -551,7 +561,7 @@ export class DashboardService {
         };
       });
     } catch (error) {
-      
+
       throw error;
     }
   }
@@ -638,9 +648,9 @@ export class DashboardService {
 
       return result;
     } catch (error) {
-      console.error('Error in getEquipmentData:', error);
+      logger.error('Error in getEquipmentData:', error);
       if (error instanceof Error) {
-        console.error('Error details:', error.message);
+        logger.error('Error details:', error.message);
       }
       // Return empty array instead of throwing to prevent dashboard crash
       return [];
@@ -691,12 +701,13 @@ export class DashboardService {
         return {
           ...timesheet,
           status,
+          approvalStatus: timesheet.approvalStatus as TimesheetData['approvalStatus'],
           totalHours: Number(timesheet.totalHours) || 0,
           overtimeHours: Number(timesheet.overtimeHours) || 0,
         };
       });
     } catch (error) {
-      
+
       throw error;
     }
   }
@@ -757,7 +768,7 @@ export class DashboardService {
         };
       });
     } catch (error) {
-      
+
       throw error;
     }
   }
@@ -785,7 +796,7 @@ export class DashboardService {
 
       return leaveData;
     } catch (error) {
-      
+
       throw error;
     }
   }
@@ -821,7 +832,7 @@ export class DashboardService {
 
       return leaveData;
     } catch (error) {
-      
+
       // Return empty array instead of throwing to prevent dashboard from failing
       return [];
     }
@@ -864,7 +875,7 @@ export class DashboardService {
         };
       });
     } catch (error) {
-      
+
       // Return empty array instead of throwing to prevent dashboard from failing
       return [];
     }
@@ -945,7 +956,7 @@ export class DashboardService {
         };
       });
     } catch (error) {
-      console.error('Error fetching projects:', error);
+      logger.error('Error fetching projects:', error);
       // Return empty array instead of throwing to prevent dashboard from failing
       return [];
     }
@@ -953,163 +964,30 @@ export class DashboardService {
 
   static async getRecentActivity(limit: number = 50): Promise<RecentActivity[]> {
     try {
-      const allActivities: any[] = [];
-
-      // Get recent timesheet submissions and approvals
-      const recentTimesheets = await db
+      const activities = await db
         .select({
-          id: timesheets.id,
-          type: sql<string>`'Timesheet Submission'`,
-          description: sql<string>`CONCAT('Timesheet submitted for ', ${timesheets.date})`,
-          user: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
-          timestamp: timesheets.submittedAt,
-          severity: sql<string>`'low'`,
+          id: auditLogs.id,
+          type: auditLogs.subjectType,
+          description: auditLogs.description,
+          user: auditLogs.userName,
+          timestamp: auditLogs.createdAt,
+          severity: auditLogs.severity,
+          changes: auditLogs.changes,
         })
-        .from(timesheets)
-        .innerJoin(employees, eq(timesheets.employeeId, employees.id))
-        .where(isNotNull(timesheets.submittedAt))
-        .orderBy(desc(timesheets.submittedAt))
-        .limit(Math.ceil(limit * 0.2));
+        .from(auditLogs)
+        .orderBy(desc(auditLogs.createdAt))
+        .limit(limit);
 
-      // Get recent timesheet approvals (status changes)
-      const recentTimesheetApprovals = await db
-        .select({
-          id: timesheets.id,
-          type: sql<string>`'Timesheet Approval'`,
-          description: sql<string>`CONCAT('Timesheet ', ${timesheets.status}, ' for ', ${timesheets.date})`,
-          user: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
-          timestamp: timesheets.updatedAt || timesheets.createdAt,
-          severity: sql<string>`'medium'`,
-        })
-        .from(timesheets)
-        .innerJoin(employees, eq(timesheets.employeeId, employees.id))
-        .where(
-          and(
-            isNotNull(timesheets.status),
-            sql`${timesheets.status} IN ('foreman_approved', 'incharge_approved', 'checking_approved', 'manager_approved', 'rejected')`,
-            isNotNull(timesheets.updatedAt) // Only get timesheets that have been updated (approved)
-          )
-        )
-        .orderBy(desc(timesheets.updatedAt))
-        .limit(Math.ceil(limit * 0.1));
-
-      // Get recent leave requests
-      const recentLeaves = await db
-        .select({
-          id: employeeLeaves.id,
-          type: sql<string>`'Leave Request'`,
-          description: sql<string>`CONCAT('Leave request for ', ${employeeLeaves.leaveType})`,
-          user: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
-          timestamp: employeeLeaves.createdAt,
-          severity: sql<string>`'medium'`,
-        })
-        .from(employeeLeaves)
-        .innerJoin(employees, eq(employeeLeaves.employeeId, employees.id))
-        .orderBy(desc(employeeLeaves.createdAt))
-        .limit(Math.ceil(limit * 0.2));
-
-      // Get recent equipment assignments
-      const recentEquipmentAssignments = await db
-        .select({
-          id: employeeAssignments.id,
-          type: sql<string>`'Equipment Assignment'`,
-          description: sql<string>`CONCAT('Equipment assigned to ', ${employees.firstName}, ' ', ${employees.lastName})`,
-          user: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
-          timestamp: employeeAssignments.createdAt,
-          severity: sql<string>`'low'`,
-        })
-        .from(employeeAssignments)
-        .innerJoin(employees, eq(employeeAssignments.employeeId, employees.id))
-        .where(eq(employeeAssignments.type, 'equipment'))
-        .orderBy(desc(employeeAssignments.createdAt))
-        .limit(Math.ceil(limit * 0.15));
-
-      // Get recent project assignments
-      const recentProjectAssignments = await db
-        .select({
-          id: employeeAssignments.id,
-          type: sql<string>`'Project Assignment'`,
-          description: sql<string>`CONCAT('Project assignment for ', ${employees.firstName}, ' ', ${employees.lastName})`,
-          user: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
-          timestamp: employeeAssignments.createdAt,
-          severity: sql<string>`'medium'`,
-        })
-        .from(employeeAssignments)
-        .innerJoin(employees, eq(employeeAssignments.employeeId, employees.id))
-        .where(eq(employeeAssignments.type, 'project'))
-        .orderBy(desc(employeeAssignments.createdAt))
-        .limit(Math.ceil(limit * 0.15));
-
-      // Get recent document updates (from employee documents)
-      const recentDocumentUpdates = await db
-        .select({
-          id: employeeDocuments.id,
-          type: sql<string>`'Document Update'`,
-          description: sql<string>`CONCAT('Document updated: ', ${employeeDocuments.documentType})`,
-          user: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
-          timestamp: employeeDocuments.updatedAt,
-          severity: sql<string>`'low'`,
-        })
-        .from(employeeDocuments)
-        .innerJoin(employees, eq(employeeDocuments.employeeId, employees.id))
-        .orderBy(desc(employeeDocuments.updatedAt))
-        .limit(Math.ceil(limit * 0.1));
-
-      // Get recent rental activities
-      const recentRentals = await db
-        .select({
-          id: rentals.id,
-          type: sql<string>`'Rental Activity'`,
-          description: sql<string>`CONCAT('Rental ', ${rentals.status}, ': ', ${rentals.equipmentName})`,
-          user: sql<string>`'System'`,
-          timestamp: rentals.createdAt,
-          severity: sql<string>`'medium'`,
-        })
-        .from(rentals)
-        .orderBy(desc(rentals.createdAt))
-        .limit(Math.ceil(limit * 0.1));
-
-      // Get recent maintenance activities
-      const recentMaintenance = await db
-        .select({
-          id: sql<number>`0`, // Placeholder since maintenance table might not exist
-          type: sql<string>`'Maintenance'`,
-          description: sql<string>`'Equipment maintenance scheduled'`,
-          user: sql<string>`'System'`,
-          timestamp: sql<string>`CURRENT_TIMESTAMP`,
-          severity: sql<string>`'high'`,
-        })
-        .from(employees)
-        .limit(1); // Just to get one record for the query structure
-
-      // Combine all activities
-      allActivities.push(
-        ...recentTimesheets,
-        ...recentTimesheetApprovals,
-        ...recentLeaves,
-        ...recentEquipmentAssignments,
-        ...recentProjectAssignments,
-        ...recentDocumentUpdates,
-        ...recentRentals
-      );
-
-      // Sort by timestamp and limit
-      const sortedActivities = allActivities
-        .filter(activity => activity.timestamp) // Filter out activities without timestamps
-        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-        .slice(0, limit)
-        .map((activity, index) => ({
-          ...activity,
-          id: index + 1,
-          severity: activity.severity as 'low' | 'medium' | 'high',
-        }));
-
-      // Debug: Log the activities being returned
-
-      return sortedActivities;
+      return activities.map(activity => ({
+        ...activity,
+        // Normalize timestamp: if it's a string and doesn't have Z or offset, append Z
+        timestamp: activity.timestamp && !activity.timestamp.includes('Z') && !activity.timestamp.includes('+')
+          ? `${activity.timestamp}Z`
+          : activity.timestamp,
+        severity: (activity.severity || 'low') as 'low' | 'medium' | 'high',
+      }));
     } catch (error) {
-      
-      // Return empty array instead of throwing to prevent dashboard from failing
+      logger.error('Error fetching recent activity:', error);
       return [];
     }
   }

@@ -1,9 +1,10 @@
 import { db } from '@/lib/drizzle';
 import { customers, projects, rentals, employees, locations } from '@/lib/drizzle/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { getServerSession } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 const getProjectHandler = async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
@@ -16,13 +17,13 @@ const getProjectHandler = async (_request: NextRequest, { params }: { params: Pr
     }
 
     const projectIdNum = parseInt(projectId);
-    console.log(`[GET /api/projects/${projectId}] Fetching project with ID: ${projectIdNum}`);
+    logger.log(`[GET /api/projects/${projectId}] Fetching project with ID: ${projectIdNum}`);
 
     // First, get the project data
     // Try with priority first, fallback if column doesn't exist
     let projectData;
     let hasPriorityColumn = true;
-    
+
     try {
       projectData = await db
         .select({
@@ -53,18 +54,18 @@ const getProjectHandler = async (_request: NextRequest, { params }: { params: Pr
       const errorMessage = dbError?.message || String(dbError);
       const errorString = String(dbError);
       const errorCode = dbError?.code || dbError?.errno || '';
-      
+
       console.error('Database query error:', {
         message: errorMessage,
         code: errorCode,
         string: errorString,
         error: dbError
       });
-      
+
       if (
-        errorMessage.includes('priority') || 
+        errorMessage.includes('priority') ||
         errorString.includes('priority') ||
-        errorMessage.includes('column') || 
+        errorMessage.includes('column') ||
         errorString.includes('column') ||
         errorMessage.includes('42703') ||
         errorString.includes('42703') ||
@@ -222,7 +223,7 @@ const getProjectHandler = async (_request: NextRequest, { params }: { params: Pr
           .limit(1);
 
         projectEngineer = engineerData[0] || null;
-        
+
       } catch (engineerError) {
         console.error('Error fetching project engineer:', engineerError);
         projectEngineer = null;
@@ -245,7 +246,7 @@ const getProjectHandler = async (_request: NextRequest, { params }: { params: Pr
           .limit(1);
 
         projectForeman = foremanData[0] || null;
-        
+
       } catch (foremanError) {
         console.error('Error fetching project foreman:', foremanError);
         projectForeman = null;
@@ -268,7 +269,7 @@ const getProjectHandler = async (_request: NextRequest, { params }: { params: Pr
           .limit(1);
 
         supervisor = supervisorData[0] || null;
-        
+
       } catch (supervisorError) {
         console.error('Error fetching supervisor:', supervisorError);
         supervisor = null;
@@ -330,15 +331,15 @@ const getProjectHandler = async (_request: NextRequest, { params }: { params: Pr
     console.error('Error in GET /api/projects/[id]:', error);
     console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
-    
+
     const errorMessage = error instanceof Error ? error.message : String(error);
     const errorString = String(error);
-    
+
     // Check if it's a database column error (priority column might not exist)
     if (
-      errorMessage.includes('priority') || 
+      errorMessage.includes('priority') ||
       errorString.includes('priority') ||
-      errorMessage.includes('column') || 
+      errorMessage.includes('column') ||
       errorString.includes('column') ||
       errorMessage.includes('42703') ||
       errorString.includes('42703') ||
@@ -357,7 +358,7 @@ const getProjectHandler = async (_request: NextRequest, { params }: { params: Pr
         { status: 500 }
       );
     }
-    
+
     return NextResponse.json(
       {
         error: 'Failed to fetch project',
@@ -381,14 +382,14 @@ const updateProjectHandler = async (request: NextRequest, { params }: { params: 
     const body = await request.json();
 
     // Log the received priority value for debugging
-    console.log(`[PUT /api/projects/${projectId}] Updating project. Received priority:`, body.priority);
-    
+    logger.log(`[PUT /api/projects/${projectId}] Updating project. Received priority:`, body.priority);
+
     // Only default to 'medium' if priority is not provided (null/undefined), not if it's an empty string
-    const priorityValue = body.priority !== undefined && body.priority !== null && body.priority !== '' 
-      ? body.priority 
+    const priorityValue = body.priority !== undefined && body.priority !== null && body.priority !== ''
+      ? body.priority
       : (body.priority === '' ? 'medium' : 'medium');
-    console.log(`[PUT /api/projects/${projectId}] Using priority value:`, priorityValue);
-    console.log(`[PUT /api/projects/${projectId}] Full body received:`, JSON.stringify(body, null, 2));
+    logger.log(`[PUT /api/projects/${projectId}] Using priority value:`, priorityValue);
+    logger.log(`[PUT /api/projects/${projectId}] Full body received:`, JSON.stringify(body, null, 2));
 
     const updateResult = await db
       .update(projects)
@@ -433,14 +434,14 @@ const updateProjectHandler = async (request: NextRequest, { params }: { params: 
           body.resource_plan_detailed ||
           body.schedule_plan_detailed ||
           body.cost_plan_detailed ||
-        body.quality_plan_detailed ||
-        body.risk_plan_detailed,
+          body.quality_plan_detailed ||
+          body.risk_plan_detailed,
       })
       .where(eq(projects.id, parseInt(projectId)))
       .returning();
 
-    console.log(`[PUT /api/projects/${projectId}] Update result:`, updateResult);
-    console.log(`[PUT /api/projects/${projectId}] Updated priority in DB:`, updateResult[0]?.priority);
+    logger.log(`[PUT /api/projects/${projectId}] Update result:`, updateResult);
+    logger.log(`[PUT /api/projects/${projectId}] Updated priority in DB:`, updateResult[0]?.priority);
 
     // Fetch the updated project with customer details
     const projectWithCustomer = await db
@@ -473,8 +474,8 @@ const updateProjectHandler = async (request: NextRequest, { params }: { params: 
       .limit(1);
 
     const updatedProject = projectWithCustomer[0];
-    console.log(`[PUT /api/projects/${projectId}] Updated project priority:`, updatedProject?.priority);
-    
+    logger.log(`[PUT /api/projects/${projectId}] Updated project priority:`, updatedProject?.priority);
+
     // Transform response to match frontend expectations (same format as GET)
     const transformedResponse = {
       ...updatedProject,
@@ -490,9 +491,9 @@ const updateProjectHandler = async (request: NextRequest, { params }: { params: 
     console.error('Error updating project:', error);
     console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
-    
+
     const errorMessage = error instanceof Error ? error.message : String(error);
-    
+
     // Check if it's a database column error (priority column might not exist)
     if (errorMessage.includes('priority') || errorMessage.includes('column') || errorMessage.includes('42703')) {
       console.error('⚠️  Priority column may not exist in database. Please run migration:');
@@ -506,13 +507,13 @@ const updateProjectHandler = async (request: NextRequest, { params }: { params: 
         { status: 500 }
       );
     }
-    
+
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to update project',
         details: errorMessage,
         fullError: process.env.NODE_ENV === 'development' ? String(error) : undefined,
-      }, 
+      },
       { status: 500 }
     );
   }
@@ -535,7 +536,7 @@ const deleteProjectHandler = async (
 
     return NextResponse.json({ message: 'Project deleted successfully' });
   } catch (error) {
-    
+
     return NextResponse.json({ error: 'Failed to delete project' }, { status: 500 });
   }
 };

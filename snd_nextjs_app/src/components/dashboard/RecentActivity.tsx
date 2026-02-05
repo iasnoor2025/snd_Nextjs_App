@@ -46,7 +46,7 @@ export function RecentActivity({ activities, onHideSection, currentUser, onRefre
     if (type === 'Timesheet Approval') {
       return 'bg-green-100 text-green-800 border-green-200';
     }
-    
+
     switch (severity) {
       case 'high':
         return 'bg-red-100 text-red-800 border-red-200';
@@ -61,25 +61,25 @@ export function RecentActivity({ activities, onHideSection, currentUser, onRefre
 
   const formatTimestamp = (timestamp: string | null) => {
     if (!timestamp) return 'N/A';
-    
+
     try {
       // Parse the timestamp and ensure it's treated as UTC if it doesn't have timezone info
       const date = new Date(timestamp);
       const now = new Date();
-      
+
       // Check if the date is valid
       if (isNaN(date.getTime())) {
         console.warn('Invalid timestamp:', timestamp);
         return 'Invalid date';
       }
-      
 
-      
+
+
       const diffInMs = now.getTime() - date.getTime();
       const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
       const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
       const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-      
+
       if (diffInMinutes < 1) {
         return t('dashboard.justNow');
       } else if (diffInMinutes < 60) {
@@ -126,6 +126,41 @@ export function RecentActivity({ activities, onHideSection, currentUser, onRefre
     }
   };
 
+  const renderChanges = (changes: any) => {
+    if (!changes || !changes.before || !changes.after) return null;
+
+    const before = changes.before;
+    const after = changes.after;
+    const modifiedFields = Object.keys(after).filter(key =>
+      JSON.stringify(before[key]) !== JSON.stringify(after[key]) &&
+      key !== 'updatedAt' && key !== 'updated_at'
+    );
+
+    if (modifiedFields.length === 0) return null;
+
+    return (
+      <div className="mt-2 p-2 rounded bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-xs">
+        <p className="font-semibold mb-1 text-gray-700 dark:text-gray-300">Changes:</p>
+        <ul className="space-y-1">
+          {modifiedFields.map(field => (
+            <li key={field} className="flex flex-wrap gap-1 items-center">
+              <span className="font-medium text-gray-600 dark:text-gray-400 capitalize">
+                {field.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ')}:
+              </span>
+              <span className="text-red-600 dark:text-red-400 line-through truncate max-w-[150px]">
+                {String(before[field] ?? 'None')}
+              </span>
+              <span className="text-gray-400">→</span>
+              <span className="text-green-600 dark:text-green-400 font-medium truncate max-w-[150px]">
+                {String(after[field] ?? 'None')}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -164,20 +199,20 @@ export function RecentActivity({ activities, onHideSection, currentUser, onRefre
                 {index < safeActivities.length - 1 && (
                   <div className="absolute left-6 top-8 w-0.5 h-8 bg-gray-200 dark:bg-gray-700" />
                 )}
-                
+
                 <div className="flex items-start gap-4">
                   {/* Icon */}
                   <div className="relative z-10 flex-shrink-0 w-12 h-12 rounded-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center shadow-sm">
                     {getActivityIcon(activity.type, activity.severity)}
                   </div>
-                  
+
                   {/* Content */}
                   <div className="flex-1 min-w-0 space-y-2">
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <Badge 
-                            variant="outline" 
+                          <Badge
+                            variant="outline"
                             className={`text-xs font-medium ${getActivityBadgeColor(activity.type, activity.severity)}`}
                           >
                             {getActivityTypeLabel(activity.type)}
@@ -186,11 +221,13 @@ export function RecentActivity({ activities, onHideSection, currentUser, onRefre
                             {formatTimestamp(activity.timestamp)}
                           </span>
                         </div>
-                        
+
                         <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {activity.description || 'No description'}
                         </p>
-                        
+
+                        {renderChanges(activity.changes)}
+
                         <div className="flex items-center gap-4 text-xs text-muted-foreground">
                           {activity.user && (
                             <div className="flex items-center gap-1">
@@ -198,7 +235,7 @@ export function RecentActivity({ activities, onHideSection, currentUser, onRefre
                               <span className="font-medium">{activity.user}</span>
                             </div>
                           )}
-                          
+
                           {activity.type === 'Timesheet Approval' && currentUser && (
                             <div className="flex items-center gap-1">
                               <span>Approved by:</span>

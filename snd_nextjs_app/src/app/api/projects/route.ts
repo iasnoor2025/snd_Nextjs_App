@@ -5,6 +5,8 @@ import { and, desc, eq, ilike, or } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { inArray } from 'drizzle-orm';
 import { employees as employeesTable } from '@/lib/drizzle/schema';
+import { AuditService } from '@/lib/services/audit-service';
+import { getServerSession } from '@/lib/auth';
 
 // GET /api/projects - List projects with pagination and filters
 const getProjectsHandler = async (request: NextRequest) => {
@@ -52,30 +54,30 @@ const getProjectsHandler = async (request: NextRequest) => {
     const whereExpr = filters.length ? and(...filters) : undefined;
 
     const rows = await db
-        .select({
-          id: projectsTable.id,
-          name: projectsTable.name,
-          description: projectsTable.description,
-          status: projectsTable.status,
-          priority: projectsTable.priority,
-          budget: projectsTable.budget,
-          startDate: projectsTable.startDate,
-          endDate: projectsTable.endDate,
-          createdAt: projectsTable.createdAt,
-          updatedAt: projectsTable.updatedAt,
-          customerId: projectsTable.customerId,
-          locationId: projectsTable.locationId,
-          notes: projectsTable.notes,
-          customerName: customers.name,
-          locationName: locations.name,
-          locationCity: locations.city,
-          locationState: locations.state,
-          // Project team roles
-          projectManagerId: projectsTable.projectManagerId,
-          projectEngineerId: projectsTable.projectEngineerId,
-          projectForemanId: projectsTable.projectForemanId,
-          supervisorId: projectsTable.supervisorId,
-        })
+      .select({
+        id: projectsTable.id,
+        name: projectsTable.name,
+        description: projectsTable.description,
+        status: projectsTable.status,
+        priority: projectsTable.priority,
+        budget: projectsTable.budget,
+        startDate: projectsTable.startDate,
+        endDate: projectsTable.endDate,
+        createdAt: projectsTable.createdAt,
+        updatedAt: projectsTable.updatedAt,
+        customerId: projectsTable.customerId,
+        locationId: projectsTable.locationId,
+        notes: projectsTable.notes,
+        customerName: customers.name,
+        locationName: locations.name,
+        locationCity: locations.city,
+        locationState: locations.state,
+        // Project team roles
+        projectManagerId: projectsTable.projectManagerId,
+        projectEngineerId: projectsTable.projectEngineerId,
+        projectForemanId: projectsTable.projectForemanId,
+        supervisorId: projectsTable.supervisorId,
+      })
       .from(projectsTable)
       .leftJoin(customers, eq(projectsTable.customerId, customers.id))
       .leftJoin(locations, eq(projectsTable.locationId, locations.id))
@@ -107,47 +109,47 @@ const getProjectsHandler = async (request: NextRequest) => {
         return acc;
       }, {} as { [key: number]: string });
     }
-    
+
     const countRows = await db
       .select({ id: projectsTable.id })
       .from(projectsTable)
       .where(whereExpr as any);
-    
+
     const total = countRows.length;
-    
+
     // Helper function to calculate progress based on dates
     const calculateProgress = (startDate: any, endDate: any, status: string): number => {
       // If project is completed, return 100%
       if (status === 'completed') return 100;
-      
+
       // If no dates, return 0
       if (!startDate || !endDate) return 0;
-      
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
+
       // Parse dates
       const start = new Date(startDate);
       start.setHours(0, 0, 0, 0);
       const end = new Date(endDate);
       end.setHours(0, 0, 0, 0);
-      
+
       // If project hasn't started yet, return 0
       if (today < start) return 0;
-      
+
       // If project is past end date, return 100% (unless already completed)
       if (today > end) return 100;
-      
+
       // Calculate progress based on elapsed time
       const totalDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
       const daysElapsed = Math.ceil((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-      
+
       if (totalDays <= 0) return 0;
-      
+
       const progress = Math.round((daysElapsed / totalDays) * 100);
       return Math.min(100, Math.max(0, progress));
     };
-    
+
     // Transform the data to match the frontend expectations
     const enhancedRows = rows.map(project => {
       // Format dates as YYYY-MM-DD to avoid timezone issues
@@ -169,23 +171,23 @@ const getProjectsHandler = async (request: NextRequest) => {
         priority: project.priority || 'medium',
         start_date: formatDateString(project.startDate),
         end_date: formatDateString(project.endDate),
-      budget: Number(project.budget) || 0,
-      progress: calculateProgress(project.startDate, project.endDate, project.status),
-      team_size: 0,
-      location: project.locationId && project.locationName ? `${project.locationName}, ${project.locationCity}, ${project.locationState}` : 'Project Location',
-      notes: project.notes || '',
-      // Project team roles
-      project_manager_id: project.projectManagerId,
-      project_engineer_id: project.projectEngineerId,
-      project_foreman_id: project.projectForemanId,
-      supervisor_id: project.supervisorId,
-      // Team member names for display
-      project_manager: project.projectManagerId ? { id: project.projectManagerId, name: employeeNames[project.projectManagerId] || 'Unknown' } : null,
-      project_engineer: project.projectEngineerId ? { id: project.projectEngineerId, name: employeeNames[project.projectEngineerId] || 'Unknown' } : null,
-      project_foreman: project.projectForemanId ? { id: project.projectForemanId, name: employeeNames[project.projectForemanId] || 'Unknown' } : null,
-      supervisor: project.supervisorId ? { id: project.supervisorId, name: employeeNames[project.supervisorId] || 'Unknown' } : null,
-      created_at: project.createdAt ? project.createdAt.toString() : '',
-      updated_at: project.updatedAt ? project.updatedAt.toString() : '',
+        budget: Number(project.budget) || 0,
+        progress: calculateProgress(project.startDate, project.endDate, project.status),
+        team_size: 0,
+        location: project.locationId && project.locationName ? `${project.locationName}, ${project.locationCity}, ${project.locationState}` : 'Project Location',
+        notes: project.notes || '',
+        // Project team roles
+        project_manager_id: project.projectManagerId,
+        project_engineer_id: project.projectEngineerId,
+        project_foreman_id: project.projectForemanId,
+        supervisor_id: project.supervisorId,
+        // Team member names for display
+        project_manager: project.projectManagerId ? { id: project.projectManagerId, name: employeeNames[project.projectManagerId] || 'Unknown' } : null,
+        project_engineer: project.projectEngineerId ? { id: project.projectEngineerId, name: employeeNames[project.projectEngineerId] || 'Unknown' } : null,
+        project_foreman: project.projectForemanId ? { id: project.projectForemanId, name: employeeNames[project.projectForemanId] || 'Unknown' } : null,
+        supervisor: project.supervisorId ? { id: project.supervisorId, name: employeeNames[project.supervisorId] || 'Unknown' } : null,
+        created_at: project.createdAt ? project.createdAt.toString() : '',
+        updated_at: project.updatedAt ? project.updatedAt.toString() : '',
       };
     });
 
@@ -205,7 +207,7 @@ const getProjectsHandler = async (request: NextRequest) => {
     });
   } catch (error) {
     console.error('Error fetching projects:', error);
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: false,
       error: 'Failed to fetch projects',
       details: error instanceof Error ? error.message : 'Unknown error'
@@ -308,6 +310,15 @@ const createProjectHandler = async (request: NextRequest) => {
       .returning();
     const project = inserted[0];
 
+    // Log the creation
+    const session = await getServerSession();
+    await AuditService.logCRUD('create', 'Project', String(project.id), `Project "${name}" created`, {
+      userId: session?.user?.id,
+      userName: session?.user?.name || undefined,
+      changes: { after: project },
+      ipAddress: request.headers.get('x-forwarded-for') || undefined,
+    });
+
     return NextResponse.json(
       {
         success: true,
@@ -344,6 +355,15 @@ const updateProjectHandler = async (request: NextRequest) => {
       .returning();
     const project = updated[0];
 
+    // Log the update
+    const session = await getServerSession();
+    await AuditService.logCRUD('update', 'Project', String(id), `Project "${project.name}" updated`, {
+      userId: session?.user?.id,
+      userName: session?.user?.name || undefined,
+      changes: { after: project },
+      ipAddress: request.headers.get('x-forwarded-for') || undefined,
+    });
+
     return NextResponse.json(project);
   } catch (error) {
     console.error('Error updating project:', error);
@@ -358,6 +378,14 @@ const deleteProjectHandler = async (request: NextRequest) => {
     const { id } = body;
 
     await db.delete(projectsTable).where(eq(projectsTable.id, Number(id)));
+
+    // Log the deletion
+    const session = await getServerSession();
+    await AuditService.logCRUD('delete', 'Project', String(id), `Project ID ${id} deleted`, {
+      userId: session?.user?.id,
+      userName: session?.user?.name || undefined,
+      ipAddress: request.headers.get('x-forwarded-for') || undefined,
+    });
 
     return NextResponse.json({ message: 'Project deleted successfully' });
   } catch (error) {

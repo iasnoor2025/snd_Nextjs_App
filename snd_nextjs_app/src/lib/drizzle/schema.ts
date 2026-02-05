@@ -984,10 +984,10 @@ export const finalSettlements = pgTable(
     employeeId: integer('employee_id').notNull(),
     resignationId: integer('resignation_id'),
     settlementNumber: text('settlement_number').notNull().unique(),
-    
+
     // Settlement Type: 'vacation' or 'exit'
     settlementType: text('settlement_type').notNull().default('exit'), // 'vacation' | 'exit'
-    
+
     // Employee Details
     employeeName: text('employee_name').notNull(),
     fileNumber: text('file_number'),
@@ -997,29 +997,29 @@ export const finalSettlements = pgTable(
     department: text('department'),
     hireDate: date('hire_date').notNull(),
     lastWorkingDate: date('last_working_date').notNull(),
-    
+
     // Vacation specific fields
     vacationStartDate: date('vacation_start_date'),
     vacationEndDate: date('vacation_end_date'),
     expectedReturnDate: date('expected_return_date'),
     vacationDurationMonths: numeric('vacation_duration_months', { precision: 4, scale: 1 }),
     vacationDays: integer('vacation_days'),
-    
+
     // Service Details
     totalServiceYears: integer('total_service_years').notNull(),
     totalServiceMonths: integer('total_service_months').notNull(),
     totalServiceDays: integer('total_service_days').notNull(),
-    
+
     // Salary Information
     lastBasicSalary: numeric('last_basic_salary', { precision: 10, scale: 2 }).notNull(),
     lastAllowances: numeric('last_allowances', { precision: 10, scale: 2 }).default('0'),
     unpaidSalaryMonths: numeric('unpaid_salary_months', { precision: 4, scale: 1 }).default('0').notNull(),
     unpaidSalaryAmount: numeric('unpaid_salary_amount', { precision: 10, scale: 2 }).default('0'),
-    
+
     // End of Service Benefits (Saudi Labor Law)
     endOfServiceBenefit: numeric('end_of_service_benefit', { precision: 10, scale: 2 }).notNull(),
     benefitCalculationMethod: text('benefit_calculation_method').notNull(), // 'resigned' or 'terminated'
-    
+
     // Other Benefits
     accruedVacationDays: integer('accrued_vacation_days').default(0),
     accruedVacationAmount: numeric('accrued_vacation_amount', { precision: 10, scale: 2 }).default('0'),
@@ -1027,46 +1027,46 @@ export const finalSettlements = pgTable(
     overtimeAmount: numeric('overtime_amount', { precision: 10, scale: 2 }).default('0'),
     otherBenefits: numeric('other_benefits', { precision: 10, scale: 2 }).default('0'),
     otherBenefitsDescription: text('other_benefits_description'),
-    
+
     // Deductions
     pendingAdvances: numeric('pending_advances', { precision: 10, scale: 2 }).default('0'),
     equipmentDeductions: numeric('equipment_deductions', { precision: 10, scale: 2 }).default('0'),
     otherDeductions: numeric('other_deductions', { precision: 10, scale: 2 }).default('0'),
     otherDeductionsDescription: text('other_deductions_description'),
-    
+
     // Absent Calculation
     absentDays: integer('absent_days').default(0),
     absentDeduction: numeric('absent_deduction', { precision: 10, scale: 2 }).default('0'),
     absentCalculationPeriod: text('absent_calculation_period'), // 'last_month', 'unpaid_period', 'custom'
     absentCalculationStartDate: date('absent_calculation_start_date'),
     absentCalculationEndDate: date('absent_calculation_end_date'),
-    
+
     // Final Settlement
     grossAmount: numeric('gross_amount', { precision: 10, scale: 2 }).notNull(),
     totalDeductions: numeric('total_deductions', { precision: 10, scale: 2 }).notNull(),
     netAmount: numeric('net_amount', { precision: 10, scale: 2 }).notNull(),
-    
+
     // Status and Approval
     status: text('status').default('draft').notNull(), // draft, pending_approval, approved, paid
     notes: text('notes'),
-    
+
     // Approval Details
     preparedBy: integer('prepared_by').notNull(),
     preparedAt: date('prepared_at').default(sql`CURRENT_DATE`).notNull(),
     approvedBy: integer('approved_by'),
     approvedAt: date('approved_at'),
-    
+
     // Payment Details
     paidBy: integer('paid_by'),
     paidAt: date('paid_at'),
     paymentMethod: text('payment_method'),
     paymentReference: text('payment_reference'),
-    
+
     // Document Details
     pdfPath: text('pdf_path'),
     employeeSignatureDate: date('employee_signature_date'),
     companySignatureDate: date('company_signature_date'),
-    
+
     currency: text('currency').default('SAR').notNull(),
     createdAt: date('created_at').default(sql`CURRENT_DATE`).notNull(),
     updatedAt: date('updated_at').notNull(),
@@ -3112,3 +3112,28 @@ export const projectSubcontractors = pgTable(
       .onDelete('set null'),
   ]
 );
+
+export const auditLogs = pgTable('audit_logs', {
+  id: serial().primaryKey().notNull(),
+  userId: integer('user_id'),
+  userName: text('user_name'),
+  action: text().notNull(), // 'create', 'update', 'delete', 'login', etc.
+  subjectType: text('subject_type').notNull(), // 'Employee', 'Equipment', etc.
+  subjectId: text('subject_id'), // ID of the related entity
+  description: text().notNull(), // Human-readable summary
+  changes: jsonb(), // Detailed changes { before: {}, after: {} }
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  severity: text().default('low').notNull(), // 'low', 'medium', 'high', 'critical'
+  createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+}, (table) => [
+  foreignKey({
+    columns: [table.userId],
+    foreignColumns: [users.id],
+    name: 'audit_logs_user_id_fkey',
+  })
+    .onUpdate('cascade')
+    .onDelete('set null'),
+]);

@@ -5,6 +5,8 @@ import { updateEmployeeStatusBasedOnLeave } from '@/lib/utils/employee-status';
 import { ERPNextSyncService } from '@/lib/services/erpnext-sync-service';
 import { eq, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from '@/lib/auth';
+import { AuditService } from '@/lib/services/audit-service';
 
 // GET handler with employee data filtering
 const getEmployeeHandler = async (
@@ -17,7 +19,7 @@ const getEmployeeHandler = async (
       try {
         resolvedParams = await params;
       } catch (error) {
-        
+
         return NextResponse.json({ error: 'Failed to resolve route parameters' }, { status: 500 });
       }
     } else {
@@ -25,7 +27,7 @@ const getEmployeeHandler = async (
     }
 
     if (!resolvedParams || !resolvedParams.id) {
-      
+
       return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
     }
 
@@ -128,7 +130,7 @@ const getEmployeeHandler = async (
           .from(employeesTable)
           .where(eq(employeesTable.id, parseInt(employeeRows[0].supervisor)))
           .limit(1);
-        
+
         if (supervisorRows.length > 0) {
           supervisorDetails = supervisorRows[0];
         }
@@ -294,8 +296,8 @@ const getEmployeeHandler = async (
       passport_file: updatedEmployee.passport_file,
       driving_license_file: updatedEmployee.driving_license_file,
       operator_license_file: updatedEmployee.operator_license_file,
-              tuv_certification_file: updatedEmployee.tuv_certification_file,
-        spsp_license_file: updatedEmployee.spsp_license_file,
+      tuv_certification_file: updatedEmployee.tuv_certification_file,
+      spsp_license_file: updatedEmployee.spsp_license_file,
     };
 
     return NextResponse.json({
@@ -304,7 +306,7 @@ const getEmployeeHandler = async (
       message: 'Employee retrieved successfully',
     });
   } catch (error) {
-    
+
     return NextResponse.json(
       {
         success: false,
@@ -328,6 +330,15 @@ const updateEmployeeHandler = async (
     if (!employeeId) {
       return NextResponse.json({ error: 'Invalid employee ID' }, { status: 400 });
     }
+
+    // Fetch old employee data for audit logging
+    const oldEmployee = await db
+      .select()
+      .from(employeesTable)
+      .where(eq(employeesTable.id, employeeId))
+      .limit(1);
+
+    const oldData = oldEmployee[0];
 
     // For employee users, ensure they can only update their own employee record
     if (request.employeeAccess?.ownEmployeeId) {
@@ -451,36 +462,36 @@ const updateEmployeeHandler = async (
             ? 'firstName'
             : key === 'middle_name'
               ? 'middleName'
-            : key === 'last_name'
-              ? 'lastName'
-            : key === 'file_number'
-              ? 'fileNumber'
-            : key === 'postal_code'
-              ? 'postalCode'
-            : key === 'department_id'
-              ? 'departmentId'
-            : key === 'designation_id'
-              ? 'designationId'
-            : key === 'iqama_number'
-              ? 'iqamaNumber'
-            : key === 'passport_number'
-              ? 'passportNumber'
-            : key === 'driving_license_number'
-              ? 'drivingLicenseNumber'
-            : key === 'operator_license_number'
-              ? 'operatorLicenseNumber'
-            : key === 'tuv_certification_number'
-              ? 'tuvCertificationNumber'
-            : key === 'spsp_license_number'
-              ? 'spspLicenseNumber'
-            : key;
-        
+              : key === 'last_name'
+                ? 'lastName'
+                : key === 'file_number'
+                  ? 'fileNumber'
+                  : key === 'postal_code'
+                    ? 'postalCode'
+                    : key === 'department_id'
+                      ? 'departmentId'
+                      : key === 'designation_id'
+                        ? 'designationId'
+                        : key === 'iqama_number'
+                          ? 'iqamaNumber'
+                          : key === 'passport_number'
+                            ? 'passportNumber'
+                            : key === 'driving_license_number'
+                              ? 'drivingLicenseNumber'
+                              : key === 'operator_license_number'
+                                ? 'operatorLicenseNumber'
+                                : key === 'tuv_certification_number'
+                                  ? 'tuvCertificationNumber'
+                                  : key === 'spsp_license_number'
+                                    ? 'spspLicenseNumber'
+                                    : key;
+
         // Handle empty strings for text fields - convert to null
         const value = updateDataRaw[key];
-        if (key === 'supervisor' || key === 'notes' || key === 'iqama_number' || 
-            key === 'passport_number' || key === 'driving_license_number' || 
-            key === 'operator_license_number' || key === 'tuv_certification_number' || 
-            key === 'spsp_license_number') {
+        if (key === 'supervisor' || key === 'notes' || key === 'iqama_number' ||
+          key === 'passport_number' || key === 'driving_license_number' ||
+          key === 'operator_license_number' || key === 'tuv_certification_number' ||
+          key === 'spsp_license_number') {
           drizzleData[drizzleKey] = value === '' || value === null || value === undefined ? null : value;
         } else if (key === 'status') {
           // status has a NOT NULL constraint with default 'active'
@@ -498,7 +509,7 @@ const updateEmployeeHandler = async (
       (Object.prototype.hasOwnProperty.call(drizzleData, 'contractDaysPerMonth') ||
         Object.prototype.hasOwnProperty.call(drizzleData, 'contractHoursPerDay'))
     ) {
-              const days = drizzleData.contractDaysPerMonth ?? 30;
+      const days = drizzleData.contractDaysPerMonth ?? 30;
       const hours = drizzleData.contractHoursPerDay ?? 8;
       if (days > 0 && hours > 0) {
         drizzleData.hourlyRate =
@@ -571,6 +582,27 @@ const updateEmployeeHandler = async (
           console.error('⚠️ ERPNext update sync failed (non-critical):', e);
         }
       })();
+    }
+
+    // Audit logging for update
+    const session = await getServerSession();
+    if (session?.user) {
+      await AuditService.logCRUD(
+        'update',
+        'Employee',
+        String(employeeId),
+        `Updated employee: ${updatedEmployee.firstName} ${updatedEmployee.lastName}`,
+        {
+          userId: session.user.id,
+          userName: session.user.name || 'Unknown User',
+          changes: {
+            before: oldData,
+            after: updatedEmployee,
+          },
+          ipAddress: request.headers.get('x-forwarded-for') || 'Internal',
+          userAgent: request.headers.get('user-agent') || 'Unknown',
+        }
+      );
     }
 
     return NextResponse.json({
@@ -668,12 +700,12 @@ const deleteEmployeeHandler = async (
         // Extract error details - Drizzle wraps PostgreSQL errors
         const errorMessage = err?.message || String(err);
         const errorCode = err?.code || err?.cause?.code || '';
-        
+
         // Also check the underlying cause if available
         const underlyingError = err?.cause || err;
         const underlyingMessage = underlyingError?.message || errorMessage;
         const underlyingCode = underlyingError?.code || errorCode;
-        
+
         // Enhanced error logging for debugging
         console.error(`Full error details for ${table}:`, {
           message: errorMessage,
@@ -683,19 +715,19 @@ const deleteEmployeeHandler = async (
           errorType: err?.constructor?.name,
           stack: err?.stack?.substring(0, 200)
         });
-        
+
         // PostgreSQL error codes:
         // 42P01 = undefined_table (table does not exist)
         // Check both main error and underlying error
         if (errorCode === '42P01' || underlyingCode === '42P01' ||
-            errorMessage.toLowerCase().includes('does not exist') || 
-            underlyingMessage.toLowerCase().includes('does not exist') ||
-            errorMessage.toLowerCase().includes('relation') && errorMessage.toLowerCase().includes('does not exist') ||
-            underlyingMessage.toLowerCase().includes('relation') && underlyingMessage.toLowerCase().includes('does not exist')) {
+          errorMessage.toLowerCase().includes('does not exist') ||
+          underlyingMessage.toLowerCase().includes('does not exist') ||
+          errorMessage.toLowerCase().includes('relation') && errorMessage.toLowerCase().includes('does not exist') ||
+          underlyingMessage.toLowerCase().includes('relation') && underlyingMessage.toLowerCase().includes('does not exist')) {
           console.warn(`Table ${table} does not exist in database (code: ${errorCode || underlyingCode}), skipping deletion`);
           continue;
         }
-        
+
         // If it's a constraint violation or other serious error, throw
         console.error(`Error deleting from table ${table} (code: ${errorCode || underlyingCode}):`, err);
         throw new Error(`Failed to delete related records from ${table}: ${underlyingMessage || errorMessage}`);
@@ -747,9 +779,29 @@ const deleteEmployeeHandler = async (
     // Attempt ERPNext sync to mark employee as inactive
     const erpnextSyncService = ERPNextSyncService.getInstance();
     let erpnextSyncResult = null;
-    
+
     if (erpnextSyncService.isAvailable()) {
       erpnextSyncResult = await erpnextSyncService.syncDeletedEmployee(employeeToDelete[0]);
+    }
+
+    // Audit logging for deletion
+    const session = await getServerSession();
+    if (session?.user && employeeToDelete[0]) {
+      const emp = employeeToDelete[0];
+      await AuditService.logCRUD(
+        'delete',
+        'Employee',
+        String(employeeId),
+        `Deleted employee: ${emp.firstName} ${emp.lastName} (${emp.fileNumber})`,
+        {
+          userId: session.user.id,
+          userName: session.user.name || 'Unknown User',
+          changes: { before: emp },
+          ipAddress: request.headers.get('x-forwarded-for') || 'Internal',
+          userAgent: request.headers.get('user-agent') || 'Unknown',
+          severity: 'medium',
+        }
+      );
     }
 
     return NextResponse.json({
