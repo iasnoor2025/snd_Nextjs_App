@@ -120,7 +120,7 @@ export class H2SCardService {
     }
 
     const { training, employee, trainingProgram } = result[0];
-    
+
     // Find employee photo from documents
     const employeePhoto = await this.findEmployeeIqamaPhoto(employee.id);
 
@@ -132,7 +132,7 @@ export class H2SCardService {
         training.id,
         baseUrl
       );
-      
+
       // Update training record with QR code URL when available
       if (qrCodeUrl) {
         await db
@@ -170,7 +170,7 @@ export class H2SCardService {
 
     return {
       id: training.id,
-      employeeName: `${employee.firstName} ${employee.middleName || ''} ${employee.lastName}`.trim(),
+      employeeName: [employee.firstName, employee.middleName, employee.lastName].filter(Boolean).join(' '),
       iqamaNumber: employee.iqamaNumber,
       fileNumber: employee.fileNumber,
       employeePhoto,

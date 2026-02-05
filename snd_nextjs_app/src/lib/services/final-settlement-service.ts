@@ -1,7 +1,7 @@
 import { db } from '@/lib/db';
-import { 
-  employees, 
-  payrolls, 
+import {
+  employees,
+  payrolls,
   finalSettlements,
   employeeSalaries,
   timesheets,
@@ -137,12 +137,12 @@ export class FinalSettlementService {
         .orderBy(desc(employeeSalaries.effectiveDate))
         .limit(1);
 
-      const currentBasicSalary = latestSalary.length > 0 
-        ? parseFloat(latestSalary[0]!.basicSalary) 
+      const currentBasicSalary = latestSalary.length > 0
+        ? parseFloat(latestSalary[0]!.basicSalary)
         : parseFloat(emp.basicSalary || '0');
 
-      const currentAllowances = latestSalary.length > 0 
-        ? parseFloat(latestSalary[0]!.allowances || '0') 
+      const currentAllowances = latestSalary.length > 0
+        ? parseFloat(latestSalary[0]!.allowances || '0')
         : 0;
 
       // Force: unpaid starts from September 2025 (meaning paid up to August 2025)
@@ -178,7 +178,7 @@ export class FinalSettlementService {
   ): EndOfServiceCalculation {
     const serviceDetails = this.calculateServicePeriod(hireDate, lastWorkingDate);
     const totalYearsDecimal = serviceDetails.totalServiceYears + (serviceDetails.totalServiceMonths / 12);
-    
+
     let endOfServiceBenefit = 0;
     let reductionPercentage = 0;
     let fullBenefitYears = 0;
@@ -202,13 +202,13 @@ export class FinalSettlementService {
       fullBenefitYears = totalYearsDecimal - 5;
       endOfServiceBenefit = (basicSalary / 2) * 5 + basicSalary * fullBenefitYears;
       reductionPercentage = isResignation ? 33.33 : 0; // 2/3 for resignation
-      endOfServiceBenefit = endOfServiceBenefit * (isResignation ? 2/3 : 1);
+      endOfServiceBenefit = endOfServiceBenefit * (isResignation ? 2 / 3 : 1);
     } else if (totalYearsDecimal >= 2) {
       // 2-5 years
       halfBenefitYears = totalYearsDecimal;
       endOfServiceBenefit = (basicSalary / 2) * totalYearsDecimal;
       reductionPercentage = isResignation ? 66.67 : 0; // 1/3 for resignation
-      endOfServiceBenefit = endOfServiceBenefit * (isResignation ? 1/3 : 1);
+      endOfServiceBenefit = endOfServiceBenefit * (isResignation ? 1 / 3 : 1);
     } else {
       // Less than 2 years: No benefit for resignation, full for termination
       halfBenefitYears = isResignation ? 0 : totalYearsDecimal;
@@ -238,7 +238,7 @@ export class FinalSettlementService {
   static calculateServicePeriod(startDate: Date, endDate: Date) {
     const start = new Date(startDate);
     const end = new Date(endDate);
-    
+
     let years = end.getFullYear() - start.getFullYear();
     let months = end.getMonth() - start.getMonth();
     let days = end.getDate() - start.getDate();
@@ -267,10 +267,10 @@ export class FinalSettlementService {
   static calculateMonthsBetween(startDate: Date, endDate: Date): number {
     const start = new Date(startDate);
     const end = new Date(endDate);
-    
+
     const yearDiff = end.getFullYear() - start.getFullYear();
     const monthDiff = end.getMonth() - start.getMonth();
-    
+
     return yearDiff * 12 + monthDiff;
   }
 
@@ -297,34 +297,34 @@ export class FinalSettlementService {
     // Iterate through each month that the vacation spans
     let currentMonth = new Date(start.getFullYear(), start.getMonth(), 1);
     const endMonth = new Date(end.getFullYear(), end.getMonth(), 1);
-    
+
     while (currentMonth <= endMonth) {
       const year = currentMonth.getFullYear();
       const month = currentMonth.getMonth();
-      
+
       // Get the first and last day of the current month
       const firstDayOfMonth = new Date(year, month, 1);
       const lastDayOfMonth = new Date(year, month + 1, 0);
-      
+
       // Calculate the actual number of days in this month
       const daysInMonth = lastDayOfMonth.getDate();
-      
+
       // Determine the start and end dates for vacation days in this month
       const monthStart = start > firstDayOfMonth ? start : firstDayOfMonth;
       const monthEnd = end < lastDayOfMonth ? end : lastDayOfMonth;
-      
+
       // Calculate the number of vacation days in this month (inclusive)
       const daysInThisMonth = Math.floor((monthEnd.getTime() - monthStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-      
+
       // Only calculate if there are days in this month
       if (daysInThisMonth > 0) {
         // Calculate daily rate based on actual days in this month
         const dailyRate = basicSalary / daysInMonth;
-        
+
         // Add allowance for this month
         totalAllowance += dailyRate * daysInThisMonth;
       }
-      
+
       // Move to the first day of the next month
       currentMonth = new Date(year, month + 1, 1);
     }
@@ -364,6 +364,7 @@ export class FinalSettlementService {
         .select({
           id: employees.id,
           firstName: employees.firstName,
+          middleName: employees.middleName,
           lastName: employees.lastName,
           fileNumber: employees.fileNumber,
           iqamaNumber: employees.iqamaNumber,
@@ -389,13 +390,13 @@ export class FinalSettlementService {
       const vacationEnd = new Date(vacationEndDate);
 
       // Calculate vacation days
-      const vacationDays = additionalData?.vacationDurationMonths 
+      const vacationDays = additionalData?.vacationDurationMonths
         ? Math.round(additionalData.vacationDurationMonths * 30) // Convert months to days (30 days per month)
         : Math.ceil((vacationEnd.getTime() - vacationStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
       // Get unpaid salary information
       const salaryInfo = await this.getUnpaidSalaryInfo(employeeId);
-      
+
       // Override unpaid salary amount if manual value is provided
       if (additionalData?.manualUnpaidSalary && additionalData.manualUnpaidSalary > 0) {
         salaryInfo.unpaidAmount = additionalData.manualUnpaidSalary;
@@ -416,9 +417,9 @@ export class FinalSettlementService {
         .where(eq(employeeSalaries.employeeId, employeeId))
         .orderBy(desc(employeeSalaries.effectiveDate))
         .limit(1);
-      
-      const currentBasicSalary = latestSalary.length > 0 
-        ? parseFloat(latestSalary[0]!.basicSalary) 
+
+      const currentBasicSalary = latestSalary.length > 0
+        ? parseFloat(latestSalary[0]!.basicSalary)
         : parseFloat(emp.basicSalary || '0');
 
       // Calculate vacation allowance based on actual days in each month
@@ -472,7 +473,7 @@ export class FinalSettlementService {
         const vacationStart = new Date(vacationStartDate);
         const daysInMonth = this.getDaysInMonth(vacationStart);
         const hourlyRate = currentBasicSalary / daysInMonth / 8; // Daily rate / 8 hours
-        
+
         // Get employee's overtime rate multiplier
         const employeeOvertime = await db
           .select({
@@ -481,11 +482,11 @@ export class FinalSettlementService {
           .from(employees)
           .where(eq(employees.id, employeeId))
           .limit(1);
-        
+
         const overtimeRate = employeeOvertime.length > 0 && employeeOvertime[0]?.overtimeRateMultiplier
           ? parseFloat(employeeOvertime[0].overtimeRateMultiplier)
           : 1.5;
-        
+
         overtimeAmount = additionalData.overtimeHours * hourlyRate * overtimeRate;
       }
 
@@ -507,7 +508,7 @@ export class FinalSettlementService {
         settlementType: 'vacation',
         employee: {
           id: emp.id,
-          name: `${emp.firstName || ''} ${emp.lastName || ''}`,
+          name: [emp.firstName, emp.middleName, emp.lastName].filter(Boolean).join(' '),
           fileNumber: emp.fileNumber || undefined,
           iqamaNumber: emp.iqamaNumber || undefined,
           nationality: emp.nationality || undefined,
@@ -586,6 +587,7 @@ export class FinalSettlementService {
         .select({
           id: employees.id,
           firstName: employees.firstName,
+          middleName: employees.middleName,
           lastName: employees.lastName,
           fileNumber: employees.fileNumber,
           iqamaNumber: employees.iqamaNumber,
@@ -620,17 +622,17 @@ export class FinalSettlementService {
         .orderBy(desc(employeeSalaries.effectiveDate))
         .limit(1);
 
-      const currentBasicSalary = latestSalary.length > 0 
-        ? parseFloat(latestSalary[0]!.basicSalary) 
+      const currentBasicSalary = latestSalary.length > 0
+        ? parseFloat(latestSalary[0]!.basicSalary)
         : parseFloat(emp.basicSalary || '0');
 
-      const currentAllowances = latestSalary.length > 0 
-        ? parseFloat(latestSalary[0]!.allowances || '0') 
+      const currentAllowances = latestSalary.length > 0
+        ? parseFloat(latestSalary[0]!.allowances || '0')
         : 0;
 
       // Get unpaid salary information
       const salaryInfo = await this.getUnpaidSalaryInfo(employeeId);
-      
+
       // Override unpaid salary amount if manual value is provided
       if (additionalData?.manualUnpaidSalary && additionalData.manualUnpaidSalary > 0) {
         salaryInfo.unpaidAmount = additionalData.manualUnpaidSalary;
@@ -685,7 +687,7 @@ export class FinalSettlementService {
         // Use actual days in the month of last working date
         const overtimeDaysInMonth = this.getDaysInMonth(lastWorking);
         const hourlyRate = currentBasicSalary / overtimeDaysInMonth / 8; // Daily rate / 8 hours
-        
+
         // Get employee's overtime rate multiplier
         const employeeOvertime = await db
           .select({
@@ -694,11 +696,11 @@ export class FinalSettlementService {
           .from(employees)
           .where(eq(employees.id, employeeId))
           .limit(1);
-        
+
         const overtimeRate = employeeOvertime.length > 0 && employeeOvertime[0]?.overtimeRateMultiplier
           ? parseFloat(employeeOvertime[0].overtimeRateMultiplier)
           : 1.5;
-        
+
         overtimeAmount = additionalData.overtimeHours * hourlyRate * overtimeRate;
       }
 
@@ -721,7 +723,7 @@ export class FinalSettlementService {
         settlementType: 'exit',
         employee: {
           id: emp.id,
-          name: `${emp.firstName || ''} ${emp.lastName || ''}`,
+          name: [emp.firstName, emp.middleName, emp.lastName].filter(Boolean).join(' '),
           fileNumber: emp.fileNumber || undefined,
           iqamaNumber: emp.iqamaNumber || undefined,
           nationality: emp.nationality || undefined,
@@ -743,18 +745,18 @@ export class FinalSettlementService {
           grossAmount: Math.round(grossAmount * 100) / 100,
           totalDeductions: Math.round(totalDeductions * 100) / 100,
           netAmount: Math.round(netAmount * 100) / 100,
-            breakdown: {
-              unpaidSalaries: Math.round(unpaidSalaries * 100) / 100,
-              endOfServiceBenefit: Math.round(endOfServiceAmount * 100) / 100,
-              accruedVacation: Math.round(accruedVacationAmount * 100) / 100,
-              vacationAllowance: 0,
-              overtimeAmount: Math.round(overtimeAmount * 100) / 100,
-              otherBenefits: Math.round(otherBenefits * 100) / 100,
-              pendingAdvances: Math.round(pendingAdvances * 100) / 100,
-              equipmentDeductions: Math.round(equipmentDeductions * 100) / 100,
-              otherDeductions: Math.round(otherDeductions * 100) / 100,
-              absentDeduction: Math.round(absentDeduction * 100) / 100,
-            },
+          breakdown: {
+            unpaidSalaries: Math.round(unpaidSalaries * 100) / 100,
+            endOfServiceBenefit: Math.round(endOfServiceAmount * 100) / 100,
+            accruedVacation: Math.round(accruedVacationAmount * 100) / 100,
+            vacationAllowance: 0,
+            overtimeAmount: Math.round(overtimeAmount * 100) / 100,
+            otherBenefits: Math.round(otherBenefits * 100) / 100,
+            pendingAdvances: Math.round(pendingAdvances * 100) / 100,
+            equipmentDeductions: Math.round(equipmentDeductions * 100) / 100,
+            otherDeductions: Math.round(otherDeductions * 100) / 100,
+            absentDeduction: Math.round(absentDeduction * 100) / 100,
+          },
         },
       };
     } catch (error) {
@@ -769,7 +771,7 @@ export class FinalSettlementService {
   static async generateSettlementNumber(settlementType: 'vacation' | 'exit' = 'exit'): Promise<string> {
     const year = new Date().getFullYear();
     const prefix = settlementType === 'vacation' ? 'VS' : 'FS'; // VS = Vacation Settlement, FS = Final Settlement
-    
+
     // Get the latest settlement number for this year and type
     const latestSettlement = await db
       .select({
@@ -826,14 +828,14 @@ export class FinalSettlementService {
           department: settlementData.employee.department || null,
           hireDate: settlementData.employee.hireDate,
           lastWorkingDate: settlementData.serviceDetails.lastWorkingDate,
-          
+
           // Vacation specific fields
           vacationStartDate: settlementData.vacationDetails?.vacationStartDate || null,
           vacationEndDate: settlementData.vacationDetails?.vacationEndDate || null,
           expectedReturnDate: settlementData.vacationDetails?.expectedReturnDate || null,
           vacationDurationMonths: additionalData?.vacationDurationMonths?.toString() || null,
           vacationDays: settlementData.vacationDetails?.vacationDays || null,
-          
+
           totalServiceYears: settlementData.serviceDetails.totalServiceYears,
           totalServiceMonths: settlementData.serviceDetails.totalServiceMonths,
           totalServiceDays: settlementData.serviceDetails.totalServiceDays,
@@ -841,7 +843,7 @@ export class FinalSettlementService {
           lastAllowances: '0', // Will be populated from salary data
           unpaidSalaryMonths: settlementData.salaryInfo.totalUnpaidMonths.toString(),
           unpaidSalaryAmount: settlementData.salaryInfo.unpaidAmount.toString(),
-          endOfServiceBenefit: settlementData.settlementType === 'vacation' 
+          endOfServiceBenefit: settlementData.settlementType === 'vacation'
             ? (settlementData.vacationDetails?.vacationAllowance || 0).toString()
             : settlementData.endOfServiceBenefit.endOfServiceBenefit.toString(),
           benefitCalculationMethod: settlementData.endOfServiceBenefit.benefitCalculationMethod,
@@ -862,14 +864,14 @@ export class FinalSettlementService {
           equipmentDeductions: settlementData.finalCalculation.breakdown.equipmentDeductions.toString(),
           otherDeductions: settlementData.finalCalculation.breakdown.otherDeductions.toString(),
           otherDeductionsDescription: additionalData?.otherDeductionsDescription || null,
-          
+
           // Absent Calculation
           absentDays: settlementData.absentCalculation.absentDays,
           absentDeduction: settlementData.absentCalculation.absentDeduction.toString(),
           absentCalculationPeriod: settlementData.absentCalculation.calculationPeriod,
           absentCalculationStartDate: settlementData.absentCalculation.startDate || null,
           absentCalculationEndDate: settlementData.absentCalculation.endDate || null,
-          
+
           grossAmount: settlementData.finalCalculation.grossAmount.toString(),
           totalDeductions: settlementData.finalCalculation.totalDeductions.toString(),
           netAmount: settlementData.finalCalculation.netAmount.toString(),
@@ -952,9 +954,9 @@ export class FinalSettlementService {
           .where(eq(employeeSalaries.employeeId, employeeId))
           .orderBy(desc(employeeSalaries.effectiveDate))
           .limit(1);
-        
-        currentBasicSalary = latestSalary.length > 0 
-          ? parseFloat(latestSalary[0]!.basicSalary) 
+
+        currentBasicSalary = latestSalary.length > 0
+          ? parseFloat(latestSalary[0]!.basicSalary)
           : 0;
       }
 
@@ -1006,7 +1008,7 @@ export class FinalSettlementService {
           periodStart.getUTCMonth(),
           periodStart.getUTCDate() + day
         ));
-        
+
         // Skip if date is beyond period end
         if (currentDate > periodEnd) break;
 
@@ -1068,19 +1070,19 @@ export class FinalSettlementService {
       // Calculate daily rate and deduction based on actual days in each month
       // Group absent days by month and calculate deduction for each month separately
       const absentDaysByMonth = new Map<string, number>();
-      
+
       // Count absent days per month
       for (const absentDate of absentDates) {
         const date = new Date(absentDate);
         const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
         absentDaysByMonth.set(monthKey, (absentDaysByMonth.get(monthKey) || 0) + 1);
       }
-      
+
       // Calculate deduction for each month based on actual days in that month
       let totalAbsentDeduction = 0;
       let totalDailyRate = 0;
       let monthCount = 0;
-      
+
       for (const [monthKey, absentDaysInMonth] of absentDaysByMonth.entries()) {
         const [year, month] = monthKey.split('-').map(Number);
         const actualDaysInMonth = this.getDaysInMonth(new Date(year, month, 1));
@@ -1090,7 +1092,7 @@ export class FinalSettlementService {
         totalDailyRate += dailyRate;
         monthCount++;
       }
-      
+
       // Calculate average daily rate for display purposes
       const averageDailyRate = monthCount > 0 ? totalDailyRate / monthCount : (currentBasicSalary / 30);
       const absentDeduction = Math.round(totalAbsentDeduction * 100) / 100;

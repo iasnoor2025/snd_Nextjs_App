@@ -3,8 +3,8 @@ import { db } from '@/lib/drizzle';
 import { getRBACPermissions } from '@/lib/rbac/rbac-utils';
 import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { 
-  equipment, 
+import {
+  equipment,
   equipmentCategories,
   locations,
   employees
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     const includeInactive = searchParams.get('includeInactive') === 'true';
 
     // Build equipment query with category information
-    let equipmentQuery = db
+    let equipmentQuery: any = db
       .select({
         id: equipment.id,
         name: equipment.name,
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
         locationId: equipment.locationId,
         locationName: locations.name,
         assignedTo: equipment.assignedTo,
-        assignedEmployeeName: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
+        assignedEmployeeName: sql<string>`CONCAT_WS(' ', ${employees.firstName}, ${employees.middleName}, ${employees.lastName})`,
         lastMaintenanceDate: equipment.lastMaintenanceDate,
         nextMaintenanceDate: equipment.nextMaintenanceDate,
         notes: equipment.notes,
@@ -81,19 +81,19 @@ export async function GET(request: NextRequest) {
 
     // Apply filters
     const conditions = [];
-    
+
     if (categoryId) {
       conditions.push(eq(equipment.categoryId, parseInt(categoryId)));
     }
-    
+
     if (status) {
       conditions.push(eq(equipment.status, status));
     }
-    
+
     if (locationId) {
       conditions.push(eq(equipment.locationId, parseInt(locationId)));
     }
-    
+
     if (!includeInactive) {
       conditions.push(eq(equipment.isActive, true));
     }
@@ -141,7 +141,7 @@ export async function GET(request: NextRequest) {
       .orderBy(asc(equipmentCategories.name));
 
     // Apply same filters to category stats
-    let categoryStatsQuery = db
+    let categoryStatsQuery: any = db
       .select({
         categoryId: equipmentCategories.id,
         categoryName: equipmentCategories.name,
@@ -171,19 +171,19 @@ export async function GET(request: NextRequest) {
       .orderBy(asc(equipmentCategories.name));
 
     const categoryStatsConditions = [];
-    
+
     if (categoryId) {
       categoryStatsConditions.push(eq(equipment.categoryId, parseInt(categoryId)));
     }
-    
+
     if (status) {
       categoryStatsConditions.push(eq(equipment.status, status));
     }
-    
+
     if (locationId) {
       categoryStatsConditions.push(eq(equipment.locationId, parseInt(locationId)));
     }
-    
+
     if (!includeInactive) {
       categoryStatsConditions.push(eq(equipment.isActive, true));
     }
@@ -211,7 +211,7 @@ export async function GET(request: NextRequest) {
       .from(equipment);
 
     // Apply same filters to overall stats
-    let overallStatsQuery = db
+    let overallStatsQuery: any = db
       .select({
         totalEquipment: count(equipment.id),
         activeEquipment: count(sql`CASE WHEN ${equipment.isActive} = true THEN 1 END`),
@@ -227,19 +227,19 @@ export async function GET(request: NextRequest) {
       .from(equipment);
 
     const overallStatsConditions = [];
-    
+
     if (categoryId) {
       overallStatsConditions.push(eq(equipment.categoryId, parseInt(categoryId)));
     }
-    
+
     if (status) {
       overallStatsConditions.push(eq(equipment.status, status));
     }
-    
+
     if (locationId) {
       overallStatsConditions.push(eq(equipment.locationId, parseInt(locationId)));
     }
-    
+
     if (!includeInactive) {
       overallStatsConditions.push(eq(equipment.isActive, true));
     }
@@ -254,7 +254,7 @@ export async function GET(request: NextRequest) {
     const equipmentByCategory = equipmentData.reduce((acc: any, item: any) => {
       const categoryKey = item.categoryId || 'uncategorized';
       const categoryName = item.categoryName || 'Uncategorized';
-      
+
       if (!acc[categoryKey]) {
         acc[categoryKey] = {
           categoryId: item.categoryId,
@@ -265,7 +265,7 @@ export async function GET(request: NextRequest) {
           equipment: []
         };
       }
-      
+
       acc[categoryKey].equipment.push(item);
       return acc;
     }, {});
@@ -287,11 +287,11 @@ export async function GET(request: NextRequest) {
       equipment_by_category: equipmentByCategory,
       equipment_list: equipmentData,
       generated_at: new Date().toISOString(),
-      parameters: { 
-        categoryId, 
-        status, 
-        locationId, 
-        includeInactive 
+      parameters: {
+        categoryId,
+        status,
+        locationId,
+        includeInactive
       }
     };
 
@@ -305,7 +305,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error generating equipment report:', error);
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: 'Failed to generate equipment report',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });

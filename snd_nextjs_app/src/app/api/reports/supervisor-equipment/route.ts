@@ -2,10 +2,10 @@ import { db } from '@/lib/drizzle';
 import { getRBACPermissions } from '@/lib/rbac/rbac-utils';
 import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { 
-  employees, 
-  equipment, 
-  rentals, 
+import {
+  employees,
+  equipment,
+  rentals,
   rentalItems,
   customers,
 } from '@/lib/drizzle/schema';
@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
       .select({
         supervisor_id: rentalItems.supervisorId,
         supervisor_first_name: employees.firstName,
+        supervisor_middle_name: employees.middleName,
         supervisor_last_name: employees.lastName,
         supervisor_file_number: employees.fileNumber,
         equipment_id: rentalItems.equipmentId,
@@ -68,6 +69,7 @@ export async function GET(request: NextRequest) {
         customer_name: customers.name,
         operator_id: rentalItems.operatorId,
         operator_first_name: operatorEmp.firstName,
+        operator_middle_name: operatorEmp.middleName,
         operator_last_name: operatorEmp.lastName,
         operator_file_number: operatorEmp.fileNumber,
         item_status: rentalItems.status,
@@ -87,14 +89,14 @@ export async function GET(request: NextRequest) {
     // Group by supervisor
     const supervisorGroups = supervisorEquipmentData.reduce((acc: any, item: any) => {
       const supervisorId = item.supervisor_id;
-      
+
       if (!supervisorId) return acc;
 
       if (!acc[supervisorId]) {
         acc[supervisorId] = {
           supervisor_id: supervisorId,
           supervisor_name: item.supervisor_first_name && item.supervisor_last_name
-            ? `${item.supervisor_first_name} ${item.supervisor_last_name}`
+            ? [item.supervisor_first_name, item.supervisor_middle_name, item.supervisor_last_name].filter(Boolean).join(' ')
             : `Employee ${supervisorId}`,
           supervisor_file_number: item.supervisor_file_number || null,
           equipment_count: 0,
@@ -119,7 +121,7 @@ export async function GET(request: NextRequest) {
             customer_name: item.customer_name || 'N/A',
             operator_id: item.operator_id,
             operator_name: item.operator_first_name && item.operator_last_name
-              ? `${item.operator_first_name} ${item.operator_last_name}`
+              ? [item.operator_first_name, item.operator_middle_name, item.operator_last_name].filter(Boolean).join(' ')
               : item.operator_id ? `Employee ${item.operator_id}` : null,
             operator_file_number: item.operator_file_number || null,
             item_status: item.item_status,
@@ -139,7 +141,7 @@ export async function GET(request: NextRequest) {
       const uniqueEquipmentIds = new Set(
         group.equipment.map((eq: any) => eq.equipment_id).filter((id: any) => id)
       );
-      
+
       return {
         supervisor_id: group.supervisor_id,
         supervisor_name: group.supervisor_name,
@@ -148,7 +150,7 @@ export async function GET(request: NextRequest) {
         total_items: group.equipment.length,
         equipment: group.equipment.map((eq: any) => ({
           ...eq,
-          display_name: eq.equipment_istimara 
+          display_name: eq.equipment_istimara
             ? `${eq.equipment_name} (${eq.equipment_istimara})`
             : eq.equipment_name,
         })),
@@ -156,23 +158,23 @@ export async function GET(request: NextRequest) {
     });
 
     // Sort by supervisor name
-    supervisorGroupsArray.sort((a: any, b: any) => 
+    supervisorGroupsArray.sort((a: any, b: any) =>
       a.supervisor_name.localeCompare(b.supervisor_name)
     );
 
     // Calculate summary statistics
     const summaryStats = {
       total_supervisors: supervisorGroupsArray.length,
-      total_equipment: supervisorGroupsArray.reduce((sum: number, group: any) => 
+      total_equipment: supervisorGroupsArray.reduce((sum: number, group: any) =>
         sum + group.equipment_count, 0
       ),
-      total_items: supervisorGroupsArray.reduce((sum: number, group: any) => 
+      total_items: supervisorGroupsArray.reduce((sum: number, group: any) =>
         sum + group.total_items, 0
       ),
       average_equipment_per_supervisor: supervisorGroupsArray.length > 0
-        ? (supervisorGroupsArray.reduce((sum: number, group: any) => 
-            sum + group.equipment_count, 0
-          ) / supervisorGroupsArray.length).toFixed(2)
+        ? (supervisorGroupsArray.reduce((sum: number, group: any) =>
+          sum + group.equipment_count, 0
+        ) / supervisorGroupsArray.length).toFixed(2)
         : 0,
     };
 

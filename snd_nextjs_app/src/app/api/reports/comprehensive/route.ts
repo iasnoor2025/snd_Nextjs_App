@@ -3,14 +3,14 @@ import { db } from '@/lib/drizzle';
 import { getRBACPermissions } from '@/lib/rbac/rbac-utils';
 import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { 
-  employees, 
-  projects, 
-  equipment, 
-  customers, 
-  rentals, 
-  timesheets, 
-  payrolls, 
+import {
+  employees,
+  projects,
+  equipment,
+  customers,
+  rentals,
+  timesheets,
+  payrolls,
   advancePayments,
   employeeLeaves,
   equipmentMaintenance,
@@ -22,7 +22,8 @@ import {
   trainings,
   rentalEquipmentTimesheets,
   rentalItems,
-  rentalTimesheetReceived
+  rentalTimesheetReceived,
+  equipmentCategories
 } from '@/lib/drizzle/schema';
 import { alias } from 'drizzle-orm/pg-core';
 import { sql, count, sum, avg, max, min, desc, asc, eq, and, gte, lte, or, inArray, notInArray, isNull } from 'drizzle-orm';
@@ -107,9 +108,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error generating comprehensive report:', error);
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: error instanceof Error ? error.message : 'Internal server error',
-      success: false 
+      success: false
     }, { status: 500 });
   }
 }
@@ -217,7 +218,7 @@ async function generateEmployeeAnalyticsReport(startDate?: string | null, endDat
         active_employees: count(sql`CASE WHEN ${employees.status} = 'active' THEN 1 END`),
         avg_salary: avg(sql`COALESCE(${employees.basicSalary}, 0)`)
       })
-      .from(employees),
+        .from(employees),
 
       // Leave Analysis
       db.select({
@@ -225,8 +226,8 @@ async function generateEmployeeAnalyticsReport(startDate?: string | null, endDat
         total_days: sum(sql`COALESCE(${employeeLeaves.days}, 0)`),
         count: count()
       })
-      .from(employeeLeaves)
-      .groupBy(employeeLeaves.leaveType)
+        .from(employeeLeaves)
+        .groupBy(employeeLeaves.leaveType)
     ]);
     return {
       performance_metrics: performanceMetrics[0] || { total_employees: 0, active_employees: 0, avg_salary: 0 },
@@ -524,40 +525,43 @@ async function generateRentalAnalyticsReport(startDate?: string | null, endDate?
         total_amount: sum(sql`COALESCE(${rentals.totalAmount}, 0)`),
         active_rentals: count(sql`CASE WHEN ${rentals.status} = 'active' THEN 1 END`)
       })
-      .from(rentals)
-      .leftJoin(customers, eq(rentals.customerId, customers.id))
-      .groupBy(rentals.customerId, customers.name),
+        .from(rentals)
+        .leftJoin(customers, eq(rentals.customerId, customers.id))
+        .groupBy(rentals.customerId, customers.name),
 
       // Equipment Rentals with Details
       db.select({
         rental_id: rentals.id,
-        equipment_id: rentals.equipmentId,
-        equipment_name: equipment.name,
-        equipment_type: equipment.type,
-        equipment_model: equipment.model,
+        equipment_id: rentalItems.equipmentId,
+        equipment_name: rentalItems.equipmentName,
+        equipment_type: equipmentCategories.name,
+        equipment_model: equipment.modelNumber,
         customer_name: customers.name,
         rental_status: rentals.status,
         rental_amount: rentals.totalAmount,
-        start_date: rentals.startDate,
-        end_date: rentals.endDate
+        start_date: rentalItems.startDate,
+        end_date: rentalItems.completedDate
       })
-      .from(rentals)
-      .leftJoin(equipment, eq(rentals.equipmentId, equipment.id))
-      .leftJoin(customers, eq(rentals.customerId, customers.id)),
+        .from(rentals)
+        .leftJoin(rentalItems, eq(rentals.id, rentalItems.rentalId))
+        .leftJoin(equipment, eq(rentalItems.equipmentId, equipment.id))
+        .leftJoin(equipmentCategories, eq(equipment.categoryId, equipmentCategories.id))
+        .leftJoin(customers, eq(rentals.customerId, customers.id)),
 
       // Operator Assignments
       db.select({
         rental_id: rentals.id,
-        operator_id: rentals.operatorId,
-        operator_name: sql`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
-        equipment_name: equipment.name,
+        operator_id: rentalItems.operatorId,
+        operator_name: sql`CONCAT_WS(' ', ${employees.firstName}, ${employees.middleName}, ${employees.lastName})`,
+        equipment_name: rentalItems.equipmentName,
         customer_name: customers.name,
         assignment_status: rentals.status
       })
-      .from(rentals)
-      .leftJoin(employees, eq(rentals.operatorId, employees.id))
-      .leftJoin(equipment, eq(rentals.equipmentId, equipment.id))
-      .leftJoin(customers, eq(rentals.customerId, customers.id))
+        .from(rentals)
+        .leftJoin(rentalItems, eq(rentals.id, rentalItems.rentalId))
+        .leftJoin(employees, eq(rentalItems.operatorId, employees.id))
+        .leftJoin(equipment, eq(rentalItems.equipmentId, equipment.id))
+        .leftJoin(customers, eq(rentals.customerId, customers.id))
     ]);
     return {
       rental_stats: rentalStats[0] || { total_rentals: 0, active_rentals: 0, completed_rentals: 0, total_revenue: 0, avg_rental_amount: 0 },
@@ -591,13 +595,13 @@ async function generateCustomerAnalyticsReport(startDate?: string | null, endDat
     const customersWithRentalsCount = await db.select({
       count: count(sql`DISTINCT ${customers.id}`)
     }).from(customers)
-    .innerJoin(rentals, eq(customers.id, rentals.customerId));
+      .innerJoin(rentals, eq(customers.id, rentals.customerId));
 
     // Get customers with projects count
     const customersWithProjectsCount = await db.select({
       count: count(sql`DISTINCT ${customers.id}`)
     }).from(customers)
-    .innerJoin(projects, eq(customers.id, projects.customerId));
+      .innerJoin(projects, eq(customers.id, projects.customerId));
     return {
       customer_stats: {
         total_customers: customerStats[0]?.total_customers || 0,
@@ -627,7 +631,7 @@ export async function generateRentalTimesheetReport(startDate?: string | null, e
   try {
     // Build date filter conditions
     const dateConditions = [];
-    
+
     // If month is provided, use it instead of startDate/endDate
     if (month) {
       const [year, monthNum] = month.split('-').map(Number);
@@ -646,9 +650,9 @@ export async function generateRentalTimesheetReport(startDate?: string | null, e
       }
     }
     // If no month and no dates provided, show all data (dateFilter will be undefined)
-    
+
     const dateFilter = dateConditions.length > 0 ? and(...dateConditions) : undefined;
-    
+
     // Handle hasTimesheet filter - this requires a subquery approach
     // If hasTimesheet is 'yes', we only want rentals that have timesheet entries
     // If hasTimesheet is 'no', we only want rentals that don't have timesheet entries
@@ -660,7 +664,7 @@ export async function generateRentalTimesheetReport(startDate?: string | null, e
         .from(rentalEquipmentTimesheets)
         .where(dateFilter || undefined);
       const rentalIds = rentalsWithTimesheets.map(r => r.rentalId).filter((id): id is number => id !== null);
-      
+
       if (hasTimesheet === 'yes') {
         if (rentalIds.length > 0) {
           rentalIdFilter = inArray(rentals.id, rentalIds);
@@ -675,7 +679,7 @@ export async function generateRentalTimesheetReport(startDate?: string | null, e
         // If no rentals have timesheets and we want "no timesheet", show all rentals (no filter needed)
       }
     }
-    
+
     // Build customer filter conditions for joins
     const customerConditions = [];
     if (dateFilter) {
@@ -734,7 +738,7 @@ export async function generateRentalTimesheetReport(startDate?: string | null, e
       activeRentalsConditions.push(rentalIdFilter);
     }
     const activeRentalsWhere = and(...activeRentalsConditions);
-    
+
     const activeRentalsCount = await db
       .select({
         count: count(sql`DISTINCT ${rentals.id}`)
@@ -830,14 +834,14 @@ export async function generateRentalTimesheetReport(startDate?: string | null, e
         itemConditions.push(eq(rentals.customerId, parseInt(customerId)));
       }
       // Do NOT apply rentalIdFilter here - we filter at item level below
-      
+
       // If month filter is provided, filter items that were active during that month
       if (month) {
         const [year, monthNum] = month.split('-').map(Number);
         const filterStartDate = `${year}-${String(monthNum).padStart(2, '0')}-01`;
         const lastDay = new Date(year, monthNum, 0).getDate();
         const filterEndDate = `${year}-${String(monthNum).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
-        
+
         // Item must be active during the selected month
         // Item is active if: (start_date <= filterEndDate) AND (completed_date IS NULL OR completed_date >= filterStartDate)
         itemConditions.push(
@@ -847,7 +851,7 @@ export async function generateRentalTimesheetReport(startDate?: string | null, e
           sql`(${rentalItems.completedDate} IS NULL OR ${rentalItems.completedDate}::date >= ${filterStartDate}::date)`
         );
       }
-      
+
       const itemWhereFilter = itemConditions.length > 0 ? and(...itemConditions) : undefined;
 
       // Get rental items that don't have timesheet entries
@@ -897,7 +901,7 @@ export async function generateRentalTimesheetReport(startDate?: string | null, e
         .selectDistinct({ rentalItemId: rentalEquipmentTimesheets.rentalItemId })
         .from(rentalEquipmentTimesheets)
         .where(timesheetCheckFilter || undefined);
-      
+
       const itemsWithTimesheetsSet = new Set(
         itemsWithTimesheets.map(r => r.rentalItemId).filter((id): id is number => id !== null)
       );
@@ -910,7 +914,7 @@ export async function generateRentalTimesheetReport(startDate?: string | null, e
       const rentalIdsForStartDate = filteredItems
         .map((item: any) => item.rental_id)
         .filter((id): id is number => id !== null && id !== undefined);
-      
+
       const rentalStartDateMap = new Map<number, string | null>();
       if (rentalIdsForStartDate.length > 0) {
         const rentalStartDates = await db
@@ -920,7 +924,7 @@ export async function generateRentalTimesheetReport(startDate?: string | null, e
           })
           .from(rentals)
           .where(inArray(rentals.id, rentalIdsForStartDate));
-        
+
         rentalStartDates.forEach(r => {
           rentalStartDateMap.set(r.id, r.startDate);
         });
@@ -935,18 +939,18 @@ export async function generateRentalTimesheetReport(startDate?: string | null, e
           const date = new Date(dateToUse);
           const itemStartDate = new Date(date);
           const itemEndDate = item.completed_date ? new Date(item.completed_date) : new Date();
-          
+
           // If month filter is provided, check if item was active during that month
           if (month) {
             const [year, monthNum] = month.split('-').map(Number);
             const filterStartDate = new Date(year, monthNum - 1, 1);
             const filterEndDate = new Date(year, monthNum, 0, 23, 59, 59, 999);
-            
+
             // Item must overlap with the selected month
             if (itemEndDate < filterStartDate || itemStartDate > filterEndDate) {
               return; // Skip this item - not active during selected month
             }
-            
+
             // Use the selected month as the month key
             const monthKey = month;
             if (!itemsByMonth[monthKey]) {
@@ -1050,7 +1054,7 @@ export async function generateRentalTimesheetReport(startDate?: string | null, e
     // Get rental IDs from monthly items data
     const rentalIdsFromMonthly = monthlyItemsData.map((item: any) => item.rental_id).filter((id): id is number => id !== null && id !== undefined);
     const uniqueRentalIds = Array.from(new Set(rentalIdsFromMonthly));
-    
+
     const timesheetReceivedData = uniqueRentalIds.length > 0 ? await db
       .select({
         month: rentalTimesheetReceived.month,
@@ -1066,12 +1070,12 @@ export async function generateRentalTimesheetReport(startDate?: string | null, e
     const monthlyGroups: Record<string, any[]> = {};
     monthlyItemsData.forEach((item: any) => {
       const monthKey = item.month;
-      
+
       // If month filter is provided, only include items from that month
       if (month && monthKey !== month) {
         return; // Skip items not in the selected month
       }
-      
+
       if (!monthlyGroups[monthKey]) {
         monthlyGroups[monthKey] = [];
       }
@@ -1084,14 +1088,14 @@ export async function generateRentalTimesheetReport(startDate?: string | null, e
       const uniqueItems = Array.from(
         new Map(items.map((item: any) => [item.rental_item_id, item])).values()
       );
-      
+
       const totalItems = uniqueItems.length;
       const activeItems = uniqueItems.filter((item: any) => item.status === 'active').length;
       const totalValue = uniqueItems.reduce((sum: number, item: any) => {
         const unitPrice = parseFloat(item.unit_price?.toString() || '0') || 0;
         const totalHours = parseFloat(item.total_hours?.toString() || '0') || 0;
         const rateType = item.rate_type || 'daily';
-        
+
         // Calculate total based on rate type and hours (convert rate to hourly, then multiply by hours)
         let itemTotal = 0;
         if (totalHours > 0) {
@@ -1110,7 +1114,7 @@ export async function generateRentalTimesheetReport(startDate?: string | null, e
           // Fallback to unit price if no hours
           itemTotal = unitPrice;
         }
-        
+
         return sum + itemTotal;
       }, 0);
 
@@ -1119,7 +1123,7 @@ export async function generateRentalTimesheetReport(startDate?: string | null, e
       const allReceived = uniqueItems.every((item: any) => {
         const received = timesheetReceivedData.find(
           (tr: any) => tr.month === monthKey && (
-            (tr.rental_item_id === item.rental_item_id) || 
+            (tr.rental_item_id === item.rental_item_id) ||
             (tr.rental_item_id === null && tr.rental_id === item.rental_id)
           )
         );
@@ -1130,16 +1134,16 @@ export async function generateRentalTimesheetReport(startDate?: string | null, e
       const sortedItems = [...uniqueItems].sort((a: any, b: any) => {
         const nameA = (a.equipment_name || '').toLowerCase();
         const nameB = (b.equipment_name || '').toLowerCase();
-        
+
         // Try to extract numeric prefix (e.g., "1404-DOZER" -> "1404")
         const extractNumber = (name: string) => {
           const match = name.match(/^(\d+)/);
           return match ? parseInt(match[1]) : null;
         };
-        
+
         const numA = extractNumber(nameA);
         const numB = extractNumber(nameB);
-        
+
         // If both have numeric prefixes, compare numerically
         if (numA !== null && numB !== null) {
           if (numA !== numB) {
@@ -1148,15 +1152,15 @@ export async function generateRentalTimesheetReport(startDate?: string | null, e
           // If numbers are equal, compare full names
           return nameA.localeCompare(nameB);
         }
-        
+
         // If one has numeric prefix and the other doesn't, numeric comes first
         if (numA !== null && numB === null) return -1;
         if (numA === null && numB !== null) return 1;
-        
+
         // Both are non-numeric, sort alphabetically
         return nameA.localeCompare(nameB);
       });
-      
+
       return {
         month: monthKey,
         monthLabel: new Date(`${monthKey}-01`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
@@ -1164,40 +1168,41 @@ export async function generateRentalTimesheetReport(startDate?: string | null, e
           ...item,
           serial_number: index + 1,
           operator_name: item.operator_first_name && item.operator_last_name
-            ? `${item.operator_first_name} ${item.operator_last_name}`
+            ? [item.operator_first_name, item.operator_middle_name, item.operator_last_name].filter(Boolean).join(' ')
             : null,
           operator_display: item.operator_file_number
-            ? `${item.operator_first_name || ''} ${item.operator_last_name || ''} (${item.operator_file_number})`.trim()
+            ? `${[item.operator_first_name, item.operator_middle_name, item.operator_last_name].filter(Boolean).join(' ')} (${item.operator_file_number})`.trim()
             : item.operator_first_name && item.operator_last_name
-            ? `${item.operator_first_name} ${item.operator_last_name}`
-            : null,
+              ? [item.operator_first_name, item.operator_middle_name, item.operator_last_name].filter(Boolean).join(' ')
+              : null,
           supervisor_name: item.supervisor_first_name && item.supervisor_last_name
-            ? `${item.supervisor_first_name} ${item.supervisor_last_name}`
+            ? [item.supervisor_first_name, item.supervisor_middle_name, item.supervisor_last_name].filter(Boolean).join(' ')
             : null,
           supervisor_display: (() => {
             // Get the full name parts
             const firstName = item.supervisor_first_name || '';
+            const middleName = item.supervisor_middle_name || '';
             const lastName = item.supervisor_last_name || '';
             const fileNumber = item.supervisor_file_number;
-            
-            // Combine first and last name, then take only first two words
-            const fullName = `${firstName} ${lastName}`.trim();
-            const nameParts = fullName.split(/\s+/).filter(part => part.length > 0);
-            
-            // Take only first two words (or just one if only one exists)
-            const shortName = nameParts.slice(0, 2).join(' ');
-            
+
+            // Combine name parts
+            const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ').trim();
+
+            // For general display, keep it full or at least 2 parts if it's too long?
+            // User requested "Full Name consistently", so we should show full name.
+            // Old logic was taking only 2 parts, which we are now fixing.
+
             if (fileNumber) {
-              return `${shortName} (${fileNumber})`;
-            } else if (shortName) {
-              return shortName;
+              return `${fullName} (${fileNumber})`;
+            } else if (fullName) {
+              return fullName;
             }
             return null;
           })(),
           timesheet_received: (() => {
             const received = timesheetReceivedData.find(
               (tr: any) => tr.month === monthKey && (
-                (tr.rental_item_id === item.rental_item_id) || 
+                (tr.rental_item_id === item.rental_item_id) ||
                 (tr.rental_item_id === null && tr.rental_id === item.rental_id)
               )
             );
@@ -1261,12 +1266,12 @@ async function generateEmployeeAdvanceReport(startDate?: string | null, endDate?
 
     // Build where conditions - always exclude deleted
     const whereConditions = [isNull(advancePayments.deletedAt)];
-    
+
     // Only add date filter if dates are provided
     if (dateFilter) {
       whereConditions.push(dateFilter);
     }
-    
+
     // Add employee filter if provided
     if (employeeId && employeeId !== 'all' && employeeId !== '' && employeeId !== undefined) {
       const empId = parseInt(employeeId);
@@ -1274,12 +1279,12 @@ async function generateEmployeeAdvanceReport(startDate?: string | null, endDate?
         whereConditions.push(eq(advancePayments.employeeId, empId));
       }
     }
-    
+
     // Add status filter if provided
     if (status && status !== 'all' && status !== '' && status !== undefined) {
       whereConditions.push(eq(advancePayments.status, status));
     }
-    
+
     // Build where filter - use and() only if we have multiple conditions
     const whereFilter = whereConditions.length > 1 ? and(...whereConditions) : whereConditions[0];
 
@@ -1295,11 +1300,11 @@ async function generateEmployeeAdvanceReport(startDate?: string | null, endDate?
       rejected_count: count(sql`CASE WHEN ${advancePayments.status} = 'rejected' THEN 1 END`),
       paid_count: count(sql`CASE WHEN ${advancePayments.status} = 'paid' THEN 1 END`),
     }).from(advancePayments);
-    
+
     if (whereFilter) {
       summaryQuery.where(whereFilter);
     }
-    
+
     const [summaryStats] = await Promise.all([summaryQuery]);
 
     // Get advances by status
@@ -1311,11 +1316,11 @@ async function generateEmployeeAdvanceReport(startDate?: string | null, endDate?
         total_repaid: sum(sql`COALESCE(${advancePayments.repaidAmount}, 0)`),
       })
       .from(advancePayments);
-    
+
     if (whereFilter) {
       statusQuery.where(whereFilter);
     }
-    
+
     const advancesByStatus = await statusQuery.groupBy(advancePayments.status);
 
     // Get detailed advance list with employee information
@@ -1342,32 +1347,32 @@ async function generateEmployeeAdvanceReport(startDate?: string | null, endDate?
       })
       .from(advancePayments)
       .leftJoin(employees, eq(advancePayments.employeeId, employees.id));
-    
+
     if (whereFilter) {
       detailsQuery.where(whereFilter);
     }
-    
+
     // Get all advance details first
     let advanceDetails = await detailsQuery;
-    
+
     // Sort by file number numerically (handle nulls and non-numeric)
     advanceDetails = advanceDetails.sort((a, b) => {
       const fileA = a.employee_file_number || '';
       const fileB = b.employee_file_number || '';
-      
+
       // Extract numeric part
       const numA = parseInt(fileA.replace(/\D/g, '')) || 0;
       const numB = parseInt(fileB.replace(/\D/g, '')) || 0;
-      
+
       // If both have numeric parts, sort numerically
       if (numA > 0 && numB > 0) {
         return numA - numB;
       }
-      
+
       // If one is numeric and other is not, numeric comes first
       if (numA > 0 && numB === 0) return -1;
       if (numA === 0 && numB > 0) return 1;
-      
+
       // Both are non-numeric or empty, sort alphabetically
       return fileA.localeCompare(fileB);
     });
@@ -1385,11 +1390,11 @@ async function generateEmployeeAdvanceReport(startDate?: string | null, endDate?
       })
       .from(advancePayments)
       .leftJoin(employees, eq(advancePayments.employeeId, employees.id));
-    
+
     if (whereFilter) {
       employeeSummaryQuery.where(whereFilter);
     }
-    
+
     const advancesByEmployee = await employeeSummaryQuery
       .groupBy(advancePayments.employeeId, employees.firstName, employees.lastName, employees.fileNumber)
       .orderBy(desc(sql`sum(COALESCE(${advancePayments.amount}, 0))`));
@@ -1403,11 +1408,11 @@ async function generateEmployeeAdvanceReport(startDate?: string | null, endDate?
         total_repaid: sum(sql`COALESCE(${advancePayments.repaidAmount}, 0)`),
       })
       .from(advancePayments);
-    
+
     if (whereFilter) {
       monthlyTrendsQuery.where(whereFilter);
     }
-    
+
     const monthlyTrends = await monthlyTrendsQuery
       .groupBy(sql`TO_CHAR(${advancePayments.createdAt}, 'YYYY-MM')`)
       .orderBy(sql`TO_CHAR(${advancePayments.createdAt}, 'YYYY-MM') DESC`);
