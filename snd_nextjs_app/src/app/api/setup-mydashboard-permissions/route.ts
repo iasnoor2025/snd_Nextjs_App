@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { roles, permissions, roleHasPermissions } from '@/lib/drizzle/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, and } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,19 +12,19 @@ export async function POST(request: NextRequest) {
       .where(eq(permissions.name, 'read.mydashboard'))
       .limit(1);
 
-    let permissionId: number;
-    
+    let permissionId: number = 0;
+
     if (dashboardPermission.length === 0) {
       const newPermission = await db
         .insert(permissions)
         .values({
           name: 'read.mydashboard',
           guardName: 'web',
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          createdAt: new Date().toISOString().split('T')[0],
+          updatedAt: new Date().toISOString().split('T')[0],
         })
         .returning();
-      
+
       permissionId = newPermission[0].id;
     } else {
       permissionId = dashboardPermission[0].id;
@@ -37,14 +37,18 @@ export async function POST(request: NextRequest) {
       .from(roles)
       .where(inArray(roles.name, targetRoles));
 
-        // 3. Assign the permission to each role
+    // 3. Assign the permission to each role
     for (const role of roleRecords) {
       // Check if permission is already assigned
       const existingAssignment = await db
         .select()
         .from(roleHasPermissions)
-        .where(eq(roleHasPermissions.roleId, role.id))
-        .where(eq(roleHasPermissions.permissionId, permissionId))
+        .where(
+          and(
+            eq(roleHasPermissions.roleId, role.id),
+            eq(roleHasPermissions.permissionId, permissionId)
+          )
+        )
         .limit(1);
 
       if (existingAssignment.length === 0) {

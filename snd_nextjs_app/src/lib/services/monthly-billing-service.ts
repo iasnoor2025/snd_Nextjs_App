@@ -283,9 +283,7 @@ export class MonthlyBillingService {
       };
 
       // Create invoice in ERPNext
-      // TODO: ERPNextInvoiceService.createInvoice method needs to be implemented
-      const erpnextInvoice = { name: billingData.invoiceNumber }; // Placeholder
-      // const erpnextInvoice = await ERPNextInvoiceService.createInvoice(invoiceData);
+      const erpnextInvoice = await ERPNextInvoiceService.createInvoice(invoiceData);
 
       // Update rental with monthly invoice information
       await db
@@ -343,7 +341,7 @@ export class MonthlyBillingService {
           if (rental.invoiceId) {
             const invoiceDetails = await ERPNextInvoiceService.getInvoice(rental.invoiceId);
 
-            if (invoiceDetails && !invoiceDetails.error) {
+            if (invoiceDetails) {
               const paymentStatus = invoiceDetails.outstanding_amount === 0 ? 'paid' : 'pending';
               const outstandingAmount = invoiceDetails.outstanding_amount || 0;
 

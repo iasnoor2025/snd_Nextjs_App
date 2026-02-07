@@ -27,13 +27,13 @@ export async function POST(
 
     // Get invoice details from ERPNext
     const invoiceDetails = await ERPNextInvoiceService.getInvoice(invoiceId);
-    
+
     // Check if invoice was deleted in ERPNext
-    if (!invoiceDetails || invoiceDetails.error) {
+    if (!invoiceDetails) {
       // Delete the invoice from our database
       try {
         await RentalInvoiceService.deleteInvoice(invoiceId);
-        
+
         // Also check if this was the main invoice for the rental and reset if needed
         const rental = await RentalService.getRental(rentalId);
         if (rental?.invoiceId === invoiceId) {
@@ -46,20 +46,20 @@ export async function POST(
             totalAmount: null,
             finalAmount: null
           };
-          
+
           await RentalService.updateRental(rentalId, resetData);
         }
-        
+
         return NextResponse.json({
           success: true,
           message: 'Invoice was deleted in ERPNext and has been unlinked from rental',
           action: 'deleted'
         });
-        
+
       } catch (deleteError) {
         console.error('Error deleting invoice after ERPNext deletion:', deleteError);
         return NextResponse.json(
-          { 
+          {
             error: 'Invoice deleted in ERPNext but failed to unlink from rental',
             details: deleteError instanceof Error ? deleteError.message : 'Unknown error'
           },
@@ -71,7 +71,7 @@ export async function POST(
     // Update the invoice record in our database
     try {
       await RentalInvoiceService.updateInvoiceStatus(invoiceId, invoiceDetails.status || 'pending');
-      
+
       return NextResponse.json({
         success: true,
         message: 'Invoice synced successfully',
@@ -85,7 +85,7 @@ export async function POST(
     } catch (updateError) {
       console.error('Error updating invoice status:', updateError);
       return NextResponse.json(
-        { 
+        {
           error: 'Failed to update invoice status',
           details: updateError instanceof Error ? updateError.message : 'Unknown database error'
         },
@@ -96,9 +96,9 @@ export async function POST(
   } catch (error: any) {
     console.error('Error syncing invoice:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to sync invoice',
-        details: error.message 
+        details: error.message
       },
       { status: 500 }
     );

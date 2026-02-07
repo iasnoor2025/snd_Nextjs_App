@@ -34,7 +34,7 @@ export class IqamaOCRService {
       // If it's a full URL, extract bucket and key
       const url = new URL(imageUrl);
       const pathParts = url.pathname.split('/').filter(Boolean);
-      
+
       // MinIO URLs typically: https://endpoint/bucket/key
       const bucket = pathParts[0];
       const key = pathParts.slice(1).join('/');
@@ -47,7 +47,7 @@ export class IqamaOCRService {
 
       const response = await client.send(command);
       const chunks: Uint8Array[] = [];
-      
+
       if (response.Body) {
         for await (const chunk of response.Body as any) {
           chunks.push(chunk);
@@ -78,7 +78,7 @@ export class IqamaOCRService {
         .sharpen() // Sharpen edges for better text recognition
         .jpeg({ quality: 85, mozjpeg: true }) // Convert to JPEG for smaller size
         .toBuffer();
-      
+
       return optimized;
     } catch (error) {
       console.warn('Image optimization failed, using original:', error);
@@ -94,20 +94,20 @@ export class IqamaOCRService {
     try {
       // Optimize image first for faster processing
       const optimizedBuffer = await this.optimizeImageForOCR(imageBuffer);
-      
+
       // Dynamic import for Tesseract.js to avoid SSR issues
       const Tesseract = (await import('tesseract.js')).default;
-      
+
       // Create a promise with timeout
       const ocrPromise = Tesseract.recognize(optimizedBuffer, 'ara+eng', {
         logger: (m: any) => {
           if (m.status === 'recognizing text') {
-                      }
+          }
         },
         // Optimize OCR settings for speed
         tessedit_pageseg_mode: '6', // Assume uniform block of text (faster)
         tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789اأإآبتثجحخدذرزسشصضطظعغفقكلمنهويىة', // Limit character set
-      });
+      } as any);
 
       // Add timeout (30 seconds max)
       const timeoutPromise = new Promise<never>((_, reject) => {
@@ -287,7 +287,7 @@ export class IqamaOCRService {
    */
   static mapCountryToNationality(countryName: string): string | null {
     const normalized = countryName.trim().toLowerCase();
-    
+
     for (const country of COUNTRIES) {
       if (
         normalized === country.name.toLowerCase() ||
@@ -414,7 +414,7 @@ export class IqamaOCRService {
         });
 
       if (newDesignation) {
-                return newDesignation.id;
+        return newDesignation.id;
       }
 
       return null;

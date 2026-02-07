@@ -10,7 +10,7 @@ import { i18n } from '@/lib/i18n-config';
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
+
   // Only log in development
   if (process.env.NODE_ENV === 'development') {
   }
@@ -24,7 +24,7 @@ export async function proxy(request: NextRequest) {
   // Define public routes that should bypass proxy completely
   const publicRoutes = [
     '/login',
-    '/signup', 
+    '/signup',
     '/forgot-password',
     '/reset-password',
     '/auth',
@@ -52,15 +52,15 @@ export async function proxy(request: NextRequest) {
 
   // Check if it's a public route or static asset
   if (publicRoutes.some(route => pathname.startsWith(route)) ||
-      staticAssets.some(asset => pathname.startsWith(asset))) {
+    staticAssets.some(asset => pathname.startsWith(asset))) {
     return NextResponse.next();
   }
 
   // Check if it's a locale-specific public route (e.g., /en/signup, /ar/forgot-password)
-  const localeSpecificPublicRoutes = publicRoutes.flatMap(route => 
+  const localeSpecificPublicRoutes = publicRoutes.flatMap(route =>
     i18n.locales.map(locale => `/${locale}${route}`)
   );
-  
+
   // Check for both exact matches and path starts with
   if (localeSpecificPublicRoutes.some(route => pathname === route || pathname.startsWith(route))) {
     return NextResponse.next();
@@ -79,15 +79,15 @@ export async function proxy(request: NextRequest) {
   if (pathname === '/en/login' || pathname === '/ar/login') {
     return NextResponse.next();
   }
-  
+
   if (pathname === '/en/signup' || pathname === '/ar/signup') {
     return NextResponse.next();
   }
-  
+
   if (pathname === '/en/forgot-password' || pathname === '/ar/forgot-password') {
     return NextResponse.next();
   }
-  
+
   if (pathname === '/en/reset-password' || pathname === '/ar/reset-password') {
     return NextResponse.next();
   }
@@ -140,8 +140,8 @@ export async function proxy(request: NextRequest) {
 
   try {
     // Get the token from the request (Auth.js v5 compatible)
-    const token = await getToken({ 
-      req: request, 
+    const token = await getToken({
+      req: request,
       secret: process.env.NEXTAUTH_SECRET || 'fallback-secret'
     });
 
@@ -155,7 +155,7 @@ export async function proxy(request: NextRequest) {
       if (pathname.includes('/login')) {
         return NextResponse.next();
       }
-      
+
       // Get the current locale from the pathname
       const currentLocale = pathname.split('/')[1];
       const validLocale = i18n.locales.includes(currentLocale as "en" | "ar") ? currentLocale : i18n.defaultLocale;
@@ -179,13 +179,13 @@ export async function proxy(request: NextRequest) {
 
     // Client-safe route permission checking (no database operations)
     const routePermission = getClientSafeRoutePermission(pathname);
-    
+
     if (routePermission) {
       // If roles array is empty, only check permissions (no role restrictions)
       if (routePermission.roles.length > 0) {
         // Check if user has any of the required roles
         const userRoles = Array.isArray(token.roles) ? token.roles : [token.role || 'USER'];
-        const hasRequiredRole = routePermission.roles.some(requiredRole => 
+        const hasRequiredRole = routePermission.roles.some(requiredRole =>
           userRoles.includes(requiredRole)
         );
 
@@ -204,7 +204,7 @@ export async function proxy(request: NextRequest) {
 
   } catch (error) {
     console.error('🔒 Proxy error:', error);
-    
+
     // On error, allow access but log the issue
     // This prevents the app from being completely broken due to proxy errors
     return NextResponse.next();
@@ -259,19 +259,19 @@ function getClientSafeRoutePermission(pathname: string) {
     '/modules/reporting': { action: 'read', subject: 'Report', roles: [] },
     '/modules/document-management': { action: 'read', subject: 'Document', roles: [] },
   };
-  
+
   // Check for exact match first
   if (routePermissions[pathname]) {
     return routePermissions[pathname];
   }
-  
+
   // Check for sub-routes (e.g., /en/timesheet-management/bulk-submit should match /timesheet-management)
   for (const [route, permission] of Object.entries(routePermissions)) {
     if (pathname.includes(route)) {
       return permission;
     }
   }
-  
+
   return null;
 }
 
@@ -293,7 +293,7 @@ function getLocale(request: NextRequest): string {
       .split(',')
       .map((lang) => lang.split(';')[0]?.trim())
       .find((lang) => i18n.locales.includes(lang as "en" | "ar"));
-    
+
     if (preferredLocale && i18n.locales.includes(preferredLocale as "en" | "ar")) {
       return preferredLocale;
     }

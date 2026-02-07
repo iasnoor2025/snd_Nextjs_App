@@ -1,11 +1,11 @@
 import { db } from '@/lib/db';
-import { 
-  equipmentRentalHistory, 
-  projectEquipment, 
-  rentalItems, 
+import {
+  equipmentRentalHistory,
+  projectEquipment,
+  rentalItems,
   employeeAssignments,
   equipment,
-  employees 
+  employees
 } from '@/lib/drizzle/schema';
 import { eq, and, or, ne } from 'drizzle-orm';
 import { toDateString, toISOString, getPreviousDay, getCurrentDateString, getCurrentTimestamp } from '@/lib/utils/date-utils';
@@ -36,13 +36,13 @@ export class CentralAssignmentService {
    */
   static async createAssignment(data: AssignmentData) {
     const { type, entityId, startDate } = data;
-    
+
     if (process.env.NODE_ENV === 'development') {
     }
-    
+
     // Complete previous active assignments for the same entity
     await this.completePreviousAssignments(type, entityId, startDate);
-    
+
     // Create new assignment based on type
     if (type === 'equipment') {
       return await this.createEquipmentAssignment(data);
@@ -56,13 +56,13 @@ export class CentralAssignmentService {
    * This is the core unified completion logic
    */
   static async completePreviousAssignments(
-    type: 'equipment' | 'employee', 
-    entityId: number, 
+    type: 'equipment' | 'employee',
+    entityId: number,
     startDate: string
   ) {
     if (process.env.NODE_ENV === 'development') {
     }
-    
+
     const completedDateStr = getPreviousDay(startDate);
     const completedTimestamp = toISOString(completedDateStr);
     const updatedAt = getCurrentTimestamp();
@@ -72,7 +72,7 @@ export class CentralAssignmentService {
       // Complete equipment assignments across all tables in parallel
       if (process.env.NODE_ENV === 'development') {
       }
-      
+
       await Promise.all([
         // Complete equipment rental history
         db.update(equipmentRentalHistory)
@@ -87,7 +87,7 @@ export class CentralAssignmentService {
               eq(equipmentRentalHistory.status, 'active')
             )
           ),
-        
+
         // Complete project equipment
         db.update(projectEquipment)
           .set({
@@ -101,7 +101,7 @@ export class CentralAssignmentService {
               eq(projectEquipment.status, 'active')
             )
           ),
-        
+
         // Complete rental items
         db.update(rentalItems)
           .set({
@@ -120,7 +120,7 @@ export class CentralAssignmentService {
       // Complete employee assignments
       if (process.env.NODE_ENV === 'development') {
       }
-      
+
       await db.update(employeeAssignments)
         .set({
           endDate: completedDateStr,
@@ -141,7 +141,7 @@ export class CentralAssignmentService {
    */
   static async createEquipmentAssignment(data: AssignmentData) {
     const { entityId, assignmentType, startDate, endDate, status = 'active', notes } = data;
-    
+
     if (process.env.NODE_ENV === 'development') {
     }
 
@@ -165,7 +165,7 @@ export class CentralAssignmentService {
         createdAt: now,
         updatedAt: now,
       }).returning();
-      
+
       if (process.env.NODE_ENV === 'development') {
       }
       return result;
@@ -174,16 +174,16 @@ export class CentralAssignmentService {
       const [result] = await db.insert(projectEquipment).values({
         projectId: data.projectId!,
         equipmentId: entityId,
-        operatorId: data.operatorId,
+        operatorId: data.operatorId || null,
         startDate: toDateString(startDate),
         endDate: endDate ? toDateString(endDate) : null,
-        hourlyRate: data.hourlyRate!,
+        hourlyRate: data.hourlyRate!.toString(),
         status,
         notes: notes || '',
         assignedBy: data.operatorId,
-        updatedAt: new Date(),
+        updatedAt: getCurrentDateString(),
       }).returning();
-      
+
       if (process.env.NODE_ENV === 'development') {
       }
       return result;
@@ -202,7 +202,7 @@ export class CentralAssignmentService {
         createdAt: now,
         updatedAt: now,
       }).returning();
-      
+
       if (process.env.NODE_ENV === 'development') {
       }
       return result;
@@ -214,7 +214,7 @@ export class CentralAssignmentService {
    */
   static async createEmployeeAssignment(data: AssignmentData) {
     const { entityId, assignmentType, startDate, endDate, status = 'active', notes, name, location } = data;
-    
+
     if (process.env.NODE_ENV === 'development') {
     }
 
@@ -299,14 +299,14 @@ export class CentralAssignmentService {
     if (type === 'equipment') {
       // Determine which table this assignment belongs to by checking both in parallel
       const [rentalAssignment, projectAssignment] = await Promise.all([
-        db.select({ 
+        db.select({
           equipmentId: equipmentRentalHistory.equipmentId,
           rentalId: equipmentRentalHistory.rentalId
         })
           .from(equipmentRentalHistory)
           .where(eq(equipmentRentalHistory.id, assignmentId))
           .limit(1),
-        db.select({ 
+        db.select({
           equipmentId: projectEquipment.equipmentId
         })
           .from(projectEquipment)
@@ -321,19 +321,19 @@ export class CentralAssignmentService {
       if (rentalAssignment[0]) {
         // Update equipment rental history
         await db.update(equipmentRentalHistory)
-          .set({ 
-            status: 'completed', 
-            endDate: toISOString(completionDate), 
-            updatedAt 
+          .set({
+            status: 'completed',
+            endDate: toISOString(completionDate),
+            updatedAt
           })
           .where(eq(equipmentRentalHistory.id, assignmentId));
       } else if (projectAssignment[0]) {
         // Update project equipment
         await db.update(projectEquipment)
-          .set({ 
-            status: 'completed', 
-            endDate: completionDate, 
-            updatedAt: updatedAtDate 
+          .set({
+            status: 'completed',
+            endDate: completionDate,
+            updatedAt: updatedAtDate
           })
           .where(eq(projectEquipment.id, assignmentId));
       }
@@ -342,10 +342,10 @@ export class CentralAssignmentService {
       if (rentalId && equipmentId) {
         await db
           .update(rentalItems)
-          .set({ 
-            status: 'completed', 
-            completedDate: completionDate, 
-            updatedAt: updatedAtDate 
+          .set({
+            status: 'completed',
+            completedDate: completionDate,
+            updatedAt: updatedAtDate
           })
           .where(
             and(
@@ -362,10 +362,10 @@ export class CentralAssignmentService {
       }
     } else {
       await db.update(employeeAssignments)
-        .set({ 
-          status: 'completed', 
-          endDate: completionDate, 
-          updatedAt: updatedAtDate 
+        .set({
+          status: 'completed',
+          endDate: completionDate,
+          updatedAt: updatedAtDate
         })
         .where(eq(employeeAssignments.id, assignmentId));
     }
@@ -381,7 +381,7 @@ export class CentralAssignmentService {
   ): Promise<void> {
     if (process.env.NODE_ENV === 'development') {
     }
-    
+
     // Set end date to one day before vacation starts
     const assignmentEndStr = getPreviousDay(vacationStartDate);
     const updatedAt = getCurrentDateString();
@@ -414,7 +414,7 @@ export class CentralAssignmentService {
   ): Promise<void> {
     if (process.env.NODE_ENV === 'development') {
     }
-    
+
     const updatedAt = getCurrentDateString();
 
     await db
@@ -444,7 +444,7 @@ export class CentralAssignmentService {
   ): Promise<void> {
     if (process.env.NODE_ENV === 'development') {
     }
-    
+
     const assignmentEndDateStr = getPreviousDay(vacationStartDate);
     const updatedAt = getCurrentDateString();
 
@@ -476,7 +476,7 @@ export class CentralAssignmentService {
   ): Promise<void> {
     if (process.env.NODE_ENV === 'development') {
     }
-    
+
     const updatedAt = getCurrentDateString();
 
     await db

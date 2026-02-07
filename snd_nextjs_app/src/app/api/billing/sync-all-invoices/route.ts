@@ -24,11 +24,11 @@ export async function POST(request: NextRequest) {
         processedCount++;
         // Check if invoice exists in ERPNext
         const erpnextInvoice = await ERPNextInvoiceService.getInvoice(invoice.invoice_id);
-        
-        if (!erpnextInvoice || erpnextInvoice.error) {
+
+        if (!erpnextInvoice) {
           // Delete from our database
           await RentalInvoiceService.deleteInvoice(invoice.invoice_id);
-          
+
           // Check if this was the main invoice for the rental
           const rental = await RentalService.getRental(invoice.rental_id);
           if (rental?.invoiceId === invoice.invoice_id) {
@@ -41,22 +41,22 @@ export async function POST(request: NextRequest) {
               totalAmount: null,
               finalAmount: null
             };
-            
+
             await RentalService.updateRental(invoice.rental_id, resetData);
           }
-          
+
           deletedCount++;
         } else {
           // Invoice exists in ERPNext, update status if needed
           const currentStatus = invoice.status;
           const erpnextStatus = erpnextInvoice.status || 'pending';
-          
+
           if (currentStatus !== erpnextStatus) {
             await RentalInvoiceService.updateInvoiceStatus(invoice.invoice_id, erpnextStatus);
             updatedCount++;
           }
         }
-        
+
       } catch (error) {
         console.error(`Error processing invoice ${invoice.invoice_id}:`, error);
         errorCount++;
@@ -78,9 +78,9 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error in bulk invoice sync:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to perform bulk invoice sync',
-        details: error.message 
+        details: error.message
       },
       { status: 500 }
     );

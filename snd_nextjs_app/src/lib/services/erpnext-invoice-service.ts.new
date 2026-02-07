@@ -1,0 +1,224 @@
+import { db } from '@/lib/db';
+import { customers, rentalEquipmentTimesheets, rentalTimesheetReceived, rentalItems, rentals } from '@/lib/drizzle/schema';
+import { eq, and, gte, lte } from 'drizzle-orm';
+import { RentalService } from './rental-service';
+
+// ERPNext configuration
+const NEXT_PUBLIC_ERPNEXT_URL = process.env.NEXT_PUBLIC_ERPNEXT_URL;
+const NEXT_PUBLIC_ERPNEXT_API_KEY = process.env.NEXT_PUBLIC_ERPNEXT_API_KEY;
+const NEXT_PUBLIC_ERPNEXT_API_SECRET = process.env.NEXT_PUBLIC_ERPNEXT_API_SECRET;
+
+const ERPNEXT_URL = process.env.ERPNEXT_URL || NEXT_PUBLIC_ERPNEXT_URL;
+const ERPNEXT_API_KEY = process.env.ERPNEXT_API_KEY || NEXT_PUBLIC_ERPNEXT_API_KEY;
+const ERPNEXT_API_SECRET = process.env.ERPNEXT_API_SECRET || NEXT_PUBLIC_ERPNEXT_API_SECRET;
+
+export interface ERPNextInvoiceItem {
+  item_code: string;
+  qty: number;
+  rate: number;
+  amount?: number;
+  description?: string;
+  uom?: string;
+  income_account?: string;
+  cost_center?: string;
+  warehouse?: string;
+}
+
+export interface ERPNextInvoiceData {
+  customer: string;
+  company: string;
+  posting_date: string;
+  due_date: string;
+  items: ERPNextInvoiceItem[];
+  currency?: string;
+  taxes_and_charges?: string;
+  taxes?: any[];
+}
+
+export interface ERPNextInvoice {
+  name: string;
+  customer: string;
+  total: number;
+  grand_total: number;
+  status: string;
+  docstatus: number;
+  outstanding_amount?: number;
+  taxes?: any[];
+  items?: any[];
+}
+
+export class ERPNextInvoiceService {
+  private static async makeERPNextRequest<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const baseUrl = ERPNEXT_URL?.replace(/\/$/, '');
+    if (!baseUrl) {
+      throw new Error('ERPNext URL is not configured. Please set NEXT_PUBLIC_ERPNEXT_URL in .env');
+    }
+
+    const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+
+    const defaultHeaders = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': `token ${ERPNEXT_API_KEY}:${ERPNEXT_API_SECRET}`,
+    };
+
+    if (!ERPNEXT_API_KEY || !ERPNEXT_API_SECRET) {
+      const missingVars = [];
+      if (!ERPNEXT_API_KEY) missingVars.push('NEXT_PUBLIC_ERPNEXT_API_KEY');
+      if (!ERPNEXT_API_SECRET) missingVars.push('NEXT_PUBLIC_ERPNEXT_API_SECRET');
+      throw new Error(`ERPNext API configuration is missing: ${missingVars.join(', ')}. Please check your .env file.`);
+    }
+
+    try {
+      console.log(`ERPNext Request: ${options.method || 'GET'} ${url}`);
+      
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          ...defaultHeaders,
+          ...options.headers,
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage = `ERPNext API error: ${response.status} ${response.statusText}`;
+        
+        try {
+          const errorJson = JSON.parse(errorText);
+          
+          // Enhanced error parsing for Frappe/ERPNext
+          if (errorJson._server_messages) {
+            const serverMessages = JSON.parse(errorJson._server_messages);
+            const excMessages = serverMessages.map((msg: string) => {
+              try {
+                const parsed = JSON.parse(msg);
+                return parsed.message || msg;
+              } catch {
+                return msg;
+              }
+            });
+            
+            if (excMessages.length > 0) {
+              const excMessage = excMessages[0];
+              console.error('=== ERPNext Exception Message ===');
+              console.error(excMessage);
+              
+              // Map common ERPNext errors to user-friendly messages
+              if (excMessage.includes('does not exist')) {
+                errorMessage += ' - The requested resource was not found.';
+              }
+              
+              // Look for item-related errors
+              if (excMessage.includes('Item') || excMessage.includes('item')) {
+                console.error('=== Item-related error detected ===');
+              }
+              
+              errorMessage += ` Details: ${excMessage.substring(0, 1500)}`;
+            }
+          }
+          
+          // Special handling for 417 Expectation Failed
+          if (response.status === 417) {
+            console.error('*** 417 EXPECTATION FAILED DETAILS ***');
+            console.error(JSON.stringify(errorJson, null, 2));
+            
+            const firstError = errorJson.exc_messages ? JSON.parse(errorJson.exc_messages[0]) : null;
+            const specificMsg = firstError?.message || errorJson.message || 'Validation failed';
+            errorMessage += ` 417 Specifics: ${specificMsg}`;
+          }
+
+          if (errorJson.message) {
+            console.error('=== Error Message ===');
+            console.error(errorJson.message);
+            errorMessage += ` Details: ${errorJson.message.substring(0, 500)}`;
+          } else if (errorJson.error) {
+            errorMessage += ` Details: ${errorJson.error}`;
+          } else {
+            errorMessage += ` Response: ${errorText.substring(0, 500)}`;
+          }
+        } catch {
+          console.error('=== Raw Error Response (not JSON) ===');
+          console.error(errorText);
+          errorMessage += ` Response: ${errorText.substring(0, 500)}`;
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      const responseData = await response.json();
+      return responseData;
+    } catch (fetchError) {
+      if (fetchError instanceof Error) {
+        if (fetchError.message.includes('fetch failed') ||
+            fetchError.message.includes('ECONNREFUSED') ||
+            fetchError.message.includes('ENOTFOUND') ||
+            fetchError.message.includes('timeout')) {
+          throw new Error(
+            `Network error connecting to ERPNext at ${baseUrl}: ${fetchError.message}. Please check your ERPNext server and network connection.`
+          );
+        }
+        throw fetchError;
+      } else {
+        throw new Error('Unknown network error connecting to ERPNext');
+      }
+    }
+  }
+
+  static async createInvoice(invoiceData: ERPNextInvoiceData): Promise<ERPNextInvoice> {
+    try {
+      if (!ERPNEXT_URL || !ERPNEXT_API_KEY || !ERPNEXT_API_SECRET) {
+        throw new Error('ERPNext configuration is missing');
+      }
+
+      if (!invoiceData.customer) throw new Error('Customer is required');
+      if (!invoiceData.items || invoiceData.items.length === 0) throw new Error('Items are required');
+
+      if (!invoiceData.taxes || invoiceData.taxes.length === 0) {
+        try {
+          const companyName = invoiceData.company || 'Samhan Naser Al-Dosri Est';
+          const taxAccount = await this.findSuitableTaxAccount(companyName);
+          invoiceData.taxes = [{
+            charge_type: 'On Net Total',
+            account_head: taxAccount,
+            description: 'VAT 15%',
+            rate: 15
+          }];
+          console.log(`Added KSA compliance tax table (VAT 15%) with account: ${taxAccount}`);
+        } catch (error) {
+          console.warn('Failed to add default tax table:', error);
+        }
+      }
+
+      console.log('=== Creating Generic Invoice in ERPNext ===');
+      
+      let response = await this.makeERPNextRequest('/api/resource/Sales Invoice', {
+        method: 'POST',
+        body: JSON.stringify(invoiceData),
+      });
+      
+      return response.data || response;
+    } catch (error) {
+       console.error('Error in createInvoice:', error);
+       throw error;
+    }
+  }
+
+  static async createRentalInvoice(rental: any, invoiceNumber: string, billingMonth?: string): Promise<any> {
+    try {
+      console.log(`=== Starting Rental Invoice Creation for Rental #${rental.id} ===`);
+      
+      const incomeAccount = await this.findSuitableIncomeAccount();
+      const costCenter = await this.findSuitableCostCenter();
+      const receivableAccount = await this.findSuitableReceivableAccount();
+      
+      const defaultIncomeAccount = incomeAccount;
+      const defaultCostCenter = costCenter;
+      
+      const targetCompany = rental.company || 'Samhan Naser Al-Dosri Est';
+      const targetCoTrim = targetCompany.trim();
+
+      const customerRecord = await db.select().from(customers).where(eq(customers.id, rental.customerId)).limit(1);
+      const customerName = rental.customerName || rental.customer?.name || 'Unknown Customer';
+      
+      let validatedCustomerName = customerName;

@@ -2,8 +2,9 @@
 import { db } from '@/lib/db';
 import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-// TODO: This route still uses ORM-like aggregations; for now, disable DB updates to prevent crashes.
 import { getRBACPermissions } from '@/lib/rbac/rbac-utils';
+import { analyticsReports } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 
 export async function POST(_request: NextRequest) {
   try {
@@ -46,8 +47,21 @@ export async function POST(_request: NextRequest) {
         return NextResponse.json({ error: 'Invalid report type' }, { status: 400 });
     }
 
-    // Update the report's last_generated timestamp
-    // if (reportId) { /* Update disabled during Drizzle migration */ }
+    // Update the report's last_generated timestamp if it's a saved report
+    if (reportId) {
+      try {
+        await db
+          .update(analyticsReports)
+          .set({
+            lastGenerated: new Date().toISOString().split('T')[0], // Using date type as per schema
+            updatedAt: new Date().toISOString().split('T')[0],
+          })
+          .where(eq(analyticsReports.id, reportId));
+      } catch (dbError) {
+        console.error('Failed to update report timestamp:', dbError);
+        // We do not block the response if this fails, as the report was generated successfully
+      }
+    }
 
     return NextResponse.json({
       success: true,
@@ -55,7 +69,7 @@ export async function POST(_request: NextRequest) {
       generated_at: new Date().toISOString(),
     });
   } catch (error) {
-    
+    console.error('Error generating report:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

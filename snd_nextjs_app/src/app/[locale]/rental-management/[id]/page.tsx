@@ -13,6 +13,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -70,7 +81,7 @@ import {
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
-import { 
+import {
   RentalItemConfirmationDialog,
   EquipmentTimesheetDialog
 } from '@/components/rental';
@@ -223,7 +234,7 @@ interface TimelineEvent {
 // Workflow Timeline Component
 function UnifiedTimeline({ rental, t, fetchRental }: { rental: Rental | null; t: any; fetchRental: () => Promise<void> }) {
   const confirmation = useRentalItemConfirmation();
-  
+
   const generateTimelineEvents = (): TimelineEvent[] => {
     if (!rental) return [];
 
@@ -232,12 +243,12 @@ function UnifiedTimeline({ rental, t, fetchRental }: { rental: Rental | null; t:
       try {
         const dateObj = new Date(date);
         if (isNaN(dateObj.getTime())) {
-          
+
           return null;
         }
         return format(dateObj, 'MMM d, yyyy');
       } catch (e) {
-        
+
         return null;
       }
     };
@@ -267,8 +278,8 @@ function UnifiedTimeline({ rental, t, fetchRental }: { rental: Rental | null; t:
         ),
         status:
           rental.quotationId ||
-          rental.status === 'quotation_generated' ||
-          rental.statusLogs?.some((log: any) => log.newStatus === 'quotation_generated')
+            rental.status === 'quotation_generated' ||
+            rental.statusLogs?.some((log: any) => log.newStatus === 'quotation_generated')
             ? 'completed'
             : 'upcoming',
       },
@@ -301,8 +312,8 @@ function UnifiedTimeline({ rental, t, fetchRental }: { rental: Rental | null; t:
         ),
         status:
           rental.mobilizationDate ||
-          rental.status === 'mobilization' ||
-          rental.statusLogs?.some((log: any) => log.newStatus === 'mobilization')
+            rental.status === 'mobilization' ||
+            rental.statusLogs?.some((log: any) => log.newStatus === 'mobilization')
             ? 'completed'
             : 'upcoming',
       },
@@ -608,11 +619,11 @@ function UnifiedTimeline({ rental, t, fetchRental }: { rental: Rental | null; t:
         }
         break;
     }
-  return null;
-};
+    return null;
+  };
 
-return (
-  <Card>
+  return (
+    <Card>
       <CardHeader>
         <CardTitle>{t('rental.rentalTimeline')}</CardTitle>
         <CardDescription>{t('rental.workflowTimeline')}</CardDescription>
@@ -650,8 +661,8 @@ return (
                         className="mt-1"
                       >
                         {event.status === 'completed' ? t('rental.completed') :
-                         event.status === 'current' ? t('rental.current') :
-                         event.status === 'upcoming' ? t('rental.upcoming') : event.status}
+                          event.status === 'current' ? t('rental.current') :
+                            event.status === 'upcoming' ? t('rental.upcoming') : event.status}
                       </Badge>
                     </div>
                     {getActionButton(event)}
@@ -669,13 +680,12 @@ return (
                 {auditEvents.map((event: WorkflowEvent, index: number) => (
                   <li key={event.id || index} className="mb-4 ml-6">
                     <span
-                      className={`absolute -left-3 flex h-6 w-6 items-center justify-center rounded-full ${
-                        event.status === 'cancelled'
-                          ? 'border-red-200 bg-red-100 text-red-700'
-                          : event.status === 'rejected'
-                            ? 'border-yellow-200 bg-yellow-100 text-yellow-700'
-                            : 'border-slate-200 bg-slate-100 text-slate-700'
-                      }`}
+                      className={`absolute -left-3 flex h-6 w-6 items-center justify-center rounded-full ${event.status === 'cancelled'
+                        ? 'border-red-200 bg-red-100 text-red-700'
+                        : event.status === 'rejected'
+                          ? 'border-yellow-200 bg-yellow-100 text-yellow-700'
+                          : 'border-slate-200 bg-slate-100 text-slate-700'
+                        }`}
                     >
                       <AlertCircle className="h-3 w-3" />
                     </span>
@@ -747,7 +757,7 @@ return (
                     <p className="text-sm font-medium">Mobilization Started</p>
                     <p className="text-xs text-muted-foreground">
                       {rental.mobilizationDate &&
-                      !isNaN(new Date(rental.mobilizationDate).getTime())
+                        !isNaN(new Date(rental.mobilizationDate).getTime())
                         ? format(new Date(rental.mobilizationDate), 'MMM dd, yyyy')
                         : 'N/A'}
                     </p>
@@ -918,7 +928,7 @@ export default function RentalDetailPage() {
                 const overtime = parseFloat(ts.overtimeHours?.toString() || '0') || 0;
                 return sum + regular + overtime;
               }, 0);
-              
+
               // Debug: Log individual day breakdown
               if (totalHours > 0) {
                 hoursMap[`${item.id}-${monthKey}`] = totalHours;
@@ -942,7 +952,7 @@ export default function RentalDetailPage() {
     if (monthKey) {
       timesheetHours = itemTimesheetHours[`${item.id}-${monthKey}`];
     }
-    
+
     // Only show timesheet hours in report view for the specific month
     if (monthKey && timesheetHours && timesheetHours > 0) {
       // Show total working hours from timesheet for this month
@@ -1107,11 +1117,11 @@ export default function RentalDetailPage() {
 
     // Check for duplicate equipment with same operator
     if (itemFormData.equipmentId && itemFormData.operatorId) {
-      const duplicate = existingItems.find(item => 
+      const duplicate = existingItems.find(item =>
         item.equipmentId?.toString() === itemFormData.equipmentId.toString() &&
         item.operatorId?.toString() === itemFormData.operatorId.toString()
       );
-      
+
       if (duplicate) {
         const equipmentName = duplicate.equipmentName || `Equipment ${duplicate.equipmentId}`;
         const startDate = (duplicate as any).startDate || (duplicate as any).start_date;
@@ -1122,10 +1132,10 @@ export default function RentalDetailPage() {
 
     // Check for duplicate equipment (even with different operator)
     if (itemFormData.equipmentId) {
-      const equipmentDuplicates = existingItems.filter(item => 
+      const equipmentDuplicates = existingItems.filter(item =>
         item.equipmentId?.toString() === itemFormData.equipmentId.toString()
       );
-      
+
       if (equipmentDuplicates.length > 0 && !warnings.some(w => w.includes('equipment'))) {
         const equipmentName = equipmentDuplicates[0].equipmentName || `Equipment ${equipmentDuplicates[0].equipmentId}`;
         warnings.push(`Equipment "${equipmentName}" already has ${equipmentDuplicates.length} active item(s) in this rental`);
@@ -1134,16 +1144,16 @@ export default function RentalDetailPage() {
 
     // Check for duplicate operator (even with different equipment)
     if (itemFormData.operatorId) {
-      const operatorDuplicates = existingItems.filter(item => 
+      const operatorDuplicates = existingItems.filter(item =>
         item.operatorId?.toString() === itemFormData.operatorId.toString()
       );
-      
+
       if (operatorDuplicates.length > 0 && !warnings.some(w => w.includes('operator'))) {
         const firstDuplicate = operatorDuplicates[0] as any;
         let operatorName = `Operator ${firstDuplicate.operatorId}`;
         if (firstDuplicate.operatorFirstName && firstDuplicate.operatorLastName) {
           const name = `${firstDuplicate.operatorFirstName} ${firstDuplicate.operatorLastName}`;
-          operatorName = firstDuplicate.operatorFileNumber 
+          operatorName = firstDuplicate.operatorFileNumber
             ? `${name} (File: ${firstDuplicate.operatorFileNumber})`
             : name;
         }
@@ -1158,11 +1168,11 @@ export default function RentalDetailPage() {
         if (item.equipmentId?.toString() !== itemFormData.equipmentId.toString()) return false;
         const itemStartDate = (item as any).startDate || (item as any).start_date;
         if (!itemStartDate) return false;
-        
+
         const itemStart = new Date(itemStartDate);
         const itemCompletedDate = (item as any).completedDate || (item as any).completed_date;
         const itemEnd = itemCompletedDate ? new Date(itemCompletedDate) : new Date();
-        
+
         return newStartDate >= itemStart && newStartDate <= itemEnd;
       });
 
@@ -1211,16 +1221,16 @@ export default function RentalDetailPage() {
               return;
             }
 
-            const startDate = assignment.startDate 
-              ? new Date(assignment.startDate).toLocaleDateString() 
+            const startDate = assignment.startDate
+              ? new Date(assignment.startDate).toLocaleDateString()
               : 'unknown date';
-            const endDate = assignment.endDate 
-              ? new Date(assignment.endDate).toLocaleDateString() 
+            const endDate = assignment.endDate
+              ? new Date(assignment.endDate).toLocaleDateString()
               : 'ongoing';
 
             if (assignment.rentalId && assignment.rentalNumber) {
-              const equipmentInfo = assignment.equipmentName 
-                ? ` for equipment "${assignment.equipmentName}"` 
+              const equipmentInfo = assignment.equipmentName
+                ? ` for equipment "${assignment.equipmentName}"`
                 : '';
               const assignmentLabel = getAssignmentRentalLabel(assignment);
               warnings.push(
@@ -1278,23 +1288,23 @@ export default function RentalDetailPage() {
             // Handle timestamp format (equipmentRentalHistory uses timestamps)
             let startDateStr = 'unknown date';
             let endDateStr = 'ongoing';
-            
+
             if (assignment.startDate) {
               try {
                 // Handle both timestamp strings and date strings
-                const dateStr = typeof assignment.startDate === 'string' 
-                  ? assignment.startDate.split('T')[0] 
+                const dateStr = typeof assignment.startDate === 'string'
+                  ? assignment.startDate.split('T')[0]
                   : assignment.startDate;
                 startDateStr = new Date(dateStr).toLocaleDateString();
               } catch (e) {
                 startDateStr = String(assignment.startDate);
               }
             }
-            
+
             if (assignment.endDate) {
               try {
-                const dateStr = typeof assignment.endDate === 'string' 
-                  ? assignment.endDate.split('T')[0] 
+                const dateStr = typeof assignment.endDate === 'string'
+                  ? assignment.endDate.split('T')[0]
                   : assignment.endDate;
                 endDateStr = new Date(dateStr).toLocaleDateString();
               } catch (e) {
@@ -1363,7 +1373,7 @@ export default function RentalDetailPage() {
   const [equipment, setEquipment] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
   const [supervisorDetails, setSupervisorDetails] = useState<any>(null);
-  const [equipmentNames, setEquipmentNames] = useState<{[key: string]: string}>({});
+  const [equipmentNames, setEquipmentNames] = useState<{ [key: string]: string }>({});
   const [activeTab, setActiveTab] = useState('details');
   const confirmation = useRentalItemConfirmation();
 
@@ -1372,9 +1382,9 @@ export default function RentalDetailPage() {
     const equipmentIds = rentalItems
       .filter(item => item.equipmentId && item.equipmentName?.startsWith('Equipment '))
       .map(item => item.equipmentId);
-    
+
     if (equipmentIds.length === 0) return;
-    
+
     try {
       // Use the existing equipment data if available, otherwise fetch all equipment
       let equipmentData = equipment;
@@ -1386,16 +1396,16 @@ export default function RentalDetailPage() {
           setEquipment(equipmentData);
         }
       }
-      
+
       // Map equipment IDs to names
-      const namesMap: {[key: string]: string} = {};
+      const namesMap: { [key: string]: string } = {};
       equipmentIds.forEach(id => {
         const eq = equipmentData.find((e: any) => e.id?.toString() === id.toString());
         if (eq) {
           namesMap[id] = eq.name || `Equipment ${id}`;
         }
       });
-      
+
       setEquipmentNames(prev => ({ ...prev, ...namesMap }));
     } catch (error) {
       console.error('Failed to fetch equipment names:', error);
@@ -1483,7 +1493,7 @@ export default function RentalDetailPage() {
       if ((!data.invoices || data.invoices.length === 0) && data.rentalItems && data.rentalItems.length > 0) {
         const financials = calculateFinancials(data.rentalItems);
         data = { ...data, ...financials };
-        
+
         // Update the database with recalculated totals so listing page shows correct values
         // Include required fields (customerId, startDate) from the rental data
         try {
@@ -1516,21 +1526,21 @@ export default function RentalDetailPage() {
 
         });
       }
-      
+
       // Fetch rental invoices and payments
       fetchRentalInvoices();
       fetchRentalPayments();
-      
+
       // Fetch equipment names for rental items that have fallback names
       if (data.rentalItems && data.rentalItems.length > 0) {
         fetchEquipmentNames(data.rentalItems);
         // Fetch timesheet total hours for all items
         // Fetch timesheet hours will be handled by the useEffect that watches rental items
       }
-      
+
       // Fetch timesheet status for all months
       fetchTimesheetStatusForMonths(data.rentalItems || [], data);
-      
+
       return data;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -1556,10 +1566,10 @@ export default function RentalDetailPage() {
           if (rentalData?.status === 'completed' && rentalData?.actualEndDate) {
             endDate = new Date(rentalData.actualEndDate);
           }
-          
+
           const currentMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
           const endMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
-          
+
           while (currentMonth <= endMonth) {
             const monthKey = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
             months.add(monthKey);
@@ -1570,7 +1580,7 @@ export default function RentalDetailPage() {
 
       // Initialize timesheet status for all items in all months
       const statusMap: Record<string, boolean> = {};
-      
+
       // Fetch existing manual received status for each month
       const statusPromises = Array.from(months).map(async (monthKey) => {
         try {
@@ -1579,10 +1589,10 @@ export default function RentalDetailPage() {
             return { monthKey, itemStatuses: {} };
           }
           const data = await response.json();
-          return { 
-            monthKey, 
+          return {
+            monthKey,
             itemStatuses: data.itemStatuses || {},
-          manualReceived: data.manualReceived || false // For backward compatibility
+            manualReceived: data.manualReceived || false // For backward compatibility
           };
         } catch (error) {
           console.error(`Error fetching timesheet status for ${monthKey}:`, error);
@@ -1601,9 +1611,9 @@ export default function RentalDetailPage() {
           });
         }
       });
-      
+
       setTimesheetStatus(statusMap);
-      
+
       // After setting status, fetch hours for months where timesheet was received
       const monthsWithTimesheet = new Set<string>();
       Object.keys(statusMap).forEach((key) => {
@@ -1618,7 +1628,7 @@ export default function RentalDetailPage() {
           }
         }
       });
-      
+
       // Fetch hours for months with received timesheets
       if (monthsWithTimesheet.size > 0 && rentalId) {
         Array.from(monthsWithTimesheet).forEach((monthKey) => {
@@ -1635,7 +1645,7 @@ export default function RentalDetailPage() {
     if (amount === null || amount === undefined) return '0';
     const num = typeof amount === 'string' ? parseFloat(amount) : Number(amount);
     if (isNaN(num)) return '0';
-    
+
     // Format with comma separators for thousands
     return num.toLocaleString('en-US', {
       minimumFractionDigits: 0,
@@ -1652,7 +1662,7 @@ export default function RentalDetailPage() {
 
   const calculateItemTotal = (item: RentalItem, rental?: Rental): number => {
     if (!item) return 0;
-  
+
     const storedTotalPrice = toNumericValue(item?.totalPrice);
     const { unitPrice, quantity = 1, rateType = 'daily', startDate: itemStartDate } = item;
     const basePrice = parseFloat(unitPrice?.toString() || '0') || 0;
@@ -1689,7 +1699,7 @@ export default function RentalDetailPage() {
         return basePrice * daysDiff * quantity;
       }
     }
-  
+
     return storedTotalPrice;
   };
 
@@ -1724,11 +1734,11 @@ export default function RentalDetailPage() {
       const itemTotal = calculateItemTotal(item, rental || undefined);
       return sum + itemTotal;
     }, 0);
-    
+
     const taxRate = 15; // Default 15% VAT for KSA
     const taxAmount = subtotal * (taxRate / 100);
     const totalAmount = subtotal + taxAmount;
-    
+
     return {
       subtotal,
       taxAmount,
@@ -1760,7 +1770,7 @@ export default function RentalDetailPage() {
     if (rental?.rentalItems && rental.rentalItems.length > 0 && rental?.id && Object.keys(timesheetStatus).length > 0) {
       // Get all unique months where timesheet was received
       const monthsWithTimesheet = new Set<string>();
-      
+
       // Check which months have timesheet received status
       Object.keys(timesheetStatus).forEach((key) => {
         if (timesheetStatus[key] === true) {
@@ -1771,7 +1781,7 @@ export default function RentalDetailPage() {
           }
         }
       });
-      
+
       // Only fetch timesheet hours for months where timesheet was received
       if (monthsWithTimesheet.size > 0) {
         Array.from(monthsWithTimesheet).forEach((monthKey) => {
@@ -1792,13 +1802,13 @@ export default function RentalDetailPage() {
   // Fetch supervisor details
   const fetchSupervisorDetails = async (supervisorId: string) => {
     if (!supervisorId) return;
-    
+
     try {
       const response = await fetch(`/api/employees/${supervisorId}`);
-      
+
       if (response.ok) {
         const data = await response.json();
-        
+
         if (data.success && data.employee) {
           setSupervisorDetails(data.employee);
         }
@@ -1853,7 +1863,7 @@ export default function RentalDetailPage() {
     const statusValue = (status || 'active').toLowerCase().trim();
     const translationKey = `rental.status.${statusValue}`;
     let translated = t(translationKey);
-    
+
     // If translation returns the key itself (translation not found), use fallback mapping
     if (translated === translationKey || translated.startsWith('rental.status.')) {
       // Fallback mapping with English defaults (will be overridden by actual translations if available)
@@ -1863,19 +1873,19 @@ export default function RentalDetailPage() {
         'pending': 'Pending',
         'cancelled': 'Cancelled',
       };
-      
+
       // Try individual status translations
       const individualKey = `rental.status.${statusValue}`;
       const individualTranslated = t(individualKey);
-      
+
       // If individual translation works, use it; otherwise use fallback
       if (individualTranslated !== individualKey && !individualTranslated.startsWith('rental.status.')) {
         return individualTranslated;
       }
-      
+
       return statusFallbacks[statusValue] || statusValue.charAt(0).toUpperCase() + statusValue.slice(1);
     }
-    
+
     return translated;
   };
 
@@ -1957,7 +1967,7 @@ export default function RentalDetailPage() {
   // Fetch only rental items (for updates without full refresh)
   const fetchRentalItems = async () => {
     if (!rental) return;
-    
+
     try {
       const response = await fetch(`/api/rentals/${rentalId}/items`);
       if (!response.ok) {
@@ -1968,14 +1978,14 @@ export default function RentalDetailPage() {
       // Update rental items in state
       setRental(prev => {
         if (!prev) return prev;
-        
+
         // Recalculate financial totals from rental items ONLY if no invoice exists
         let updatedRental = { ...prev, rentalItems: items };
         if ((!prev.invoices || prev.invoices.length === 0) && items && items.length > 0) {
           const financials = calculateFinancials(items);
           updatedRental = { ...updatedRental, ...financials };
         }
-        
+
         return updatedRental;
       });
 
@@ -1999,7 +2009,7 @@ export default function RentalDetailPage() {
       const data = await response.json();
       setEquipment(data.data || data.equipment || []);
     } catch (err) {
-      
+
     }
   };
 
@@ -2013,8 +2023,8 @@ export default function RentalDetailPage() {
       }
       const data = await response.json();
       const employeesData = data.data || data.employees || [];
-            setEmployees(employeesData);
-      
+      setEmployees(employeesData);
+
     } catch (err) {
       console.error('Error fetching employees:', err);
     }
@@ -2066,7 +2076,7 @@ export default function RentalDetailPage() {
 
       const result = await response.json();
       toast.success(result.message);
-      
+
       // Refresh rental data to show new items
       fetchRental();
     } catch (err) {
@@ -2089,7 +2099,7 @@ export default function RentalDetailPage() {
 
       const result = await response.json();
       toast.success(result.message);
-      
+
       // Refresh rental data to show updated invoice info
       fetchRental();
     } catch (err) {
@@ -2124,7 +2134,7 @@ export default function RentalDetailPage() {
       const response = await fetch(`/api/rentals/${rental.id}/invoice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           billingMonth: selectedMonth
         })
       });
@@ -2141,23 +2151,23 @@ export default function RentalDetailPage() {
           console.error('Invoice API error (non-JSON):', errorText);
           throw new Error(`Failed to generate monthly invoice (${response.status}): ${errorText.substring(0, 200)}`);
         }
-        
+
         console.error('Invoice API error:', errorData);
-        
+
         // Extract error message from various possible formats
-        const errorMessage = errorData.error || 
-                           errorData.details || 
-                           errorData.message || 
-                           (errorData.errorDetails?.message) ||
-                           `Failed to generate monthly invoice (${response.status})`;
-        
+        const errorMessage = errorData.error ||
+          errorData.details ||
+          errorData.message ||
+          (errorData.errorDetails?.message) ||
+          `Failed to generate monthly invoice (${response.status})`;
+
         throw new Error(errorMessage);
       }
 
       const result = await response.json();
 
       toast.success(result.message || 'Invoice generated successfully');
-      
+
       // Close dialog and refresh rental data
       setIsMonthSelectionOpen(false);
       setSelectedMonth('');
@@ -2167,7 +2177,7 @@ export default function RentalDetailPage() {
       console.error('Invoice generation error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to generate monthly invoice';
       toast.error(errorMessage);
-      
+
       // Close dialog on error
       setIsMonthSelectionOpen(false);
       setSelectedMonth('');
@@ -2191,7 +2201,7 @@ export default function RentalDetailPage() {
       }
 
       const result = await response.json();
-      
+
       // Show detailed results
       const { summary } = result;
       let message = `Sync completed: ${summary.totalProcessed} processed`;
@@ -2204,9 +2214,9 @@ export default function RentalDetailPage() {
       if (summary.errors > 0) {
         message += `, ${summary.errors} errors`;
       }
-      
+
       toast.success(message);
-      
+
       // Refresh rental data and invoices to show updated status
       fetchRental();
       fetchRentalInvoices();
@@ -2232,7 +2242,7 @@ export default function RentalDetailPage() {
 
       const result = await response.json();
       toast.success(result.message);
-      
+
       // Refresh rental data to show updated payment status
       fetchRental();
     } catch (err) {
@@ -2257,7 +2267,7 @@ export default function RentalDetailPage() {
 
       const result = await response.json();
       toast.success(result.message);
-      
+
       // Refresh rental data to show cleaned items
       fetchRental();
     } catch (err) {
@@ -2448,7 +2458,7 @@ export default function RentalDetailPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        
+
         throw new Error(errorData.error || 'Failed to add rental item');
       }
 
@@ -2560,7 +2570,7 @@ export default function RentalDetailPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        
+
         throw new Error(errorData.error || 'Failed to update rental item');
       }
 
@@ -2662,12 +2672,12 @@ export default function RentalDetailPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        
+
         throw new Error(errorData.error || 'Failed to delete rental item');
       }
 
       toast.success('Rental item deleted successfully');
-      
+
       // Refresh only rental items (no full page refresh)
       fetchRentalItems();
     } catch (err) {
@@ -2705,7 +2715,7 @@ export default function RentalDetailPage() {
       }
 
       toast.success(`${item.equipmentName} returned successfully`);
-      
+
       // Refresh only rental items
       fetchRentalItems();
     } catch (err) {
@@ -2716,12 +2726,12 @@ export default function RentalDetailPage() {
   // Handle complete with confirmation dialog
   const handleCompleteItem = (item: RentalItem) => {
     // Get the item's start date (use item start date or rental start date)
-    const itemStartDate = item.startDate && item.startDate !== '' 
-      ? item.startDate 
-      : rental?.startDate 
-        ? rental.startDate 
+    const itemStartDate = item.startDate && item.startDate !== ''
+      ? item.startDate
+      : rental?.startDate
+        ? rental.startDate
         : undefined;
-    
+
     confirmation.showReturnConfirmation(
       item.equipmentName,
       'Select the return date for this equipment. This will mark it as completed.',
@@ -2946,7 +2956,7 @@ export default function RentalDetailPage() {
                       <Label className="text-sm font-medium">{t('rental.fields.expectedEndDate')}</Label>
                       <p className="text-sm text-muted-foreground">
                         {rental.expectedEndDate &&
-                        !isNaN(new Date(rental.expectedEndDate).getTime())
+                          !isNaN(new Date(rental.expectedEndDate).getTime())
                           ? format(new Date(rental.expectedEndDate), 'MMM dd, yyyy')
                           : 'N/A'}
                       </p>
@@ -3018,33 +3028,33 @@ export default function RentalDetailPage() {
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
                       <span className="text-sm font-medium">{t('rental.subtotal')}:</span>
-                                             <span className="font-mono">SAR {formatAmount(rental.subtotal)}</span>
+                      <span className="font-mono">SAR {formatAmount(rental.subtotal)}</span>
                     </div>
-                    
+
                     {rental.discount && rental.discount > 0 && (
                       <div className="flex justify-between items-center text-green-600">
                         <span className="text-sm font-medium">{t('rental.discount')} ({rental.discount}%):</span>
-                                                 <span className="font-mono">-SAR {formatAmount(rental.discount)}</span>
+                        <span className="font-mono">-SAR {formatAmount(rental.discount)}</span>
                       </div>
                     )}
-                    
+
                     <div className="flex justify-between items-center">
                       <span className="text-sm font-medium">{t('rental.tax')} ({rental.tax || 15}%):</span>
-                                             <span className="font-mono">SAR {formatAmount(rental.taxAmount)}</span>
+                      <span className="font-mono">SAR {formatAmount(rental.taxAmount)}</span>
                     </div>
-                    
+
                     <Separator />
-                    
+
                     <div className="flex justify-between items-center text-lg font-bold">
                       <span>{t('rental.totalAmount')}:</span>
-                                             <span className="font-mono text-primary">SAR {formatAmount(rental.totalAmount)}</span>
+                      <span className="font-mono text-primary">SAR {formatAmount(rental.totalAmount)}</span>
                     </div>
-                    
+
                     <div className="flex justify-between items-center text-sm text-muted-foreground">
                       <span>{t('rental.finalAmount')}:</span>
-                                             <span className="font-mono">SAR {formatAmount(rental.finalAmount)}</span>
+                      <span className="font-mono">SAR {formatAmount(rental.finalAmount)}</span>
                     </div>
-                    
+
                     {rental.depositAmount && rental.depositAmount > 0 && (
                       <>
                         <Separator />
@@ -3054,7 +3064,7 @@ export default function RentalDetailPage() {
                         </div>
                         <div className="flex justify-between items-center text-sm text-muted-foreground">
                           <span>{t('rental.remainingBalance')}:</span>
-                                                     <span className="font-mono">SAR {formatAmount((rental.finalAmount || rental.totalAmount) - (rental.depositAmount || 0))}</span>
+                          <span className="font-mono">SAR {formatAmount((rental.finalAmount || rental.totalAmount) - (rental.depositAmount || 0))}</span>
                         </div>
                       </>
                     )}
@@ -3073,14 +3083,14 @@ export default function RentalDetailPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="flex gap-4">
-                      <Button 
+                      <Button
                         onClick={generateAutomatedMonthlyInvoices}
                         className="flex items-center gap-2"
                       >
                         <Calendar className="w-4 h-4" />
                         Generate All Monthly Invoices
                       </Button>
-                      <Button 
+                      <Button
                         onClick={generateMonthlyInvoice}
                         disabled={!rental || (rental.invoices && rental.invoices.length > 0)}
                         className="flex items-center gap-2"
@@ -3088,7 +3098,7 @@ export default function RentalDetailPage() {
                         <Receipt className="w-4 h-4" />
                         Generate Monthly Invoice
                       </Button>
-                      <Button 
+                      <Button
                         variant="outline"
                         onClick={syncPaymentStatus}
                         className="flex items-center gap-2"
@@ -3096,7 +3106,7 @@ export default function RentalDetailPage() {
                         <RefreshCw className="w-4 h-4" />
                         Sync Payment Status
                       </Button>
-                      <Button 
+                      <Button
                         variant="outline"
                         onClick={syncAllInvoices}
                         className="flex items-center gap-2"
@@ -3123,7 +3133,7 @@ export default function RentalDetailPage() {
                   </CardContent>
                 </Card>
               )}
-              
+
               {/* Unified Timeline */}
               <UnifiedTimeline rental={rental} t={t} fetchRental={fetchRental} />
             </TabsContent>
@@ -3134,8 +3144,8 @@ export default function RentalDetailPage() {
                   <div className="flex justify-between items-center">
                     <CardTitle>{t('rental.rentalItems')}</CardTitle>
                     <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         onClick={syncEquipmentAssignments}
                         disabled={!rental || rental.rentalItems?.length > 0}
@@ -3143,8 +3153,8 @@ export default function RentalDetailPage() {
                         <RefreshCw className="w-4 h-4 mr-2" />
                         Sync Equipment
                       </Button>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         onClick={cleanupDuplicates}
                         disabled={!rental || !rental.rentalItems?.length}
@@ -3202,10 +3212,10 @@ export default function RentalDetailPage() {
 
                         // Get operator name directly from API response
                         let operatorName = 'N/A';
-                        
+
                         if (item?.operatorId && item?.operatorFirstName && item?.operatorLastName) {
                           const name = `${item.operatorFirstName} ${item.operatorLastName}`;
-                          operatorName = item?.operatorFileNumber 
+                          operatorName = item?.operatorFileNumber
                             ? `${name} (File: ${item.operatorFileNumber})`
                             : name;
                         } else if (item?.operatorId) {
@@ -3216,7 +3226,7 @@ export default function RentalDetailPage() {
                         let supervisorName = '-';
                         if (item?.supervisorId && (item as any).supervisorFirstName && (item as any).supervisorLastName) {
                           const name = getShortName(`${(item as any).supervisorFirstName} ${(item as any).supervisorLastName}`);
-                          supervisorName = item?.supervisorFileNumber 
+                          supervisorName = item?.supervisorFileNumber
                             ? `${name} (File: ${item.supervisorFileNumber})`
                             : name;
                         } else if (item?.supervisorId) {
@@ -3231,23 +3241,23 @@ export default function RentalDetailPage() {
                             <TableCell className="w-12 text-center">{index + 1}</TableCell>
                             <TableCell className="font-medium">
                               {(() => {
-                                const name = item?.equipmentName?.startsWith('Equipment ') && item?.equipmentId 
-                                ? (equipmentNames[item.equipmentId.toString()] || item.equipmentName)
+                                const name = item?.equipmentName?.startsWith('Equipment ') && item?.equipmentId
+                                  ? (equipmentNames[item.equipmentId.toString()] || item.equipmentName)
                                   : item?.equipmentName || 'N/A';
                                 const plate = (item as any)?.equipmentIstimara;
                                 return plate ? `${name} (${plate})` : name;
                               })()}
                             </TableCell>
-                                                         <TableCell className="font-mono">SAR {formatAmount(item?.unitPrice)}</TableCell>
+                            <TableCell className="font-mono">SAR {formatAmount(item?.unitPrice)}</TableCell>
                             <TableCell>
                               <Badge variant="outline" className="capitalize">
                                 {item?.rateType || 'daily'}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">
-                              {item?.startDate && item.startDate !== '' 
+                              {item?.startDate && item.startDate !== ''
                                 ? format(new Date(item.startDate), 'MMM dd, yyyy')
-                                : rental?.startDate 
+                                : rental?.startDate
                                   ? `Rental: ${format(new Date(rental.startDate), 'MMM dd, yyyy')}`
                                   : 'N/A'
                               }
@@ -3312,8 +3322,8 @@ export default function RentalDetailPage() {
                   <div className="flex justify-between items-center">
                     <CardTitle>{t('rental.payments')}</CardTitle>
                     <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         onClick={() => setIsManualPaymentDialogOpen(true)}
                       >
@@ -3349,15 +3359,15 @@ export default function RentalDetailPage() {
                           <TableCell>{getPaymentStatusBadge(payment.status)}</TableCell>
                           <TableCell>
                             <div className="flex gap-2">
-                              <Button 
-                                variant="outline" 
+                              <Button
+                                variant="outline"
                                 size="sm"
                                 onClick={() => window.open(`/api/erpnext/payment/${payment.paymentId}`, '_blank')}
                               >
                                 <Eye className="w-4 h-4" />
                               </Button>
-                              <Button 
-                                variant="destructive" 
+                              <Button
+                                variant="destructive"
                                 size="sm"
                                 onClick={async () => {
                                   if (confirm(`Are you sure you want to unlink payment ${payment.paymentId}?`)) {
@@ -3401,8 +3411,8 @@ export default function RentalDetailPage() {
                   <div className="flex justify-between items-center">
                     <CardTitle>{t('rental.invoices')}</CardTitle>
                     <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         onClick={() => setIsManualInvoiceDialogOpen(true)}
                       >
@@ -3421,6 +3431,7 @@ export default function RentalDetailPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>{t('rental.invoiceNumber')}</TableHead>
+                        <TableHead>Billing Month</TableHead>
                         <TableHead>{t('rental.amount')}</TableHead>
                         <TableHead>{t('rental.table.headers.status')}</TableHead>
                         <TableHead>{t('rental.dueDate')}</TableHead>
@@ -3431,6 +3442,13 @@ export default function RentalDetailPage() {
                       {rentalInvoices.map((invoice) => (
                         <TableRow key={invoice.id}>
                           <TableCell>{invoice.invoiceId}</TableCell>
+                          <TableCell>
+                            {invoice.billingMonth ? (() => {
+                              const [year, month] = invoice.billingMonth.split('-');
+                              const date = new Date(parseInt(year), parseInt(month) - 1);
+                              return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                            })() : 'N/A'}
+                          </TableCell>
                           <TableCell>SAR {formatAmount(parseFloat(invoice.amount))}</TableCell>
                           <TableCell>{getPaymentStatusBadge(invoice.status)}</TableCell>
                           <TableCell>
@@ -3438,15 +3456,15 @@ export default function RentalDetailPage() {
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-2">
-                              <Button 
-                                variant="outline" 
+                              <Button
+                                variant="outline"
                                 size="sm"
                                 onClick={() => window.open(`/api/erpnext/invoice/${invoice.invoiceId}`, '_blank')}
                               >
                                 <Eye className="w-4 h-4" />
                               </Button>
-                              <Button 
-                                variant="outline" 
+                              <Button
+                                variant="outline"
                                 size="sm"
                                 onClick={async () => {
                                   try {
@@ -3469,32 +3487,51 @@ export default function RentalDetailPage() {
                               >
                                 <RefreshCw className="w-4 h-4" />
                               </Button>
-                              <Button 
-                                variant="destructive" 
-                                size="sm"
-                                onClick={async () => {
-                                  if (confirm(`Are you sure you want to unlink invoice ${invoice.invoiceId}?`)) {
-                                    try {
-                                      const response = await fetch(`/api/rentals/${rentalId}/invoices/${invoice.invoiceId}/unlink`, {
-                                        method: 'DELETE',
-                                        headers: { 'Content-Type': 'application/json' }
-                                      });
-                                      const result = await response.json();
-                                      if (result.success) {
-                                        toast.success(result.message);
-                                        fetchRentalInvoices();
-                                      } else {
-                                        toast.error(result.error || 'Failed to unlink invoice');
-                                      }
-                                    } catch (err) {
-                                      console.error('Error unlinking invoice:', err);
-                                      toast.error('Failed to unlink invoice');
-                                    }
-                                  }
-                                }}
-                              >
-                                <X className="w-4 h-4" />
-                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Unlink Invoice?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to unlink invoice <strong>{invoice.invoiceId}</strong>?
+                                      This will remove the link from this rental but will not delete the invoice in ERPNext.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={async () => {
+                                        try {
+                                          const response = await fetch(`/api/rentals/${rentalId}/invoices/${invoice.invoiceId}/unlink`, {
+                                            method: 'DELETE',
+                                            headers: { 'Content-Type': 'application/json' }
+                                          });
+                                          const result = await response.json();
+                                          if (result.success) {
+                                            toast.success(result.message);
+                                            fetchRentalInvoices();
+                                          } else {
+                                            toast.error(result.error || 'Failed to unlink invoice');
+                                          }
+                                        } catch (err) {
+                                          console.error('Error unlinking invoice:', err);
+                                          toast.error('Failed to unlink invoice');
+                                        }
+                                      }}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Unlink Invoice
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -3517,36 +3554,36 @@ export default function RentalDetailPage() {
                       <CardDescription>Rental items grouped by month with monthly summaries</CardDescription>
                     </div>
                     <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         onClick={() => {
                           // Create printable HTML content in a new window
                           const rentalItems = rental?.rentalItems || [];
-                          
+
                           const monthlyData = rentalItems.reduce((acc: any, item: any) => {
                             const itemStartDate = item.startDate || rental?.startDate;
                             if (!itemStartDate) return acc;
-                            
+
                             const startDate = new Date(itemStartDate);
-                            
-                          // Determine end date for this item (prefer per-item completedDate)
-                          let endDate = new Date();
-                          const itemCompletedDate = item.completedDate || (item as any).completed_date;
-                          if (itemCompletedDate) {
-                            endDate = new Date(itemCompletedDate);
-                          } else if (rental.status === 'completed' && rental.actualEndDate) {
-                            endDate = new Date(rental.actualEndDate);
-                          }
-                            
+
+                            // Determine end date for this item (prefer per-item completedDate)
+                            let endDate = new Date();
+                            const itemCompletedDate = item.completedDate || (item as any).completed_date;
+                            if (itemCompletedDate) {
+                              endDate = new Date(itemCompletedDate);
+                            } else if (rental.status === 'completed' && rental.actualEndDate) {
+                              endDate = new Date(rental.actualEndDate);
+                            }
+
                             // Generate entries for each month the item was active
                             const currentMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
                             const endMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
-                            
+
                             while (currentMonth <= endMonth) {
                               const monthKey = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
                               const monthLabel = format(currentMonth, 'MMMM yyyy');
-                              
+
                               if (!acc[monthKey]) {
                                 acc[monthKey] = {
                                   monthLabel,
@@ -3557,16 +3594,16 @@ export default function RentalDetailPage() {
                                   completedItems: 0
                                 };
                               }
-                              
+
                               // Calculate amount for this specific month
                               const itemStartForCalc = new Date(item.startDate);
                               itemStartForCalc.setHours(0, 0, 0, 0);
-                              
+
                               const reportMonthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
                               reportMonthStart.setHours(0, 0, 0, 0);
                               const reportMonthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
                               reportMonthEnd.setHours(23, 59, 59, 999);
-                              
+
                               const startInMonth = itemStartForCalc > reportMonthStart ? itemStartForCalc : reportMonthStart;
                               let endInMonth = reportMonthEnd;
 
@@ -3581,7 +3618,7 @@ export default function RentalDetailPage() {
                                 currentMonth.setMonth(currentMonth.getMonth() + 1);
                                 continue;
                               }
-                              
+
                               // Prefer the item's completedDate when determining the end within this month
                               const itemCompletedDateForMonth = item.completedDate || (item as any).completed_date;
                               if (itemCompletedDateForMonth) {
@@ -3606,19 +3643,19 @@ export default function RentalDetailPage() {
                                   endInMonth = today;
                                 }
                               }
-                              
+
                               if (startInMonth <= endInMonth) {
                                 // Check if we have timesheet hours for this item and month
                                 const timesheetHours = itemTimesheetHours[`${item.id}-${monthKey}`];
                                 const timesheetReceived = timesheetStatus[`${monthKey}-${item.id}`] === true;
-                                
+
                                 let itemAmount = 0;
-                                
+
                                 // If timesheet was received and we have hours, use timesheet-based calculation
                                 if (timesheetReceived && timesheetHours && timesheetHours > 0) {
                                   const unitPrice = parseFloat(item.unitPrice || 0) || 0;
                                   const rateType = item.rateType || 'daily';
-                                  
+
                                   // Convert rate to hourly equivalent
                                   let hourlyRate = unitPrice;
                                   if (rateType === 'daily') {
@@ -3628,7 +3665,7 @@ export default function RentalDetailPage() {
                                   } else if (rateType === 'monthly') {
                                     hourlyRate = unitPrice / (30 * 10); // 30 days * 10 hours
                                   }
-                                  
+
                                   itemAmount = hourlyRate * timesheetHours;
                                 } else {
                                   // Fallback to date-based calculation
@@ -3637,36 +3674,36 @@ export default function RentalDetailPage() {
                                   const days = endDay - startDay + 1; // +1 inclusive
                                   itemAmount = (parseFloat(item.unitPrice || 0) || 0) * Math.max(days, 0);
                                 }
-                                
+
                                 acc[monthKey].totalAmount += itemAmount;
                               } else {
                                 currentMonth.setMonth(currentMonth.getMonth() + 1);
                                 continue;
                               }
-                              
+
                               acc[monthKey].items.push(item);
                               acc[monthKey].totalItems += 1;
-                              
+
                               if (item.status === 'active') {
                                 acc[monthKey].activeItems += 1;
                               } else if (item.status === 'completed' || item.status === 'removed') {
                                 acc[monthKey].completedItems += 1;
                               }
-                              
+
                               // Move to next month
                               currentMonth.setMonth(currentMonth.getMonth() + 1);
                             }
-                            
+
                             return acc;
                           }, {});
-                          
+
                           let sortedMonths = Object.keys(monthlyData).sort().reverse();
-                          
+
                           // Filter by selected month if not "all"
                           if (selectedMonth && selectedMonth !== 'all') {
                             sortedMonths = sortedMonths.filter(key => key === selectedMonth);
                           }
-                          
+
                           let html = `
                             <html>
                               <head>
@@ -3706,7 +3743,7 @@ export default function RentalDetailPage() {
                                   <strong>Report Date:</strong> ${format(new Date(), 'MMM dd, yyyy')}
                                 </div>
                           `;
-                          
+
                           sortedMonths.forEach(monthKey => {
                             const monthData = monthlyData[monthKey];
                             html += `
@@ -3734,35 +3771,35 @@ export default function RentalDetailPage() {
                                   </thead>
                                   <tbody>
                             `;
-                            
+
                             // Group items by supervisor
                             const groupedBySupervisor = monthData.items.reduce((acc: any, item: any) => {
                               let supervisorKey = 'No Supervisor';
                               if (item?.supervisorId) {
                                 if (item?.supervisorFirstName && item?.supervisorLastName) {
                                   const name = getShortName(`${item.supervisorFirstName} ${item.supervisorLastName}`);
-                                  supervisorKey = item?.supervisorFileNumber 
+                                  supervisorKey = item?.supervisorFileNumber
                                     ? `${name} (File: ${item.supervisorFileNumber})`
                                     : name;
                                 } else {
                                   supervisorKey = `Employee ${item.supervisorId}`;
                                 }
                               }
-                              
+
                               if (!acc[supervisorKey]) {
                                 acc[supervisorKey] = [];
                               }
                               acc[supervisorKey].push(item);
                               return acc;
                             }, {});
-                            
+
                             const supervisorKeys = Object.keys(groupedBySupervisor).sort();
                             const hasMultipleSupervisors = supervisorKeys.length > 1;
                             let globalIndex = 0;
-                            
+
                             supervisorKeys.forEach((supervisorKey) => {
                               const supervisorItems = groupedBySupervisor[supervisorKey];
-                              
+
                               // Add supervisor header row if multiple supervisors
                               if (hasMultipleSupervisors) {
                                 html += `
@@ -3771,169 +3808,169 @@ export default function RentalDetailPage() {
                                   </tr>
                                 `;
                               }
-                              
+
                               supervisorItems.forEach((item: any) => {
-                              const baseName = item.equipmentName?.startsWith('Equipment ') && item.equipmentId 
-                                ? (equipmentNames[item.equipmentId.toString()] || item.equipmentName)
-                                : item.equipmentName || 'N/A';
-                              const plate = item?.equipmentIstimara;
-                              const equipmentName = plate ? `${baseName} (${plate})` : baseName;
-                              
-                              let operatorName = 'N/A';
-                              if (item?.operatorId && item?.operatorFirstName && item?.operatorLastName) {
-                                const name = `${item.operatorFirstName} ${item.operatorLastName}`;
-                                operatorName = item?.operatorFileNumber 
-                                  ? `${name} (File: ${item.operatorFileNumber})`
-                                  : name;
-                              } else if (item?.operatorId) {
-                                operatorName = `Employee ${item.operatorId}`;
-                              }
-                              
-                              // Get supervisor name
-                              let supervisorName = 'N/A';
-                              if (item?.supervisorId && item?.supervisorFirstName && item?.supervisorLastName) {
-                                const name = getShortName(`${item.supervisorFirstName} ${item.supervisorLastName}`);
-                                supervisorName = item?.supervisorFileNumber 
-                                  ? `${name} (File: ${item.supervisorFileNumber})`
-                                  : name;
-                              } else if (item?.supervisorId) {
-                                supervisorName = `Employee ${item.supervisorId}`;
-                              }
-                              
-                              // Calculate duration and display start date for this specific month
-                              let durationText = 'N/A';
-                              let displayStartDate = 'N/A';
-                              let monthlyTotal = 0;
-                              
-                              if (item.startDate) {
-                                const itemStartDate = new Date(item.startDate);
-                                itemStartDate.setHours(0, 0, 0, 0);
-                                
-                                // Parse month and year from monthLabel (e.g., "October 2025")
-                                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-                                const monthParts = monthData.monthLabel.split(' ');
-                                const year = parseInt(monthParts[1]);
-                                const monthNum = monthNames.indexOf(monthParts[0]);
-                                
-                                // Get first and last day of the month
-                                const monthStart = new Date(year, monthNum, 1);
-                                monthStart.setHours(0, 0, 0, 0);
-                                const monthEnd = new Date(year, monthNum + 1, 0);
-                                monthEnd.setHours(23, 59, 59, 999);
-                                
-                                // Determine what start date to show for this month
-                                if (itemStartDate.getTime() === monthStart.getTime()) {
-                                  // Started on 1st of this month
-                                  displayStartDate = format(itemStartDate, 'MMM dd, yyyy');
-                                } else if (itemStartDate >= monthStart && itemStartDate < new Date(year, monthNum + 1, 1)) {
-                                  // Started mid-month in this month
-                                  displayStartDate = format(itemStartDate, 'MMM dd, yyyy');
-                                } else {
-                                  // This is a month after the start - show first of month
-                                  displayStartDate = format(monthStart, 'MMM dd, yyyy');
+                                const baseName = item.equipmentName?.startsWith('Equipment ') && item.equipmentId
+                                  ? (equipmentNames[item.equipmentId.toString()] || item.equipmentName)
+                                  : item.equipmentName || 'N/A';
+                                const plate = item?.equipmentIstimara;
+                                const equipmentName = plate ? `${baseName} (${plate})` : baseName;
+
+                                let operatorName = 'N/A';
+                                if (item?.operatorId && item?.operatorFirstName && item?.operatorLastName) {
+                                  const name = `${item.operatorFirstName} ${item.operatorLastName}`;
+                                  operatorName = item?.operatorFileNumber
+                                    ? `${name} (File: ${item.operatorFileNumber})`
+                                    : name;
+                                } else if (item?.operatorId) {
+                                  operatorName = `Employee ${item.operatorId}`;
                                 }
-                                
-                                // Determine the start date in this month for duration calculation
-                                const startInMonth = itemStartDate > monthStart ? itemStartDate : monthStart;
-                                
-                                // Determine the end date in this month
-                                let endInMonth = monthEnd;
-                                
-                                // Check if item has a completed date and use it for duration calculation
-                                const itemCompletedDate = (item.completedDate || (item as any).completed_date);
-                                if (itemCompletedDate && item.status === 'completed') {
-                                  const completedDate = new Date(itemCompletedDate);
-                                  completedDate.setHours(23, 59, 59, 999);
-                                  // If completed date is within this month, use it as end date
-                                  if (completedDate >= monthStart && completedDate <= monthEnd) {
-                                    endInMonth = completedDate;
-                                  } else if (completedDate < monthStart) {
-                                    // If completed before this month, item wasn't active this month
-                                    endInMonth = monthStart;
-                                  }
-                                  // If completed after this month, use month end (item was active all month)
-                                } else if (rental.status === 'completed' && rental.actualEndDate) {
-                                  // Fallback to rental end date if item doesn't have completed date
-                                  const actualEnd = new Date(rental.actualEndDate);
-                                  actualEnd.setHours(23, 59, 59, 999);
-                                  if (actualEnd >= monthStart && actualEnd <= monthEnd) {
-                                    endInMonth = actualEnd;
-                                  }
-                                } else {
-                                  // For active rentals, use today if within the month
-                                  const today = new Date();
-                                  today.setHours(23, 59, 59, 999);
-                                  if (today >= monthStart && today <= monthEnd) {
-                                    endInMonth = today;
-                                  }
+
+                                // Get supervisor name
+                                let supervisorName = 'N/A';
+                                if (item?.supervisorId && item?.supervisorFirstName && item?.supervisorLastName) {
+                                  const name = getShortName(`${item.supervisorFirstName} ${item.supervisorLastName}`);
+                                  supervisorName = item?.supervisorFileNumber
+                                    ? `${name} (File: ${item.supervisorFileNumber})`
+                                    : name;
+                                } else if (item?.supervisorId) {
+                                  supervisorName = `Employee ${item.supervisorId}`;
                                 }
-                                
-                                // Check if we have timesheet hours for this item and month
-                                const timesheetHours = itemTimesheetHours[`${item.id}-${monthKey}`];
-                                const timesheetReceived = timesheetStatus[`${monthKey}-${item.id}`] === true;
-                                
-                                // If timesheet was received and we have hours, use timesheet-based calculation
-                                if (timesheetReceived && timesheetHours && timesheetHours > 0) {
-                                  // Show duration in hours
-                                  durationText = timesheetHours % 1 === 0 ? `${timesheetHours} hours` : `${timesheetHours.toFixed(1)} hours`;
-                                  
-                                  // Calculate monthly total based on timesheet hours
-                                  const unitPrice = parseFloat(item.unitPrice || 0) || 0;
-                                  const rateType = item.rateType || 'daily';
-                                  
-                                  // Convert rate to hourly equivalent
-                                  let hourlyRate = unitPrice;
-                                  if (rateType === 'daily') {
-                                    hourlyRate = unitPrice / 10; // 10 hours per day
-                                  } else if (rateType === 'weekly') {
-                                    hourlyRate = unitPrice / (7 * 10); // 7 days * 10 hours
-                                  } else if (rateType === 'monthly') {
-                                    hourlyRate = unitPrice / (30 * 10); // 30 days * 10 hours
-                                  }
-                                  
-                                  monthlyTotal = hourlyRate * timesheetHours;
-                                } else {
-                                  // Fallback to date-based calculation
-                                  if (itemStartDate <= monthEnd) {
-                                    const startDay = startInMonth.getDate();
-                                    const endDay = endInMonth.getDate();
-                                    const days = endDay - startDay + 1; // +1 for inclusive counting
-                                    durationText = days >= 1 ? `${days} days` : '1 day';
-                                    
-                                    // Calculate monthly total
-                                    monthlyTotal = (parseFloat(item.unitPrice || 0) || 0) * Math.max(days, 1);
+
+                                // Calculate duration and display start date for this specific month
+                                let durationText = 'N/A';
+                                let displayStartDate = 'N/A';
+                                let monthlyTotal = 0;
+
+                                if (item.startDate) {
+                                  const itemStartDate = new Date(item.startDate);
+                                  itemStartDate.setHours(0, 0, 0, 0);
+
+                                  // Parse month and year from monthLabel (e.g., "October 2025")
+                                  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                                  const monthParts = monthData.monthLabel.split(' ');
+                                  const year = parseInt(monthParts[1]);
+                                  const monthNum = monthNames.indexOf(monthParts[0]);
+
+                                  // Get first and last day of the month
+                                  const monthStart = new Date(year, monthNum, 1);
+                                  monthStart.setHours(0, 0, 0, 0);
+                                  const monthEnd = new Date(year, monthNum + 1, 0);
+                                  monthEnd.setHours(23, 59, 59, 999);
+
+                                  // Determine what start date to show for this month
+                                  if (itemStartDate.getTime() === monthStart.getTime()) {
+                                    // Started on 1st of this month
+                                    displayStartDate = format(itemStartDate, 'MMM dd, yyyy');
+                                  } else if (itemStartDate >= monthStart && itemStartDate < new Date(year, monthNum + 1, 1)) {
+                                    // Started mid-month in this month
+                                    displayStartDate = format(itemStartDate, 'MMM dd, yyyy');
                                   } else {
-                                    durationText = '0 days';
-                                    monthlyTotal = 0;
+                                    // This is a month after the start - show first of month
+                                    displayStartDate = format(monthStart, 'MMM dd, yyyy');
+                                  }
+
+                                  // Determine the start date in this month for duration calculation
+                                  const startInMonth = itemStartDate > monthStart ? itemStartDate : monthStart;
+
+                                  // Determine the end date in this month
+                                  let endInMonth = monthEnd;
+
+                                  // Check if item has a completed date and use it for duration calculation
+                                  const itemCompletedDate = (item.completedDate || (item as any).completed_date);
+                                  if (itemCompletedDate && item.status === 'completed') {
+                                    const completedDate = new Date(itemCompletedDate);
+                                    completedDate.setHours(23, 59, 59, 999);
+                                    // If completed date is within this month, use it as end date
+                                    if (completedDate >= monthStart && completedDate <= monthEnd) {
+                                      endInMonth = completedDate;
+                                    } else if (completedDate < monthStart) {
+                                      // If completed before this month, item wasn't active this month
+                                      endInMonth = monthStart;
+                                    }
+                                    // If completed after this month, use month end (item was active all month)
+                                  } else if (rental.status === 'completed' && rental.actualEndDate) {
+                                    // Fallback to rental end date if item doesn't have completed date
+                                    const actualEnd = new Date(rental.actualEndDate);
+                                    actualEnd.setHours(23, 59, 59, 999);
+                                    if (actualEnd >= monthStart && actualEnd <= monthEnd) {
+                                      endInMonth = actualEnd;
+                                    }
+                                  } else {
+                                    // For active rentals, use today if within the month
+                                    const today = new Date();
+                                    today.setHours(23, 59, 59, 999);
+                                    if (today >= monthStart && today <= monthEnd) {
+                                      endInMonth = today;
+                                    }
+                                  }
+
+                                  // Check if we have timesheet hours for this item and month
+                                  const timesheetHours = itemTimesheetHours[`${item.id}-${monthKey}`];
+                                  const timesheetReceived = timesheetStatus[`${monthKey}-${item.id}`] === true;
+
+                                  // If timesheet was received and we have hours, use timesheet-based calculation
+                                  if (timesheetReceived && timesheetHours && timesheetHours > 0) {
+                                    // Show duration in hours
+                                    durationText = timesheetHours % 1 === 0 ? `${timesheetHours} hours` : `${timesheetHours.toFixed(1)} hours`;
+
+                                    // Calculate monthly total based on timesheet hours
+                                    const unitPrice = parseFloat(item.unitPrice || 0) || 0;
+                                    const rateType = item.rateType || 'daily';
+
+                                    // Convert rate to hourly equivalent
+                                    let hourlyRate = unitPrice;
+                                    if (rateType === 'daily') {
+                                      hourlyRate = unitPrice / 10; // 10 hours per day
+                                    } else if (rateType === 'weekly') {
+                                      hourlyRate = unitPrice / (7 * 10); // 7 days * 10 hours
+                                    } else if (rateType === 'monthly') {
+                                      hourlyRate = unitPrice / (30 * 10); // 30 days * 10 hours
+                                    }
+
+                                    monthlyTotal = hourlyRate * timesheetHours;
+                                  } else {
+                                    // Fallback to date-based calculation
+                                    if (itemStartDate <= monthEnd) {
+                                      const startDay = startInMonth.getDate();
+                                      const endDay = endInMonth.getDate();
+                                      const days = endDay - startDay + 1; // +1 for inclusive counting
+                                      durationText = days >= 1 ? `${days} days` : '1 day';
+
+                                      // Calculate monthly total
+                                      monthlyTotal = (parseFloat(item.unitPrice || 0) || 0) * Math.max(days, 1);
+                                    } else {
+                                      durationText = '0 days';
+                                      monthlyTotal = 0;
+                                    }
                                   }
                                 }
-                              }
-                              
-                              // Determine completed date display - only show in the month when completed
-                              let completedDateDisplay = '-';
-                              if (item.status === 'completed' && (item.completedDate || (item as any).completed_date)) {
-                                const completedDate = new Date((item.completedDate || (item as any).completed_date));
-                                completedDate.setHours(0, 0, 0, 0);
-                                
-                                // Check if completed date falls within the current report month
-                                const [monthName, yearStr] = monthData.monthLabel.split(' ');
-                                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-                                const reportMonth = monthNames.indexOf(monthName);
-                                const reportYear = parseInt(yearStr);
-                                
-                                const reportMonthStart = new Date(reportYear, reportMonth, 1);
-                                reportMonthStart.setHours(0, 0, 0, 0);
-                                const reportMonthEnd = new Date(reportYear, reportMonth + 1, 0);
-                                reportMonthEnd.setHours(23, 59, 59, 999);
-                                
-                                // Only show completed date if it's in this month
-                                if (completedDate >= reportMonthStart && completedDate <= reportMonthEnd) {
-                                  completedDateDisplay = format(completedDate, 'MMM dd, yyyy');
+
+                                // Determine completed date display - only show in the month when completed
+                                let completedDateDisplay = '-';
+                                if (item.status === 'completed' && (item.completedDate || (item as any).completed_date)) {
+                                  const completedDate = new Date((item.completedDate || (item as any).completed_date));
+                                  completedDate.setHours(0, 0, 0, 0);
+
+                                  // Check if completed date falls within the current report month
+                                  const [monthName, yearStr] = monthData.monthLabel.split(' ');
+                                  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                                  const reportMonth = monthNames.indexOf(monthName);
+                                  const reportYear = parseInt(yearStr);
+
+                                  const reportMonthStart = new Date(reportYear, reportMonth, 1);
+                                  reportMonthStart.setHours(0, 0, 0, 0);
+                                  const reportMonthEnd = new Date(reportYear, reportMonth + 1, 0);
+                                  reportMonthEnd.setHours(23, 59, 59, 999);
+
+                                  // Only show completed date if it's in this month
+                                  if (completedDate >= reportMonthStart && completedDate <= reportMonthEnd) {
+                                    completedDateDisplay = format(completedDate, 'MMM dd, yyyy');
+                                  }
                                 }
-                              }
-                              
-                              globalIndex++;
-                              html += `
+
+                                globalIndex++;
+                                html += `
                                 <tr>
                                   <td class="sl-col">${globalIndex}</td>
                                   <td class="equipment-col">${equipmentName}</td>
@@ -3947,21 +3984,21 @@ export default function RentalDetailPage() {
                                   <td class="completed-col">${completedDateDisplay}</td>
                                 </tr>
                               `;
+                              });
                             });
-                            });
-                            
+
                             html += `
                                   </tbody>
                                 </table>
                               </div>
                             `;
                           });
-                          
+
                           html += `
                               </body>
                             </html>
                           `;
-                          
+
                           // Open print window
                           const printWindow = window.open('', '_blank');
                           if (printWindow) {
@@ -3974,22 +4011,22 @@ export default function RentalDetailPage() {
                         <Printer className="w-4 h-4 mr-2" />
                         Print
                       </Button>
-                      <Button 
+                      <Button
                         size="sm"
                         onClick={async () => {
                           try {
                             // Fetch PDF from API
                             const url = `/api/rentals/${rentalId}/report/pdf?month=${selectedMonth || 'all'}`;
                             const response = await fetch(url);
-                            
+
                             if (!response.ok) {
                               toast.error('Failed to generate PDF');
                               return;
                             }
-                            
+
                             // Get the PDF blob
                             const blob = await response.blob();
-                            
+
                             // Create download link
                             const downloadUrl = URL.createObjectURL(blob);
                             const link = document.createElement('a');
@@ -3999,7 +4036,7 @@ export default function RentalDetailPage() {
                             link.click();
                             document.body.removeChild(link);
                             URL.revokeObjectURL(downloadUrl);
-                            
+
                             toast.success('Report downloaded successfully');
                           } catch (error) {
                             console.error('Error downloading report:', error);
@@ -4027,11 +4064,11 @@ export default function RentalDetailPage() {
                                 if (rental.status === 'completed' && rental.actualEndDate) {
                                   endDate = new Date(rental.actualEndDate);
                                 }
-                                
+
                                 // Add all months from start to end
                                 const currentMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
                                 const endMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
-                                
+
                                 while (currentMonth <= endMonth) {
                                   const monthKey = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
                                   months.add(monthKey);
@@ -4056,7 +4093,7 @@ export default function RentalDetailPage() {
                   {(() => {
                     // Group rental items by month based on start date
                     const rentalItems = rental?.rentalItems || [];
-                    
+
                     // First, identify handover relationships across all items
                     // A handover is when an item is completed and a new item with different operator starts for same equipment
                     const handoverMap = new Map<string, string>(); // Maps completed item ID to new operator item ID
@@ -4065,29 +4102,29 @@ export default function RentalDetailPage() {
                       const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
                       return dateA - dateB;
                     });
-                    
+
                     for (let i = 0; i < allItemsSorted.length; i++) {
                       const item = allItemsSorted[i];
-                      const baseName = item.equipmentName?.startsWith('Equipment ') && item.equipmentId 
+                      const baseName = item.equipmentName?.startsWith('Equipment ') && item.equipmentId
                         ? (equipmentNames[item.equipmentId.toString()] || item.equipmentName)
                         : item.equipmentName || 'N/A';
                       const plate = item?.equipmentIstimara;
                       const itemEquipmentName = plate ? `${baseName} (${plate})` : baseName;
-                      
+
                       if (item.status === 'completed' && item.completedDate) {
                         // Look for a new item with different operator for same equipment that started after completion
                         for (let j = i + 1; j < allItemsSorted.length; j++) {
                           const nextItem = allItemsSorted[j];
-                          const nextEquipmentName = nextItem.equipmentName?.startsWith('Equipment ') && nextItem.equipmentId 
+                          const nextEquipmentName = nextItem.equipmentName?.startsWith('Equipment ') && nextItem.equipmentId
                             ? (equipmentNames[nextItem.equipmentId.toString()] || nextItem.equipmentName)
                             : nextItem.equipmentName;
-                          
-                          if (itemEquipmentName === nextEquipmentName && 
-                              item.operatorId !== nextItem.operatorId &&
-                              nextItem.startDate) {
+
+                          if (itemEquipmentName === nextEquipmentName &&
+                            item.operatorId !== nextItem.operatorId &&
+                            nextItem.startDate) {
                             const completedDate = new Date(item.completedDate);
                             const nextStartDate = new Date(nextItem.startDate);
-                            
+
                             // New item started on or after completion
                             if (nextStartDate >= completedDate) {
                               handoverMap.set(item.id, nextItem.id);
@@ -4097,13 +4134,13 @@ export default function RentalDetailPage() {
                         }
                       }
                     }
-                    
+
                     const monthlyData = rentalItems.reduce((acc: any, item: any) => {
                       const itemStartDate = item.startDate || rental?.startDate;
                       if (!itemStartDate) return acc;
-                      
+
                       const startDate = new Date(itemStartDate);
-                      
+
                       // Determine end date for this item (prefer the item's completedDate)
                       let endDate = new Date();
                       const itemCompletedDate = item.completedDate || (item as any).completed_date;
@@ -4112,15 +4149,15 @@ export default function RentalDetailPage() {
                       } else if (rental.status === 'completed' && rental.actualEndDate) {
                         endDate = new Date(rental.actualEndDate);
                       }
-                      
+
                       // Generate entries for each month the item was active
                       const currentMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
                       const endMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
-                      
+
                       while (currentMonth <= endMonth) {
                         const monthKey = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
                         const monthLabel = format(currentMonth, 'MMMM yyyy');
-                        
+
                         if (!acc[monthKey]) {
                           acc[monthKey] = {
                             monthLabel,
@@ -4131,17 +4168,17 @@ export default function RentalDetailPage() {
                             completedItems: 0
                           };
                         }
-                        
+
                         // Calculate amount for this specific month
                         const itemStartDate = new Date(item.startDate);
                         const [monthName, yearStr] = monthLabel.split(' ');
                         const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
                         const reportMonth = monthNames.indexOf(monthName);
                         const reportYear = parseInt(yearStr);
-                        
+
                         const monthStart = new Date(reportYear, reportMonth, 1);
                         const monthEnd = new Date(reportYear, reportMonth + 1, 0);
-                        
+
                         // If the item ended before this month starts, skip
                         if (endDate < monthStart) {
                           currentMonth.setMonth(currentMonth.getMonth() + 1);
@@ -4180,14 +4217,14 @@ export default function RentalDetailPage() {
                           // Check if we have timesheet hours for this item and month
                           const timesheetHours = itemTimesheetHours[`${item.id}-${monthKey}`];
                           const timesheetReceived = timesheetStatus[`${monthKey}-${item.id}`] === true;
-                          
+
                           let itemAmount = 0;
-                          
+
                           // If timesheet was received and we have hours, use timesheet-based calculation
                           if (timesheetReceived && timesheetHours && timesheetHours > 0) {
                             const unitPrice = parseFloat(item.unitPrice || 0) || 0;
                             const rateType = item.rateType || 'daily';
-                            
+
                             // Convert rate to hourly equivalent
                             let hourlyRate = unitPrice;
                             if (rateType === 'daily') {
@@ -4197,7 +4234,7 @@ export default function RentalDetailPage() {
                             } else if (rateType === 'monthly') {
                               hourlyRate = unitPrice / (30 * 10); // 30 days * 10 hours
                             }
-                            
+
                             itemAmount = hourlyRate * timesheetHours;
                           } else {
                             // Fallback to date-based calculation
@@ -4206,7 +4243,7 @@ export default function RentalDetailPage() {
                             const days = endDay - startDay + 1; // +1 inclusive
                             itemAmount = (parseFloat(item.unitPrice || 0) || 0) * Math.max(days, 0);
                           }
-                          
+
                           acc[monthKey].totalAmount += itemAmount;
 
                           acc[monthKey].items.push(item);
@@ -4216,20 +4253,20 @@ export default function RentalDetailPage() {
                           } else if (item.status === 'completed' || item.status === 'removed') {
                             acc[monthKey].completedItems += 1;
                           }
-                          
+
                           // If this item has a handover (completed and new operator started), 
                           // only show the handover item in the month where the completion actually happened
                           if (handoverMap.has(item.id) && item.status === 'completed' && item.completedDate) {
                             const completedDate = item.completedDate ? new Date(item.completedDate) : null;
-                            
+
                             // Only add handover item if the completion happened in THIS specific month
                             if (completedDate && completedDate >= monthStart && completedDate <= monthEnd) {
                               const handoverItemId = handoverMap.get(item.id);
                               const handoverItem = rentalItems.find((ri: any) => ri.id === handoverItemId);
-                              
+
                               if (handoverItem && !acc[monthKey].items.find((ri: any) => ri.id === handoverItemId)) {
                                 const handoverStartDate = handoverItem.startDate ? new Date(handoverItem.startDate) : null;
-                                
+
                                 if (handoverStartDate && handoverStartDate >= completedDate) {
                                   // Calculate amount for handover item in this month (only if it started in this month)
                                   if (handoverStartDate >= monthStart && handoverStartDate <= monthEnd) {
@@ -4239,14 +4276,14 @@ export default function RentalDetailPage() {
                                       // Check if we have timesheet hours for handover item
                                       const handoverTimesheetHours = itemTimesheetHours[`${handoverItem.id}-${monthKey}`];
                                       const handoverTimesheetReceived = timesheetStatus[`${monthKey}-${handoverItem.id}`] === true;
-                                      
+
                                       let handoverAmount = 0;
-                                      
+
                                       // If timesheet was received and we have hours, use timesheet-based calculation
                                       if (handoverTimesheetReceived && handoverTimesheetHours && handoverTimesheetHours > 0) {
                                         const unitPrice = typeof handoverItem.unitPrice === 'string' ? parseFloat(handoverItem.unitPrice) : (Number(handoverItem.unitPrice) || 0);
                                         const rateType = handoverItem.rateType || 'daily';
-                                        
+
                                         // Convert rate to hourly equivalent
                                         let hourlyRate = unitPrice;
                                         if (rateType === 'daily') {
@@ -4256,7 +4293,7 @@ export default function RentalDetailPage() {
                                         } else if (rateType === 'monthly') {
                                           hourlyRate = unitPrice / (30 * 10);
                                         }
-                                        
+
                                         handoverAmount = hourlyRate * handoverTimesheetHours;
                                       } else {
                                         // Fallback to date-based calculation
@@ -4265,11 +4302,11 @@ export default function RentalDetailPage() {
                                         const handoverDays = handoverEndDay - handoverStartDay + 1;
                                         handoverAmount = (Number(handoverItem.unitPrice) || 0) * Math.max(handoverDays, 0);
                                       }
-                                      
+
                                       acc[monthKey].totalAmount += handoverAmount;
                                     }
                                   }
-                                  
+
                                   // Add handover item to this month's items to show continuity
                                   acc[monthKey].items.push(handoverItem);
                                   acc[monthKey].totalItems += 1;
@@ -4281,22 +4318,22 @@ export default function RentalDetailPage() {
                             }
                           }
                         }
-                        
+
                         // Move to next month
                         currentMonth.setMonth(currentMonth.getMonth() + 1);
                       }
-                      
+
                       return acc;
                     }, {});
-                    
+
                     // Sort by month (newest first)
                     let sortedMonths = Object.keys(monthlyData).sort().reverse();
-                    
+
                     // Filter by selected month if not "all"
                     if (selectedMonth && selectedMonth !== 'all') {
                       sortedMonths = sortedMonths.filter(key => key === selectedMonth);
                     }
-                    
+
                     return sortedMonths.length > 0 ? (
                       <div className="space-y-3">
                         {sortedMonths.map((monthKey) => {
@@ -4309,21 +4346,21 @@ export default function RentalDetailPage() {
                                   <div className="flex items-center gap-4">
                                     {(() => {
                                       // Get all items in this month
-                                      const monthItems = monthData.items.filter((item: any, index: number, self: any[]) => 
+                                      const monthItems = monthData.items.filter((item: any, index: number, self: any[]) =>
                                         index === self.findIndex((t: any) => t.id === item.id)
                                       );
-                                      
+
                                       // Check how many items are checked
                                       const checkedItems = monthItems.filter((item: any) => {
                                         const itemKey = `${monthKey}-${item.id}`;
                                         return timesheetStatus[itemKey] === true;
                                       });
-                                      
+
                                       const allChecked = monthItems.length > 0 && checkedItems.length === monthItems.length;
-                                      
+
                                       return (
                                         <div className="flex items-center gap-2">
-                                          <Checkbox 
+                                          <Checkbox
                                             id={`timesheet-header-${monthKey}`}
                                             checked={allChecked}
                                             onCheckedChange={async (checked) => {
@@ -4341,26 +4378,26 @@ export default function RentalDetailPage() {
                                                         received: checked === true,
                                                       }),
                                                     });
-                                                    
+
                                                     if (!response.ok) {
                                                       const errorData = await response.json().catch(() => ({}));
                                                       throw new Error(errorData.error || `Failed to update timesheet status for item ${item.id}`);
                                                     }
-                                                    
+
                                                     return { itemKey, received: checked === true, success: true };
                                                   } catch (error) {
                                                     console.error(`Error updating item ${item.id}:`, error);
                                                     return { itemKey, received: checked === true, success: false, error };
                                                   }
                                                 });
-                                                
+
                                                 const results = await Promise.all(updates);
                                                 const failed = results.filter(r => !r.success);
                                                 if (failed.length > 0) {
                                                   console.error('Some items failed to update:', failed);
                                                   toast.error(`${failed.length} item(s) failed to update. Check console for details.`);
                                                 }
-                                                
+
                                                 // Update local state for all items (only successful ones)
                                                 const successfulResults = results.filter(r => r.success);
                                                 setTimesheetStatus(prev => {
@@ -4370,7 +4407,7 @@ export default function RentalDetailPage() {
                                                   });
                                                   return newState;
                                                 });
-                                                
+
                                                 if (failed.length === 0) {
                                                   toast.success(checked ? `All ${monthItems.length} timesheets marked as received for this month` : 'All timesheet received statuses cleared for this month');
                                                 } else {
@@ -4409,379 +4446,379 @@ export default function RentalDetailPage() {
                                 <div className="overflow-x-auto">
                                   {(() => {
                                     // Remove duplicates (in case handover items were added)
-                                    const uniqueItems = monthData.items.filter((item: any, index: number, self: any[]) => 
+                                    const uniqueItems = monthData.items.filter((item: any, index: number, self: any[]) =>
                                       index === self.findIndex((t: any) => t.id === item.id)
                                     );
-                                    
+
                                     // Group items by equipment to show handover continuity
                                     const groupedByEquipment = uniqueItems.reduce((acc: any, item: any) => {
-                                      const baseName = item.equipmentName?.startsWith('Equipment ') && item.equipmentId 
+                                      const baseName = item.equipmentName?.startsWith('Equipment ') && item.equipmentId
                                         ? (equipmentNames[item.equipmentId.toString()] || item.equipmentName)
                                         : item.equipmentName || 'N/A';
                                       const plate = item?.equipmentIstimara;
                                       const equipmentName = plate ? `${baseName} (${plate})` : baseName;
                                       const equipmentKey = equipmentName || 'Unknown Equipment';
-                                      
+
                                       if (!acc[equipmentKey]) {
                                         acc[equipmentKey] = [];
                                       }
                                       acc[equipmentKey].push(item);
                                       return acc;
                                     }, {});
-                                    
+
                                     // Sort items within each equipment group by active status first, then by start date
                                     Object.keys(groupedByEquipment).forEach(key => {
                                       groupedByEquipment[key].sort((a: any, b: any) => {
                                         // First sort by active status (active items first, then completed)
                                         const aIsActive = a.status === 'active';
                                         const bIsActive = b.status === 'active';
-                                        
+
                                         if (aIsActive && !bIsActive) return -1; // Active comes first
                                         if (!aIsActive && bIsActive) return 1; // Active comes first
-                                        
+
                                         // If both have same status, sort by start date
                                         const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
                                         const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
                                         if (dateA !== dateB) return dateA - dateB;
-                                        
+
                                         return 0;
                                       });
                                     });
-                                    
+
                                     // Flatten and sort equipment groups
                                     const equipmentKeys = Object.keys(groupedByEquipment).sort();
                                     const allItems: any[] = [];
                                     equipmentKeys.forEach(key => {
                                       allItems.push(...groupedByEquipment[key]);
                                     });
-                                    
+
                                     return (
-                                  <Table>
-                                    <TableHeader>
-                                      <TableRow className="border-b">
-                                        <TableHead className="w-10 text-center text-sm py-1 px-1">Sl#</TableHead>
-                                        <TableHead className="text-sm py-1 px-2 min-w-[110px] font-semibold">Equipment</TableHead>
-                                        <TableHead className="text-sm py-1 px-1 w-24">Unit Price</TableHead>
-                                        <TableHead className="text-sm py-1 px-1 w-16">Rate</TableHead>
-                                        <TableHead className="text-sm py-1 px-1 w-24">Start Date</TableHead>
-                                        <TableHead className="text-sm py-1 px-1 min-w-[100px]">Operator</TableHead>
+                                      <Table>
+                                        <TableHeader>
+                                          <TableRow className="border-b">
+                                            <TableHead className="w-10 text-center text-sm py-1 px-1">Sl#</TableHead>
+                                            <TableHead className="text-sm py-1 px-2 min-w-[110px] font-semibold">Equipment</TableHead>
+                                            <TableHead className="text-sm py-1 px-1 w-24">Unit Price</TableHead>
+                                            <TableHead className="text-sm py-1 px-1 w-16">Rate</TableHead>
+                                            <TableHead className="text-sm py-1 px-1 w-24">Start Date</TableHead>
+                                            <TableHead className="text-sm py-1 px-1 min-w-[100px]">Operator</TableHead>
                                             <TableHead className="text-sm py-1 px-1 min-w-[110px]">Supervisor</TableHead>
-                                        <TableHead className="text-sm py-1 px-1 w-20">Duration</TableHead>
-                                        <TableHead className="text-sm py-1 px-1 w-28">Total</TableHead>
-                                        <TableHead className="text-sm py-1 px-1 w-28">Completed Date</TableHead>
-                                        <TableHead className="text-sm py-1 px-1 w-32 text-center">Timesheet</TableHead>
-                                      </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
+                                            <TableHead className="text-sm py-1 px-1 w-20">Duration</TableHead>
+                                            <TableHead className="text-sm py-1 px-1 w-28">Total</TableHead>
+                                            <TableHead className="text-sm py-1 px-1 w-28">Completed Date</TableHead>
+                                            <TableHead className="text-sm py-1 px-1 w-32 text-center">Timesheet</TableHead>
+                                          </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
                                           {allItems.map((item: any, itemIndex: number) => {
-                                      const baseName = item.equipmentName?.startsWith('Equipment ') && item.equipmentId 
-                                        ? (equipmentNames[item.equipmentId.toString()] || item.equipmentName)
-                                        : item.equipmentName || 'N/A';
-                                      const plate = item?.equipmentIstimara;
-                                      const equipmentName = plate ? `${baseName} (${plate})` : baseName;
-                                      
-                                      // Get operator name directly from API response
-                                      let operatorName = 'N/A';
-                                      if (item?.operatorId && item?.operatorFirstName && item?.operatorLastName) {
-                                        const name = `${item.operatorFirstName} ${item.operatorLastName}`;
-                                        operatorName = item?.operatorFileNumber 
-                                          ? `${name} (File: ${item.operatorFileNumber})`
-                                          : name;
-                                      } else if (item?.operatorId) {
-                                        operatorName = `Employee ${item.operatorId}`;
-                                      }
-                                                  
-                                                  // Get supervisor name
-                                                  let supervisorName = 'N/A';
-                                                  if (item?.supervisorId && item?.supervisorFirstName && item?.supervisorLastName) {
-                                                    const name = getShortName(`${item.supervisorFirstName} ${item.supervisorLastName}`);
-                                                    supervisorName = item?.supervisorFileNumber 
-                                                      ? `${name} (File: ${item.supervisorFileNumber})`
-                                                      : name;
-                                                  } else if (item?.supervisorId) {
-                                                    supervisorName = `Employee ${item.supervisorId}`;
-                                                  }
-                                      
-                                      // Check if this is a handover using the handoverMap
-                                      // A handover item is one that was started after a completed item with different operator
-                                      const isHandoverItem = Array.from(handoverMap.values()).includes(item.id);
-                                      
-                                      // Check if this is the completed item that has a handover
-                                      const isCompletedWithHandover = handoverMap.has(item.id);
-                                      
-                                      // Also check if previous item in list is the completed item for this handover
-                                      const isHandoverContinuation = itemIndex > 0 && (() => {
-                                        const prevItem = allItems[itemIndex - 1];
-                                        const prevEquipmentName = prevItem.equipmentName?.startsWith('Equipment ') && prevItem.equipmentId 
-                                          ? (equipmentNames[prevItem.equipmentId.toString()] || prevItem.equipmentName)
-                                          : prevItem.equipmentName;
-                                        
-                                        if (equipmentName !== prevEquipmentName) return false;
-                                        
-                                        // Check if previous item is the completed item that this item is a handover for
-                                        return handoverMap.has(prevItem.id) && handoverMap.get(prevItem.id) === item.id;
-                                      })();
-                                      
-                                      const showHandoverHighlight = isHandoverItem || isCompletedWithHandover || isHandoverContinuation;
-                                      
-                                      // Calculate duration for this specific month
-                                      let durationText = 'N/A';
-                                      
-                                      // Check if we have timesheet data for this item and this specific month
-                                      const monthKeyForDuration = monthData.monthLabel ? (() => {
-                                        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-                                        const [monthName, yearStr] = monthData.monthLabel.split(' ');
-                                        const monthNum = monthNames.indexOf(monthName);
-                                        return `${yearStr}-${String(monthNum + 1).padStart(2, '0')}`;
-                                      })() : '';
-                                      
-                                      // Check if we have timesheet hours for this item and month
-                                      const timesheetReceived = timesheetStatus[`${monthKeyForDuration}-${item.id}`];
-                                      const timesheetHours = monthKeyForDuration ? itemTimesheetHours[`${item.id}-${monthKeyForDuration}`] : undefined;
-                                      
-                                      // Track if this is timesheet-based hours for styling
-                                      let isTimesheetHours = false;
-                                      
-                                      // Show timesheet hours if they exist AND timesheet is marked as received
-                                      if (timesheetHours && timesheetHours > 0 && timesheetReceived) {
-                                        // Show total working hours from timesheet for this month only (if timesheet was received)
-                                        const hoursDisplay = timesheetHours % 1 === 0 ? timesheetHours.toString() : timesheetHours.toFixed(1);
-                                        durationText = `${hoursDisplay} hours`;
-                                        isTimesheetHours = true;
-                                      } else if (item.startDate) {
-                                        const itemStartDate = new Date(item.startDate);
-                                        itemStartDate.setHours(0, 0, 0, 0);
-                                        
-                                        // Parse month and year from monthLabel (e.g., "October 2025")
-                                        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-                                        const monthParts = monthData.monthLabel.split(' ');
-                                        const year = parseInt(monthParts[1]);
-                                        const monthNum = monthNames.indexOf(monthParts[0]);
-                                        
-                                        // Get first and last day of the month
-                                        const monthStart = new Date(year, monthNum, 1);
-                                        monthStart.setHours(0, 0, 0, 0);
-                                        const monthEnd = new Date(year, monthNum + 1, 0);
-                                        monthEnd.setHours(23, 59, 59, 999);
-                                        
-                                        // Determine the start date in this month
-                                        const startInMonth = itemStartDate > monthStart ? itemStartDate : monthStart;
-                                        
-                                        // Determine the end date in this month
-                                        let endInMonth = monthEnd;
-                                        
-                                        // Check if item has a completed date and use it for duration calculation
-                                        const itemCompletedDate = (item.completedDate || (item as any).completed_date);
-                                        if (itemCompletedDate && item.status === 'completed') {
-                                          const completedDate = new Date(itemCompletedDate);
-                                          completedDate.setHours(23, 59, 59, 999);
-                                          // If completed date is within this month, use it as end date
-                                          if (completedDate >= monthStart && completedDate <= monthEnd) {
-                                            endInMonth = completedDate;
-                                          } else if (completedDate < monthStart) {
-                                            // If completed before this month, item wasn't active this month
-                                            endInMonth = monthStart;
-                                          }
-                                          // If completed after this month, use month end (item was active all month)
-                                        } else if (rental.status === 'completed' && rental.actualEndDate) {
-                                          // Fallback to rental end date if item doesn't have completed date
-                                          const actualEnd = new Date(rental.actualEndDate);
-                                          actualEnd.setHours(23, 59, 59, 999);
-                                          if (actualEnd >= monthStart && actualEnd <= monthEnd) {
-                                            endInMonth = actualEnd;
-                                          }
-                                        } else {
-                                          // For active rentals, use today if within the month
-                                          const today = new Date();
-                                          today.setHours(23, 59, 59, 999);
-                                          if (today >= monthStart && today <= monthEnd) {
-                                            endInMonth = today;
-                                          }
-                                        }
-                                        
-                                        // Calculate days - ensure we don't go outside the month
-                                        if (itemStartDate > monthEnd) {
-                                          durationText = '0 days';
-                                        } else {
-                                          // Calculate days by getting day components (inclusive)
-                                          const startDay = startInMonth.getDate();
-                                          const endDay = endInMonth.getDate();
-                                          const days = endDay - startDay + 1; // +1 for inclusive counting
-                                          durationText = days >= 1 ? `${days} days` : '1 day';
-                                        }
-                                      }
-                                      
-                                        // Determine what start date to show for this month
-                                        // For handover items, always show the actual start date
-                                        let displayStartDate = 'N/A';
-                                        if (item.startDate && item.startDate !== '') {
-                                          const itemStartDate = new Date(item.startDate);
-                                          itemStartDate.setHours(0, 0, 0, 0);
-                                          
-                                          // Check if this is the actual start month or a subsequent month
-                                          const [monthName, yearStr] = monthData.monthLabel.split(' ');
-                                          const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-                                          const reportMonth = monthNames.indexOf(monthName);
-                                          const reportYear = parseInt(yearStr);
-                                          
-                                          const reportMonthStart = new Date(reportYear, reportMonth, 1);
-                                          reportMonthStart.setHours(0, 0, 0, 0);
-                                          
-                                          // For handover items, always show the actual start date if it's in this month
-                                          if (showHandoverHighlight && itemStartDate >= reportMonthStart && itemStartDate < new Date(reportYear, reportMonth + 1, 1)) {
-                                            displayStartDate = format(itemStartDate, 'MMM dd, yyyy');
-                                          } else if (itemStartDate.getTime() === reportMonthStart.getTime()) {
-                                            // Started on 1st of this month - show the actual date
-                                            displayStartDate = format(itemStartDate, 'MMM dd, yyyy');
-                                          } else if (itemStartDate >= reportMonthStart && itemStartDate < new Date(reportYear, reportMonth + 1, 1)) {
-                                            // Started mid-month in this month - show the actual start date
-                                            displayStartDate = format(itemStartDate, 'MMM dd, yyyy');
-                                          } else {
-                                            // This is a month after the start - show first of month
-                                            displayStartDate = format(reportMonthStart, 'MMM dd, yyyy');
-                                          }
-                                        } else if (rental?.startDate) {
-                                          displayStartDate = `Rental: ${format(new Date(rental.startDate), 'MMM dd, yyyy')}`;
-                                        }
-                                      
-                                      // Determine completed date display - only show in the month when completed
-                                      let completedDateDisplay = '-';
-                                      if (item.status === 'completed' && (item.completedDate || (item as any).completed_date)) {
-                                        const completedDate = new Date((item.completedDate || (item as any).completed_date));
-                                        completedDate.setHours(0, 0, 0, 0);
-                                        
-                                        // Check if completed date falls within the current report month
-                                        const [monthName, yearStr] = monthData.monthLabel.split(' ');
-                                        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-                                        const reportMonth = monthNames.indexOf(monthName);
-                                        const reportYear = parseInt(yearStr);
-                                        
-                                        const reportMonthStart = new Date(reportYear, reportMonth, 1);
-                                        reportMonthStart.setHours(0, 0, 0, 0);
-                                        const reportMonthEnd = new Date(reportYear, reportMonth + 1, 0);
-                                        reportMonthEnd.setHours(23, 59, 59, 999);
-                                        
-                                        // Only show completed date if it's in this month
-                                        if (completedDate >= reportMonthStart && completedDate <= reportMonthEnd) {
-                                          completedDateDisplay = format(completedDate, 'MMM dd, yyyy');
-                                        }
-                                      }
-                                      
-                                      return (
-                                        <TableRow key={item.id} className={`border-b ${showHandoverHighlight ? 'bg-blue-50/50' : ''}`}>
-                                                      <TableCell className="w-10 text-center text-sm py-1 px-1">{itemIndex + 1}</TableCell>
-                                          <TableCell className="font-medium text-sm py-1 px-2 min-w-[110px]">{equipmentName}</TableCell>
-                                          <TableCell className="font-mono text-sm py-1 px-1 w-24">SAR {formatAmount(item.unitPrice)}</TableCell>
-                                          <TableCell className="text-sm py-1 px-1 w-16">
-                                            <Badge variant="outline" className="capitalize text-xs px-1.5 py-0.5 h-5">
-                                              {item.rateType || 'daily'}
-                                            </Badge>
-                                          </TableCell>
-                                          <TableCell className="text-sm text-muted-foreground py-1 px-1 w-24">
-                                            {displayStartDate}
-                                          </TableCell>
-                                          <TableCell className="text-sm text-muted-foreground py-1 px-1 min-w-[100px]">{operatorName}</TableCell>
-                                                      <TableCell className="text-sm text-muted-foreground py-1 px-1 min-w-[110px]">{supervisorName}</TableCell>
-                                          <TableCell className={`text-sm py-1 px-1 w-20 ${isTimesheetHours ? 'text-green-600 font-semibold' : 'text-muted-foreground'}`}>{durationText}</TableCell>
-                                          <TableCell className="font-mono font-semibold text-sm py-1 px-1 w-28">
-                                            {(() => {
-                                              // Get monthKey for this month
-                                              const monthKeyForTotal = (() => {
-                                                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-                                                const [monthName, yearStr] = monthData.monthLabel.split(' ');
-                                                const monthNum = monthNames.indexOf(monthName);
-                                                return `${yearStr}-${String(monthNum + 1).padStart(2, '0')}`;
-                                              })();
-                                              
-                                              // Only use timesheet hours if timesheet was actually imported (checked)
-                                              const timesheetReceived = timesheetStatus[`${monthKeyForTotal}-${item.id}`];
-                                              const timesheetHoursForTotal = timesheetReceived ? itemTimesheetHours[`${item.id}-${monthKeyForTotal}`] : undefined;
-                                              
-                                              // If we have timesheet hours for this month AND timesheet was received, calculate based on hours
-                                              if (timesheetHoursForTotal && timesheetHoursForTotal > 0 && timesheetReceived) {
-                                                const unitPrice = parseFloat(item.unitPrice || 0) || 0;
-                                                const rateType = item.rateType || 'daily';
-                                                
-                                                // Convert rate to hourly equivalent
-                                                let hourlyRate = unitPrice;
-                                                if (rateType === 'daily') {
-                                                  hourlyRate = unitPrice / 10;
-                                                } else if (rateType === 'weekly') {
-                                                  hourlyRate = unitPrice / (7 * 10);
-                                                } else if (rateType === 'monthly') {
-                                                  hourlyRate = unitPrice / (30 * 10);
+                                            const baseName = item.equipmentName?.startsWith('Equipment ') && item.equipmentId
+                                              ? (equipmentNames[item.equipmentId.toString()] || item.equipmentName)
+                                              : item.equipmentName || 'N/A';
+                                            const plate = item?.equipmentIstimara;
+                                            const equipmentName = plate ? `${baseName} (${plate})` : baseName;
+
+                                            // Get operator name directly from API response
+                                            let operatorName = 'N/A';
+                                            if (item?.operatorId && item?.operatorFirstName && item?.operatorLastName) {
+                                              const name = `${item.operatorFirstName} ${item.operatorLastName}`;
+                                              operatorName = item?.operatorFileNumber
+                                                ? `${name} (File: ${item.operatorFileNumber})`
+                                                : name;
+                                            } else if (item?.operatorId) {
+                                              operatorName = `Employee ${item.operatorId}`;
+                                            }
+
+                                            // Get supervisor name
+                                            let supervisorName = 'N/A';
+                                            if (item?.supervisorId && item?.supervisorFirstName && item?.supervisorLastName) {
+                                              const name = getShortName(`${item.supervisorFirstName} ${item.supervisorLastName}`);
+                                              supervisorName = item?.supervisorFileNumber
+                                                ? `${name} (File: ${item.supervisorFileNumber})`
+                                                : name;
+                                            } else if (item?.supervisorId) {
+                                              supervisorName = `Employee ${item.supervisorId}`;
+                                            }
+
+                                            // Check if this is a handover using the handoverMap
+                                            // A handover item is one that was started after a completed item with different operator
+                                            const isHandoverItem = Array.from(handoverMap.values()).includes(item.id);
+
+                                            // Check if this is the completed item that has a handover
+                                            const isCompletedWithHandover = handoverMap.has(item.id);
+
+                                            // Also check if previous item in list is the completed item for this handover
+                                            const isHandoverContinuation = itemIndex > 0 && (() => {
+                                              const prevItem = allItems[itemIndex - 1];
+                                              const prevEquipmentName = prevItem.equipmentName?.startsWith('Equipment ') && prevItem.equipmentId
+                                                ? (equipmentNames[prevItem.equipmentId.toString()] || prevItem.equipmentName)
+                                                : prevItem.equipmentName;
+
+                                              if (equipmentName !== prevEquipmentName) return false;
+
+                                              // Check if previous item is the completed item that this item is a handover for
+                                              return handoverMap.has(prevItem.id) && handoverMap.get(prevItem.id) === item.id;
+                                            })();
+
+                                            const showHandoverHighlight = isHandoverItem || isCompletedWithHandover || isHandoverContinuation;
+
+                                            // Calculate duration for this specific month
+                                            let durationText = 'N/A';
+
+                                            // Check if we have timesheet data for this item and this specific month
+                                            const monthKeyForDuration = monthData.monthLabel ? (() => {
+                                              const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                                              const [monthName, yearStr] = monthData.monthLabel.split(' ');
+                                              const monthNum = monthNames.indexOf(monthName);
+                                              return `${yearStr}-${String(monthNum + 1).padStart(2, '0')}`;
+                                            })() : '';
+
+                                            // Check if we have timesheet hours for this item and month
+                                            const timesheetReceived = timesheetStatus[`${monthKeyForDuration}-${item.id}`];
+                                            const timesheetHours = monthKeyForDuration ? itemTimesheetHours[`${item.id}-${monthKeyForDuration}`] : undefined;
+
+                                            // Track if this is timesheet-based hours for styling
+                                            let isTimesheetHours = false;
+
+                                            // Show timesheet hours if they exist AND timesheet is marked as received
+                                            if (timesheetHours && timesheetHours > 0 && timesheetReceived) {
+                                              // Show total working hours from timesheet for this month only (if timesheet was received)
+                                              const hoursDisplay = timesheetHours % 1 === 0 ? timesheetHours.toString() : timesheetHours.toFixed(1);
+                                              durationText = `${hoursDisplay} hours`;
+                                              isTimesheetHours = true;
+                                            } else if (item.startDate) {
+                                              const itemStartDate = new Date(item.startDate);
+                                              itemStartDate.setHours(0, 0, 0, 0);
+
+                                              // Parse month and year from monthLabel (e.g., "October 2025")
+                                              const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                                              const monthParts = monthData.monthLabel.split(' ');
+                                              const year = parseInt(monthParts[1]);
+                                              const monthNum = monthNames.indexOf(monthParts[0]);
+
+                                              // Get first and last day of the month
+                                              const monthStart = new Date(year, monthNum, 1);
+                                              monthStart.setHours(0, 0, 0, 0);
+                                              const monthEnd = new Date(year, monthNum + 1, 0);
+                                              monthEnd.setHours(23, 59, 59, 999);
+
+                                              // Determine the start date in this month
+                                              const startInMonth = itemStartDate > monthStart ? itemStartDate : monthStart;
+
+                                              // Determine the end date in this month
+                                              let endInMonth = monthEnd;
+
+                                              // Check if item has a completed date and use it for duration calculation
+                                              const itemCompletedDate = (item.completedDate || (item as any).completed_date);
+                                              if (itemCompletedDate && item.status === 'completed') {
+                                                const completedDate = new Date(itemCompletedDate);
+                                                completedDate.setHours(23, 59, 59, 999);
+                                                // If completed date is within this month, use it as end date
+                                                if (completedDate >= monthStart && completedDate <= monthEnd) {
+                                                  endInMonth = completedDate;
+                                                } else if (completedDate < monthStart) {
+                                                  // If completed before this month, item wasn't active this month
+                                                  endInMonth = monthStart;
                                                 }
-                                                
-                                                const monthlyTotal = hourlyRate * timesheetHoursForTotal;
-                                                return `SAR ${formatAmount(monthlyTotal.toString())}`;
+                                                // If completed after this month, use month end (item was active all month)
+                                              } else if (rental.status === 'completed' && rental.actualEndDate) {
+                                                // Fallback to rental end date if item doesn't have completed date
+                                                const actualEnd = new Date(rental.actualEndDate);
+                                                actualEnd.setHours(23, 59, 59, 999);
+                                                if (actualEnd >= monthStart && actualEnd <= monthEnd) {
+                                                  endInMonth = actualEnd;
+                                                }
+                                              } else {
+                                                // For active rentals, use today if within the month
+                                                const today = new Date();
+                                                today.setHours(23, 59, 59, 999);
+                                                if (today >= monthStart && today <= monthEnd) {
+                                                  endInMonth = today;
+                                                }
                                               }
-                                              
-                                              // Otherwise, calculate based on days (normal calculation)
-                                              const days = parseInt(durationText.replace(' days', '').replace(' day', '').replace(' hours', '').replace(/\d+\.?\d*\s*hours?/i, '')) || 1;
-                                              const unitPrice = parseFloat(item.unitPrice || 0) || 0;
-                                              const monthlyTotal = unitPrice * days;
-                                              return `SAR ${formatAmount(monthlyTotal.toString())}`;
-                                            })()}
-                                          </TableCell>
-                                          <TableCell className="text-sm text-muted-foreground py-1 px-1 w-28">{completedDateDisplay}</TableCell>
-                                          <TableCell className="text-sm py-1 px-1 w-32 text-center">
-                                            <div className="flex items-center justify-center gap-2">
-                                              <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-7 w-7 p-0"
-                                                onClick={() => {
-                                                  setEquipmentTimesheetDialog({
-                                                    open: true,
-                                                    rentalItemId: item.id,
-                                                    equipmentName: equipmentName,
-                                                    month: monthKey,
-                                                  });
-                                                }}
-                                                title="Enter/Import Timesheet Data"
-                                              >
-                                                <FileText className="h-4 w-4" />
-                                              </Button>
-                                              <Checkbox 
-                                                checked={timesheetStatus[`${monthKey}-${item.id}`] || false} 
-                                                onCheckedChange={async (checked) => {
-                                                  try {
-                                                    const response = await fetch(`/api/rentals/${rentalId}/timesheet-status`, {
-                                                      method: 'PUT',
-                                                      headers: { 'Content-Type': 'application/json' },
-                                                      body: JSON.stringify({
-                                                        month: monthKey,
-                                                        itemId: item.id,
-                                                        received: checked === true,
-                                                      }),
-                                                    });
-                                                    
-                                                    if (!response.ok) {
-                                                      throw new Error('Failed to update timesheet received status');
+
+                                              // Calculate days - ensure we don't go outside the month
+                                              if (itemStartDate > monthEnd) {
+                                                durationText = '0 days';
+                                              } else {
+                                                // Calculate days by getting day components (inclusive)
+                                                const startDay = startInMonth.getDate();
+                                                const endDay = endInMonth.getDate();
+                                                const days = endDay - startDay + 1; // +1 for inclusive counting
+                                                durationText = days >= 1 ? `${days} days` : '1 day';
+                                              }
+                                            }
+
+                                            // Determine what start date to show for this month
+                                            // For handover items, always show the actual start date
+                                            let displayStartDate = 'N/A';
+                                            if (item.startDate && item.startDate !== '') {
+                                              const itemStartDate = new Date(item.startDate);
+                                              itemStartDate.setHours(0, 0, 0, 0);
+
+                                              // Check if this is the actual start month or a subsequent month
+                                              const [monthName, yearStr] = monthData.monthLabel.split(' ');
+                                              const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                                              const reportMonth = monthNames.indexOf(monthName);
+                                              const reportYear = parseInt(yearStr);
+
+                                              const reportMonthStart = new Date(reportYear, reportMonth, 1);
+                                              reportMonthStart.setHours(0, 0, 0, 0);
+
+                                              // For handover items, always show the actual start date if it's in this month
+                                              if (showHandoverHighlight && itemStartDate >= reportMonthStart && itemStartDate < new Date(reportYear, reportMonth + 1, 1)) {
+                                                displayStartDate = format(itemStartDate, 'MMM dd, yyyy');
+                                              } else if (itemStartDate.getTime() === reportMonthStart.getTime()) {
+                                                // Started on 1st of this month - show the actual date
+                                                displayStartDate = format(itemStartDate, 'MMM dd, yyyy');
+                                              } else if (itemStartDate >= reportMonthStart && itemStartDate < new Date(reportYear, reportMonth + 1, 1)) {
+                                                // Started mid-month in this month - show the actual start date
+                                                displayStartDate = format(itemStartDate, 'MMM dd, yyyy');
+                                              } else {
+                                                // This is a month after the start - show first of month
+                                                displayStartDate = format(reportMonthStart, 'MMM dd, yyyy');
+                                              }
+                                            } else if (rental?.startDate) {
+                                              displayStartDate = `Rental: ${format(new Date(rental.startDate), 'MMM dd, yyyy')}`;
+                                            }
+
+                                            // Determine completed date display - only show in the month when completed
+                                            let completedDateDisplay = '-';
+                                            if (item.status === 'completed' && (item.completedDate || (item as any).completed_date)) {
+                                              const completedDate = new Date((item.completedDate || (item as any).completed_date));
+                                              completedDate.setHours(0, 0, 0, 0);
+
+                                              // Check if completed date falls within the current report month
+                                              const [monthName, yearStr] = monthData.monthLabel.split(' ');
+                                              const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                                              const reportMonth = monthNames.indexOf(monthName);
+                                              const reportYear = parseInt(yearStr);
+
+                                              const reportMonthStart = new Date(reportYear, reportMonth, 1);
+                                              reportMonthStart.setHours(0, 0, 0, 0);
+                                              const reportMonthEnd = new Date(reportYear, reportMonth + 1, 0);
+                                              reportMonthEnd.setHours(23, 59, 59, 999);
+
+                                              // Only show completed date if it's in this month
+                                              if (completedDate >= reportMonthStart && completedDate <= reportMonthEnd) {
+                                                completedDateDisplay = format(completedDate, 'MMM dd, yyyy');
+                                              }
+                                            }
+
+                                            return (
+                                              <TableRow key={item.id} className={`border-b ${showHandoverHighlight ? 'bg-blue-50/50' : ''}`}>
+                                                <TableCell className="w-10 text-center text-sm py-1 px-1">{itemIndex + 1}</TableCell>
+                                                <TableCell className="font-medium text-sm py-1 px-2 min-w-[110px]">{equipmentName}</TableCell>
+                                                <TableCell className="font-mono text-sm py-1 px-1 w-24">SAR {formatAmount(item.unitPrice)}</TableCell>
+                                                <TableCell className="text-sm py-1 px-1 w-16">
+                                                  <Badge variant="outline" className="capitalize text-xs px-1.5 py-0.5 h-5">
+                                                    {item.rateType || 'daily'}
+                                                  </Badge>
+                                                </TableCell>
+                                                <TableCell className="text-sm text-muted-foreground py-1 px-1 w-24">
+                                                  {displayStartDate}
+                                                </TableCell>
+                                                <TableCell className="text-sm text-muted-foreground py-1 px-1 min-w-[100px]">{operatorName}</TableCell>
+                                                <TableCell className="text-sm text-muted-foreground py-1 px-1 min-w-[110px]">{supervisorName}</TableCell>
+                                                <TableCell className={`text-sm py-1 px-1 w-20 ${isTimesheetHours ? 'text-green-600 font-semibold' : 'text-muted-foreground'}`}>{durationText}</TableCell>
+                                                <TableCell className="font-mono font-semibold text-sm py-1 px-1 w-28">
+                                                  {(() => {
+                                                    // Get monthKey for this month
+                                                    const monthKeyForTotal = (() => {
+                                                      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                                                      const [monthName, yearStr] = monthData.monthLabel.split(' ');
+                                                      const monthNum = monthNames.indexOf(monthName);
+                                                      return `${yearStr}-${String(monthNum + 1).padStart(2, '0')}`;
+                                                    })();
+
+                                                    // Only use timesheet hours if timesheet was actually imported (checked)
+                                                    const timesheetReceived = timesheetStatus[`${monthKeyForTotal}-${item.id}`];
+                                                    const timesheetHoursForTotal = timesheetReceived ? itemTimesheetHours[`${item.id}-${monthKeyForTotal}`] : undefined;
+
+                                                    // If we have timesheet hours for this month AND timesheet was received, calculate based on hours
+                                                    if (timesheetHoursForTotal && timesheetHoursForTotal > 0 && timesheetReceived) {
+                                                      const unitPrice = parseFloat(item.unitPrice || 0) || 0;
+                                                      const rateType = item.rateType || 'daily';
+
+                                                      // Convert rate to hourly equivalent
+                                                      let hourlyRate = unitPrice;
+                                                      if (rateType === 'daily') {
+                                                        hourlyRate = unitPrice / 10;
+                                                      } else if (rateType === 'weekly') {
+                                                        hourlyRate = unitPrice / (7 * 10);
+                                                      } else if (rateType === 'monthly') {
+                                                        hourlyRate = unitPrice / (30 * 10);
+                                                      }
+
+                                                      const monthlyTotal = hourlyRate * timesheetHoursForTotal;
+                                                      return `SAR ${formatAmount(monthlyTotal.toString())}`;
                                                     }
-                                                    
-                                                    // Update local state for this specific item
-                                                    const itemKey = `${monthKey}-${item.id}`;
-                                                    setTimesheetStatus(prev => ({
-                                                      ...prev,
-                                                      [itemKey]: checked === true,
-                                                    }));
-                                                    
-                                                    toast.success(checked ? 'Timesheet marked as received' : 'Timesheet marked as not received');
-                                                  } catch (error) {
-                                                    console.error('Error updating timesheet status:', error);
-                                                    toast.error('Failed to update timesheet received status');
-                                                  }
-                                                }}
-                                                className="mx-auto"
-                                              />
-                                            </div>
-                                          </TableCell>
-                                        </TableRow>
-                                                  );
-                                                })}
-                                    </TableBody>
-                                  </Table>
+
+                                                    // Otherwise, calculate based on days (normal calculation)
+                                                    const days = parseInt(durationText.replace(' days', '').replace(' day', '').replace(' hours', '').replace(/\d+\.?\d*\s*hours?/i, '')) || 1;
+                                                    const unitPrice = parseFloat(item.unitPrice || 0) || 0;
+                                                    const monthlyTotal = unitPrice * days;
+                                                    return `SAR ${formatAmount(monthlyTotal.toString())}`;
+                                                  })()}
+                                                </TableCell>
+                                                <TableCell className="text-sm text-muted-foreground py-1 px-1 w-28">{completedDateDisplay}</TableCell>
+                                                <TableCell className="text-sm py-1 px-1 w-32 text-center">
+                                                  <div className="flex items-center justify-center gap-2">
+                                                    <Button
+                                                      variant="ghost"
+                                                      size="sm"
+                                                      className="h-7 w-7 p-0"
+                                                      onClick={() => {
+                                                        setEquipmentTimesheetDialog({
+                                                          open: true,
+                                                          rentalItemId: item.id,
+                                                          equipmentName: equipmentName,
+                                                          month: monthKey,
+                                                        });
+                                                      }}
+                                                      title="Enter/Import Timesheet Data"
+                                                    >
+                                                      <FileText className="h-4 w-4" />
+                                                    </Button>
+                                                    <Checkbox
+                                                      checked={timesheetStatus[`${monthKey}-${item.id}`] || false}
+                                                      onCheckedChange={async (checked) => {
+                                                        try {
+                                                          const response = await fetch(`/api/rentals/${rentalId}/timesheet-status`, {
+                                                            method: 'PUT',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({
+                                                              month: monthKey,
+                                                              itemId: item.id,
+                                                              received: checked === true,
+                                                            }),
+                                                          });
+
+                                                          if (!response.ok) {
+                                                            throw new Error('Failed to update timesheet received status');
+                                                          }
+
+                                                          // Update local state for this specific item
+                                                          const itemKey = `${monthKey}-${item.id}`;
+                                                          setTimesheetStatus(prev => ({
+                                                            ...prev,
+                                                            [itemKey]: checked === true,
+                                                          }));
+
+                                                          toast.success(checked ? 'Timesheet marked as received' : 'Timesheet marked as not received');
+                                                        } catch (error) {
+                                                          console.error('Error updating timesheet status:', error);
+                                                          toast.error('Failed to update timesheet received status');
+                                                        }
+                                                      }}
+                                                      className="mx-auto"
+                                                    />
+                                                  </div>
+                                                </TableCell>
+                                              </TableRow>
+                                            );
+                                          })}
+                                        </TableBody>
+                                      </Table>
                                     );
                                   })()}
                                 </div>
@@ -4804,130 +4841,130 @@ export default function RentalDetailPage() {
 
         {/* Right Column - Actions & Customer Info */}
         {activeTab !== 'items' && (
-        <div className="space-y-6">
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('rental.quickActions')}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {!rental.quotationId &&
-                rental.status !== 'quotation_generated' &&
-                !rental.statusLogs?.some((log: any) => log.newStatus === 'quotation_generated') && (
-                  <Button className="w-full" onClick={generateQuotation}>
-                    <FileText className="w-4 h-4 mr-2" />
-                    {t('rental.generateQuotation')}
-                  </Button>
-                )}
-              {(rental.quotationId ||
-                rental.status === 'quotation_generated' ||
-                rental.statusLogs?.some((log: any) => log.newStatus === 'quotation_generated')) && (
-                <Button
-                  className="w-full"
-                  variant="outline"
-                  onClick={() => router.push(`/${locale}/rental-management/${rental.id}/quotation`)}
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  {t('rental.viewQuotation')}
-                </Button>
-              )}
-              {(rental.quotationId || rental.status === 'quotation_generated') &&
-                !rental.approvedAt &&
-                !rental.statusLogs?.some((log: any) => log.newStatus === 'approved') && (
-                  <Button className="w-full" variant="outline" onClick={handleApproveQuotation}>
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    {t('rental.approveQuotation')}
-                  </Button>
-                )}
-              {(rental.approvedAt || rental.status === 'approved') &&
-                !rental.mobilizationDate &&
-                rental.status !== 'mobilization' &&
-                !rental.statusLogs?.some((log: any) => log.newStatus === 'mobilization') && (
-                  <Button className="w-full" variant="outline" onClick={handleStartMobilization}>
-                    <Truck className="w-4 h-4 mr-2" />
-                    {t('rental.startMobilization')}
-                  </Button>
-                )}
-              {(rental.mobilizationDate || rental.status === 'mobilization') &&
-                rental.status !== 'active' &&
-                rental.status !== 'completed' && (
-                  <Button className="w-full" variant="outline" onClick={handleActivateRental}>
-                    <Clock className="w-4 h-4 mr-2" />
-                                        {t('rental.activateRental')}
-                  </Button>
-                )}
-              {rental.status === 'active' && !rental.actualEndDate && (
-                <Button className="w-full" variant="outline" onClick={() => confirmation.showConfirmDialog(
-                  'Complete Rental',
-                  'Are you sure you want to complete this rental? All active items will be marked as completed.',
-                  () => handleCompleteRental()
-                )}>
-                  <CalendarCheck className="w-4 h-4 mr-2" />
-                  {t('rental.completeRental')}
-                  </Button>
-              )}
-              {rental.status === 'completed' && (
-                <Button className="w-full" variant="outline" onClick={() => confirmation.showConfirmDialog(
-                  'Reactivate Rental',
-                  'Are you sure you want to reactivate this rental?',
-                  () => handleActivateRental()
-                )}>
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Reactivate
-                </Button>
-              )}
-              {(rental.status === 'completed' || rental.actualEndDate) &&
-                !rental.invoiceDate &&
-                !rental.invoices?.length && (
-                  <Button className="w-full" variant="outline" onClick={generateInvoice}>
-                    <Receipt className="w-4 h-4 mr-2" />
-                    {t('rental.generateInvoice')}
-                  </Button>
-                )}
-              <Button className="w-full" variant="outline">
-                <Printer className="w-4 h-4 mr-2" />
-                {t('rental.printRental')}
-              </Button>
-              <Button className="w-full" variant="outline">
-                <Share2 className="w-4 h-4 mr-2" />
-                {t('rental.share')}
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Customer Information */}
-          {rental.customer && (
+          <div className="space-y-6">
+            {/* Quick Actions */}
             <Card>
               <CardHeader>
-                <CardTitle>{t('rental.customerInformation')}</CardTitle>
+                <CardTitle>{t('rental.quickActions')}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label className="text-sm font-medium">{t('rental.name')}</Label>
-                  <p className="text-sm text-muted-foreground">{rental.customer.name}</p>
-                </div>
-                {rental.customer.email && (
-                  <div>
-                    <Label className="text-sm font-medium">{t('rental.email')}</Label>
-                    <p className="text-sm text-muted-foreground">{rental.customer.email}</p>
-                  </div>
+              <CardContent className="space-y-2">
+                {!rental.quotationId &&
+                  rental.status !== 'quotation_generated' &&
+                  !rental.statusLogs?.some((log: any) => log.newStatus === 'quotation_generated') && (
+                    <Button className="w-full" onClick={generateQuotation}>
+                      <FileText className="w-4 h-4 mr-2" />
+                      {t('rental.generateQuotation')}
+                    </Button>
+                  )}
+                {(rental.quotationId ||
+                  rental.status === 'quotation_generated' ||
+                  rental.statusLogs?.some((log: any) => log.newStatus === 'quotation_generated')) && (
+                    <Button
+                      className="w-full"
+                      variant="outline"
+                      onClick={() => router.push(`/${locale}/rental-management/${rental.id}/quotation`)}
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      {t('rental.viewQuotation')}
+                    </Button>
+                  )}
+                {(rental.quotationId || rental.status === 'quotation_generated') &&
+                  !rental.approvedAt &&
+                  !rental.statusLogs?.some((log: any) => log.newStatus === 'approved') && (
+                    <Button className="w-full" variant="outline" onClick={handleApproveQuotation}>
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      {t('rental.approveQuotation')}
+                    </Button>
+                  )}
+                {(rental.approvedAt || rental.status === 'approved') &&
+                  !rental.mobilizationDate &&
+                  rental.status !== 'mobilization' &&
+                  !rental.statusLogs?.some((log: any) => log.newStatus === 'mobilization') && (
+                    <Button className="w-full" variant="outline" onClick={handleStartMobilization}>
+                      <Truck className="w-4 h-4 mr-2" />
+                      {t('rental.startMobilization')}
+                    </Button>
+                  )}
+                {(rental.mobilizationDate || rental.status === 'mobilization') &&
+                  rental.status !== 'active' &&
+                  rental.status !== 'completed' && (
+                    <Button className="w-full" variant="outline" onClick={handleActivateRental}>
+                      <Clock className="w-4 h-4 mr-2" />
+                      {t('rental.activateRental')}
+                    </Button>
+                  )}
+                {rental.status === 'active' && !rental.actualEndDate && (
+                  <Button className="w-full" variant="outline" onClick={() => confirmation.showConfirmDialog(
+                    'Complete Rental',
+                    'Are you sure you want to complete this rental? All active items will be marked as completed.',
+                    () => handleCompleteRental()
+                  )}>
+                    <CalendarCheck className="w-4 h-4 mr-2" />
+                    {t('rental.completeRental')}
+                  </Button>
                 )}
-                {rental.customer.phone && (
-                  <div>
-                    <Label className="text-sm font-medium">{t('rental.phone')}</Label>
-                    <p className="text-sm text-muted-foreground">{rental.customer.phone}</p>
-                  </div>
+                {rental.status === 'completed' && (
+                  <Button className="w-full" variant="outline" onClick={() => confirmation.showConfirmDialog(
+                    'Reactivate Rental',
+                    'Are you sure you want to reactivate this rental?',
+                    () => handleActivateRental()
+                  )}>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Reactivate
+                  </Button>
                 )}
-                {rental.customer.address && (
-                  <div>
-                    <Label className="text-sm font-medium">{t('rental.address')}</Label>
-                    <p className="text-sm text-muted-foreground">{rental.customer.address}</p>
-                  </div>
-                )}
+                {(rental.status === 'completed' || rental.actualEndDate) &&
+                  !rental.invoiceDate &&
+                  !rental.invoices?.length && (
+                    <Button className="w-full" variant="outline" onClick={generateInvoice}>
+                      <Receipt className="w-4 h-4 mr-2" />
+                      {t('rental.generateInvoice')}
+                    </Button>
+                  )}
+                <Button className="w-full" variant="outline">
+                  <Printer className="w-4 h-4 mr-2" />
+                  {t('rental.printRental')}
+                </Button>
+                <Button className="w-full" variant="outline">
+                  <Share2 className="w-4 h-4 mr-2" />
+                  {t('rental.share')}
+                </Button>
               </CardContent>
             </Card>
-          )}
-        </div>
+
+            {/* Customer Information */}
+            {rental.customer && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t('rental.customerInformation')}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium">{t('rental.name')}</Label>
+                    <p className="text-sm text-muted-foreground">{rental.customer.name}</p>
+                  </div>
+                  {rental.customer.email && (
+                    <div>
+                      <Label className="text-sm font-medium">{t('rental.email')}</Label>
+                      <p className="text-sm text-muted-foreground">{rental.customer.email}</p>
+                    </div>
+                  )}
+                  {rental.customer.phone && (
+                    <div>
+                      <Label className="text-sm font-medium">{t('rental.phone')}</Label>
+                      <p className="text-sm text-muted-foreground">{rental.customer.phone}</p>
+                    </div>
+                  )}
+                  {rental.customer.address && (
+                    <div>
+                      <Label className="text-sm font-medium">{t('rental.address')}</Label>
+                      <p className="text-sm text-muted-foreground">{rental.customer.address}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </div>
         )}
       </div>
 
@@ -5069,15 +5106,15 @@ export default function RentalDetailPage() {
                           })
                           .slice(0, 5)
                           .map((assignment: any, index: number) => {
-                            const startDate = assignment.startDate 
-                              ? new Date(assignment.startDate).toLocaleDateString() 
+                            const startDate = assignment.startDate
+                              ? new Date(assignment.startDate).toLocaleDateString()
                               : 'unknown';
-                            const equipmentInfo = assignment.equipmentName 
-                              ? ` - ${assignment.equipmentName}` 
+                            const equipmentInfo = assignment.equipmentName
+                              ? ` - ${assignment.equipmentName}`
                               : '';
                             const role = assignment.role || 'operator';
                             const roleLabel = role === 'supervisor' ? 'Supervisor' : 'Operator';
-                            
+
                             if (assignment.rentalNumber) {
                               return (
                                 <p key={index} className="text-xs">
@@ -5093,15 +5130,15 @@ export default function RentalDetailPage() {
                             }
                             return null;
                           })}
-                        {operatorAssignmentsForTooltip.filter((a: any) => 
+                        {operatorAssignmentsForTooltip.filter((a: any) =>
                           !(a.rentalId && rental?.id && a.rentalId.toString() === rental.id.toString())
                         ).length > 5 && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            +{operatorAssignmentsForTooltip.filter((a: any) => 
-                              !(a.rentalId && rental?.id && a.rentalId.toString() === rental.id.toString())
-                            ).length - 5} more
-                          </p>
-                        )}
+                            <p className="text-xs text-muted-foreground mt-1">
+                              +{operatorAssignmentsForTooltip.filter((a: any) =>
+                                !(a.rentalId && rental?.id && a.rentalId.toString() === rental.id.toString())
+                              ).length - 5} more
+                            </p>
+                          )}
                       </div>
                     </TooltipContent>
                   </Tooltip>
@@ -5302,8 +5339,8 @@ export default function RentalDetailPage() {
             }}>
               Cancel
             </Button>
-            <Button 
-              onClick={addRentalItem} 
+            <Button
+              onClick={addRentalItem}
               variant={duplicateWarnings.length > 0 || previousAssignmentWarnings.length > 0 || equipmentAssignmentWarnings.length > 0 ? 'outline' : 'default'}
             >
               {duplicateWarnings.length > 0 || previousAssignmentWarnings.length > 0 || equipmentAssignmentWarnings.length > 0 ? 'Add Anyway' : 'Add Item'}
@@ -5391,9 +5428,9 @@ export default function RentalDetailPage() {
                 value={itemFormData.status}
                 onValueChange={value => setItemFormData(prev => ({ ...prev, status: value }))}
               >
-                              <SelectTrigger>
-                <SelectValue placeholder={t('rental.selectStatus')} />
-              </SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('rental.selectStatus')} />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="active">{t('rental.active')}</SelectItem>
                   <SelectItem value="inactive">{t('rental.inactive')}</SelectItem>
@@ -5420,13 +5457,13 @@ export default function RentalDetailPage() {
           </div>
           <div>
             <Label htmlFor="editNotes">{t('rental.notes')}</Label>
-                          <Textarea
-                id="editNotes"
-                value={itemFormData.notes}
-                onChange={e => setItemFormData(prev => ({ ...prev, notes: e.target.value }))}
-                rows={3}
-                placeholder={t('rental.enterNotes')}
-              />
+            <Textarea
+              id="editNotes"
+              value={itemFormData.notes}
+              onChange={e => setItemFormData(prev => ({ ...prev, notes: e.target.value }))}
+              rows={3}
+              placeholder={t('rental.enterNotes')}
+            />
           </div>
 
           {/* Operator Action Type Selection */}
@@ -5543,37 +5580,37 @@ export default function RentalDetailPage() {
                 <SelectContent>
                   {(() => {
                     if (!rental?.startDate) return [];
-                    
+
                     const startDate = new Date(rental.startDate);
                     const currentDate = new Date();
                     const months = [];
-                    
+
                     // Start from rental start date month
                     let currentMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
-                    
+
                     // Generate months from start date to current month only
                     const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-                    
+
                     while (currentMonth <= endDate) {
                       const monthName = currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' });
                       const monthValue = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
-                      
+
                       months.push(
                         <SelectItem key={monthValue} value={monthValue}>
                           {monthName}
                         </SelectItem>
                       );
-                      
+
                       // Move to next month
                       currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
                     }
-                    
+
                     return months;
                   })()}
                 </SelectContent>
               </Select>
             </div>
-            
+
             {isGeneratingInvoice && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
@@ -5587,16 +5624,16 @@ export default function RentalDetailPage() {
                 </div>
               </div>
             )}
-            
+
             <div className="flex justify-end gap-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setIsMonthSelectionOpen(false)}
                 disabled={isGeneratingInvoice}
               >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 onClick={generateInvoiceForMonth}
                 disabled={!selectedMonth || isGeneratingInvoice}
               >

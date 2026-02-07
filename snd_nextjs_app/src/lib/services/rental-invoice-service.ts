@@ -11,6 +11,7 @@ export class RentalInvoiceService {
     dueDate?: string;
     amount: string;
     status?: string;
+    billingMonth?: string | null;
   }) {
     try {
       const result = await db.insert(rentalInvoices).values({
@@ -20,6 +21,7 @@ export class RentalInvoiceService {
         dueDate: data.dueDate,
         amount: data.amount,
         status: data.status || 'pending',
+        billingMonth: data.billingMonth,
         updatedAt: new Date().toISOString().split('T')[0]
       }).returning();
 
@@ -49,6 +51,7 @@ export class RentalInvoiceService {
         dueDate: row.due_date,
         amount: row.amount,
         status: row.status,
+        billingMonth: row.billing_month,
         createdAt: row.created_at,
         updatedAt: row.updated_at
       }));

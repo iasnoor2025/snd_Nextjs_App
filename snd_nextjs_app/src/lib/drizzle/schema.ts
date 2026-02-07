@@ -755,6 +755,7 @@ export const rentalInvoices = pgTable('rental_invoices', {
   dueDate: date('due_date'),
   amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
   status: text('status').default('pending').notNull(),
+  billingMonth: text('billing_month'),
   createdAt: date('created_at')
     .default(sql`CURRENT_DATE`)
     .notNull(),

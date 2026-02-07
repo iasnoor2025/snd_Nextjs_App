@@ -208,7 +208,7 @@ export class RentalService {
                 totalAmount: rental.totalAmount,
                 finalAmount: rental.finalAmount,
               };
-              
+
               if (items && items.length > 0) {
                 const subtotal = items.reduce((sum: number, item: any) => {
                   // Calculate based on duration
@@ -217,14 +217,14 @@ export class RentalService {
                   const rateType = item.rateType || 'daily';
                   const itemStartDate = item.startDate || rental.startDate;
                   const itemCompletedDate = item.completedDate || item.completed_date;
-                  
+
                   if (!itemStartDate) {
                     return sum + (parseFloat(item.totalPrice?.toString() || '0') || 0);
                   }
-                  
+
                   const startDate = new Date(itemStartDate);
                   let endDate: Date;
-                  
+
                   if (itemCompletedDate) {
                     endDate = new Date(itemCompletedDate);
                   } else if (rental.status === 'completed' && rental.expectedEndDate) {
@@ -232,11 +232,11 @@ export class RentalService {
                   } else {
                     endDate = new Date();
                   }
-                  
+
                   if (endDate < startDate) {
                     endDate = startDate;
                   }
-                  
+
                   let itemTotal = 0;
                   if (rateType === 'hourly') {
                     const hours = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)));
@@ -251,18 +251,18 @@ export class RentalService {
                     const days = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
                     itemTotal = unitPrice * days * quantity;
                   }
-                  
+
                   return sum + itemTotal;
                 }, 0);
-                
+
                 const taxRate = 15;
                 const taxAmount = subtotal * (taxRate / 100);
                 const totalAmount = subtotal + taxAmount;
                 calculatedTotals = {
-                  subtotal,
-                  taxAmount,
-                  totalAmount,
-                  finalAmount: totalAmount,
+                  subtotal: subtotal.toString(),
+                  taxAmount: taxAmount.toString(),
+                  totalAmount: totalAmount.toString(),
+                  finalAmount: totalAmount.toString(),
                 };
               }
 
@@ -1061,7 +1061,7 @@ export class RentalService {
               )
             );
         } else {
-                  }
+        }
       } else {
       }
     } catch (error) {
@@ -1317,13 +1317,23 @@ export class RentalService {
     }
   }
 
+  /**
+   * Safe date formatting that stays in local time to avoid timezone shifts
+   */
+  private static formatDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   // Get rental by ID (alias for getRental)
   static async getRentalById(id: number) {
     return this.getRental(id);
   }
 
   // Recalculate rental totals based on items
-  static async recalculateRentalTotals(rentalId: number) {
+  static async recalculateRentalTotals(rentalId: number, startDate?: string, endDate?: string) {
     try {
       const items = await this.getRentalItems(rentalId);
       const rental = await this.getRentalById(rentalId);
@@ -1338,7 +1348,7 @@ export class RentalService {
       for (const item of items) {
         // Try to use actual hours from timesheets for all rate types
         // Falls back to regular calculation if no timesheet data exists
-        const itemTotal = await this.calculateItemTotalWithActualHours(item, rental);
+        const itemTotal = await this.calculateItemTotalWithActualHours(item, rental, startDate, endDate);
         subtotal += itemTotal;
 
         console.log(`[recalculateRentalTotals] Updating item ${item.id}: old totalPrice=${item.totalPrice}, new totalPrice=${itemTotal}`);
@@ -1416,14 +1426,14 @@ export class RentalService {
 
   // Calculate total price using actual equipment timesheet hours (for all rate types)
   // Converts monthly/daily rates to hourly equivalent when using actual hours
-  static async calculateItemTotalWithActualHours(item: any, rental: any): Promise<number> {
+  static async calculateItemTotalWithActualHours(item: any, rental: any, startDate?: string, endDate?: string): Promise<number> {
     const { unitPrice, quantity = 1, rateType = 'daily', startDate: itemStartDate } = item;
     const basePrice = parseFloat(unitPrice?.toString() || '0') || 0;
 
     try {
       const { rentalEquipmentTimesheets } = await import('@/lib/drizzle/schema');
       const { gte, lte, and, eq } = await import('drizzle-orm');
-      
+
       // Normalize dates to YYYY-MM-DD format for comparison
       const normalizeDate = (date: any): string | null => {
         if (!date) return null;
@@ -1441,14 +1451,29 @@ export class RentalService {
         return null;
       };
 
-      // First, try to get ALL timesheet data for this item (regardless of date range)
-      // This ensures we use actual hours even if they're outside the rental period
-      let timesheets = await db
+      // First, try to get timesheet data for this item
+      let timesheetQuery = db
         .select()
         .from(rentalEquipmentTimesheets)
         .where(eq(rentalEquipmentTimesheets.rentalItemId, item.id));
 
-      // If we have timesheet data, use it regardless of date range
+      // Apply date filtering if provided
+      if (startDate && endDate) {
+        timesheetQuery = db
+          .select()
+          .from(rentalEquipmentTimesheets)
+          .where(
+            and(
+              eq(rentalEquipmentTimesheets.rentalItemId, item.id),
+              gte(rentalEquipmentTimesheets.date, startDate),
+              lte(rentalEquipmentTimesheets.date, endDate)
+            )
+          );
+      }
+
+      let timesheets = await timesheetQuery;
+
+      // If we have timesheet data, use it
       if (timesheets.length > 0) {
 
         // Sum all actual hours (regular + overtime)
@@ -1461,7 +1486,7 @@ export class RentalService {
         if (totalHours > 0) {
           // Convert rate to hourly equivalent based on rate type
           let hourlyRate = basePrice;
-          
+
           if (rateType === 'daily') {
             // Convert daily rate to hourly: daily rate / 10 hours (standard work day)
             hourlyRate = basePrice / 10;
@@ -1475,7 +1500,7 @@ export class RentalService {
           // If rateType is already 'hourly', use basePrice as is
 
           const calculatedTotal = hourlyRate * totalHours * quantity;
-          
+
           console.log(`[calculateItemTotalWithActualHours] Item ${item.id}: Using timesheet data`, {
             rateType,
             basePrice,
