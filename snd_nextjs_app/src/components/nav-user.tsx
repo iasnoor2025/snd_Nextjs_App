@@ -94,9 +94,9 @@ export function NavUser() {
         <button
           type="button"
           aria-label={t('common.actions.userMenu')}
-          className="flex w-full items-center gap-3 rounded-xl p-2.5 transition-all duration-200 cursor-pointer hover:bg-sidebar-accent/80 focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+          className="flex w-full items-center gap-3 rounded-[var(--sidebar-radius)] p-2.5 transition-all duration-200 cursor-pointer hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:outline-none"
         >
-          <Avatar className="h-9 w-9 shrink-0 ring-2 ring-sidebar-border">
+          <Avatar className="h-9 w-9 shrink-0 ring-2 ring-sidebar-border shadow-sm">
             <AvatarFallback className={`${avatarColorClass} text-white text-sm font-semibold`}>
               {userInitials}
             </AvatarFallback>

@@ -214,16 +214,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       collapsible="offcanvas"
       variant="sidebar"
       side={isRTL ? 'right' : 'left'}
-      className={`w-64 border-l-2 border-r-0 ${borderColorClass} shadow-sm bg-sidebar`}
+      className={`w-64 border-l-2 border-r-0 ${borderColorClass} bg-sidebar shadow-[0_2px_4px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.25)]`}
       {...props}
     >
       <SidebarHeader className="border-b border-sidebar-border/80 px-3 py-4">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-2 rounded-xl hover:bg-sidebar-accent/60 transition-colors duration-200">
-              <Link href={`/${locale}`} className="flex items-center gap-3 cursor-pointer min-w-0">
+            <SidebarMenuButton
+              asChild
+              className="data-[slot=sidebar-menu-button]:!p-2.5 rounded-[var(--sidebar-radius)] hover:bg-sidebar-accent transition-colors duration-200 ease-out motion-reduce:transition-none cursor-pointer"
+            >
+              <Link href={`/${locale}`} className="flex items-center gap-3 min-w-0">
                 {companyLogo ? (
-                  <div className="relative h-9 w-9 flex-shrink-0 rounded-lg overflow-hidden bg-sidebar-accent/50 flex items-center justify-center">
+                  <div className="relative h-9 w-9 flex-shrink-0 rounded-[var(--sidebar-radius)] overflow-hidden bg-sidebar-accent/80 flex items-center justify-center shadow-sm">
                     {companyLogo.startsWith('http') ? (
                       <img src={companyLogo} alt={appTitle} className="h-8 w-8 object-contain" />
                     ) : (
@@ -231,7 +234,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     )}
                   </div>
                 ) : (
-                  <div className="h-9 w-9 rounded-lg bg-sidebar-accent/50 flex items-center justify-center">
+                  <div className="h-9 w-9 rounded-[var(--sidebar-radius)] bg-sidebar-accent/80 flex items-center justify-center shadow-sm">
                     <Layers className="size-5 text-sidebar-foreground" />
                   </div>
                 )}
@@ -241,7 +244,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent className="py-2 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <SidebarContent className="py-3 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         <NavMain groups={data.navGroups} />
         <NavDocuments items={data.documents} />
       </SidebarContent>

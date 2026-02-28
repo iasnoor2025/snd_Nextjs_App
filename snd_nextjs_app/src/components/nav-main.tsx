@@ -35,10 +35,10 @@ export const NavMain = memo(function NavMain({
   const { t } = useI18n();
 
   return (
-    <div className="flex flex-col gap-4 px-2">
+    <div className="flex flex-col gap-5 px-2">
       {groups.map(group => (
-        <SidebarGroup key={group.labelKey} className="gap-1">
-          <SidebarGroupLabel className="px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/60">
+        <SidebarGroup key={group.labelKey} className="gap-1.5">
+          <SidebarGroupLabel className="px-2.5 py-1 text-[11px] font-semibold uppercase tracking-widest text-sidebar-foreground/55">
             {t(group.labelKey)}
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -55,9 +55,9 @@ export const NavMain = memo(function NavMain({
                       asChild
                       tooltip={item.title}
                       className={cn(
-                        'rounded-lg px-3 py-2 transition-all duration-200 ease-out cursor-pointer',
-                        'hover:bg-sidebar-accent/80 focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2',
-                        isActive && 'bg-emerald-600 text-white hover:bg-emerald-600/95 shadow-sm'
+                        'rounded-[var(--sidebar-radius)] px-3 py-2.5 transition-all duration-200 ease-out motion-reduce:transition-none cursor-pointer',
+                        'hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:outline-none',
+                        isActive && 'bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] hover:bg-[hsl(var(--sidebar-primary))]/95 shadow-[0_2px_4px_rgba(0,0,0,0.08)]'
                       )}
                     >
                       <Link
@@ -70,14 +70,14 @@ export const NavMain = memo(function NavMain({
                       >
                         {isActive && (
                           <span
-                            className="absolute inset-y-0 start-0 w-1 rounded-e-full bg-white/30"
+                            className="absolute inset-y-0 start-0 w-1 rounded-e-full bg-white/25"
                             aria-hidden
                           />
                         )}
                         {item.icon && (
                           <item.icon className={cn('size-4 shrink-0', isActive && 'opacity-95')} />
                         )}
-                        <span className="truncate text-sm">{item.title}</span>
+                        <span className="truncate text-sm font-medium">{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
