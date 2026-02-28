@@ -34,11 +34,26 @@ interface PettyCashAccount {
   currency: string;
 }
 
+interface PettyCashTransaction {
+  id: number;
+  accountId: number;
+  transactionDate: string;
+  type: string;
+  amount: number;
+  description?: string | null;
+  receiptNumber?: string | null;
+  reference?: string | null;
+  expenseCategoryId?: number | null;
+  projectId?: number | null;
+  employeeId?: number | null;
+}
+
 interface PettyCashTransactionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   accounts: PettyCashAccount[];
   onSuccess: () => void;
+  transaction?: PettyCashTransaction | null;
 }
 
 interface ExpenseCategory {
@@ -56,7 +71,9 @@ export function PettyCashTransactionDialog({
   onOpenChange,
   accounts,
   onSuccess,
+  transaction,
 }: PettyCashTransactionDialogProps) {
+  const isEdit = !!transaction;
   const { t } = useTranslations();
   const [loading, setLoading] = useState(false);
   const [accountId, setAccountId] = useState('');
@@ -75,18 +92,31 @@ export function PettyCashTransactionDialog({
 
   useEffect(() => {
     if (open) {
-      setAccountId(accounts[0] ? String(accounts[0].id) : '');
-      setTransactionDate(new Date());
-      setType('EXPENSE');
-      setAmount('');
-      setDescription('');
-      setReference('');
-      setReceiptNumber('');
-      setExpenseCategoryId('');
-      setProjectId('');
-      setEmployeeId('');
+      if (transaction) {
+        setAccountId(String(transaction.accountId));
+        setTransactionDate(transaction.transactionDate ? new Date(transaction.transactionDate + 'T12:00:00') : new Date());
+        setType((transaction.type as 'IN' | 'OUT' | 'EXPENSE' | 'ADJUSTMENT') || 'EXPENSE');
+        setAmount(String(transaction.amount ?? ''));
+        setDescription(transaction.description || '');
+        setReference(transaction.reference || '');
+        setReceiptNumber(transaction.receiptNumber || '');
+        setExpenseCategoryId(transaction.expenseCategoryId ? String(transaction.expenseCategoryId) : '');
+        setProjectId(transaction.projectId ? String(transaction.projectId) : '');
+        setEmployeeId(transaction.employeeId ? String(transaction.employeeId) : '');
+      } else {
+        setAccountId(accounts[0] ? String(accounts[0].id) : '');
+        setTransactionDate(new Date());
+        setType('EXPENSE');
+        setAmount('');
+        setDescription('');
+        setReference('');
+        setReceiptNumber('');
+        setExpenseCategoryId('');
+        setProjectId('');
+        setEmployeeId('');
+      }
     }
-  }, [open, accounts]);
+  }, [open, accounts, transaction]);
 
   useEffect(() => {
     if (!open) return;
@@ -118,21 +148,35 @@ export function PettyCashTransactionDialog({
     }
     setLoading(true);
     try {
-      await ApiService.createPettyCashTransaction({
-        accountId: parseInt(accountId),
-        transactionDate: format(transactionDate, 'yyyy-MM-dd'),
-        type,
-        amount: amt,
-        description: description.trim() || undefined,
-        reference: reference.trim() || undefined,
-        receiptNumber: receiptNumber.trim() || undefined,
-        expenseCategoryId: expenseCategoryId ? parseInt(expenseCategoryId) : null,
-        projectId: projectId ? parseInt(projectId) : null,
-        employeeId: employeeId ? parseInt(employeeId) : null,
-      });
+      if (isEdit && transaction) {
+        await ApiService.updatePettyCashTransaction(transaction.id, {
+          transactionDate: format(transactionDate, 'yyyy-MM-dd'),
+          type,
+          amount: amt,
+          description: description.trim() || undefined,
+          reference: reference.trim() || undefined,
+          receiptNumber: receiptNumber.trim() || undefined,
+          expenseCategoryId: expenseCategoryId ? parseInt(expenseCategoryId) : null,
+          projectId: projectId ? parseInt(projectId) : null,
+          employeeId: employeeId ? parseInt(employeeId) : null,
+        });
+      } else {
+        await ApiService.createPettyCashTransaction({
+          accountId: parseInt(accountId),
+          transactionDate: format(transactionDate, 'yyyy-MM-dd'),
+          type,
+          amount: amt,
+          description: description.trim() || undefined,
+          reference: reference.trim() || undefined,
+          receiptNumber: receiptNumber.trim() || undefined,
+          expenseCategoryId: expenseCategoryId ? parseInt(expenseCategoryId) : null,
+          projectId: projectId ? parseInt(projectId) : null,
+          employeeId: employeeId ? parseInt(employeeId) : null,
+        });
+      }
       onSuccess();
     } catch (err) {
-      toast.error(t('pettyCash.recordFailed'));
+      toast.error(isEdit ? t('pettyCash.updateFailed') : t('pettyCash.recordFailed'));
     } finally {
       setLoading(false);
     }
@@ -142,15 +186,15 @@ export function PettyCashTransactionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{t('pettyCash.newTransaction')}</DialogTitle>
+          <DialogTitle>{isEdit ? t('pettyCash.editTransaction') : t('pettyCash.newTransaction')}</DialogTitle>
           <DialogDescription>
-            {t('pettyCash.newTransactionDesc')}
+            {isEdit ? t('pettyCash.editTransactionDesc') : t('pettyCash.newTransactionDesc')}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label>{t('pettyCash.accountLabel')}</Label>
-            <Select value={accountId} onValueChange={setAccountId} required>
+            <Select value={accountId} onValueChange={setAccountId} required disabled={isEdit}>
               <SelectTrigger>
                 <SelectValue placeholder={t('pettyCash.selectAccount')} />
               </SelectTrigger>
@@ -263,7 +307,7 @@ export function PettyCashTransactionDialog({
               {t('common.actions.cancel')}
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? t('pettyCash.saving') : t('pettyCash.record')}
+              {loading ? t('pettyCash.saving') : isEdit ? t('pettyCash.update') : t('pettyCash.record')}
             </Button>
           </div>
         </form>

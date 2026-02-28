@@ -78,5 +78,18 @@
   "typeIn": "IN",
   "typeOut": "OUT",
   "typeExpense": "EXPENSE",
-  "typeAdjustment": "ADJUSTMENT"
+  "typeAdjustment": "ADJUSTMENT",
+  "actions": "Actions",
+  "editTransaction": "Edit transaction",
+  "editTransactionDesc": "Update transaction details.",
+  "transactionUpdated": "Transaction updated",
+  "deleteTransactionTitle": "Delete transaction?",
+  "deleteTransactionConfirm": "Delete this transaction? This cannot be undone.",
+  "transactionDeleted": "Transaction deleted",
+  "deleteTransactionFailed": "Failed to delete transaction",
+  "print": "Print",
+  "downloadPdf": "Download PDF",
+  "generatingPdf": "Generating PDF…",
+  "pdfDownloaded": "Report downloaded successfully",
+  "pdfFailed": "Failed to generate PDF"
 }

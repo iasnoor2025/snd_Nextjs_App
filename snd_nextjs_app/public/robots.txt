@@ -1,0 +1,9 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Disallow admin and API from indexing
+Disallow: /api/
+Disallow: /admin/
+
+Sitemap: /sitemap.xml

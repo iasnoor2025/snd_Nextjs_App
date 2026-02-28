@@ -11,6 +11,9 @@ export const logger = {
   info: (...args: unknown[]) => {
     if (isDev) console.info('[INFO]', ...args);
   },
+  log: (...args: unknown[]) => {
+    if (isDev) console.log('[LOG]', ...args);
+  },
   warn: (...args: unknown[]) => {
     console.warn('[WARN]', ...args);
   },

@@ -78,5 +78,18 @@
   "typeIn": "إيداع",
   "typeOut": "سحب",
   "typeExpense": "مصروف",
-  "typeAdjustment": "تعديل"
+  "typeAdjustment": "تعديل",
+  "actions": "إجراءات",
+  "editTransaction": "تعديل المعاملة",
+  "editTransactionDesc": "تحديث تفاصيل المعاملة.",
+  "transactionUpdated": "تم تحديث المعاملة",
+  "deleteTransactionTitle": "حذف المعاملة؟",
+  "deleteTransactionConfirm": "حذف هذه المعاملة؟ لا يمكن التراجع عن ذلك.",
+  "transactionDeleted": "تم حذف المعاملة",
+  "deleteTransactionFailed": "فشل حذف المعاملة",
+  "print": "طباعة",
+  "downloadPdf": "تحميل PDF",
+  "generatingPdf": "جاري إنشاء PDF…",
+  "pdfDownloaded": "تم تحميل التقرير بنجاح",
+  "pdfFailed": "فشل إنشاء PDF"
 }

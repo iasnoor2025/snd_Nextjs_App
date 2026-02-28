@@ -29,7 +29,11 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
   const isEmployee = session?.user?.role === 'EMPLOYEE';
 
   if (isPublicPage) {
-    return <div className="min-h-screen bg-background">{children}</div>;
+    return (
+      <div id="main-content" className="min-h-screen bg-background">
+        {children}
+      </div>
+    );
   }
 
   // Show loading state only on first login verification
@@ -61,7 +65,7 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
       <>
         <div className="min-h-screen bg-background flex flex-col">
           <SiteHeader />
-          <main className="flex-1 overflow-auto p-3 sm:p-4 md:p-6 transition-all duration-200 ease-linear main-content w-full rtl:p-3 sm:rtl:p-4 md:rtl:p-6 flex flex-col">
+          <main id="main-content" className="flex-1 overflow-auto p-3 sm:p-4 md:p-6 transition-all duration-200 ease-linear main-content w-full rtl:p-3 sm:rtl:p-4 md:rtl:p-6 flex flex-col">
             <div className="w-full flex-1 max-w-none content-wrapper content-full-width">{children}</div>
             <SiteFooter />
           </main>
@@ -97,7 +101,7 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
           <AppSidebar />
           <SidebarInset className="flex-1 flex flex-col min-w-0 overflow-hidden peer">
             <SiteHeader />
-            <main className="flex-1 overflow-auto p-3 sm:p-4 md:p-6 transition-all duration-200 ease-linear main-content w-full flex flex-col">
+            <main id="main-content" className="flex-1 overflow-auto p-3 sm:p-4 md:p-6 transition-all duration-200 ease-linear main-content w-full flex flex-col">
               <div className="w-full flex-1 max-w-none content-wrapper content-full-width">{children}</div>
               <SiteFooter />
             </main>

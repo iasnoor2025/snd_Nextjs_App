@@ -12,8 +12,15 @@ const inter = Inter({
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'SND Rental Management System',
-  description: 'SND Rental Management System',
+  title: {
+    default: 'SND Rental Management System',
+    template: '%s | SND Rental',
+  },
+  description: 'Comprehensive rental management system for equipment and property rentals',
+  keywords: ['rental', 'management', 'equipment', 'property', 'Saudi Arabia'],
+  openGraph: {
+    type: 'website',
+  },
 };
 
 export const viewport = {
@@ -74,6 +81,12 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans antialiased touch-pan-y" suppressHydrationWarning>
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 rtl:focus:left-auto rtl:focus:right-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          Skip to main content
+        </a>
         <ErrorBoundary>
           {children}
         </ErrorBoundary>

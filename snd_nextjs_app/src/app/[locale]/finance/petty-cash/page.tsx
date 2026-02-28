@@ -24,19 +24,31 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { PermissionContent } from '@/lib/rbac/rbac-components';
 import ApiService from '@/lib/api-service';
 import { format } from 'date-fns';
 import {
   ArrowDownLeft,
   ArrowUpRight,
+  Download,
+  Pencil,
   Plus,
+  Printer,
+  Receipt,
   RefreshCw,
   Search,
-  Wallet,
-  Receipt,
-  Pencil,
   Trash2,
+  Wallet,
 } from 'lucide-react';
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { toast } from 'sonner';
@@ -61,6 +73,9 @@ interface PettyCashTransaction {
   type: string;
   amount: number;
   description?: string | null;
+  reference?: string | null;
+  receiptNumber?: string | null;
+  expenseCategoryId?: number | null;
   categoryName?: string | null;
   projectId?: number | null;
   employeeId?: number | null;
@@ -76,6 +91,10 @@ export default function PettyCashPage() {
   const [loadingTransactions, setLoadingTransactions] = useState(true);
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
   const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<PettyCashTransaction | null>(null);
+  const [deleteTransactionDialogOpen, setDeleteTransactionDialogOpen] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<PettyCashTransaction | null>(null);
+  const [deletingTransaction, setDeletingTransaction] = useState(false);
   const [editingAccount, setEditingAccount] = useState<PettyCashAccount | null>(null);
   const [showInactive, setShowInactive] = useState(false);
 
@@ -164,9 +183,39 @@ export default function PettyCashPage() {
   };
 
   const handleTransactionSaved = () => {
+    setEditingTransaction(null);
     setTransactionDialogOpen(false);
     loadTransactions();
     loadAccounts();
+  };
+
+  const handleEditTransaction = (tx: PettyCashTransaction) => {
+    setEditingTransaction(tx);
+    setTransactionDialogOpen(true);
+  };
+
+  const openDeleteTransactionDialog = (tx: PettyCashTransaction) => {
+    setTransactionToDelete(tx);
+    setDeleteTransactionDialogOpen(true);
+  };
+
+  const handleDeleteTransaction = async () => {
+    if (!transactionToDelete) return;
+    setDeletingTransaction(true);
+    try {
+      await ApiService.deletePettyCashTransaction(transactionToDelete.id);
+      toast.success(t('pettyCash.transactionDeleted'));
+      setTransactionToDelete(null);
+      setDeleteTransactionDialogOpen(false);
+      loadTransactions();
+      loadAccounts();
+    } catch (e) {
+      toast.error(t('pettyCash.deleteTransactionFailed'));
+      setDeleteTransactionDialogOpen(false);
+      setTransactionToDelete(null);
+    } finally {
+      setDeletingTransaction(false);
+    }
   };
 
   const handleEditAccount = (account: PettyCashAccount) => {
@@ -183,6 +232,125 @@ export default function PettyCashPage() {
       loadTransactions();
     } catch (e) {
       toast.error(t('pettyCash.deactivateFailed'));
+    }
+  };
+
+  const getTypeLabel = (type: string) => {
+    if (type === 'IN') return t('pettyCash.typeIn');
+    if (type === 'OUT') return t('pettyCash.typeOut');
+    if (type === 'EXPENSE') return t('pettyCash.typeExpense');
+    return t('pettyCash.typeAdjustment');
+  };
+
+  const handlePrintReport = () => {
+    const accountName = filters.accountId
+      ? accounts.find((a) => String(a.id) === filters.accountId)?.name ?? null
+      : null;
+    let html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Petty Cash Report</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 10px; margin: 0; font-size: 12px; }
+    h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 5px; margin-bottom: 10px; font-size: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; page-break-inside: auto; font-size: 12px; }
+    th, td { border: 1px solid #ddd; padding: 4px 6px; text-align: left; }
+    th { background-color: #f2f2f2; font-weight: bold; }
+    .text-right { text-align: right; }
+    .text-green { color: #15803d; font-weight: 500; }
+    .text-red { color: #b91c1c; font-weight: 500; }
+    .summary { background-color: #f9f9f9; padding: 8px; margin: 10px 0; border-radius: 4px; font-size: 12px; }
+    @media print { body { padding: 6px; } .no-print { display: none; } }
+  </style>
+</head>
+<body>
+  <h1>${t('pettyCash.title')} - ${t('pettyCash.transactions')}</h1>
+  <div class="summary">
+    <strong>${t('pettyCash.dateFrom')}:</strong> ${filters.dateFrom || '—'}<br/>
+    <strong>${t('pettyCash.dateTo')}:</strong> ${filters.dateTo || '—'}<br/>
+    ${accountName ? `<strong>${t('pettyCash.account')}:</strong> ${accountName}<br/>` : ''}
+    ${filters.type && filters.type !== 'all' ? `<strong>${t('pettyCash.type')}:</strong> ${getTypeLabel(filters.type)}<br/>` : ''}
+    ${filters.search ? `<strong>${t('pettyCash.search')}:</strong> ${filters.search}<br/>` : ''}
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>${t('pettyCash.date')}</th>
+        <th>${t('pettyCash.account')}</th>
+        <th>${t('pettyCash.type')}</th>
+        <th class="text-right">${t('pettyCash.inAmount')}</th>
+        <th class="text-right">${t('pettyCash.outAmount')}</th>
+        <th>${t('pettyCash.description')}</th>
+        <th>${t('pettyCash.category')}</th>
+        <th class="text-right">${t('pettyCash.balance')}</th>
+      </tr>
+    </thead>
+    <tbody>
+`;
+    if (transactionsWithBalance.length === 0) {
+      html += `<tr><td colspan="8" style="text-align:center;color:#666;">${t('pettyCash.noTransactions')}</td></tr>`;
+    } else {
+      transactionsWithBalance.forEach((tx) => {
+        const isIn = tx.type === 'IN';
+        const amt = tx.amount?.toFixed(2) ?? '0.00';
+        const bal = (tx as { runningBalance?: number }).runningBalance ?? 0;
+        const inCell = isIn ? `<span class="text-green">${amt}</span>` : '—';
+        const outCell = !isIn ? `<span class="text-red">${amt}</span>` : '—';
+        const balClass = bal >= 0 ? 'text-green' : 'text-red';
+        const dateStr = tx.transactionDate ? format(new Date(tx.transactionDate + 'T12:00:00'), 'yyyy-MM-dd') : '—';
+        html += `<tr>
+          <td>${dateStr}</td>
+          <td>${tx.accountName ?? tx.accountId}</td>
+          <td>${getTypeLabel(tx.type)}</td>
+          <td class="text-right">${inCell}</td>
+          <td class="text-right">${outCell}</td>
+          <td>${(tx.description || '—').replace(/</g, '&lt;')}</td>
+          <td>${tx.categoryName || '—'}</td>
+          <td class="text-right ${balClass}">${bal.toFixed(2)}</td>
+        </tr>`;
+      });
+    }
+    html += `
+    </tbody>
+  </table>
+</body>
+</html>`;
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+      setTimeout(() => printWindow.print(), 250);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    const params = new URLSearchParams();
+    if (filters.accountId) params.set('accountId', filters.accountId);
+    if (filters.type && filters.type !== 'all') params.set('type', filters.type);
+    if (filters.dateFrom) params.set('dateFrom', filters.dateFrom);
+    if (filters.dateTo) params.set('dateTo', filters.dateTo);
+    if (filters.search?.trim()) params.set('search', filters.search.trim());
+    try {
+      toast.loading(t('pettyCash.generatingPdf'), { id: 'petty-pdf' });
+      const res = await fetch(`/api/petty-cash/report/pdf?${params.toString()}`);
+      if (!res.ok) {
+        toast.error(t('pettyCash.pdfFailed'), { id: 'petty-pdf' });
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Petty_Cash_Report_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success(t('pettyCash.pdfDownloaded'), { id: 'petty-pdf' });
+    } catch (e) {
+      toast.error(t('pettyCash.pdfFailed'), { id: 'petty-pdf' });
     }
   };
 
@@ -213,6 +381,14 @@ export default function PettyCashPage() {
             <Button variant="ghost" size="sm" onClick={() => { loadAccounts(); loadTransactions(); }}>
               <RefreshCw className="h-4 w-4 mr-2" />
               {t('pettyCash.refresh')}
+            </Button>
+            <Button variant="outline" size="sm" onClick={handlePrintReport}>
+              <Printer className="h-4 w-4 mr-2" />
+              {t('pettyCash.print')}
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleDownloadPdf}>
+              <Download className="h-4 w-4 mr-2" />
+              {t('pettyCash.downloadPdf')}
             </Button>
           </div>
         </div>
@@ -316,12 +492,13 @@ export default function PettyCashPage() {
                           <TableHead>{t('pettyCash.description')}</TableHead>
                           <TableHead>{t('pettyCash.category')}</TableHead>
                           <TableHead className="text-right">{t('pettyCash.balance')}</TableHead>
+                          <TableHead className="w-[100px]">{t('pettyCash.actions')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {transactionsWithBalance.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={9} className="text-center text-muted-foreground">
+                            <TableCell colSpan={10} className="text-center text-muted-foreground">
                               {t('pettyCash.noTransactions')}
                             </TableCell>
                           </TableRow>
@@ -355,6 +532,32 @@ export default function PettyCashPage() {
                                 <TableCell>{tx.categoryName || '—'}</TableCell>
                                 <TableCell className={`text-right font-semibold ${bal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                   {bal.toFixed(2)}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-1">
+                                    <PermissionContent action="update" subject="PettyCash">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        onClick={() => handleEditTransaction(tx)}
+                                        title={t('pettyCash.edit')}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                    </PermissionContent>
+                                    <PermissionContent action="delete" subject="PettyCash">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-destructive hover:text-destructive"
+                                        onClick={() => openDeleteTransactionDialog(tx)}
+                                        title={t('pettyCash.delete')}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </PermissionContent>
+                                  </div>
                                 </TableCell>
                               </TableRow>
                             );
@@ -455,10 +658,38 @@ export default function PettyCashPage() {
         />
         <PettyCashTransactionDialog
           open={transactionDialogOpen}
-          onOpenChange={setTransactionDialogOpen}
+          onOpenChange={(open) => {
+            if (!open) setEditingTransaction(null);
+            setTransactionDialogOpen(open);
+          }}
           accounts={accounts}
           onSuccess={handleTransactionSaved}
+          transaction={editingTransaction}
         />
+
+        <AlertDialog open={deleteTransactionDialogOpen} onOpenChange={setDeleteTransactionDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('pettyCash.deleteTransactionTitle')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('pettyCash.deleteTransactionConfirm')}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deletingTransaction}>{t('common.actions.cancel')}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={async (e) => {
+                  e.preventDefault();
+                  await handleDeleteTransaction();
+                }}
+                disabled={deletingTransaction}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deletingTransaction ? t('pettyCash.loading') : t('pettyCash.delete')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </ProtectedRoute>
   );
