@@ -148,6 +148,10 @@ const getHandler = async (request: NextRequest) => {
   }
 };
 
+function formatAmount(n: number): string {
+  return (n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 function getTypeLabel(type: string): string {
   const map: Record<string, string> = {
     IN: 'IN',
@@ -233,11 +237,11 @@ function generateReportHTML(
       const isIn = tx.type === 'IN';
       if (isIn) totalIn += tx.amount;
       else totalOut += tx.amount;
-      const amt = tx.amount.toFixed(2);
+      const amt = formatAmount(tx.amount);
       const inCell = isIn ? `<span class="text-green">${amt}</span>` : '—';
       const outCell = !isIn ? `<span class="text-red">${amt}</span>` : '—';
       const balClass = tx.runningBalance >= 0 ? 'text-green' : 'text-red';
-      const bal = tx.runningBalance.toFixed(2);
+      const bal = formatAmount(tx.runningBalance);
       const dateStr = tx.transactionDate ? format(new Date(tx.transactionDate + 'T12:00:00'), 'yyyy-MM-dd') : '—';
       html += `
       <tr>
@@ -256,10 +260,10 @@ function generateReportHTML(
     html += `
       <tr style="background-color:#f0f0f0;font-weight:bold;">
         <td colspan="3">Total In / Total Out / Closing Balance</td>
-        <td class="text-right text-green">${totalIn.toFixed(2)}</td>
-        <td class="text-right text-red">${totalOut.toFixed(2)}</td>
+        <td class="text-right text-green">${formatAmount(totalIn)}</td>
+        <td class="text-right text-red">${formatAmount(totalOut)}</td>
         <td colspan="2"></td>
-        <td class="text-right ${lastBalClass}">${lastBalance.toFixed(2)}</td>
+        <td class="text-right ${lastBalClass}">${formatAmount(lastBalance)}</td>
       </tr>`;
   }
 

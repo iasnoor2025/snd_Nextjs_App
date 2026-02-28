@@ -115,7 +115,7 @@ export default function PettyCashPage() {
   type SortDirection = 'asc' | 'desc';
   const [sortConfig, setSortConfig] = useState<{ column: SortColumn; direction: SortDirection }>({
     column: 'date',
-    direction: 'desc',
+    direction: 'asc',
   });
 
   const loadAccounts = async () => {
@@ -189,10 +189,17 @@ export default function PettyCashPage() {
       let aVal: string | number;
       let bVal: string | number;
       switch (column) {
-        case 'date':
+        case 'date': {
           aVal = a.transactionDate || '';
           bVal = b.transactionDate || '';
-          return mult * (aVal.localeCompare(bVal) || 0);
+          const dateCmp = mult * (String(aVal).localeCompare(String(bVal)) || 0);
+          if (dateCmp !== 0) return dateCmp;
+          // Same date: IN first, then others (OUT, EXPENSE, ADJUSTMENT)
+          const typeOrder: Record<string, number> = { IN: 0, OUT: 1, EXPENSE: 2, ADJUSTMENT: 3 };
+          const aType = typeOrder[a.type] ?? 4;
+          const bType = typeOrder[b.type] ?? 4;
+          return aType - bType;
+        }
         case 'account':
           aVal = (a.accountName ?? a.accountId)?.toString() ?? '';
           bVal = (b.accountName ?? b.accountId)?.toString() ?? '';
@@ -310,6 +317,9 @@ export default function PettyCashPage() {
     </TableHead>
   );
 
+  const formatAmount = (n: number) =>
+    (n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
   const getTypeLabel = (type: string) => {
     if (type === 'IN') return t('pettyCash.typeIn');
     if (type === 'OUT') return t('pettyCash.typeOut');
@@ -374,7 +384,7 @@ export default function PettyCashPage() {
         const amt = tx.amount ?? 0;
         if (isIn) totalIn += amt;
         else totalOut += amt;
-        const amtStr = amt.toFixed(2);
+        const amtStr = formatAmount(amt);
         const bal = (tx as { runningBalance?: number }).runningBalance ?? 0;
         const inCell = isIn ? `<span class="text-green">${amtStr}</span>` : '—';
         const outCell = !isIn ? `<span class="text-red">${amtStr}</span>` : '—';
@@ -388,7 +398,7 @@ export default function PettyCashPage() {
           <td class="text-right">${outCell}</td>
           <td>${(tx.description || '—').replace(/</g, '&lt;')}</td>
           <td>${tx.categoryName || '—'}</td>
-          <td class="text-right ${balClass}">${bal.toFixed(2)}</td>
+          <td class="text-right ${balClass}">${formatAmount(bal)}</td>
         </tr>`;
       });
       const lastBalance = (transactionsWithBalance[0] as { runningBalance?: number })?.runningBalance ?? 0;
@@ -396,10 +406,10 @@ export default function PettyCashPage() {
       html += `
       <tr style="background-color:#f0f0f0;font-weight:bold;">
         <td colspan="3">${t('pettyCash.totalIn')} / ${t('pettyCash.totalOut')} / ${t('pettyCash.lastBalance')}</td>
-        <td class="text-right text-green">${totalIn.toFixed(2)}</td>
-        <td class="text-right text-red">${totalOut.toFixed(2)}</td>
+        <td class="text-right text-green">${formatAmount(totalIn)}</td>
+        <td class="text-right text-red">${formatAmount(totalOut)}</td>
         <td colspan="2"></td>
-        <td class="text-right ${lastBalClass}">${lastBalance.toFixed(2)}</td>
+        <td class="text-right ${lastBalClass}">${formatAmount(lastBalance)}</td>
       </tr>`;
     }
     html += `
@@ -595,10 +605,10 @@ export default function PettyCashPage() {
                         ) : (
                           transactionsWithBalance.map((tx) => {
                             const isIn = tx.type === 'IN';
-                            const amt = tx.amount?.toFixed(2) ?? '0.00';
+                            const amt = formatAmount(tx.amount ?? 0);
                             const bal = (tx as { runningBalance?: number }).runningBalance ?? 0;
                             return (
-                              <TableRow key={tx.id}>
+                              <TableRow key={tx.id} className={isIn ? 'bg-green-50 dark:bg-green-950/20' : ''}>
                                 <TableCell>
                                   {tx.transactionDate ? format(new Date(tx.transactionDate + 'T12:00:00'), 'yyyy-MM-dd') : '—'}
                                 </TableCell>
@@ -621,7 +631,7 @@ export default function PettyCashPage() {
                                 <TableCell className="max-w-[200px] truncate">{tx.description || '—'}</TableCell>
                                 <TableCell>{tx.categoryName || '—'}</TableCell>
                                 <TableCell className={`text-right font-semibold ${bal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                  {bal.toFixed(2)}
+                                  {formatAmount(bal)}
                                 </TableCell>
                                 <TableCell>
                                   <div className="flex items-center gap-1">
@@ -699,7 +709,7 @@ export default function PettyCashPage() {
                         </CardHeader>
                         <CardContent className="space-y-2">
                           <p className="text-2xl font-semibold">
-                            {(acc.currentBalance ?? acc.openingBalance ?? 0).toFixed(2)} {acc.currency}
+                            {formatAmount(acc.currentBalance ?? acc.openingBalance ?? 0)} {acc.currency}
                           </p>
                           <div className="flex gap-2">
                             <PermissionContent action="update" subject="PettyCash">
