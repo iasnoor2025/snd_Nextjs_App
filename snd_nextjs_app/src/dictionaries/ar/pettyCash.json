@@ -91,5 +91,9 @@
   "downloadPdf": "تحميل PDF",
   "generatingPdf": "جاري إنشاء PDF…",
   "pdfDownloaded": "تم تحميل التقرير بنجاح",
-  "pdfFailed": "فشل إنشاء PDF"
+  "pdfFailed": "فشل إنشاء PDF",
+  "totalIn": "إجمالي الإيداع",
+  "totalOut": "إجمالي السحب",
+  "lastBalance": "الرصيد الختامي",
+  "sortBy": "ترتيب حسب"
 }

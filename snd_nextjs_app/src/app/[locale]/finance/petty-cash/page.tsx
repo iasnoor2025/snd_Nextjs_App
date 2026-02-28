@@ -38,7 +38,10 @@ import { PermissionContent } from '@/lib/rbac/rbac-components';
 import ApiService from '@/lib/api-service';
 import { format } from 'date-fns';
 import {
+  ArrowDown,
   ArrowDownLeft,
+  ArrowUp,
+  ArrowUpDown,
   ArrowUpRight,
   Download,
   Pencil,
@@ -108,6 +111,13 @@ export default function PettyCashPage() {
   const [searchInput, setSearchInput] = useState('');
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
+  type SortColumn = 'date' | 'account' | 'type' | 'amount' | 'description' | 'category' | 'balance';
+  type SortDirection = 'asc' | 'desc';
+  const [sortConfig, setSortConfig] = useState<{ column: SortColumn; direction: SortDirection }>({
+    column: 'date',
+    direction: 'desc',
+  });
+
   const loadAccounts = async () => {
     setLoadingAccounts(true);
     try {
@@ -166,14 +176,52 @@ export default function PettyCashPage() {
     accounts.forEach((acc) => {
       accountBalances.set(acc.id, acc.currentBalance ?? acc.openingBalance ?? 0);
     });
-    return transactions.map((tx) => {
+    const withBalance = transactions.map((tx) => {
       const balance = accountBalances.get(tx.accountId) ?? 0;
       const isIn = tx.type === 'IN';
       const delta = isIn ? tx.amount : -(tx.amount ?? 0);
       accountBalances.set(tx.accountId, balance - delta);
       return { ...tx, runningBalance: balance };
     });
-  }, [transactions, accounts]);
+    const { column, direction } = sortConfig;
+    const mult = direction === 'asc' ? 1 : -1;
+    return [...withBalance].sort((a, b) => {
+      let aVal: string | number;
+      let bVal: string | number;
+      switch (column) {
+        case 'date':
+          aVal = a.transactionDate || '';
+          bVal = b.transactionDate || '';
+          return mult * (aVal.localeCompare(bVal) || 0);
+        case 'account':
+          aVal = (a.accountName ?? a.accountId)?.toString() ?? '';
+          bVal = (b.accountName ?? b.accountId)?.toString() ?? '';
+          return mult * (aVal.localeCompare(bVal) || 0);
+        case 'type':
+          aVal = a.type;
+          bVal = b.type;
+          return mult * (aVal.localeCompare(bVal) || 0);
+        case 'amount':
+          aVal = a.amount ?? 0;
+          bVal = b.amount ?? 0;
+          return mult * (aVal - bVal);
+        case 'description':
+          aVal = (a.description ?? '').toLowerCase();
+          bVal = (b.description ?? '').toLowerCase();
+          return mult * (aVal.localeCompare(bVal) || 0);
+        case 'category':
+          aVal = (a.categoryName ?? '').toLowerCase();
+          bVal = (b.categoryName ?? '').toLowerCase();
+          return mult * (aVal.localeCompare(bVal) || 0);
+        case 'balance':
+          aVal = (a as { runningBalance?: number }).runningBalance ?? 0;
+          bVal = (b as { runningBalance?: number }).runningBalance ?? 0;
+          return mult * (aVal - bVal);
+        default:
+          return 0;
+      }
+    });
+  }, [transactions, accounts, sortConfig]);
 
   const handleAccountSaved = () => {
     setEditingAccount(null);
@@ -235,6 +283,33 @@ export default function PettyCashPage() {
     }
   };
 
+  const handleSort = (column: SortColumn) => {
+    setSortConfig((prev) => ({
+      column,
+      direction: prev.column === column && prev.direction === 'desc' ? 'asc' : 'desc',
+    }));
+  };
+
+  const SortableHead = ({ column, label, className = '' }: { column: SortColumn; label: string; className?: string }) => (
+    <TableHead
+      className={`cursor-pointer select-none hover:bg-muted/50 ${className}`}
+      onClick={() => handleSort(column)}
+    >
+      <div className={`flex items-center gap-1 ${className.includes('text-right') ? 'justify-end' : ''}`}>
+        {label}
+        {sortConfig.column === column ? (
+          sortConfig.direction === 'asc' ? (
+            <ArrowUp className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          ) : (
+            <ArrowDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          )
+        ) : (
+          <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        )}
+      </div>
+    </TableHead>
+  );
+
   const getTypeLabel = (type: string) => {
     if (type === 'IN') return t('pettyCash.typeIn');
     if (type === 'OUT') return t('pettyCash.typeOut');
@@ -292,12 +367,17 @@ export default function PettyCashPage() {
     if (transactionsWithBalance.length === 0) {
       html += `<tr><td colspan="8" style="text-align:center;color:#666;">${t('pettyCash.noTransactions')}</td></tr>`;
     } else {
+      let totalIn = 0;
+      let totalOut = 0;
       transactionsWithBalance.forEach((tx) => {
         const isIn = tx.type === 'IN';
-        const amt = tx.amount?.toFixed(2) ?? '0.00';
+        const amt = tx.amount ?? 0;
+        if (isIn) totalIn += amt;
+        else totalOut += amt;
+        const amtStr = amt.toFixed(2);
         const bal = (tx as { runningBalance?: number }).runningBalance ?? 0;
-        const inCell = isIn ? `<span class="text-green">${amt}</span>` : '—';
-        const outCell = !isIn ? `<span class="text-red">${amt}</span>` : '—';
+        const inCell = isIn ? `<span class="text-green">${amtStr}</span>` : '—';
+        const outCell = !isIn ? `<span class="text-red">${amtStr}</span>` : '—';
         const balClass = bal >= 0 ? 'text-green' : 'text-red';
         const dateStr = tx.transactionDate ? format(new Date(tx.transactionDate + 'T12:00:00'), 'yyyy-MM-dd') : '—';
         html += `<tr>
@@ -311,6 +391,16 @@ export default function PettyCashPage() {
           <td class="text-right ${balClass}">${bal.toFixed(2)}</td>
         </tr>`;
       });
+      const lastBalance = (transactionsWithBalance[0] as { runningBalance?: number })?.runningBalance ?? 0;
+      const lastBalClass = lastBalance >= 0 ? 'text-green' : 'text-red';
+      html += `
+      <tr style="background-color:#f0f0f0;font-weight:bold;">
+        <td colspan="3">${t('pettyCash.totalIn')} / ${t('pettyCash.totalOut')} / ${t('pettyCash.lastBalance')}</td>
+        <td class="text-right text-green">${totalIn.toFixed(2)}</td>
+        <td class="text-right text-red">${totalOut.toFixed(2)}</td>
+        <td colspan="2"></td>
+        <td class="text-right ${lastBalClass}">${lastBalance.toFixed(2)}</td>
+      </tr>`;
     }
     html += `
     </tbody>
@@ -484,14 +574,14 @@ export default function PettyCashPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>{t('pettyCash.date')}</TableHead>
-                          <TableHead>{t('pettyCash.account')}</TableHead>
-                          <TableHead>{t('pettyCash.type')}</TableHead>
-                          <TableHead className="text-right">{t('pettyCash.inAmount')}</TableHead>
-                          <TableHead className="text-right">{t('pettyCash.outAmount')}</TableHead>
-                          <TableHead>{t('pettyCash.description')}</TableHead>
-                          <TableHead>{t('pettyCash.category')}</TableHead>
-                          <TableHead className="text-right">{t('pettyCash.balance')}</TableHead>
+                          <SortableHead column="date" label={t('pettyCash.date')} />
+                          <SortableHead column="account" label={t('pettyCash.account')} />
+                          <SortableHead column="type" label={t('pettyCash.type')} />
+                          <SortableHead column="amount" label={t('pettyCash.inAmount')} className="text-right" />
+                          <SortableHead column="amount" label={t('pettyCash.outAmount')} className="text-right" />
+                          <SortableHead column="description" label={t('pettyCash.description')} />
+                          <SortableHead column="category" label={t('pettyCash.category')} />
+                          <SortableHead column="balance" label={t('pettyCash.balance')} className="text-right" />
                           <TableHead className="w-[100px]">{t('pettyCash.actions')}</TableHead>
                         </TableRow>
                       </TableHeader>

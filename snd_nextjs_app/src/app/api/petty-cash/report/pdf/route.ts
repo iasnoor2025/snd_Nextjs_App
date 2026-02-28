@@ -227,8 +227,12 @@ function generateReportHTML(
   if (transactions.length === 0) {
     html += `<tr><td colspan="8" style="text-align:center;color:#666;">No transactions found.</td></tr>`;
   } else {
+    let totalIn = 0;
+    let totalOut = 0;
     transactions.forEach((tx) => {
       const isIn = tx.type === 'IN';
+      if (isIn) totalIn += tx.amount;
+      else totalOut += tx.amount;
       const amt = tx.amount.toFixed(2);
       const inCell = isIn ? `<span class="text-green">${amt}</span>` : '—';
       const outCell = !isIn ? `<span class="text-red">${amt}</span>` : '—';
@@ -247,6 +251,16 @@ function generateReportHTML(
         <td class="text-right ${balClass}">${bal}</td>
       </tr>`;
     });
+    const lastBalance = transactions[0]?.runningBalance ?? 0;
+    const lastBalClass = lastBalance >= 0 ? 'text-green' : 'text-red';
+    html += `
+      <tr style="background-color:#f0f0f0;font-weight:bold;">
+        <td colspan="3">Total In / Total Out / Closing Balance</td>
+        <td class="text-right text-green">${totalIn.toFixed(2)}</td>
+        <td class="text-right text-red">${totalOut.toFixed(2)}</td>
+        <td colspan="2"></td>
+        <td class="text-right ${lastBalClass}">${lastBalance.toFixed(2)}</td>
+      </tr>`;
   }
 
   html += `

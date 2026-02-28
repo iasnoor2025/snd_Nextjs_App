@@ -91,5 +91,9 @@
   "downloadPdf": "Download PDF",
   "generatingPdf": "Generating PDF…",
   "pdfDownloaded": "Report downloaded successfully",
-  "pdfFailed": "Failed to generate PDF"
+  "pdfFailed": "Failed to generate PDF",
+  "totalIn": "Total In",
+  "totalOut": "Total Out",
+  "lastBalance": "Closing Balance",
+  "sortBy": "Sort by"
 }
