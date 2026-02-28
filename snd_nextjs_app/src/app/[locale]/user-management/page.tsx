@@ -662,7 +662,59 @@ export default function UserManagementPage() {
         return 'Iqama Management';
       case 'PettyCash':
         return 'Petty Cash';
+      case 'FinalSettlement':
+        return 'Final Settlement Management';
+      case 'Dashboard':
+      case 'Performance':
+        return 'Dashboard & Analytics';
+      case 'Admin':
+      case 'Notification':
+      case 'Settings':
+        return 'Admin & Settings';
+      case 'CronJob':
+      case 'Backup':
+      case 'Webhook':
+      case 'ExternalSystem':
+      case 'SystemSetting':
+      case 'Integration':
+      case 'ScheduledTask':
+      case 'Recovery':
+      case 'Audit':
+        return 'System & Integrations';
+      case 'CompanyDocument':
+      case 'DocumentVersion':
+      case 'File':
+      case 'CompanyDocumentType':
+        return 'Documents & Files';
+      case 'ReportTemplate':
+      case 'ScheduledReport':
+      case 'Translation':
+      case 'Language':
+        return 'Reports & Templates';
+      case 'SafetyReport':
+      case 'SafetyIncident':
+      case 'GeofenceZone':
+        return 'Safety & Compliance';
+      case 'PerformanceReview':
+      case 'EmployeeSalary':
+      case 'Resignation':
+        return 'Performance & HR';
+      case 'Video':
+      case 'Audio':
+      case 'Image':
+        return 'Media';
       default:
+        // Fallback: match by subject pattern for uncategorized permissions
+        const subjectLower = subject?.toLowerCase() || '';
+        if (subjectLower.includes('document') || subjectLower.includes('file')) return 'Documents & Files';
+        if (subjectLower.includes('report') || subjectLower.includes('template')) return 'Reports & Templates';
+        if (subjectLower.includes('safety') || subjectLower.includes('incident')) return 'Safety & Compliance';
+        if (subjectLower.includes('admin') || subjectLower.includes('notification') || subjectLower.includes('setting')) return 'Admin & Settings';
+        if (subjectLower.includes('dashboard') || subjectLower.includes('performance')) return 'Dashboard & Analytics';
+        if (subjectLower.includes('cron') || subjectLower.includes('backup') || subjectLower.includes('webhook') || subjectLower.includes('integration')) return 'System & Integrations';
+        if (subjectLower.includes('resignation') || subjectLower.includes('salary') || subjectLower.includes('review')) return 'Performance & HR';
+        if (subjectLower.includes('settlement')) return 'Final Settlement Management';
+        if (subjectLower.includes('video') || subjectLower.includes('audio') || subjectLower.includes('image')) return 'Media';
         // Fallback categorization based on subject
         const fallbackMappings: Record<string, string> = {
           'User': 'User Management',
@@ -1717,7 +1769,19 @@ export default function UserManagementPage() {
                   }
                   groupedPermissions[category].push(permission);
                 });
-                return Object.entries(groupedPermissions).map(([category, permissions]) => {
+                const categoryOrder = [
+                  'Core System', 'User Management', 'Admin & Settings', 'Dashboard & Analytics',
+                  'Employee Management', 'Performance & HR', 'Customer Management', 'Equipment Management',
+                  'Maintenance Management', 'Rental Management', 'Quotation Management', 'Payroll Management',
+                  'Advance Management', 'Petty Cash', 'Final Settlement Management', 'Timesheet Management',
+                  'Project Management', 'Leave Management', 'Department & Organization', 'Reports & Analytics',
+                  'Reports & Templates', 'Company & Safety', 'Safety & Compliance', 'Document Management',
+                  'Documents & Files', 'Assignment Management', 'Iqama Management', 'System & Integrations', 'Media'
+                ];
+                const sortedEntries = Object.entries(groupedPermissions).sort(
+                  ([a], [b]) => (categoryOrder.indexOf(a) >= 0 ? categoryOrder.indexOf(a) : 999) - (categoryOrder.indexOf(b) >= 0 ? categoryOrder.indexOf(b) : 999)
+                );
+                return sortedEntries.map(([category, permissions]) => {
                   const allSelected = permissions.every(p => 
                     Array.isArray(selectedRolePermissions) && 
                     selectedRolePermissions.some(sp => sp.id === p.id)

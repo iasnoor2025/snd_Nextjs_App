@@ -125,7 +125,47 @@ const PERMISSION_CATEGORIES = {
   'Document Management': {
     icon: FileText,
     color: 'bg-rose-100 text-rose-800',
-    permissions: ['document-approval']
+    permissions: ['document-approval', 'Document']
+  },
+  'Dashboard & Analytics': {
+    icon: ChartBar,
+    color: 'bg-indigo-100 text-indigo-800',
+    permissions: ['Dashboard', 'Performance']
+  },
+  'Admin & Settings': {
+    icon: Settings,
+    color: 'bg-slate-100 text-slate-800',
+    permissions: ['Admin', 'Notification', 'Settings']
+  },
+  'System & Integrations': {
+    icon: Settings,
+    color: 'bg-zinc-100 text-zinc-800',
+    permissions: ['CronJob', 'Backup', 'Webhook', 'ExternalSystem', 'SystemSetting', 'Integration', 'ScheduledTask', 'Recovery', 'Audit']
+  },
+  'Documents & Files': {
+    icon: FileText,
+    color: 'bg-rose-100 text-rose-800',
+    permissions: ['CompanyDocument', 'DocumentVersion', 'File', 'CompanyDocumentType']
+  },
+  'Reports & Templates': {
+    icon: FileText,
+    color: 'bg-amber-100 text-amber-800',
+    permissions: ['ReportTemplate', 'ScheduledReport', 'Translation', 'Language']
+  },
+  'Safety & Compliance': {
+    icon: Safety,
+    color: 'bg-red-100 text-red-800',
+    permissions: ['SafetyReport', 'SafetyIncident', 'GeofenceZone']
+  },
+  'Performance & HR': {
+    icon: UserCheck,
+    color: 'bg-teal-100 text-teal-800',
+    permissions: ['PerformanceReview', 'EmployeeSalary', 'Resignation']
+  },
+  'Media': {
+    icon: FileText,
+    color: 'bg-sky-100 text-sky-800',
+    permissions: ['Video', 'Audio', 'Image']
   },
   'Assignment Management': {
     icon: MapPin,
@@ -194,6 +234,18 @@ export function PermissionManagement({
       }
     }
 
+    // Fallback: match by subject pattern for uncategorized permissions
+    const subjectLower = subject?.toLowerCase() || '';
+    if (subjectLower.includes('document') || subjectLower.includes('file')) return 'Documents & Files';
+    if (subjectLower.includes('report') || subjectLower.includes('template')) return 'Reports & Templates';
+    if (subjectLower.includes('safety') || subjectLower.includes('incident')) return 'Safety & Compliance';
+    if (subjectLower.includes('admin') || subjectLower.includes('notification') || subjectLower.includes('setting')) return 'Admin & Settings';
+    if (subjectLower.includes('dashboard') || subjectLower.includes('performance')) return 'Dashboard & Analytics';
+    if (subjectLower.includes('cron') || subjectLower.includes('backup') || subjectLower.includes('webhook') || subjectLower.includes('integration')) return 'System & Integrations';
+    if (subjectLower.includes('resignation') || subjectLower.includes('salary') || subjectLower.includes('review')) return 'Performance & HR';
+    if (subjectLower.includes('settlement')) return 'Final Settlement Management';
+    if (subjectLower.includes('video') || subjectLower.includes('audio') || subjectLower.includes('image')) return 'Media';
+
     // Fallback categorization based on subject
     const fallbackMappings: Record<string, string> = {
       'User': 'User Management',
@@ -223,7 +275,12 @@ export function PermissionManagement({
       'FinalSettlement': 'Final Settlement Management',
       'advance-payment': 'Advance Management',
       'advance-history': 'Advance Management',
-      'PettyCash': 'Petty Cash'
+      'PettyCash': 'Petty Cash',
+      'Dashboard': 'Dashboard & Analytics',
+      'Admin': 'Admin & Settings',
+      'Notification': 'Admin & Settings',
+      'Settings': 'Admin & Settings',
+      'Document': 'Document Management'
     };
 
     return (subject && fallbackMappings[subject]) || 'Core System';
