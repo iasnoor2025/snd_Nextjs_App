@@ -525,6 +525,7 @@ export default function SalaryIncrementsPage() {
                               onClick={() =>
                                 router.push(`/${locale}/salary-increments/edit/${increment.id}`)
                               }
+                              aria-label="Edit increment"
                             >
                               <Edit className="w-4 h-4 text-blue-600" />
                             </Button>
@@ -534,6 +535,7 @@ export default function SalaryIncrementsPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleApprove(increment)}
+                              aria-label="Approve increment"
                             >
                               <Check className="w-4 h-4 text-green-600" />
                             </Button>
@@ -546,6 +548,7 @@ export default function SalaryIncrementsPage() {
                                 setSelectedIncrement(increment);
                                 setShowRejectDialog(true);
                               }}
+                              aria-label="Reject increment"
                             >
                               <X className="w-4 h-4 text-red-600" />
                             </Button>
@@ -555,6 +558,7 @@ export default function SalaryIncrementsPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleApply(increment)}
+                              aria-label="Apply increment"
                             >
                               <Play className="w-4 h-4 text-blue-600" />
                             </Button>
@@ -567,6 +571,7 @@ export default function SalaryIncrementsPage() {
                                 setIncrementToDelete(increment);
                                 setShowDeleteDialog(true);
                               }}
+                              aria-label="Delete increment"
                             >
                               <Trash2 className="w-4 h-4 text-red-600" />
                             </Button>

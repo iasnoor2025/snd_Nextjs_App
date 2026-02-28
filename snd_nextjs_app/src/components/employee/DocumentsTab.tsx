@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { useRBAC } from '@/lib/rbac/rbac-context';
-import { Plus, RefreshCw, Trash2, Upload } from 'lucide-react';
+import { FileSpreadsheet, FileText, Image as ImageIcon, Plus, RefreshCw, Trash2, Upload } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useCallback, useEffect, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
@@ -72,18 +72,18 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
 
   const documentNameOptions = [
-    { label: '📸 Employee Photo', value: 'employee_photo', priority: 'high' },
-    { label: '🆔 Employee Iqama', value: 'employee_iqama', priority: 'high' },
-    { label: '🛂 Employee Passport', value: 'employee_passport', priority: 'high' },
-    { label: '🚗 Driving License', value: 'driving_license', priority: 'medium' },
-    { label: '⚙️ Operator License', value: 'operator_license', priority: 'medium' },
-    { label: '🔧 SPSP License', value: 'spsp_license', priority: 'medium' },
-    { label: '🏆 TUV Certification', value: 'tuv_certification', priority: 'medium' },
-    { label: '⚠️ H2S Card', value: 'h2s_card', priority: 'medium' },
-    { label: '📜 H2S Certificate', value: 'h2s_certificate', priority: 'medium' },
-    { label: '📄 Employment Contract', value: 'contract', priority: 'high' },
-    { label: '🏥 Medical Certificate', value: 'medical', priority: 'high' },
-    { label: '📁 General Document', value: 'general', priority: 'low' },
+    { label: 'Employee Photo', value: 'employee_photo', priority: 'high' },
+    { label: 'Employee Iqama', value: 'employee_iqama', priority: 'high' },
+    { label: 'Employee Passport', value: 'employee_passport', priority: 'high' },
+    { label: 'Driving License', value: 'driving_license', priority: 'medium' },
+    { label: 'Operator License', value: 'operator_license', priority: 'medium' },
+    { label: 'SPSP License', value: 'spsp_license', priority: 'medium' },
+    { label: 'TUV Certification', value: 'tuv_certification', priority: 'medium' },
+    { label: 'H2S Card', value: 'h2s_card', priority: 'medium' },
+    { label: 'H2S Certificate', value: 'h2s_certificate', priority: 'medium' },
+    { label: 'Employment Contract', value: 'contract', priority: 'high' },
+    { label: 'Medical Certificate', value: 'medical', priority: 'high' },
+    { label: 'General Document', value: 'general', priority: 'low' },
   ];
 
   // Debug session status
@@ -311,13 +311,13 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
     return type.startsWith('image/') || type.toLowerCase().includes('image');
   };
 
-  const getFileIcon = (type: string | undefined): string => {
+  const getFileIcon = (type: string | undefined) => {
+    const iconClass = 'h-5 w-5 text-muted-foreground';
     const t = (type || '').toLowerCase();
-    if (t.includes('pdf')) return '📄';
-    if (t.includes('word') || t.includes('doc')) return '📝';
-    if (t.includes('excel') || t.includes('sheet') || t.includes('xls')) return '📊';
-    if (t.includes('image')) return '🖼️';
-    return '📄';
+    if (t.includes('pdf') || t.includes('word') || t.includes('doc')) return <FileText className={iconClass} aria-hidden />;
+    if (t.includes('excel') || t.includes('sheet') || t.includes('xls')) return <FileSpreadsheet className={iconClass} aria-hidden />;
+    if (t.includes('image')) return <ImageIcon className={iconClass} aria-hidden />;
+    return <FileText className={iconClass} aria-hidden />;
   };
 
   const getDocumentTypeBadge = (type: string) => {

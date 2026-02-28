@@ -1246,11 +1246,7 @@ export default function EquipmentManagementPage() {
                         <PaginationContent>
                           <PaginationItem>
                             <PaginationPrevious
-                              href="#"
-                              onClick={e => {
-                                e.preventDefault();
-                                if (currentPage > 1) handlePageChange(currentPage - 1);
-                              }}
+                              onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
                               className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
                             />
                           </PaginationItem>
@@ -1260,11 +1256,7 @@ export default function EquipmentManagementPage() {
                             <>
                               <PaginationItem>
                                 <PaginationLink
-                                  href="#"
-                                  onClick={e => {
-                                    e.preventDefault();
-                                    handlePageChange(1);
-                                  }}
+                                  onClick={() => handlePageChange(1)}
                                 >
                                   1
                                 </PaginationLink>
@@ -1283,11 +1275,7 @@ export default function EquipmentManagementPage() {
                             return (
                               <PaginationItem key={page}>
                                 <PaginationLink
-                                  href="#"
-                                  onClick={e => {
-                                    e.preventDefault();
-                                    handlePageChange(page);
-                                  }}
+                                  onClick={() => handlePageChange(page)}
                                   isActive={currentPage === page}
                                 >
                                   {page}
@@ -1304,11 +1292,7 @@ export default function EquipmentManagementPage() {
                               </PaginationItem>
                               <PaginationItem>
                                 <PaginationLink
-                                  href="#"
-                                  onClick={e => {
-                                    e.preventDefault();
-                                    handlePageChange(totalPages);
-                                  }}
+                                  onClick={() => handlePageChange(totalPages)}
                                 >
                                   {totalPages}
                                 </PaginationLink>
@@ -1318,11 +1302,7 @@ export default function EquipmentManagementPage() {
 
                           <PaginationItem>
                             <PaginationNext
-                              href="#"
-                              onClick={e => {
-                                e.preventDefault();
-                                if (currentPage < totalPages) handlePageChange(currentPage + 1);
-                              }}
+                              onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
                               className={
                                 currentPage === totalPages ? 'pointer-events-none opacity-50' : ''
                               }

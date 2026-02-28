@@ -29,22 +29,38 @@ PaginationItem.displayName = 'PaginationItem';
 
 type PaginationLinkProps = {
   isActive?: boolean;
+  href?: string;
 } & Pick<ButtonProps, 'size'> &
-  React.ComponentProps<'a'>;
+  Omit<React.ComponentProps<'a'>, 'href'> &
+  Omit<React.ComponentProps<'button'>, 'type'>;
 
-const PaginationLink = ({ className, isActive, size = 'icon', ...props }: PaginationLinkProps) => (
-  <a
-    aria-current={isActive ? 'page' : undefined}
-    className={cn(
-      buttonVariants({
-        variant: isActive ? 'outline' : 'ghost',
-        size,
-      }),
-      className
-    )}
-    {...props}
-  />
-);
+const PaginationLink = ({ className, isActive, size = 'icon', href, onClick, ...props }: PaginationLinkProps) => {
+  const isButton = !href || href === '#';
+  const sharedClassName = cn(
+    buttonVariants({ variant: isActive ? 'outline' : 'ghost', size }),
+    className
+  );
+  if (isButton) {
+    return (
+      <button
+        type="button"
+        aria-current={isActive ? 'page' : undefined}
+        className={sharedClassName}
+        onClick={onClick}
+        {...(props as React.ComponentProps<'button'>)}
+      />
+    );
+  }
+  return (
+    <a
+      aria-current={isActive ? 'page' : undefined}
+      className={sharedClassName}
+      href={href}
+      onClick={onClick}
+      {...(props as React.ComponentProps<'a'>)}
+    />
+  );
+};
 PaginationLink.displayName = 'PaginationLink';
 
 const PaginationPrevious = ({

@@ -34,6 +34,7 @@ export default function RootLayout({
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
+        {/* Static theme/chunk script - no user input, safe */}
         <script
           dangerouslySetInnerHTML={{
             __html: `

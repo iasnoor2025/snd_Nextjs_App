@@ -1,24 +1,20 @@
-// Production-safe logging utility
+/**
+ * Centralized logger - use instead of console.log/error/warn in production.
+ * In development, logs to console. In production, can be configured to send to monitoring.
+ */
+const isDev = process.env.NODE_ENV !== 'production';
+
 export const logger = {
-  log: (...args: any[]) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log(...args);
-    }
+  debug: (...args: unknown[]) => {
+    if (isDev) console.debug('[DEBUG]', ...args);
   },
-  error: (...args: any[]) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.error(...args);
-    }
+  info: (...args: unknown[]) => {
+    if (isDev) console.info('[INFO]', ...args);
   },
-  warn: (...args: any[]) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.warn(...args);
-    }
+  warn: (...args: unknown[]) => {
+    console.warn('[WARN]', ...args);
   },
-  info: (...args: any[]) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.info(...args);
-    }
+  error: (...args: unknown[]) => {
+    console.error('[ERROR]', ...args);
   },
 };
-

@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { signIn } from 'next-auth/react';
+import Link from 'next/link';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -177,12 +178,12 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
                 <div className="grid gap-2">
                   <div className="flex items-center">
                     <Label htmlFor="password">{t('auth.signin.password')}</Label>
-                    <a
-                      href="/forgot-password"
+                    <Link
+                      href={`/${locale}/forgot-password`}
                       className="ml-auto text-sm underline-offset-4 hover:underline text-left"
                     >
                       {t('auth.signin.forgotPassword')}
-                    </a>
+                    </Link>
                   </div>
                   <Input
                     id="password"
@@ -199,20 +200,20 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
               </div>
               <div className="text-center text-sm">
                 {t('auth.signin.dontHaveAccount')}{' '}
-                <a
-                  href="/signup"
+                <Link
+                  href={`/${locale}/signup`}
                   className="text-primary hover:underline underline-offset-4 font-medium"
                 >
                   {t('auth.signin.signUp')}
-                </a>
+                </Link>
               </div>
             </div>
           </form>
         </CardContent>
       </Card>
       <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 [&_a]:hover:text-primary  ">
-        {t('auth.terms.byContinuing')} <a href="/terms" className="cursor-pointer">{t('auth.terms.termsOfService')}</a> {t('auth.terms.and')}{' '}
-        <a href="/privacy" className="cursor-pointer">{t('auth.terms.privacyPolicy')}</a>.
+        {t('auth.terms.byContinuing')} <Link href={`/${locale}/terms`} className="cursor-pointer">{t('auth.terms.termsOfService')}</Link> {t('auth.terms.and')}{' '}
+        <Link href={`/${locale}/privacy`} className="cursor-pointer">{t('auth.terms.privacyPolicy')}</Link>.
       </div>
     </div>
   );

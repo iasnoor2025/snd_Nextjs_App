@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import puppeteer from 'puppeteer';
 import { db } from '@/lib/drizzle';
 import { rentalEquipmentTimesheets, rentalTimesheetReceived } from '@/lib/drizzle/schema';
-import { eq, and, gte, lte } from 'drizzle-orm';
+import { eq, and, gte, lte, inArray } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
@@ -114,75 +114,64 @@ async function fetchTimesheetData(rentalId: number, rentalItems: any[]): Promise
     }
   });
 
-  // Fetch timesheet hours for each item and month
-  await Promise.all(
-    rentalItems.map(async (item) => {
-      await Promise.all(
-        Array.from(months).map(async (monthKey) => {
-          try {
-            // Fetch timesheet hours
-            const [year, monthNum] = monthKey.split('-').map(Number);
-            const startDateStr = `${year}-${String(monthNum).padStart(2, '0')}-01`;
-            const lastDay = new Date(year, monthNum, 0).getDate();
-            const endDateStr = `${year}-${String(monthNum).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
-            
-            const timesheets = await db
-              .select()
-              .from(rentalEquipmentTimesheets)
-              .where(
-                and(
-                  eq(rentalEquipmentTimesheets.rentalId, rentalId),
-                  eq(rentalEquipmentTimesheets.rentalItemId, item.id),
-                  gte(rentalEquipmentTimesheets.date, startDateStr),
-                  lte(rentalEquipmentTimesheets.date, endDateStr)
-                )
-              )
-              .orderBy(rentalEquipmentTimesheets.date);
+  // Batch fetch: get all timesheets for this rental in one query
+  const itemIds = rentalItems.map((item: { id: number }) => item.id);
+  const monthKeys = Array.from(months).sort();
+  if (monthKeys.length === 0) {
+    return { hours: hoursMap, status: statusMap };
+  }
 
-            if (timesheets.length > 0) {
-              const totalHours = timesheets.reduce((sum, ts) => {
-                const regular = parseFloat(ts.regularHours?.toString() || '0') || 0;
-                const overtime = parseFloat(ts.overtimeHours?.toString() || '0') || 0;
-                return sum + regular + overtime;
-              }, 0);
-              
-              if (totalHours > 0) {
-                hoursMap[`${item.id}-${monthKey}`] = totalHours;
-              }
-            }
-          } catch (error) {
-            console.error(`Error fetching timesheet hours for item ${item.id} month ${monthKey}:`, error);
-          }
-        })
+  const [minYear, minMonth] = monthKeys[0].split('-').map(Number);
+  const [maxYear, maxMonth] = monthKeys[monthKeys.length - 1].split('-').map(Number);
+  const startDateStr = `${minYear}-${String(minMonth).padStart(2, '0')}-01`;
+  const lastDay = new Date(maxYear, maxMonth, 0).getDate();
+  const endDateStr = `${maxYear}-${String(maxMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+  try {
+    const allTimesheets = await db
+      .select()
+      .from(rentalEquipmentTimesheets)
+      .where(
+        and(
+          eq(rentalEquipmentTimesheets.rentalId, rentalId),
+          inArray(rentalEquipmentTimesheets.rentalItemId, itemIds),
+          gte(rentalEquipmentTimesheets.date, startDateStr),
+          lte(rentalEquipmentTimesheets.date, endDateStr)
+        )
       );
-    })
-  );
 
-  // Fetch timesheet status for each month
-  await Promise.all(
-    Array.from(months).map(async (monthKey) => {
-      try {
-        const statusRecords = await db
-          .select()
-          .from(rentalTimesheetReceived)
-          .where(
-            and(
-              eq(rentalTimesheetReceived.rentalId, rentalId),
-              eq(rentalTimesheetReceived.month, monthKey)
-            )
-          );
-
-        statusRecords.forEach((record) => {
-          if (record.rentalItemId) {
-            const itemKey = `${monthKey}-${record.rentalItemId}`;
-            statusMap[itemKey] = record.received || false;
-          }
-        });
-      } catch (error) {
-        console.error(`Error fetching timesheet status for ${monthKey}:`, error);
+    allTimesheets.forEach((ts) => {
+      const date = new Date(ts.date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      if (months.has(monthKey)) {
+        const key = `${ts.rentalItemId}-${monthKey}`;
+        const regular = parseFloat(ts.regularHours?.toString() || '0') || 0;
+        const overtime = parseFloat(ts.overtimeHours?.toString() || '0') || 0;
+        const total = regular + overtime;
+        if (total > 0) {
+          hoursMap[key] = (hoursMap[key] || 0) + total;
+        }
       }
-    })
-  );
+    });
+
+    const allStatusRecords = await db
+      .select()
+      .from(rentalTimesheetReceived)
+      .where(
+        and(
+          eq(rentalTimesheetReceived.rentalId, rentalId),
+          inArray(rentalTimesheetReceived.month, monthKeys)
+        )
+      );
+
+    allStatusRecords.forEach((record) => {
+      if (record.rentalItemId) {
+        statusMap[`${record.month}-${record.rentalItemId}`] = record.received || false;
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching timesheet data:', error);
+  }
 
   return { hours: hoursMap, status: statusMap };
 }
