@@ -1210,7 +1210,7 @@ export default function EmployeeShowPage() {
                     <div className="mb-2 flex justify-between">
                       <span className="text-sm font-medium">{t('employee.salary.basicSalary')}</span>   
                       <span className="text-base font-semibold">
-                        {t('employee.currency.symbol')} {Number(employee.basic_salary || 0).toFixed(2)}
+                        {t('employee.currency.symbol')} {Number(employee.basic_salary || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
                     <div className="h-1.5 w-full rounded-full bg-muted">
@@ -1226,9 +1226,10 @@ export default function EmployeeShowPage() {
                       <dt className="text-sm font-medium">{t('employee.salary.hourlyRate')}</dt>
                       <dd className="text-sm">
                         {t('employee.currency.symbol')} {(() => {
+                          const formatNum = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                           // Calculate hourly rate if stored rate is 0 or missing
                           if (Number(employee.hourly_rate || 0) > 0) {
-                            return Number(employee.hourly_rate).toFixed(2);
+                            return formatNum(Number(employee.hourly_rate));
                           }
                           // Calculate based on basic salary and actual total days in month
                           if (Number(employee.basic_salary || 0) > 0 && 
@@ -1237,7 +1238,7 @@ export default function EmployeeShowPage() {
                             const currentMonthDays = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
                             const calculatedRate = Number(employee.basic_salary) / 
                               (currentMonthDays * Number(employee.contract_hours_per_day));
-                            return calculatedRate.toFixed(2);
+                            return formatNum(calculatedRate);
                           }
                           return '0.00';
                         })()}
@@ -1247,7 +1248,7 @@ export default function EmployeeShowPage() {
                       <div className="flex justify-between border-b pb-2">
                         <dt className="text-sm font-medium">{t('employee.salary.foodAllowance')}</dt>
                         <dd className="text-sm">
-                          {t('employee.currency.symbol')} {Number(employee.food_allowance).toFixed(2)}
+                          {t('employee.currency.symbol')} {Number(employee.food_allowance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </dd>
                       </div>
                     )}
@@ -1255,7 +1256,7 @@ export default function EmployeeShowPage() {
                       <div className="flex justify-between border-b pb-2">
                         <dt className="text-sm font-medium">{t('employee.salary.housingAllowance')}</dt>
                         <dd className="text-sm">
-                          {t('employee.currency.symbol')} {Number(employee.housing_allowance).toFixed(2)}
+                          {t('employee.currency.symbol')} {Number(employee.housing_allowance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </dd>
                       </div>
                     )}
@@ -1263,7 +1264,7 @@ export default function EmployeeShowPage() {
                       <div className="flex justify-between border-b pb-2">
                         <dt className="text-sm font-medium">{t('employee.salary.transportAllowance')}</dt>
                         <dd className="text-sm">
-                          {t('employee.currency.symbol')} {Number(employee.transport_allowance).toFixed(2)}
+                          {t('employee.currency.symbol')} {Number(employee.transport_allowance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </dd>
                       </div>
                     )}
@@ -1279,12 +1280,12 @@ export default function EmployeeShowPage() {
                       <div className="flex justify-between border-b pb-2">
                         <dt className="text-sm font-medium">{t('employee.salary.overtimeFixedRate')}</dt>
                         <dd className="text-sm">
-                          {t('employee.currency.symbol')} {Number(employee.overtime_fixed_rate).toFixed(2)}/hr
+                          {t('employee.currency.symbol')} {Number(employee.overtime_fixed_rate).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/hr
                         </dd>
                       </div>
                     )}
                     <div className="flex justify-between border-b pb-2">
-                      <dt className="text-sm font-medium">{t('employee.salary.contractDaysPerMonth')} (Auto-set)</dt>
+                      <dt className="text-sm font-medium">{t('employee.salary.contractDaysPerMonth')}</dt>
                       <dd className="text-sm">
                         {(() => {
                           // Show actual total days in current month
