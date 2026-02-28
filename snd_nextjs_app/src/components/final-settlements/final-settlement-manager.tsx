@@ -327,8 +327,8 @@ export function FinalSettlementManager({
         )}
       </div>
 
-      {/* Unpaid Salary Alert */}
-      {unpaidSalaryInfo && unpaidSalaryInfo.unpaidMonths > 0 && (
+      {/* Salary Status (Unpaid Alert or Paid Status - same section) */}
+      {unpaidSalaryInfo && (
         <UnpaidSalaryAlert unpaidSalaryInfo={unpaidSalaryInfo} />
       )}
 

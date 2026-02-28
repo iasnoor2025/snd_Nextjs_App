@@ -103,9 +103,6 @@ export class FinalSettlementService {
    */
   static async getUnpaidSalaryInfo(employeeId: number): Promise<UnpaidSalaryInfo> {
     try {
-      // New rule: unpaid salary always starts from October 2025 (paid up to September 2025)
-      // We intentionally ignore any manual adjustments or payroll history for this calculation.
-
       // Get employee basic salary and hire date
       const employee = await db
         .select({
@@ -145,11 +142,44 @@ export class FinalSettlementService {
         ? parseFloat(latestSalary[0]!.allowances || '0')
         : 0;
 
-      // Force: unpaid starts from September 2025 (meaning paid up to August 2025)
-      const lastPaidMonth: number = 8; // August
-      const lastPaidYear: number = 2025;
-      const startDate = new Date(2025, 8, 1); // Sep 1, 2025
-      // Include the start month (September) in the count
+      // Get latest PAID payroll for this employee (based on actual payroll records)
+      const paidPayrolls = await db
+        .select({
+          month: payrolls.month,
+          year: payrolls.year,
+          paidAt: payrolls.paidAt,
+        })
+        .from(payrolls)
+        .where(and(eq(payrolls.employeeId, employeeId), eq(payrolls.status, 'paid')))
+        .orderBy(desc(payrolls.year), desc(payrolls.month))
+        .limit(1);
+
+      let lastPaidMonth: number;
+      let lastPaidYear: number;
+      let lastPaidDate: string | undefined;
+      let startDate: Date;
+
+      if (paidPayrolls.length > 0) {
+        const latest = paidPayrolls[0]!;
+        lastPaidMonth = latest.month;
+        lastPaidYear = latest.year;
+        lastPaidDate = latest.paidAt
+          ? (typeof latest.paidAt === 'string' ? latest.paidAt : latest.paidAt.toISOString().split('T')[0])
+          : new Date(lastPaidYear, lastPaidMonth - 1, 1).toISOString().split('T')[0];
+        // Unpaid starts from the month AFTER last paid
+        const nextMonth = lastPaidMonth === 12 ? 1 : lastPaidMonth + 1;
+        const nextYear = lastPaidMonth === 12 ? lastPaidYear + 1 : lastPaidYear;
+        startDate = new Date(nextYear, nextMonth - 1, 1);
+      } else {
+        // No paid payrolls - unpaid from hire date, last payment = Never
+        const hireMonth = hireDate.getMonth() + 1;
+        const hireYear = hireDate.getFullYear();
+        startDate = new Date(hireYear, hireMonth - 1, 1);
+        lastPaidDate = undefined;
+        lastPaidMonth = hireMonth > 1 ? hireMonth - 1 : 12;
+        lastPaidYear = hireMonth > 1 ? hireYear : hireYear - 1;
+      }
+
       const monthsFromStart = this.calculateMonthsBetween(startDate, today);
       const totalUnpaidMonths = Math.max(0, monthsFromStart + 1);
 
@@ -161,7 +191,7 @@ export class FinalSettlementService {
         unpaidAmount,
         lastPaidMonth,
         lastPaidYear,
-        lastPaidDate: new Date(lastPaidYear, lastPaidMonth - 1, 1).toISOString().split('T')[0],
+        lastPaidDate: lastPaidDate ?? (paidPayrolls.length > 0 ? new Date(lastPaidYear, lastPaidMonth - 1, 1).toISOString().split('T')[0] : undefined),
         totalUnpaidMonths: Math.max(0, totalUnpaidMonths),
       };
     } catch (error) {
