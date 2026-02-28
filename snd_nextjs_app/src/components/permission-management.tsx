@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ChevronDown, ChevronRight, Shield, Users, Settings, FileText, Calendar, Truck, Wrench, Building, ChartBar, UserCheck, CreditCard, Clock, FolderOpen, Briefcase, MapPin, Shield as Safety, DollarSign, Receipt, Wallet } from 'lucide-react';
+import { formatPermissionName } from '@/lib/rbac/permission-format';
 
 interface Permission {
   id: number;
@@ -418,7 +419,7 @@ export function PermissionManagement({
                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                            {categoryPermissions.map(permission => {
                              const isSelected = selectedPermissions.some(p => p.id === permission.id);
-                             const [action, subject] = permission.name.split('.');
+                             const displayName = formatPermissionName(permission.name);
                              
                              return (
                                <div
@@ -433,10 +434,7 @@ export function PermissionManagement({
                                  />
                                  <div className="flex-1 min-w-0">
                                    <div className="text-sm font-medium truncate">
-                                     {permission.name}
-                                   </div>
-                                   <div className="text-xs text-muted-foreground">
-                                     {action} • {subject}
+                                     {displayName}
                                    </div>
                                  </div>
                                </div>

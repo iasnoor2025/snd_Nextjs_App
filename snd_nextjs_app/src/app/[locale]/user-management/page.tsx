@@ -39,6 +39,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PermissionManagement } from '@/components/permission-management';
 import { useTranslations } from '@/hooks/use-translations';
 import { useRBAC } from '@/lib/rbac/rbac-context';
+import { formatPermissionName } from '@/lib/rbac/permission-format';
 import {
   Edit,
   Eye,
@@ -1199,7 +1200,7 @@ export default function UserManagementPage() {
                                         variant="outline"
                                         className="text-xs"
                                       >
-                                        {permission.name}
+                                        {formatPermissionName(permission.name)}
                                       </Badge>
                                     ))
                                   ) : null}
@@ -1768,7 +1769,7 @@ export default function UserManagementPage() {
                               htmlFor={`permission-${permission.id}`} 
                               className="text-sm font-medium text-gray-700 cursor-pointer"
                             >
-                              {permission.name}
+                              {formatPermissionName(permission.name)}
                             </Label>
                           </div>
                         ))}
