@@ -248,6 +248,13 @@ export const PermissionConfigs = {
     delete: { action: 'delete' as Action, subject: 'Admin' },
     manage: { action: 'manage' as Action, subject: 'Admin' },
   },
+  pettyCash: {
+    read: { action: 'read' as Action, subject: 'PettyCash' },
+    create: { action: 'create' as Action, subject: 'PettyCash' },
+    update: { action: 'update' as Action, subject: 'PettyCash' },
+    delete: { action: 'delete' as Action, subject: 'PettyCash' },
+    manage: { action: 'manage' as Action, subject: 'PettyCash' },
+  },
   finalSettlement: {
     read: { action: 'read' as Action, subject: 'FinalSettlement' },
     create: { action: 'create' as Action, subject: 'FinalSettlement' },

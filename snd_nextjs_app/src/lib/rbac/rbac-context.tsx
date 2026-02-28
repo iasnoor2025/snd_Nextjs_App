@@ -276,6 +276,8 @@ function canAccessRouteClient(user: User, route: string): boolean {
     '/salary-increments': { action: 'read', subject: 'SalaryIncrement', roles: [] },
     '/reporting': { action: 'read', subject: 'Report', roles: [] },
     '/document-management': { action: 'read', subject: 'Document', roles: [] },
+    '/finance/petty-cash': { action: 'read', subject: 'PettyCash', roles: [] },
+    '/modules/finance/petty-cash': { action: 'read', subject: 'PettyCash', roles: [] },
     '/admin': { action: 'manage', subject: 'Admin', roles: [] },
     '/reports': { action: 'read', subject: 'Report', roles: [] },
     // Keep old /modules/ routes for backward compatibility during migration

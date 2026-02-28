@@ -564,7 +564,8 @@ export default function UserManagementPage() {
       'iqama-renewal': 'Iqama Management',
       'iqama-expiry': 'Iqama Management',
       'advance-payment': 'Advance Management',
-      'advance-history': 'Advance Management'
+      'advance-history': 'Advance Management',
+      'PettyCash': 'Petty Cash'
     };
 
     // Check direct mappings first
@@ -658,6 +659,8 @@ export default function UserManagementPage() {
       case 'iqama-renewal':
       case 'iqama-expiry':
         return 'Iqama Management';
+      case 'PettyCash':
+        return 'Petty Cash';
       default:
         // Fallback categorization based on subject
         const fallbackMappings: Record<string, string> = {
@@ -684,7 +687,8 @@ export default function UserManagementPage() {
           'Location': 'Company & Safety',
           'Skill': 'Department & Organization',
           'Training': 'Department & Organization',
-          'Iqama': 'Iqama Management'
+          'Iqama': 'Iqama Management',
+          'PettyCash': 'Petty Cash'
         };
 
         return (subject && fallbackMappings[subject]) || 'Core System';

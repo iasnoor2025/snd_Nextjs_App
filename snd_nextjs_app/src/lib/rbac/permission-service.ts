@@ -212,6 +212,19 @@ export async function checkUserPermission(
       setCachedPermissionCheck(userId, action, subject, result);
       return result;
     }
+    // PettyCash: allow read with read.Payroll or manage.Payroll; create/update/delete with manage.Payroll
+    if (subject === 'PettyCash') {
+      if (directPermissions.includes('manage.Payroll')) {
+        const result = { hasPermission: true, userRole: roleName };
+        setCachedPermissionCheck(userId, action, subject, result);
+        return result;
+      }
+      if (action === 'read' && directPermissions.includes('read.Payroll')) {
+        const result = { hasPermission: true, userRole: roleName };
+        setCachedPermissionCheck(userId, action, subject, result);
+        return result;
+      }
+    }
 
     // Check role permissions
     if (!roleId) {
@@ -249,10 +262,15 @@ export async function checkUserPermission(
     }
 
     // Check for broader permissions (e.g., if user has 'manage.employee', they can 'read.employee')
+    // PettyCash: allow read with read.Payroll or manage.Payroll; create/update/delete only with manage.Payroll
     const broaderPermissions = rolePermissions.filter(p => {
       if (p === 'manage.all') return true;
       if (p === `manage.${subject}`) return true;
       if (p === specificRolePermission) return true;
+      if (subject === 'PettyCash') {
+        if (p === 'manage.Payroll') return true;
+        if (action === 'read' && p === 'read.Payroll') return true;
+      }
       return false;
     });
 

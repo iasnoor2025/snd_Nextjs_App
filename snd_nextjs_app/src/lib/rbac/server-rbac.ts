@@ -174,7 +174,12 @@ export const PERMISSION_MAPPING: Record<string, string[]> = {
   'delete.Advance': ['delete.Advance', 'delete.advance'],
   'manage.Advance': ['manage.Advance', 'manage.advance'],
 
-
+  // PettyCash permissions
+  'read.PettyCash': ['read.PettyCash', 'read.pettycash'],
+  'create.PettyCash': ['create.PettyCash', 'create.pettycash'],
+  'update.PettyCash': ['update.PettyCash', 'update.pettycash'],
+  'delete.PettyCash': ['delete.PettyCash', 'delete.pettycash'],
+  'manage.PettyCash': ['manage.PettyCash', 'manage.pettycash'],
 
   // Assignment permissions
   'read.Assignment': ['read.Assignment', 'read.assignment'],
@@ -541,6 +546,8 @@ export async function canAccessRoute(user: User, route: string): Promise<boolean
 
 
     '/modules/document-management': { action: 'read', subject: 'Document', roles: [] },
+    '/finance/petty-cash': { action: 'read', subject: 'PettyCash', roles: [] },
+    '/modules/finance/petty-cash': { action: 'read', subject: 'PettyCash', roles: [] },
     '/admin': { action: 'read', subject: 'Settings', roles: [] },
     '/reports': { action: 'read', subject: 'Report', roles: [] },
   };

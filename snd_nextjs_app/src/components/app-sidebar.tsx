@@ -19,6 +19,7 @@ import {
   Wrench,
   Car,
   Settings,
+  Wallet,
   type LucideIcon,
 } from 'lucide-react';
 import * as React from 'react';
@@ -163,6 +164,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: t('sidebar.payrollManagement'),
       url: `/${locale}/payroll-management`,
       icon: BarChart3,
+    },
+    {
+      title: t('sidebar.pettyCashManagement'),
+      url: `/${locale}/finance/petty-cash`,
+      icon: Wallet,
     },
     {
       title: t('sidebar.salaryIncrements'),

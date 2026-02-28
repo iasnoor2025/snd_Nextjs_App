@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ChevronDown, ChevronRight, Shield, Users, Settings, FileText, Calendar, Truck, Wrench, Building, ChartBar, UserCheck, CreditCard, Clock, FolderOpen, Briefcase, MapPin, Shield as Safety, DollarSign, Receipt } from 'lucide-react';
+import { ChevronDown, ChevronRight, Shield, Users, Settings, FileText, Calendar, Truck, Wrench, Building, ChartBar, UserCheck, CreditCard, Clock, FolderOpen, Briefcase, MapPin, Shield as Safety, DollarSign, Receipt, Wallet } from 'lucide-react';
 
 interface Permission {
   id: number;
@@ -85,6 +85,11 @@ const PERMISSION_CATEGORIES = {
     icon: DollarSign,
     color: 'bg-blue-100 text-blue-800',
     permissions: ['Advance', 'advance-payment', 'advance-history']
+  },
+  'Petty Cash': {
+    icon: Wallet,
+    color: 'bg-sky-100 text-sky-800',
+    permissions: ['PettyCash']
   },
   'Timesheet Management': {
     icon: Clock,
@@ -172,7 +177,8 @@ export function PermissionManagement({
       'iqama-renewal': 'Iqama Management',
       'iqama-expiry': 'Iqama Management',
       'advance-payment': 'Advance Management',
-      'advance-history': 'Advance Management'
+      'advance-history': 'Advance Management',
+      'PettyCash': 'Petty Cash'
     };
 
     // Check direct mappings first
@@ -215,7 +221,8 @@ export function PermissionManagement({
       'Iqama': 'Iqama Management',
       'FinalSettlement': 'Final Settlement Management',
       'advance-payment': 'Advance Management',
-      'advance-history': 'Advance Management'
+      'advance-history': 'Advance Management',
+      'PettyCash': 'Petty Cash'
     };
 
     return (subject && fallbackMappings[subject]) || 'Core System';

@@ -52,6 +52,11 @@ import {
   projectFuel,
   projectExpenses,
   projectSubcontractors,
+  pettyCashAccounts,
+  pettyCashTransactions,
+  expenseCategories,
+  companies,
+  locations,
   systemSettings,
   reportTemplates,
   scheduledReports,
@@ -757,6 +762,49 @@ export const projectExpensesRelations = relations(projectExpenses, ({ one }) => 
   }),
   assignedTo: one(employees, {
     fields: [projectExpenses.assignedTo],
+    references: [employees.id],
+  }),
+}));
+
+export const pettyCashAccountsRelations = relations(pettyCashAccounts, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [pettyCashAccounts.companyId],
+    references: [companies.id],
+  }),
+  location: one(locations, {
+    fields: [pettyCashAccounts.locationId],
+    references: [locations.id],
+  }),
+  createdByEmployee: one(employees, {
+    fields: [pettyCashAccounts.createdBy],
+    references: [employees.id],
+  }),
+  transactions: many(pettyCashTransactions),
+}));
+
+export const pettyCashTransactionsRelations = relations(pettyCashTransactions, ({ one }) => ({
+  account: one(pettyCashAccounts, {
+    fields: [pettyCashTransactions.accountId],
+    references: [pettyCashAccounts.id],
+  }),
+  expenseCategory: one(expenseCategories, {
+    fields: [pettyCashTransactions.expenseCategoryId],
+    references: [expenseCategories.id],
+  }),
+  project: one(projects, {
+    fields: [pettyCashTransactions.projectId],
+    references: [projects.id],
+  }),
+  employee: one(employees, {
+    fields: [pettyCashTransactions.employeeId],
+    references: [employees.id],
+  }),
+  createdByEmployee: one(employees, {
+    fields: [pettyCashTransactions.createdBy],
+    references: [employees.id],
+  }),
+  approvedByEmployee: one(employees, {
+    fields: [pettyCashTransactions.approvedBy],
     references: [employees.id],
   }),
 }));

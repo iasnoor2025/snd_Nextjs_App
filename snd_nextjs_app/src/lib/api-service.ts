@@ -757,6 +757,115 @@ class ApiService {
   }
 
   // ========================================
+  // PETTY CASH (Finance)
+  // ========================================
+
+  static async getPettyCashAccounts(params?: { active?: boolean }) {
+    return this.get('/petty-cash/accounts', params, { errorMessage: 'Failed to load petty cash accounts' });
+  }
+
+  static async getPettyCashAccount(id: number) {
+    return this.get(`/petty-cash/accounts/${id}`, undefined, { errorMessage: 'Failed to load petty cash account' });
+  }
+
+  static async createPettyCashAccount(data: {
+    name: string;
+    description?: string;
+    companyId?: number | null;
+    locationId?: number | null;
+    currency?: string;
+    openingBalance?: number;
+  }) {
+    return this.post('/petty-cash/accounts', data, {
+      toastMessage: 'Petty cash account created',
+      errorMessage: 'Failed to create petty cash account',
+    });
+  }
+
+  static async updatePettyCashAccount(
+    id: number,
+    data: {
+      name?: string;
+      description?: string;
+      companyId?: number | null;
+      locationId?: number | null;
+      currency?: string;
+      openingBalance?: number;
+      isActive?: boolean;
+    }
+  ) {
+    return this.put(`/petty-cash/accounts/${id}`, data, {
+      toastMessage: 'Petty cash account updated',
+      errorMessage: 'Failed to update petty cash account',
+    });
+  }
+
+  static async deletePettyCashAccount(id: number) {
+    return this.delete(`/petty-cash/accounts/${id}`, {
+      toastMessage: 'Petty cash account deactivated',
+      errorMessage: 'Failed to deactivate petty cash account',
+    });
+  }
+
+  static async getPettyCashTransactions(params?: {
+    accountId?: number;
+    projectId?: number;
+    status?: string;
+    type?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    search?: string;
+  }) {
+    return this.get('/petty-cash/transactions', params, { errorMessage: 'Failed to load petty cash transactions' });
+  }
+
+  static async createPettyCashTransaction(data: {
+    accountId: number;
+    transactionDate: string;
+    type: 'IN' | 'OUT' | 'EXPENSE' | 'ADJUSTMENT';
+    amount: number;
+    description?: string;
+    reference?: string;
+    receiptNumber?: string;
+    expenseCategoryId?: number | null;
+    projectId?: number | null;
+    employeeId?: number | null;
+  }) {
+    return this.post('/petty-cash/transactions', data, {
+      toastMessage: 'Transaction recorded',
+      errorMessage: 'Failed to record transaction',
+    });
+  }
+
+  static async updatePettyCashTransaction(
+    id: number,
+    data: Partial<{
+      transactionDate: string;
+      type: string;
+      amount: number;
+      description: string;
+      reference: string;
+      receiptNumber: string;
+      expenseCategoryId: number | null;
+      projectId: number | null;
+      employeeId: number | null;
+      status: string;
+    }>
+  ) {
+    return this.put(`/petty-cash/transactions/${id}`, data, {
+      toastMessage: 'Transaction updated',
+      errorMessage: 'Failed to update transaction',
+    });
+  }
+
+  static async deletePettyCashTransaction(id: number) {
+    return this.delete(`/petty-cash/transactions/${id}`, {
+      toastMessage: 'Transaction deleted',
+      errorMessage: 'Failed to delete transaction',
+    });
+  }
+
+  // ========================================
   // FILE UPLOAD
   // ========================================
 

@@ -32,6 +32,7 @@ import enDesignations from '@/dictionaries/en/designations.json';
 import enRoles from '@/dictionaries/en/roles.json';
 import enProjectTemplates from '@/dictionaries/en/project-templates.json';
 import enTranslate from '@/dictionaries/en/translate.json';
+import enPettyCash from '@/dictionaries/en/pettyCash.json';
 
 import arCommon from '@/dictionaries/ar/common.json';
 import arAuth from '@/dictionaries/ar/auth.json';
@@ -64,6 +65,7 @@ import arDesignations from '@/dictionaries/ar/designations.json';
 import arRoles from '@/dictionaries/ar/roles.json';
 import arProjectTemplates from '@/dictionaries/ar/project-templates.json';
 import arTranslate from '@/dictionaries/ar/translate.json';
+import arPettyCash from '@/dictionaries/ar/pettyCash.json';
 
 const dictionaries = {
   en: {
@@ -98,6 +100,7 @@ const dictionaries = {
     roles: enRoles,
     projectTemplates: enProjectTemplates,
     translate: enTranslate,
+    pettyCash: enPettyCash,
   },
   ar: {
     common: arCommon,
@@ -131,6 +134,7 @@ const dictionaries = {
     roles: arRoles,
     projectTemplates: arProjectTemplates,
     translate: arTranslate,
+    pettyCash: arPettyCash,
   },
 };
 

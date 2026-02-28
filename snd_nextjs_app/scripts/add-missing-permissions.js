@@ -33,6 +33,7 @@ const MISSING_PERMISSIONS = [
   'read.Safety', 'create.Safety', 'update.Safety', 'delete.Safety', 'manage.Safety',
   'read.SalaryIncrement', 'create.SalaryIncrement', 'update.SalaryIncrement', 'delete.SalaryIncrement', 'manage.SalaryIncrement', 'approve.SalaryIncrement', 'reject.SalaryIncrement', 'apply.SalaryIncrement',
   'read.Advance', 'create.Advance', 'update.Advance', 'delete.Advance', 'manage.Advance',
+  'read.PettyCash', 'create.PettyCash', 'update.PettyCash', 'delete.PettyCash', 'manage.PettyCash',
   'read.Assignment', 'create.Assignment', 'update.Assignment', 'delete.Assignment', 'manage.Assignment',
   'read.Report', 'create.Report', 'update.Report', 'delete.Report', 'manage.Report', 'export.Report',
   'read.Document', 'create.Document', 'update.Document', 'delete.Document', 'manage.Document', 'upload.Document', 'download.Document',

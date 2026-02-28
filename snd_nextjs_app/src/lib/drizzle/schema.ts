@@ -2196,6 +2196,116 @@ export const expenseCategories = pgTable(
   ]
 );
 
+export const pettyCashAccounts = pgTable(
+  'petty_cash_accounts',
+  {
+    id: serial().primaryKey().notNull(),
+    name: text().notNull(),
+    description: text(),
+    companyId: integer('company_id'),
+    locationId: integer('location_id'),
+    currency: text().default('SAR').notNull(),
+    openingBalance: numeric('opening_balance', { precision: 12, scale: 2 }).default('0').notNull(),
+    isActive: boolean('is_active').default(true).notNull(),
+    createdBy: integer('created_by'),
+    createdAt: date('created_at')
+      .default(sql`CURRENT_DATE`)
+      .notNull(),
+    updatedAt: date('updated_at').notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.companyId],
+      foreignColumns: [companies.id],
+      name: 'petty_cash_accounts_company_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+    foreignKey({
+      columns: [table.locationId],
+      foreignColumns: [locations.id],
+      name: 'petty_cash_accounts_location_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [employees.id],
+      name: 'petty_cash_accounts_created_by_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+  ]
+);
+
+export const pettyCashTransactions = pgTable(
+  'petty_cash_transactions',
+  {
+    id: serial().primaryKey().notNull(),
+    accountId: integer('account_id').notNull(),
+    transactionDate: date('transaction_date').notNull(),
+    type: text().notNull(),
+    amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
+    description: text(),
+    reference: text(),
+    receiptNumber: text('receipt_number'),
+    expenseCategoryId: integer('expense_category_id'),
+    projectId: integer('project_id'),
+    employeeId: integer('employee_id'),
+    createdBy: integer('created_by'),
+    approvedBy: integer('approved_by'),
+    status: text().default('pending').notNull(),
+    createdAt: date('created_at')
+      .default(sql`CURRENT_DATE`)
+      .notNull(),
+    updatedAt: date('updated_at').notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.accountId],
+      foreignColumns: [pettyCashAccounts.id],
+      name: 'petty_cash_transactions_account_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('cascade'),
+    foreignKey({
+      columns: [table.expenseCategoryId],
+      foreignColumns: [expenseCategories.id],
+      name: 'petty_cash_transactions_expense_category_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+    foreignKey({
+      columns: [table.projectId],
+      foreignColumns: [projects.id],
+      name: 'petty_cash_transactions_project_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+    foreignKey({
+      columns: [table.employeeId],
+      foreignColumns: [employees.id],
+      name: 'petty_cash_transactions_employee_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [employees.id],
+      name: 'petty_cash_transactions_created_by_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+    foreignKey({
+      columns: [table.approvedBy],
+      foreignColumns: [employees.id],
+      name: 'petty_cash_transactions_approved_by_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+  ]
+);
+
 export const equipmentDocuments = pgTable(
   'equipment_documents',
   {
