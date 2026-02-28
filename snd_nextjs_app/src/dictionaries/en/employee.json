@@ -563,7 +563,19 @@
     "requestedBy": "Requested By",
     "approvedBy": "Approved By",
     "loadingSalaryHistory": "Loading salary history...",
-    "noSalaryHistory": "No salary history available"
+    "noSalaryHistory": "No salary history available",
+    "paidSalaryMonths": "Paid Salary Months",
+    "paidSalaryMonthsDescription": "Months when salary was paid via bank transfer",
+    "paidMonth": "Month",
+    "finalAmount": "Final Amount",
+    "loadingPaidMonths": "Loading paid months...",
+    "noPaidMonths": "No paid salary records found",
+    "howToAddPaidMonths": "To add records: Create payroll in Payroll Management, approve it, then process the payment (bank transfer). Records will appear here once marked as paid.",
+    "managePayroll": "Manage Payroll",
+    "viewPayrolls": "View Payrolls",
+    "createPayroll": "Create Payroll",
+    "actions": "Actions",
+    "viewPayslip": "View Payslip"
   },
 
   "timesheet": {

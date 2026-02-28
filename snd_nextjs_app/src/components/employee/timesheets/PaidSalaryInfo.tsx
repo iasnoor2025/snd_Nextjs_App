@@ -1,8 +1,105 @@
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Receipt, Calendar, DollarSign } from 'lucide-react';
+import { Loader2, Receipt, Calendar, FileText } from 'lucide-react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
+interface PaidMonth {
+  id: number;
+  month: number;
+  year: number;
+  final_amount: number;
+  paid_at: string | null;
+  payment_method: string | null;
+}
+
+function PaidSalaryInfoEmpty({
+  employeeId,
+  t,
+}: {
+  employeeId: number;
+  t: (key: string, fallback?: string) => string;
+}) {
+  const params = useParams();
+  const locale = (params?.locale as string) || 'en';
+  const [paidMonths, setPaidMonths] = useState<PaidMonth[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+
+  useEffect(() => {
+    const fetchPaidMonths = async () => {
+      try {
+        const response = await fetch(
+          `/api/payroll?employee_id=${employeeId}&status=paid&limit=50`
+        );
+        const data = await response.json();
+        if (data.success && data.data?.length) {
+          setPaidMonths(data.data);
+        }
+      } catch {
+        setPaidMonths([]);
+      } finally {
+        setLoadingHistory(false);
+      }
+    };
+    fetchPaidMonths();
+  }, [employeeId]);
+
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'SAR' }).format(amount);
+
+  return (
+    <Card className="mb-4">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Receipt className="h-5 w-5" />
+          {t('employee.paidSalary.title', 'Paid Salary Information')}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-center py-2 text-muted-foreground">
+          {t('employee.paidSalary.noData', 'No paid salary information available for this month')}
+        </div>
+        {loadingHistory ? (
+          <div className="flex justify-center py-3">
+            <Loader2 className="h-4 w-4 animate-spin" />
+          </div>
+        ) : paidMonths.length > 0 ? (
+          <div className="mt-3 border-t pt-3">
+            <p className="text-xs font-medium text-muted-foreground mb-2">
+              {t('employee.salary.paidSalaryMonths', 'Paid Salary Months')}:
+            </p>
+            <div className="space-y-1.5 max-h-40 overflow-y-auto">
+              {paidMonths.map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-center justify-between text-sm py-1.5 px-2 rounded bg-muted/50"
+                >
+                  <span>
+                    {new Date(p.year, p.month - 1).toLocaleDateString('en-US', {
+                      month: 'short',
+                      year: 'numeric',
+                    })}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{formatCurrency(Number(p.final_amount || 0))}</span>
+                    <Link href={`/${locale}/payroll-management/${p.id}/payslip`}>
+                      <Button variant="ghost" size="sm" className="h-7 px-2">
+                        <FileText className="h-3.5 w-3" />
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
 
 interface PaidSalaryInfoProps {
   employeeId: number;
@@ -147,19 +244,7 @@ export default function PaidSalaryInfo({ employeeId, month, year }: PaidSalaryIn
 
   if (!payrollData) {
     return (
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Receipt className="h-5 w-5" />
-            {t('employee.paidSalary.title', 'Paid Salary Information')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-4 text-muted-foreground">
-            {t('employee.paidSalary.noData', 'No paid salary information available for this month')}
-          </div>
-        </CardContent>
-      </Card>
+      <PaidSalaryInfoEmpty employeeId={employeeId} t={t} />
     );
   }
 

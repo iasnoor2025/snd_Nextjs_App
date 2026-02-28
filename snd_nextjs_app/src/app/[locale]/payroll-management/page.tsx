@@ -4,6 +4,16 @@
 export const dynamic = 'force-dynamic';
 
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { ProtectedRoute } from '@/components/protected-route';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -48,6 +58,7 @@ import {
 import { format } from 'date-fns';
 import {
   Ban,
+  CalendarIcon,
   CheckCircle,
   ChevronLeft,
   ChevronRight,
@@ -67,7 +78,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 interface PayrollItem {
   id: number;
   payroll_id: number;
@@ -137,6 +148,7 @@ interface PayrollResponse {
 export default function PayrollManagementPage() {
   const { hasPermission } = useRBAC();
   const params = useParams();
+  const searchParams = useSearchParams();
   const locale = params?.locale as string || 'en';
   const { t,isRTL } = useI18n();
   const [payrolls, setPayrolls] = useState<PayrollResponse | null>(null);
@@ -147,32 +159,53 @@ export default function PayrollManagementPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [monthFilter, setMonthFilter] = useState<Date | undefined>(undefined);
   const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
+  const [isGenerateMonthDialogOpen, setIsGenerateMonthDialogOpen] = useState(false);
+  const [generateMonth, setGenerateMonth] = useState<string>(
+    () => `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
+  );
   const [generating, setGenerating] = useState(false);
-  const [employeeFilter, setEmployeeFilter] = useState<string>('all');
+  const [generatingMonth, setGeneratingMonth] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [payrollToDelete, setPayrollToDelete] = useState<number | null>(null);
+  const [payrollToCancel, setPayrollToCancel] = useState<number | null>(null);
+  const [employeeFilter, setEmployeeFilter] = useState<string>(() => searchParams?.get('employee_id') || 'all');
   const [translatedNames, setTranslatedNames] = useState<{ [key: string]: string }>({})
+
+  // Sync employee_id from URL on mount
+  useEffect(() => {
+    const empId = searchParams?.get('employee_id');
+    if (empId) setEmployeeFilter(empId);
+  }, [searchParams]);
 
   // Fetch payrolls from API
   const fetchPayrolls = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams({
+      const apiParams = new URLSearchParams({
         page: currentPage.toString(),
-        per_page: '10',
+        limit: '10',
       });
 
       if (statusFilter !== 'all') {
-        params.append('status', statusFilter);
+        apiParams.append('status', statusFilter);
       }
 
       if (monthFilter) {
-        params.append('month', monthFilter.toISOString().slice(0, 7)); // Format as YYYY-MM
+        apiParams.append('month', monthFilter.toISOString().slice(5, 7)); // MM
+        apiParams.append('year', monthFilter.toISOString().slice(0, 4)); // YYYY
       }
 
       if (searchTerm) {
-        params.append('search', searchTerm);
+        apiParams.append('search', searchTerm);
       }
 
-      const response = await fetch(`/api/payroll?${params}`);
+      if (employeeFilter && employeeFilter !== 'all') {
+        apiParams.append('employee_id', employeeFilter);
+      }
+
+      const response = await fetch(`/api/payroll?${apiParams}`);
       const data = await response.json();
 
       if (data.success) {
@@ -249,7 +282,7 @@ export default function PayrollManagementPage() {
   useEffect(() => {
     fetchPayrolls();
     fetchEmployees();
-  }, [currentPage, statusFilter, monthFilter, searchTerm]);
+  }, [currentPage, statusFilter, monthFilter, searchTerm, employeeFilter]);
 
   const handleGenerateApproved = async () => {
     try {
@@ -275,6 +308,35 @@ export default function PayrollManagementPage() {
       console.error('Error generating approved payrolls:', err);
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleGenerateFromMonth = async () => {
+    if (!generateMonth) {
+      toast.error(t('payroll.selectMonth'));
+      return;
+    }
+    const [year, month] = generateMonth.split('-').map(Number);
+    try {
+      setGeneratingMonth(true);
+      const response = await fetch('/api/payroll/generate-from-month', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ month, year }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success(data.message);
+        setIsGenerateMonthDialogOpen(false);
+        fetchPayrolls();
+      } else {
+        toast.error(data.message || 'Failed to generate payroll');
+      }
+    } catch (err) {
+      toast.error('Failed to generate payroll from month');
+      console.error(err);
+    } finally {
+      setGeneratingMonth(false);
     }
   };
 
@@ -325,21 +387,22 @@ export default function PayrollManagementPage() {
     }
   };
 
-  const handleCancel = async (payrollId: number) => {
-    if (!confirm(t('payroll.confirm.cancel'))) {
-      return;
-    }
+  const handleCancelClick = (payrollId: number) => {
+    setPayrollToCancel(payrollId);
+    setCancelDialogOpen(true);
+  };
 
+  const handleCancel = async () => {
+    if (!payrollToCancel) return;
     try {
-      const response = await fetch(`/api/payroll/${payrollId}/cancel`, {
+      const response = await fetch(`/api/payroll/${payrollToCancel}/cancel`, {
         method: 'POST',
       });
-
       const data = await response.json();
-
       if (data.success) {
         toast.success(t('payroll.success.cancel'));
-        fetchPayrolls(); // Refresh the list
+        setCancelDialogOpen(false);
+        fetchPayrolls();
       } else {
         toast.error(data.message || t('payroll.error.cancel'));
       }
@@ -349,21 +412,22 @@ export default function PayrollManagementPage() {
     }
   };
 
-  const handleDelete = async (payrollId: number) => {
-    if (!confirm(t('payroll.confirm.delete'))) {
-      return;
-    }
+  const handleDeleteClick = (payrollId: number) => {
+    setPayrollToDelete(payrollId);
+    setDeleteDialogOpen(true);
+  };
 
+  const handleDelete = async () => {
+    if (!payrollToDelete) return;
     try {
-      const response = await fetch(`/api/payroll/${payrollId}`, {
+      const response = await fetch(`/api/payroll/${payrollToDelete}`, {
         method: 'DELETE',
       });
-
       const data = await response.json();
-
       if (data.success) {
         toast.success(t('payroll.success.delete'));
-        fetchPayrolls(); // Refresh the list
+        setDeleteDialogOpen(false);
+        fetchPayrolls();
       } else {
         toast.error(data.message || t('payroll.error.delete'));
       }
@@ -373,31 +437,27 @@ export default function PayrollManagementPage() {
     }
   };
 
-  const handleBulkDelete = async () => {
+  const handleBulkDeleteClick = () => {
     if (selectedPayrolls.size === 0) {
       toast.error(t('payroll.error.selectPayrolls'));
       return;
     }
+    setBulkDeleteDialogOpen(true);
+  };
 
-    if (!confirm(t('payroll.confirm.bulkDelete', { count: selectedPayrolls.size.toString() }))) {
-      return;
-    }
-
+  const handleBulkDelete = async () => {
     try {
       const response = await fetch('/api/payroll/bulk-delete', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: Array.from(selectedPayrolls) }),
       });
-
       const data = await response.json();
-
       if (data.success) {
         toast.success(data.message);
+        setBulkDeleteDialogOpen(false);
         setSelectedPayrolls(new Set());
-        fetchPayrolls(); // Refresh the list
+        fetchPayrolls();
       } else {
         toast.error(data.message || t('payroll.error.bulkDelete'));
       }
@@ -504,6 +564,53 @@ export default function PayrollManagementPage() {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+              <Dialog open={isGenerateMonthDialogOpen} onOpenChange={setIsGenerateMonthDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <CalendarIcon className="h-4 w-4 mr-2" />
+                    {t('payroll.generateForMonth')}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{t('payroll.generateForMonthTitle')}</DialogTitle>
+                    <DialogDescription>
+                      {t('payroll.generateForMonthDescription')}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="generate-month">{t('payroll.selectMonth')}</Label>
+                      <Input
+                        id="generate-month"
+                        type="month"
+                        value={generateMonth}
+                        onChange={(e) => setGenerateMonth(e.target.value)}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsGenerateMonthDialogOpen(false)}
+                      disabled={generatingMonth}
+                    >
+                      {t('payroll.cancel')}
+                    </Button>
+                    <Button onClick={handleGenerateFromMonth} disabled={generatingMonth}>
+                      {generatingMonth ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          {t('payroll.generating')}
+                        </>
+                      ) : (
+                        t('payroll.generatePayroll')
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </PermissionContent>
 
 
@@ -597,7 +704,7 @@ export default function PayrollManagementPage() {
                   </span>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={handleBulkDelete}>
+                  <Button variant="outline" size="sm" onClick={handleBulkDeleteClick}>
                     <Trash2 className="h-4 w-4 mr-2" />
                     {t('payroll.deleteSelected')}
                   </Button>
@@ -802,7 +909,7 @@ export default function PayrollManagementPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleCancel(payroll.id)}
+                                  onClick={() => handleCancelClick(payroll.id)}
                                 >
                                   <Ban className="h-4 w-4" />
                                 </Button>
@@ -811,7 +918,7 @@ export default function PayrollManagementPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleDelete(payroll.id)}
+                                  onClick={() => handleDeleteClick(payroll.id)}
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
@@ -967,6 +1074,77 @@ export default function PayrollManagementPage() {
             </CardContent>
           </Card>
         </RoleContent>
+
+        {/* Confirmation dialogs */}
+        <AlertDialog
+          open={deleteDialogOpen}
+          onOpenChange={(open) => {
+            setDeleteDialogOpen(open);
+            if (!open) setPayrollToDelete(null);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('payroll.confirm.deleteTitle')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('payroll.confirm.delete')} This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('payroll.cancel')}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {t('payroll.confirm.deleteButton')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog
+          open={cancelDialogOpen}
+          onOpenChange={(open) => {
+            setCancelDialogOpen(open);
+            if (!open) setPayrollToCancel(null);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('payroll.confirm.cancelTitle')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('payroll.confirm.cancel')} The payroll will be reverted to pending status.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('payroll.cancel')}</AlertDialogCancel>
+              <AlertDialogAction onClick={handleCancel}>{t('payroll.confirm.cancelButton')}</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('payroll.confirm.bulkDeleteTitle')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('payroll.confirm.bulkDelete', { count: selectedPayrolls.size.toString() })} This
+                action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('payroll.cancel')}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleBulkDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {t('payroll.confirm.bulkDeleteButton', {
+                  count: selectedPayrolls.size.toString(),
+                })}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </ProtectedRoute>
   );

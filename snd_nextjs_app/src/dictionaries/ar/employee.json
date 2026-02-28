@@ -675,7 +675,19 @@
     "requestedBy": "مطلوب بواسطة",
     "approvedBy": "معتمد بواسطة",
     "loadingSalaryHistory": "جاري تحميل تاريخ الراتب...",
-    "noSalaryHistory": "لا يوجد تاريخ راتب متاح"
+    "noSalaryHistory": "لا يوجد تاريخ راتب متاح",
+    "paidSalaryMonths": "أشهر الراتب المدفوعة",
+    "paidSalaryMonthsDescription": "الأشهر التي تم دفع الراتب فيها عبر التحويل البنكي",
+    "paidMonth": "الشهر",
+    "finalAmount": "المبلغ النهائي",
+    "loadingPaidMonths": "جاري تحميل الأشهر المدفوعة...",
+    "noPaidMonths": "لا توجد سجلات راتب مدفوعة",
+    "howToAddPaidMonths": "لإضافة السجلات: أنشئ كشف راتب في إدارة الرواتب، اعتمده، ثم قم بمعالجة الدفع (تحويل بنكي). ستظهر السجلات هنا بعد تحديدها كمدفوعة.",
+    "managePayroll": "إدارة الرواتب",
+    "viewPayrolls": "عرض كشوف الرواتب",
+    "createPayroll": "إنشاء كشف راتب",
+    "actions": "الإجراءات",
+    "viewPayslip": "عرض مسير الراتب"
   },
 
   "timesheet": {

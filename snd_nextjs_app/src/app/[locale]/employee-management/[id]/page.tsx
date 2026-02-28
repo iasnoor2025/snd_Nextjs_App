@@ -32,12 +32,14 @@ import {
   Calendar,
   Clock,
   CreditCard,
+  DollarSign,
   Edit,
   FileBox,
   FileText,
   History,
   Loader2,
   Lock,
+  Plus,
   Receipt,
   Trash2,
   User,
@@ -150,6 +152,8 @@ export default function EmployeeShowPage() {
   const [activeTab, setActiveTab] = useState('personal-info');
   const [salaryHistory, setSalaryHistory] = useState<SalaryIncrement[]>([]);
   const [loadingSalaryHistory, setLoadingSalaryHistory] = useState(false);
+  const [paidPayrolls, setPaidPayrolls] = useState<any[]>([]);
+  const [loadingPaidPayrolls, setLoadingPaidPayrolls] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Advances state
@@ -342,6 +346,10 @@ export default function EmployeeShowPage() {
         // Only fetch salary history if user has permission
         if (hasPermission('read', 'SalaryIncrement')) {
           fetchSalaryHistory();
+        }
+        // Fetch paid payroll months if user has Payroll or Employee read permission
+        if (hasPermission('read', 'Payroll') || hasPermission('read', 'Employee')) {
+          fetchPaidPayrolls();
         }
       } else {
         // Employee not found
@@ -579,6 +587,27 @@ export default function EmployeeShowPage() {
       }
     } finally {
       setLoadingSalaryHistory(false);
+    }
+  };
+
+  const fetchPaidPayrolls = async () => {
+    if (!employeeId || isNaN(parseInt(employeeId))) return;
+    setLoadingPaidPayrolls(true);
+    try {
+      const response = await fetch(
+        `/api/payroll?employee_id=${employeeId}&status=paid&limit=100`
+      );
+      const data = await response.json();
+      if (data.success && data.data) {
+        setPaidPayrolls(data.data);
+      } else {
+        setPaidPayrolls([]);
+      }
+    } catch (error) {
+      console.error('Error fetching paid payrolls:', error);
+      setPaidPayrolls([]);
+    } finally {
+      setLoadingPaidPayrolls(false);
     }
   };
 
@@ -1423,7 +1452,7 @@ export default function EmployeeShowPage() {
         </TabsContent>
 
         {hasPermission('read', 'Timesheet') && (
-          <TabsContent value="timesheets" className="mt-6">
+          <TabsContent value="timesheets" className="mt-6 space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>{t('employee.timesheet.title')}</CardTitle>
@@ -1436,6 +1465,129 @@ export default function EmployeeShowPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Paid Salary Months - shows which months salary was paid via bank */}
+            {(hasPermission('read', 'Payroll') || hasPermission('read', 'Employee')) && (
+              <Card>
+                <CardHeader>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div>
+                      <CardTitle>{t('employee.salary.paidSalaryMonths')}</CardTitle>
+                      <CardDescription>{t('employee.salary.paidSalaryMonthsDescription')}</CardDescription>
+                    </div>
+                    {hasPermission('read', 'Payroll') && (
+                      <Link href={`/${locale}/payroll-management?employee_id=${employeeId}`}>
+                        <Button variant="outline" size="sm">
+                          <DollarSign className="h-4 w-4 mr-2" />
+                          {t('employee.salary.managePayroll')}
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto rounded-md border">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t('employee.salary.paidMonth')}
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t('employee.salary.finalAmount')}
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t('employee.paidSalary.paidOn')}
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t('employee.paidSalary.paymentMethod')}
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t('employee.paidSalary.paymentReference')}
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t('employee.salary.actions')}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {loadingPaidPayrolls ? (
+                          <tr>
+                            <td colSpan={6} className="px-6 py-8 text-center text-sm text-muted-foreground">
+                              <div className="flex items-center justify-center gap-2">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                {t('employee.salary.loadingPaidMonths')}
+                              </div>
+                            </td>
+                          </tr>
+                        ) : paidPayrolls.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="px-6 py-8">
+                              <div className="flex flex-col items-center justify-center gap-3 text-center">
+                                <p className="text-sm text-muted-foreground italic">
+                                  {t('employee.salary.noPaidMonths')}
+                                </p>
+                                <p className="text-xs text-muted-foreground max-w-md">
+                                  {t('employee.salary.howToAddPaidMonths')}
+                                </p>
+                                {hasPermission('read', 'Payroll') && (
+                                  <div className="flex flex-wrap gap-2 justify-center mt-2">
+                                    <Link href={`/${locale}/payroll-management?employee_id=${employeeId}`}>
+                                      <Button variant="outline" size="sm">
+                                        {t('employee.salary.viewPayrolls')}
+                                      </Button>
+                                    </Link>
+                                    <Link href={`/${locale}/payroll-management/create`}>
+                                      <Button size="sm">
+                                        <Plus className="h-4 w-4 mr-1" />
+                                        {t('employee.salary.createPayroll')}
+                                      </Button>
+                                    </Link>
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ) : (
+                          paidPayrolls.map((payroll) => (
+                            <tr key={payroll.id} className="hover:bg-muted/50">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {new Date(payroll.year, payroll.month - 1).toLocaleDateString(
+                                  isRTL ? 'ar-SA' : 'en-US',
+                                  { month: 'long', year: 'numeric' }
+                                )}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                {t('employee.currency.symbol')} {Number(payroll.final_amount || 0).toLocaleString()}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                {payroll.paid_at
+                                  ? format(new Date(payroll.paid_at), 'MMM dd, yyyy')
+                                  : t('employee.na')}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                {payroll.payment_method || t('employee.na')}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                {payroll.payment_reference || t('employee.na')}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                <Link href={`/${locale}/payroll-management/${payroll.id}/payslip`}>
+                                  <Button variant="outline" size="sm">
+                                    <FileText className="h-4 w-4 mr-1" />
+                                    {t('employee.salary.viewPayslip')}
+                                  </Button>
+                                </Link>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         )}
 

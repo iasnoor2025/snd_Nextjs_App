@@ -3,6 +3,7 @@ import { departments, designations, employees, payrollItems, payrolls } from '@/
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
+import { getServerSession } from '@/lib/auth';
 
 export async function GET(_request: NextRequest) {
   try {
@@ -166,6 +167,14 @@ export async function GET(_request: NextRequest) {
           overtime_hours: Number(payroll.overtimeHours),
           status: payroll.status,
           notes: payroll.notes,
+          approved_by: payroll.approvedBy,
+          approved_at: payroll.approvedAt,
+          paid_by: payroll.paidBy,
+          paid_at: payroll.paidAt,
+          payment_method: payroll.paymentMethod,
+          payment_reference: payroll.paymentReference,
+          payment_status: payroll.paymentStatus,
+          payment_processed_at: payroll.paymentProcessedAt,
           currency: payroll.currency,
           created_at: payroll.createdAt,
           updated_at: payroll.updatedAt,
@@ -275,27 +284,49 @@ export async function POST(_request: NextRequest) {
       absentDeduction -
       advanceDeduction;
 
+    const status = body.status || 'pending';
+    const isPaid = status === 'paid';
+
+    // Build insert values
+    const insertValues: Record<string, unknown> = {
+      employeeId: body.employeeId,
+      month: body.month,
+      year: body.year,
+      baseSalary: baseSalary.toString(),
+      overtimeAmount: overtimeAmount.toString(),
+      bonusAmount: bonusAmount.toString(),
+      deductionAmount: deductionAmount.toString(),
+      advanceDeduction: advanceDeduction.toString(),
+      finalAmount: finalAmount.toString(),
+      totalWorkedHours: (body.totalWorkedHours || 0).toString(),
+      overtimeHours: (body.overtimeHours || 0).toString(),
+      status,
+      notes: body.notes || '',
+      currency: body.currency || 'SAR',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Add payment fields when creating as paid
+    if (isPaid) {
+      if (body.paidAt) {
+        insertValues.paidAt = typeof body.paidAt === 'string' ? body.paidAt.split('T')[0] : body.paidAt;
+      } else {
+        insertValues.paidAt = new Date().toISOString().split('T')[0];
+      }
+      insertValues.paymentMethod = body.paymentMethod || null;
+      insertValues.paymentReference = body.paymentReference || null;
+      insertValues.paymentStatus = body.paymentStatus || 'completed';
+      const session = await getServerSession();
+      if (session?.user?.id) {
+        insertValues.paidBy = typeof session.user.id === 'string' ? parseInt(session.user.id, 10) : session.user.id;
+      }
+    }
+
     // Create payroll
     const insertedPayrolls = await db
       .insert(payrolls)
-      .values({
-        employeeId: body.employeeId,
-        month: body.month,
-        year: body.year,
-        baseSalary: baseSalary.toString(),
-        overtimeAmount: overtimeAmount.toString(),
-        bonusAmount: bonusAmount.toString(),
-        deductionAmount: deductionAmount.toString(),
-        advanceDeduction: advanceDeduction.toString(),
-        finalAmount: finalAmount.toString(),
-        totalWorkedHours: (body.totalWorkedHours || 0).toString(),
-        overtimeHours: (body.overtimeHours || 0).toString(),
-        status: body.status || 'pending',
-        notes: body.notes || '',
-        currency: body.currency || 'SAR',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      })
+      .values(insertValues as any)
       .returning();
 
     const payroll = insertedPayrolls[0];
