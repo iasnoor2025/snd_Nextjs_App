@@ -962,7 +962,7 @@ export class DashboardService {
     }
   }
 
-  static async getRecentActivity(limit: number = 50): Promise<RecentActivity[]> {
+  static async getRecentActivity(limit: number = 50, offset: number = 0): Promise<RecentActivity[]> {
     try {
       const activities = await db
         .select({
@@ -976,7 +976,8 @@ export class DashboardService {
         })
         .from(auditLogs)
         .orderBy(desc(auditLogs.createdAt))
-        .limit(limit);
+        .limit(limit)
+        .offset(offset);
 
       return activities.map(activity => ({
         ...activity,
@@ -989,6 +990,18 @@ export class DashboardService {
     } catch (error) {
       logger.error('Error fetching recent activity:', error);
       return [];
+    }
+  }
+
+  static async getRecentActivityCount(): Promise<number> {
+    try {
+      const result = await db
+        .select({ count: count() })
+        .from(auditLogs);
+      return result[0]?.count ?? 0;
+    } catch (error) {
+      logger.error('Error fetching recent activity count:', error);
+      return 0;
     }
   }
 }

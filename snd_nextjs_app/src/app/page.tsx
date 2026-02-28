@@ -117,6 +117,8 @@ export default function DashboardPage() {
   const [timesheetData, setTimesheetData] = useState<TimesheetData[]>([]);
   const [projectData, setProjectData] = useState<ActiveProject[]>([]);
   const [activities, setActivities] = useState<RecentActivityType[]>([]);
+  const [activityPage, setActivityPage] = useState(1);
+  const [activityTotal, setActivityTotal] = useState(0);
 
   // State for loading and refreshing
   const [loading, setLoading] = useState(true);
@@ -313,13 +315,17 @@ export default function DashboardPage() {
     }
   };
 
-  // Fetch Recent Activity data
-  const fetchActivityData = async () => {
+  // Fetch Recent Activity data with pagination
+  const fetchActivityData = async (page: number = 1) => {
     try {
-      const response = await fetch('/api/dashboard/activity?limit=10');
+      const limit = 5;
+      const offset = (page - 1) * limit;
+      const response = await fetch(`/api/dashboard/activity?limit=${limit}&offset=${offset}`);
       if (response.ok) {
         const data = await response.json();
         setActivities(data.recentActivity || []);
+        setActivityTotal(data.total ?? 0);
+        setActivityPage(page);
       }
     } catch (error) {
       // Handle error silently for production
@@ -390,10 +396,13 @@ export default function DashboardPage() {
 
   const memoizedFetchActivityData = useCallback(async () => {
     try {
-      const response = await fetch('/api/dashboard/activity?limit=10');
+      const limit = 5;
+      const response = await fetch(`/api/dashboard/activity?limit=${limit}&offset=0`);
       if (response.ok) {
         const data = await response.json();
         setActivities(data.recentActivity || []);
+        setActivityTotal(data.total ?? 0);
+        setActivityPage(1);
       }
     } catch (error) {
       // Handle error silently for production
@@ -1137,7 +1146,11 @@ export default function DashboardPage() {
                   activities={activities}
                   onHideSection={() => toggleSection('recentActivity')}
                   currentUser={session?.user?.name || t('dashboard.unknownUser')}
-                  onRefresh={fetchActivityData}
+                  onRefresh={() => fetchActivityData(1)}
+                  currentPage={activityPage}
+                  totalCount={activityTotal}
+                  pageSize={5}
+                  onPageChange={fetchActivityData}
                 />
               </RecentActivityPermission>
             </div>

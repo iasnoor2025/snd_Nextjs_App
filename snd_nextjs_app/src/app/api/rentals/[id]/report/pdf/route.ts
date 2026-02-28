@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { RentalService } from '@/lib/services/rental-service';
 import { format } from 'date-fns';
 import puppeteer from 'puppeteer';
@@ -64,7 +65,7 @@ export async function GET(
       await browser.close();
     }
   } catch (error) {
-    console.error('Error generating report:', error);
+    logger.error('Error generating report:', error);
     return NextResponse.json(
       { error: 'Failed to generate report' },
       { status: 500 }
@@ -170,7 +171,7 @@ async function fetchTimesheetData(rentalId: number, rentalItems: any[]): Promise
       }
     });
   } catch (error) {
-    console.error('Error fetching timesheet data:', error);
+    logger.error('Error fetching timesheet data:', error);
   }
 
   return { hours: hoursMap, status: statusMap };

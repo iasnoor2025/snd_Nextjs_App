@@ -3,6 +3,14 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import { useI18n } from '@/hooks/use-i18n';
 import { RecentActivity as RecentActivityType } from '@/lib/services/dashboard-service';
 import { Activity, AlertCircle, Clock, Info, User, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
@@ -12,9 +20,22 @@ interface RecentActivityProps {
   onHideSection: () => void;
   currentUser?: string;
   onRefresh?: () => void;
+  currentPage?: number;
+  totalCount?: number;
+  pageSize?: number;
+  onPageChange?: (page: number) => void;
 }
 
-export function RecentActivity({ activities, onHideSection, currentUser, onRefresh }: RecentActivityProps) {
+export function RecentActivity({
+  activities,
+  onHideSection,
+  currentUser,
+  onRefresh,
+  currentPage = 1,
+  totalCount = 0,
+  pageSize = 5,
+  onPageChange,
+}: RecentActivityProps) {
   const { t, isRTL } = useI18n();
 
   // Ensure activities is always an array
@@ -139,25 +160,21 @@ export function RecentActivity({ activities, onHideSection, currentUser, onRefre
     if (modifiedFields.length === 0) return null;
 
     return (
-      <div className="mt-2 p-2 rounded bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-xs">
-        <p className="font-semibold mb-1 text-gray-700 dark:text-gray-300">Changes:</p>
-        <ul className="space-y-1">
-          {modifiedFields.map(field => (
-            <li key={field} className="flex flex-wrap gap-1 items-center">
-              <span className="font-medium text-gray-600 dark:text-gray-400 capitalize">
-                {field.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ')}:
-              </span>
-              <span className="text-red-600 dark:text-red-400 line-through truncate max-w-[150px]">
-                {String(before[field] ?? 'None')}
-              </span>
+      <span className="text-xs text-muted-foreground">
+        <span className="font-medium text-gray-700 dark:text-gray-300">Changes: </span>
+        {modifiedFields.map((field, i) => {
+          const label = field.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').trim();
+          return (
+            <span key={field}>
+              {i > 0 && <span className="text-gray-400 mx-1">·</span>}
+              <span className="capitalize">{label}: </span>
+              <span className="text-red-600 dark:text-red-400 line-through">{String(before[field] ?? 'None')}</span>
               <span className="text-gray-400">→</span>
-              <span className="text-green-600 dark:text-green-400 font-medium truncate max-w-[150px]">
-                {String(after[field] ?? 'None')}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </div>
+              <span className="text-green-600 dark:text-green-400">{String(after[field] ?? 'None')}</span>
+            </span>
+          );
+        })}
+      </span>
     );
   };
 
@@ -192,61 +209,41 @@ export function RecentActivity({ activities, onHideSection, currentUser, onRefre
       </CardHeader>
       <CardContent>
         {safeActivities.length > 0 ? (
-          <div className="space-y-4">
-            {safeActivities.slice(0, 8).map((activity, index) => (
+          <div className="space-y-2">
+            {safeActivities.map((activity, index) => (
               <div key={activity.id} className="relative">
                 {/* Timeline connector */}
                 {index < safeActivities.length - 1 && (
-                  <div className="absolute left-6 top-8 w-0.5 h-8 bg-gray-200 dark:bg-gray-700" />
+                  <div className="absolute left-5 top-6 w-0.5 h-4 bg-gray-200 dark:bg-gray-700" />
                 )}
 
-                <div className="flex items-start gap-4">
+                <div className="flex items-center gap-3 py-1">
                   {/* Icon */}
-                  <div className="relative z-10 flex-shrink-0 w-12 h-12 rounded-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center shadow-sm">
+                  <div className="relative z-10 flex-shrink-0 w-8 h-8 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center [&_svg]:h-4 [&_svg]:w-4">
                     {getActivityIcon(activity.type, activity.severity)}
                   </div>
 
-                  {/* Content */}
-                  <div className="flex-1 min-w-0 space-y-2">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant="outline"
-                            className={`text-xs font-medium ${getActivityBadgeColor(activity.type, activity.severity)}`}
-                          >
-                            {getActivityTypeLabel(activity.type)}
-                          </Badge>
-                          <span className="text-sm text-muted-foreground">
-                            {formatTimestamp(activity.timestamp)}
-                          </span>
-                        </div>
-
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {activity.description || 'No description'}
-                        </p>
-
-                        {renderChanges(activity.changes)}
-
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          {activity.user && (
-                            <div className="flex items-center gap-1">
-                              <User className="h-3 w-3" />
-                              <span className="font-medium">{activity.user}</span>
-                            </div>
-                          )}
-
-                          {activity.type === 'Timesheet Approval' && currentUser && (
-                            <div className="flex items-center gap-1">
-                              <span>Approved by:</span>
-                              <span className="font-medium text-blue-600 dark:text-blue-400">
-                                {currentUser}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                  {/* Content - compact single line */}
+                  <div className="flex-1 min-w-0 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm">
+                    <Badge
+                      variant="outline"
+                      className={`text-xs font-medium shrink-0 ${getActivityBadgeColor(activity.type, activity.severity)}`}
+                    >
+                      {getActivityTypeLabel(activity.type)}
+                    </Badge>
+                    <span className="text-muted-foreground shrink-0">
+                      {formatTimestamp(activity.timestamp)}
+                    </span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">
+                      {activity.description || 'No description'}
+                    </span>
+                    {activity.changes && renderChanges(activity.changes)}
+                    {activity.user && (
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+                        <User className="h-3 w-3" />
+                        {activity.user}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -257,6 +254,73 @@ export function RecentActivity({ activities, onHideSection, currentUser, onRefre
             <Activity className="h-16 w-16 mx-auto mb-4 opacity-50" />
             <p className="font-medium text-lg">{t('dashboard.noRecentActivity')}</p>
             <p className="text-sm opacity-80">{t('dashboard.noRecentActivityDescription')}</p>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {safeActivities.length > 0 && totalCount > pageSize && onPageChange && (
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground">
+              {t('common.pagination.showing')} {(currentPage - 1) * pageSize + 1}{' '}
+              {t('common.pagination.to')} {Math.min(currentPage * pageSize, totalCount)}{' '}
+              {t('common.pagination.of')} {totalCount} {t('common.pagination.results')}
+            </p>
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => currentPage > 1 && onPageChange(currentPage - 1)}
+                    className={currentPage <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+                {(() => {
+                  const totalPages = Math.ceil(totalCount / pageSize);
+                  const pageNumbers: number[] = [];
+                  for (let p = 1; p <= totalPages; p++) {
+                    if (p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1) {
+                      pageNumbers.push(p);
+                    }
+                  }
+                  const deduped = [...new Set(pageNumbers)].sort((a, b) => a - b);
+                  const items: JSX.Element[] = [];
+                  let prev = 0;
+                  for (const p of deduped) {
+                    if (prev && p > prev + 1) {
+                      items.push(
+                        <PaginationItem key={`ellipsis-${p}`}>
+                          <span className="px-2 text-muted-foreground">…</span>
+                        </PaginationItem>
+                      );
+                    }
+                    items.push(
+                      <PaginationItem key={p}>
+                        <PaginationLink
+                          onClick={() => onPageChange(p)}
+                          isActive={currentPage === p}
+                          className="cursor-pointer"
+                        >
+                          {p}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                    prev = p;
+                  }
+                  return items;
+                })()}
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() =>
+                      currentPage < Math.ceil(totalCount / pageSize) && onPageChange(currentPage + 1)
+                    }
+                    className={
+                      currentPage >= Math.ceil(totalCount / pageSize)
+                        ? 'pointer-events-none opacity-50'
+                        : 'cursor-pointer'
+                    }
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
           </div>
         )}
 

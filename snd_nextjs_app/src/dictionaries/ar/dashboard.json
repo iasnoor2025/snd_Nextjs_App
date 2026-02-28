@@ -288,7 +288,10 @@
   "documentDeletedSuccessfully": "تم حذف المستند بنجاح",
   "failedToDeleteDocument": "فشل في حذف المستند",
   "errorDeletingDocument": "حدث خطأ أثناء حذف المستند",
+  "justNow": "الآن",
+  "minutesAgo": "منذ {{minutes}} دقيقة",
   "hoursAgo": "منذ {{hours}} ساعة",
+  "daysAgo": "منذ {{days}} يوم",
   "employeeAdvance": {
     "title": "سلف الموظفين والسداد",
     "description": "إدارة مدفوعات السلف للموظفين والموافقات وتتبع السداد",

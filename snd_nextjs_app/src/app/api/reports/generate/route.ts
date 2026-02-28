@@ -2,6 +2,7 @@
 import { db } from '@/lib/db';
 import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { getRBACPermissions } from '@/lib/rbac/rbac-utils';
 import { analyticsReports } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
@@ -58,7 +59,7 @@ export async function POST(_request: NextRequest) {
           })
           .where(eq(analyticsReports.id, reportId));
       } catch (dbError) {
-        console.error('Failed to update report timestamp:', dbError);
+        logger.error('Failed to update report timestamp:', dbError);
         // We do not block the response if this fails, as the report was generated successfully
       }
     }
@@ -69,7 +70,7 @@ export async function POST(_request: NextRequest) {
       generated_at: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Error generating report:', error);
+    logger.error('Error generating report:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

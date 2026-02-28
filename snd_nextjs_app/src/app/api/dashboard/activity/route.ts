@@ -22,13 +22,16 @@ export const GET = withPermission(PermissionConfigs.dashboard.read)(async (_requ
 
     // Get query parameters
     const { searchParams } = new URL(_request.url);
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '5'), 50);
+    const offset = Math.max(0, parseInt(searchParams.get('offset') || '0'));
 
-    // Fetch Recent Activity data
-    const activityData = await DashboardService.getRecentActivity(limit);
-    
+    // Fetch Recent Activity data with pagination
+    const [activityData, total] = await Promise.all([
+      DashboardService.getRecentActivity(limit, offset),
+      DashboardService.getRecentActivityCount(),
+    ]);
 
-    return NextResponse.json({ recentActivity: activityData });
+    return NextResponse.json({ recentActivity: activityData, total });
   } catch (error) {
     console.error('Dashboard Activity API - Error:', error);
     return NextResponse.json({ recentActivity: [] });

@@ -4,6 +4,7 @@ import { pettyCashTransactions, pettyCashAccounts, expenseCategories } from '@/l
 import { eq, and, desc, gte, lte, or, ilike } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
+import { logger } from '@/lib/logger';
 
 const getHandler = async (request: NextRequest) => {
   try {
@@ -86,7 +87,7 @@ const getHandler = async (request: NextRequest) => {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error('Error fetching petty cash transactions:', error);
+    logger.error('Error fetching petty cash transactions:', error);
     return NextResponse.json(
       { error: 'Failed to fetch petty cash transactions', details: error instanceof Error ? error.message : 'Unknown' },
       { status: 500 }
@@ -157,7 +158,7 @@ const postHandler = async (request: NextRequest) => {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating petty cash transaction:', error);
+    logger.error('Error creating petty cash transaction:', error);
     return NextResponse.json(
       { error: 'Failed to create petty cash transaction', details: error instanceof Error ? error.message : 'Unknown' },
       { status: 500 }

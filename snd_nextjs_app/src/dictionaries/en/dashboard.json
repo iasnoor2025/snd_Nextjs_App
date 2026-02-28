@@ -240,7 +240,10 @@
   "errorDeletingDocument": "An error occurred while deleting document",
   "downloadAllExpiredPdf": "Download All Expired PDF ({{count}})",
   "downloadAllExpiredPdfTitle": "Download consolidated PDF report for all expired documents ({{count}} total)",
+  "justNow": "Just now",
+  "minutesAgo": "{{minutes}} minutes ago",
   "hoursAgo": "{{hours}} hours ago",
+  "daysAgo": "{{days}} days ago",
   "employeeAdvance": {
     "title": "Employee Advances & Repayments",
     "description": "Manage employee advance payments, approvals, and repayment tracking",

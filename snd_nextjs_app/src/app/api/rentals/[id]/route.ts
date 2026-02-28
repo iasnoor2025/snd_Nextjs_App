@@ -1,4 +1,5 @@
 import { db } from '@/lib/drizzle';
+import { logger } from '@/lib/logger';
 import { rentalItems, rentals } from '@/lib/drizzle/schema';
 import { RentalService } from '@/lib/services/rental-service';
 import { eq } from 'drizzle-orm';
@@ -24,7 +25,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
     return NextResponse.json(rentalWithItems);
   } catch (error) {
-    console.error('Error fetching rental:', error);
+    logger.error('Error fetching rental:', error);
     return NextResponse.json({ error: 'Failed to fetch rental' }, { status: 500 });
   }
 }
@@ -117,7 +118,7 @@ export async function DELETE(
       }
     });
   } catch (error) {
-    console.error('Error deleting rental:', error);
+    logger.error('Error deleting rental:', error);
     return NextResponse.json({ 
       success: false,
       error: 'Failed to delete rental',

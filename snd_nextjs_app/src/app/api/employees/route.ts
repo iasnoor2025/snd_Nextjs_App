@@ -22,6 +22,7 @@ import { and, asc, desc, eq, ilike, inArray, or, sql, isNull, gte } from 'drizzl
 import { NextRequest, NextResponse } from 'next/server';
 import { AuditService } from '@/lib/services/audit-service';
 import { getServerSession } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 // In-memory cache for employee list
 let employeesCache: any = null;
@@ -493,7 +494,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Employees API - Error fetching employees:', error);
+    logger.error('Employees API - Error fetching employees:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
     // Check if error is due to missing columns (migration not run)
@@ -724,7 +725,7 @@ const createEmployeeHandler = async (request: NextRequest) => {
               .where(eq(employeesTable.id, employee.id));
           }
         } catch (e) {
-          console.error('⚠️ ERPNext sync failed (non-critical):', e);
+          logger.warn('ERPNext sync failed (non-critical):', e);
         }
       })();
     }
@@ -828,7 +829,7 @@ const createEmployeeHandler = async (request: NextRequest) => {
           }
         }
       } catch (contractError) {
-        console.error('⚠️ Failed to generate contract (non-critical):', contractError);
+        logger.warn('Failed to generate contract (non-critical):', contractError);
       }
     })();
 
@@ -842,7 +843,7 @@ const createEmployeeHandler = async (request: NextRequest) => {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating employee:', error);
+    logger.error('Error creating employee:', error);
     const message = error instanceof Error ? error.message : String(error);
     // Handle race-condition duplicate (unique constraint) as 409 Conflict
     if ((error as any)?.code === '23505' || message.includes('employees_file_number_key') || message.toLowerCase().includes('unique')) {
