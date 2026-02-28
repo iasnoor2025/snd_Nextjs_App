@@ -14,6 +14,8 @@ const getHandler = async (request: NextRequest) => {
     const dateTo = searchParams.get('dateTo');
     const type = searchParams.get('type');
     const search = searchParams.get('search')?.trim();
+    const sortColumn = searchParams.get('sortColumn') || 'date';
+    const sortDirection = searchParams.get('sortDirection') || 'asc';
 
     const conditions = [];
     if (accountId && !isNaN(parseInt(accountId))) {
@@ -88,13 +90,15 @@ const getHandler = async (request: NextRequest) => {
       accountBalances.set(a.id, opening + (bal ? bal.in - bal.out : 0));
     });
 
-    const transactionsWithBalance = transactions.map((tx) => {
+    let transactionsWithBalance = transactions.map((tx) => {
       const balance = accountBalances.get(tx.accountId) ?? 0;
       const isIn = tx.type === 'IN';
       const delta = isIn ? tx.amount : -(tx.amount ?? 0);
       accountBalances.set(tx.accountId, balance - delta);
       return { ...tx, runningBalance: balance };
     });
+
+    transactionsWithBalance = sortTransactions(transactionsWithBalance, sortColumn, sortDirection);
 
     let accountName: string | null = null;
     if (accountId && accountId !== 'all') {
@@ -147,6 +151,56 @@ const getHandler = async (request: NextRequest) => {
     );
   }
 };
+
+function sortTransactions<T extends { transactionDate?: string; accountId?: number; accountName?: string; type?: string; amount?: number; description?: string; categoryName?: string; id?: number; runningBalance?: number }>(
+  list: T[],
+  column: string,
+  direction: string
+): T[] {
+  const mult = direction === 'asc' ? 1 : -1;
+  const typeOrder: Record<string, number> = { IN: 0, OUT: 1, EXPENSE: 2, ADJUSTMENT: 3 };
+  return [...list].sort((a, b) => {
+    let aVal: string | number;
+    let bVal: string | number;
+    switch (column) {
+      case 'date': {
+        aVal = a.transactionDate || '';
+        bVal = b.transactionDate || '';
+        const dateCmp = mult * (String(aVal).localeCompare(String(bVal)) || 0);
+        if (dateCmp !== 0) return dateCmp;
+        const aType = typeOrder[a.type ?? ''] ?? 4;
+        const bType = typeOrder[b.type ?? ''] ?? 4;
+        return aType - bType;
+      }
+      case 'account':
+        aVal = (a.accountName ?? a.accountId)?.toString() ?? '';
+        bVal = (b.accountName ?? b.accountId)?.toString() ?? '';
+        return mult * (aVal.localeCompare(bVal) || 0);
+      case 'type':
+        aVal = a.type ?? '';
+        bVal = b.type ?? '';
+        return mult * (aVal.localeCompare(bVal) || 0);
+      case 'amount':
+        aVal = a.amount ?? 0;
+        bVal = b.amount ?? 0;
+        return mult * (aVal - bVal);
+      case 'description':
+        aVal = (a.description ?? '').toLowerCase();
+        bVal = (b.description ?? '').toLowerCase();
+        return mult * (aVal.localeCompare(bVal) || 0);
+      case 'category':
+        aVal = (a.categoryName ?? '').toLowerCase();
+        bVal = (b.categoryName ?? '').toLowerCase();
+        return mult * (aVal.localeCompare(bVal) || 0);
+      case 'balance':
+        aVal = a.runningBalance ?? 0;
+        bVal = b.runningBalance ?? 0;
+        return mult * (aVal - bVal);
+      default:
+        return 0;
+    }
+  });
+}
 
 function formatAmount(n: number): string {
   return (n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -244,7 +298,7 @@ function generateReportHTML(
       const bal = formatAmount(tx.runningBalance);
       const dateStr = tx.transactionDate ? format(new Date(tx.transactionDate + 'T12:00:00'), 'yyyy-MM-dd') : '—';
       html += `
-      <tr>
+      <tr${isIn ? ' style="background-color:#f0fdf4;"' : ''}>
         <td>${dateStr}</td>
         <td>${tx.accountName ?? tx.accountId}</td>
         <td>${getTypeLabel(tx.type)}</td>

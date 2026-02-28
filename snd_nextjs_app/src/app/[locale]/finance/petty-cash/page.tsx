@@ -390,7 +390,7 @@ export default function PettyCashPage() {
         const outCell = !isIn ? `<span class="text-red">${amtStr}</span>` : '—';
         const balClass = bal >= 0 ? 'text-green' : 'text-red';
         const dateStr = tx.transactionDate ? format(new Date(tx.transactionDate + 'T12:00:00'), 'yyyy-MM-dd') : '—';
-        html += `<tr>
+        html += `<tr${isIn ? ' style="background-color:#f0fdf4;"' : ''}>
           <td>${dateStr}</td>
           <td>${tx.accountName ?? tx.accountId}</td>
           <td>${getTypeLabel(tx.type)}</td>
@@ -439,6 +439,8 @@ export default function PettyCashPage() {
     if (filters.dateFrom) params.set('dateFrom', filters.dateFrom);
     if (filters.dateTo) params.set('dateTo', filters.dateTo);
     if (filters.search?.trim()) params.set('search', filters.search.trim());
+    params.set('sortColumn', sortConfig.column);
+    params.set('sortDirection', sortConfig.direction);
     try {
       toast.loading(t('pettyCash.generatingPdf'), { id: 'petty-pdf' });
       const res = await fetch(`/api/petty-cash/report/pdf?${params.toString()}`);
