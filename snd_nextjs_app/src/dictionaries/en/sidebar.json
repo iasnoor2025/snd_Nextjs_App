@@ -24,5 +24,12 @@
   "getHelp": "Get Help",
   "search": "Search",
   "appTitle": "SND Rental",
-  "databaseBackup": "Database Backup"
+  "databaseBackup": "Database Backup",
+  "groupOverview": "Overview",
+  "groupManagement": "Management",
+  "groupOperations": "Operations",
+  "groupFinance": "Finance",
+  "groupHR": "HR & Leave",
+  "groupTools": "Tools & Reports",
+  "groupAdministration": "Administration"
 }

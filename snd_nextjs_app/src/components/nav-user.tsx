@@ -94,14 +94,17 @@ export function NavUser() {
         <button
           type="button"
           aria-label={t('common.actions.userMenu')}
-          className="flex items-center space-x-2 rounded-full p-1 hover:bg-gray-100 transition-colors cursor-pointer"
+          className="flex w-full items-center gap-3 rounded-xl p-2.5 transition-all duration-200 cursor-pointer hover:bg-sidebar-accent/80 focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:outline-none"
         >
-          <Avatar className="h-8 w-8">
-            <AvatarFallback className={`${avatarColorClass} text-white text-sm font-medium`}>
+          <Avatar className="h-9 w-9 shrink-0 ring-2 ring-sidebar-border">
+            <AvatarFallback className={`${avatarColorClass} text-white text-sm font-semibold`}>
               {userInitials}
             </AvatarFallback>
           </Avatar>
-          <span className="text-sm font-medium text-gray-700 hidden md:block">{user.name}</span>
+          <div className="flex min-w-0 flex-1 flex-col items-start text-left">
+            <span className="truncate text-sm font-medium text-sidebar-foreground">{user.name}</span>
+            <span className="truncate text-xs text-sidebar-foreground/70">{user.role}</span>
+          </div>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">

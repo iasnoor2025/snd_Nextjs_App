@@ -24,5 +24,12 @@
   "getHelp": "الحصول على المساعدة",
   "search": "البحث",
   "appTitle": "إدارة التأجير SND",
-  "databaseBackup": "نسخ احتياطي لقاعدة البيانات"
+  "databaseBackup": "نسخ احتياطي لقاعدة البيانات",
+  "groupOverview": "نظرة عامة",
+  "groupManagement": "الإدارة",
+  "groupOperations": "العمليات",
+  "groupFinance": "المالية",
+  "groupHR": "الموارد البشرية",
+  "groupTools": "الأدوات والتقارير",
+  "groupAdministration": "الإدارة العامة"
 }

@@ -51,6 +51,12 @@ type MenuItem = {
   requiredPermission?: { action: string; subject: string };
 };
 
+// Navigation groups for better organization
+type NavGroup = {
+  labelKey: string;
+  items: MenuItem[];
+};
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { t, isRTL } = useI18n();
   const { canAccessRoute, user, hasPermission } = useRBAC();
@@ -104,124 +110,65 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     setLocale(currentLocale);
   }, [params?.locale]);
 
-  // Memoize menu items definition to prevent recreation
-  const allMenuItems = React.useMemo<MenuItem[]>(() => [
+  // Memoize menu items definition with logical groups
+  const allNavGroups = React.useMemo<NavGroup[]>(() => [
     {
-      title: t('sidebar.dashboard'),
-      icon: LayoutDashboard,
-      url: `/${locale}`,
+      labelKey: 'sidebar.groupOverview',
+      items: [
+        { title: t('sidebar.dashboard'), icon: LayoutDashboard, url: `/${locale}` },
+        { title: t('sidebar.employeeDashboard'), url: `/${locale}/employee-dashboard`, icon: User },
+      ],
     },
     {
-      title: t('sidebar.employeeDashboard'),
-      url: `/${locale}/employee-dashboard`,
-      icon: User,
+      labelKey: 'sidebar.groupManagement',
+      items: [
+        { title: t('sidebar.customerManagement'), url: `/${locale}/customer-management`, icon: Users },
+        { title: t('sidebar.companyManagement'), url: `/${locale}/company-management`, icon: Building },
+        { title: t('sidebar.employeeManagement'), url: `/${locale}/employee-management`, icon: Users },
+        { title: t('sidebar.equipmentManagement'), url: `/${locale}/equipment-management`, icon: Car },
+        { title: t('sidebar.maintenanceManagement'), url: `/${locale}/maintenance-management`, icon: Wrench },
+      ],
     },
     {
-      title: t('sidebar.customerManagement'),
-      url: `/${locale}/customer-management`,
-      icon: Users,
+      labelKey: 'sidebar.groupOperations',
+      items: [
+        { title: t('sidebar.rentalManagement'), url: `/${locale}/rental-management`, icon: Calendar },
+        { title: t('sidebar.quotationManagement'), url: `/${locale}/quotation-management`, icon: FileText },
+        { title: t('sidebar.timesheetManagement'), url: `/${locale}/timesheet-management`, icon: Calendar },
+        { title: t('sidebar.projectManagement'), url: `/${locale}/project-management`, icon: FileText },
+      ],
     },
     {
-      title: t('sidebar.companyManagement'),
-      url: `/${locale}/company-management`,
-      icon: Building,
+      labelKey: 'sidebar.groupFinance',
+      items: [
+        { title: t('sidebar.payrollManagement'), url: `/${locale}/payroll-management`, icon: BarChart3 },
+        { title: t('sidebar.pettyCashManagement'), url: `/${locale}/finance/petty-cash`, icon: Wallet },
+        { title: t('sidebar.salaryIncrements'), url: `/${locale}/salary-increments`, icon: BarChart3 },
+      ],
     },
     {
-      title: t('sidebar.employeeManagement'),
-      url: `/${locale}/employee-management`,
-      icon: Users,
+      labelKey: 'sidebar.groupHR',
+      items: [
+        { title: t('sidebar.leaveManagement'), url: `/${locale}/leave-management`, icon: Calendar },
+      ],
     },
     {
-      title: t('sidebar.equipmentManagement'),
-      url: `/${locale}/equipment-management`,
-      icon: Car,
+      labelKey: 'sidebar.groupTools',
+      items: [
+        { title: t('sidebar.safetyManagement'), url: `/${locale}/safety-management`, icon: HelpCircle },
+        { title: t('sidebar.locationManagement'), url: `/${locale}/location-management`, icon: MapPin },
+        { title: t('sidebar.reporting'), url: `/${locale}/reporting`, icon: FileSpreadsheet },
+        { title: t('sidebar.documentManagement'), url: `/${locale}/document-management`, icon: FileText },
+        { title: t('sidebar.chat'), url: `/${locale}/chat`, icon: MessageSquare },
+      ],
     },
     {
-      title: t('sidebar.maintenanceManagement'),
-      url: `/${locale}/maintenance-management`,
-      icon: Wrench,
-    },
-    {
-      title: t('sidebar.rentalManagement'),
-      url: `/${locale}/rental-management`,
-      icon: Calendar,
-    },
-    {
-      title: t('sidebar.quotationManagement'),
-      url: `/${locale}/quotation-management`,
-      icon: FileText,
-    },
-    {
-      title: t('sidebar.timesheetManagement'),
-      url: `/${locale}/timesheet-management`,
-      icon: Calendar,
-    },
-    {
-      title: t('sidebar.projectManagement'),
-      url: `/${locale}/project-management`,
-      icon: FileText,
-    },
-    {
-      title: t('sidebar.payrollManagement'),
-      url: `/${locale}/payroll-management`,
-      icon: BarChart3,
-    },
-    {
-      title: t('sidebar.pettyCashManagement'),
-      url: `/${locale}/finance/petty-cash`,
-      icon: Wallet,
-    },
-    {
-      title: t('sidebar.salaryIncrements'),
-      url: `/${locale}/salary-increments`,
-      icon: BarChart3,
-    },
-    {
-      title: t('sidebar.leaveManagement'),
-      url: `/${locale}/leave-management`,
-      icon: Calendar,
-    },
-    {
-      title: t('sidebar.safetyManagement'),
-      url: `/${locale}/safety-management`,
-      icon: HelpCircle,
-    },
-    {
-      title: t('sidebar.locationManagement'),
-      url: `/${locale}/location-management`,
-      icon: MapPin,
-    },
-    {
-      title: t('sidebar.reporting'),
-      url: `/${locale}/reporting`,
-      icon: FileSpreadsheet,
-    },
-    {
-      title: t('sidebar.documentManagement'),
-      url: `/${locale}/document-management`,
-      icon: FileText,
-    },
-    {
-      title: t('sidebar.chat'),
-      url: `/${locale}/chat`,
-      icon: MessageSquare,
-    },
-    {
-      title: t('sidebar.userManagement'),
-      url: `/${locale}/user-management`,
-      icon: Users,
-    },
-    {
-      title: 'Settings',
-      url: `/${locale}/settings`,
-      icon: Settings,
-      requiredRole: 'SUPER_ADMIN'
-    },
-    {
-      title: t('sidebar.databaseBackup'),
-      url: `/${locale}/admin/backup`,
-      icon: Database,
-      requiredPermission: { action: 'manage', subject: 'all' }
+      labelKey: 'sidebar.groupAdministration',
+      items: [
+        { title: t('sidebar.userManagement'), url: `/${locale}/user-management`, icon: Users },
+        { title: 'Settings', url: `/${locale}/settings`, icon: Settings, requiredRole: 'SUPER_ADMIN' },
+        { title: t('sidebar.databaseBackup'), url: `/${locale}/admin/backup`, icon: Database, requiredPermission: { action: 'manage', subject: 'all' } },
+      ],
     },
   ], [t, locale]);
 
@@ -231,45 +178,34 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const filterMenuItems = React.useCallback((items: MenuItem[]) => {
     if (!user) return [];
 
-    // Always show items without specific routes (like help, search)
     const essentialItems = items.filter(item => item.url === '#' || !item.url);
-    
-      // Filter route-based items by permissions
-      const routeItems = items.filter(item => {
-        // Skip essential items (already handled above)
-        if (item.url === '#' || !item.url) return false;
-        
-        // Check for specific role requirements first
-        if (item.requiredRole) {
-          return user.role === item.requiredRole;
-        }
-        
-        // Check for specific permission requirements
-        if (item.requiredPermission) {
-          return hasPermission(item.requiredPermission.action, item.requiredPermission.subject);
-        }
-        
-        // Hide employee dashboard for non-EMPLOYEE users
-        if (item.url === `/${locale}/employee-dashboard`) {
-          return hasPermission('read', 'mydashboard');
-        }
-        
-        // For all other routes, check if user can access them
-        const routeWithoutLocale = item.url.replace(`/${locale}`, '');
-        return canAccessRoute(routeWithoutLocale);
-      });
-    
+    const routeItems = items.filter(item => {
+      if (item.url === '#' || !item.url) return false;
+      if (item.requiredRole) return user.role === item.requiredRole;
+      if (item.requiredPermission) return hasPermission(item.requiredPermission.action, item.requiredPermission.subject);
+      if (item.url === `/${locale}/employee-dashboard`) return hasPermission('read', 'mydashboard');
+      const routeWithoutLocale = item.url.replace(`/${locale}`, '');
+      return canAccessRoute(routeWithoutLocale);
+    });
     return [...essentialItems, ...routeItems];
   }, [user, locale, hasPermission, canAccessRoute]);
 
-  // Memoize filtered menu items to prevent recalculation on every render
-  const navMain = React.useMemo(() => filterMenuItems(allMenuItems), [filterMenuItems, allMenuItems]);
+  // Filter each group and keep only groups with visible items
+  const navGroups = React.useMemo(() => {
+    return allNavGroups
+      .map(group => ({
+        ...group,
+        items: filterMenuItems(group.items),
+      }))
+      .filter(group => group.items.length > 0);
+  }, [allNavGroups, filterMenuItems]);
+
   const documents = React.useMemo(() => filterMenuItems(allDocumentItems), [filterMenuItems, allDocumentItems]);
 
   const data = React.useMemo(() => ({
-    navMain,
+    navGroups,
     documents,
-  }), [navMain, documents]);
+  }), [navGroups, documents]);
 
   const borderColorClass = getRoleColorByRoleName(currentUserRole, roleColor, 'border', userPreferredColor);
 
@@ -278,46 +214,38 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       collapsible="offcanvas"
       variant="sidebar"
       side={isRTL ? 'right' : 'left'}
-      className={`w-64 border-l-2 ${borderColorClass}`}
+      className={`w-64 border-l-2 border-r-0 ${borderColorClass} shadow-sm bg-sidebar`}
       {...props}
     >
-      <SidebarHeader>
+      <SidebarHeader className="border-b border-sidebar-border/80 px-3 py-4">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
-              <Link href={`/${locale}`} className="flex items-center gap-2 cursor-pointer">
+            <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-2 rounded-xl hover:bg-sidebar-accent/60 transition-colors duration-200">
+              <Link href={`/${locale}`} className="flex items-center gap-3 cursor-pointer min-w-0">
                 {companyLogo ? (
-                  <div className="relative h-8 w-8 flex-shrink-0">
+                  <div className="relative h-9 w-9 flex-shrink-0 rounded-lg overflow-hidden bg-sidebar-accent/50 flex items-center justify-center">
                     {companyLogo.startsWith('http') ? (
-                      <img
-                        src={companyLogo}
-                        alt={appTitle}
-                        className="h-8 w-8 object-contain"
-                      />
+                      <img src={companyLogo} alt={appTitle} className="h-8 w-8 object-contain" />
                     ) : (
-                      <Image
-                        src={companyLogo}
-                        alt={appTitle}
-                        width={32}
-                        height={32}
-                        className="object-contain"
-                      />
+                      <Image src={companyLogo} alt={appTitle} width={36} height={36} className="object-contain" />
                     )}
                   </div>
                 ) : (
-                  <Layers className="!size-5" />
+                  <div className="h-9 w-9 rounded-lg bg-sidebar-accent/50 flex items-center justify-center">
+                    <Layers className="size-5 text-sidebar-foreground" />
+                  </div>
                 )}
-                <span className="text-base font-semibold truncate">{appTitle}</span>
+                <span className="text-base font-semibold truncate text-sidebar-foreground">{appTitle}</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
-        <NavMain items={data.navMain} />
+      <SidebarContent className="py-2 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <NavMain groups={data.navGroups} />
         <NavDocuments items={data.documents} />
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="border-t border-sidebar-border/80 px-3 py-3">
         <NavUser />
       </SidebarFooter>
     </Sidebar>
