@@ -35,6 +35,7 @@ import {
 import { useI18n } from '@/hooks/use-i18n';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { validateLocale } from '@/lib/locale-utils';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useSettings } from '@/hooks/use-settings';
 import Image from 'next/image';
@@ -284,7 +285,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
-              <a href="#" className="flex items-center gap-2">
+              <Link href={`/${locale}`} className="flex items-center gap-2 cursor-pointer">
                 {companyLogo ? (
                   <div className="relative h-8 w-8 flex-shrink-0">
                     {companyLogo.startsWith('http') ? (
@@ -307,7 +308,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <Layers className="!size-5" />
                 )}
                 <span className="text-base font-semibold truncate">{appTitle}</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

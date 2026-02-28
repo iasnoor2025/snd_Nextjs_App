@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Download, Eye, FileText, Loader2, Trash2, Upload, X } from 'lucide-react';
+import { Download, Eye, FileText, FileSpreadsheet, Image as ImageIcon, FileArchive, Presentation, Music, FileVideo, Loader2, Trash2, Upload, X } from 'lucide-react';
 import { useCallback, useEffect, useState, memo } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { toast } from 'sonner';
@@ -499,30 +499,23 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
   };
 
   const getFileIcon = (fileType: string | undefined) => {
-    // Handle undefined or null fileType
+    const iconClass = 'h-10 w-10 text-muted-foreground';
     if (!fileType || typeof fileType !== 'string') {
-      return '📄';
+      return <FileText className={iconClass} aria-hidden />;
     }
-
     const lowerFileType = fileType.toLowerCase();
-    
-    if (lowerFileType.includes('pdf')) return '📄';
+    if (lowerFileType.includes('pdf')) return <FileText className={iconClass} aria-hidden />;
     if (lowerFileType.includes('word') || lowerFileType.includes('document') || lowerFileType.includes('doc'))
-      return '📝';
-    if (
-      lowerFileType.includes('excel') ||
-      lowerFileType.includes('spreadsheet') ||
-      lowerFileType.includes('sheet') ||
-      lowerFileType.includes('xls')
-    )
-      return '📊';
-    if (lowerFileType.includes('image')) return '🖼️';
-    if (lowerFileType.includes('text') || lowerFileType.includes('plain')) return '📃';
-    if (lowerFileType.includes('zip') || lowerFileType.includes('rar') || lowerFileType.includes('7z')) return '🗜️';
-    if (lowerFileType.includes('powerpoint') || lowerFileType.includes('presentation') || lowerFileType.includes('ppt')) return '📽️';
-    if (lowerFileType.includes('audio') || lowerFileType.includes('mp3') || lowerFileType.includes('wav')) return '🎵';
-    if (lowerFileType.includes('video') || lowerFileType.includes('mp4') || lowerFileType.includes('avi')) return '🎬';
-    return '📄';
+      return <FileText className={iconClass} aria-hidden />;
+    if (lowerFileType.includes('excel') || lowerFileType.includes('spreadsheet') || lowerFileType.includes('sheet') || lowerFileType.includes('xls'))
+      return <FileSpreadsheet className={iconClass} aria-hidden />;
+    if (lowerFileType.includes('image')) return <ImageIcon className={iconClass} aria-hidden />;
+    if (lowerFileType.includes('text') || lowerFileType.includes('plain')) return <FileText className={iconClass} aria-hidden />;
+    if (lowerFileType.includes('zip') || lowerFileType.includes('rar') || lowerFileType.includes('7z')) return <FileArchive className={iconClass} aria-hidden />;
+    if (lowerFileType.includes('powerpoint') || lowerFileType.includes('presentation') || lowerFileType.includes('ppt')) return <Presentation className={iconClass} aria-hidden />;
+    if (lowerFileType.includes('audio') || lowerFileType.includes('mp3') || lowerFileType.includes('wav')) return <Music className={iconClass} aria-hidden />;
+    if (lowerFileType.includes('video') || lowerFileType.includes('mp4') || lowerFileType.includes('avi')) return <FileVideo className={iconClass} aria-hidden />;
+    return <FileText className={iconClass} aria-hidden />;
   };
 
   const formatFileSize = (bytes: number) => {
@@ -674,7 +667,7 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
                                  className="w-full h-full hidden items-center justify-center bg-gray-100 rounded border border-gray-200"
                                >
                                  <div className="text-center">
-                                   <div className="text-3xl">🖼️</div>
+                                   <ImageIcon className="h-8 w-8 text-muted-foreground" aria-hidden />
                                    <div className="text-sm text-gray-600">IMG</div>
                                  </div>
                                </div>
@@ -833,7 +826,7 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
                   />
                   {/* Error fallback when image fails to load */}
                   <div className="hidden w-full h-[70vh] flex items-center justify-center flex-col gap-4">
-                    <div className="text-6xl">🖼️</div>
+                    <ImageIcon className="h-16 w-16 text-muted-foreground" aria-hidden />
                     <div className="text-center">
                       <p className="text-lg font-medium text-gray-600">{previewImage.name}</p>
                       <p className="text-sm text-gray-500 mt-2">
@@ -870,7 +863,7 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
                 </div>
               ) : (
                 <div className="w-full h-[70vh] flex items-center justify-center flex-col gap-4">
-                  <div className="text-6xl">{getFileIcon(previewImage.file_type)}</div>
+                  <div className="flex justify-center text-muted-foreground [&>svg]:h-16 [&>svg]:w-16">{getFileIcon(previewImage.file_type)}</div>
                   <div className="text-center">
                     <p className="text-lg font-medium text-gray-600">{previewImage.name}</p>
                     <p className="text-sm text-gray-500 mt-2">

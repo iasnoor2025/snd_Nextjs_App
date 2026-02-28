@@ -309,6 +309,7 @@ export function SiteHeader() {
             size="sm"
             onClick={refreshSession}
             title={t('common.actions.refreshSession')}
+            aria-label={t('common.actions.refreshSession')}
           >
             <RefreshCw className="h-4 w-4" />
           </Button>
@@ -323,7 +324,12 @@ export function SiteHeader() {
           </Badge>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="flex items-center gap-1 sm:gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center gap-1 sm:gap-2"
+                aria-label={t('common.actions.userMenu')}
+              >
                 <User className="h-4 w-4" />
                 <span className="hidden sm:inline truncate max-w-[120px] md:max-w-none">
                   {session?.user?.name || session?.user?.email}

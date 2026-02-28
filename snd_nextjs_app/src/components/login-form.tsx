@@ -211,8 +211,8 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
         </CardContent>
       </Card>
       <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 [&_a]:hover:text-primary  ">
-        {t('auth.terms.byContinuing')} <a href="#">{t('auth.terms.termsOfService')}</a> {t('auth.terms.and')}{' '}
-        <a href="#">{t('auth.terms.privacyPolicy')}</a>.
+        {t('auth.terms.byContinuing')} <a href="/terms" className="cursor-pointer">{t('auth.terms.termsOfService')}</a> {t('auth.terms.and')}{' '}
+        <a href="/privacy" className="cursor-pointer">{t('auth.terms.privacyPolicy')}</a>.
       </div>
     </div>
   );

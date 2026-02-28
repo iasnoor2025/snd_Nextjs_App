@@ -91,7 +91,11 @@ export function NavUser() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center space-x-2 rounded-full p-1 hover:bg-gray-100 transition-colors">
+        <button
+          type="button"
+          aria-label={t('common.actions.userMenu')}
+          className="flex items-center space-x-2 rounded-full p-1 hover:bg-gray-100 transition-colors cursor-pointer"
+        >
           <Avatar className="h-8 w-8">
             <AvatarFallback className={`${avatarColorClass} text-white text-sm font-medium`}>
               {userInitials}

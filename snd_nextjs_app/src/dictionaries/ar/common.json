@@ -78,6 +78,7 @@
     "na": "غير متاح",
     "actions": {
       "profile": "الملف الشخصي",
+      "userMenu": "فتح قائمة المستخدم",
       "logout": "تسجيل الخروج",
       "refreshSession": "تحديث الجلسة",
       "settings": "الإعدادات"
