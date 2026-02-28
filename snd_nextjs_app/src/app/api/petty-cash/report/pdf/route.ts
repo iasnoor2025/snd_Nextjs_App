@@ -218,10 +218,10 @@ function generateReportHTML(
         <th>Date</th>
         <th>Account</th>
         <th>Type</th>
-        <th class="text-right">In (SAR)</th>
-        <th class="text-right">Out (SAR)</th>
         <th>Description</th>
         <th>Category</th>
+        <th class="text-right">In (SAR)</th>
+        <th class="text-right">Out (SAR)</th>
         <th class="text-right">Balance (SAR)</th>
       </tr>
     </thead>
@@ -248,21 +248,28 @@ function generateReportHTML(
         <td>${dateStr}</td>
         <td>${tx.accountName ?? tx.accountId}</td>
         <td>${getTypeLabel(tx.type)}</td>
-        <td class="text-right">${inCell}</td>
-        <td class="text-right">${outCell}</td>
         <td>${(tx.description || '—').replace(/</g, '&lt;')}</td>
         <td>${tx.categoryName || '—'}</td>
+        <td class="text-right">${inCell}</td>
+        <td class="text-right">${outCell}</td>
         <td class="text-right ${balClass}">${bal}</td>
       </tr>`;
     });
-    const lastBalance = transactions[0]?.runningBalance ?? 0;
+    const mostRecent = transactions.reduce((a, b) => {
+      const aDate = a.transactionDate || '';
+      const bDate = b.transactionDate || '';
+      if (aDate > bDate) return a;
+      if (aDate < bDate) return b;
+      return (a.id ?? 0) > (b.id ?? 0) ? a : b;
+    });
+    const lastBalance = mostRecent?.runningBalance ?? 0;
     const lastBalClass = lastBalance >= 0 ? 'text-green' : 'text-red';
     html += `
       <tr style="background-color:#f0f0f0;font-weight:bold;">
         <td colspan="3">Total In / Total Out / Closing Balance</td>
+        <td colspan="2"></td>
         <td class="text-right text-green">${formatAmount(totalIn)}</td>
         <td class="text-right text-red">${formatAmount(totalOut)}</td>
-        <td colspan="2"></td>
         <td class="text-right ${lastBalClass}">${formatAmount(lastBalance)}</td>
       </tr>`;
   }

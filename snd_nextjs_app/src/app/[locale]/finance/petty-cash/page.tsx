@@ -365,10 +365,10 @@ export default function PettyCashPage() {
         <th>${t('pettyCash.date')}</th>
         <th>${t('pettyCash.account')}</th>
         <th>${t('pettyCash.type')}</th>
-        <th class="text-right">${t('pettyCash.inAmount')}</th>
-        <th class="text-right">${t('pettyCash.outAmount')}</th>
         <th>${t('pettyCash.description')}</th>
         <th>${t('pettyCash.category')}</th>
+        <th class="text-right">${t('pettyCash.inAmount')}</th>
+        <th class="text-right">${t('pettyCash.outAmount')}</th>
         <th class="text-right">${t('pettyCash.balance')}</th>
       </tr>
     </thead>
@@ -394,21 +394,28 @@ export default function PettyCashPage() {
           <td>${dateStr}</td>
           <td>${tx.accountName ?? tx.accountId}</td>
           <td>${getTypeLabel(tx.type)}</td>
-          <td class="text-right">${inCell}</td>
-          <td class="text-right">${outCell}</td>
           <td>${(tx.description || '—').replace(/</g, '&lt;')}</td>
           <td>${tx.categoryName || '—'}</td>
+          <td class="text-right">${inCell}</td>
+          <td class="text-right">${outCell}</td>
           <td class="text-right ${balClass}">${formatAmount(bal)}</td>
         </tr>`;
       });
-      const lastBalance = (transactionsWithBalance[0] as { runningBalance?: number })?.runningBalance ?? 0;
+      const mostRecent = transactionsWithBalance.reduce((a, b) => {
+        const aDate = a.transactionDate || '';
+        const bDate = b.transactionDate || '';
+        if (aDate > bDate) return a;
+        if (aDate < bDate) return b;
+        return (a.id ?? 0) > (b.id ?? 0) ? a : b;
+      });
+      const lastBalance = (mostRecent as { runningBalance?: number })?.runningBalance ?? 0;
       const lastBalClass = lastBalance >= 0 ? 'text-green' : 'text-red';
       html += `
       <tr style="background-color:#f0f0f0;font-weight:bold;">
         <td colspan="3">${t('pettyCash.totalIn')} / ${t('pettyCash.totalOut')} / ${t('pettyCash.lastBalance')}</td>
+        <td colspan="2"></td>
         <td class="text-right text-green">${formatAmount(totalIn)}</td>
         <td class="text-right text-red">${formatAmount(totalOut)}</td>
-        <td colspan="2"></td>
         <td class="text-right ${lastBalClass}">${formatAmount(lastBalance)}</td>
       </tr>`;
     }
@@ -587,10 +594,10 @@ export default function PettyCashPage() {
                           <SortableHead column="date" label={t('pettyCash.date')} />
                           <SortableHead column="account" label={t('pettyCash.account')} />
                           <SortableHead column="type" label={t('pettyCash.type')} />
-                          <SortableHead column="amount" label={t('pettyCash.inAmount')} className="text-right" />
-                          <SortableHead column="amount" label={t('pettyCash.outAmount')} className="text-right" />
                           <SortableHead column="description" label={t('pettyCash.description')} />
                           <SortableHead column="category" label={t('pettyCash.category')} />
+                          <SortableHead column="amount" label={t('pettyCash.inAmount')} className="text-right" />
+                          <SortableHead column="amount" label={t('pettyCash.outAmount')} className="text-right" />
                           <SortableHead column="balance" label={t('pettyCash.balance')} className="text-right" />
                           <TableHead className="w-[100px]">{t('pettyCash.actions')}</TableHead>
                         </TableRow>
@@ -622,14 +629,14 @@ export default function PettyCashPage() {
                                     {tx.type === 'IN' ? t('pettyCash.typeIn') : tx.type === 'OUT' ? t('pettyCash.typeOut') : tx.type === 'EXPENSE' ? t('pettyCash.typeExpense') : t('pettyCash.typeAdjustment')}
                                   </span>
                                 </TableCell>
+                                <TableCell className="max-w-[200px] truncate">{tx.description || '—'}</TableCell>
+                                <TableCell>{tx.categoryName || '—'}</TableCell>
                                 <TableCell className={`text-right font-medium ${isIn ? 'text-green-600' : ''}`}>
                                   {isIn ? amt : '—'}
                                 </TableCell>
                                 <TableCell className={`text-right font-medium ${!isIn ? 'text-red-600' : ''}`}>
                                   {!isIn ? amt : '—'}
                                 </TableCell>
-                                <TableCell className="max-w-[200px] truncate">{tx.description || '—'}</TableCell>
-                                <TableCell>{tx.categoryName || '—'}</TableCell>
                                 <TableCell className={`text-right font-semibold ${bal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                   {formatAmount(bal)}
                                 </TableCell>
