@@ -137,7 +137,7 @@ export default function PettyCashPage() {
       const params: Record<string, string> = {};
       if (filters.accountId) params.accountId = filters.accountId;
       if (filters.type && filters.type !== 'all') params.type = filters.type;
-      if (filters.dateFrom) params.dateFrom = filters.dateFrom;
+      // Do not send dateFrom to API so we get full history and can compute correct running balance; filter by date range client-side
       if (filters.dateTo) params.dateTo = filters.dateTo;
       if (filters.search?.trim()) params.search = filters.search.trim();
       const res = await ApiService.getPettyCashTransactions(params as any);
@@ -156,7 +156,7 @@ export default function PettyCashPage() {
 
   useEffect(() => {
     loadTransactions();
-  }, [filters.accountId, filters.type, filters.dateFrom, filters.dateTo, filters.search]);
+  }, [filters.accountId, filters.type, filters.dateTo, filters.search]);
 
   // Debounce search input (300ms) before updating filters
   useEffect(() => {
@@ -189,12 +189,23 @@ export default function PettyCashPage() {
       accountBalances.set(tx.accountId, newBalance);
       return { ...tx, runningBalance: newBalance };
     });
-    const totalIn = withBalance.reduce((s, tx) => s + (tx.type === 'IN' ? (tx.amount ?? 0) : 0), 0);
-    const totalOut = withBalance.reduce((s, tx) => s + (tx.type !== 'IN' ? (tx.amount ?? 0) : 0), 0);
-    const lastBalance = withBalance.length > 0 ? (withBalance[withBalance.length - 1] as { runningBalance?: number }).runningBalance ?? 0 : 0;
+    // Apply date range filter client-side so running balances include earlier transactions
+    const dateFrom = filters.dateFrom || null;
+    const dateTo = filters.dateTo || null;
+    const visible = withBalance.filter((tx) => {
+      const d = tx.transactionDate || '';
+      if (!d) return !dateFrom && !dateTo;
+      if (dateFrom && d < dateFrom) return false;
+      if (dateTo && d > dateTo) return false;
+      return true;
+    });
+    const totalIn = visible.reduce((s, tx) => s + (tx.type === 'IN' ? (tx.amount ?? 0) : 0), 0);
+    const totalOut = visible.reduce((s, tx) => s + (tx.type !== 'IN' ? (tx.amount ?? 0) : 0), 0);
+    const lastBalance =
+      visible.length > 0 ? (visible[visible.length - 1] as { runningBalance?: number }).runningBalance ?? 0 : 0;
     const { column, direction } = sortConfig;
     const mult = direction === 'asc' ? 1 : -1;
-    const list = [...withBalance].sort((a, b) => {
+    const list = [...visible].sort((a, b) => {
       let aVal: string | number;
       let bVal: string | number;
       switch (column) {
@@ -238,7 +249,7 @@ export default function PettyCashPage() {
       }
     });
     return { list, summary: { totalIn, totalOut, lastBalance } };
-  }, [transactions, accounts, sortConfig]);
+  }, [transactions, accounts, sortConfig, filters.dateFrom, filters.dateTo]);
 
   const { list: transactionsWithBalance, summary: pettyCashSummary } = transactionsWithBalanceResult;
 
