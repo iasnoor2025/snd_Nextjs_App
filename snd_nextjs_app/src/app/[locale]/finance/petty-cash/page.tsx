@@ -170,22 +170,31 @@ export default function PettyCashPage() {
     };
   }, [searchInput]);
 
-  // Compute running balance per account (transactions sorted newest first)
-  const transactionsWithBalance = useMemo(() => {
+  // Compute running balance in chronological order (oldest first) so last row = current balance (ledger/print style)
+  const transactionsWithBalanceResult = useMemo(() => {
+    const chronological = [...transactions].sort((a, b) => {
+      const d = (a.transactionDate || '').localeCompare(b.transactionDate || '');
+      if (d !== 0) return d;
+      return (a.id ?? 0) - (b.id ?? 0);
+    });
     const accountBalances = new Map<number, number>();
     accounts.forEach((acc) => {
-      accountBalances.set(acc.id, acc.currentBalance ?? acc.openingBalance ?? 0);
+      accountBalances.set(acc.id, acc.openingBalance ?? 0);
     });
-    const withBalance = transactions.map((tx) => {
+    const withBalance = chronological.map((tx) => {
       const balance = accountBalances.get(tx.accountId) ?? 0;
       const isIn = tx.type === 'IN';
-      const delta = isIn ? tx.amount : -(tx.amount ?? 0);
-      accountBalances.set(tx.accountId, balance - delta);
-      return { ...tx, runningBalance: balance };
+      const delta = isIn ? (tx.amount ?? 0) : -(tx.amount ?? 0);
+      const newBalance = balance + delta;
+      accountBalances.set(tx.accountId, newBalance);
+      return { ...tx, runningBalance: newBalance };
     });
+    const totalIn = withBalance.reduce((s, tx) => s + (tx.type === 'IN' ? (tx.amount ?? 0) : 0), 0);
+    const totalOut = withBalance.reduce((s, tx) => s + (tx.type !== 'IN' ? (tx.amount ?? 0) : 0), 0);
+    const lastBalance = withBalance.length > 0 ? (withBalance[withBalance.length - 1] as { runningBalance?: number }).runningBalance ?? 0 : 0;
     const { column, direction } = sortConfig;
     const mult = direction === 'asc' ? 1 : -1;
-    return [...withBalance].sort((a, b) => {
+    const list = [...withBalance].sort((a, b) => {
       let aVal: string | number;
       let bVal: string | number;
       switch (column) {
@@ -228,7 +237,10 @@ export default function PettyCashPage() {
           return 0;
       }
     });
+    return { list, summary: { totalIn, totalOut, lastBalance } };
   }, [transactions, accounts, sortConfig]);
+
+  const { list: transactionsWithBalance, summary: pettyCashSummary } = transactionsWithBalanceResult;
 
   const handleAccountSaved = () => {
     setEditingAccount(null);
@@ -377,13 +389,9 @@ export default function PettyCashPage() {
     if (transactionsWithBalance.length === 0) {
       html += `<tr><td colspan="8" style="text-align:center;color:#666;">${t('pettyCash.noTransactions')}</td></tr>`;
     } else {
-      let totalIn = 0;
-      let totalOut = 0;
       transactionsWithBalance.forEach((tx) => {
         const isIn = tx.type === 'IN';
         const amt = tx.amount ?? 0;
-        if (isIn) totalIn += amt;
-        else totalOut += amt;
         const amtStr = formatAmount(amt);
         const bal = (tx as { runningBalance?: number }).runningBalance ?? 0;
         const inCell = isIn ? `<span class="text-green">${amtStr}</span>` : '—';
@@ -401,14 +409,7 @@ export default function PettyCashPage() {
           <td class="text-right ${balClass}">${formatAmount(bal)}</td>
         </tr>`;
       });
-      const mostRecent = transactionsWithBalance.reduce((a, b) => {
-        const aDate = a.transactionDate || '';
-        const bDate = b.transactionDate || '';
-        if (aDate > bDate) return a;
-        if (aDate < bDate) return b;
-        return (a.id ?? 0) > (b.id ?? 0) ? a : b;
-      });
-      const lastBalance = (mostRecent as { runningBalance?: number })?.runningBalance ?? 0;
+      const { totalIn, totalOut, lastBalance } = pettyCashSummary;
       const lastBalClass = lastBalance >= 0 ? 'text-green' : 'text-red';
       html += `
       <tr style="background-color:#f0f0f0;font-weight:bold;">
@@ -612,65 +613,79 @@ export default function PettyCashPage() {
                             </TableCell>
                           </TableRow>
                         ) : (
-                          transactionsWithBalance.map((tx) => {
-                            const isIn = tx.type === 'IN';
-                            const amt = formatAmount(tx.amount ?? 0);
-                            const bal = (tx as { runningBalance?: number }).runningBalance ?? 0;
-                            return (
-                              <TableRow key={tx.id} className={isIn ? 'bg-green-50 dark:bg-green-950/20' : ''}>
-                                <TableCell>
-                                  {tx.transactionDate ? format(new Date(tx.transactionDate + 'T12:00:00'), 'yyyy-MM-dd') : '—'}
-                                </TableCell>
-                                <TableCell>{tx.accountName ?? tx.accountId}</TableCell>
-                                <TableCell>
-                                  <span
-                                    className={
-                                      tx.type === 'IN' ? 'text-green-600 font-medium' : tx.type === 'OUT' || tx.type === 'EXPENSE' ? 'text-red-600 font-medium' : ''
-                                    }
-                                  >
-                                    {tx.type === 'IN' ? t('pettyCash.typeIn') : tx.type === 'OUT' ? t('pettyCash.typeOut') : tx.type === 'EXPENSE' ? t('pettyCash.typeExpense') : t('pettyCash.typeAdjustment')}
-                                  </span>
-                                </TableCell>
-                                <TableCell className="max-w-[200px] truncate">{tx.description || '—'}</TableCell>
-                                <TableCell>{tx.categoryName || '—'}</TableCell>
-                                <TableCell className={`text-right font-medium ${isIn ? 'text-green-600' : ''}`}>
-                                  {isIn ? amt : '—'}
-                                </TableCell>
-                                <TableCell className={`text-right font-medium ${!isIn ? 'text-red-600' : ''}`}>
-                                  {!isIn ? amt : '—'}
-                                </TableCell>
-                                <TableCell className={`text-right font-semibold ${bal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                  {formatAmount(bal)}
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-1">
-                                    <PermissionContent action="update" subject="PettyCash">
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8"
-                                        onClick={() => handleEditTransaction(tx)}
-                                        title={t('pettyCash.edit')}
-                                      >
-                                        <Pencil className="h-4 w-4" />
-                                      </Button>
-                                    </PermissionContent>
-                                    <PermissionContent action="delete" subject="PettyCash">
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-destructive hover:text-destructive"
-                                        onClick={() => openDeleteTransactionDialog(tx)}
-                                        title={t('pettyCash.delete')}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </PermissionContent>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })
+                          <>
+                            {transactionsWithBalance.map((tx) => {
+                              const isIn = tx.type === 'IN';
+                              const amt = formatAmount(tx.amount ?? 0);
+                              const bal = (tx as { runningBalance?: number }).runningBalance ?? 0;
+                              return (
+                                <TableRow key={tx.id} className={isIn ? 'bg-green-50 dark:bg-green-950/20' : ''}>
+                                  <TableCell>
+                                    {tx.transactionDate ? format(new Date(tx.transactionDate + 'T12:00:00'), 'yyyy-MM-dd') : '—'}
+                                  </TableCell>
+                                  <TableCell>{tx.accountName ?? tx.accountId}</TableCell>
+                                  <TableCell>
+                                    <span
+                                      className={
+                                        tx.type === 'IN' ? 'text-green-600 font-medium' : tx.type === 'OUT' || tx.type === 'EXPENSE' ? 'text-red-600 font-medium' : ''
+                                      }
+                                    >
+                                      {tx.type === 'IN' ? t('pettyCash.typeIn') : tx.type === 'OUT' ? t('pettyCash.typeOut') : tx.type === 'EXPENSE' ? t('pettyCash.typeExpense') : t('pettyCash.typeAdjustment')}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell className="max-w-[200px] truncate">{tx.description || '—'}</TableCell>
+                                  <TableCell>{tx.categoryName || '—'}</TableCell>
+                                  <TableCell className={`text-right font-medium ${isIn ? 'text-green-600' : ''}`}>
+                                    {isIn ? amt : '—'}
+                                  </TableCell>
+                                  <TableCell className={`text-right font-medium ${!isIn ? 'text-red-600' : ''}`}>
+                                    {!isIn ? amt : '—'}
+                                  </TableCell>
+                                  <TableCell className={`text-right font-semibold ${bal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    {formatAmount(bal)}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-1">
+                                      <PermissionContent action="update" subject="PettyCash">
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8"
+                                          onClick={() => handleEditTransaction(tx)}
+                                          title={t('pettyCash.edit')}
+                                        >
+                                          <Pencil className="h-4 w-4" />
+                                        </Button>
+                                      </PermissionContent>
+                                      <PermissionContent action="delete" subject="PettyCash">
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8 text-destructive hover:text-destructive"
+                                          onClick={() => openDeleteTransactionDialog(tx)}
+                                          title={t('pettyCash.delete')}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </PermissionContent>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                            <TableRow className="bg-muted/60 font-semibold">
+                              <TableCell colSpan={3} className="text-muted-foreground">
+                                {t('pettyCash.totalIn')} / {t('pettyCash.totalOut')} / {t('pettyCash.lastBalance')}
+                              </TableCell>
+                              <TableCell colSpan={2} />
+                              <TableCell className="text-right text-green-600">{formatAmount(pettyCashSummary.totalIn)}</TableCell>
+                              <TableCell className="text-right text-red-600">{formatAmount(pettyCashSummary.totalOut)}</TableCell>
+                              <TableCell className={`text-right font-semibold ${pettyCashSummary.lastBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {formatAmount(pettyCashSummary.lastBalance)}
+                              </TableCell>
+                              <TableCell />
+                            </TableRow>
+                          </>
                         )}
                       </TableBody>
                     </Table>
