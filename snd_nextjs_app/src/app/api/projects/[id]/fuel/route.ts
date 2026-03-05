@@ -115,15 +115,47 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       operatorId,
       usageNotes,
       purchaseDate,
-    } = body;
+    } = body as {
+      fuelType?: string;
+      quantity?: string | number;
+      unitPrice?: string | number;
+      supplier?: string;
+      equipmentId?: string | number | null;
+      operatorId?: string | number | null;
+      usageNotes?: string;
+      purchaseDate?: string | Date | null;
+    };
 
-    // Validation
-    if (!fuelType || !quantity || !unitPrice) {
-      return NextResponse.json({ error: 'Fuel type, quantity, and unit price are required' }, { status: 400 });
+    // Normalize and validate numeric values
+    const quantityValue =
+      typeof quantity === 'number' ? quantity : quantity != null ? parseFloat(quantity) : NaN;
+    const unitPriceValue =
+      typeof unitPrice === 'number' ? unitPrice : unitPrice != null ? parseFloat(unitPrice) : NaN;
+
+    if (!fuelType || !Number.isFinite(quantityValue) || !Number.isFinite(unitPriceValue)) {
+      return NextResponse.json(
+        { error: 'Fuel type, quantity, and unit price are required and must be valid numbers' },
+        { status: 400 }
+      );
+    }
+
+    if (quantityValue <= 0 || unitPriceValue <= 0) {
+      return NextResponse.json(
+        { error: 'Quantity and unit price must be greater than 0' },
+        { status: 400 }
+      );
     }
 
     // Calculate total cost
-    const totalCost = parseFloat(quantity) * parseFloat(unitPrice);
+    const totalCost = quantityValue * unitPriceValue;
+
+    // Normalize purchase date to YYYY-MM-DD string to avoid timezone issues
+    let purchaseDateStr: string;
+    if (typeof purchaseDate === 'string' && purchaseDate) {
+      purchaseDateStr = purchaseDate.split('T')[0];
+    } else {
+      purchaseDateStr = new Date().toISOString().split('T')[0];
+    }
 
     // Create fuel record
     const [newFuel] = await db
@@ -131,14 +163,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       .values({
         projectId: parseInt(projectId),
         fuelType,
-        quantity: parseFloat(quantity).toString(),
-        unitPrice: parseFloat(unitPrice).toString(),
+        quantity: quantityValue.toString(),
+        unitPrice: unitPriceValue.toString(),
         totalCost: totalCost.toString(),
         supplier,
-        // Store dates as YYYY-MM-DD strings to avoid timezone issues
-        purchaseDate: purchaseDate ? purchaseDate.split('T')[0] : new Date().toISOString().split('T')[0],
-        equipmentId: equipmentId ? parseInt(equipmentId) : null,
-        operatorId: operatorId ? parseInt(operatorId) : null,
+        purchaseDate: purchaseDateStr,
+        equipmentId: equipmentId != null ? (typeof equipmentId === 'number' ? equipmentId : parseInt(equipmentId)) : null,
+        operatorId: operatorId != null ? (typeof operatorId === 'number' ? operatorId : parseInt(operatorId)) : null,
         usageNotes,
         status: 'purchased',
         updatedAt: new Date().toISOString().split('T')[0],
@@ -152,7 +183,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }, { status: 201 });
   } catch (error) {
     console.error('Error adding fuel record:', error);
-    return NextResponse.json({ error: 'Failed to add fuel record' }, { status: 500 });
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : 'Unknown',
+    });
+    return NextResponse.json(
+      {
+        error: 'Failed to add fuel record',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
   }
 }
 

@@ -139,10 +139,12 @@ export default function FuelDialog({
       const response = await ApiService.getProjectEquipment(Number(projectId));
       if (response.success && response.data) {
         // Map API response to expected frontend format
+        // IMPORTANT: Use equipmentId (the actual equipment table ID) not id (which is projectEquipment assignment ID)
+        // because projectFuel.equipmentId foreign key references equipment.id
         const mappedEquipment = response.data.map((item: any) => ({
-          id: item.id.toString(),
+          id: (item.equipmentId || item.id).toString(),
           name: item.equipmentName || item.name || 'Unknown Equipment',
-          model_number: item.model || item.modelNumber || '',
+          model_number: item.equipmentModel || item.model || item.modelNumber || '',
           status: item.status || 'available',
         }));
         setEquipment(mappedEquipment);
@@ -171,7 +173,15 @@ export default function FuelDialog({
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => {
-      const newData = { ...prev, [field]: value };
+      let nextValue = value;
+
+      // Normalize numeric fields to avoid NaN leaking into the API
+      if (field === 'liters' || field === 'price_per_liter') {
+        const parsed = typeof value === 'number' ? value : parseFloat(value);
+        nextValue = Number.isFinite(parsed) ? parsed : 0;
+      }
+
+      const newData = { ...prev, [field]: nextValue };
 
       // Handle equipment selection
       if (field === 'equipment_id') {
@@ -223,19 +233,20 @@ export default function FuelDialog({
         fuelType: formData.fuel_type,
         quantity: formData.liters,
         unitPrice: formData.price_per_liter,
-        supplier: '', // Default empty supplier
+        supplier: '',
         equipmentId: formData.equipment_id ? parseInt(formData.equipment_id) : null,
-        operatorId: null, // Default null operator
+        operatorId: null,
         usageNotes: formData.notes,
-        purchaseDate: formData.date, // Add required purchaseDate field
+        purchaseDate: formData.date,
       };
 
       if (initialData?.id) {
         await ApiService.put(`/projects/${projectId}/fuel?id=${initialData.id}`, submitData);
         toast.success('Fuel record updated successfully');
       } else {
-        await ApiService.post(`/projects/${projectId}/fuel`, submitData);
-        toast.success('Fuel record added successfully');
+        // Use dedicated helper for creating project fuel to keep API usage consistent
+        await ApiService.createProjectFuel(Number(projectId), submitData);
+        // Toast is already handled by ApiService.createProjectFuel
       }
 
       onSuccess();
@@ -286,7 +297,7 @@ export default function FuelDialog({
                 </div>
               ) : (
                 <Select
-                  value={formData.equipment_id || undefined}
+                  value={formData.equipment_id ?? ''}
                   onValueChange={value => handleInputChange('equipment_id', value)}
                 >
                   <SelectTrigger>
@@ -318,7 +329,7 @@ export default function FuelDialog({
             <div className="space-y-2">
               <Label htmlFor="fuel_type">Fuel Type</Label>
               <Select
-                value={formData.fuel_type || undefined}
+                value={formData.fuel_type ?? ''}
                 onValueChange={value => handleInputChange('fuel_type', value)}
               >
                 <SelectTrigger>
