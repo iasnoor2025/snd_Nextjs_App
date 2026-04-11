@@ -9,7 +9,37 @@ import {
   locations,
   employees
 } from '@/lib/drizzle/schema';
-import { eq, sql, count, and, isNotNull, desc, asc } from 'drizzle-orm';
+import { eq, sql, count, and, asc, or } from 'drizzle-orm';
+import { getEquipmentReportAssignmentFields } from '@/lib/services/equipment-report-assignment-data';
+
+/** Sort rows: equipment name, then company (assignment), then operator/employee */
+function compareEquipmentReportRows(a: {
+  name?: string | null;
+  assignmentSummary?: string | null;
+  operatorDisplay?: string | null;
+}, b: {
+  name?: string | null;
+  assignmentSummary?: string | null;
+  operatorDisplay?: string | null;
+}): number {
+  const opts = { numeric: true, sensitivity: 'base' as const };
+  const byName = String(a.name ?? '').trim().localeCompare(String(b.name ?? '').trim(), undefined, opts);
+  if (byName !== 0) return byName;
+  const byCompany = String(a.assignmentSummary ?? '').trim().localeCompare(String(b.assignmentSummary ?? '').trim(), undefined, opts);
+  if (byCompany !== 0) return byCompany;
+  return String(a.operatorDisplay ?? '').trim().localeCompare(String(b.operatorDisplay ?? '').trim(), undefined, opts);
+}
+
+/** DB status from EquipmentStatusService: assigned = rental or project; under_maintenance = open maintenance */
+function equipmentStatusFilter(status: string) {
+  if (status === 'rented') {
+    return or(eq(equipment.status, 'rented'), eq(equipment.status, 'assigned'));
+  }
+  if (status === 'maintenance') {
+    return or(eq(equipment.status, 'maintenance'), eq(equipment.status, 'under_maintenance'));
+  }
+  return eq(equipment.status, status);
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -86,8 +116,8 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(equipment.categoryId, parseInt(categoryId)));
     }
 
-    if (status) {
-      conditions.push(eq(equipment.status, status));
+    if (status && status !== 'all') {
+      conditions.push(equipmentStatusFilter(status));
     }
 
     if (locationId) {
@@ -108,37 +138,24 @@ export async function GET(request: NextRequest) {
       asc(equipment.name)
     );
 
-    const equipmentData = await equipmentQuery;
+    const equipmentRows = await equipmentQuery;
 
-    // Get summary statistics by category
-    const categoryStats = await db
-      .select({
-        categoryId: equipmentCategories.id,
-        categoryName: equipmentCategories.name,
-        categoryDescription: equipmentCategories.description,
-        categoryIcon: equipmentCategories.icon,
-        categoryColor: equipmentCategories.color,
-        totalEquipment: count(equipment.id),
-        activeEquipment: count(sql`CASE WHEN ${equipment.isActive} = true THEN 1 END`),
-        availableEquipment: count(sql`CASE WHEN ${equipment.status} = 'available' THEN 1 END`),
-        rentedEquipment: count(sql`CASE WHEN ${equipment.status} = 'rented' THEN 1 END`),
-        maintenanceEquipment: count(sql`CASE WHEN ${equipment.status} = 'maintenance' THEN 1 END`),
-        totalValue: sql<number>`COALESCE(SUM(${equipment.purchasePrice}), 0)`,
-        totalDepreciatedValue: sql<number>`COALESCE(SUM(${equipment.depreciatedValue}), 0)`,
-        avgDailyRate: sql<number>`COALESCE(AVG(${equipment.dailyRate}), 0)`,
-        avgWeeklyRate: sql<number>`COALESCE(AVG(${equipment.weeklyRate}), 0)`,
-        avgMonthlyRate: sql<number>`COALESCE(AVG(${equipment.monthlyRate}), 0)`
-      })
-      .from(equipment)
-      .leftJoin(equipmentCategories, eq(equipment.categoryId, equipmentCategories.id))
-      .groupBy(
-        equipmentCategories.id,
-        equipmentCategories.name,
-        equipmentCategories.description,
-        equipmentCategories.icon,
-        equipmentCategories.color
-      )
-      .orderBy(asc(equipmentCategories.name));
+    const uniqueIds = [...new Set(equipmentRows.map((r: { id: number }) => r.id))];
+    const assignmentById = await getEquipmentReportAssignmentFields(uniqueIds);
+
+    const equipmentData = equipmentRows.map((row: (typeof equipmentRows)[number]) => {
+      const af = assignmentById[row.id];
+      const opFromAssignment = af?.operatorDisplay?.trim();
+      const operatorDisplay =
+        opFromAssignment && opFromAssignment !== '—'
+          ? opFromAssignment
+          : (row.assignedEmployeeName && String(row.assignedEmployeeName).trim()) || '—';
+      return {
+        ...row,
+        assignmentSummary: af?.assignmentSummary ?? '—',
+        operatorDisplay,
+      };
+    });
 
     // Apply same filters to category stats
     let categoryStatsQuery: any = db
@@ -151,8 +168,12 @@ export async function GET(request: NextRequest) {
         totalEquipment: count(equipment.id),
         activeEquipment: count(sql`CASE WHEN ${equipment.isActive} = true THEN 1 END`),
         availableEquipment: count(sql`CASE WHEN ${equipment.status} = 'available' THEN 1 END`),
-        rentedEquipment: count(sql`CASE WHEN ${equipment.status} = 'rented' THEN 1 END`),
-        maintenanceEquipment: count(sql`CASE WHEN ${equipment.status} = 'maintenance' THEN 1 END`),
+        rentedEquipment: count(
+          sql`CASE WHEN ${equipment.status} IN ('rented', 'assigned') THEN 1 END`
+        ),
+        maintenanceEquipment: count(
+          sql`CASE WHEN ${equipment.status} IN ('maintenance', 'under_maintenance') THEN 1 END`
+        ),
         totalValue: sql<number>`COALESCE(SUM(${equipment.purchasePrice}), 0)`,
         totalDepreciatedValue: sql<number>`COALESCE(SUM(${equipment.depreciatedValue}), 0)`,
         avgDailyRate: sql<number>`COALESCE(AVG(${equipment.dailyRate}), 0)`,
@@ -176,8 +197,8 @@ export async function GET(request: NextRequest) {
       categoryStatsConditions.push(eq(equipment.categoryId, parseInt(categoryId)));
     }
 
-    if (status) {
-      categoryStatsConditions.push(eq(equipment.status, status));
+    if (status && status !== 'all') {
+      categoryStatsConditions.push(equipmentStatusFilter(status));
     }
 
     if (locationId) {
@@ -194,30 +215,18 @@ export async function GET(request: NextRequest) {
 
     const categoryStatsData = await categoryStatsQuery;
 
-    // Get overall summary statistics
-    const overallStats = await db
-      .select({
-        totalEquipment: count(equipment.id),
-        activeEquipment: count(sql`CASE WHEN ${equipment.isActive} = true THEN 1 END`),
-        availableEquipment: count(sql`CASE WHEN ${equipment.status} = 'available' THEN 1 END`),
-        rentedEquipment: count(sql`CASE WHEN ${equipment.status} = 'rented' THEN 1 END`),
-        maintenanceEquipment: count(sql`CASE WHEN ${equipment.status} = 'maintenance' THEN 1 END`),
-        totalValue: sql<number>`COALESCE(SUM(${equipment.purchasePrice}), 0)`,
-        totalDepreciatedValue: sql<number>`COALESCE(SUM(${equipment.depreciatedValue}), 0)`,
-        avgDailyRate: sql<number>`COALESCE(AVG(${equipment.dailyRate}), 0)`,
-        avgWeeklyRate: sql<number>`COALESCE(AVG(${equipment.weeklyRate}), 0)`,
-        avgMonthlyRate: sql<number>`COALESCE(AVG(${equipment.monthlyRate}), 0)`
-      })
-      .from(equipment);
-
     // Apply same filters to overall stats
     let overallStatsQuery: any = db
       .select({
         totalEquipment: count(equipment.id),
         activeEquipment: count(sql`CASE WHEN ${equipment.isActive} = true THEN 1 END`),
         availableEquipment: count(sql`CASE WHEN ${equipment.status} = 'available' THEN 1 END`),
-        rentedEquipment: count(sql`CASE WHEN ${equipment.status} = 'rented' THEN 1 END`),
-        maintenanceEquipment: count(sql`CASE WHEN ${equipment.status} = 'maintenance' THEN 1 END`),
+        rentedEquipment: count(
+          sql`CASE WHEN ${equipment.status} IN ('rented', 'assigned') THEN 1 END`
+        ),
+        maintenanceEquipment: count(
+          sql`CASE WHEN ${equipment.status} IN ('maintenance', 'under_maintenance') THEN 1 END`
+        ),
         totalValue: sql<number>`COALESCE(SUM(${equipment.purchasePrice}), 0)`,
         totalDepreciatedValue: sql<number>`COALESCE(SUM(${equipment.depreciatedValue}), 0)`,
         avgDailyRate: sql<number>`COALESCE(AVG(${equipment.dailyRate}), 0)`,
@@ -232,8 +241,8 @@ export async function GET(request: NextRequest) {
       overallStatsConditions.push(eq(equipment.categoryId, parseInt(categoryId)));
     }
 
-    if (status) {
-      overallStatsConditions.push(eq(equipment.status, status));
+    if (status && status !== 'all') {
+      overallStatsConditions.push(equipmentStatusFilter(status));
     }
 
     if (locationId) {
@@ -270,6 +279,12 @@ export async function GET(request: NextRequest) {
       return acc;
     }, {});
 
+    for (const key of Object.keys(equipmentByCategory)) {
+      equipmentByCategory[key].equipment.sort(compareEquipmentReportRows);
+    }
+
+    const equipmentListSorted = [...equipmentData].sort(compareEquipmentReportRows);
+
     const reportData = {
       summary_stats: overallStatsData[0] || {
         totalEquipment: 0,
@@ -285,7 +300,7 @@ export async function GET(request: NextRequest) {
       },
       category_stats: categoryStatsData,
       equipment_by_category: equipmentByCategory,
-      equipment_list: equipmentData,
+      equipment_list: equipmentListSorted,
       generated_at: new Date().toISOString(),
       parameters: {
         categoryId,

@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import { EquipmentReportData } from './equipment-report-pdf-service';
+import { formatEquipmentReportStatus } from '@/lib/utils/equipment-report-status';
 
 export class EquipmentReportExcelService {
   static generateEquipmentReportExcel(data: EquipmentReportData): XLSX.WorkBook {
@@ -12,21 +13,38 @@ export class EquipmentReportExcelService {
     // Equipment Details Sheet (only sheet needed)
     if (data.equipment_by_category && Object.keys(data.equipment_by_category).length > 0) {
       const equipmentHeaders = [
-        'Category', 'Name', 'Door #', 'Plate #', 'Plate # Expiry Date', 'Status'
+        'Category',
+        'Name',
+        'Manufacturer',
+        'Model',
+        'Serial',
+        'Door #',
+        'Status',
+        'Location',
+        'Assignment (rental / project)',
+        'Operator / driver',
+        'Plate #',
+        'Plate expiry',
       ];
-      
+
       const equipmentData = [equipmentHeaders];
-      
+
       Object.values(data.equipment_by_category).forEach(category => {
         if (category.equipment && category.equipment.length > 0) {
           category.equipment.forEach(equipment => {
             equipmentData.push([
               category.categoryName || 'Unknown',
               equipment.name || 'N/A',
+              equipment.manufacturer || 'N/A',
+              equipment.modelNumber || 'N/A',
+              equipment.serialNumber || 'N/A',
               equipment.doorNumber || 'N/A',
+              formatEquipmentReportStatus(equipment.status),
+              equipment.locationName || 'N/A',
+              (equipment as { assignmentSummary?: string }).assignmentSummary || '—',
+              (equipment as { operatorDisplay?: string }).operatorDisplay || '—',
               equipment.istimara || 'N/A',
               equipment.istimaraExpiryDate || 'N/A',
-              equipment.status || 'N/A'
             ]);
           });
         }

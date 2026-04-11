@@ -1,4 +1,11 @@
 import { jsPDF } from 'jspdf';
+import { formatEquipmentReportStatus } from '@/lib/utils/equipment-report-status';
+import {
+  applyArabicFontToPdf,
+  ARABIC_FONT_NAME,
+  loadArabicFontDataForPdf,
+  textContainsArabic,
+} from '@/lib/utils/pdf-arabic-font';
 
 export interface EquipmentReportData {
   summary_stats: {
@@ -56,6 +63,9 @@ export interface EquipmentReportData {
       depreciatedValue: number;
       istimara: string;
       istimaraExpiryDate: string;
+      /** Rental / project / maintenance (aligned with equipment management) */
+      assignmentSummary?: string;
+      operatorDisplay?: string;
     }>;
   }>;
   equipment_list: Array<{
@@ -79,6 +89,8 @@ export interface EquipmentReportData {
     depreciatedValue: number;
     istimara: string;
     istimaraExpiryDate: string;
+    assignmentSummary?: string;
+    operatorDisplay?: string;
   }>;
   generated_at: string;
   parameters: {
@@ -89,13 +101,87 @@ export interface EquipmentReportData {
   };
 }
 
+export interface EquipmentReportPdfOptions {
+  /** Base64 TTF from loadArabicFontDataForPdf(); required for Arabic in jsPDF */
+  arabicFontData?: string | null;
+}
+
 export class EquipmentReportPDFService {
-  static generateEquipmentReportPDF(data: EquipmentReportData): jsPDF {
+  /** True if any displayed field may contain Arabic (assignment, names, categories, …). */
+  static reportHasArabicText(data: EquipmentReportData): boolean {
+    const t = (v: unknown) => textContainsArabic(v == null ? '' : String(v));
+    if (data.category_stats?.some((c) => t(c.categoryName))) return true;
+    const byCat = data.equipment_by_category;
+    if (byCat) {
+      for (const cat of Object.values(byCat)) {
+        if (t(cat.categoryName) || t(cat.categoryDescription)) return true;
+        for (const eq of cat.equipment || []) {
+          if (
+            t(eq.name) ||
+            t(eq.manufacturer) ||
+            t(eq.modelNumber) ||
+            t(eq.serialNumber) ||
+            t(eq.doorNumber) ||
+            t(eq.status) ||
+            t(eq.locationName) ||
+            t(eq.assignedEmployeeName) ||
+            t(eq.assignmentSummary) ||
+            t(eq.operatorDisplay)
+          ) {
+            return true;
+          }
+        }
+      }
+    }
+    for (const eq of data.equipment_list || []) {
+      if (
+        t(eq.name) ||
+        t(eq.categoryName) ||
+        t(eq.manufacturer) ||
+        t(eq.assignmentSummary) ||
+        t(eq.operatorDisplay)
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  static generateEquipmentReportPDF(data: EquipmentReportData, options?: EquipmentReportPdfOptions): jsPDF {
     if (!data) {
       throw new Error('Equipment report data is required');
     }
 
-    const doc = new jsPDF('p', 'mm', 'a4');
+    // Landscape fits assignment + operator columns like equipment management
+    const doc = new jsPDF('l', 'mm', 'a4');
+
+    /** Register Noto whenever font data is provided (always loaded client-side) so Arabic renders even if pre-scan missed it */
+    let notoRegistered = false;
+    if (options?.arabicFontData) {
+      try {
+        applyArabicFontToPdf(doc, options.arabicFontData, false);
+        notoRegistered = true;
+      } catch (e) {
+        console.warn('[EquipmentReportPDFService] Failed to register Arabic font:', e);
+      }
+    } else if (EquipmentReportPDFService.reportHasArabicText(data)) {
+      console.warn(
+        '[EquipmentReportPDFService] Arabic text in report but no font loaded — add /public/fonts/NotoSansArabic-Regular.ttf'
+      );
+    }
+    doc.setFont('helvetica', 'normal');
+
+    const setLatin = (style: 'normal' | 'bold' = 'normal') => {
+      doc.setFont('helvetica', style);
+    };
+    const setFontForMixedText = (text: unknown) => {
+      const s = String(text ?? '');
+      if (notoRegistered && textContainsArabic(s)) {
+        doc.setFont(ARABIC_FONT_NAME, 'normal');
+      } else {
+        doc.setFont('helvetica', 'normal');
+      }
+    };
 
     // Set document properties
     doc.setProperties({
@@ -106,19 +192,20 @@ export class EquipmentReportPDFService {
     });
 
     let yPosition = 20;
+    const margin = 12;
 
     // Header
     doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Equipment Report by Category', 105, yPosition, { align: 'center' });
+    setLatin('bold');
+    doc.text('Equipment Report by Category', 148, yPosition, { align: 'center' });
     yPosition += 10;
 
     // Company info
     doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.text('SND Equipment Rental Company', 105, yPosition, { align: 'center' });
+    setLatin('normal');
+    doc.text('SND Equipment Rental Company', 148, yPosition, { align: 'center' });
     yPosition += 5;
-    doc.text('Kingdom of Saudi Arabia', 105, yPosition, { align: 'center' });
+    doc.text('Kingdom of Saudi Arabia', 148, yPosition, { align: 'center' });
     yPosition += 15;
 
     // Generation info
@@ -134,7 +221,10 @@ export class EquipmentReportPDFService {
 
       if (data.parameters.categoryId) {
         const category = data.category_stats?.find(c => c.categoryId.toString() === data.parameters.categoryId);
-        doc.text(`Category: ${category?.categoryName || 'Unknown'}`, 25, yPosition);
+        const catLine = `Category: ${category?.categoryName || 'Unknown'}`;
+        setFontForMixedText(catLine);
+        doc.text(catLine, 25, yPosition);
+        setLatin('normal');
         yPosition += 4;
       }
 
@@ -156,61 +246,12 @@ export class EquipmentReportPDFService {
       yPosition += 5;
     }
 
-    // Summary Statistics
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Summary Statistics', 20, yPosition);
-    yPosition += 10;
-
-    // Summary table
-    const summaryStats = data.summary_stats || ({} as any);
-    const summaryData = [
-      ['Total Equipment', (summaryStats.totalEquipment || 0).toString()],
-      ['Active Equipment', (summaryStats.activeEquipment || 0).toString()],
-      ['Available Equipment', (summaryStats.availableEquipment || 0).toString()],
-      ['Rented Equipment', (summaryStats.rentedEquipment || 0).toString()],
-      ['Maintenance Equipment', (summaryStats.maintenanceEquipment || 0).toString()],
-      ['Total Value', `SAR ${Number(summaryStats.totalValue || 0).toLocaleString()}`],
-      ['Total Depreciated Value', `SAR ${Number(summaryStats.totalDepreciatedValue || 0).toLocaleString()}`],
-      ['Average Daily Rate', `SAR ${Number(summaryStats.avgDailyRate || 0).toFixed(2)}`],
-      ['Average Weekly Rate', `SAR ${Number(summaryStats.avgWeeklyRate || 0).toFixed(2)}`],
-      ['Average Monthly Rate', `SAR ${Number(summaryStats.avgMonthlyRate || 0).toFixed(2)}`]
-    ];
-
-    // Draw summary table manually
-    const tableStartY = yPosition;
-    const rowHeight = 8;
-    const col1Width = 60;
-    const col2Width = 40;
-
-    // Draw table header
-    doc.setFillColor(41, 128, 185);
-    doc.rect(20, tableStartY, col1Width + col2Width, rowHeight, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Metric', 25, tableStartY + 5);
-    doc.text('Value', 20 + col1Width + 5, tableStartY + 5);
-
-    // Draw table rows
-    doc.setTextColor(0, 0, 0);
-    doc.setFont('helvetica', 'normal');
-    summaryData.forEach((row, index) => {
-      const rowY = tableStartY + rowHeight + (index * rowHeight);
-      if (index % 2 === 0) {
-        doc.setFillColor(245, 245, 245);
-        doc.rect(20, rowY, col1Width + col2Width, rowHeight, 'F');
-      }
-      doc.text(row[0] || '', 25, rowY + 5);
-      doc.text(row[1] || '', 20 + col1Width + 5, rowY + 5);
-    });
-
-    yPosition = tableStartY + rowHeight + (summaryData.length * rowHeight) + 15;
+    yPosition += 5;
 
     // Category Statistics
     if (data.category_stats && data.category_stats.length > 0) {
       doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
+      setLatin('bold');
       doc.text('Category Statistics', 20, yPosition);
       yPosition += 10;
 
@@ -235,17 +276,16 @@ export class EquipmentReportPDFService {
       doc.rect(20, categoryTableStartY, categoryColWidths.reduce((a, b) => a + b, 0), categoryRowHeight, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      const headers = ['Category', 'Total', 'Active', 'Available', 'Rented', 'Maintenance', 'Total Value', 'Avg Daily Rate'];
+      setLatin('bold');
+      const headers = ['Category', 'Total', 'Active', 'Available', 'In use', 'Maint.', 'Total Value', 'Avg Daily Rate'];
       let xPos = 25;
       headers.forEach((header, index) => {
-        doc.text(header, xPos, categoryTableStartY + 4);
+        doc.text(header, xPos, categoryTableStartY + 4.5);
         xPos += categoryColWidths[index];
       });
 
       // Draw table rows
       doc.setTextColor(0, 0, 0);
-      doc.setFont('helvetica', 'normal');
       categoryData.forEach((row, index) => {
         const rowY = categoryTableStartY + categoryRowHeight + (index * categoryRowHeight);
         if (index % 2 === 0) {
@@ -254,7 +294,9 @@ export class EquipmentReportPDFService {
         }
         xPos = 25;
         row.forEach((cell, cellIndex) => {
-          doc.text(cell, xPos, rowY + 4);
+          setFontForMixedText(cell);
+          doc.setTextColor(0, 0, 0);
+          doc.text(String(cell), xPos, rowY + 4.5);
           xPos += categoryColWidths[cellIndex];
         });
       });
@@ -262,86 +304,149 @@ export class EquipmentReportPDFService {
       yPosition = categoryTableStartY + categoryRowHeight + (categoryData.length * categoryRowHeight) + 15;
     }
 
-    // Equipment Details by Category
+    // Equipment details: same columns as web report; Helvetica for Latin, Noto only when cell has Arabic
+    const pageBottom = 188;
+    const pageInnerW = doc.internal.pageSize.getWidth() - margin * 2;
+    // Wider Status (idx 5), narrower Location (6) — assignment col 7 still absorbs leftover width
+    const equipmentColWidths = [30, 22, 16, 16, 13, 22, 11, 110, 33];
+    // Stretch assignment column to full content width (A4 landscape inner ≈ 273mm)
+    let eqPad = pageInnerW - equipmentColWidths.reduce((a, b) => a + b, 0);
+    if (eqPad > 0) {
+      equipmentColWidths[7] += eqPad;
+    }
+    const equipmentHeaders = [
+      'Name',
+      'Mfr',
+      'Model',
+      'Serial',
+      'Door',
+      'Status',
+      'Location',
+      'Assignment',
+      'Operator',
+    ];
+
     if (data.equipment_by_category) {
-      Object.values(data.equipment_by_category).forEach((category, categoryIndex) => {
-        // Check if we need a new page
-        if (yPosition > 250) {
+      Object.values(data.equipment_by_category).forEach((category) => {
+        if (yPosition > pageBottom - 24) {
           doc.addPage();
-          yPosition = 20;
+          yPosition = margin;
         }
 
-        // Category header
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
         const categoryName = category.categoryName || 'Unknown Category';
         const equipmentCount = category.equipment?.length || 0;
-        doc.text(`${categoryName} (${equipmentCount} items)`, 20, yPosition);
-        yPosition += 8;
-
-        if (category.equipment && category.equipment.length > 0) {
-          const equipmentData = category.equipment.map(equipment => [
-            equipment.name || 'N/A',
-            equipment.doorNumber || 'N/A',
-            equipment.istimara || 'N/A',
-            equipment.istimaraExpiryDate || 'N/A',
-            equipment.status || 'N/A'
-          ]);
-
-          // Draw equipment table manually
-          const equipmentTableStartY = yPosition;
-          const equipmentRowHeight = 6;
-          const equipmentColWidths = [40, 20, 30, 30, 20];
-
-          // Draw table header
-          doc.setFillColor(52, 152, 219);
-          doc.rect(20, equipmentTableStartY, equipmentColWidths.reduce((a, b) => a + b, 0), equipmentRowHeight, 'F');
-          doc.setTextColor(255, 255, 255);
-          doc.setFontSize(8);
-          doc.setFont('helvetica', 'bold');
-          const equipmentHeaders = ['Name', 'Door #', 'Plate #', 'Plate # Expiry Date', 'Status'];
-          let equipmentXPos = 25;
-          equipmentHeaders.forEach((header, index) => {
-            doc.text(header, equipmentXPos, equipmentTableStartY + 4);
-            equipmentXPos += equipmentColWidths[index];
-          });
-
-          // Draw table rows
-          doc.setTextColor(0, 0, 0);
-          doc.setFont('helvetica', 'normal');
-          equipmentData.forEach((row, index) => {
-            const rowY = equipmentTableStartY + equipmentRowHeight + (index * equipmentRowHeight);
-            if (index % 2 === 0) {
-              doc.setFillColor(245, 245, 245);
-              doc.rect(20, rowY, equipmentColWidths.reduce((a, b) => a + b, 0), equipmentRowHeight, 'F');
-            }
-            equipmentXPos = 25;
-            row.forEach((cell, cellIndex) => {
-              doc.text(cell, equipmentXPos, rowY + 4);
-              equipmentXPos += equipmentColWidths[cellIndex];
-            });
-          });
-
-          yPosition = equipmentTableStartY + equipmentRowHeight + (equipmentData.length * equipmentRowHeight) + 10;
+        const catTitle = `${categoryName} (${equipmentCount} items)`;
+        if (notoRegistered && textContainsArabic(catTitle)) {
+          setFontForMixedText(catTitle);
+        } else {
+          setLatin('bold');
         }
+        doc.text(catTitle, margin, yPosition);
+        yPosition += 7;
+
+        if (!category.equipment?.length) {
+          yPosition += 4;
+          return;
+        }
+
+        const tableW = equipmentColWidths.reduce((a, b) => a + b, 0);
+        const headerH = 7;
+        const lineH = 2.5;
+        const cellPad = 2.5;
+
+        const drawHeader = (startY: number) => {
+          doc.setFillColor(52, 152, 219);
+          doc.rect(margin, startY, tableW, headerH, 'F');
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(6.5);
+          setLatin('bold');
+          let x = margin + 1;
+          equipmentHeaders.forEach((h, i) => {
+            doc.text(h, x, startY + 4.8);
+            x += equipmentColWidths[i];
+          });
+          doc.setTextColor(0, 0, 0);
+          setLatin('normal');
+        };
+
+        let tableY = yPosition;
+        drawHeader(tableY);
+        tableY += headerH;
+
+        const maxLinesPerCol = [4, 3, 3, 3, 3, 5, 4, 16, 8];
+
+        category.equipment.forEach((eq, index) => {
+          doc.setFontSize(6);
+          setLatin('normal');
+
+          const rowStrings = [
+            String(eq.name || '—'),
+            String(eq.manufacturer || '—'),
+            String(eq.modelNumber || '—'),
+            String(eq.serialNumber || '—'),
+            String(eq.doorNumber || '—'),
+            formatEquipmentReportStatus(eq.status),
+            String(eq.locationName || '—'),
+            String(eq.assignmentSummary ?? '—'),
+            String(eq.operatorDisplay ?? '—'),
+          ];
+
+          const cellLines = rowStrings.map((text, i) => {
+            setFontForMixedText(text);
+            const cap = maxLinesPerCol[i] ?? 5;
+            const lines = doc.splitTextToSize(String(text), Math.max(8, equipmentColWidths[i] - 2));
+            return lines.length <= cap ? lines : lines.slice(0, cap);
+          });
+          const maxLines = Math.max(1, ...cellLines.map((lines) => lines.length));
+          const rowH = cellPad + maxLines * lineH + 1;
+
+          if (tableY + rowH > pageBottom) {
+            doc.addPage();
+            tableY = margin;
+            drawHeader(tableY);
+            tableY += headerH;
+          }
+
+          if (index % 2 === 0) {
+            doc.setFillColor(245, 245, 245);
+            doc.rect(margin, tableY, tableW, rowH, 'F');
+          }
+
+          doc.setTextColor(0, 0, 0);
+          let cx = margin + 1;
+          cellLines.forEach((lines, colIdx) => {
+            lines.forEach((line, lineIdx) => {
+              setFontForMixedText(line);
+              doc.text(line, cx, tableY + cellPad + lineIdx * lineH);
+            });
+            cx += equipmentColWidths[colIdx];
+          });
+
+          tableY += rowH;
+        });
+
+        yPosition = tableY + 8;
       });
     }
 
     // Footer
     const pageCount = doc.getNumberOfPages();
+    const pageH = doc.internal.pageSize.getHeight();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
       doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Page ${i} of ${pageCount}`, 20, 290);
-      doc.text(new Date().toLocaleDateString(), 180, 290);
+      setLatin('normal');
+      doc.text(`Page ${i} of ${pageCount}`, margin, pageH - 6);
+      doc.text(new Date().toLocaleDateString(), doc.internal.pageSize.getWidth() - margin - 40, pageH - 6);
     }
 
     return doc;
   }
 
   static async generateEquipmentReportPDFBlob(data: EquipmentReportData): Promise<Blob> {
-    const doc = this.generateEquipmentReportPDF(data);
+    const arabicFontData = await loadArabicFontDataForPdf();
+    const doc = this.generateEquipmentReportPDF(data, { arabicFontData });
     return doc.output('blob');
   }
 

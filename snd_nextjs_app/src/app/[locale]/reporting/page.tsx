@@ -68,6 +68,7 @@ import { SupervisorEquipmentReportExcelService } from '@/lib/services/supervisor
 import { EmployeeAdvanceReportPDFService, EmployeeAdvanceReportData } from '@/lib/services/employee-advance-report-pdf-service';
 import { LeavingReportPDFService, LeavingReportData } from '@/lib/services/leaving-report-pdf-service';
 import { OnLeaveReportPDFService, OnLeaveReportData } from '@/lib/services/on-leave-report-pdf-service';
+import { formatEquipmentReportStatus } from '@/lib/utils/equipment-report-status';
 
 interface ReportData {
   success: boolean;
@@ -105,6 +106,56 @@ interface MetricCard {
   icon: any;
   color: string;
   trend?: string;
+}
+
+function equipmentReportStatusBadgeVariant(
+  status: string | null | undefined
+): 'default' | 'secondary' | 'destructive' | 'outline' {
+  const s = status ?? '';
+  if (s === 'available') return 'default';
+  if (s === 'rented' || s === 'assigned') return 'secondary';
+  if (s === 'maintenance' || s === 'under_maintenance') return 'destructive';
+  return 'outline';
+}
+
+/** Stacked assignment lines + strict clipping so long names cannot paint over the operator column */
+function AssignmentReportCell({ summary }: { summary: string }) {
+  if (!summary || summary === '—') {
+    return <span className="text-muted-foreground">—</span>;
+  }
+  const segments = summary.split(' · ').map((s) => s.trim()).filter(Boolean);
+  const last = segments[segments.length - 1];
+  const hasRef = last?.startsWith('#');
+  if (hasRef && segments.length >= 2) {
+    const ref = last;
+    const head = segments.slice(0, -1);
+    const typeLabel = head[0] ?? '';
+    const middle = head.slice(1).join(' · ');
+    return (
+      <div className="min-w-0 max-w-full space-y-0.5 overflow-hidden">
+        <div className="text-[11px] font-medium text-muted-foreground">{typeLabel}</div>
+        {middle ? (
+          <p
+            className="line-clamp-3 break-words text-sm leading-snug text-foreground [overflow-wrap:anywhere] [word-break:break-word]"
+            title={middle}
+          >
+            {middle}
+          </p>
+        ) : null}
+        <p className="break-all font-mono text-[11px] leading-tight text-muted-foreground" title={ref}>
+          {ref}
+        </p>
+      </div>
+    );
+  }
+  return (
+    <p
+      className="line-clamp-4 break-words text-sm leading-snug text-foreground [overflow-wrap:anywhere] [word-break:break-word]"
+      title={summary}
+    >
+      {summary}
+    </p>
+  );
 }
 
 export default function ReportingDashboardPage() {
@@ -314,7 +365,7 @@ export default function ReportingDashboardPage() {
       setCompanyFilter('all');
     } else if (selectedReport === 'equipment_by_category') {
       fetchEquipmentCategories();
-      // Reset customer filter when switching to equipment report
+      setDepartmentFilter('all');
       setCustomerFilter('all');
       setMonthFilter('');
       setCompanyFilter('all');
@@ -387,17 +438,16 @@ export default function ReportingDashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supervisorFilter, selectedReport]);
 
-  // Auto-regenerate report when status filter changes (only if report already exists)
+  // Auto-regenerate when status/category/include-inactive change (equipment & supervisor reports)
   React.useEffect(() => {
     if ((selectedReport === 'supervisor_equipment' || selectedReport === 'equipment_by_category') && reportData && reportGeneratedRef.current) {
-      // Small delay to ensure state is updated
       const timer = setTimeout(() => {
         generateReport();
       }, 300);
       return () => clearTimeout(timer);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, selectedReport]);
+  }, [statusFilter, categoryFilter, includeInactive, selectedReport]);
 
   // Re-fetch customers when month or hasTimesheet filter changes
   React.useEffect(() => {
@@ -441,12 +491,19 @@ export default function ReportingDashboardPage() {
       }
       // For employee_advance, don't send date filters - show all advances
 
-      if (departmentFilter !== 'all' && selectedReport !== 'on_leave_report') paramsObj.departmentId = departmentFilter;
+      if (
+        departmentFilter !== 'all' &&
+        selectedReport !== 'on_leave_report' &&
+        selectedReport !== 'equipment_by_category'
+      ) {
+        paramsObj.departmentId = departmentFilter;
+      }
       if (customerFilter !== 'all') paramsObj.customerId = customerFilter;
       if (categoryFilter !== 'all') paramsObj.categoryId = categoryFilter;
-      if (selectedReport === 'supervisor_equipment') paramsObj.status = statusFilter;
-      if (selectedReport === 'equipment_by_category') paramsObj.status = statusFilter;
       if (supervisorFilter !== 'all' && selectedReport === 'supervisor_equipment') paramsObj.supervisorId = supervisorFilter;
+      // Supervisor API uses status=all to mean "no item-status filter"; omit status=all for equipment — it would match status text 'all'
+      if (selectedReport === 'supervisor_equipment') paramsObj.status = statusFilter;
+      if (selectedReport === 'equipment_by_category' && statusFilter !== 'all') paramsObj.status = statusFilter;
       if (includeInactive) paramsObj.includeInactive = 'true';
       if (selectedReport === 'rental_timesheet' && companyFilter !== 'all') paramsObj.customerId = companyFilter;
       if (selectedReport === 'rental_timesheet' && hasTimesheetFilter !== 'all') paramsObj.hasTimesheet = hasTimesheetFilter;
@@ -580,8 +637,8 @@ export default function ReportingDashboardPage() {
             { title: 'Total Equipment', value: data.summary_stats.totalEquipment || 0, icon: Car, color: 'blue' },
             { title: 'Active Equipment', value: data.summary_stats.activeEquipment || 0, icon: Car, color: 'green' },
             { title: 'Available Equipment', value: data.summary_stats.availableEquipment || 0, icon: Car, color: 'emerald' },
-            { title: 'Rented Equipment', value: data.summary_stats.rentedEquipment || 0, icon: Car, color: 'orange' },
-            { title: 'Maintenance Equipment', value: data.summary_stats.maintenanceEquipment || 0, icon: Car, color: 'red' },
+            { title: 'Rented / assigned (in use)', value: data.summary_stats.rentedEquipment || 0, icon: Car, color: 'orange' },
+            { title: 'Maintenance (incl. under maint.)', value: data.summary_stats.maintenanceEquipment || 0, icon: Car, color: 'red' },
             { title: 'Total Value', value: `SAR ${Number(data.summary_stats.totalValue || 0).toLocaleString()}`, icon: DollarSign, color: 'purple' }
           );
         }
@@ -1224,52 +1281,79 @@ export default function ReportingDashboardPage() {
                     )}
                   </div>
                   <div className="overflow-x-auto">
-                    <Table>
+                    <Table className="w-full table-fixed min-w-[920px] border-collapse">
+                      <colgroup>
+                        <col className="w-[11%]" />
+                        <col className="w-[9%]" />
+                        <col className="w-[7%]" />
+                        <col className="w-[7%]" />
+                        <col className="w-[6%]" />
+                        <col className="w-[9%]" />
+                        <col className="w-[9%]" />
+                        <col className="w-[26%]" />
+                        <col className="w-[16%]" />
+                      </colgroup>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Manufacturer</TableHead>
-                          <TableHead>Model</TableHead>
-                          <TableHead>Serial</TableHead>
-                          <TableHead>Door #</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Location</TableHead>
-                          <TableHead>Assigned To</TableHead>
-                          <TableHead>Purchase Price</TableHead>
-                          <TableHead>Daily Rate</TableHead>
-                          <TableHead>Condition</TableHead>
+                          <TableHead className="whitespace-normal align-bottom">Name</TableHead>
+                          <TableHead className="whitespace-normal align-bottom">Manufacturer</TableHead>
+                          <TableHead className="whitespace-normal align-bottom">Model</TableHead>
+                          <TableHead className="whitespace-normal align-bottom">Serial</TableHead>
+                          <TableHead className="whitespace-normal align-bottom">Door #</TableHead>
+                          <TableHead className="whitespace-normal align-bottom">Status</TableHead>
+                          <TableHead className="whitespace-normal align-bottom">Location</TableHead>
+                          <TableHead className="whitespace-normal align-bottom">Current assignment</TableHead>
+                          <TableHead className="whitespace-normal align-bottom">Operator / driver</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {category.equipment.map((equipment: any, equipmentIndex: number) => (
                           <TableRow key={equipment.id || equipmentIndex}>
-                            <TableCell className="font-medium">{equipment.name}</TableCell>
-                            <TableCell>{equipment.manufacturer || 'N/A'}</TableCell>
-                            <TableCell>{equipment.modelNumber || 'N/A'}</TableCell>
-                            <TableCell>{equipment.serialNumber || 'N/A'}</TableCell>
-                            <TableCell>{equipment.doorNumber || 'N/A'}</TableCell>
-                            <TableCell>
+                            <TableCell className="font-medium min-w-0 whitespace-normal break-words align-top">
+                              {equipment.name}
+                            </TableCell>
+                            <TableCell className="min-w-0 whitespace-normal break-words align-top text-muted-foreground">
+                              {equipment.manufacturer || 'N/A'}
+                            </TableCell>
+                            <TableCell className="min-w-0 whitespace-normal break-words align-top">
+                              {equipment.modelNumber || 'N/A'}
+                            </TableCell>
+                            <TableCell className="min-w-0 whitespace-normal break-words align-top">
+                              {equipment.serialNumber || 'N/A'}
+                            </TableCell>
+                            <TableCell className="min-w-0 whitespace-normal break-words align-top">
+                              {equipment.doorNumber || 'N/A'}
+                            </TableCell>
+                            <TableCell className="align-top">
                               <Badge
-                                variant={
-                                  equipment.status === 'available' ? 'default' :
-                                    equipment.status === 'rented' ? 'secondary' :
-                                      equipment.status === 'maintenance' ? 'destructive' : 'outline'
-                                }
+                                variant={equipmentReportStatusBadgeVariant(equipment.status)}
+                                className="whitespace-normal text-left font-normal h-auto max-w-full py-1"
                               >
-                                {equipment.status}
+                                {formatEquipmentReportStatus(equipment.status)}
                               </Badge>
                             </TableCell>
-                            <TableCell>{equipment.locationName || 'N/A'}</TableCell>
-                            <TableCell>
-                              {equipment.assignedEmployeeName ? (
-                                <Badge variant="outline">{equipment.assignedEmployeeName}</Badge>
+                            <TableCell className="min-w-0 whitespace-normal break-words align-top">
+                              {equipment.locationName || 'N/A'}
+                            </TableCell>
+                            <TableCell className="min-w-0 max-w-0 overflow-hidden border-r border-border/40 p-2 align-top text-sm">
+                              <div dir="auto" className="min-w-0 max-w-full">
+                                <AssignmentReportCell summary={equipment.assignmentSummary || '—'} />
+                              </div>
+                            </TableCell>
+                            <TableCell className="relative z-[1] min-w-0 max-w-0 overflow-hidden bg-card align-top p-2">
+                              {equipment.operatorDisplay && equipment.operatorDisplay !== '—' ? (
+                                <Badge
+                                  variant="outline"
+                                  className="block w-full max-w-full whitespace-normal break-words text-left font-normal leading-snug [overflow-wrap:anywhere] [word-break:break-word]"
+                                >
+                                  {equipment.operatorDisplay}
+                                </Badge>
                               ) : (
-                                <Badge variant="secondary">Unassigned</Badge>
+                                <Badge variant="secondary" className="font-normal">
+                                  —
+                                </Badge>
                               )}
                             </TableCell>
-                            <TableCell>SAR {Number(equipment.purchasePrice || 0).toLocaleString()}</TableCell>
-                            <TableCell>SAR {Number(equipment.dailyRate || 0).toFixed(2)}</TableCell>
-                            <TableCell>{equipment.assetCondition || 'N/A'}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -1821,7 +1905,11 @@ export default function ReportingDashboardPage() {
   const exportReport = () => {
     if (!reportData) return;
 
-    const dataStr = JSON.stringify(reportData.data, null, 2);
+    const payload =
+      reportData && typeof reportData === 'object' && 'data' in reportData
+        ? (reportData as { data?: unknown }).data ?? reportData
+        : reportData;
+    const dataStr = JSON.stringify(payload, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
@@ -2438,8 +2526,11 @@ export default function ReportingDashboardPage() {
                   </div>
                 )}
 
-                {/* Department Filter - Hide for rental timesheet, employee advance, and on leave reports */}
-                {selectedReport !== 'rental_timesheet' && selectedReport !== 'employee_advance' && selectedReport !== 'on_leave_report' && (
+                {/* Department Filter - Hidden for reports that do not scope by department (incl. equipment by category) */}
+                {selectedReport !== 'rental_timesheet' &&
+                  selectedReport !== 'employee_advance' &&
+                  selectedReport !== 'on_leave_report' &&
+                  selectedReport !== 'equipment_by_category' && (
                   <div className="space-y-2 min-w-[180px]">
                     <Label htmlFor="department-filter">{t('reporting.department_filter')}</Label>
                     <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
@@ -2559,8 +2650,10 @@ export default function ReportingDashboardPage() {
                         ) : (
                           <>
                             <SelectItem value="available">Available</SelectItem>
-                            <SelectItem value="rented">Rented</SelectItem>
-                            <SelectItem value="maintenance">Maintenance</SelectItem>
+                            <SelectItem value="rented">Rented or assigned (on job)</SelectItem>
+                            <SelectItem value="assigned">Assigned only</SelectItem>
+                            <SelectItem value="maintenance">Maintenance (incl. in shop)</SelectItem>
+                            <SelectItem value="under_maintenance">Under maintenance only</SelectItem>
                             <SelectItem value="inactive">Inactive</SelectItem>
                           </>
                         )}
