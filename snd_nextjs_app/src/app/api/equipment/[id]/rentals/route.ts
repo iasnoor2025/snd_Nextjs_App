@@ -38,6 +38,44 @@ async function updateEquipmentStatusOnAssignmentChange(
   }
 }
 
+/** Equipment should only appear with one current assignment; if DB still has multiple active rows, show the latest-started as active and the rest as completed. */
+function normalizeAtMostOneActiveAssignment<
+  T extends {
+    status?: string;
+    rental_start_date?: string | null;
+    start_date?: string | null;
+    created_at?: string | null;
+  },
+>(rows: T[]): T[] {
+  const activeLike = new Set(['active', 'pending']);
+  const activeIdx = rows
+    .map((r, i) => (activeLike.has((r.status || '').toLowerCase()) ? i : -1))
+    .filter((i): i is number => i >= 0);
+  if (activeIdx.length <= 1) return rows;
+
+  const startMs = (r: T) => {
+    const raw = r.rental_start_date || r.start_date || r.created_at;
+    if (!raw) return 0;
+    const t = new Date(raw).getTime();
+    return Number.isNaN(t) ? 0 : t;
+  };
+
+  let bestIdx = activeIdx[0]!;
+  let bestMs = startMs(rows[bestIdx]!);
+  for (const i of activeIdx) {
+    const m = startMs(rows[i]!);
+    if (m > bestMs) {
+      bestMs = m;
+      bestIdx = i;
+    }
+  }
+
+  return rows.map((r, i) => {
+    if (!activeIdx.includes(i) || i === bestIdx) return r;
+    return { ...r, status: 'completed' };
+  });
+}
+
 const getEquipmentRentalsHandler = async (request: Request, { params }: { params: Promise<{ id: string }> }) => {
   try {
     // Get session for user ID if needed (middleware handles auth)
@@ -648,11 +686,12 @@ const getEquipmentRentalsHandler = async (request: Request, { params }: { params
       };
     });
     // Merge both histories and sort by creation date (most recent first)
-    const allHistory = [...history, ...projectEquipmentHistory].sort((a, b) => {
+    const merged = [...history, ...projectEquipmentHistory].sort((a, b) => {
       const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
       const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
       return dateB - dateA; // Descending order (most recent first)
     });
+    const allHistory = normalizeAtMostOneActiveAssignment(merged);
     return NextResponse.json({
       success: true,
       data: allHistory,

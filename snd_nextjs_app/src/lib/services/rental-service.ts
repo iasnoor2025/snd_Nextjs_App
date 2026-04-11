@@ -5,10 +5,17 @@ import {
   employees,
   equipment,
   equipmentRentalHistory,
+  projectEquipment,
   rentalItems,
   rentals,
 } from '@/lib/drizzle/schema';
 import { and, desc, eq, gte, ilike, isNull, lt, lte, ne, or, sql } from 'drizzle-orm';
+import {
+  getCurrentDateString,
+  getCurrentTimestamp,
+  getPreviousDay,
+  toISOString,
+} from '@/lib/utils/date-utils';
 import {
   cacheQueryResult,
   generateCacheKey,
@@ -1138,6 +1145,7 @@ export class RentalService {
       for (const item of items) {
         if (item.equipmentId) {
           equipmentIdsToSync.add(item.equipmentId);
+          await this.endConflictingAssignmentsBeforeRentalLine(rentalId, item.equipmentId, startDate);
           // Check if equipment assignment already exists (any status)
           const existingEquipmentAssignment = await db
             .select()
@@ -1613,27 +1621,70 @@ export class RentalService {
     return fallbackTotal;
   }
 
-  // Create or update equipment assignment for rental item
-  static async createEquipmentAssignment(rentalId: number, equipmentId: number, unitPrice: number, totalPrice: number, startDate: Date, endDate?: Date) {
-    try {
-      // Complete previous active assignments for this equipment
-      const previousDay = new Date(startDate);
-      previousDay.setDate(previousDay.getDate() - 1);
-      const completedDateStr = previousDay.toISOString();
+  /**
+   * Before this rental line becomes the active use of a piece of equipment, end:
+   * - other active equipment_rental_history rows,
+   * - active project_equipment rows,
+   * - active rental_items on *other* rentals (not `rentalId`).
+   */
+  static async endConflictingAssignmentsBeforeRentalLine(
+    rentalId: number,
+    equipmentId: number,
+    startDate: Date
+  ): Promise<void> {
+    const completedDayStr = getPreviousDay(startDate);
+    const completedHistoryEnd = toISOString(completedDayStr);
+    const updatedAt = getCurrentTimestamp();
+    const updatedAtDate = getCurrentDateString();
 
-      await db
+    await Promise.all([
+      db
         .update(equipmentRentalHistory)
         .set({
-          endDate: completedDateStr,
+          endDate: completedHistoryEnd,
           status: 'completed',
-          updatedAt: new Date().toISOString(),
+          updatedAt,
         })
         .where(
           and(
             eq(equipmentRentalHistory.equipmentId, equipmentId),
             eq(equipmentRentalHistory.status, 'active')
           )
-        );
+        ),
+      db
+        .update(projectEquipment)
+        .set({
+          endDate: completedDayStr,
+          status: 'completed',
+          updatedAt: updatedAtDate,
+        })
+        .where(
+          and(
+            eq(projectEquipment.equipmentId, equipmentId),
+            eq(projectEquipment.status, 'active')
+          )
+        ),
+      db
+        .update(rentalItems)
+        .set({
+          completedDate: completedDayStr,
+          status: 'completed',
+          updatedAt: updatedAtDate,
+        })
+        .where(
+          and(
+            eq(rentalItems.equipmentId, equipmentId),
+            eq(rentalItems.status, 'active'),
+            ne(rentalItems.rentalId, rentalId)
+          )
+        ),
+    ]);
+  }
+
+  // Create or update equipment assignment for rental item
+  static async createEquipmentAssignment(rentalId: number, equipmentId: number, unitPrice: number, totalPrice: number, startDate: Date, endDate?: Date) {
+    try {
+      await this.endConflictingAssignmentsBeforeRentalLine(rentalId, equipmentId, startDate);
 
       // Check if equipment assignment already exists for this rental
       const existingAssignment = await db
