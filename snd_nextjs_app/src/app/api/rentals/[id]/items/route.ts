@@ -4,7 +4,6 @@ import { RentalService } from '@/lib/services/rental-service';
 import { CentralAssignmentService } from '@/lib/services/central-assignment-service';
 import { and, eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
-import { EquipmentStatusService } from '@/lib/services/equipment-status-service';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -140,9 +139,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             startDate,
             endDate
           );
-          
-          // Immediately update equipment status to 'assigned'
-          await EquipmentStatusService.onAssignmentCreated(parseInt(body.equipmentId));
+          // Status reconciled inside createEquipmentAssignment (EquipmentStatusService)
         }
       } catch (equipmentError) {
         console.error('Failed to create equipment assignment:', equipmentError);

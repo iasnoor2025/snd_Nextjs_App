@@ -16,6 +16,7 @@ import { withPermission } from '@/lib/rbac/api-middleware';
 import { PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { cacheService } from '@/lib/redis';
 import { CACHE_TAGS } from '@/lib/redis';
+import { EquipmentStatusService } from '@/lib/services/equipment-status-service';
 
 export const PUT = withPermission(PermissionConfigs.equipment.update)(
   async (
@@ -94,6 +95,8 @@ export const PUT = withPermission(PermissionConfigs.equipment.update)(
       .update(equipmentRentalHistory)
       .set(updateData)
       .where(eq(equipmentRentalHistory.id, assignmentId));
+
+    await EquipmentStatusService.syncAfterAssignmentMutation(currentAssignment.equipmentId);
 
     // Handle employee assignment synchronization
     let employeeAssignment: any = null;

@@ -183,6 +183,22 @@ export class EquipmentStatusService {
   /**
    * Update equipment status when assignment is created
    */
+  /**
+   * Call after any DB write that changes assignment state (rental history, project equipment,
+   * rental items). Deduplicates IDs and reconciles each row against assignments + maintenance.
+   */
+  static async syncAfterAssignmentMutation(
+    equipmentIds: number | readonly number[]
+  ): Promise<void> {
+    const list = Array.isArray(equipmentIds) ? equipmentIds : [equipmentIds];
+    const ids = [
+      ...new Set(
+        list.filter((id): id is number => typeof id === 'number' && !Number.isNaN(id))
+      ),
+    ];
+    await Promise.all(ids.map((id) => this.updateEquipmentStatusImmediately(id)));
+  }
+
   static async onAssignmentCreated(equipmentId: number): Promise<void> {
     if (process.env.NODE_ENV === 'development') {
     }

@@ -45,7 +45,10 @@ export class CentralAssignmentService {
 
     // Create new assignment based on type
     if (type === 'equipment') {
-      return await this.createEquipmentAssignment(data);
+      const created = await this.createEquipmentAssignment(data);
+      const { EquipmentStatusService } = await import('@/lib/services/equipment-status-service');
+      await EquipmentStatusService.syncAfterAssignmentMutation(entityId);
+      return created;
     } else {
       return await this.createEmployeeAssignment(data);
     }

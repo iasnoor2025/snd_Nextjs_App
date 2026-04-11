@@ -700,7 +700,20 @@ export class RentalService {
       const deletedEquipmentAssignments = await db
         .delete(equipmentRentalHistory)
         .where(eq(equipmentRentalHistory.rentalId, rentalId))
-        .returning();
+        .returning({ equipmentId: equipmentRentalHistory.equipmentId });
+
+      const equipIds = [
+        ...new Set(
+          deletedEquipmentAssignments
+            .map((r) => r.equipmentId)
+            .filter((id): id is number => typeof id === 'number' && id > 0)
+        ),
+      ];
+      if (equipIds.length > 0) {
+        const { EquipmentStatusService } = await import('@/lib/services/equipment-status-service');
+        await EquipmentStatusService.syncAfterAssignmentMutation(equipIds);
+      }
+
       return {
         employeeAssignments: deletedEmployeeAssignments.length,
         equipmentAssignments: deletedEquipmentAssignments.length
@@ -1119,9 +1132,12 @@ export class RentalService {
       const startDate = new Date(rental.startDate);
       const endDate = rental.expectedEndDate ? new Date(rental.expectedEndDate) : null;
 
+      const equipmentIdsToSync = new Set<number>();
+
       // Create equipment assignments for each rental item with equipment
       for (const item of items) {
         if (item.equipmentId) {
+          equipmentIdsToSync.add(item.equipmentId);
           // Check if equipment assignment already exists (any status)
           const existingEquipmentAssignment = await db
             .select()
@@ -1226,6 +1242,11 @@ export class RentalService {
         }
       }
 
+      if (equipmentIdsToSync.size > 0) {
+        const { EquipmentStatusService } = await import('@/lib/services/equipment-status-service');
+        await EquipmentStatusService.syncAfterAssignmentMutation([...equipmentIdsToSync]);
+      }
+
     } catch (error) {
 
     }
@@ -1305,6 +1326,28 @@ export class RentalService {
           .where(eq(rentalItems.rentalId, rentalId));
       }
 
+      const [histRows, itemRows] = await Promise.all([
+        db
+          .select({ equipmentId: equipmentRentalHistory.equipmentId })
+          .from(equipmentRentalHistory)
+          .where(eq(equipmentRentalHistory.rentalId, rentalId)),
+        db
+          .select({ equipmentId: rentalItems.equipmentId })
+          .from(rentalItems)
+          .where(eq(rentalItems.rentalId, rentalId)),
+      ]);
+      const statusSyncIds = [
+        ...new Set(
+          [...histRows, ...itemRows]
+            .map((r) => r.equipmentId)
+            .filter((id): id is number => typeof id === 'number' && id > 0)
+        ),
+      ];
+      if (statusSyncIds.length > 0) {
+        const { EquipmentStatusService } = await import('@/lib/services/equipment-status-service');
+        await EquipmentStatusService.syncAfterAssignmentMutation(statusSyncIds);
+      }
+
     } catch (error) {
       console.error('Error updating assignment statuses:', error);
     }
@@ -1341,6 +1384,22 @@ export class RentalService {
         .update(equipmentRentalHistory)
         .set(equipmentUpdateData)
         .where(eq(equipmentRentalHistory.rentalId, rentalId));
+
+      const dateSyncRows = await db
+        .select({ equipmentId: equipmentRentalHistory.equipmentId })
+        .from(equipmentRentalHistory)
+        .where(eq(equipmentRentalHistory.rentalId, rentalId));
+      const dateSyncIds = [
+        ...new Set(
+          dateSyncRows
+            .map((r) => r.equipmentId)
+            .filter((id): id is number => typeof id === 'number' && id > 0)
+        ),
+      ];
+      if (dateSyncIds.length > 0) {
+        const { EquipmentStatusService } = await import('@/lib/services/equipment-status-service');
+        await EquipmentStatusService.syncAfterAssignmentMutation(dateSyncIds);
+      }
     } catch (error) {
       console.error('Error updating rental assignment dates:', error);
     }
@@ -1617,6 +1676,9 @@ export class RentalService {
           })
           .where(eq(equipmentRentalHistory.id, existingAssignment[0]?.id || 0));
       }
+
+      const { EquipmentStatusService } = await import('@/lib/services/equipment-status-service');
+      await EquipmentStatusService.syncAfterAssignmentMutation(equipmentId);
     } catch (error) {
       console.error('Error creating/updating equipment assignment:', error);
     }
@@ -1638,6 +1700,9 @@ export class RentalService {
             eq(equipmentRentalHistory.status, 'active')
           )
         );
+
+      const { EquipmentStatusService } = await import('@/lib/services/equipment-status-service');
+      await EquipmentStatusService.syncAfterAssignmentMutation(equipmentId);
     } catch (error) {
       console.error('Error removing equipment assignment:', error);
     }
