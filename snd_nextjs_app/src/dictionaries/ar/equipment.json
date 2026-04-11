@@ -305,6 +305,7 @@
       "type": "النوع",
       "reference": "المرجع",
       "customerProjectEmployee": "العميل/المشروع/الموظف",
+      "rate": "السعر",
       "period": "الفترة",
       "amount": "المبلغ",
       "status": "الحالة",

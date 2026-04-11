@@ -59,6 +59,8 @@ import { useTranslations } from '@/hooks/use-translations';
 
 interface AssignmentHistoryItem {
   id: number;
+  /** Present for rental rows when joined to a specific rental_items line (handovers / multiple lines). */
+  rental_item_id?: number | null;
   rental_id?: number;
   rental_number?: string;
   customer_name?: string;
@@ -92,6 +94,10 @@ interface AssignmentHistoryItem {
   rental_status?: string;
   duration_days?: number;
   operator_count?: number;
+  /** All distinct drivers on this rental for this equipment (from rental line items). */
+  operators?: Array<{ id: number; name: string; file_number?: string | null }>;
+  /** Driver on this specific rental line when known (useful when multiple operators on same rental). */
+  line_operator?: { id: number; name: string; file_number?: string | null } | null;
   created_at: string;
   updated_at: string;
 }
@@ -266,6 +272,169 @@ export default function EquipmentAssignmentHistory({
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(value);
+  };
+
+  /** One line: "Jan 11, 2026 → Feb 08, 2026 (28 days)" */
+  const formatAssignmentPeriodLine = (assignment: {
+    rental_start_date?: string;
+    start_date?: string;
+    rental_expected_end_date?: string;
+    expected_end_date?: string;
+    duration_days?: number;
+    status?: string;
+  }): string => {
+    const startRaw = assignment.rental_start_date || assignment.start_date;
+    const endRaw = assignment.rental_expected_end_date || assignment.expected_end_date;
+    const d = assignment.duration_days;
+    const ongoing = assignment.status === 'active';
+
+    if (startRaw && endRaw) {
+      const range = `${format(new Date(startRaw), 'MMM dd, yyyy')} → ${format(new Date(endRaw), 'MMM dd, yyyy')}`;
+      if (d && d > 0) {
+        return `${range} (${d} ${d === 1 ? 'day' : 'days'}${ongoing ? ', ongoing' : ''})`;
+      }
+      return `${range}${ongoing ? ' (ongoing)' : ''}`;
+    }
+    if (startRaw) {
+      if (d && d > 0) {
+        return `${format(new Date(startRaw), 'MMM dd, yyyy')} (${d} ${d === 1 ? 'day' : 'days'}${ongoing ? ', ongoing' : ''})`;
+      }
+      return `${format(new Date(startRaw), 'MMM dd, yyyy')}${ongoing ? ' (ongoing)' : ''}`;
+    }
+    return 'Not specified';
+  };
+
+  const formatSar = (n: number) => `SAR ${formatNumber(n)}`;
+
+  /** Total + a rate line that matches how rental totals are built (avoid misleading "1 × rate"). */
+  const getAssignmentAmountBreakdown = (
+    a: Pick<
+      AssignmentHistoryItem,
+      | 'total_price'
+      | 'unit_price'
+      | 'quantity'
+      | 'rate_type'
+      | 'duration_days'
+      | 'assignment_type'
+    >
+  ): { total: string; rateLine: string } => {
+    const totalN = Number(a.total_price) || 0;
+    const unitN = Number(a.unit_price) || 0;
+    const qty = Math.max(1, Number(a.quantity ?? 1) || 1);
+    const rt = (a.rate_type || 'daily').toLowerCase();
+    const days = a.duration_days ?? 0;
+
+    const total = formatSar(totalN);
+
+    if (rt === 'daily') {
+      if (days > 0) {
+        return {
+          total,
+          rateLine: `${formatSar(unitN)}/day × ${days} ${days === 1 ? 'day' : 'days'}`,
+        };
+      }
+      return { total, rateLine: `${formatSar(unitN)}/day` };
+    }
+
+    if (rt === 'hourly') {
+      return {
+        total,
+        rateLine:
+          qty > 1
+            ? `${qty} × ${formatSar(unitN)}/hr`
+            : `${formatSar(unitN)}/hr`,
+      };
+    }
+
+    if (rt === 'weekly') {
+      return { total, rateLine: `${formatSar(unitN)}/week` };
+    }
+
+    if (rt === 'monthly') {
+      return { total, rateLine: `${formatSar(unitN)}/month` };
+    }
+
+    return { total, rateLine: `${formatSar(unitN)} · ${rt}` };
+  };
+
+  /** Rental rows: show the driver for this line only when known (not every driver on the rental). */
+  const renderRentalOperatorsInfo = (
+    assignment: AssignmentHistoryItem | undefined | null,
+    opts?: { compact?: boolean }
+  ) => {
+    if (!assignment || assignment.assignment_type !== 'rental') return null;
+    const compact = opts?.compact;
+    const wrapperCls = compact ? 'text-xs mt-1 space-y-1' : 'text-sm mt-1 space-y-1';
+    if (assignment.line_operator) {
+      return (
+        <div className={wrapperCls}>
+          <div className="text-foreground">
+            <span className="font-medium text-muted-foreground">Operator: </span>
+            {assignment.line_operator.name}
+            {assignment.line_operator.file_number ? (
+              <span className="text-muted-foreground"> ({assignment.line_operator.file_number})</span>
+            ) : null}
+          </div>
+        </div>
+      );
+    }
+    if (assignment.operators && assignment.operators.length > 0) {
+      return (
+        <div className={wrapperCls}>
+          <div className="text-foreground">
+            <span className="font-medium text-muted-foreground">Operators: </span>
+            {assignment.operators.map((o, i) => (
+              <span key={`${o.id}-${i}`}>
+                {i > 0 ? ', ' : ''}
+                {o.name}
+                {o.file_number ? (
+                  <span className="text-muted-foreground"> ({o.file_number})</span>
+                ) : null}
+              </span>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    if (assignment.operator_count === undefined) return null;
+    return (
+      <div
+        className={
+          compact
+            ? 'text-xs text-blue-600 mt-1 font-medium'
+            : 'text-sm text-blue-600 font-medium'
+        }
+      >
+        {assignment.operator_count === 0
+          ? 'No operators assigned'
+          : assignment.operator_count === 1
+            ? '1 operator assigned'
+            : `${assignment.operator_count} operators assigned`}
+      </div>
+    );
+  };
+
+  const renderOperatorsInPeriodCell = (assignment: AssignmentHistoryItem) => {
+    if (assignment.assignment_type === 'rental') {
+      return renderRentalOperatorsInfo(assignment, { compact: true });
+    }
+    if (assignment.assignment_type === 'project' && assignment.operators && assignment.operators.length > 0) {
+      return (
+        <div className="text-xs mt-1 text-foreground">
+          <span className="font-medium text-muted-foreground">Operator: </span>
+          {assignment.operators.map((o, i) => (
+            <span key={`${o.id}-${i}`}>
+              {i > 0 ? ', ' : ''}
+              {o.name}
+              {o.file_number ? (
+                <span className="text-muted-foreground"> ({o.file_number})</span>
+              ) : null}
+            </span>
+          ))}
+        </div>
+      );
+    }
+    return null;
   };
 
   const fetchEmployees = async () => {
@@ -487,6 +656,10 @@ export default function EquipmentAssignmentHistory({
   }
 
   const totalRevenue = getTotalRevenue();
+  const currentAssignment = getCurrentAssignment();
+  const currentAmountBreakdown = currentAssignment
+    ? getAssignmentAmountBreakdown(currentAssignment)
+    : null;
 
   return (
     <>
@@ -568,42 +741,38 @@ export default function EquipmentAssignmentHistory({
                           `Employee: ${getCurrentAssignment()?.employee_name}`}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        Start Date:{' '}
-                        {getCurrentAssignment()?.rental_start_date ||
-                        getCurrentAssignment()?.start_date
-                          ? format(
-                              new Date(
-                                getCurrentAssignment()!.rental_start_date ||
-                                  getCurrentAssignment()!.start_date!
-                              ),
-                              'MMM dd, yyyy'
-                            )
-                          : 'Not specified'}
-                        {getCurrentAssignment()?.duration_days && getCurrentAssignment()!.duration_days > 0 && (
-                          <span className="ml-2">
-                            ({getCurrentAssignment()!.duration_days} {getCurrentAssignment()!.duration_days === 1 ? 'day' : 'days'}
-                            {getCurrentAssignment()?.status === 'active' && ' ongoing'})
-                          </span>
+                        Period:{' '}
+                        <span className="text-foreground font-medium tabular-nums">
+                          {formatAssignmentPeriodLine(getCurrentAssignment()!)}
+                        </span>
+                      </div>
+                      {renderRentalOperatorsInfo(getCurrentAssignment())}
+                      {getCurrentAssignment()?.assignment_type === 'project' &&
+                        getCurrentAssignment()?.operators &&
+                        getCurrentAssignment()!.operators!.length > 0 && (
+                          <div className="text-sm mt-1 text-foreground">
+                            <span className="font-medium text-muted-foreground">Operator(s): </span>
+                            {getCurrentAssignment()!.operators!.map((o, i) => (
+                              <span key={`${o.id}-${i}`}>
+                                {i > 0 ? ', ' : ''}
+                                {o.name}
+                                {o.file_number ? (
+                                  <span className="text-muted-foreground"> ({o.file_number})</span>
+                                ) : null}
+                              </span>
+                            ))}
+                          </div>
                         )}
-                      </div>
-                      {getCurrentAssignment()?.assignment_type === 'rental' && getCurrentAssignment()?.operator_count !== undefined && (
-                        <div className="text-sm text-blue-600 font-medium">
-                          {getCurrentAssignment()!.operator_count === 0
-                            ? 'No operators assigned'
-                            : getCurrentAssignment()!.operator_count === 1
-                              ? '1 operator assigned'
-                              : `${getCurrentAssignment()!.operator_count} operators assigned`}
-                        </div>
-                      )}
                     </div>
-                    <div className="text-right">
-                      <div className="text-lg font-bold">
-                        SAR {formatNumber(Number(getCurrentAssignment()!.total_price) || 0)}
+                    <div className="text-right space-y-1">
+                      <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                        Total
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        {getCurrentAssignment()!.quantity} × SAR{' '}
-                        {formatNumber(Number(getCurrentAssignment()!.unit_price) || 0)}{' '}
-                        {getCurrentAssignment()!.rate_type}
+                      <div className="text-lg font-bold tabular-nums">
+                        {currentAmountBreakdown?.total}
+                      </div>
+                      <div className="text-xs text-muted-foreground tabular-nums max-w-[16rem] ml-auto">
+                        {currentAmountBreakdown?.rateLine}
                       </div>
                     </div>
                   </div>
@@ -645,6 +814,7 @@ export default function EquipmentAssignmentHistory({
                       <TableHead>{t('equipment.assignmentHistory.table.type')}</TableHead>
                       <TableHead>{t('equipment.assignmentHistory.table.reference')}</TableHead>
                       <TableHead>{t('equipment.assignmentHistory.table.customerProjectEmployee')}</TableHead>
+                      <TableHead>{t('equipment.assignmentHistory.table.rate')}</TableHead>
                       <TableHead>{t('equipment.assignmentHistory.table.period')}</TableHead>
                       <TableHead>{t('equipment.assignmentHistory.table.amount')}</TableHead>
                       <TableHead>{t('equipment.assignmentHistory.table.status')}</TableHead>
@@ -652,8 +822,12 @@ export default function EquipmentAssignmentHistory({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {assignmentHistory.map(assignment => (
-                      <TableRow key={assignment.id}>
+                    {assignmentHistory.map((assignment, index) => {
+                      const amt = getAssignmentAmountBreakdown(assignment);
+                      return (
+                      <TableRow
+                        key={`${assignment.assignment_type}-${String(assignment.id)}-ri${assignment.rental_item_id ?? 'x'}-${index}`}
+                      >
                         <TableCell>
                           <div>
                             <div className="font-medium">{assignment.equipment_name}</div>
@@ -731,57 +905,26 @@ export default function EquipmentAssignmentHistory({
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="text-sm">
-                            <div>
-                              {assignment.rental_start_date || assignment.start_date
-                                ? format(
-                                    new Date(
-                                      assignment.rental_start_date || assignment.start_date!
-                                    ),
-                                    'MMM dd, yyyy'
-                                  )
-                                : 'Not specified'}
+                          <div className="space-y-1.5 min-w-[10rem]">
+                            <div className="text-xs text-muted-foreground tabular-nums leading-snug">
+                              {amt.rateLine}
                             </div>
-                            {(assignment.rental_expected_end_date ||
-                              assignment.expected_end_date) && (
-                              <div className="text-muted-foreground">
-                                to{' '}
-                                {format(
-                                  new Date(
-                                    assignment.rental_expected_end_date ||
-                                      assignment.expected_end_date!
-                                  ),
-                                  'MMM dd, yyyy'
-                                )}
-                              </div>
-                            )}
-                            {assignment.duration_days && assignment.duration_days > 0 && (
-                              <div className="text-xs text-muted-foreground mt-1">
-                                {assignment.duration_days} {assignment.duration_days === 1 ? 'day' : 'days'}
-                                {assignment.status === 'active' && ' (ongoing)'}
-                              </div>
-                            )}
-                            {assignment.assignment_type === 'rental' && assignment.operator_count !== undefined && (
-                              <div className="text-xs text-blue-600 mt-1 font-medium">
-                                {assignment.operator_count === 0
-                                  ? 'No operators'
-                                  : assignment.operator_count === 1
-                                    ? '1 operator'
-                                    : `${assignment.operator_count} operators`}
-                              </div>
-                            )}
+                            <div className="flex flex-wrap gap-1">
+                              {getRateTypeBadge(assignment.rate_type)}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div>
-                            <div className="font-medium">
-                              SAR {formatNumber(Number(assignment.total_price) || 0)}
+                          <div className="text-sm">
+                            <div className="font-medium tabular-nums leading-snug">
+                              {formatAssignmentPeriodLine(assignment)}
                             </div>
-                            <div className="text-sm text-muted-foreground">
-                              {assignment.quantity} × SAR{' '}
-                              {formatNumber(Number(assignment.unit_price) || 0)}{' '}
-                              {getRateTypeBadge(assignment.rate_type)}
-                            </div>
+                            {renderOperatorsInPeriodCell(assignment)}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-semibold tabular-nums text-sm min-w-[6rem]">
+                            {amt.total}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -835,7 +978,8 @@ export default function EquipmentAssignmentHistory({
                           </DropdownMenu>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -910,6 +1054,77 @@ export default function EquipmentAssignmentHistory({
                       )}
                     </div>
                   </div>
+                  {(selectedAssignment.line_operator ||
+                    (selectedAssignment.operators?.length ?? 0) > 0) && (
+                    <>
+                      <Separator />
+                      <div>
+                        {selectedAssignment.line_operator ? (
+                          <>
+                            <Label className="text-sm font-medium text-muted-foreground">
+                              Driver (this period)
+                            </Label>
+                            <p className="mt-2 text-sm font-medium">
+                              {selectedAssignment.line_operator.name}
+                              {selectedAssignment.line_operator.file_number && (
+                                <span className="text-muted-foreground font-normal">
+                                  {' '}
+                                  · File #{selectedAssignment.line_operator.file_number}
+                                </span>
+                              )}
+                            </p>
+                            {(selectedAssignment.operators?.length ?? 0) > 1 && (
+                              <>
+                                <Label className="text-sm font-medium text-muted-foreground mt-3 block">
+                                  Other drivers on same rental (equipment)
+                                </Label>
+                                <ul className="mt-2 space-y-1.5 text-sm list-none">
+                                  {selectedAssignment
+                                    .operators!.filter(
+                                      op => op.id !== selectedAssignment.line_operator!.id
+                                    )
+                                    .map(op => (
+                                      <li
+                                        key={op.id}
+                                        className="flex flex-wrap items-baseline gap-x-2"
+                                      >
+                                        <span className="font-medium">{op.name}</span>
+                                        {op.file_number && (
+                                          <span className="text-muted-foreground text-xs">
+                                            File #{op.file_number}
+                                          </span>
+                                        )}
+                                      </li>
+                                    ))}
+                                </ul>
+                              </>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <Label className="text-sm font-medium text-muted-foreground">
+                              Operators (drivers)
+                            </Label>
+                            <ul className="mt-2 space-y-1.5 text-sm list-none">
+                              {selectedAssignment.operators!.map(op => (
+                                <li
+                                  key={op.id}
+                                  className="flex flex-wrap items-baseline gap-x-2"
+                                >
+                                  <span className="font-medium">{op.name}</span>
+                                  {op.file_number && (
+                                    <span className="text-muted-foreground text-xs">
+                                      File #{op.file_number}
+                                    </span>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          </>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </>
               )}
 
@@ -931,6 +1146,28 @@ export default function EquipmentAssignmentHistory({
                       </p>
                     </div>
                   </div>
+                  {(selectedAssignment.operators?.length ?? 0) > 0 && (
+                    <>
+                      <Separator />
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">
+                          Operator(s)
+                        </Label>
+                        <ul className="mt-2 space-y-1.5 text-sm list-none">
+                          {selectedAssignment.operators!.map(op => (
+                            <li key={op.id} className="flex flex-wrap items-baseline gap-x-2">
+                              <span className="font-medium">{op.name}</span>
+                              {op.file_number && (
+                                <span className="text-muted-foreground text-xs">
+                                  File #{op.file_number}
+                                </span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </>
+                  )}
                 </>
               )}
 
@@ -964,84 +1201,50 @@ export default function EquipmentAssignmentHistory({
 
               <Separator />
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Start Date</Label>
-                  <p>
-                    {selectedAssignment.rental_start_date || selectedAssignment.start_date
-                      ? format(
-                          new Date(
-                            selectedAssignment.rental_start_date || selectedAssignment.start_date!
-                          ),
-                          'MMM dd, yyyy'
-                        )
-                      : 'Not specified'}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">
-                    Expected End Date
-                  </Label>
-                  <p>
-                    {selectedAssignment.rental_expected_end_date ||
-                    selectedAssignment.expected_end_date
-                      ? format(
-                          new Date(
-                            selectedAssignment.rental_expected_end_date ||
-                              selectedAssignment.expected_end_date!
-                          ),
-                          'MMM dd, yyyy'
-                        )
-                      : 'Not specified'}
-                  </p>
-                </div>
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">Period</Label>
+                <p className="mt-1 font-medium tabular-nums">
+                  {formatAssignmentPeriodLine(selectedAssignment)}
+                </p>
                 {(selectedAssignment.rental_actual_end_date ||
                   selectedAssignment.actual_end_date) && (
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">
-                      Actual End Date
-                    </Label>
-                    <p>
-                      {selectedAssignment.rental_actual_end_date ||
-                      selectedAssignment.actual_end_date
-                        ? format(
-                            new Date(
-                              selectedAssignment.rental_actual_end_date ||
-                                selectedAssignment.actual_end_date!
-                            ),
-                            'MMM dd, yyyy'
-                          )
-                        : 'Not specified'}
-                    </p>
-                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Actual end:{' '}
+                    {format(
+                      new Date(
+                        selectedAssignment.rental_actual_end_date ||
+                          selectedAssignment.actual_end_date!
+                      ),
+                      'MMM dd, yyyy'
+                    )}
+                  </p>
                 )}
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Days</Label>
-                  <p>{selectedAssignment.days || 'Not specified'}</p>
-                </div>
               </div>
 
               <Separator />
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Quantity</Label>
-                  <p>{selectedAssignment.quantity}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Rate Type</Label>
-                  <div>{getRateTypeBadge(selectedAssignment.rate_type)}</div>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Unit Price</Label>
-                  <p>SAR {formatNumber(Number(selectedAssignment.unit_price) || 0)}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Total Price</Label>
-                  <p className="font-bold">
-                    SAR {formatNumber(Number(selectedAssignment.total_price) || 0)}
-                  </p>
-                </div>
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">Amount</Label>
+                {(() => {
+                  const detailAmt = getAssignmentAmountBreakdown(selectedAssignment);
+                  return (
+                    <>
+                      <p className="mt-1 text-xl font-bold tabular-nums">{detailAmt.total}</p>
+                      <p className="mt-1 text-sm text-muted-foreground tabular-nums">
+                        {detailAmt.rateLine}
+                      </p>
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Rate type:</span>
+                        {getRateTypeBadge(selectedAssignment.rate_type)}
+                        {Number(selectedAssignment.quantity ?? 1) > 1 && (
+                          <span className="text-xs text-muted-foreground">
+                            · Qty {selectedAssignment.quantity}
+                          </span>
+                        )}
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
 
               {selectedAssignment.notes && (

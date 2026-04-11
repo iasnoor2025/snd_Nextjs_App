@@ -83,6 +83,7 @@ interface Equipment {
 
 interface Assignment {
   id: number;
+  rental_item_id?: number | null;
   assignment_type: string;
   start_date: string;
   end_date?: string;
@@ -537,8 +538,10 @@ export default function EquipmentAssignmentPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    assignments.map(assignment => (
-                      <TableRow key={assignment.id}>
+                    assignments.map((assignment, idx) => (
+                      <TableRow
+                        key={`${assignment.assignment_type}-${String(assignment.id)}-ri${assignment.rental_item_id ?? 'x'}-${idx}`}
+                      >
                         <TableCell>{getAssignmentTypeBadge(assignment.assignment_type)}</TableCell>
                         <TableCell>
                           <div>

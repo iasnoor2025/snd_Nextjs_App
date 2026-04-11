@@ -6,6 +6,7 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { withPermission } from '@/lib/rbac/api-middleware';
 import { PermissionConfigs } from '@/lib/rbac/api-middleware';
+import { EquipmentStatusService } from '@/lib/services/equipment-status-service';
 
 export async function GET(
   request: NextRequest,
@@ -63,9 +64,14 @@ export async function GET(
       return NextResponse.json({ success: false, error: 'Equipment not found' }, { status: 404 });
     }
 
+    // Align status with real assignments (same logic as list + EquipmentStatusService); fixes stale "assigned"
+    const statusSync = await EquipmentStatusService.updateEquipmentStatusImmediately(id);
+    const resolvedStatus =
+      statusSync.success && statusSync.newStatus ? statusSync.newStatus : equipmentData.status;
+
     return NextResponse.json({
       success: true,
-      data: equipmentData,
+      data: { ...equipmentData, status: resolvedStatus },
     });
   } catch (error) {
     

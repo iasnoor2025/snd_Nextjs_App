@@ -13,7 +13,7 @@ import {
   customers,
 } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
-import { asc, eq, or, ilike, sql, desc, and, inArray } from 'drizzle-orm';
+import { asc, eq, or, ilike, sql, desc, and, inArray, exists, notExists, isNull } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { NextRequest, NextResponse } from 'next/server';
 import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
@@ -190,7 +190,36 @@ const getEquipmentHandler = async (request: NextRequest) => {
                 .where(
                   and(
                     inArray(equipmentRentalHistory.equipmentId, equipmentIds),
-                    eq(equipmentRentalHistory.status, 'active')
+                    eq(equipmentRentalHistory.status, 'active'),
+                    // Match EquipmentStatusService: rental rows count as "current" only if line item is still active
+                    // or there is no rental_items row yet (legacy); exclude stale active history when item is completed
+                    or(
+                      sql`${equipmentRentalHistory.assignmentType} IS DISTINCT FROM 'rental'`,
+                      notExists(
+                        db
+                          .select()
+                          .from(rentalItems)
+                          .where(
+                            and(
+                              eq(rentalItems.rentalId, equipmentRentalHistory.rentalId),
+                              eq(rentalItems.equipmentId, equipmentRentalHistory.equipmentId)
+                            )
+                          )
+                      ),
+                      exists(
+                        db
+                          .select()
+                          .from(rentalItems)
+                          .where(
+                            and(
+                              eq(rentalItems.rentalId, equipmentRentalHistory.rentalId),
+                              eq(rentalItems.equipmentId, equipmentRentalHistory.equipmentId),
+                              eq(rentalItems.status, 'active'),
+                              isNull(rentalItems.completedDate)
+                            )
+                          )
+                      )
+                    )
                   )
                 ),
               // Get active assignments from projectEquipment (filtered by equipment IDs)
@@ -407,10 +436,16 @@ const getEquipmentHandler = async (request: NextRequest) => {
               const assignments = assignmentsByEquipment[item.id] || [];
               const maintenance = maintenanceByEquipment[item.id] || [];
 
-              // Use the actual equipment status from database (which is updated by EquipmentStatusService)
-              // This ensures consistency with the status shown on detail pages
-              // The status is already calculated correctly by EquipmentStatusService based on all assignments
-              const status = item.status || 'available';
+              // Prefer DB status, but if assignments/maintenance are empty and DB still says assigned,
+              // treat as available (fixes stale rows before bulk sync or when cache lagged)
+              let status = item.status || 'available';
+              if (
+                assignments.length === 0 &&
+                maintenance.length === 0 &&
+                (status === 'assigned' || status === 'rented')
+              ) {
+                status = 'available';
+              }
 
               return {
                 ...item,

@@ -179,6 +179,10 @@ export default function EquipmentShowPage() {
         className: 'bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200',
         label: t('equipment.status.maintenance'),
       },
+      under_maintenance: {
+        className: 'bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200',
+        label: t('equipment.status.maintenance'),
+      },
       out_of_service: {
         className: 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200',
         label: t('equipment.status.out_of_service'),

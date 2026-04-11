@@ -234,6 +234,7 @@
       "type": "Type",
       "reference": "Reference",
       "customerProjectEmployee": "Customer/Project/Employee",
+      "rate": "Rate",
       "period": "Period",
       "amount": "Amount",
       "status": "Status",

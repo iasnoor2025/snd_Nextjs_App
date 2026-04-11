@@ -901,6 +901,35 @@ export class RentalService {
     const item = await this.getRentalItem(id);
     if (item) {
       await this.recalculateRentalTotals(item.rentalId);
+
+      // Sync equipment_rental_history + equipment.status when a line item completes.
+      // Assignment History UI can show "Completed" from rental_items while history rows stayed `active`,
+      // which left inventory as Assigned with no operator.
+      if (item.status === 'completed' && item.equipmentId && item.rentalId) {
+        const endDate =
+          item.completedDate ||
+          (item as { completed_date?: string | null }).completed_date ||
+          new Date().toISOString().split('T')[0];
+
+        await db
+          .update(equipmentRentalHistory)
+          .set({
+            status: 'completed',
+            endDate,
+            updatedAt: new Date().toISOString(),
+          })
+          .where(
+            and(
+              eq(equipmentRentalHistory.rentalId, item.rentalId),
+              eq(equipmentRentalHistory.equipmentId, item.equipmentId),
+              eq(equipmentRentalHistory.assignmentType, 'rental'),
+              eq(equipmentRentalHistory.status, 'active')
+            )
+          );
+
+        const { EquipmentStatusService } = await import('@/lib/services/equipment-status-service');
+        await EquipmentStatusService.updateEquipmentStatusImmediately(item.equipmentId);
+      }
     }
 
     return this.getRentalItem(id);

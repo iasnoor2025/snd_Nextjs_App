@@ -13,6 +13,7 @@ import {
 } from '@/lib/drizzle/schema';
 import { CentralAssignmentService } from '@/lib/services/central-assignment-service';
 import { and, desc, eq, inArray } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 
@@ -55,6 +56,7 @@ const getEquipmentRentalsHandler = async (request: Request, { params }: { params
     }
 
     const equipmentItem = equipmentData[0];
+    const rentalLineOperator = alias(employees, 'rental_line_operator');
     // Get basic rental history without JOINs first
     const rentalHistory = await db
       .select({
@@ -128,12 +130,20 @@ const getEquipmentRentalsHandler = async (request: Request, { params }: { params
         // Rental item information (for rental assignments)
         rentalItem: {
           id: rentalItems.id,
+          operatorId: rentalItems.operatorId,
           totalPrice: rentalItems.totalPrice,
           unitPrice: rentalItems.unitPrice,
           rateType: rentalItems.rateType,
           startDate: rentalItems.startDate,
           completedDate: rentalItems.completedDate,
           status: rentalItems.status,
+        },
+        // Operator on this rental line item (employee)
+        rentalLineOperator: {
+          id: rentalLineOperator.id,
+          firstName: rentalLineOperator.firstName,
+          lastName: rentalLineOperator.lastName,
+          fileNumber: rentalLineOperator.fileNumber,
         },
       })
       .from(equipmentRentalHistory)
@@ -148,8 +158,32 @@ const getEquipmentRentalsHandler = async (request: Request, { params }: { params
           eq(rentalItems.equipmentId, equipmentRentalHistory.equipmentId)
         )
       )
+      .leftJoin(rentalLineOperator, eq(rentalItems.operatorId, rentalLineOperator.id))
       .where(eq(equipmentRentalHistory.equipmentId, id))
       .orderBy(desc(equipmentRentalHistory.createdAt));
+
+    // Join can repeat the same equipment_rental_history row when multiple rental_items share rental+equipment
+    // (different operators / date ranges). Keep each distinct line; only drop true SQL duplicates (same pair twice).
+    type RentalHistoryJoinRow = (typeof rentalHistoryWithJoins)[number];
+    const seenHistoryAndLine = new Set<string>();
+    const rentalHistoryWithJoinsDeduped: RentalHistoryJoinRow[] = [];
+    for (const row of rentalHistoryWithJoins) {
+      const ri = row.rentalItem;
+      const dedupeKey =
+        ri?.id != null ? `h${row.id}:ri${ri.id}` : `h${row.id}:no-ri`;
+      if (seenHistoryAndLine.has(dedupeKey)) continue;
+      seenHistoryAndLine.add(dedupeKey);
+      rentalHistoryWithJoinsDeduped.push(row);
+    }
+    rentalHistoryWithJoinsDeduped.sort((a, b) => {
+      const ca = new Date(a.createdAt ?? 0).getTime();
+      const cb = new Date(b.createdAt ?? 0).getTime();
+      if (cb !== ca) return cb - ca;
+      const sa = a.rentalItem?.startDate ? new Date(a.rentalItem.startDate).getTime() : 0;
+      const sb = b.rentalItem?.startDate ? new Date(b.rentalItem.startDate).getTime() : 0;
+      return sb - sa;
+    });
+
     // Fetch project equipment assignments
     const projectEquipmentAssignments = await db
       .select({
@@ -198,36 +232,70 @@ const getEquipmentRentalsHandler = async (request: Request, { params }: { params
       .where(eq(projectEquipment.equipmentId, id))
       .orderBy(desc(projectEquipment.createdAt));
     // Get operator counts for rental assignments
-    const rentalIds = rentalHistoryWithJoins
+    const rentalIds = rentalHistoryWithJoinsDeduped
       .filter(item => item.rentalId)
       .map(item => item.rentalId!)
-      .filter((id, index, self) => self.indexOf(id) === index); // Get unique rental IDs
+      .filter((rid, index, self) => self.indexOf(rid) === index); // Get unique rental IDs
+
+    const operatorData =
+      rentalIds.length > 0
+        ? await db
+            .select({
+              rentalId: rentalItems.rentalId,
+              operatorId: rentalItems.operatorId,
+            })
+            .from(rentalItems)
+            .where(
+              and(
+                eq(rentalItems.equipmentId, id),
+                inArray(rentalItems.rentalId, rentalIds)
+              )
+            )
+        : [];
 
     const operatorCounts: Record<number, number> = {};
-    if (rentalIds.length > 0) {
-      const operatorData = await db
-        .select({
-          rentalId: rentalItems.rentalId,
-          operatorId: rentalItems.operatorId,
-        })
-        .from(rentalItems)
-        .where(
-          and(
-            eq(rentalItems.equipmentId, id),
-            inArray(rentalItems.rentalId, rentalIds)
-          )
-        );
+    rentalIds.forEach(rentalId => {
+      const operators = new Set(
+        operatorData
+          .filter(item => item.rentalId === rentalId && item.operatorId)
+          .map(item => item.operatorId!)
+      );
+      operatorCounts[rentalId] = operators.size;
+    });
 
-      // Count unique operators per rental
-      rentalIds.forEach(rentalId => {
-        const operators = new Set(
-          operatorData
-            .filter(item => item.rentalId === rentalId && item.operatorId)
-            .map(item => item.operatorId!)
-        );
-        operatorCounts[rentalId] = operators.size;
+    const operatorIdsForNames = [
+      ...new Set(
+        operatorData.map(o => o.operatorId).filter((oid): oid is number => oid != null && oid > 0)
+      ),
+    ];
+    const operatorEmployeeRows =
+      operatorIdsForNames.length > 0
+        ? await db
+            .select({
+              id: employees.id,
+              firstName: employees.firstName,
+              lastName: employees.lastName,
+              fileNumber: employees.fileNumber,
+            })
+            .from(employees)
+            .where(inArray(employees.id, operatorIdsForNames))
+        : [];
+    const operatorIdToEmployee = Object.fromEntries(operatorEmployeeRows.map(e => [e.id, e]));
+
+    const operatorsForRental = (rentalId: number) => {
+      const ids = new Set<number>();
+      for (const row of operatorData) {
+        if (row.rentalId === rentalId && row.operatorId) ids.add(row.operatorId);
+      }
+      return [...ids].map(oid => {
+        const e = operatorIdToEmployee[oid];
+        return {
+          id: oid,
+          name: e ? `${e.firstName} ${e.lastName}`.trim() : `Operator #${oid}`,
+          file_number: e?.fileNumber ?? null,
+        };
       });
-    }
+    };
 
     // Helper function to parse Decimal types to numbers
     const parseDecimal = (value: any): number => {
@@ -332,8 +400,24 @@ const getEquipmentRentalsHandler = async (request: Request, { params }: { params
         displayStatus = 'completed';
       }
 
+      const projectOperators: { id: number; name: string; file_number?: string | null }[] = [];
+      if (operatorName && item.employee) {
+        projectOperators.push({
+          id: item.employee.id,
+          name: operatorName,
+          file_number: item.employee.fileNumber ?? null,
+        });
+      } else if (operatorName && item.operator?.workerName) {
+        projectOperators.push({
+          id: item.operator.id,
+          name: operatorName,
+          file_number: null,
+        });
+      }
+
       return {
         id: `project_${item.id}`, // Prefix to avoid conflicts with rental history IDs
+        rental_item_id: null,
         rental_id: null,
         rental_number: null,
         customer_name: null,
@@ -363,13 +447,15 @@ const getEquipmentRentalsHandler = async (request: Request, { params }: { params
         rental_status: item.status,
         duration_days: durationDays,
         operator_count: item.operatorId ? 1 : 0,
+        operators: projectOperators,
+        line_operator: projectOperators[0] ?? null,
         created_at: item.createdAt ? new Date(item.createdAt).toISOString() : null,
         updated_at: item.updatedAt ? new Date(item.updatedAt).toISOString() : null,
       };
     });
 
     // Transform the rental history data to match the expected format
-    const history = rentalHistoryWithJoins.map(item => {
+    const history = rentalHistoryWithJoinsDeduped.map(item => {
 
       let totalPrice = 0;
       let unitPrice = parseDecimal(item.dailyRate);
@@ -486,8 +572,44 @@ const getEquipmentRentalsHandler = async (request: Request, { params }: { params
         }
       }
 
+      let line_operator: { id: number; name: string; file_number?: string | null } | null = null;
+      if (item.rentalLineOperator?.id) {
+        line_operator = {
+          id: item.rentalLineOperator.id,
+          name: `${item.rentalLineOperator.firstName} ${item.rentalLineOperator.lastName}`.trim(),
+          file_number: item.rentalLineOperator.fileNumber,
+        };
+      } else if (item.rentalItem?.operatorId) {
+        const e = operatorIdToEmployee[item.rentalItem.operatorId];
+        if (e) {
+          line_operator = {
+            id: e.id,
+            name: `${e.firstName} ${e.lastName}`.trim(),
+            file_number: e.fileNumber,
+          };
+        }
+      }
+
+      // Period shown in UI must match this line (handover = different start/end per rental_item).
+      // Do not use equipment_rental_history dates when a rental line exists — those are shared across lines.
+      const periodStart =
+        item.assignmentType === 'rental' && item.rentalItem
+          ? effectiveStartDate
+          : item.startDate;
+      const periodEnd =
+        item.assignmentType === 'rental' && item.rentalItem
+          ? effectiveEndDate
+          : item.endDate;
+
+      const toIso = (d: string | Date | null | undefined): string | null => {
+        if (d == null || d === '') return null;
+        const dt = d instanceof Date ? d : new Date(d);
+        return Number.isNaN(dt.getTime()) ? null : dt.toISOString();
+      };
+
       return {
         id: item.id,
+        rental_item_id: item.rentalItem?.id ?? null,
         rental_id: item.rentalId,
         rental_number: item.rental?.rentalNumber || null,
         customer_name: item.customer?.name || null,
@@ -513,12 +635,14 @@ const getEquipmentRentalsHandler = async (request: Request, { params }: { params
         rate_type: rateType,
         status: displayStatus, // Use the determined status
         notes: item.notes,
-        rental_start_date: item.startDate,
-        rental_expected_end_date: item.endDate,
-        rental_actual_end_date: item.endDate,
+        rental_start_date: toIso(periodStart),
+        rental_expected_end_date: toIso(periodEnd),
+        rental_actual_end_date: toIso(periodEnd),
         rental_status: item.status,
         duration_days: durationDays,
         operator_count: item.rentalId ? (operatorCounts[item.rentalId] || 0) : 0,
+        operators: item.rentalId ? operatorsForRental(item.rentalId) : [],
+        line_operator,
         created_at: item.createdAt,
         updated_at: item.updatedAt,
       };
