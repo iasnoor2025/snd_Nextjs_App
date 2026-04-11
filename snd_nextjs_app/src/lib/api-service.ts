@@ -650,7 +650,7 @@ class ApiService {
 
   static async createProject(data: any) {
     return this.post('/projects', data, {
-      toastMessage: 'Project created successfully',
+      showToast: false,
       errorMessage: 'Failed to create project',
     });
   }

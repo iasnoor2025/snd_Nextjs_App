@@ -2,6 +2,15 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -95,6 +104,7 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletingProject, setDeletingProject] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creatingSample, setCreatingSample] = useState(false);
 
@@ -299,12 +309,16 @@ export default function ProjectDetailPage() {
 
   const handleDeleteProject = async () => {
     try {
+      setDeletingProject(true);
       await ApiService.delete(`/projects/${projectId}`);
       toast.success('Project deleted successfully');
+      setShowDeleteDialog(false);
       router.push(`/${locale}/project-management`);
     } catch (error) {
       console.error('Error deleting project:', error);
       toast.error('Failed to delete project');
+    } finally {
+      setDeletingProject(false);
     }
   };
 
@@ -1313,25 +1327,27 @@ export default function ProjectDetailPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Delete Confirmation Dialog */}
-      {showDeleteDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Delete Project</h3>
-            <p className="text-gray-600 mb-6">
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Project</AlertDialogTitle>
+            <AlertDialogDescription>
               Are you sure you want to delete this project? This action cannot be undone.
-            </p>
-            <div className="flex justify-end space-x-3">
-              <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-                Cancel
-              </Button>
-              <Button variant="destructive" onClick={handleDeleteProject}>
-                Delete
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingProject}>Cancel</AlertDialogCancel>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deletingProject}
+              onClick={() => void handleDeleteProject()}
+            >
+              {deletingProject ? 'Deleting…' : 'Delete project'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

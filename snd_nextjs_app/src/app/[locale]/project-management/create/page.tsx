@@ -39,6 +39,9 @@ import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
 import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import { cn } from '@/lib/utils';
+
+type CreateFieldErrorKey = 'name' | 'customer_id' | 'start_date' | 'end_date';
 
 interface Customer {
   id: string;
@@ -81,6 +84,7 @@ export default function CreateProjectPage() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [project, setProject] = useState<Project | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<CreateFieldErrorKey, string>>>({});
 
   const [formData, setFormData] = useState({
     name: '',
@@ -185,6 +189,52 @@ export default function CreateProjectPage() {
       ...prev,
       [field]: value,
     }));
+    setFieldErrors(prev => {
+      const n = { ...prev };
+      if (field === 'start_date') {
+        delete n.start_date;
+        delete n.end_date;
+      } else if (field === 'end_date') {
+        delete n.end_date;
+      } else if (field === 'name') {
+        delete n.name;
+      } else if (field === 'customer_id') {
+        delete n.customer_id;
+      }
+      return n;
+    });
+  };
+
+  const validateCreateForm = (): boolean => {
+    const next: Partial<Record<CreateFieldErrorKey, string>> = {};
+    if (!formData.name?.trim()) {
+      next.name = t('project.validation.nameRequired');
+    }
+    if (!formData.customer_id?.trim()) {
+      next.customer_id = t('project.validation.clientRequired');
+    }
+    if (!formData.start_date) {
+      next.start_date = t('project.validation.startDateRequired');
+    }
+    if (
+      formData.start_date &&
+      formData.end_date &&
+      formData.end_date < formData.start_date
+    ) {
+      next.end_date = t('project.validation.endDateAfterStart');
+    }
+    setFieldErrors(next);
+    const order: CreateFieldErrorKey[] = ['name', 'customer_id', 'start_date', 'end_date'];
+    const first = order.find(k => next[k]);
+    if (first) {
+      requestAnimationFrame(() => {
+        document.getElementById(`project-create-field-${first}`)?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      });
+    }
+    return Object.keys(next).length === 0;
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -201,8 +251,8 @@ export default function CreateProjectPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name || !formData.customer_id || !formData.start_date) {
-      toast.error(t('project.validation.validationError') || 'Please fill in all required fields');
+    if (!validateCreateForm()) {
+      toast.error(t('project.messages.validationErrorSummary') || t('project.messages.validationError'));
       return;
     }
 
@@ -231,19 +281,39 @@ export default function CreateProjectPage() {
         supervisor_id: formData.supervisor_id || null,
       };
 
-      const response = (await ApiService.createProject(submitData)) as any;
+      const response = (await ApiService.createProject(submitData)) as {
+        success?: boolean;
+        data?: { id: string | number };
+      };
 
-      // TODO: Project file upload endpoint doesn't exist yet
+      const newId = response?.data?.id;
+      if (newId == null) {
+        throw new Error('Invalid create response');
+      }
+
+      // File upload must use multipart fetch — ApiService serializes JSON only. Endpoint may be absent.
       if (selectedFiles.length > 0) {
-        const formDataFiles = new FormData();
-        selectedFiles.forEach(file => {
-          formDataFiles.append('files[]', file);
-        });
-        await ApiService.post(`/projects/${response.data.id}/files`, formDataFiles);
+        try {
+          const formDataFiles = new FormData();
+          selectedFiles.forEach(file => {
+            formDataFiles.append('files[]', file);
+          });
+          const uploadRes = await fetch(`/api/projects/${newId}/files`, {
+            method: 'POST',
+            body: formDataFiles,
+          });
+          if (!uploadRes.ok) {
+            console.warn('[create project] File upload unavailable or failed:', uploadRes.status);
+            toast.message(t('project.messages.fileUploadSkipped'));
+          }
+        } catch (fileErr) {
+          console.warn('[create project] File upload skipped:', fileErr);
+          toast.message(t('project.messages.fileUploadSkipped'));
+        }
       }
 
       toast.success(t('project.messages.createSuccess') || 'Project created successfully!');
-      router.push(`/${locale}/project-management/${response.data.id}`);
+      router.push(`/${locale}/project-management/${newId}`);
     } catch (error) {
       
       toast.error(t('project.messages.createError') || 'Failed to create project');
@@ -299,18 +369,29 @@ export default function CreateProjectPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">{t('project.fields.name')} *</Label>
+              <div id="project-create-field-name" className="space-y-2">
+                <Label htmlFor="name" className={cn(fieldErrors.name && 'text-destructive')}>
+                  {t('project.fields.name')} *
+                </Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={e => handleInputChange('name', e.target.value)}
                   placeholder={t('project.fields.name')}
                   required
+                  aria-invalid={!!fieldErrors.name}
+                  className={cn(fieldErrors.name && 'border-destructive ring-destructive/20 ring-2')}
                 />
+                {fieldErrors.name && (
+                  <p className="text-sm text-destructive" role="alert">
+                    {fieldErrors.name}
+                  </p>
+                )}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="customer_id">{t('project.fields.client')} *</Label>
+              <div id="project-create-field-customer_id" className="space-y-2">
+                <Label htmlFor="customer_id" className={cn(fieldErrors.customer_id && 'text-destructive')}>
+                  {t('project.fields.client')} *
+                </Label>
                 <SearchableSelect
                   value={formData.customer_id}
                   onValueChange={value => handleInputChange('customer_id', value)}
@@ -327,6 +408,7 @@ export default function CreateProjectPage() {
                   required
                   searchFields={['label', 'name', 'email', 'phone']}
                   loading={loading}
+                  error={fieldErrors.customer_id}
                 />
               </div>
             </div>
@@ -377,13 +459,21 @@ export default function CreateProjectPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="start_date">{t('project.fields.startDate')} *</Label>
+              <div id="project-create-field-start_date" className="space-y-2">
+                <Label htmlFor="start_date" className={cn(fieldErrors.start_date && 'text-destructive')}>
+                  {t('project.fields.startDate')} *
+                </Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
+                      id="start_date"
+                      type="button"
                       variant="outline"
-                      className="w-full justify-start text-left font-normal"
+                      aria-invalid={!!fieldErrors.start_date}
+                      className={cn(
+                        'w-full justify-start text-left font-normal',
+                        fieldErrors.start_date && 'border-destructive ring-destructive/20 ring-2'
+                      )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {formData.start_date ? format(formData.start_date, 'PPP') : t('project.fields.pickDate')}
@@ -398,14 +488,27 @@ export default function CreateProjectPage() {
                     />
                   </PopoverContent>
                 </Popover>
+                {fieldErrors.start_date && (
+                  <p className="text-sm text-destructive" role="alert">
+                    {fieldErrors.start_date}
+                  </p>
+                )}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="end_date">{t('project.fields.endDate')}</Label>
+              <div id="project-create-field-end_date" className="space-y-2">
+                <Label htmlFor="end_date" className={cn(fieldErrors.end_date && 'text-destructive')}>
+                  {t('project.fields.endDate')}
+                </Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
+                      id="end_date"
+                      type="button"
                       variant="outline"
-                      className="w-full justify-start text-left font-normal"
+                      aria-invalid={!!fieldErrors.end_date}
+                      className={cn(
+                        'w-full justify-start text-left font-normal',
+                        fieldErrors.end_date && 'border-destructive ring-destructive/20 ring-2'
+                      )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {formData.end_date ? format(formData.end_date, 'PPP') : t('project.fields.pickDate')}
@@ -420,6 +523,11 @@ export default function CreateProjectPage() {
                     />
                   </PopoverContent>
                 </Popover>
+                {fieldErrors.end_date && (
+                  <p className="text-sm text-destructive" role="alert">
+                    {fieldErrors.end_date}
+                  </p>
+                )}
               </div>
             </div>
 

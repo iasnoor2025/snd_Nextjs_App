@@ -2,14 +2,15 @@
 
 import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import React from 'react';
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import * as React from 'react';
 
 interface ConfirmationDialogProps {
   open: boolean;
@@ -36,36 +37,47 @@ export function ConfirmationDialog({
   onCancel,
   loading = false,
 }: ConfirmationDialogProps) {
+  const confirmedRef = React.useRef(false);
+
+  React.useEffect(() => {
+    if (open) {
+      confirmedRef.current = false;
+    }
+  }, [open]);
+
+  const handleOpenChange = (next: boolean) => {
+    if (!next) {
+      if (!confirmedRef.current) {
+        onCancel?.();
+      }
+      onOpenChange(false);
+    }
+  };
+
+  const handleConfirm = () => {
+    confirmedRef.current = true;
+    onConfirm();
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
+    <AlertDialog open={open} onOpenChange={handleOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={loading}>{cancelText}</AlertDialogCancel>
           <Button
-            variant="outline"
-            onClick={() => {
-              onOpenChange(false);
-              onCancel?.();
-            }}
+            type="button"
+            variant={variant === 'destructive' ? 'destructive' : 'default'}
             disabled={loading}
-          >
-            {cancelText}
-          </Button>
-          <Button
-            variant={variant}
-            onClick={() => {
-              onConfirm();
-              onOpenChange(false);
-            }}
-            disabled={loading}
+            onClick={handleConfirm}
           >
             {loading ? 'Loading...' : confirmText}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

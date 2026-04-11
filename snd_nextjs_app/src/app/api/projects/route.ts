@@ -1,12 +1,45 @@
 import { db } from '@/lib/drizzle';
-import { projects as projectsTable, customers, employees, locations } from '@/lib/drizzle/schema';
+import { projects as projectsTable, customers, locations } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
-import { and, desc, eq, ilike, or } from 'drizzle-orm';
+import { and, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import type { SQL } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
-import { inArray } from 'drizzle-orm';
 import { employees as employeesTable } from '@/lib/drizzle/schema';
 import { AuditService } from '@/lib/services/audit-service';
 import { getServerSession } from '@/lib/auth';
+
+function isMissingPriorityColumnError(e: unknown): boolean {
+  const msg = e instanceof Error ? e.message : String(e);
+  return (
+    msg.includes('42703') ||
+    msg.includes('does not exist') ||
+    (msg.includes('column') && msg.includes('priority'))
+  );
+}
+
+type ProjectListRow = {
+  id: number;
+  name: string | null;
+  description: string | null;
+  status: string | null;
+  priority?: string | null;
+  budget: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+  customerId: number | null;
+  locationId: number | null;
+  notes: string | null;
+  customerName: string | null;
+  locationName: string | null;
+  locationCity: string | null;
+  locationState: string | null;
+  projectManagerId: number | null;
+  projectEngineerId: number | null;
+  projectForemanId: number | null;
+  supervisorId: number | null;
+};
 
 // GET /api/projects - List projects with pagination and filters
 const getProjectsHandler = async (request: NextRequest) => {
@@ -19,47 +52,31 @@ const getProjectsHandler = async (request: NextRequest) => {
     const priority = searchParams.get('priority') || '';
     const skip = (page - 1) * limit;
 
-    const where: any = {};
-
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    if (status && status !== 'all') {
-      where.status = status;
-    }
-
-    if (priority && priority !== 'all') {
-      where.priority = priority;
-    }
-
-    const filters: any[] = [];
-    if (search) {
-      filters.push(
-        or(
+    const buildFilters = (opts: { includePriority: boolean }) => {
+      const filters: SQL[] = [];
+      if (search) {
+        const searchCond = or(
           ilike(projectsTable.name, `%${search}%`),
           ilike(projectsTable.description, `%${search}%`)
-        )
-      );
-    }
-    if (status && status !== 'all') {
-      filters.push(eq(projectsTable.status, status));
-    }
-    if (priority && priority !== 'all') {
-      filters.push(eq(projectsTable.priority, priority));
-    }
-    const whereExpr = filters.length ? and(...filters) : undefined;
+        );
+        if (searchCond) filters.push(searchCond);
+      }
+      if (status && status !== 'all') {
+        filters.push(eq(projectsTable.status, status));
+      }
+      if (opts.includePriority && priority && priority !== 'all') {
+        filters.push(eq(projectsTable.priority, priority));
+      }
+      return filters.length ? and(...filters) : undefined;
+    };
 
-    const rows = await db
-      .select({
+    const runListQuery = async (includePriority: boolean): Promise<ProjectListRow[]> => {
+      const whereExpr = buildFilters({ includePriority });
+      const baseSelect = {
         id: projectsTable.id,
         name: projectsTable.name,
         description: projectsTable.description,
         status: projectsTable.status,
-        priority: projectsTable.priority,
         budget: projectsTable.budget,
         startDate: projectsTable.startDate,
         endDate: projectsTable.endDate,
@@ -72,19 +89,81 @@ const getProjectsHandler = async (request: NextRequest) => {
         locationName: locations.name,
         locationCity: locations.city,
         locationState: locations.state,
-        // Project team roles
         projectManagerId: projectsTable.projectManagerId,
         projectEngineerId: projectsTable.projectEngineerId,
         projectForemanId: projectsTable.projectForemanId,
         supervisorId: projectsTable.supervisorId,
-      })
-      .from(projectsTable)
-      .leftJoin(customers, eq(projectsTable.customerId, customers.id))
-      .leftJoin(locations, eq(projectsTable.locationId, locations.id))
-      .where(whereExpr as any)
-      .orderBy(desc(projectsTable.createdAt))
-      .offset(skip)
-      .limit(limit);
+        ...(includePriority ? { priority: projectsTable.priority } : {}),
+      };
+
+      const base = db
+        .select(baseSelect as any)
+        .from(projectsTable)
+        .leftJoin(customers, eq(projectsTable.customerId, customers.id))
+        .leftJoin(locations, eq(projectsTable.locationId, locations.id));
+
+      const q = whereExpr ? base.where(whereExpr) : base;
+      return (await q.orderBy(desc(projectsTable.createdAt)).offset(skip).limit(limit)) as unknown as ProjectListRow[];
+    };
+
+    const runCount = async (): Promise<number> => {
+      const whereExpr = buildFilters({ includePriority: true });
+      const base = db
+        .select({ count: sql<number>`cast(count(*) as int)` })
+        .from(projectsTable);
+      const row = await (whereExpr ? base.where(whereExpr) : base);
+      return Number(row[0]?.count ?? 0);
+    };
+
+    let rows: ProjectListRow[];
+    let total: number;
+    try {
+      rows = await runListQuery(true);
+      total = await runCount();
+    } catch (firstErr) {
+      if (!isMissingPriorityColumnError(firstErr)) {
+        throw firstErr;
+      }
+      console.warn(
+        '[GET /api/projects] priority column missing; listing without priority. Run migration if needed.'
+      );
+      const whereExprFallback = buildFilters({ includePriority: false });
+      const baseSelectNoPri = {
+        id: projectsTable.id,
+        name: projectsTable.name,
+        description: projectsTable.description,
+        status: projectsTable.status,
+        budget: projectsTable.budget,
+        startDate: projectsTable.startDate,
+        endDate: projectsTable.endDate,
+        createdAt: projectsTable.createdAt,
+        updatedAt: projectsTable.updatedAt,
+        customerId: projectsTable.customerId,
+        locationId: projectsTable.locationId,
+        notes: projectsTable.notes,
+        customerName: customers.name,
+        locationName: locations.name,
+        locationCity: locations.city,
+        locationState: locations.state,
+        projectManagerId: projectsTable.projectManagerId,
+        projectEngineerId: projectsTable.projectEngineerId,
+        projectForemanId: projectsTable.projectForemanId,
+        supervisorId: projectsTable.supervisorId,
+      };
+      const base = db
+        .select(baseSelectNoPri)
+        .from(projectsTable)
+        .leftJoin(customers, eq(projectsTable.customerId, customers.id))
+        .leftJoin(locations, eq(projectsTable.locationId, locations.id));
+      const q = whereExprFallback ? base.where(whereExprFallback) : base;
+      rows = (await q.orderBy(desc(projectsTable.createdAt)).offset(skip).limit(limit)) as unknown as ProjectListRow[];
+      rows = rows.map(r => ({ ...r, priority: 'medium' }));
+      const countBase = db
+        .select({ count: sql<number>`cast(count(*) as int)` })
+        .from(projectsTable);
+      const countRow = await (whereExprFallback ? countBase.where(whereExprFallback) : countBase);
+      total = Number(countRow[0]?.count ?? 0);
+    }
 
     // Get employee names for team roles
     const employeeIds = rows
@@ -95,7 +174,7 @@ const getProjectsHandler = async (request: NextRequest) => {
     let employeeNames: { [key: number]: string } = {};
     if (employeeIds.length > 0) {
       const uniqueEmployeeIds = [...new Set(employeeIds)];
-      const employees = await db
+      const employeeRows = await db
         .select({
           id: employeesTable.id,
           firstName: employeesTable.firstName,
@@ -104,18 +183,11 @@ const getProjectsHandler = async (request: NextRequest) => {
         .from(employeesTable)
         .where(inArray(employeesTable.id, uniqueEmployeeIds));
 
-      employeeNames = employees.reduce((acc, emp) => {
+      employeeNames = employeeRows.reduce((acc, emp) => {
         acc[emp.id] = `${emp.firstName} ${emp.lastName}`;
         return acc;
       }, {} as { [key: number]: string });
     }
-
-    const countRows = await db
-      .select({ id: projectsTable.id })
-      .from(projectsTable)
-      .where(whereExpr as any);
-
-    const total = countRows.length;
 
     // Helper function to calculate progress based on dates
     const calculateProgress = (startDate: any, endDate: any, status: string): number => {
@@ -258,9 +330,10 @@ const createProjectHandler = async (request: NextRequest) => {
       cost_plan_detailed,
       quality_plan_detailed,
       risk_plan_detailed,
+      priority: bodyPriority,
     } = body;
 
-    const [inserted] = await db
+    const insertedRows = await db
       .insert(projectsTable)
       .values({
         name,
@@ -271,6 +344,10 @@ const createProjectHandler = async (request: NextRequest) => {
         startDate: start_date ? start_date.split('T')[0] : null,
         endDate: end_date ? end_date.split('T')[0] : null,
         status: status || 'planning',
+        priority:
+          bodyPriority !== undefined && bodyPriority !== null && String(bodyPriority).trim() !== ''
+            ? String(bodyPriority)
+            : 'medium',
         budget: budget ? String(parseFloat(budget)) : null,
         // Project team roles
         projectManagerId: project_manager_id ? parseInt(project_manager_id) : null,
@@ -308,21 +385,56 @@ const createProjectHandler = async (request: NextRequest) => {
         updatedAt: new Date().toISOString(),
       })
       .returning();
-    const project = inserted[0];
+    const project = insertedRows[0];
+    if (!project) {
+      return NextResponse.json({ success: false, error: 'Failed to create project' }, { status: 500 });
+    }
 
-    // Log the creation
-    const session = await getServerSession();
-    await AuditService.logCRUD('create', 'Project', String(project.id), `Project "${name}" created`, {
-      userId: session?.user?.id,
-      userName: session?.user?.name || undefined,
-      changes: { after: project },
-      ipAddress: request.headers.get('x-forwarded-for') || undefined,
-    });
+    // Log the creation (must not fail the request — project already persisted)
+    try {
+      const session = await getServerSession();
+      await AuditService.logCRUD('create', 'Project', String(project.id), `Project "${name}" created`, {
+        userId: session?.user?.id,
+        userName: session?.user?.name || undefined,
+        changes: {
+          after: {
+            id: project.id,
+            name: project.name,
+            status: project.status,
+            priority: project.priority,
+          },
+        },
+        ipAddress: request.headers.get('x-forwarded-for') || undefined,
+      });
+    } catch (auditErr) {
+      console.error('[POST /api/projects] Audit log failed (project still created):', auditErr);
+    }
+
+    const data = {
+      id: project.id,
+      name: project.name,
+      description: project.description,
+      customerId: project.customerId,
+      locationId: project.locationId,
+      startDate: project.startDate,
+      endDate: project.endDate,
+      status: project.status,
+      priority: project.priority,
+      budget: project.budget,
+      notes: project.notes,
+      projectManagerId: project.projectManagerId,
+      projectEngineerId: project.projectEngineerId,
+      projectForemanId: project.projectForemanId,
+      supervisorId: project.supervisorId,
+      createdAt: project.createdAt,
+      updatedAt: project.updatedAt,
+      deletedAt: project.deletedAt,
+    };
 
     return NextResponse.json(
       {
         success: true,
-        data: project,
+        data,
         message: 'Project created successfully',
       },
       { status: 201 }

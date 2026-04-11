@@ -200,11 +200,13 @@
     "deleteError": "Failed to delete project",
     "fetchError": "Error fetching project data",
     "validationError": "Please fill in all required fields",
+    "validationErrorSummary": "Check the highlighted fields below.",
     "projectNotFound": "Project not found",
     "accessDenied": "Access denied. You don't have permission to manage projects.",
     "errorGeneral": "An error occurred during the operation",
     "noCustomersFound": "No customers found",
-    "noLocationsFound": "No locations found"
+    "noLocationsFound": "No locations found",
+    "fileUploadSkipped": "Project was saved; attachments could not be uploaded (upload service is not available yet)."
   },
   "validation": {
     "required": "This field is required",

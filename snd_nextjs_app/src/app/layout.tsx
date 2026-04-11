@@ -31,6 +31,7 @@ export const viewport = {
 };
 
 import ErrorBoundary from '@/components/error-boundary';
+import { ChunkErrorListeners } from '@/components/chunk-error-listeners';
 
 export default function RootLayout({
   children,
@@ -38,49 +39,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.variable} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={inter.variable}
+      suppressHydrationWarning
+      data-scroll-behavior="smooth"
+    >
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
-        {/* Static theme/chunk script - no user input, safe */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              try {
-                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                  document.documentElement.classList.add('dark')
-                } else {
-                  document.documentElement.classList.remove('dark')
-                }
-              } catch (_) {}
-              
-              // Handle chunk loading errors globally
-              window.addEventListener('error', function(event) {
-                if (event.message && (
-                  event.message.includes('ChunkLoadError') ||
-                  event.message.includes('Loading chunk') ||
-                  event.message.includes('Failed to fetch dynamically imported module')
-                )) {
-                  console.warn('Chunk loading error detected, will retry on next navigation');
-                  // Don't reload immediately, let the error boundary handle it
-                }
-              });
-              
-              // Handle unhandled promise rejections for chunk loading
-              window.addEventListener('unhandledrejection', function(event) {
-                if (event.reason && (
-                  event.reason.message?.includes('ChunkLoadError') ||
-                  event.reason.message?.includes('Loading chunk') ||
-                  event.reason.message?.includes('Failed to fetch dynamically imported module')
-                )) {
-                  console.warn('Chunk loading promise rejection detected');
-                  event.preventDefault(); // Prevent default error handling
-                }
-              });
-            `,
-          }}
-        />
       </head>
       <body className="font-sans antialiased touch-pan-y" suppressHydrationWarning>
+        <ChunkErrorListeners />
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 rtl:focus:left-auto rtl:focus:right-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:outline-none focus:ring-2 focus:ring-ring"

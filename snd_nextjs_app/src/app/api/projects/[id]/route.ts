@@ -534,7 +534,10 @@ const deleteProjectHandler = async (
 
     await db.delete(projects).where(eq(projects.id, parseInt(projectId)));
 
-    return NextResponse.json({ message: 'Project deleted successfully' });
+    return NextResponse.json({
+      success: true,
+      message: 'Project deleted successfully',
+    });
   } catch (error) {
 
     return NextResponse.json({ error: 'Failed to delete project' }, { status: 500 });

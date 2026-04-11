@@ -62,6 +62,7 @@ import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
 
 import { useParams } from 'next/navigation';
+import { useDeleteConfirmations } from '@/lib/utils/confirmation-utils';
 interface Project {
   id: string;
   name: string;
@@ -111,6 +112,7 @@ export default function ProjectManagementPage() {
   const [viewMode, setViewMode] = useState('table');
   const [creatingSample, setCreatingSample] = useState(false);
   const { t } = useI18n();
+  const { confirmDeleteProject } = useDeleteConfirmations();
 
   // Get allowed actions for project management
   const allowedActions = getAllowedActions('Project');
@@ -181,26 +183,23 @@ export default function ProjectManagementPage() {
     };
   }, [search, status, priority, currentPage]);
 
-  const handleDelete = async (projectId: string) => {
-    if (!confirm('Are you sure you want to delete this project?')) return;
+  const handleDelete = async (projectId: string, projectName?: string) => {
+    const ok = await confirmDeleteProject(projectName);
+    if (!ok) return;
 
     try {
-      toast.loading('Deleting project...');
-      
-      const response = await ApiService.delete(`/projects/${projectId}`);
-      if (response.success) {
-        toast.success('Project deleted successfully');
-        
-        // Remove from local state
-        if (projects) {
-          setProjects({
-            ...projects,
-            data: projects.data.filter(p => p.id !== projectId),
-            total: projects.total - 1,
-          });
-        }
-      } else {
-        throw new Error(response.message || 'Failed to delete project');
+      const loadingId = toast.loading('Deleting project...');
+      // DELETE /api/projects/:id returns { message } without success — a resolved call means HTTP OK
+      await ApiService.delete(`/projects/${projectId}`);
+      toast.dismiss(loadingId);
+      toast.success('Project deleted successfully');
+
+      if (projects) {
+        setProjects({
+          ...projects,
+          data: projects.data.filter(p => p.id !== projectId),
+          total: projects.total - 1,
+        });
       }
     } catch (error) {
       console.error('Error deleting project:', error);
@@ -277,6 +276,8 @@ export default function ProjectManagementPage() {
     switch (status) {
       case 'planning':
         return <Badge className="bg-blue-100 text-blue-800">{t('project.status_options.planning')}</Badge>;
+      case 'active':
+        return <Badge className="bg-green-100 text-green-800">{t('project.status_options.active')}</Badge>;
       case 'in_progress':
         return (
           <Badge className="bg-yellow-100 text-yellow-800">{t('project.status_options.in_progress')}</Badge>
@@ -452,9 +453,9 @@ export default function ProjectManagementPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t('project.allPriority')}</SelectItem>
-                {priorities.map(priority => (
-                  <SelectItem key={priority} value={priority}>
-                    {priority}
+                {priorities.map(p => (
+                  <SelectItem key={p} value={p}>
+                    {t(`project.priority_options.${p}`)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -640,7 +641,7 @@ export default function ProjectManagementPage() {
                             variant="ghost"
                             size="sm"
                             className="h-8 w-8 p-0"
-                            onClick={() => handleDelete(project.id)}
+                            onClick={() => handleDelete(project.id, project.name)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -681,7 +682,7 @@ export default function ProjectManagementPage() {
                         </Link>
                       )}
                       {hasPermission('delete', 'Project') && (
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(project.id)}>
+                        <Button variant="ghost" size="sm" onClick={() => handleDelete(project.id, project.name)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       )}

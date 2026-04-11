@@ -175,11 +175,6 @@ export default function EditProjectPage() {
     fetchProjectData();
   }, [projectId]);
 
-  // Debug: Log priority changes
-  useEffect(() => {
-    console.log('[Edit Page] formData.priority changed to:', formData.priority);
-  }, [formData.priority]);
-
   // Check employee assignments when any employee field changes
   const checkEmployeeAssignments = useCallback(async (employeeId: string | undefined, fieldName: string) => {
     if (!employeeId) {
@@ -418,18 +413,12 @@ export default function EditProjectPage() {
   };
 
   const handleInputChange = (field: string, value: any) => {
-    if (field === 'priority') {
-      console.log('[Edit Page] Priority changed to:', value);
-    }
     setFormData(prev => {
       const updated = {
         ...prev,
         [field]: value,
       };
-      if (field === 'priority') {
-        console.log('[Edit Page] Updated formData.priority:', updated.priority);
-      }
-      
+
       // Validate dates when either date changes
       if (field === 'start_date' || field === 'end_date') {
         validateDates(field === 'start_date' ? value : prev.start_date, field === 'end_date' ? value : prev.end_date);
@@ -497,13 +486,8 @@ export default function EditProjectPage() {
         supervisor_id: formData.supervisor_id || null,
       };
 
-      console.log('[Edit Page] Submitting project update with priority:', submitData.priority);
-      console.log('[Edit Page] Full submitData:', JSON.stringify(submitData, null, 2));
-
       const response = await ApiService.put(`/projects/${projectId}`, submitData);
-      
-      console.log('[Edit Page] Update response:', response);
-      
+
       if (response.success) {
         toast.success(t('project.messages.updateSuccess'));
         router.push(`/${locale}/project-management/${projectId}`);
