@@ -251,11 +251,6 @@ const getEquipmentHandler = async (request: NextRequest) => {
                   and(
                     inArray(projectEquipment.equipmentId, equipmentIds),
                     sql`${projectEquipment.status} IN ('active', 'pending')`,
-                    sql`${projectEquipment.startDate} <= CURRENT_DATE`,
-                    or(
-                      sql`${projectEquipment.endDate} IS NULL`,
-                      sql`${projectEquipment.endDate} >= CURRENT_DATE`
-                    )
                   )
                 ),
               // Get active maintenance records (filtered by equipment IDs)

@@ -10,7 +10,7 @@ import {
   rentalItems,
   customers,
 } from '@/lib/drizzle/schema';
-import { and, eq, inArray, or, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { shortCompanyOrPartyName, COMPANY_SHORT_REPORT_MAX } from '@/lib/utils/company-display-name';
 
@@ -152,8 +152,6 @@ export async function getEquipmentReportAssignmentFields(
         and(
           inArray(projectEquipment.equipmentId, equipmentIds),
           sql`${projectEquipment.status} IN ('active', 'pending')`,
-          sql`${projectEquipment.startDate} <= CURRENT_DATE`,
-          or(sql`${projectEquipment.endDate} IS NULL`, sql`${projectEquipment.endDate} >= CURRENT_DATE`)
         )
       ),
     db

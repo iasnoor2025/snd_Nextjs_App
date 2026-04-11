@@ -87,11 +87,9 @@ export class EquipmentStatusService {
             )
           )
           .limit(1),
-        // Check for active project equipment assignments
-        // An assignment is active if:
-        // 1. status is 'active' or 'pending' AND
-        // 2. startDate is today or in the past AND
-        // 3. endDate is null or in the future
+        // Project equipment: same rule as assignment history API — row status is authoritative.
+        // Do not gate on start/end dates here; overdue assignments still show as active in UI until
+        // the project_equipment row is completed/returned (otherwise Basic Info disagrees with Assignments).
         db
           .select({ 
             id: projectEquipment.id,
@@ -101,11 +99,6 @@ export class EquipmentStatusService {
             and(
               eq(projectEquipment.equipmentId, equipmentId),
               sql`${projectEquipment.status} IN ('active', 'pending')`,
-              sql`${projectEquipment.startDate} <= CURRENT_DATE`,
-              or(
-                sql`${projectEquipment.endDate} IS NULL`,
-                sql`${projectEquipment.endDate} >= CURRENT_DATE`
-              )
             )
           )
           .limit(1)
