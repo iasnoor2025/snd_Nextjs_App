@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Download, Eye, FileText, FileSpreadsheet, Image as ImageIcon, FileArchive, Presentation, Music, FileVideo, Loader2, Trash2, Upload, X } from 'lucide-react';
-import { useCallback, useEffect, useState, memo } from 'react';
+import { useCallback, useEffect, useState, memo, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
@@ -156,6 +156,13 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
   const [documentName, setDocumentName] = useState('');
   const [previewImage, setPreviewImage] = useState<DocumentItem | null>(null);
 
+  // Parent often passes a new `loadDocuments` every render; `t` is also recreated each render.
+  // Refs keep `refresh` stable so the mount effect does not refetch in a tight loop.
+  const loadDocumentsRef = useRef(loadDocuments);
+  loadDocumentsRef.current = loadDocuments;
+  const tRef = useRef(t);
+  tRef.current = t;
+
   // Memoized sorting function to prevent recreation on every render
   const sortDocuments = useCallback((list: DocumentItem[]) => {
     const sortedList = Array.isArray(list) ? [...list] : [];
@@ -185,23 +192,24 @@ const DocumentManagerComponent = function DocumentManager(props: DocumentManager
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const list = await loadDocuments();
+      const list = await loadDocumentsRef.current();
       const sortedList = sortDocuments(list);
-      
+
       setDocuments(sortedList);
-      
-      // Documents loaded and sorted (removed console logging for performance)
     } catch (error) {
       console.error('Error loading documents:', error);
-      toast.error(t('employee.documents.errorLoadingDocuments'));
+      toast.error(tRef.current('employee.documents.errorLoadingDocuments'));
     } finally {
       setLoading(false);
     }
-  }, [loadDocuments, sortDocuments]);
+  }, [sortDocuments]);
 
+  // Mount-only load: `refresh` reads `loadDocumentsRef` so we always call the latest loader
+  // without re-running this effect when parent passes new function identities every render.
   useEffect(() => {
     void refresh();
-  }, [refresh]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only; avoid effect ↔ refresh dependency loops
+  }, []);
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {

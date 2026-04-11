@@ -1,7 +1,6 @@
 'use client';
 
 import DocumentManager, { type DocumentItem } from '@/components/shared/DocumentManager';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -21,44 +20,41 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
+import { useI18n } from '@/hooks/use-i18n';
 import { useRBAC } from '@/lib/rbac/rbac-context';
-import { Plus, RefreshCw, Trash2, Upload } from 'lucide-react';
+import { RefreshCw, Upload } from 'lucide-react';
 import { useSession } from 'next-auth/react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-
-interface Document {
-  id: number;
-  name: string;
-  file_name: string;
-  file_type: string;
-  size: number;
-  url: string;
-  mime_type: string;
-  document_type: string;
-  description?: string;
-  created_at: string;
-  updated_at: string;
-}
 
 interface ProjectDocumentsTabProps {
   projectId: number;
 }
 
+const DOC_TYPE_VALUES = [
+  'contract',
+  'proposal',
+  'report',
+  'meeting_notes',
+  'blueprint',
+  'photo',
+  'invoice',
+  'specification',
+  'general',
+] as const;
+
 export default function ProjectDocumentsTab({ projectId }: ProjectDocumentsTabProps) {
+  const { t } = useI18n();
+  const tRef = useRef(t);
+  tRef.current = t;
   const { hasPermission } = useRBAC();
   const { data: session, status: sessionStatus } = useSession();
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[] | null>(null);
-  const [hasError, setHasError] = useState(false);
+  /** Bumped to tell DocumentManager to reload after upload/delete (list lives inside DocumentManager). */
+  const [documentsVersion, setDocumentsVersion] = useState(0);
 
-  // Upload form state
   const [uploadForm, setUploadForm] = useState({
     document_name: '',
     document_type: '',
@@ -67,160 +63,78 @@ export default function ProjectDocumentsTab({ projectId }: ProjectDocumentsTabPr
   });
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
 
-  const documentTypeOptions = [
-    { label: '📄 Contract', value: 'contract' },
-    { label: '📋 Proposal', value: 'proposal' },
-    { label: '📊 Report', value: 'report' },
-    { label: '📝 Meeting Notes', value: 'meeting_notes' },
-    { label: '📐 Blueprint', value: 'blueprint' },
-    { label: '📸 Photo', value: 'photo' },
-    { label: '📑 Invoice', value: 'invoice' },
-    { label: '📋 Specification', value: 'specification' },
-    { label: '📄 General Document', value: 'general' },
-  ];
+  const documentTypeOptions = useMemo(
+    () =>
+      DOC_TYPE_VALUES.map(value => ({
+        value,
+        label: t(`project.documents.types.${value}`),
+      })),
+    [t]
+  );
 
-  // Show loading while session is loading
-  if (sessionStatus === 'loading') {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Loading...</span>
-      </div>
-    );
-  }
+  const getDocumentTypeLabel = useCallback((type?: string) => {
+    const tr = tRef.current;
+    if (!type) return tr('project.documents.documentLabelDefault');
+    const key = `project.documents.types.${type}`;
+    const translated = tr(key);
+    if (translated !== key) return translated;
+    return type.replace(/_/g, ' ').replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+  }, []);
 
-  // Show error if not authenticated
-  if (sessionStatus === 'unauthenticated' || !session?.user) {
-    return (
-      <div className="rounded-md border border-red-200 bg-red-50 p-4">
-        <div className="text-center">
-          <div className="font-medium text-red-600">Authentication Required</div>
-          <div className="mt-1 text-sm text-red-600">Please log in to view project documents.</div>
-        </div>
-      </div>
-    );
-  }
+  const bumpDocuments = useCallback(() => {
+    setDocumentsVersion(v => v + 1);
+  }, []);
 
-  useEffect(() => {
-    fetchDocuments();
-  }, [projectId]);
+  const getFileTypeFromFileName = (fileName: string): string => {
+    if (!fileName) return 'UNKNOWN';
+    const ext = fileName.split('.').pop()?.toUpperCase();
+    return ext || 'UNKNOWN';
+  };
 
-  // Error boundary effect
-  useEffect(() => {
-    if (error && !hasError) {
-      setHasError(true);
-    }
-  }, [error, hasError]);
-
-  // Reset error state when projectId changes
-  useEffect(() => {
-    setError(null);
-    setHasError(false);
-  }, [projectId]);
-
-  const fetchDocuments = async () => {
-    setLoading(true);
-    setError(null);
+  const loadDocumentsForManager = useCallback(async () => {
     try {
       const response = await fetch(`/api/projects/${projectId}/documents`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Cache-Control': 'max-age=300',
         },
         credentials: 'include',
       });
 
       if (response.ok) {
         const data = await response.json();
-        setDocuments(Array.isArray(data) ? data : []);
-      } else {
-        const errorText = await response.text();
-        let errorData;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch (e) {
-          errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
-        }
-        const errorMessage = errorData.error || `Failed to load documents (${response.status})`;
-        setError(errorMessage);
+        const list = Array.isArray(data) ? data : [];
+
+        return list.map((d: Record<string, unknown>) => {
+          const fileName = (d.fileName as string) || (d.file_name as string);
+          const docType = (d.documentType as string) || (d.document_type as string);
+          return {
+            id: d.id as number,
+            name:
+              (d.fileName as string) ||
+              (d.name as string) ||
+              getDocumentTypeLabel(docType) ||
+              tRef.current('project.documents.documentLabelDefault'),
+            file_name: fileName || tRef.current('project.documents.unknownDocument'),
+            file_type:
+              (d.mimeType as string) ||
+              (d.file_type as string) ||
+              getFileTypeFromFileName(fileName || '') ||
+              'UNKNOWN',
+            size: (d.fileSize as number) || (d.size as number) || 0,
+            url: (d.filePath as string) || (d.url as string) || '',
+            created_at: (d.createdAt as string) || (d.created_at as string) || new Date().toISOString(),
+            typeLabel: getDocumentTypeLabel(docType),
+            document_type: docType || '',
+            project_id: projectId,
+          } as DocumentItem;
+        }) as DocumentItem[];
       }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load documents';
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
+      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    } catch {
+      return [] as DocumentItem[];
     }
-  };
-
-  const handleUpload = async (fileOverride?: File) => {
-    const fileToUpload = fileOverride || uploadForm.file;
-    
-    if (!fileToUpload || !uploadForm.document_name.trim()) {
-      toast.error('Please select a file and provide a document name');
-      return;
-    }
-
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', fileToUpload);
-      formData.append('document_name', uploadForm.document_name.trim());
-      if (uploadForm.document_type) formData.append('document_type', uploadForm.document_type);
-      formData.append('description', uploadForm.description);
-
-      const response = await fetch(`/api/projects/${projectId}/documents/upload`, {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        toast.success('Document uploaded successfully');
-        setShowUploadDialog(false);
-        setUploadForm({ document_name: '', document_type: '', file: null, description: '' });
-        setTimeout(() => {
-          fetchDocuments();
-        }, 500);
-        setTimeout(() => {
-          fetchDocuments();
-        }, 2000);
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.error || 'Failed to upload document');
-      }
-    } catch (error) {
-      toast.error('Failed to upload document');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleDelete = async (documentId: number) => {
-    if (!confirm('Are you sure you want to delete this document?')) {
-      return;
-    }
-
-    setDeletingId(documentId);
-    try {
-      const response = await fetch(`/api/projects/${projectId}/documents/${documentId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        toast.success('Document deleted successfully');
-        fetchDocuments();
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.error || 'Failed to delete document');
-      }
-    } catch (error) {
-      toast.error('Failed to delete document');
-    } finally {
-      setDeletingId(null);
-    }
-  };
+  }, [projectId, getDocumentTypeLabel]);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -230,45 +144,21 @@ export default function ProjectDocumentsTab({ projectId }: ProjectDocumentsTabPr
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const getFileTypeFromFileName = (fileName: string): string => {
-    if (!fileName) return 'UNKNOWN';
-    const ext = fileName.split('.').pop()?.toUpperCase();
-    return ext || 'UNKNOWN';
-  };
-
-  const getDocumentTypeLabel = (type?: string) => {
-    if (!type) return 'Document';
-    return type.replace(/_/g, ' ').replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
-  };
-
-  if (loading) {
+  if (sessionStatus === 'loading') {
     return (
       <div className="flex items-center justify-center p-8">
         <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Loading documents...</span>
+        <span className="ml-2">{t('project.documents.loadingSession')}</span>
       </div>
     );
   }
 
-  if (hasError) {
+  if (sessionStatus === 'unauthenticated' || !session?.user) {
     return (
       <div className="rounded-md border border-red-200 bg-red-50 p-4">
         <div className="text-center">
-          <div className="font-medium text-red-600">Error Loading Documents</div>
-          <div className="mt-1 text-sm text-red-600">{error || 'An unexpected error occurred'}</div>
-          <div className="mt-4 flex justify-center space-x-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setError(null);
-                setHasError(false);
-                fetchDocuments();
-              }}
-              className="bg-white"
-            >
-              <RefreshCw className="mr-2 h-4 w-4" /> Retry
-            </Button>
-          </div>
+          <div className="font-medium text-red-600">{t('project.documents.authRequiredTitle')}</div>
+          <div className="mt-1 text-sm text-red-600">{t('project.documents.authRequiredDescription')}</div>
         </div>
       </div>
     );
@@ -278,8 +168,9 @@ export default function ProjectDocumentsTab({ projectId }: ProjectDocumentsTabPr
     <>
       <div className="w-full">
         <DocumentManager
-          title="Project Documents"
-          description="Upload and manage project-related documents"
+          key={`${projectId}-${documentsVersion}`}
+          title={t('project.documents.tabTitle')}
+          description={t('project.documents.tabDescription')}
           beforeUpload={files => {
             if (!uploadForm.document_name.trim() || !uploadForm.document_type.trim()) {
               setPendingFiles(files);
@@ -288,54 +179,15 @@ export default function ProjectDocumentsTab({ projectId }: ProjectDocumentsTabPr
             }
             return true;
           }}
-          loadDocuments={async () => {
-            try {
-              const response = await fetch(`/api/projects/${projectId}/documents`, {
-                method: 'GET',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                credentials: 'include',
-              });
-
-              if (response.ok) {
-                const data = await response.json();
-                const list = Array.isArray(data) ? data : [];
-
-                return list.map((d: any) => {
-                  return {
-                    id: d.id,
-                    name: d.fileName || d.name || getDocumentTypeLabel(d.documentType) || 'Document',
-                    file_name: d.fileName || d.file_name || 'Unknown Document',
-                    file_type:
-                      d.mimeType ||
-                      d.file_type ||
-                      getFileTypeFromFileName(d.fileName || d.file_name) ||
-                      'UNKNOWN',
-                    size: d.fileSize || d.size || 0,
-                    url: d.filePath || d.url || '',
-                    created_at: d.createdAt || d.created_at || new Date().toISOString(),
-                    typeLabel: getDocumentTypeLabel(d.documentType),
-                    document_type: d.documentType || '',
-                    project_id: projectId, // Add project ID for download endpoint
-                  } as DocumentItem;
-                }) as DocumentItem[];
-              } else {
-                throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-              }
-            } catch (error) {
-              return [] as DocumentItem[];
-            }
-          }}
-          uploadDocument={async (file, extra) => {
+          loadDocuments={loadDocumentsForManager}
+          uploadDocument={async file => {
             try {
               setUploadProgress(prev => ({ ...prev, [file.name]: 0 }));
 
               const formData = new FormData();
               formData.append('file', file);
               formData.append('document_name', uploadForm.document_name.trim());
-              if (uploadForm.document_type)
-                formData.append('document_type', uploadForm.document_type);
+              if (uploadForm.document_type) formData.append('document_type', uploadForm.document_type);
               formData.append('description', uploadForm.description);
 
               const progressInterval = setInterval(() => {
@@ -361,18 +213,17 @@ export default function ProjectDocumentsTab({ projectId }: ProjectDocumentsTabPr
                 if (errorData.error && errorData.error.includes('already exists')) {
                   toast.error(errorData.error);
                 } else {
-                  throw new Error(errorData.message || 'Upload failed');
+                  throw new Error(errorData.error || errorData.message || t('project.documents.uploadError'));
                 }
                 setUploadProgress(prev => ({ ...prev, [file.name]: 0 }));
                 return false;
               }
 
               setUploadProgress(prev => ({ ...prev, [file.name]: 100 }));
-              fetchDocuments();
               return true;
-            } catch (error) {
+            } catch (err) {
               setUploadProgress(prev => ({ ...prev, [file.name]: 0 }));
-              toast.error(error instanceof Error ? error.message : 'Failed to upload document');
+              toast.error(err instanceof Error ? err.message : t('project.documents.uploadError'));
               return false;
             }
           }}
@@ -384,47 +235,43 @@ export default function ProjectDocumentsTab({ projectId }: ProjectDocumentsTabPr
               });
               if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to delete document');
+                throw new Error(errorData.error || errorData.message || t('project.documents.deleteError'));
               }
-              fetchDocuments();
               return true;
-            } catch (error) {
-              toast.error(error instanceof Error ? error.message : 'Failed to delete document');
+            } catch (err) {
+              toast.error(err instanceof Error ? err.message : t('project.documents.deleteError'));
               return false;
             }
           }}
           downloadDocument={async id => {
             try {
-              // Use the download endpoint which handles S3 authentication
               const response = await fetch(`/api/projects/${projectId}/documents/${id}/download`, {
                 method: 'GET',
                 credentials: 'include',
               });
-              
+
               if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to download document');
+                throw new Error(errorData.error || t('project.documents.downloadError'));
               }
-              
+
               const blob = await response.blob();
               const url = window.URL.createObjectURL(blob);
-              
-              // Get filename from Content-Disposition header or use default
+
               const contentDisposition = response.headers.get('Content-Disposition');
               let filename = 'document.pdf';
               if (contentDisposition) {
                 const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
                 if (filenameMatch && filenameMatch[1]) {
                   filename = filenameMatch[1].replace(/['"]/g, '');
-                  // Decode URI-encoded filename
                   try {
                     filename = decodeURIComponent(filename);
-                  } catch (e) {
-                    // If decoding fails, use as is
+                  } catch {
+                    /* keep raw */
                   }
                 }
               }
-              
+
               const link = document.createElement('a');
               link.href = url;
               link.download = filename;
@@ -432,14 +279,14 @@ export default function ProjectDocumentsTab({ projectId }: ProjectDocumentsTabPr
               link.click();
               document.body.removeChild(link);
               window.URL.revokeObjectURL(url);
-              
-              toast.success('Document downloaded successfully');
-            } catch (error) {
-              console.error('Download error:', error);
-              toast.error(error instanceof Error ? error.message : 'Failed to download document');
+
+              toast.success(t('project.documents.downloadSuccess'));
+            } catch (err) {
+              console.error('Download error:', err);
+              toast.error(err instanceof Error ? err.message : t('project.documents.downloadError'));
             }
           }}
-          canUpload={hasPermission('create', 'Project')}
+          canUpload={hasPermission('update', 'Project')}
           canDownload={hasPermission('read', 'Project')}
           canPreview={hasPermission('read', 'Project')}
           canDelete={hasPermission('delete', 'Project')}
@@ -450,12 +297,12 @@ export default function ProjectDocumentsTab({ projectId }: ProjectDocumentsTabPr
           renderExtraControls={
             <div className="grid gap-3">
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{t('project.documents.descriptionLabel')}</Label>
                 <Input
                   id="description"
                   value={uploadForm.description}
                   onChange={e => setUploadForm(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Optional description for this document"
+                  placeholder={t('project.documents.descriptionPlaceholder')}
                 />
               </div>
             </div>
@@ -472,23 +319,21 @@ export default function ProjectDocumentsTab({ projectId }: ProjectDocumentsTabPr
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Document Details</DialogTitle>
-            <DialogDescription>
-              Please provide a name and type for the document(s) you're uploading.
-            </DialogDescription>
+            <DialogTitle>{t('project.documents.dialogTitleDetails')}</DialogTitle>
+            <DialogDescription>{t('project.documents.dialogDescriptionUpload')}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
             <div>
-              <Label htmlFor="doc_name_popup">Document Name</Label>
+              <Label htmlFor="doc_name_popup">{t('project.documents.documentName')}</Label>
               <Input
                 id="doc_name_popup"
                 value={uploadForm.document_name}
                 onChange={e => setUploadForm(prev => ({ ...prev, document_name: e.target.value }))}
-                placeholder="Enter document name"
+                placeholder={t('project.documents.documentNamePlaceholder')}
               />
             </div>
             <div>
-              <Label htmlFor="doc_type_popup">Document Type</Label>
+              <Label htmlFor="doc_type_popup">{t('project.documents.documentType')}</Label>
               <Select
                 value={uploadForm.document_type}
                 onValueChange={v => {
@@ -501,7 +346,7 @@ export default function ProjectDocumentsTab({ projectId }: ProjectDocumentsTabPr
                 }}
               >
                 <SelectTrigger id="doc_type_popup">
-                  <SelectValue placeholder="Select document type" />
+                  <SelectValue placeholder={t('project.documents.selectDocumentType')} />
                 </SelectTrigger>
                 <SelectContent>
                   {documentTypeOptions.map(o => (
@@ -516,16 +361,17 @@ export default function ProjectDocumentsTab({ projectId }: ProjectDocumentsTabPr
               <div className="space-y-3">
                 <div className="text-sm text-muted-foreground">
                   <div className="mb-2">
-                    <strong>Files to upload:</strong> {pendingFiles.length} file(s)
+                    <strong>{t('project.documents.filesToUpload')}</strong>{' '}
+                    {t('project.documents.fileCount', { count: String(pendingFiles.length) })}
                   </div>
                   <div className="mb-2">
-                    <strong>Total size:</strong>{' '}
+                    <strong>{t('project.documents.totalSize')}</strong>{' '}
                     {formatFileSize(pendingFiles.reduce((total, file) => total + file.size, 0))}
                   </div>
                 </div>
                 {uploading && Object.keys(uploadProgress).length > 0 && (
                   <div className="space-y-2">
-                    <Label>Upload Progress</Label>
+                    <Label>{t('project.documents.uploadProgress')}</Label>
                     {pendingFiles.map(file => (
                       <div key={file.name} className="space-y-1">
                         <div className="flex items-center justify-between text-xs">
@@ -548,25 +394,24 @@ export default function ProjectDocumentsTab({ projectId }: ProjectDocumentsTabPr
                 setPendingFiles(null);
               }}
             >
-              Cancel
+              {t('project.buttons.cancel')}
             </Button>
             <Button
               onClick={async () => {
                 if (!pendingFiles || pendingFiles.length === 0) {
-                  toast.error('No files selected');
+                  toast.error(t('project.documents.noFilesSelected'));
                   return;
                 }
-                
+
                 if (!uploadForm.document_name.trim() || !uploadForm.document_type) {
-                  toast.error('Please provide a document name and type');
+                  toast.error(t('project.documents.validationNameAndType'));
                   return;
                 }
-                
+
                 setShowDetailsDialog(false);
                 setUploading(true);
-                
+
                 try {
-                  // Upload all pending files
                   for (const file of pendingFiles) {
                     const formData = new FormData();
                     formData.append('file', file);
@@ -582,16 +427,20 @@ export default function ProjectDocumentsTab({ projectId }: ProjectDocumentsTabPr
 
                     if (!response.ok) {
                       const errorData = await response.json();
-                      throw new Error(errorData.error || `Failed to upload ${file.name}`);
+                      throw new Error(
+                        errorData.error || t('project.documents.uploadFailedForFile', { name: file.name })
+                      );
                     }
                   }
-                  
-                  toast.success(`Successfully uploaded ${pendingFiles.length} file(s)`);
+
+                  toast.success(
+                    t('project.documents.multiUploadSuccess', { count: String(pendingFiles.length) })
+                  );
                   setPendingFiles(null);
                   setUploadForm({ document_name: '', document_type: '', file: null, description: '' });
-                  fetchDocuments();
-                } catch (error) {
-                  toast.error(error instanceof Error ? error.message : 'Failed to upload document');
+                  bumpDocuments();
+                } catch (err) {
+                  toast.error(err instanceof Error ? err.message : t('project.documents.uploadError'));
                 } finally {
                   setUploading(false);
                 }
@@ -601,12 +450,12 @@ export default function ProjectDocumentsTab({ projectId }: ProjectDocumentsTabPr
               {uploading ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Uploading...
+                  {t('project.documents.uploading')}
                 </>
               ) : (
                 <>
                   <Upload className="mr-2 h-4 w-4" />
-                  Upload
+                  {t('project.documents.uploadButton')}
                 </>
               )}
             </Button>

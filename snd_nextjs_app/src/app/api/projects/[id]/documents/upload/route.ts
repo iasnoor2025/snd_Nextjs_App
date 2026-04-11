@@ -46,7 +46,7 @@ const uploadDocumentsHandler = async (
     const documentName = (formData.get('document_name') as string) || '';
     const description = formData.get('description') as string;
 
-    // Validate file type
+    // Validate file type (some browsers send empty MIME — infer from extension)
     const allowedTypes = [
       'application/pdf',
       'application/msword',
@@ -59,9 +59,29 @@ const uploadDocumentsHandler = async (
       'image/gif',
       'image/webp',
     ];
+    const extToMime: Record<string, string> = {
+      pdf: 'application/pdf',
+      doc: 'application/msword',
+      docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      xls: 'application/vnd.ms-excel',
+      xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      gif: 'image/gif',
+      webp: 'image/webp',
+    };
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    const inferred = extToMime[ext];
+    const effectiveMime =
+      file.type && allowedTypes.includes(file.type)
+        ? file.type
+        : inferred && allowedTypes.includes(inferred)
+          ? inferred
+          : file.type;
 
-    if (!allowedTypes.includes(file.type)) {
-      console.error(`Invalid file type: ${file.type}`);
+    if (!allowedTypes.includes(effectiveMime)) {
+      console.error(`Invalid file type: reported=${file.type}, inferred=${inferred}, ext=${ext}`);
       return NextResponse.json(
         { error: 'Invalid file type. Only PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF, and WEBP files are allowed.' },
         { status: 400 }
@@ -166,7 +186,7 @@ const uploadDocumentsHandler = async (
       Bucket: bucketName,
       Key: fullPath,
       Body: fileBuffer,
-      ContentType: file.type,
+      ContentType: effectiveMime,
     });
 
     await s3Client.send(command);
@@ -185,7 +205,7 @@ const uploadDocumentsHandler = async (
         filePath: minioUrl,
         fileName: descriptiveFilename,
         fileSize: file.size,
-        mimeType: (file.type || 'application/octet-stream') as string,
+        mimeType: effectiveMime,
         description: description || null,
         createdAt: new Date().toISOString().split('T')[0],
         updatedAt: new Date().toISOString().split('T')[0],
@@ -248,4 +268,5 @@ const uploadDocumentsHandler = async (
   }
 };
 
+// Must align with UI: uploads change project attachments → `update` on Project (not `create`).
 export const POST = withPermission(PermissionConfigs.project.update)(uploadDocumentsHandler);

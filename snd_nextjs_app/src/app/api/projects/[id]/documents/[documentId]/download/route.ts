@@ -1,25 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth';
 import { db } from '@/lib/drizzle';
 import { projectDocuments, projects } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { PermissionConfigs, withPermission } from '@/lib/rbac/api-middleware';
 
-// Shared handler for both GET and POST (POST used to bypass IDM interception)
+// Shared handler for both GET and POST (POST used to bypass IDM interception).
+// Uses project.read (same as GET /documents list) — not a narrow role whitelist.
 async function handleDownload(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; documentId: string }> }
+  ...args: unknown[]
 ) {
-  console.log('🔵🔵🔵 PROJECT DOCUMENT DOWNLOAD: Handler STARTED', request.url);
-  
   try {
-    const session = await getServerSession();
-    console.log('🔵 PROJECT DOCUMENT DOWNLOAD: Session exists?', !!session?.user);
-    if (!session?.user) {
-      console.log('🔴 PROJECT DOCUMENT DOWNLOAD: No session, returning 401');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+    const { params } = args[0] as { params: Promise<{ id: string; documentId: string }> };
     const { id: projectId, documentId } = await params;
     const projectIdNum = parseInt(projectId);
     const documentIdNum = parseInt(documentId);
@@ -44,14 +37,6 @@ async function handleDownload(
     // Verify the document belongs to the project
     if (documentRecord.projectId !== projectIdNum) {
       return NextResponse.json({ error: 'Document does not belong to this project' }, { status: 403 });
-    }
-
-    // Check if user has permission to access this document
-    if (session.user.role !== 'SUPER_ADMIN' && 
-        session.user.role !== 'ADMIN' && 
-        session.user.role !== 'MANAGER' &&
-        session.user.role !== 'SUPERVISOR') {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
     // Get project information
@@ -104,12 +89,8 @@ async function handleDownload(
         }
 
         const buffer = await s3Response.Body.transformToByteArray();
-        
-        console.log('🔵 PROJECT DOCUMENT DOWNLOAD: Buffer size', buffer.length, 'bytes');
-        console.log('🔵 PROJECT DOCUMENT DOWNLOAD: MIME type', documentRecord.mimeType);
-        
+
         if (!buffer || buffer.length === 0) {
-          console.error('🔴 PROJECT DOCUMENT DOWNLOAD: Empty buffer!');
           return NextResponse.json(
             { error: 'Document file is empty' },
             { status: 500 }
@@ -128,20 +109,14 @@ async function handleDownload(
         // Return the file with proper headers
         const url = new URL(request.url);
         const isPreview = !url.searchParams.has('download');
-        
-        console.log('🔵 PROJECT DOCUMENT DOWNLOAD: About to return response', {
-          bufferLength: buffer.length,
-          contentType: documentRecord.mimeType,
-          isPreview,
-        });
-        
+
         // For preview mode (thumbnails), use application/octet-stream to bypass
         // download managers like IDM that intercept application/pdf
         const contentType = isPreview 
           ? 'application/octet-stream'
           : (documentRecord.mimeType || 'application/octet-stream');
         
-        return new NextResponse(buffer, {
+        return new NextResponse(Buffer.from(buffer), {
           headers: {
             'Content-Type': contentType,
             'Content-Disposition': isPreview 
@@ -174,18 +149,5 @@ async function handleDownload(
   }
 }
 
-// GET handler for normal downloads and browser access
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ id: string; documentId: string }> }
-) {
-  return handleDownload(request, context);
-}
-
-// POST handler to bypass IDM interception (IDM only intercepts GET requests)
-export async function POST(
-  request: NextRequest,
-  context: { params: Promise<{ id: string; documentId: string }> }
-) {
-  return handleDownload(request, context);
-}
+export const GET = withPermission(PermissionConfigs.project.read)(handleDownload);
+export const POST = withPermission(PermissionConfigs.project.read)(handleDownload);

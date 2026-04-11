@@ -1,24 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth';
 import { db } from '@/lib/drizzle';
 import { projectDocuments, projects } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { PermissionConfigs, withPermission } from '@/lib/rbac/api-middleware';
 
 // Preview endpoint - returns document data for inline preview
 // Uses different path from /download to avoid IDM interception
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string; documentId: string }> }
-) {
-  console.log('🔵🔵🔵 PROJECT DOCUMENT PREVIEW: Handler STARTED', request.url);
-  
+async function previewHandler(request: NextRequest, ...args: unknown[]) {
   try {
-    const session = await getServerSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+    const { params } = args[0] as { params: Promise<{ id: string; documentId: string }> };
     const { id: projectId, documentId } = await params;
     const projectIdNum = parseInt(projectId);
     const documentIdNum = parseInt(documentId);
@@ -43,14 +34,6 @@ export async function GET(
     // Verify the document belongs to the project
     if (documentRecord.projectId !== projectIdNum) {
       return NextResponse.json({ error: 'Document does not belong to this project' }, { status: 403 });
-    }
-
-    // Check if user has permission to access this document
-    if (session.user.role !== 'SUPER_ADMIN' && 
-        session.user.role !== 'ADMIN' && 
-        session.user.role !== 'MANAGER' &&
-        session.user.role !== 'SUPERVISOR') {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
     // Get project information
@@ -103,11 +86,8 @@ export async function GET(
         }
 
         const buffer = await s3Response.Body.transformToByteArray();
-        
-        console.log('🔵 PROJECT DOCUMENT PREVIEW: Buffer size', buffer.length, 'bytes');
-        
+
         if (!buffer || buffer.length === 0) {
-          console.error('🔴 PROJECT DOCUMENT PREVIEW: Empty buffer!');
           return NextResponse.json(
             { error: 'Document file is empty' },
             { status: 500 }
@@ -140,7 +120,7 @@ export async function GET(
         
         // Return the file with proper headers for inline preview
         // Use the actual MIME type so the browser can render it correctly
-        return new NextResponse(buffer, {
+        return new NextResponse(Buffer.from(buffer), {
           headers: {
             'Content-Type': documentRecord.mimeType || 'application/octet-stream',
             'Content-Disposition': `inline; filename="${encodeURIComponent(previewFileName)}"`,
@@ -172,10 +152,5 @@ export async function GET(
   }
 }
 
-// POST handler - same as GET, used to bypass IDM interception
-export async function POST(
-  request: NextRequest,
-  context: { params: Promise<{ id: string; documentId: string }> }
-) {
-  return GET(request, context);
-}
+export const GET = withPermission(PermissionConfigs.project.read)(previewHandler);
+export const POST = withPermission(PermissionConfigs.project.read)(previewHandler);
