@@ -27,6 +27,9 @@ export interface SettlementPDFData {
   accruedVacationAmount: number;
   otherBenefits: number;
   otherBenefitsDescription?: string;
+  /** Overtime for PDF earnings section (Basic + OT block) */
+  overtimeAmount?: number;
+  overtimeHours?: number;
   pendingAdvances: number;
   equipmentDeductions: number;
   otherDeductions: number;
@@ -140,6 +143,7 @@ export class FinalSettlementPDFService {
       return '';
     }
   }
+
   /**
    * Generate PDF document for final settlement
    */
@@ -369,7 +373,7 @@ export class FinalSettlementPDFService {
           pageErrors.push(error);
         });
         
-        await page.setViewport({ width: 1200, height: 1600 });
+        await page.setViewport({ width: 1200, height: 4000 });
         
         const htmlContent = await this.generateBilingualTemplate(settlementData);
         
@@ -381,7 +385,7 @@ export class FinalSettlementPDFService {
         
         // Brief wait for styles to apply
         await new Promise(resolve => setTimeout(resolve, 300));
-        
+
         // Check if page is still open and connected before generating PDF
         if (page.isClosed()) {
           throw new Error('Page was closed before PDF generation');
@@ -408,11 +412,12 @@ export class FinalSettlementPDFService {
             format: 'A4',
             printBackground: true,
             margin: {
-              top: '6mm',
-              right: '6mm',
-              bottom: '6mm',
-              left: '6mm',
+              top: '10mm',
+              right: '10mm',
+              bottom: '10mm',
+              left: '10mm',
             },
+            scale: 1,
             timeout: 60000,
           });
         } catch (pdfError) {
@@ -514,6 +519,22 @@ export class FinalSettlementPDFService {
     const formatCurrency = (amount: number) => `${data.currency} ${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
     const formatDate = (date: string) => new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
+    const overtimeAmount = data.overtimeAmount ?? 0;
+    const hasBasicOtSection = data.unpaidSalaryAmount > 0 || overtimeAmount > 0;
+    const basicOtSubtotal = data.unpaidSalaryAmount + overtimeAmount;
+    const overtimeLabelSuffix =
+      data.overtimeHours != null && data.overtimeHours > 0 ? ` (${data.overtimeHours} hrs)` : '';
+    const deferredVacationAllowance =
+      data.settlementType === 'vacation' && data.endOfServiceBenefit > 0
+        ? data.endOfServiceBenefit
+        : 0;
+    const netPayableNow =
+      deferredVacationAllowance > 0 ? data.netAmount - deferredVacationAllowance : data.netAmount;
+    const hasOthersSubsection =
+      data.otherBenefits > 0 ||
+      (data.settlementType === 'exit' && data.endOfServiceBenefit > 0) ||
+      (data.settlementType === 'exit' && data.accruedVacationAmount > 0);
+
     return `
 <!DOCTYPE html>
 <html lang="en">
@@ -545,6 +566,11 @@ export class FinalSettlementPDFService {
             display: flex;
             align-items: center;
             gap: 15px;
+        }
+        .subsection-header td {
+            background-color: #f8fafc;
+            font-weight: bold;
+            color: #1e40af;
         }
         .logo {
             width: 80px;
@@ -658,6 +684,14 @@ export class FinalSettlementPDFService {
             padding: 15px;
             border-radius: 5px;
             margin: 15px 0;
+        }
+        .vacation-payout-note {
+            font-size: 12px;
+            color: #57534e;
+            font-style: italic;
+            margin: 12px 0 0 0;
+            padding: 0 2px;
+            line-height: 1.45;
         }
     </style>
 </head>
@@ -760,34 +794,36 @@ export class FinalSettlementPDFService {
                 </tr>
             </thead>
             <tbody>
+                <tr class="subsection-header">
+                    <td colspan="2"><strong>Earnings</strong></td>
+                </tr>
+                ${hasBasicOtSection ? `
                 ${data.unpaidSalaryAmount > 0 ? `
                 <tr>
-                    <td>Unpaid Salaries (${data.unpaidSalaryMonths} months)</td>
+                    <td>Basic Salary (unpaid salaries – ${data.unpaidSalaryMonths} months)</td>
                     <td class="amount">${this.formatAmount(data.unpaidSalaryAmount)}</td>
                 </tr>
                 ` : ''}
+                ${overtimeAmount > 0 ? `
                 <tr>
-                    <td>${data.settlementType === 'vacation' ? 'Vacation Allowance' : 'End of Service Benefits'}</td>
-                    <td class="amount">${this.formatAmount(data.endOfServiceBenefit)}</td>
-                </tr>
-                ${data.accruedVacationAmount > 0 ? `
-                <tr>
-                    <td>Accrued Vacation (${data.accruedVacationDays} days)</td>
-                    <td class="amount">${this.formatAmount(data.accruedVacationAmount)}</td>
-                </tr>
-                ` : ''}
-                ${data.otherBenefits > 0 ? `
-                <tr>
-                    <td>Other Benefits ${data.otherBenefitsDescription ? `(${data.otherBenefitsDescription})` : ''}</td>
-                    <td class="amount">${this.formatAmount(data.otherBenefits)}</td>
+                    <td>Overtime (OT)${overtimeLabelSuffix}</td>
+                    <td class="amount">${this.formatAmount(overtimeAmount)}</td>
                 </tr>
                 ` : ''}
                 <tr class="total-row">
-                    <td><strong>Gross Amount</strong></td>
-                    <td class="amount"><strong>${this.formatAmount(data.grossAmount)}</strong></td>
+                    <td><strong>Total (Basic Salary + OT)</strong></td>
+                    <td class="amount"><strong>${this.formatAmount(basicOtSubtotal)}</strong></td>
                 </tr>
-                ${data.totalDeductions > 0 ? `
-                <tr><td colspan="2"><strong>Deductions:</strong></td></tr>
+                ${hasBasicOtSection && data.totalDeductions > 0 ? `
+                <tr class="subsection-header">
+                    <td colspan="2"><strong>Deductions</strong></td>
+                </tr>
+                ${data.absentDeduction > 0 ? `
+                <tr>
+                    <td>Absent Deduction (${data.absentDays} days)</td>
+                    <td class="amount">(${this.formatAmount(data.absentDeduction)})</td>
+                </tr>
+                ` : ''}
                 ${data.pendingAdvances > 0 ? `
                 <tr>
                     <td>Pending Advances</td>
@@ -806,10 +842,61 @@ export class FinalSettlementPDFService {
                     <td class="amount">(${this.formatAmount(data.otherDeductions)})</td>
                 </tr>
                 ` : ''}
+                <tr class="total-row">
+                    <td><strong>Total Deductions</strong></td>
+                    <td class="amount"><strong>(${this.formatAmount(data.totalDeductions)})</strong></td>
+                </tr>
+                ` : ''}
+                ${hasOthersSubsection ? `
+                <tr class="subsection-header">
+                    <td colspan="2"><strong>Others</strong></td>
+                </tr>
+                ` : ''}
+                ` : ''}
+                ${data.settlementType === 'exit' && data.endOfServiceBenefit > 0 ? `
+                <tr>
+                    <td>End of Service Benefits</td>
+                    <td class="amount">${this.formatAmount(data.endOfServiceBenefit)}</td>
+                </tr>
+                ` : ''}
+                ${data.settlementType === 'exit' && data.accruedVacationAmount > 0 ? `
+                <tr>
+                    <td>Accrued Vacation (${data.accruedVacationDays} days)</td>
+                    <td class="amount">${this.formatAmount(data.accruedVacationAmount)}</td>
+                </tr>
+                ` : ''}
+                ${data.otherBenefits > 0 ? `
+                <tr>
+                    <td>Other Benefits ${data.otherBenefitsDescription ? `(${data.otherBenefitsDescription})` : ''}</td>
+                    <td class="amount">${this.formatAmount(data.otherBenefits)}</td>
+                </tr>
+                ` : ''}
+                ${!hasBasicOtSection && data.totalDeductions > 0 ? `
+                <tr class="subsection-header">
+                    <td colspan="2"><strong>Deductions</strong></td>
+                </tr>
                 ${data.absentDeduction > 0 ? `
                 <tr>
                     <td>Absent Deduction (${data.absentDays} days)</td>
                     <td class="amount">(${this.formatAmount(data.absentDeduction)})</td>
+                </tr>
+                ` : ''}
+                ${data.pendingAdvances > 0 ? `
+                <tr>
+                    <td>Pending Advances</td>
+                    <td class="amount">(${this.formatAmount(data.pendingAdvances)})</td>
+                </tr>
+                ` : ''}
+                ${data.equipmentDeductions > 0 ? `
+                <tr>
+                    <td>Equipment Deductions</td>
+                    <td class="amount">(${this.formatAmount(data.equipmentDeductions)})</td>
+                </tr>
+                ` : ''}
+                ${data.otherDeductions > 0 ? `
+                <tr>
+                    <td>Other Deductions ${data.otherDeductionsDescription ? `(${data.otherDeductionsDescription})` : ''}</td>
+                    <td class="amount">(${this.formatAmount(data.otherDeductions)})</td>
                 </tr>
                 ` : ''}
                 <tr class="total-row">
@@ -819,11 +906,32 @@ export class FinalSettlementPDFService {
                 ` : ''}
                 <tr class="net-amount">
                     <td><strong>NET SETTLEMENT AMOUNT</strong></td>
-                    <td class="amount"><strong>${this.formatAmount(data.netAmount)}</strong></td>
+                    <td class="amount"><strong>${this.formatAmount(netPayableNow)}</strong></td>
                 </tr>
             </tbody>
         </table>
     </div>
+
+    ${deferredVacationAllowance > 0 ? `
+    <div class="section">
+        <div class="section-title">Vacation allowance (payable after return from vacation)</div>
+        <table class="calculation-table">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Amount (${data.currency})</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Vacation Allowance</td>
+                    <td class="amount">${this.formatAmount(deferredVacationAllowance)}</td>
+                </tr>
+            </tbody>
+        </table>
+        <p class="vacation-payout-note">Paid after the employee returns from vacation.</p>
+    </div>
+    ` : ''}
 
     ${data.notes ? `
     <div class="section">
@@ -869,6 +977,22 @@ export class FinalSettlementPDFService {
     const formatCurrency = (amount: number) => `${amount.toLocaleString('ar-SA', { minimumFractionDigits: 2 })} ${data.currency}`;
     const formatDate = (date: string) => new Date(date).toLocaleDateString('ar-SA');
 
+    const overtimeAmount = data.overtimeAmount ?? 0;
+    const hasBasicOtSection = data.unpaidSalaryAmount > 0 || overtimeAmount > 0;
+    const basicOtSubtotal = data.unpaidSalaryAmount + overtimeAmount;
+    const overtimeLabelSuffix =
+      data.overtimeHours != null && data.overtimeHours > 0 ? ` (${data.overtimeHours} ساعة)` : '';
+    const deferredVacationAllowance =
+      data.settlementType === 'vacation' && data.endOfServiceBenefit > 0
+        ? data.endOfServiceBenefit
+        : 0;
+    const netPayableNow =
+      deferredVacationAllowance > 0 ? data.netAmount - deferredVacationAllowance : data.netAmount;
+    const hasOthersSubsection =
+      data.otherBenefits > 0 ||
+      (data.settlementType === 'exit' && data.endOfServiceBenefit > 0) ||
+      (data.settlementType === 'exit' && data.accruedVacationAmount > 0);
+
     return `
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -902,6 +1026,11 @@ export class FinalSettlementPDFService {
             display: flex;
             align-items: center;
             gap: 15px;
+        }
+        .subsection-header td {
+            background-color: #f8fafc;
+            font-weight: bold;
+            color: #1e40af;
         }
         .logo {
             width: 80px;
@@ -1016,6 +1145,14 @@ export class FinalSettlementPDFService {
             border-radius: 5px;
             margin: 15px 0;
         }
+        .vacation-payout-note {
+            font-size: 12px;
+            color: #57534e;
+            font-style: italic;
+            margin: 12px 0 0 0;
+            padding: 0 2px;
+            line-height: 1.45;
+        }
     </style>
 </head>
 <body>
@@ -1117,17 +1254,72 @@ export class FinalSettlementPDFService {
                 </tr>
             </thead>
             <tbody>
+                <tr class="subsection-header">
+                    <td colspan="2"><strong>المستحقات</strong></td>
+                </tr>
+                ${hasBasicOtSection ? `
                 ${data.unpaidSalaryAmount > 0 ? `
                 <tr>
-                    <td>الرواتب غير المدفوعة (${data.unpaidSalaryMonths} شهر)</td>
+                    <td>الراتب الأساسي (رواتب غير مدفوعة – ${data.unpaidSalaryMonths} شهر)</td>
                     <td class="amount">${this.formatAmount(data.unpaidSalaryAmount)}</td>
                 </tr>
                 ` : ''}
+                ${overtimeAmount > 0 ? `
+                <tr>
+                    <td>عمل إضافي (OT)${overtimeLabelSuffix}</td>
+                    <td class="amount">${this.formatAmount(overtimeAmount)}</td>
+                </tr>
+                ` : ''}
+                <tr class="total-row">
+                    <td><strong>الإجمالي (راتب أساسي + عمل إضافي)</strong></td>
+                    <td class="amount"><strong>${this.formatAmount(basicOtSubtotal)}</strong></td>
+                </tr>
+                ${hasBasicOtSection && data.totalDeductions > 0 ? `
+                <tr class="subsection-header">
+                    <td colspan="2"><strong>الخصومات</strong></td>
+                </tr>
+                ${data.absentDeduction > 0 ? `
+                <tr>
+                    <td>خصم الغياب (${data.absentDays} أيام)</td>
+                    <td class="amount">(${this.formatAmount(data.absentDeduction)})</td>
+                </tr>
+                ` : ''}
+                ${data.pendingAdvances > 0 ? `
+                <tr>
+                    <td>السلف المعلقة</td>
+                    <td class="amount">(${this.formatAmount(data.pendingAdvances)})</td>
+                </tr>
+                ` : ''}
+                ${data.equipmentDeductions > 0 ? `
+                <tr>
+                    <td>خصومات المعدات</td>
+                    <td class="amount">(${this.formatAmount(data.equipmentDeductions)})</td>
+                </tr>
+                ` : ''}
+                ${data.otherDeductions > 0 ? `
+                <tr>
+                    <td>خصومات أخرى ${data.otherDeductionsDescription ? `(${data.otherDeductionsDescription})` : ''}</td>
+                    <td class="amount">(${this.formatAmount(data.otherDeductions)})</td>
+                </tr>
+                ` : ''}
+                <tr class="total-row">
+                    <td><strong>إجمالي الخصومات</strong></td>
+                    <td class="amount"><strong>(${this.formatAmount(data.totalDeductions)})</strong></td>
+                </tr>
+                ` : ''}
+                ${hasOthersSubsection ? `
+                <tr class="subsection-header">
+                    <td colspan="2"><strong>أخرى</strong></td>
+                </tr>
+                ` : ''}
+                ` : ''}
+                ${data.settlementType === 'exit' && data.endOfServiceBenefit > 0 ? `
                 <tr>
                     <td>مكافأة نهاية الخدمة</td>
                     <td class="amount">${this.formatAmount(data.endOfServiceBenefit)}</td>
                 </tr>
-                ${data.accruedVacationAmount > 0 ? `
+                ` : ''}
+                ${data.settlementType === 'exit' && data.accruedVacationAmount > 0 ? `
                 <tr>
                     <td>رصيد الإجازات (${data.accruedVacationDays} يوم)</td>
                     <td class="amount">${this.formatAmount(data.accruedVacationAmount)}</td>
@@ -1139,12 +1331,16 @@ export class FinalSettlementPDFService {
                     <td class="amount">${this.formatAmount(data.otherBenefits)}</td>
                 </tr>
                 ` : ''}
-                <tr class="total-row">
-                    <td><strong>إجمالي المستحقات</strong></td>
-                    <td class="amount"><strong>${this.formatAmount(data.grossAmount)}</strong></td>
+                ${!hasBasicOtSection && data.totalDeductions > 0 ? `
+                <tr class="subsection-header">
+                    <td colspan="2"><strong>الخصومات</strong></td>
                 </tr>
-                ${data.totalDeductions > 0 ? `
-                <tr><td colspan="2"><strong>الخصومات:</strong></td></tr>
+                ${data.absentDeduction > 0 ? `
+                <tr>
+                    <td>خصم الغياب (${data.absentDays} أيام)</td>
+                    <td class="amount">(${this.formatAmount(data.absentDeduction)})</td>
+                </tr>
+                ` : ''}
                 ${data.pendingAdvances > 0 ? `
                 <tr>
                     <td>السلف المعلقة</td>
@@ -1170,11 +1366,32 @@ export class FinalSettlementPDFService {
                 ` : ''}
                 <tr class="net-amount">
                     <td><strong>صافي مبلغ التسوية</strong></td>
-                    <td class="amount"><strong>${this.formatAmount(data.netAmount)}</strong></td>
+                    <td class="amount"><strong>${this.formatAmount(netPayableNow)}</strong></td>
                 </tr>
             </tbody>
         </table>
     </div>
+
+    ${deferredVacationAllowance > 0 ? `
+    <div class="section">
+        <div class="section-title">بدل إجازة (يُصرف بعد العودة من الإجازة)</div>
+        <table class="calculation-table">
+            <thead>
+                <tr>
+                    <th>البيان</th>
+                    <th>المبلغ (${data.currency})</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>بدل إجازة</td>
+                    <td class="amount">${this.formatAmount(deferredVacationAllowance)}</td>
+                </tr>
+            </tbody>
+        </table>
+        <p class="vacation-payout-note">يُدفع بعد عودة الموظف من الإجازة.</p>
+    </div>
+    ` : ''}
 
     ${data.notes ? `
     <div class="section">
@@ -1222,6 +1439,24 @@ export class FinalSettlementPDFService {
     const formatDate = (date: string) => new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
     const formatDateAr = (date: string) => new Date(date).toLocaleDateString('ar-SA');
 
+    const overtimeAmount = data.overtimeAmount ?? 0;
+    const hasBasicOtSection = data.unpaidSalaryAmount > 0 || overtimeAmount > 0;
+    const basicOtSubtotal = data.unpaidSalaryAmount + overtimeAmount;
+    const overtimeLabelSuffix =
+      data.overtimeHours != null && data.overtimeHours > 0 ? ` (${data.overtimeHours} hrs)` : '';
+    const overtimeLabelSuffixAr =
+      data.overtimeHours != null && data.overtimeHours > 0 ? ` (${data.overtimeHours} ساعة)` : '';
+    const deferredVacationAllowance =
+      data.settlementType === 'vacation' && data.endOfServiceBenefit > 0
+        ? data.endOfServiceBenefit
+        : 0;
+    const netPayableNow =
+      deferredVacationAllowance > 0 ? data.netAmount - deferredVacationAllowance : data.netAmount;
+    const hasOthersSubsection =
+      data.otherBenefits > 0 ||
+      (data.settlementType === 'exit' && data.endOfServiceBenefit > 0) ||
+      (data.settlementType === 'exit' && data.accruedVacationAmount > 0);
+
     return `
 <!DOCTYPE html>
 <html>
@@ -1230,111 +1465,185 @@ export class FinalSettlementPDFService {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Final Settlement / التسوية النهائية - ${data.settlementNumber}</title>
     <style>
+        /* rem-based (html 62.5% → 1rem ≈ 10px); compact spacing for single A4 (no PDF scale shrink) */
         @page {
-            margin: 20mm 15mm 20mm 15mm;
-            @top-left {
-                content: url("file://${path.join(process.cwd(), 'public', 'snd-logo.png')}");
-                width: 250px;
-                height: 250px;
-            }
+            margin: 7mm;
+        }
+        html {
+            font-size: 62.5%;
         }
         body {
-            font-family: 'Arial', 'Tahoma', sans-serif;
-            line-height: 1.2;
+            font-family: Helvetica, Arial, "Segoe UI", Roboto, "Noto Sans Arabic", "Tahoma", sans-serif;
+            line-height: 1.35;
             margin: 0;
-            padding: 4px;
-            color: #333;
-            font-size: 8px;
+            padding: 0;
+            color: #1c1917;
+            font-size: 1.15rem;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .pdf-page-shell {
+            box-sizing: border-box;
+            padding: 0;
+        }
+        .pdf-page-main {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .pdf-page-footer {
+            margin-top: 0.55rem;
         }
         .bilingual-header {
-            border-bottom: 2px solid #2563eb;
-            padding-bottom: 5px;
-            margin-bottom: 8px;
             display: flex;
-            align-items: center;
-            gap: 8px;
+            align-items: flex-start;
+            gap: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #cbd5e1;
         }
         .logo {
-            width: 50px;
-            height: 50px;
+            width: 4.2rem;
+            height: 4.2rem;
             flex-shrink: 0;
+            object-fit: contain;
         }
         .header-content {
             flex: 1;
             text-align: center;
+            padding-top: 0;
         }
         .company-name {
-            font-size: 14px;
-            font-weight: bold;
-            color: #1e40af;
-            margin-bottom: 3px;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #64748b;
+            margin: 0 0 0.35rem 0;
         }
         .document-title {
-            font-size: 16px;
-            font-weight: bold;
-            margin: 10px 0;
-            color: #1e40af;
+            font-size: 1.95rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0 0 0.45rem 0;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
         }
-        .settlement-number {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 8px;
+        .document-title-ar {
+            display: block;
+            margin-top: 0.25rem;
+            font-size: 0.88em;
+            font-weight: 700;
+            color: #334155;
+        }
+        .doc-meta {
+            font-size: 1.05rem;
+            color: #57534e;
+            margin: 0 0 0.15rem 0;
+            text-align: center;
+        }
+        .doc-meta-value {
+            font-weight: 600;
+            color: #292524;
         }
         .bilingual-section {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 15px;
-            border: 1px solid #e5e7eb;
-            border-radius: 5px;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.6rem;
             overflow: hidden;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
         }
         .english-side {
-            padding: 10px;
-            border-right: 1px solid #e5e7eb;
+            padding: 0;
+            border-right: 1px solid #e2e8f0;
+            background: #fff;
         }
         .arabic-side {
-            padding: 10px;
+            padding: 0;
             direction: rtl;
             text-align: right;
+            background: #fafafa;
         }
         .section-title {
-            font-size: 14px;
-            font-weight: bold;
-            color: #1e40af;
-            border-bottom: 1px solid #e5e7eb;
-            padding-bottom: 3px;
-            margin-bottom: 10px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+            padding: 0.4rem 0.85rem;
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            border-bottom: 1px solid #e2e8f0;
+            letter-spacing: 0.02em;
         }
         .info-row {
             display: flex;
             justify-content: space-between;
-            padding: 4px 0;
-            border-bottom: 1px dotted #d1d5db;
-            font-size: 11px;
+            align-items: baseline;
+            gap: 0.75rem;
+            padding: 0.32rem 0.85rem;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 1.12rem;
+        }
+        .info-row:last-child {
+            border-bottom: none;
         }
         .label {
-            font-weight: bold;
-            color: #374151;
+            font-weight: 600;
+            color: #44403c;
+            text-align: left;
+            flex: 0 1 auto;
+        }
+        .arabic-side .label {
+            text-align: right;
         }
         .value {
-            color: #111827;
+            color: #1c1917;
+            text-align: right;
+            font-weight: 400;
+        }
+        .english-side .value {
+            text-align: right;
+        }
+        .arabic-side .value {
+            text-align: left;
+        }
+        .table-wrap {
+            border: 1px solid #e2e8f0;
+            border-radius: 0.6rem;
+            overflow: hidden;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+        }
+        .block-heading {
+            font-size: 1.12rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0 0 0.35rem 0;
+            padding-left: 0.15rem;
+            letter-spacing: 0.03em;
         }
         .calculation-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 15px 0;
-            font-size: 11px;
+            margin: 0;
+            font-size: 1.1rem;
         }
         .calculation-table th,
         .calculation-table td {
-            border: 1px solid #d1d5db;
-            padding: 8px;
+            border-bottom: 1px solid #e7e5e4;
+            padding: 0.38rem 0.65rem;
+            vertical-align: top;
         }
-        .calculation-table th {
-            background-color: #f3f4f6;
-            font-weight: bold;
-            color: #374151;
+        .calculation-table thead th {
+            background: #f1f5f9;
+            color: #334155;
+            font-size: 0.95rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border-bottom: 2px solid #cbd5e1;
+            padding: 0.35rem 0.65rem;
+        }
+        .calculation-table tbody tr:last-child td {
+            border-bottom: none;
         }
         .en-col {
             text-align: left;
@@ -1344,45 +1653,108 @@ export class FinalSettlementPDFService {
             direction: rtl;
         }
         .amount-col {
-            text-align: center;
-            font-weight: bold;
+            text-align: right;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+            width: 22%;
         }
         .total-row {
-            background-color: #eff6ff;
-            font-weight: bold;
+            background: #eff6ff;
+            font-weight: 700;
+            color: #1e3a8a;
+        }
+        .total-row td {
+            border-bottom-color: #bfdbfe;
+        }
+        .subsection-header td {
+            background: #f8fafc;
+            font-weight: 700;
+            color: #0f172a;
+            text-align: center;
+            font-size: 0.98rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            padding: 0.3rem 0.6rem;
         }
         .net-amount {
-            background-color: #dcfce7;
-            font-size: 14px;
-            font-weight: bold;
+            background: #ecfdf5 !important;
+            color: #065f46 !important;
+            font-size: 1.28rem;
+            font-weight: 700;
+        }
+        .net-amount td {
+            border-bottom: none !important;
+            padding-top: 0.45rem;
+            padding-bottom: 0.45rem;
         }
         .signatures {
-            margin-top: 20px;
+            margin-top: 0.65rem;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            gap: 0.85rem;
+            page-break-inside: avoid;
         }
         .signature-box {
-            border: 1px solid #d1d5db;
-            padding: 15px;
-            min-height: 80px;
-            font-size: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.45rem;
+            padding: 0.85rem 0.9rem 1rem;
+            min-height: 0;
+            font-size: 1.02rem;
+            line-height: 1.55;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            gap: 0.55rem;
+        }
+        .signature-box p {
+            margin: 0;
+            text-align: left;
+        }
+        .signature-box > div:not(.signature-title) {
+            text-align: left;
+            margin: 0;
         }
         .signature-title {
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #374151;
+            font-weight: 700;
+            margin: 0 0 0.15rem 0;
+            color: #0f172a;
+            font-size: 1.08rem;
+            padding-bottom: 0.45rem;
+            border-bottom: 1px solid #e7e5e4;
         }
         .legal-text {
-            font-size: 10px;
-            color: #6b7280;
-            margin-top: 20px;
-            line-height: 1.4;
-            text-align: justify;
+            font-size: 1.02rem;
+            color: #57534e;
+            line-height: 1.38;
+            text-align: left;
+            margin: 0;
+            padding: 0.55rem 0.75rem;
+            background: #fafaf9;
+            border-left: 3px solid #d6d3d1;
+            border-radius: 0 0.35rem 0.35rem 0;
+        }
+        .legal-text p {
+            margin: 0;
+        }
+        .legal-text strong {
+            color: #292524;
+        }
+        .vacation-payout-note {
+            font-size: 1.02rem;
+            color: #57534e;
+            font-style: italic;
+            margin: 0;
+            padding: 0.45rem 0.65rem 0.55rem;
+            line-height: 1.38;
+            background: #fafaf9;
+            border-top: 1px solid #e7e5e4;
         }
     </style>
 </head>
 <body>
+    <div class="pdf-page-shell">
+    <div class="pdf-page-main">
     <div class="bilingual-header">
         <img src="${logoBase64}" alt="Company Logo" class="logo" />
         <div class="header-content">
@@ -1390,10 +1762,11 @@ export class FinalSettlementPDFService {
                 Samhan Naser Al-Dosari Est | مؤسسة سمحان ناصر الدوسري
             </div>
             <div class="document-title">
-                FINAL SETTLEMENT CERTIFICATE | شهادة التسوية النهائية
+                FINAL SETTLEMENT CERTIFICATE
+                <span class="document-title-ar">شهادة التسوية النهائية</span>
             </div>
-            <div class="settlement-number">Settlement No / رقم التسوية: ${data.settlementNumber}</div>
-            <div>Date / التاريخ: ${formatDate(data.preparedAt)} | ${formatDateAr(data.preparedAt)}</div>
+            <div class="doc-meta">Settlement No / رقم التسوية: <span class="doc-meta-value">${data.settlementNumber}</span></div>
+            <div class="doc-meta">Date / التاريخ: <span class="doc-meta-value">${formatDate(data.preparedAt)}</span> &nbsp;|&nbsp; <span class="doc-meta-value">${formatDateAr(data.preparedAt)}</span></div>
         </div>
     </div>
 
@@ -1507,6 +1880,8 @@ export class FinalSettlementPDFService {
         </div>
     </div>
 
+    <div class="table-wrap">
+    <div class="block-heading">Settlement amounts / مبالغ التسوية</div>
     <table class="calculation-table">
         <thead>
             <tr>
@@ -1516,38 +1891,40 @@ export class FinalSettlementPDFService {
             </tr>
         </thead>
         <tbody>
+            <tr class="subsection-header">
+                <td colspan="3"><strong>Earnings / المستحقات</strong></td>
+            </tr>
+            ${hasBasicOtSection ? `
             ${data.unpaidSalaryAmount > 0 ? `
             <tr>
-                <td class="en-col">Unpaid Salaries (${data.unpaidSalaryMonths} months)</td>
-                <td class="ar-col">الرواتب غير المدفوعة (${data.unpaidSalaryMonths} شهر)</td>
+                <td class="en-col">Basic Salary (unpaid salaries – ${data.unpaidSalaryMonths} months)</td>
+                <td class="ar-col">الراتب الأساسي (رواتب غير مدفوعة – ${data.unpaidSalaryMonths} شهر)</td>
                 <td class="amount-col">${this.formatAmount(data.unpaidSalaryAmount)}</td>
             </tr>
             ` : ''}
+            ${overtimeAmount > 0 ? `
             <tr>
-                <td class="en-col">${data.settlementType === 'vacation' ? 'Vacation Allowance' : 'End of Service Benefits'}</td>
-                <td class="ar-col">${data.settlementType === 'vacation' ? 'بدل إجازة' : 'مكافأة نهاية الخدمة'}</td>
-                <td class="amount-col">${this.formatAmount(data.endOfServiceBenefit)}</td>
-            </tr>
-            ${data.accruedVacationAmount > 0 ? `
-            <tr>
-                <td class="en-col">Accrued Vacation (${data.accruedVacationDays} days)</td>
-                <td class="ar-col">رصيد الإجازات (${data.accruedVacationDays} يوم)</td>
-                <td class="amount-col">${this.formatAmount(data.accruedVacationAmount)}</td>
-            </tr>
-            ` : ''}
-            ${data.otherBenefits > 0 ? `
-            <tr>
-                <td class="en-col">Other Benefits</td>
-                <td class="ar-col">مزايا أخرى</td>
-                <td class="amount-col">${this.formatAmount(data.otherBenefits)}</td>
+                <td class="en-col">Overtime (OT)${overtimeLabelSuffix}</td>
+                <td class="ar-col">عمل إضافي (OT)${overtimeLabelSuffixAr}</td>
+                <td class="amount-col">${this.formatAmount(overtimeAmount)}</td>
             </tr>
             ` : ''}
             <tr class="total-row">
-                <td class="en-col"><strong>Gross Amount</strong></td>
-                <td class="ar-col"><strong>إجمالي المستحقات</strong></td>
-                <td class="amount-col"><strong>${this.formatAmount(data.grossAmount)}</strong></td>
+                <td class="en-col"><strong>Total (Basic Salary + OT)</strong></td>
+                <td class="ar-col"><strong>الإجمالي (راتب أساسي + عمل إضافي)</strong></td>
+                <td class="amount-col"><strong>${this.formatAmount(basicOtSubtotal)}</strong></td>
             </tr>
-            ${data.totalDeductions > 0 ? `
+            ${hasBasicOtSection && data.totalDeductions > 0 ? `
+            <tr class="subsection-header">
+                <td colspan="3"><strong>Deductions / الخصومات</strong></td>
+            </tr>
+            ${data.absentDeduction > 0 ? `
+            <tr>
+                <td class="en-col">Absent Deduction (${data.absentDays} days)</td>
+                <td class="ar-col">خصم الغياب (${data.absentDays} أيام)</td>
+                <td class="amount-col">(${this.formatAmount(data.absentDeduction)})</td>
+            </tr>
+            ` : ''}
             ${data.pendingAdvances > 0 ? `
             <tr>
                 <td class="en-col">Pending Advances</td>
@@ -1569,11 +1946,69 @@ export class FinalSettlementPDFService {
                 <td class="amount-col">(${this.formatAmount(data.otherDeductions)})</td>
             </tr>
             ` : ''}
+            <tr class="total-row">
+                <td class="en-col"><strong>Total Deductions</strong></td>
+                <td class="ar-col"><strong>إجمالي الخصومات</strong></td>
+                <td class="amount-col"><strong>(${this.formatAmount(data.totalDeductions)})</strong></td>
+            </tr>
+            ` : ''}
+            ${hasOthersSubsection ? `
+            <tr class="subsection-header">
+                <td colspan="3"><strong>Others / أخرى</strong></td>
+            </tr>
+            ` : ''}
+            ` : ''}
+            ${data.settlementType === 'exit' && data.endOfServiceBenefit > 0 ? `
+            <tr>
+                <td class="en-col">End of Service Benefits</td>
+                <td class="ar-col">مكافأة نهاية الخدمة</td>
+                <td class="amount-col">${this.formatAmount(data.endOfServiceBenefit)}</td>
+            </tr>
+            ` : ''}
+            ${data.settlementType === 'exit' && data.accruedVacationAmount > 0 ? `
+            <tr>
+                <td class="en-col">Accrued Vacation (${data.accruedVacationDays} days)</td>
+                <td class="ar-col">رصيد الإجازات (${data.accruedVacationDays} يوم)</td>
+                <td class="amount-col">${this.formatAmount(data.accruedVacationAmount)}</td>
+            </tr>
+            ` : ''}
+            ${data.otherBenefits > 0 ? `
+            <tr>
+                <td class="en-col">Other Benefits ${data.otherBenefitsDescription ? `(${data.otherBenefitsDescription})` : ''}</td>
+                <td class="ar-col">مزايا أخرى ${data.otherBenefitsDescription ? `(${data.otherBenefitsDescription})` : ''}</td>
+                <td class="amount-col">${this.formatAmount(data.otherBenefits)}</td>
+            </tr>
+            ` : ''}
+            ${!hasBasicOtSection && data.totalDeductions > 0 ? `
+            <tr class="subsection-header">
+                <td colspan="3"><strong>Deductions / الخصومات</strong></td>
+            </tr>
             ${data.absentDeduction > 0 ? `
             <tr>
                 <td class="en-col">Absent Deduction (${data.absentDays} days)</td>
                 <td class="ar-col">خصم الغياب (${data.absentDays} أيام)</td>
                 <td class="amount-col">(${this.formatAmount(data.absentDeduction)})</td>
+            </tr>
+            ` : ''}
+            ${data.pendingAdvances > 0 ? `
+            <tr>
+                <td class="en-col">Pending Advances</td>
+                <td class="ar-col">السلف المعلقة</td>
+                <td class="amount-col">(${this.formatAmount(data.pendingAdvances)})</td>
+            </tr>
+            ` : ''}
+            ${data.equipmentDeductions > 0 ? `
+            <tr>
+                <td class="en-col">Equipment Deductions</td>
+                <td class="ar-col">خصومات المعدات</td>
+                <td class="amount-col">(${this.formatAmount(data.equipmentDeductions)})</td>
+            </tr>
+            ` : ''}
+            ${data.otherDeductions > 0 ? `
+            <tr>
+                <td class="en-col">Other Deductions</td>
+                <td class="ar-col">خصومات أخرى</td>
+                <td class="amount-col">(${this.formatAmount(data.otherDeductions)})</td>
             </tr>
             ` : ''}
             <tr class="total-row">
@@ -1585,11 +2020,38 @@ export class FinalSettlementPDFService {
             <tr class="net-amount">
                 <td class="en-col"><strong>NET SETTLEMENT AMOUNT</strong></td>
                 <td class="ar-col"><strong>صافي مبلغ التسوية</strong></td>
-                <td class="amount-col"><strong>${this.formatAmount(data.netAmount)}</strong></td>
+                <td class="amount-col"><strong>${this.formatAmount(netPayableNow)}</strong></td>
             </tr>
         </tbody>
     </table>
+    </div>
+    ${deferredVacationAllowance > 0 ? `
+    <div class="table-wrap">
+        <div class="block-heading">Vacation allowance (payable after return) / بدل إجازة (يُصرف بعد العودة من الإجازة)</div>
+        <table class="calculation-table">
+            <thead>
+                <tr>
+                    <th class="en-col">Description</th>
+                    <th class="ar-col">البيان</th>
+                    <th class="amount-col">Amount (${data.currency})</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="en-col">Vacation Allowance</td>
+                    <td class="ar-col">بدل إجازة</td>
+                    <td class="amount-col">${this.formatAmount(deferredVacationAllowance)}</td>
+                </tr>
+                <tr>
+                    <td colspan="3" class="vacation-payout-note">Paid after the employee returns from vacation. / يُدفع بعد عودة الموظف من الإجازة.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    ` : ''}
+    </div>
 
+    <footer class="pdf-page-footer">
     <div class="legal-text">
         <p><strong>Legal Declaration / الإقرار القانوني:</strong> This final settlement is prepared in accordance with the Saudi Labor Law and represents the complete and final settlement of all dues between the company and the employee. تم إعداد هذه التسوية النهائية وفقاً لنظام العمل السعودي وتمثل التسوية الكاملة والنهائية لجميع المستحقات بين الشركة والموظف.</p>
     </div>
@@ -1598,7 +2060,6 @@ export class FinalSettlementPDFService {
         <div class="signature-box">
             <div class="signature-title">Employee Acknowledgment / إقرار الموظف</div>
             <p>I acknowledge receipt of the settlement amount / أقر بإستلام مبلغ التسوية</p>
-            <br>
             <div>Signature / التوقيع: ____________________</div>
             <div>Name / الاسم: ${data.employeeName}</div>
             <div>Date / التاريخ: ____________________</div>
@@ -1606,12 +2067,13 @@ export class FinalSettlementPDFService {
         <div class="signature-box">
             <div class="signature-title">Company Authorization / تفويض الشركة</div>
             <p>Approved by company management / معتمد من إدارة الشركة</p>
-            <br>
             <div>Signature / التوقيع: ____________________</div>
             <div>Name / الاسم: ____________________</div>
             <div>Title / المنصب: HR Manager / مدير الموارد البشرية</div>
             <div>Date / التاريخ: ____________________</div>
         </div>
+    </div>
+    </footer>
     </div>
 </body>
 </html>`;

@@ -242,7 +242,7 @@ class EmployeeProvider extends ChangeNotifier {
     
     // Since we're using loadAllEmployees, just apply filters to existing data
     // The search will work on the already loaded employees
-    print('🔍 Searching for: "$query" in ${_employees.length} employees');
+    print('🔍 Searching for: "$query" in ${_employees.length} employees'); 
   }
 
   // Filter employees by status

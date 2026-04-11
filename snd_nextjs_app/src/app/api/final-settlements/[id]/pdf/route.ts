@@ -85,6 +85,11 @@ export async function GET(
       accruedVacationAmount: parseFloat(settlementData.accruedVacationAmount || '0'),
       otherBenefits: parseFloat(settlementData.otherBenefits || '0'),
       otherBenefitsDescription: settlementData.otherBenefitsDescription || undefined,
+      overtimeAmount: parseFloat(settlementData.overtimeAmount || '0'),
+      overtimeHours:
+        settlementData.overtimeHours != null
+          ? parseFloat(String(settlementData.overtimeHours))
+          : undefined,
       pendingAdvances: parseFloat(settlementData.pendingAdvances || '0'),
       equipmentDeductions: parseFloat(settlementData.equipmentDeductions || '0'),
       otherDeductions: parseFloat(settlementData.otherDeductions || '0'),
@@ -275,6 +280,11 @@ export async function POST(
       accruedVacationAmount: parseFloat(settlementData.accruedVacationAmount || '0'),
       otherBenefits: parseFloat(settlementData.otherBenefits || '0'),
       otherBenefitsDescription: settlementData.otherBenefitsDescription || undefined,
+      overtimeAmount: parseFloat(settlementData.overtimeAmount || '0'),
+      overtimeHours:
+        settlementData.overtimeHours != null
+          ? parseFloat(String(settlementData.overtimeHours))
+          : undefined,
       pendingAdvances: parseFloat(settlementData.pendingAdvances || '0'),
       equipmentDeductions: parseFloat(settlementData.equipmentDeductions || '0'),
       otherDeductions: parseFloat(settlementData.otherDeductions || '0'),
