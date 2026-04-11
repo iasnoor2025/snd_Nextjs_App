@@ -1,3 +1,8 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
@@ -5,6 +10,8 @@ const nextConfig = {
   },
   // Performance optimizations
   experimental: {
+    // Limit static-generation workers (default is ~CPU count − 1); avoids native crashes on some Windows builds.
+    cpus: 4,
     optimizeCss: true,
     scrollRestoration: true,
     // Optimize package imports
@@ -136,7 +143,7 @@ const nextConfig = {
     // Optimize module resolution
     config.resolve.alias = {
       ...config.resolve.alias,
-      '@': require('path').resolve(__dirname, 'src'),
+      '@': path.resolve(__dirname, 'src'),
     };
 
     // Add performance hints only in production
