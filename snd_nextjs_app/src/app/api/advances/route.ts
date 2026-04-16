@@ -2,7 +2,7 @@
 import { db } from '@/lib/db';
 import { advancePayments, employees, users } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
-import { and, desc, eq, isNull, like, or } from 'drizzle-orm';
+import { and, count, desc, eq, isNull, like, or, sql } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -92,7 +92,10 @@ const getAdvancesHandler = async (
         like(employees.firstName, `%${search}%`),
         like(employees.lastName, `%${search}%`),
         like(employees.fileNumber, `%${search}%`),
-        like(advancePayments.reason, `%${search}%`)
+        like(advancePayments.reason, `%${search}%`),
+        like(advancePayments.purpose, `%${search}%`),
+        like(users.name, `%${search}%`),
+        like(users.email, `%${search}%`)
       );
     }
 
@@ -135,15 +138,28 @@ const getAdvancesHandler = async (
       .limit(limit)
       .offset(skip);
 
-    // Get total count
-    const totalRows = await db
-      .select({ count: advancePayments.id })
+    const [countRow] = await db
+      .select({ total: count() })
       .from(advancePayments)
       .leftJoin(employees, eq(advancePayments.employeeId, employees.id))
+      .leftJoin(users, eq(employees.userId, users.id))
       .where(whereClause);
 
-    const total = totalRows.length;
-    const totalPages = Math.ceil(total / limit);
+    const total = Number(countRow?.total ?? 0);
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+
+    const [summaryRow] = await db
+      .select({
+        totalAdvances: sql<number>`count(*)::int`,
+        pending: sql<number>`coalesce(sum(case when ${advancePayments.status} = 'pending' then 1 else 0 end), 0)::int`,
+        approved: sql<number>`coalesce(sum(case when ${advancePayments.status} = 'approved' then 1 else 0 end), 0)::int`,
+        totalAmount: sql<string>`coalesce(sum(${advancePayments.amount})::numeric, 0)::text`,
+        totalRepaid: sql<string>`coalesce(sum(${advancePayments.repaidAmount})::numeric, 0)::text`,
+      })
+      .from(advancePayments)
+      .leftJoin(employees, eq(advancePayments.employeeId, employees.id))
+      .leftJoin(users, eq(employees.userId, users.id))
+      .where(whereClause);
 
     // Transform data to match expected format
     const advances = advancesRows.map(row => ({
@@ -174,6 +190,21 @@ const getAdvancesHandler = async (
       last_page: totalPages,
       per_page: limit,
       total,
+      summary: summaryRow
+        ? {
+            total_advances: summaryRow.totalAdvances,
+            pending: summaryRow.pending,
+            approved: summaryRow.approved,
+            total_amount: summaryRow.totalAmount,
+            total_repaid: summaryRow.totalRepaid,
+          }
+        : {
+            total_advances: 0,
+            pending: 0,
+            approved: 0,
+            total_amount: '0',
+            total_repaid: '0',
+          },
       next_page_url: page < totalPages ? `/api/advances?page=${page + 1}` : null,
       prev_page_url: page > 1 ? `/api/advances?page=${page - 1}` : null,
     });

@@ -1908,14 +1908,6 @@ export default function EmployeeShowPage() {
                                       onChange={e => setRepaymentAmount(e.target.value)}
                                       placeholder="Enter repayment amount"
                                     />
-                                    {selectedAdvanceForRepayment.monthly_deduction && (
-                                      <p className="text-xs text-muted-foreground">
-                                        Minimum repayment: SAR{' '}
-                                        {Number(
-                                          selectedAdvanceForRepayment.monthly_deduction
-                                        ).toFixed(2)}
-                                      </p>
-                                    )}
                                   </div>
                                 </div>
                               )}
@@ -2382,20 +2374,6 @@ export default function EmployeeShowPage() {
                                       }}
                                     >
                                       <FileText className="h-4 w-4" />
-                                    </Button>
-                                  )}
-
-                                  {/* View details button */}
-                                  {hasPermission('read', 'AdvancePayment') && (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => {
-                                        // Handle view details
-                                        toast.info('View advance details');
-                                      }}
-                                    >
-                                      View
                                     </Button>
                                   )}
 

@@ -63,17 +63,6 @@ async function postRepayHandler(request: NextRequest, { params }: { params: Prom
 
     const repaymentAmountNum = parseFloat(repaymentAmount);
     const advanceAmount = parseFloat(advance.amount.toString());
-    const monthlyDeduction = advance.monthlyDeduction ? parseFloat(advance.monthlyDeduction) : 0;
-
-    // Validate minimum repayment amount
-    if (monthlyDeduction > 0 && repaymentAmountNum < monthlyDeduction) {
-      return NextResponse.json(
-        {
-          error: `Repayment amount must be at least the monthly deduction (SAR ${monthlyDeduction.toFixed(2)})`,
-        },
-        { status: 400 }
-      );
-    }
 
     // Check if repayment amount exceeds the advance amount
     if (repaymentAmountNum > advanceAmount) {

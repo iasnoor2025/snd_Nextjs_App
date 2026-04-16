@@ -5,11 +5,40 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
 import { useI18n } from '@/hooks/use-i18n';
-import { CreditCard, DollarSign, Eye, History, Loader2, Plus, Trash2, User, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+import {
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  CreditCard,
+  DollarSign,
+  Eye,
+  History,
+  Loader2,
+  Plus,
+  Search,
+  Trash2,
+  User,
+  XCircle,
+} from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useParams } from 'next/navigation';
 import { usePermission } from '@/lib/rbac/rbac-context';
@@ -41,17 +70,60 @@ interface EmployeeAdvanceSectionProps {
   onHideSection: () => void;
 }
 
+/** SAR accounting display: thousands separators + 2 decimals (aligned with employee-management money fields). */
+function formatSarAmount(value: number | string): string {
+  const n = typeof value === 'string' ? Number(value) : value;
+  if (Number.isNaN(n)) return '0.00';
+  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanceSectionProps) {
   const params = useParams();
   const locale = params?.locale as string || 'en';
   const { t } = useI18n();
+  const tRef = useRef(t);
+  tRef.current = t;
   const { hasPermission } = usePermission();
-  const canCreate = hasPermission('create', 'Advance');
-  const canUpdate = hasPermission('update', 'Advance');
-  const canDelete = hasPermission('delete', 'Advance');
+
+  const manageAdvance = hasPermission('manage', 'Advance');
+  const readAdvance = hasPermission('read', 'Advance');
+  const createAdvance = hasPermission('create', 'Advance');
+  const updateAdvance = hasPermission('update', 'Advance');
+  const deleteAdvance = hasPermission('delete', 'Advance');
+  const approveAdvancePerm = hasPermission('approve', 'Advance');
+  const rejectAdvancePerm = hasPermission('reject', 'Advance');
+  const readEmployee = hasPermission('read', 'Employee');
+  const manageEmployee = hasPermission('manage', 'Employee');
+
+  const canCreateAdvance = createAdvance || manageAdvance;
+  const canDeleteAdvance = deleteAdvance || manageAdvance;
+  const canRefreshAdvances = readAdvance || manageAdvance;
+  /** Approve: explicit approve, manage, or legacy update when no separate approve/reject perms */
+  const canApproveAdvance =
+    manageAdvance ||
+    approveAdvancePerm ||
+    (updateAdvance && !approveAdvancePerm && !rejectAdvancePerm);
+  const canRejectAdvance =
+    manageAdvance ||
+    rejectAdvancePerm ||
+    (updateAdvance && !approveAdvancePerm && !rejectAdvancePerm);
+  /** Repay updates balances — requires update (or manage) */
+  const canRepayAdvance = updateAdvance || manageAdvance;
+  const canOpenEmployeeProfile = readEmployee || manageEmployee;
   const [advances, setAdvances] = useState<AdvanceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [page, setPage] = useState(1);
+  const perPage = 5;
+  const [total, setTotal] = useState(0);
+  const [summary, setSummary] = useState({
+    totalAdvances: 0,
+    pendingAdvances: 0,
+    approvedAdvances: 0,
+    totalAmount: 0,
+    totalRepaid: 0,
+    outstandingBalance: 0,
+  });
   
   // Dialog states
   const [isAdvanceRequestDialogOpen, setIsAdvanceRequestDialogOpen] = useState(false);
@@ -68,32 +140,68 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
   // Selected items
   const [selectedAdvanceForReject, setSelectedAdvanceForReject] = useState<AdvanceData | null>(null);
   const [selectedAdvanceForRepayment, setSelectedAdvanceForRepayment] = useState<AdvanceData | null>(null);
-  
+  const [searchInput, setSearchInput] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const prevFiltersKeyRef = useRef<string | undefined>(undefined);
 
+  const loadAdvancesPage = useCallback(
+    async (targetPage: number, options?: { silent?: boolean }) => {
+      try {
+        if (options?.silent) {
+          setRefreshing(true);
+        } else {
+          setLoading(true);
+        }
+        const params = new URLSearchParams({
+          page: String(targetPage),
+          limit: String(perPage),
+        });
+        const q = debouncedSearch.trim();
+        if (q) params.set('search', q);
+        if (statusFilter !== 'all') params.set('status', statusFilter);
+        const response = await fetch(`/api/advances?${params.toString()}`);
+        const data = await response.json();
+        if (!response.ok) {
+          toast.error(data.error || tRef.current('dashboard.employeeAdvance.messages.failedToLoad'));
+          setAdvances([]);
+          return;
+        }
+        const rows = data.data ?? [];
+        const totalRows = typeof data.total === 'number' ? data.total : 0;
+        const lp = typeof data.last_page === 'number' ? data.last_page : 1;
 
-  // Fetch advances data
-  const fetchAdvances = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/advances');
-      const data = await response.json();
-      if (!response.ok) {
-        toast.error(data.error || t('dashboard.employeeAdvance.messages.failedToLoad'));
-        setAdvances([]);
-        return;
+        if (rows.length === 0 && totalRows > 0 && targetPage > lp) {
+          setPage(lp);
+          return;
+        }
+
+        setAdvances(rows);
+        setTotal(totalRows);
+
+        const s = data.summary;
+        if (s) {
+          const totalAmount = parseFloat(s.total_amount ?? '0') || 0;
+          const totalRepaid = parseFloat(s.total_repaid ?? '0') || 0;
+          setSummary({
+            totalAdvances: s.total_advances ?? 0,
+            pendingAdvances: s.pending ?? 0,
+            approvedAdvances: s.approved ?? 0,
+            totalAmount,
+            totalRepaid,
+            outstandingBalance: totalAmount - totalRepaid,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching advances:', error);
+        toast.error(tRef.current('dashboard.employeeAdvance.messages.failedToLoad'));
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-      if (data.data) {
-        setAdvances(data.data || []);
-      } else {
-        toast.error(t('dashboard.employeeAdvance.messages.failedToLoad'));
-      }
-    } catch (error) {
-      console.error('Error fetching advances:', error);
-      toast.error(t('dashboard.employeeAdvance.messages.failedToLoad'));
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [perPage, debouncedSearch, statusFilter]
+  );
 
 
 
@@ -125,7 +233,11 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
         setAdvanceAmount('');
         setAdvanceReason('');
         setSelectedEmployeeId('');
-        fetchAdvances();
+        if (page !== 1) {
+          setPage(1);
+        } else {
+          void loadAdvancesPage(1);
+        }
       } else {
                  toast.error(data.error || t('dashboard.employeeAdvance.messages.failedToSubmit'));
       }
@@ -147,7 +259,7 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
 
       if (response.ok) {
                  toast.success(t('dashboard.employeeAdvance.messages.advanceApproved'));
-        fetchAdvances();
+        void loadAdvancesPage(page, { silent: true });
       } else {
         const data = await response.json();
                  toast.error(data.error || t('dashboard.employeeAdvance.messages.failedToApprove'));
@@ -174,7 +286,7 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
         setIsRejectDialogOpen(false);
         setRejectionReason('');
         setSelectedAdvanceForReject(null);
-        fetchAdvances();
+        void loadAdvancesPage(page, { silent: true });
       } else {
         const data = await response.json();
                  toast.error(data.error || t('dashboard.employeeAdvance.messages.failedToReject'));
@@ -203,7 +315,7 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
         setIsRepaymentDialogOpen(false);
         setRepaymentAmount('');
         setSelectedAdvanceForRepayment(null);
-        fetchAdvances();
+        void loadAdvancesPage(page, { silent: true });
       } else {
         const data = await response.json();
                  toast.error(data.error || t('dashboard.employeeAdvance.messages.failedToRecordRepayment'));
@@ -229,7 +341,7 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
 
       if (response.ok) {
                  toast.success(t('dashboard.employeeAdvance.messages.advanceDeleted'));
-        fetchAdvances();
+        void loadAdvancesPage(page, { silent: true });
       } else {
         const data = await response.json();
                  toast.error(data.error || t('dashboard.employeeAdvance.messages.failedToDelete'));
@@ -240,31 +352,32 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
        }
   };
 
-  // Calculate statistics
-  const getStatistics = () => {
-    const totalAdvances = advances.length;
-    const pendingAdvances = advances.filter(a => a.status === 'pending').length;
-    const approvedAdvances = advances.filter(a => a.status === 'approved').length;
-    const totalAmount = advances.reduce((sum, a) => sum + parseFloat(a.amount), 0);
-    const totalRepaid = advances.reduce((sum, a) => sum + parseFloat(a.repaidAmount || '0'), 0);
-    const outstandingBalance = totalAmount - totalRepaid;
-
-    return {
-      totalAdvances,
-      pendingAdvances,
-      approvedAdvances,
-      totalAmount,
-      totalRepaid,
-      outstandingBalance,
-    };
-  };
-
-  // Initial data fetch
   useEffect(() => {
-    fetchAdvances();
-  }, []);
+    const timer = setTimeout(() => setDebouncedSearch(searchInput.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
-  const stats = getStatistics();
+  useEffect(() => {
+    const key = `${debouncedSearch}__${statusFilter}`;
+    if (prevFiltersKeyRef.current === undefined) {
+      prevFiltersKeyRef.current = key;
+      void loadAdvancesPage(page);
+      return;
+    }
+    const filtersChanged = prevFiltersKeyRef.current !== key;
+    if (filtersChanged) {
+      prevFiltersKeyRef.current = key;
+      if (page !== 1) {
+        setPage(1);
+        return;
+      }
+      void loadAdvancesPage(1);
+      return;
+    }
+    void loadAdvancesPage(page);
+  }, [page, debouncedSearch, statusFilter, loadAdvancesPage]);
+
+  const stats = summary;
 
   return (
     <Card className="shadow-sm">
@@ -288,7 +401,7 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
             >
                              {t('dashboard.employeeAdvance.hideSection')}
             </Button>
-            {canCreate && (
+            {canCreateAdvance && (
               <Button
                 variant="outline"
                 onClick={() => setIsAdvanceRequestDialogOpen(true)}
@@ -298,19 +411,21 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
                 {t('dashboard.employeeAdvance.newAdvance')}
               </Button>
             )}
-            <Button
-              variant="outline"
-              onClick={fetchAdvances}
-              disabled={refreshing}
-              className="flex items-center gap-2"
-            >
-              {refreshing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <History className="h-4 w-4" />
-              )}
-                             {t('dashboard.employeeAdvance.refresh')}
-            </Button>
+            {canRefreshAdvances && (
+              <Button
+                variant="outline"
+                onClick={() => void loadAdvancesPage(page, { silent: true })}
+                disabled={refreshing || loading}
+                className="flex items-center gap-2"
+              >
+                {refreshing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <History className="h-4 w-4" />
+                )}
+                {t('dashboard.employeeAdvance.refresh')}
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -347,7 +462,9 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
               <DollarSign className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                              <span className="text-sm font-medium text-muted-foreground">{t('dashboard.employeeAdvance.statistics.totalAmount')}</span>
             </div>
-            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">SAR {stats.totalAmount.toFixed(2)}</p>
+            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              SAR {formatSarAmount(stats.totalAmount)}
+            </p>
           </div>
 
           <div className="rounded-lg border bg-card p-4 shadow-sm">
@@ -355,7 +472,9 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
               <CreditCard className="h-4 w-4 text-green-600 dark:text-green-500" />
                              <span className="text-sm font-medium text-muted-foreground">{t('dashboard.employeeAdvance.statistics.totalRepaid')}</span>
             </div>
-            <p className="text-2xl font-bold text-green-600 dark:text-green-500">SAR {stats.totalRepaid.toFixed(2)}</p>
+            <p className="text-2xl font-bold text-green-600 dark:text-green-500">
+              SAR {formatSarAmount(stats.totalRepaid)}
+            </p>
           </div>
 
           <div className="rounded-lg border bg-card p-4 shadow-sm">
@@ -363,16 +482,50 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
               <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
                              <span className="text-sm font-medium text-muted-foreground">{t('dashboard.employeeAdvance.statistics.outstanding')}</span>
             </div>
-            <p className="text-2xl font-bold text-red-600 dark:text-red-400">SAR {stats.outstandingBalance.toFixed(2)}</p>
+            <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+              SAR {formatSarAmount(stats.outstandingBalance)}
+            </p>
           </div>
         </div>
 
         {/* Advances Table */}
         <Card className="mt-6 shadow-sm">
           <CardHeader className="bg-muted/50 rounded-t-lg p-4">
-            <div className="flex items-center gap-2">
-              <History className="h-5 w-5 text-primary" />
-                             <CardTitle className="text-lg font-semibold">{t('dashboard.employeeAdvance.table.title')}</CardTitle>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <History className="h-5 w-5 text-primary" />
+                <CardTitle className="text-lg font-semibold">
+                  {t('dashboard.employeeAdvance.table.title')}
+                </CardTitle>
+              </div>
+              <div className="flex w-full flex-col gap-2 sm:max-w-2xl sm:flex-row sm:items-center sm:justify-end sm:gap-2">
+                <div className="relative min-w-0 flex-1 sm:max-w-xs">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    value={searchInput}
+                    onChange={e => setSearchInput(e.target.value)}
+                    placeholder={t('dashboard.employeeAdvance.table.searchPlaceholder')}
+                    className="pl-9"
+                    aria-label={t('dashboard.employeeAdvance.table.searchPlaceholder')}
+                  />
+                </div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full sm:w-[200px]" aria-label={t('dashboard.employeeAdvance.filters.status')}>
+                    <SelectValue placeholder={t('dashboard.employeeAdvance.filters.status')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('dashboard.employeeAdvance.filters.all')}</SelectItem>
+                    <SelectItem value="pending">{t('dashboard.employeeAdvance.filters.pending')}</SelectItem>
+                    <SelectItem value="approved">{t('dashboard.employeeAdvance.filters.approved')}</SelectItem>
+                    <SelectItem value="rejected">{t('dashboard.employeeAdvance.filters.rejected')}</SelectItem>
+                    <SelectItem value="partially_repaid">
+                      {t('dashboard.employeeAdvance.filters.partially_repaid')}
+                    </SelectItem>
+                    <SelectItem value="fully_repaid">{t('dashboard.employeeAdvance.filters.fully_repaid')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -380,12 +533,15 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
               <table className="min-w-full divide-y divide-border">
                 <thead className="bg-muted/50">
                   <tr>
-                                         <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
-                       {t('dashboard.employeeAdvance.table.employee')}
-                     </th>
-                                                              <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
-                        {t('dashboard.employeeAdvance.table.amount')}
-                      </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
+                      {t('dashboard.employeeAdvance.table.fileNumber')}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
+                      {t('dashboard.employeeAdvance.table.employee')}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
+                      {t('dashboard.employeeAdvance.table.amount')}
+                    </th>
                                                                <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
                         {t('dashboard.employeeAdvance.table.currentBalance')}
                       </th>
@@ -406,7 +562,7 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
                 <tbody className="bg-background divide-y divide-border">
                   {loading ? (
                                        <tr>
-                     <td colSpan={6} className="px-6 py-8 text-center">
+                     <td colSpan={8} className="px-6 py-8 text-center">
                        <div className="flex items-center justify-center gap-2">
                          <Loader2 className="h-4 w-4 animate-spin" />
                          <span className="text-muted-foreground">{t('dashboard.employeeAdvance.messages.loading')}</span>
@@ -415,31 +571,32 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
                    </tr>
                  ) : advances.length === 0 ? (
                    <tr>
-                     <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground italic">
+                     <td colSpan={8} className="px-6 py-8 text-center text-muted-foreground italic">
                        {t('dashboard.employeeAdvance.messages.noRecords')}
                      </td>
                    </tr>
                   ) : (
                     advances.map(advance => (
                       <tr key={advance.id} className="hover:bg-muted/50">
+                        <td className="px-6 py-4 whitespace-nowrap text-foreground tabular-nums">
+                          {advance.employee?.file_number ?? '—'}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                                                             <div className="font-medium text-foreground">
-                                 {advance.employee?.first_name} {advance.employee?.last_name}
-                               </div>
-                               <div className="text-sm text-muted-foreground">
-                                 {advance.employee?.file_number}
-                               </div>
+                            <User className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            <div className="font-medium text-foreground">
+                              {advance.employee?.first_name} {advance.employee?.last_name}
                             </div>
                           </div>
                         </td>
-                                                 <td className="px-6 py-4 whitespace-nowrap font-medium text-primary">
-                           SAR {Number(advance.amount).toFixed(2)}
+                        <td className="px-6 py-4 whitespace-nowrap font-medium text-primary">
+                           SAR {formatSarAmount(advance.amount)}
                          </td>
                                                    <td className="px-6 py-4 whitespace-nowrap font-medium text-blue-600 dark:text-blue-400">
-                            SAR {(Number(advance.amount) - Number(advance.repaidAmount || 0)).toFixed(2)}
+                            SAR{' '}
+                            {formatSarAmount(
+                              Number(advance.amount) - Number(advance.repaidAmount || 0)
+                            )}
                           </td>
                          <td className="px-6 py-4 max-w-[200px] truncate text-foreground">{advance.reason}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-foreground">
@@ -477,60 +634,61 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
                             {advance.status.replace('_', ' ')}
                           </Badge>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex items-center justify-end gap-2">
-                                                         {/* Approve/Reject buttons for pending advances */}
-                             {advance.status === 'pending' && canUpdate && (
-                               <>
-                                 <Button
-                                   size="sm"
-                                   variant="outline"
-                                   onClick={() => handleApproveAdvance(advance.id)}
-                                 >
-                                   {t('dashboard.employeeAdvance.actions.approve')}
-                                 </Button>
-                                 <Button
-                                   size="sm"
-                                   variant="outline"
-                                   onClick={() => {
-                                     setSelectedAdvanceForReject(advance);
-                                     setIsRejectDialogOpen(true);
-                                   }}
-                                 >
-                                   {t('dashboard.employeeAdvance.actions.reject')}
-                                 </Button>
-                               </>
-                             )}
+                        <td className="px-6 py-4 text-right text-sm font-medium">
+                          <div className="flex flex-wrap items-center justify-end gap-2">
+                            {advance.status === 'pending' && canApproveAdvance && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-green-600/40 text-green-700 hover:bg-green-50 dark:border-green-500/40 dark:text-green-400 dark:hover:bg-green-950/40"
+                                onClick={() => handleApproveAdvance(advance.id)}
+                              >
+                                <CheckCircle className="mr-1 h-4 w-4" />
+                                {t('dashboard.employeeAdvance.actions.approve')}
+                              </Button>
+                            )}
+                            {advance.status === 'pending' && canRejectAdvance && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-destructive/40 text-destructive hover:bg-destructive/10"
+                                onClick={() => {
+                                  setSelectedAdvanceForReject(advance);
+                                  setIsRejectDialogOpen(true);
+                                }}
+                              >
+                                <XCircle className="mr-1 h-4 w-4" />
+                                {t('dashboard.employeeAdvance.actions.reject')}
+                              </Button>
+                            )}
 
-                             {/* Repayment button for approved advances */}
-                             {(advance.status === 'approved' || advance.status === 'partially_repaid') && canUpdate && (
-                               <Button
-                                 size="sm"
-                                 variant="outline"
-                                 onClick={() => {
-                                   setSelectedAdvanceForRepayment(advance);
-                                   setIsRepaymentDialogOpen(true);
-                                 }}
-                               >
-                                 {t('dashboard.employeeAdvance.actions.repay')}
-                               </Button>
-                             )}
+                            {(advance.status === 'approved' || advance.status === 'partially_repaid') &&
+                              canRepayAdvance && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedAdvanceForRepayment(advance);
+                                    setIsRepaymentDialogOpen(true);
+                                  }}
+                                >
+                                  {t('dashboard.employeeAdvance.actions.repay')}
+                                </Button>
+                              )}
 
+                            {canOpenEmployeeProfile && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  window.open(`/${locale}/employee-management/${advance.employee_id}`, '_blank');
+                                }}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            )}
 
-
-                            {/* View details button */}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                                                             onClick={() => {
-                                 // Navigate to employee details page
-                                 window.open(`/${locale}/employee-management/${advance.employee_id}`, '_blank');
-                               }}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-
-                            {canDelete && (
+                            {canDeleteAdvance && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -548,6 +706,71 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
                 </tbody>
               </table>
             </div>
+            {!loading && total > perPage && (
+              <div className="mt-6 flex flex-col items-center justify-between gap-4 border-t px-4 py-4 sm:flex-row">
+                <p className="text-sm text-muted-foreground">
+                  {t('common.pagination.showing')} {(page - 1) * perPage + 1}{' '}
+                  {t('common.pagination.to')} {Math.min(page * perPage, total)}{' '}
+                  {t('common.pagination.of')} {total} {t('common.pagination.results')}
+                </p>
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() => page > 1 && setPage(page - 1)}
+                        className={page <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                    {(() => {
+                      const totalPages = Math.ceil(total / perPage);
+                      const pageNumbers: number[] = [];
+                      for (let p = 1; p <= totalPages; p++) {
+                        if (p === 1 || p === totalPages || Math.abs(p - page) <= 1) {
+                          pageNumbers.push(p);
+                        }
+                      }
+                      const deduped = [...new Set(pageNumbers)].sort((a, b) => a - b);
+                      const items: JSX.Element[] = [];
+                      let prev = 0;
+                      for (const p of deduped) {
+                        if (prev && p > prev + 1) {
+                          items.push(
+                            <PaginationItem key={`ellipsis-${p}`}>
+                              <span className="px-2 text-muted-foreground">…</span>
+                            </PaginationItem>
+                          );
+                        }
+                        items.push(
+                          <PaginationItem key={p}>
+                            <PaginationLink
+                              onClick={() => setPage(p)}
+                              isActive={page === p}
+                              className="cursor-pointer"
+                            >
+                              {p}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                        prev = p;
+                      }
+                      return items;
+                    })()}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() =>
+                          page < Math.ceil(total / perPage) && setPage(page + 1)
+                        }
+                        className={
+                          page >= Math.ceil(total / perPage)
+                            ? 'pointer-events-none opacity-50'
+                            : 'cursor-pointer'
+                        }
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
           </CardContent>
         </Card>
       </CardContent>
@@ -691,7 +914,8 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
                        {t('dashboard.employeeAdvance.dialogs.repayment.employee')}: {selectedAdvanceForRepayment.employee?.first_name} {selectedAdvanceForRepayment.employee?.last_name}
                      </div>
                      <div>
-                       {t('dashboard.employeeAdvance.dialogs.repayment.amount')}: SAR {Number(selectedAdvanceForRepayment.amount).toFixed(2)}
+                       {t('dashboard.employeeAdvance.dialogs.repayment.amount')}: SAR{' '}
+                       {formatSarAmount(selectedAdvanceForRepayment.amount)}
                      </div>
                      <div>
                        {t('dashboard.employeeAdvance.dialogs.repayment.status')}: {selectedAdvanceForRepayment.status.replace('_', ' ')}

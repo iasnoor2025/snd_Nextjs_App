@@ -258,9 +258,20 @@
       "totalRepaid": "Total Repaid",
       "outstanding": "Outstanding"
     },
+    "filters": {
+      "status": "Status",
+      "all": "All statuses",
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "partially_repaid": "Partially repaid",
+      "fully_repaid": "Fully repaid"
+    },
     "table": {
       "title": "All Employee Advances",
+      "searchPlaceholder": "Search by name, file #, email, reason…",
       "employee": "Employee",
+      "fileNumber": "File #",
       "amount": "Amount",
       "currentBalance": "Current Balance",
       "reason": "Reason",

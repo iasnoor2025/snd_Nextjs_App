@@ -306,9 +306,20 @@
       "totalRepaid": "إجمالي المسدد",
       "outstanding": "المستحق"
     },
+    "filters": {
+      "status": "الحالة",
+      "all": "كل الحالات",
+      "pending": "معلق",
+      "approved": "موافق عليه",
+      "rejected": "مرفوض",
+      "partially_repaid": "مسدد جزئياً",
+      "fully_repaid": "مسدد بالكامل"
+    },
     "table": {
       "title": "جميع سلف الموظفين",
+      "searchPlaceholder": "بحث بالاسم، رقم الملف، البريد، السبب…",
       "employee": "الموظف",
+      "fileNumber": "رقم الملف",
       "amount": "المبلغ",
       "currentBalance": "الرصيد الحالي",
       "reason": "السبب",
