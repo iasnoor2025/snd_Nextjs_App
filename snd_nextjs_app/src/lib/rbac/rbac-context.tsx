@@ -247,6 +247,16 @@ function hasPermissionClient(user: User, action: Action, subject: Subject): bool
   if (userPermissions.some(p => p.toLowerCase() === managePermission)) {
     return true;
   }
+
+  // Advance vs AdvancePayment naming (legacy DB permissions use AdvancePayment)
+  const subj = subject.toLowerCase();
+  if (subj === 'advance' || subj === 'advancepayment') {
+    const altSubject = subj === 'advance' ? 'AdvancePayment' : 'Advance';
+    const altPerm = `${action}.${altSubject}`.toLowerCase();
+    if (userPermissions.some(p => p.toLowerCase() === altPerm)) return true;
+    const altManage = `manage.${altSubject}`.toLowerCase();
+    if (userPermissions.some(p => p.toLowerCase() === altManage)) return true;
+  }
   
   return false;
 }

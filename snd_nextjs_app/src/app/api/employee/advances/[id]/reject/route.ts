@@ -1,25 +1,21 @@
 
 import { db } from '@/lib/db';
 import { advancePayments } from '@/lib/drizzle/schema';
+import { PermissionConfigs, withPermission } from '@/lib/rbac/api-middleware';
 import { eq } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
-// Explicit route configuration for Next.js 15
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const fetchCache = 'force-no-store';
-
-// Additional route configuration for Next.js 15
 export const runtime = 'nodejs';
 export const preferredRegion = 'auto';
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function postRejectHandler(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-
     const session = await getServerSession();
     if (!session?.user) {
-      
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -36,7 +32,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Invalid advance ID' }, { status: 400 });
     }
 
-    // Check if advance exists and is pending using Drizzle
     const advanceRows = await db
       .select()
       .from(advancePayments)
@@ -57,7 +52,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Advance is not in pending status' }, { status: 400 });
     }
 
-    // Update advance status to rejected using Drizzle
     const updatedAdvanceRows = await db
       .update(advancePayments)
       .set({
@@ -78,7 +72,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       message: 'Advance rejected successfully',
     });
   } catch (error) {
-    
     return NextResponse.json(
       {
         error: `Failed to reject advance: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -87,3 +80,5 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     );
   }
 }
+
+export const POST = withPermission(PermissionConfigs.advance.update)(postRejectHandler);

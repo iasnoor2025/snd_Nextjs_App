@@ -40,6 +40,7 @@ export const Subject = {
   EMPLOYEE_DOCUMENT: 'employee-document',
   SALARY_INCREMENT: 'SalaryIncrement',
   ADVANCE: 'Advance',
+  ADVANCE_PAYMENT: 'AdvancePayment',
   ASSIGNMENT: 'Assignment',
   LOCATION: 'Location',
   MAINTENANCE: 'Maintenance'

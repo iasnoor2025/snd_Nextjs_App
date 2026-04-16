@@ -12,6 +12,7 @@ import { CreditCard, DollarSign, Eye, History, Loader2, Plus, Trash2, User, Cloc
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useParams } from 'next/navigation';
+import { usePermission } from '@/lib/rbac/rbac-context';
 
 interface AdvanceData {
   id: number;
@@ -44,6 +45,10 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
   const params = useParams();
   const locale = params?.locale as string || 'en';
   const { t } = useI18n();
+  const { hasPermission } = usePermission();
+  const canCreate = hasPermission('create', 'Advance');
+  const canUpdate = hasPermission('update', 'Advance');
+  const canDelete = hasPermission('delete', 'Advance');
   const [advances, setAdvances] = useState<AdvanceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -72,15 +77,20 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
       setLoading(true);
       const response = await fetch('/api/advances');
       const data = await response.json();
-             if (data.data) {
-         setAdvances(data.data || []);
-       } else {
-         toast.error(t('dashboard.employeeAdvance.messages.failedToLoad'));
-       }
-           } catch (error) {
-         console.error('Error fetching advances:', error);
-         toast.error(t('dashboard.employeeAdvance.messages.failedToLoad'));
-       } finally {
+      if (!response.ok) {
+        toast.error(data.error || t('dashboard.employeeAdvance.messages.failedToLoad'));
+        setAdvances([]);
+        return;
+      }
+      if (data.data) {
+        setAdvances(data.data || []);
+      } else {
+        toast.error(t('dashboard.employeeAdvance.messages.failedToLoad'));
+      }
+    } catch (error) {
+      console.error('Error fetching advances:', error);
+      toast.error(t('dashboard.employeeAdvance.messages.failedToLoad'));
+    } finally {
       setLoading(false);
     }
   };
@@ -278,14 +288,16 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
             >
                              {t('dashboard.employeeAdvance.hideSection')}
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => setIsAdvanceRequestDialogOpen(true)}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-                             {t('dashboard.employeeAdvance.newAdvance')}
-            </Button>
+            {canCreate && (
+              <Button
+                variant="outline"
+                onClick={() => setIsAdvanceRequestDialogOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                {t('dashboard.employeeAdvance.newAdvance')}
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={fetchAdvances}
@@ -468,7 +480,7 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex items-center justify-end gap-2">
                                                          {/* Approve/Reject buttons for pending advances */}
-                             {advance.status === 'pending' && (
+                             {advance.status === 'pending' && canUpdate && (
                                <>
                                  <Button
                                    size="sm"
@@ -491,7 +503,7 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
                              )}
 
                              {/* Repayment button for approved advances */}
-                             {(advance.status === 'approved' || advance.status === 'partially_repaid') && (
+                             {(advance.status === 'approved' || advance.status === 'partially_repaid') && canUpdate && (
                                <Button
                                  size="sm"
                                  variant="outline"
@@ -518,15 +530,16 @@ export default function EmployeeAdvanceSection({ onHideSection }: EmployeeAdvanc
                               <Eye className="h-4 w-4" />
                             </Button>
 
-                            {/* Delete button */}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-700 dark:hover:text-red-300"
-                              onClick={() => handleDeleteAdvance(advance.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {canDelete && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-700 dark:hover:text-red-300"
+                                onClick={() => handleDeleteAdvance(advance.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         </td>
                       </tr>

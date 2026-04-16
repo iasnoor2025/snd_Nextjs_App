@@ -1,7 +1,7 @@
 import { db } from '@/lib/drizzle';
-import { advancePayments, designations, employees } from '@/lib/drizzle/schema';
+import { advancePayments, companies, designations, employees } from '@/lib/drizzle/schema';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, isNull } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -84,6 +84,7 @@ const getAdvanceReceiptHandler = async (
         firstName: employees.firstName,
         lastName: employees.lastName,
         fileNumber: employees.fileNumber,
+        companyName: employees.companyName,
         designation: {
           name: designations.name,
         },
@@ -103,12 +104,51 @@ const getAdvanceReceiptHandler = async (
       return NextResponse.json({ error: 'Employee data not found' }, { status: 404 });
     }
 
-    // Get company information
+    // Resolve company: match employee.companyName to companies.name, else first company row, else env
+    let companyRow: {
+      name: string;
+      address: string | null;
+      phone: string | null;
+      email: string | null;
+      logo: string | null;
+    } | null = null;
+
+    const cn = employeeData.companyName?.trim();
+    if (cn) {
+      const matched = await db
+        .select({
+          name: companies.name,
+          address: companies.address,
+          phone: companies.phone,
+          email: companies.email,
+          logo: companies.logo,
+        })
+        .from(companies)
+        .where(eq(companies.name, cn))
+        .limit(1);
+      companyRow = matched[0] ?? null;
+    }
+    if (!companyRow) {
+      const fallback = await db
+        .select({
+          name: companies.name,
+          address: companies.address,
+          phone: companies.phone,
+          email: companies.email,
+          logo: companies.logo,
+        })
+        .from(companies)
+        .orderBy(asc(companies.id))
+        .limit(1);
+      companyRow = fallback[0] ?? null;
+    }
+
     const company = {
-      name: process.env.NEXT_PUBLIC_APP_NAME || 'Your Company Name',
-      address: process.env.NEXT_PUBLIC_COMPANY_ADDRESS || 'Company Address',
-      phone: process.env.NEXT_PUBLIC_COMPANY_PHONE || 'Company Phone',
-      email: process.env.NEXT_PUBLIC_COMPANY_EMAIL || 'company@example.com',
+      name: companyRow?.name || process.env.NEXT_PUBLIC_APP_NAME || 'Your Company Name',
+      address: companyRow?.address || process.env.NEXT_PUBLIC_COMPANY_ADDRESS || 'Company Address',
+      phone: companyRow?.phone || process.env.NEXT_PUBLIC_COMPANY_PHONE || 'Company Phone',
+      email: companyRow?.email || process.env.NEXT_PUBLIC_COMPANY_EMAIL || 'company@example.com',
+      logo: companyRow?.logo || null,
     };
 
     const advance = advanceRecord[0];
@@ -149,7 +189,7 @@ const getAdvanceReceiptHandler = async (
         position: employeeData.designation?.name || 'Employee',
         employee_id: employeeData.fileNumber,
       },
-      company: company,
+      company,
     };
 
     return NextResponse.json({

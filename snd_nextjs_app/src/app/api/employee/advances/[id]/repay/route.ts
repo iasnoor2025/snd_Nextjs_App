@@ -1,6 +1,7 @@
 
 import { db } from '@/lib/db';
 import { advancePaymentHistories, advancePayments } from '@/lib/drizzle/schema';
+import { PermissionConfigs, withPermission } from '@/lib/rbac/api-middleware';
 import { and, asc, eq, isNull } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
@@ -14,7 +15,7 @@ export const fetchCache = 'force-no-store';
 export const runtime = 'nodejs';
 export const preferredRegion = 'auto';
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function postRepayHandler(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
 
     const session = await getServerSession();
@@ -191,3 +192,5 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     );
   }
 }
+
+export const POST = withPermission(PermissionConfigs.advance.update)(postRepayHandler);

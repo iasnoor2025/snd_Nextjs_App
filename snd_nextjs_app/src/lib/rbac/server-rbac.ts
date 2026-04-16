@@ -167,12 +167,12 @@ export const PERMISSION_MAPPING: Record<string, string[]> = {
   'delete.SalaryIncrement': ['delete.SalaryIncrement', 'delete.salaryincrement'],
   'manage.SalaryIncrement': ['manage.SalaryIncrement', 'manage.salaryincrement'],
 
-  // Advance permissions
-  'read.Advance': ['read.Advance', 'read.advance'],
-  'create.Advance': ['create.Advance', 'create.advance'],
-  'update.Advance': ['update.Advance', 'update.advance'],
-  'delete.Advance': ['delete.Advance', 'delete.advance'],
-  'manage.Advance': ['manage.Advance', 'manage.advance'],
+  // Advance permissions (AdvancePayment is legacy name used in DB / scripts)
+  'read.Advance': ['read.Advance', 'read.advance', 'read.AdvancePayment', 'read.advancepayment'],
+  'create.Advance': ['create.Advance', 'create.advance', 'create.AdvancePayment', 'create.advancepayment'],
+  'update.Advance': ['update.Advance', 'update.advance', 'update.AdvancePayment', 'update.advancepayment'],
+  'delete.Advance': ['delete.Advance', 'delete.advance', 'delete.AdvancePayment', 'delete.advancepayment'],
+  'manage.Advance': ['manage.Advance', 'manage.advance', 'manage.AdvancePayment', 'manage.advancepayment'],
 
   // PettyCash permissions
   'read.PettyCash': ['read.PettyCash', 'read.pettycash'],

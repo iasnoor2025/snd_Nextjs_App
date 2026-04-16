@@ -368,30 +368,7 @@ export const PUT = withPermission(PermissionConfigs.advance.update)(
   // No specific permission config for PUT, as it's for own data
 );
 
-// DELETE /api/advances - Delete employee advance with permission check
-export const DELETE = withPermission(PermissionConfigs.advance.delete)(
-  async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
-    try {
-      const body = await request.json();
-      const { id } = body;
+// DELETE /api/advances/[id] — see src/app/api/advances/[id]/route.ts (ID in path; soft delete)
 
-      await db.delete(advancePayments).where(eq(advancePayments.id, id));
-
-      return NextResponse.json({ message: 'Advance deleted successfully' });
-    } catch (error) {
-      
-      return NextResponse.json(
-        {
-          error: 'Failed to delete advance',
-          details: error instanceof Error ? error.message : 'Unknown error',
-        },
-        { status: 500 }
-      );
-    }
-  }
-  // No specific permission config for DELETE, as it's for own data
-);
-
-// Export the wrapped handlers
 export const GET = withPermission(PermissionConfigs.advance.read)(getAdvancesHandler);
 export const POST = withPermission(PermissionConfigs.advance.create)(createAdvanceHandler);

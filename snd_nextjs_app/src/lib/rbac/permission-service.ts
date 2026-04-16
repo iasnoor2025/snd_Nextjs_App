@@ -17,6 +17,28 @@ export interface PermissionCheck {
   requiredPermissions?: string[];
 }
 
+/** DB/scripts sometimes use AdvancePayment; APIs use Advance — treat as equivalent */
+function isAdvanceSubject(subject: string): boolean {
+  const s = subject.toLowerCase();
+  return s === 'advance' || s === 'advancepayment';
+}
+
+function hasAdvanceActionPermission(permissions: string[], action: Action, subject: Subject): boolean {
+  if (!isAdvanceSubject(subject)) return false;
+  const a = action.toLowerCase();
+  return permissions.some(p => {
+    const pl = p.toLowerCase();
+    return pl === `${a}.advance` || pl === `${a}.advancepayment`;
+  });
+}
+
+function hasManageAdvanceEitherForm(permissions: string[]): boolean {
+  return permissions.some(p => {
+    const pl = p.toLowerCase();
+    return pl === 'manage.advance' || pl === 'manage.advancepayment';
+  });
+}
+
 // Server-side permission cache
 const PERMISSION_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours (permissions rarely change)
 const permissionCache = new Map<string, { result: PermissionCheck; timestamp: number }>();
@@ -212,6 +234,16 @@ export async function checkUserPermission(
       setCachedPermissionCheck(userId, action, subject, result);
       return result;
     }
+    if (hasAdvanceActionPermission(directPermissions, action, subject)) {
+      const result = { hasPermission: true, userRole: roleName };
+      setCachedPermissionCheck(userId, action, subject, result);
+      return result;
+    }
+    if (isAdvanceSubject(subject) && hasManageAdvanceEitherForm(directPermissions)) {
+      const result = { hasPermission: true, userRole: roleName };
+      setCachedPermissionCheck(userId, action, subject, result);
+      return result;
+    }
     // PettyCash: allow read with read.Payroll or manage.Payroll; create/update/delete with manage.Payroll
     if (subject === 'PettyCash') {
       if (directPermissions.includes('manage.Payroll')) {
@@ -260,12 +292,21 @@ export async function checkUserPermission(
       setCachedPermissionCheck(userId, action, subject, result);
       return result;
     }
+    if (hasAdvanceActionPermission(rolePermissions, action, subject)) {
+      const result = { hasPermission: true, userRole: roleName };
+      setCachedPermissionCheck(userId, action, subject, result);
+      return result;
+    }
 
     // Check for broader permissions (e.g., if user has 'manage.employee', they can 'read.employee')
     // PettyCash: allow read with read.Payroll or manage.Payroll; create/update/delete only with manage.Payroll
     const broaderPermissions = rolePermissions.filter(p => {
       if (p === 'manage.all') return true;
       if (p === `manage.${subject}`) return true;
+      if (isAdvanceSubject(subject)) {
+        const pl = p.toLowerCase();
+        if (pl === 'manage.advance' || pl === 'manage.advancepayment') return true;
+      }
       if (p === specificRolePermission) return true;
       if (subject === 'PettyCash') {
         if (p === 'manage.Payroll') return true;

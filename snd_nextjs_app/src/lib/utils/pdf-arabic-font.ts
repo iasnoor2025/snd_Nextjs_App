@@ -27,26 +27,36 @@ export async function loadArabicFontDataForPdf(): Promise<string | null> {
   if (fontBase64Cache) return fontBase64Cache;
   if (fontLoadPromise) return fontLoadPromise;
 
-  const fontUrl = new URL(`/fonts/${ARABIC_FONT_FILE}`, window.location.origin).toString();
+  const localUrl = new URL(`/fonts/${ARABIC_FONT_FILE}`, window.location.origin).toString();
+  const cdnUrl =
+    'https://raw.githubusercontent.com/googlefonts/noto-fonts/main/hinted/ttf/NotoSansArabic/NotoSansArabic-Regular.ttf';
 
-  fontLoadPromise = fetch(fontUrl)
-    .then((response) => {
-      if (!response.ok) throw new Error('Failed to fetch Arabic font');
-      return response.arrayBuffer();
-    })
-    .then((buffer) => {
-      const base64 = arrayBufferToBase64(buffer);
+  const loadOnce = async (): Promise<string | null> => {
+    try {
+      let res = await fetch(localUrl);
+      if (!res.ok) throw new Error('local missing');
+      const buf = await res.arrayBuffer();
+      const base64 = arrayBufferToBase64(buf);
       fontBase64Cache = base64;
       return base64;
-    })
-    .catch((error) => {
-      console.error('[pdf-arabic-font] Failed to load Arabic font:', error);
-      return null;
-    })
-    .finally(() => {
+    } catch {
+      try {
+        const res = await fetch(cdnUrl);
+        if (!res.ok) throw new Error('cdn failed');
+        const buf = await res.arrayBuffer();
+        const base64 = arrayBufferToBase64(buf);
+        fontBase64Cache = base64;
+        return base64;
+      } catch (error) {
+        console.error('[pdf-arabic-font] Failed to load Arabic font (local + CDN):', error);
+        return null;
+      }
+    } finally {
       fontLoadPromise = null;
-    });
+    }
+  };
 
+  fontLoadPromise = loadOnce();
   return fontLoadPromise;
 }
 
