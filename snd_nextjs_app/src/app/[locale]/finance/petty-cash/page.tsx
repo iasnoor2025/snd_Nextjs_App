@@ -322,7 +322,7 @@ export default function PettyCashPage() {
 
   const SortableHead = ({ column, label, className = '' }: { column: SortColumn; label: string; className?: string }) => (
     <TableHead
-      className={`cursor-pointer select-none hover:bg-muted/50 ${className}`}
+      className={`sticky top-0 z-30 cursor-pointer select-none bg-background shadow-[0_1px_0_0_hsl(var(--border))] hover:bg-muted/50 ${className}`}
       onClick={() => handleSort(column)}
     >
       <div className={`flex items-center gap-1 ${className.includes('text-right') ? 'justify-end' : ''}`}>
@@ -629,7 +629,7 @@ export default function PettyCashPage() {
                 {loadingTransactions ? (
                   <p className="text-muted-foreground">{t('pettyCash.loading')}</p>
                 ) : (
-                  <div className="rounded-md border overflow-x-auto">
+                  <div className="relative rounded-md border max-h-[60vh] overflow-auto [&>[data-slot=table-container]]:mx-0 [&>[data-slot=table-container]]:px-0 [&>[data-slot=table-container]]:overflow-visible">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -641,7 +641,7 @@ export default function PettyCashPage() {
                           <SortableHead column="amount" label={t('pettyCash.inAmount')} className="text-right" />
                           <SortableHead column="amount" label={t('pettyCash.outAmount')} className="text-right" />
                           <SortableHead column="balance" label={t('pettyCash.balance')} className="text-right" />
-                          <TableHead className="w-[100px]">{t('pettyCash.actions')}</TableHead>
+                          <TableHead className="sticky top-0 z-30 w-[100px] bg-background shadow-[0_1px_0_0_hsl(var(--border))]">{t('pettyCash.actions')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
