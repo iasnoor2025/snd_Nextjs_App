@@ -475,6 +475,34 @@ export default function PettyCashPage() {
     }
   };
 
+  const handleDownloadEmployeeReceipt = async (tx: PettyCashTransaction) => {
+    if (!tx.employeeId || !['OUT', 'EXPENSE'].includes(tx.type)) {
+      toast.error('Employee receipt is available only for employee cash payout transactions.');
+      return;
+    }
+
+    try {
+      toast.loading('Generating employee receipt PDF...', { id: `petty-receipt-${tx.id}` });
+      const res = await fetch(`/api/petty-cash/transactions/${tx.id}/receipt-pdf`);
+      if (!res.ok) {
+        toast.error('Failed to generate employee receipt PDF.', { id: `petty-receipt-${tx.id}` });
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Petty_Cash_Receipt_${tx.id}_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success('Employee receipt downloaded.', { id: `petty-receipt-${tx.id}` });
+    } catch {
+      toast.error('Failed to generate employee receipt PDF.', { id: `petty-receipt-${tx.id}` });
+    }
+  };
+
   return (
     <ProtectedRoute>
       <div className="space-y-6 p-4 md:p-6">
@@ -668,6 +696,19 @@ export default function PettyCashPage() {
                                           <Pencil className="h-4 w-4" />
                                         </Button>
                                       </PermissionContent>
+                                      {tx.employeeId && ['OUT', 'EXPENSE'].includes(tx.type) && (
+                                        <PermissionContent action="read" subject="PettyCash">
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8"
+                                            onClick={() => handleDownloadEmployeeReceipt(tx)}
+                                            title="Download employee receipt"
+                                          >
+                                            <Download className="h-4 w-4" />
+                                          </Button>
+                                        </PermissionContent>
+                                      )}
                                       <PermissionContent action="delete" subject="PettyCash">
                                         <Button
                                           variant="ghost"

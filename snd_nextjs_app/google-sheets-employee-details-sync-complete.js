@@ -32,9 +32,12 @@ function syncEmployeeDetails() {
     const formattedData = formatEmployeeData(employeeData);
     const result = updateEmployeeDetailsSheet(employeeDetailsSheet, formattedData);
     
-    const alertMessage = result.newRecords > 0
+    let alertMessage = result.newRecords > 0
       ? `Sync Complete!\n\nAdded ${result.newRecords} new record(s).\nTotal records: ${result.totalRecords}`
       : `Sync Complete!\n\nNo new records to add.\nTotal records: ${result.totalRecords}`;
+    if (result.removedDuplicateRows > 0) {
+      alertMessage += `\n\nRemoved ${result.removedDuplicateRows} duplicate row(s) (same File#).`;
+    }
     
     SpreadsheetApp.getUi().alert('Sync Complete', alertMessage, SpreadsheetApp.getUi().ButtonSet.OK);
     console.log('=== Employee Details Sync Complete ===');
@@ -88,6 +91,63 @@ function fetchEmployeesFromAPI() {
     console.error('Error fetching from API:', error);
     throw error;
   }
+}
+
+/**
+ * Same logical employee must map to one key whether the value came from the API
+ * (string with leading zeros) or from Sheets (numeric cell).
+ */
+function normalizeEmployeeFileKey(raw) {
+  if (raw === null || raw === undefined) return '';
+  const s = String(raw).trim();
+  if (!s) return '';
+  if (/^\d+$/.test(s)) return String(parseInt(s, 10));
+  return s.toLowerCase();
+}
+
+function dedupeFormattedEmployeesByFileKey(data) {
+  const out = [];
+  const seen = new Set();
+  data.forEach(function (emp) {
+    const key = normalizeEmployeeFileKey(emp.fileNumber);
+    if (!key) return;
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(emp);
+  });
+  return out;
+}
+
+/**
+ * Removes extra sheet rows that share the same normalized File# (keeps first row).
+ */
+function removeDuplicateEmployeeRowsByFileKey(sheet, writeColumns) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return 0;
+
+  const numDataRows = lastRow - 1;
+  const values = sheet.getRange(2, 1, numDataRows, writeColumns).getValues();
+  const keyToFirstRow = new Map();
+  const rowsToDelete = [];
+
+  for (var i = 0; i < values.length; i++) {
+    var sheetRow = 2 + i;
+    var key = normalizeEmployeeFileKey(values[i][0]);
+    if (!key) continue;
+    if (keyToFirstRow.has(key)) {
+      rowsToDelete.push(sheetRow);
+    } else {
+      keyToFirstRow.set(key, sheetRow);
+    }
+  }
+
+  rowsToDelete.sort(function (a, b) {
+    return b - a;
+  });
+  rowsToDelete.forEach(function (r) {
+    sheet.deleteRow(r);
+  });
+  return rowsToDelete.length;
 }
 
 function formatEmployeeData(employees) {
@@ -156,7 +216,7 @@ function updateEmployeeDetailsSheet(sheet, data) {
     const WRITE_COLUMNS = 12;
     const headers = ['File#', 'Employees Full Name', 'Nationality', 'Category', 'Basic Salary', 'Food Money', 'OT Rates', 'Gosi', 'Advance', 'Other', 'Bonus', 'Status'];
     
-    const lastRow = sheet.getLastRow();
+    let lastRow = sheet.getLastRow();
     const hasData = lastRow > 0;
     
     if (lastRow === 0) {
@@ -168,20 +228,33 @@ function updateEmployeeDetailsSheet(sheet, data) {
       headerRange.setFontSize(11);
       console.log('Initialized sheet with headers');
     }
+
+    data = dedupeFormattedEmployeesByFileKey(data);
+    var removedDuplicateRows = 0;
+    if (sheet.getLastRow() > 1) {
+      removedDuplicateRows = removeDuplicateEmployeeRowsByFileKey(sheet, WRITE_COLUMNS);
+      if (removedDuplicateRows > 0) {
+        console.log('Removed duplicate sheet rows by File#:', removedDuplicateRows);
+      }
+    }
+    lastRow = sheet.getLastRow();
     
-    // Build map of existing rows: fileNumber -> { rowIndex, values }
+    // Build map of existing rows: normalized fileNumber -> { rowIndex, values }
     const existingFileNumbers = new Set();
     const existingMap = new Map();
-    if (hasData && lastRow > 1) {
-      const existingRange = sheet.getRange(2, 1, lastRow - 1, WRITE_COLUMNS).getValues();
+    if (lastRow > 1) {
+      const numDataRows = lastRow - 1;
+      const existingRange = sheet.getRange(2, 1, numDataRows, WRITE_COLUMNS).getValues();
       for (let i = 0; i < existingRange.length; i++) {
         const row = existingRange[i];
         const fileNum = row[0];
         if (fileNum) {
           const rowIndex = 2 + i; // actual row in sheet
-          existingFileNumbers.add(String(fileNum).trim());
+          const mapKey = normalizeEmployeeFileKey(fileNum);
+          if (!mapKey) continue;
+          existingFileNumbers.add(mapKey);
           // Store only the columns we auto-manage: 1..5 and 12
-          existingMap.set(String(fileNum).trim(), {
+          existingMap.set(mapKey, {
             rowIndex,
             a: row[0], // File#
             b: row[1], // Name
@@ -200,8 +273,12 @@ function updateEmployeeDetailsSheet(sheet, data) {
     let updatedCells = 0;
     
     data.forEach(emp => {
-      const fileNumber = String(emp.fileNumber).trim();
-      if (!existingFileNumbers.has(fileNumber)) {
+      const mapKey = normalizeEmployeeFileKey(emp.fileNumber);
+      if (!mapKey) {
+        console.warn('Skipping employee with empty File# after normalize:', emp.fullName || '');
+        return;
+      }
+      if (!existingFileNumbers.has(mapKey)) {
         newRows.push([
           emp.fileNumber,
           emp.fullName,
@@ -219,7 +296,7 @@ function updateEmployeeDetailsSheet(sheet, data) {
       }
       else {
         // Update only changed cells for existing row
-        const current = existingMap.get(fileNumber);
+        const current = existingMap.get(mapKey);
         if (current) {
           // Columns: 1..5 and 12
           if (String(current.a || '') !== String(emp.fileNumber || '')) {
@@ -305,7 +382,8 @@ function updateEmployeeDetailsSheet(sheet, data) {
     return {
       newRecords: newRows.length,
       updatedCells,
-      totalRecords: sheet.getLastRow() - 1
+      totalRecords: sheet.getLastRow() - 1,
+      removedDuplicateRows: removedDuplicateRows
     };
     
   } catch (error) {
@@ -645,25 +723,70 @@ function updateBonusCheckboxBasedOnMonth() {
 }
 
 function updateOTRatesWithTimestamp() {
+  // Helpers below are nested so this function can be copied alone into macros.gs
+  // without separate global definitions (avoids ReferenceError).
+  function normalizeFileKeyForOt(raw) {
+    if (raw === null || raw === undefined) return '';
+    const s = String(raw).trim();
+    if (!s) return '';
+    if (/^\d+$/.test(s)) return String(parseInt(s, 10));
+    return s.toLowerCase();
+  }
+  function parseSpreadsheetDateLoose(raw, timeZone) {
+    if (raw === null || raw === undefined || raw === '') return null;
+    if (raw instanceof Date) {
+      return isNaN(raw.getTime()) ? null : raw;
+    }
+    if (typeof raw === 'number') {
+      if (raw > 0 && raw < 1e7) {
+        const fromSerial = new Date(Math.round((raw - 25569) * 86400 * 1000));
+        if (!isNaN(fromSerial.getTime())) return fromSerial;
+      }
+      const asMs = new Date(raw);
+      return isNaN(asMs.getTime()) ? null : asMs;
+    }
+    const s = String(raw).trim();
+    if (!s) return null;
+    let d = new Date(s);
+    if (!isNaN(d.getTime())) return d;
+    if (timeZone) {
+      const fmts = ['dd/MM/yyyy', 'd/M/yyyy', 'dd/MM/yy', 'd/M/yy', 'yyyy-MM-dd', 'MM/dd/yyyy', 'M/d/yyyy'];
+      for (let i = 0; i < fmts.length; i++) {
+        try {
+          d = Utilities.parseDate(s, timeZone, fmts[i]);
+          if (d && !isNaN(d.getTime())) return d;
+        } catch (e) { /* try next */ }
+      }
+    }
+    return null;
+  }
+  function monthKeyFromDate(d, timeZone) {
+    const first = new Date(d.getFullYear(), d.getMonth(), 1);
+    return Utilities.formatDate(first, timeZone, 'yyyy-MM');
+  }
+
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const tz = ss.getSpreadsheetTimeZone();
   const empSheet = ss.getSheetByName("Employees_Details");
   const otSheet = ss.getSheetByName("OT_Rates");
   const timeCardSheet = ss.getSheetByName("Time Card");
 
   if (!empSheet || !otSheet || !timeCardSheet) return;
 
-  // Get the selected date from Time Card sheet AI7
   const rawDate = timeCardSheet.getRange("AI7").getValue();
-  if (!(rawDate instanceof Date)) {
-    SpreadsheetApp.getUi().alert("Please select a month in Time Card sheet (AI7)");
+  const anchorDate = parseSpreadsheetDateLoose(rawDate, tz);
+  if (!anchorDate) {
+    SpreadsheetApp.getUi().alert(
+      'Invalid month in AI7',
+      'Enter a date in Time Card cell AI7 (any day in the target month). Text like 15/04/2026 or a real date cell both work.',
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
     return;
   }
 
-  // Extract month-year from the date
-  // Use 1st of the month for comparison
-  const targetDate = new Date(rawDate.getFullYear(), rawDate.getMonth(), 1);
-  const targetMonth = Utilities.formatDate(targetDate, ss.getSpreadsheetTimeZone(), "yyyy-MM");
-  
+  const targetDate = new Date(anchorDate.getFullYear(), anchorDate.getMonth(), 1);
+  const targetMonth = Utilities.formatDate(targetDate, tz, 'yyyy-MM');
+
   const empData = empSheet.getDataRange().getValues();
   const otData = otSheet.getDataRange().getValues();
 
@@ -672,8 +795,7 @@ function updateOTRatesWithTimestamp() {
 
   const empFileCol = empHeaders.indexOf("File#");
   const empOTRateCol = empHeaders.indexOf("OT Rates");
-  
-  // Try multiple possible header variations
+
   const otFileCol = otHeaders.findIndex(h => String(h).trim().toLowerCase() === "file");
   const otRateCol = otHeaders.findIndex(h => String(h).trim().toLowerCase().includes("ot rate"));
   const otDateCol = otHeaders.findIndex(h => String(h).trim().toLowerCase() === "date");
@@ -681,80 +803,105 @@ function updateOTRatesWithTimestamp() {
   console.log('Target month:', targetMonth);
   console.log('OT_Rates headers:', otHeaders);
   console.log('OT_Rates sheet columns:', otFileCol, otRateCol, otDateCol);
-  
+
   if (otFileCol === -1 || otRateCol === -1 || otDateCol === -1) {
-    SpreadsheetApp.getUi().alert('Invalid Headers', 
-      'OT_Rates sheet must have headers: File, OT Rate, Date', 
-      SpreadsheetApp.getUi().ButtonSet.OK);
+    SpreadsheetApp.getUi().alert(
+      'Invalid Headers',
+      'OT_Rates sheet must have headers: File, OT Rate, Date',
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
     console.error('Missing headers in OT_Rates sheet');
     return;
   }
 
-  // Build map of OT rates for the specific month
-  const otMap = new Map();
+  if (empFileCol === -1 || empOTRateCol === -1) {
+    SpreadsheetApp.getUi().alert(
+      'Invalid Headers',
+      'Employees_Details must include columns: File#, OT Rates',
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+    return;
+  }
+
+  const candidates = [];
   for (let i = 1; i < otData.length; i++) {
     const fileId = otData[i][otFileCol];
     const rate = otData[i][otRateCol];
     const dateValue = otData[i][otDateCol];
-    
-    if (fileId && rate && dateValue) {
-      // Handle different date formats
-      let parsedDate;
-      if (dateValue instanceof Date) {
-        parsedDate = dateValue;
-      } else if (typeof dateValue === 'string') {
-        parsedDate = new Date(dateValue);
-      } else if (typeof dateValue === 'number') {
-        // Date serial number (Google Sheets date format)
-        // Google Sheets: days since 1899-12-30
-        parsedDate = new Date((dateValue - 25569) * 86400 * 1000);
-      } else {
-        parsedDate = new Date(dateValue);
-      }
-      
-      // Normalize to 1st of month for comparison
-      const normalizedDate = new Date(parsedDate.getFullYear(), parsedDate.getMonth(), 1);
-      const rateMonth = Utilities.formatDate(normalizedDate, ss.getSpreadsheetTimeZone(), "yyyy-MM");
-      
-      console.log(`Row ${i + 1}: File=${fileId}, Rate=${rate}, Date=${dateValue}, Month=${rateMonth}, Match=${rateMonth === targetMonth}`);
-      
-      if (rateMonth === targetMonth) {
-        otMap.set(String(fileId), { rate: rate, row: i + 1 });
-      }
-    }
-  }
-  
-  console.log(`Found ${otMap.size} OT rates for month ${targetMonth}`);
+    if (!fileId || rate === '' || rate === null || rate === undefined) continue;
 
-  // Update OT rates in Employees_Details sheet for the target month
+    const fileKey = normalizeFileKeyForOt(fileId);
+    if (!fileKey) continue;
+
+    const parsed = parseSpreadsheetDateLoose(dateValue, tz);
+    if (!parsed) continue;
+
+    candidates.push({ fileKey: fileKey, rate: rate, parsed: parsed, row: i + 1 });
+  }
+
+  if (candidates.length === 0) {
+    SpreadsheetApp.getUi().alert(
+      'No dated OT rows',
+      'OT_Rates has no rows with File, OT Rate, and a readable Date. Dates can be cells, serial numbers, or text (e.g. dd/MM/yyyy).',
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+    return;
+  }
+
+  const byFile = new Map();
+  candidates.forEach(c => {
+    if (!byFile.has(c.fileKey)) byFile.set(c.fileKey, []);
+    byFile.get(c.fileKey).push(c);
+  });
+
+  const otMap = new Map();
+  byFile.forEach((rows, fileKey) => {
+    const exact = rows.filter(c => monthKeyFromDate(c.parsed, tz) === targetMonth);
+    let chosen;
+    if (exact.length) {
+      exact.sort((a, b) => b.parsed - a.parsed || b.row - a.row);
+      chosen = exact[0];
+    } else {
+      rows.sort((a, b) => b.parsed - a.parsed || b.row - a.row);
+      chosen = rows[0];
+    }
+    otMap.set(fileKey, { rate: chosen.rate, row: chosen.row });
+  });
+
+  console.log(`Built OT map for ${otMap.size} file number(s) from ${candidates.length} dated row(s); target ${targetMonth}`);
+
   let updatedCount = 0;
   let notFoundCount = 0;
-  
+
   for (let i = 1; i < empData.length; i++) {
-    const fileId = String(empData[i][empFileCol] || '').trim();
+    const fileKey = normalizeFileKeyForOt(empData[i][empFileCol]);
     const currentRate = empData[i][empOTRateCol];
-    
-    if (otMap.has(fileId)) {
-      const otEntry = otMap.get(fileId);
+
+    if (!fileKey) continue;
+
+    if (otMap.has(fileKey)) {
+      const otEntry = otMap.get(fileKey);
       if (String(otEntry.rate) !== String(currentRate)) {
         empSheet.getRange(i + 1, empOTRateCol + 1).setValue(otEntry.rate);
         updatedCount++;
-        console.log(`Updated File# ${fileId}: ${currentRate} -> ${otEntry.rate}`);
+        console.log(`Updated File# ${fileKey}: ${currentRate} -> ${otEntry.rate}`);
       } else {
-        console.log(`File# ${fileId}: already has rate ${otEntry.rate}`);
+        console.log(`File# ${fileKey}: already has rate ${otEntry.rate}`);
       }
-    } else if (fileId) {
+    } else {
       notFoundCount++;
     }
   }
 
-  let message = `Updated ${updatedCount} OT rates for ${targetMonth}`;
+  let message =
+    `Updated ${updatedCount} OT rate(s); calendar month from AI7 is ${targetMonth}.\n` +
+    `For each File#, the row dated in that month is used when present; otherwise the latest dated OT row for that File (any month).`;
   if (notFoundCount > 0) {
-    message += `\n${notFoundCount} employees not found in OT_Rates`;
+    message += `\n\n${notFoundCount} employee row(s) had no matching OT_Rates entry (by File#).`;
   }
-  
+
   SpreadsheetApp.getUi().alert('OT Rates Updated', message, SpreadsheetApp.getUi().ButtonSet.OK);
-  
+
   console.log(`Updated ${updatedCount} OT rates for month ${targetMonth}`);
   console.log(`Total employees checked: ${empData.length - 1}`);
 }

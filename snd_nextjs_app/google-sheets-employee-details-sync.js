@@ -35,9 +35,12 @@ function syncEmployeeDetails() {
     // Update the sheet
     const result = updateEmployeeDetailsSheet(employeeDetailsSheet, formattedData);
     
-    const alertMessage = result.newRecords > 0
+    let alertMessage = result.newRecords > 0
       ? `Sync Complete!\n\nAdded ${result.newRecords} new record(s).\nTotal records: ${result.totalRecords}`
       : `Sync Complete!\n\nNo new records to add.\nTotal records: ${result.totalRecords}`;
+    if (result.removedDuplicateRows > 0) {
+      alertMessage += `\n\nRemoved ${result.removedDuplicateRows} duplicate row(s) (same File#).`;
+    }
     
     SpreadsheetApp.getUi().alert('Sync Complete', alertMessage, SpreadsheetApp.getUi().ButtonSet.OK);
     
@@ -102,6 +105,56 @@ function fetchEmployeesFromAPI() {
     console.error('Error fetching from API:', error);
     throw error;
   }
+}
+
+function normalizeEmployeeFileKey(raw) {
+  if (raw === null || raw === undefined) return '';
+  const s = String(raw).trim();
+  if (!s) return '';
+  if (/^\d+$/.test(s)) return String(parseInt(s, 10));
+  return s.toLowerCase();
+}
+
+function dedupeFormattedEmployeesByFileKey(data) {
+  const out = [];
+  const seen = new Set();
+  data.forEach(function (emp) {
+    const key = normalizeEmployeeFileKey(emp.fileNumber);
+    if (!key) return;
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(emp);
+  });
+  return out;
+}
+
+function removeDuplicateEmployeeRowsByFileKey(sheet, writeColumns) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return 0;
+
+  const numDataRows = lastRow - 1;
+  const values = sheet.getRange(2, 1, numDataRows, writeColumns).getValues();
+  const keyToFirstRow = new Map();
+  const rowsToDelete = [];
+
+  for (var i = 0; i < values.length; i++) {
+    var sheetRow = 2 + i;
+    var key = normalizeEmployeeFileKey(values[i][0]);
+    if (!key) continue;
+    if (keyToFirstRow.has(key)) {
+      rowsToDelete.push(sheetRow);
+    } else {
+      keyToFirstRow.set(key, sheetRow);
+    }
+  }
+
+  rowsToDelete.sort(function (a, b) {
+    return b - a;
+  });
+  rowsToDelete.forEach(function (r) {
+    sheet.deleteRow(r);
+  });
+  return rowsToDelete.length;
 }
 
 /**
@@ -187,7 +240,7 @@ function updateEmployeeDetailsSheet(sheet, data) {
     const headers = ['File#', 'Employees Full Name', 'Nationality', 'Category', 'Basic Salary', 'Food Money', 'OT Rates', 'Gosi', 'Advance', 'Other', 'Bonus', 'Status'];
     
     // Check if sheet is empty or needs headers
-    const lastRow = sheet.getLastRow();
+    let lastRow = sheet.getLastRow();
     const hasData = lastRow > 0;
     
     // Setup headers if sheet is empty
@@ -203,20 +256,33 @@ function updateEmployeeDetailsSheet(sheet, data) {
       
       console.log('Initialized sheet with headers');
     }
+
+    data = dedupeFormattedEmployeesByFileKey(data);
+    var removedDuplicateRows = 0;
+    if (sheet.getLastRow() > 1) {
+      removedDuplicateRows = removeDuplicateEmployeeRowsByFileKey(sheet, WRITE_COLUMNS);
+      if (removedDuplicateRows > 0) {
+        console.log('Removed duplicate sheet rows by File#:', removedDuplicateRows);
+      }
+    }
+    lastRow = sheet.getLastRow();
     
     // Get existing File# values from column 1 (skip header row)
-    // Build existing map for updates
+    // Build existing map for updates (normalized keys so "00123" matches 123)
     const existingFileNumbers = new Set();
     const existingMap = new Map();
-    if (hasData && lastRow > 1) {
-      const existingRange = sheet.getRange(2, 1, lastRow - 1, WRITE_COLUMNS).getValues();
+    if (lastRow > 1) {
+      const numDataRows = lastRow - 1;
+      const existingRange = sheet.getRange(2, 1, numDataRows, WRITE_COLUMNS).getValues();
       for (let i = 0; i < existingRange.length; i++) {
         const row = existingRange[i];
         const fileNum = row[0];
         if (fileNum) {
           const rowIndex = 2 + i;
-          existingFileNumbers.add(String(fileNum).trim());
-          existingMap.set(String(fileNum).trim(), {
+          const mapKey = normalizeEmployeeFileKey(fileNum);
+          if (!mapKey) continue;
+          existingFileNumbers.add(mapKey);
+          existingMap.set(mapKey, {
             rowIndex,
             a: row[0], b: row[1], c: row[2], d: row[3], e: row[4], l: row[11],
           });
@@ -232,8 +298,12 @@ function updateEmployeeDetailsSheet(sheet, data) {
     const newEmployeeData = [];
     
     data.forEach(emp => {
-      const fileNumber = String(emp.fileNumber).trim();
-      if (!existingFileNumbers.has(fileNumber)) {
+      const mapKey = normalizeEmployeeFileKey(emp.fileNumber);
+      if (!mapKey) {
+        console.warn('Skipping employee with empty File# after normalize:', emp.fullName || '');
+        return;
+      }
+      if (!existingFileNumbers.has(mapKey)) {
         newRows.push([
           emp.fileNumber,  // 1
           emp.fullName,    // 2
@@ -251,7 +321,7 @@ function updateEmployeeDetailsSheet(sheet, data) {
         newEmployeeData.push(emp);
       }
       else {
-        const current = existingMap.get(fileNumber);
+        const current = existingMap.get(mapKey);
         if (current) {
           if (String(current.a || '') !== String(emp.fileNumber || '')) { sheet.getRange(current.rowIndex, 1).setValue(emp.fileNumber); updatedCells++; }
           if (String(current.b || '') !== String(emp.fullName || '')) { sheet.getRange(current.rowIndex, 2).setValue(emp.fullName); updatedCells++; }
@@ -336,7 +406,8 @@ function updateEmployeeDetailsSheet(sheet, data) {
     return {
       newRecords: newRows.length,
       updatedCells,
-      totalRecords: sheet.getLastRow() - 1
+      totalRecords: sheet.getLastRow() - 1,
+      removedDuplicateRows: removedDuplicateRows
     };
     
   } catch (error) {
