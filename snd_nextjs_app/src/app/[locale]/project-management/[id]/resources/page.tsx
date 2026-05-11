@@ -35,6 +35,7 @@ import ApiService from '@/lib/api-service';
 import { format } from 'date-fns';
 import {
   ArrowLeft,
+  CalendarRange,
   Download,
   Edit,
   FileText,
@@ -61,7 +62,12 @@ import {
   TaskDialog,
   TaskList,
 } from './components';
-import { ProjectResourcesReportService, ProjectResourceReportData } from '@/lib/services/project-resources-report-service';
+import {
+  ProjectResourcesReportService,
+  ProjectResourceReportData,
+} from '@/lib/services/project-resources-report-service';
+import { ProjectEquipmentTimesheetDialog } from '@/components/project/ProjectEquipmentTimesheetDialog';
+import { ProjectEquipmentMonthlyReport } from '@/components/project/ProjectEquipmentMonthlyReport';
 
 type ResourceType = 'manpower' | 'equipment' | 'material' | 'fuel' | 'expense' | 'tasks';
 
@@ -110,6 +116,9 @@ interface ProjectResource {
   hourly_rate?: number;
   hours_worked?: number;
   usage_hours?: number;
+  // Sum of regular + overtime hours from project_equipment_timesheets. When > 0 it
+  // overrides the 10h/day estimate for both Usage Hours and Cost (rental-style).
+  timesheet_total_hours?: number;
   maintenance_cost?: number;
   equipment_start_date?: string;
   equipment_end_date?: string;
@@ -193,6 +202,23 @@ export default function ProjectResourcesPage() {
   // Delete confirmation state
   const [deleteResource, setDeleteResource] = useState<ProjectResource | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  // Project equipment timesheet dialog (rental-style monthly grid)
+  const [timesheetDialog, setTimesheetDialog] = useState<{
+    open: boolean;
+    projectEquipmentId: number | null;
+    equipmentName: string;
+    month: string; // YYYY-MM
+  }>({
+    open: false,
+    projectEquipmentId: null,
+    equipmentName: '',
+    month: format(new Date(), 'yyyy-MM'),
+  });
+
+  // Active tab — controlled so the Equipment tab's "Monthly Report" button can switch us
+  // to the new "Report" tab (which mirrors the rental Monthly Items Report).
+  const [activeTab, setActiveTab] = useState<string>('manpower');
 
   useEffect(() => {
     fetchData();
@@ -389,8 +415,12 @@ export default function ProjectResourcesPage() {
             // If assigned to equipment, cost is 0 (included in equipment rate)
             return effectiveDailyRate * calculatedTotalDays;
           } else if (resource.type === 'equipment') {
-            // For equipment, calculate usage hours from dates first, then calculate cost
-            const calculatedUsageHours = (() => {
+            // Timesheet hours (regular + overtime) win over the 10h/day estimate when present.
+            const timesheetHours = Number(
+              resource.timesheetTotalHours ?? resource.timesheet_total_hours ?? 0
+            ) || 0;
+
+            const calculatedUsageHours = timesheetHours > 0 ? timesheetHours : (() => {
               if (resource.startDate) {
                 const parseLocalDate = (dateString: string): Date => {
                   const dateStr = dateString.split('T')[0];
@@ -431,7 +461,7 @@ export default function ProjectResourcesPage() {
             const hourlyRate = resource.hourlyRate ? parseFloat(resource.hourlyRate) : 0;
             const maintenanceCost = resource.maintenanceCost ? parseFloat(resource.maintenanceCost) : 0;
 
-            // Calculate total cost: (hourly rate * calculated usage hours) + maintenance cost
+            // Calculate total cost: (hourly rate * effective usage hours) + maintenance cost
             return hourlyRate * calculatedUsageHours + maintenanceCost;
           } else if (resource.type === 'material' && resource.unitPrice && resource.quantity) {
             return parseFloat(resource.unitPrice) * parseFloat(resource.quantity);
@@ -468,8 +498,15 @@ export default function ProjectResourcesPage() {
         hours_worked: resource.hoursWorked !== undefined && resource.hoursWorked !== null
           ? parseFloat(resource.hoursWorked)
           : undefined,
-        // Calculate usage hours from dates (auto-updates as days pass)
+        timesheet_total_hours: Number(
+          resource.timesheetTotalHours ?? resource.timesheet_total_hours ?? 0
+        ) || 0,
+        // Usage hours: timesheet wins, otherwise 10h/day from start_date..min(end_date, today)
         usage_hours: (() => {
+          const tsHours = Number(
+            resource.timesheetTotalHours ?? resource.timesheet_total_hours ?? 0
+          ) || 0;
+          if (tsHours > 0) return tsHours;
           if (resource.startDate) {
             // Use end date if provided and not in the future, otherwise use today
             const parseLocalDate = (dateString: string): Date => {
@@ -996,19 +1033,22 @@ export default function ProjectResourcesPage() {
 
       // Transform equipment data to match frontend structure
       const transformedEquipment = equipmentData.map((resource: any) => {
-        // Always calculate usage hours from dates if dates are available
-        // This ensures the table shows the correct hours that update automatically as days pass
+        // Timesheet hours win when present; otherwise compute from date range (10h/day).
+        const timesheetHours = Number(
+          resource.timesheetTotalHours ?? resource.timesheet_total_hours ?? 0
+        ) || 0;
         const calculatedUsageHours = calculateUsageHoursFromDates(resource.startDate, resource.endDate);
 
-        // Use calculated hours if dates are present, otherwise fall back to stored estimatedHours
-        const usageHours = (resource.startDate && calculatedUsageHours > 0)
-          ? calculatedUsageHours
-          : (resource.estimatedHours ? parseFloat(resource.estimatedHours) : 0);
+        const usageHours = timesheetHours > 0
+          ? timesheetHours
+          : (resource.startDate && calculatedUsageHours > 0)
+            ? calculatedUsageHours
+            : (resource.estimatedHours ? parseFloat(resource.estimatedHours) : 0);
 
         const hourlyRate = resource.hourlyRate ? parseFloat(resource.hourlyRate) : 0;
         const maintenanceCost = resource.maintenanceCost ? parseFloat(resource.maintenanceCost) : 0;
 
-        // Calculate total cost: (hourly rate * usage hours) + maintenance cost
+        // Calculate total cost: (hourly rate * effective usage hours) + maintenance cost
         const totalCost = hourlyRate * usageHours + maintenanceCost;
 
         return {
@@ -1042,7 +1082,8 @@ export default function ProjectResourcesPage() {
           operator_file_number: resource.operatorFileNumber || undefined,
           hourly_rate: hourlyRate || undefined,
           hours_worked: resource.hoursWorked ? parseFloat(resource.hoursWorked) : undefined,
-          usage_hours: usageHours, // This will now show the calculated hours from dates
+          usage_hours: usageHours, // timesheet hours take priority, else 10h/day from dates
+          timesheet_total_hours: timesheetHours,
           maintenance_cost: maintenanceCost || undefined,
           start_date: resource.startDate,
           end_date: resource.endDate,
@@ -1378,6 +1419,7 @@ export default function ProjectResourcesPage() {
   };
 
 
+
   if (loading) {
     return (
       <div className="p-6">
@@ -1497,8 +1539,8 @@ export default function ProjectResourcesPage() {
       </div>
 
       {/* Resources Tabs */}
-      <Tabs defaultValue="manpower" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="manpower" className="flex items-center space-x-2">
             <Users className="h-4 w-4" />
             <span>Manpower</span>
@@ -1523,6 +1565,10 @@ export default function ProjectResourcesPage() {
             <Target className="h-4 w-4" />
             <span>Tasks</span>
           </TabsTrigger>
+          <TabsTrigger value="report" className="flex items-center space-x-2">
+            <CalendarRange className="h-4 w-4" />
+            <span>Report</span>
+          </TabsTrigger>
         </TabsList>
 
         {(['manpower', 'equipment', 'material', 'fuel', 'expense'] as ResourceType[]).map(type => (
@@ -1541,6 +1587,18 @@ export default function ProjectResourcesPage() {
                     <span className="text-sm text-muted-foreground">
                       {getResourceCount(type)} items
                     </span>
+                    {type === 'equipment' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setActiveTab('report')}
+                        disabled={getResourceCount(type) === 0}
+                        title="View monthly equipment timesheet report"
+                      >
+                        <CalendarRange className="h-4 w-4 mr-2" />
+                        Monthly Report
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="outline"
@@ -1993,6 +2051,38 @@ export default function ProjectResourcesPage() {
 
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end space-x-2">
+                              {type === 'equipment' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  title={
+                                    resource.timesheet_total_hours && resource.timesheet_total_hours > 0
+                                      ? `Timesheet: ${resource.timesheet_total_hours} hrs`
+                                      : 'Enter timesheet (current month)'
+                                  }
+                                  onClick={() => {
+                                    const peId = Number(resource.id);
+                                    if (!peId || Number.isNaN(peId)) {
+                                      toast.error('Cannot open timesheet for this row');
+                                      return;
+                                    }
+                                    setTimesheetDialog({
+                                      open: true,
+                                      projectEquipmentId: peId,
+                                      equipmentName:
+                                        resource.equipment_name || resource.name || 'Equipment',
+                                      month: format(new Date(), 'yyyy-MM'),
+                                    });
+                                  }}
+                                  className={
+                                    resource.timesheet_total_hours && resource.timesheet_total_hours > 0
+                                      ? 'text-green-600 hover:text-green-700'
+                                      : ''
+                                  }
+                                >
+                                  <FileText className="h-4 w-4" />
+                                </Button>
+                              )}
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -2186,6 +2276,14 @@ export default function ProjectResourcesPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Monthly Equipment Timesheet Report (rental-style) */}
+        <TabsContent value="report" className="space-y-4">
+          <ProjectEquipmentMonthlyReport
+            projectId={projectId}
+            projectName={project?.name || 'Project'}
+          />
+        </TabsContent>
       </Tabs>
 
       {/* Separate Dialogs for each resource type */}
@@ -2204,6 +2302,25 @@ export default function ProjectResourcesPage() {
         initialData={editingResource}
         onSuccess={() => handleResourceSuccess('equipment')}
       />
+
+      {/* Project Equipment Timesheet Dialog (monthly grid, rental-style) */}
+      {timesheetDialog.projectEquipmentId && (
+        <ProjectEquipmentTimesheetDialog
+          open={timesheetDialog.open}
+          onOpenChange={(open) =>
+            setTimesheetDialog((prev) => ({ ...prev, open }))
+          }
+          projectId={Number(projectId)}
+          projectEquipmentId={timesheetDialog.projectEquipmentId}
+          equipmentName={timesheetDialog.equipmentName}
+          month={timesheetDialog.month}
+          onSuccess={() => {
+            // Refresh equipment rows so Usage Hours + Cost reflect the saved timesheet
+            updateEquipmentData();
+          }}
+        />
+      )}
+
 
       <MaterialDialog
         open={materialDialogOpen}

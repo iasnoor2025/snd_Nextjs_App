@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { projectEquipment, projects, equipment, projectManpower, employees } from '@/lib/drizzle/schema';
+import {
+  projectEquipment,
+  projects,
+  equipment,
+  projectManpower,
+  employees,
+  projectEquipmentTimesheets,
+} from '@/lib/drizzle/schema';
 import { CentralAssignmentService } from '@/lib/services/central-assignment-service';
 import { EquipmentStatusService } from '@/lib/services/equipment-status-service';
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { eq, and, desc, sql, inArray } from 'drizzle-orm';
 import { getServerSession } from '@/lib/auth';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
@@ -72,16 +79,61 @@ const getProjectEquipmentHandler = async (request: NextRequest, { params }: { pa
       .where(and(...whereConditions))
       .orderBy(desc(projectEquipment.createdAt));
 
-    // Calculate total cost for each equipment item
-    const equipmentWithCosts = projectEquipmentList.map(item => ({
-      ...item,
-      total_cost: (Number(item.hourlyRate) || 0) * (Number(item.estimatedHours) || 0) + (Number(item.maintenanceCost) || 0),
-      type: 'equipment' // Add type for frontend categorization
-    }));
+    // Aggregate timesheet hours (regular + overtime) per project_equipment row, if any rows exist.
+    // When timesheet entries exist they become the source of truth for usage hours/cost
+    // (chosen design: "replace" the 10h/day estimate).
+    //
+    // Wrapped in try/catch so the endpoint still works before the project_equipment_timesheets
+    // migration is applied (table missing => fall back to estimatedHours only).
+    const peIds = projectEquipmentList.map(p => p.id);
+    let timesheetTotalsById: Record<number, number> = {};
+    if (peIds.length > 0) {
+      try {
+        const tsRows = await db
+          .select({
+            projectEquipmentId: projectEquipmentTimesheets.projectEquipmentId,
+            totalHours: sql<string>`SUM(${projectEquipmentTimesheets.regularHours} + ${projectEquipmentTimesheets.overtimeHours})`,
+          })
+          .from(projectEquipmentTimesheets)
+          .where(inArray(projectEquipmentTimesheets.projectEquipmentId, peIds))
+          .groupBy(projectEquipmentTimesheets.projectEquipmentId);
 
-    return NextResponse.json({ 
+        timesheetTotalsById = tsRows.reduce<Record<number, number>>((acc, row) => {
+          acc[row.projectEquipmentId] = Number(row.totalHours) || 0;
+          return acc;
+        }, {});
+      } catch (tsError: any) {
+        // Most likely: table not yet created (run drizzle/0042 migration).
+        // Log once and continue without timesheet totals so the equipment list still renders.
+        console.warn(
+          '[project equipment] timesheet aggregation skipped:',
+          tsError?.message || tsError
+        );
+      }
+    }
+
+    // Calculate total cost for each equipment item. When timesheet hours are present they
+    // override estimatedHours so the row behaves like a real timesheet-driven rental line.
+    const equipmentWithCosts = projectEquipmentList.map(item => {
+      const timesheetTotalHours = timesheetTotalsById[item.id] ?? 0;
+      const hourlyRate = Number(item.hourlyRate) || 0;
+      const maintenance = Number(item.maintenanceCost) || 0;
+      const baseHours = timesheetTotalHours > 0
+        ? timesheetTotalHours
+        : Number(item.estimatedHours) || 0;
+
+      return {
+        ...item,
+        timesheet_total_hours: timesheetTotalHours,
+        timesheetTotalHours, // camelCase alias for FE convenience
+        total_cost: hourlyRate * baseHours + maintenance,
+        type: 'equipment',
+      };
+    });
+
+    return NextResponse.json({
       success: true,
-      data: equipmentWithCosts 
+      data: equipmentWithCosts,
     });
   } catch (error) {
     console.error('Error fetching project equipment:', error);

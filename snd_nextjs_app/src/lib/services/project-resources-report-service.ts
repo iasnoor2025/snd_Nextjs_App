@@ -1,5 +1,11 @@
 import { jsPDF } from 'jspdf';
 import { format } from 'date-fns';
+import {
+  applyArabicFontToPdf,
+  ARABIC_FONT_NAME,
+  loadArabicFontDataForPdf,
+  textContainsArabic,
+} from '@/lib/utils/pdf-arabic-font';
 
 export interface ProjectResourceReportData {
   project: {
@@ -10,6 +16,41 @@ export interface ProjectResourceReportData {
   resources: Array<any>;
   summary: {
     totalCount: number;
+    totalCost: number;
+  };
+}
+
+// Input for the monthly equipment-timesheet report (rental-style "Items report").
+// Columns shown in the PDF: SI / Equipment / Operator / Start Date / Duration / Total / TS.
+export interface ProjectEquipmentMonthlyReportData {
+  project: { id: number | string; name: string };
+  month: string; // YYYY-MM
+  items: Array<{
+    projectEquipmentId: number;
+    equipmentName: string;
+    doorNumber?: string | null;
+    operatorName?: string | null;
+    operatorFileNumber?: string | null;
+    startDate?: string | null;          // raw PE.start_date
+    endDate?: string | null;
+    effectiveStartDate?: string | null; // start within the month
+    durationDays?: number;              // overlap days within the month
+    hourlyRate: number;
+    regularHours: number;
+    overtimeHours: number;
+    timesheetHours?: number;
+    isManualHours?: boolean;
+    monthlyCost: number;
+    received: boolean;
+  }>;
+  summary: {
+    totalEquipment: number;
+    withHours: number;
+    active?: number;
+    received: number;
+    totalDurationDays?: number;
+    totalRegularHours: number;
+    totalOvertimeHours: number;
     totalCost: number;
   };
 }
@@ -199,6 +240,307 @@ export class ProjectResourcesReportService {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error generating PDF report:', error);
+      throw error;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Monthly Equipment Timesheet Report
+  // ---------------------------------------------------------------------------
+  // Mirrors the rental "rental timesheet" report style: one row per equipment,
+  // with Regular / Overtime / Total hours and the monthly cost computed at the
+  // project_equipment hourly rate. Summary row at the bottom.
+
+  static async generateMonthlyEquipmentTimesheetReport(
+    data: ProjectEquipmentMonthlyReportData
+  ): Promise<jsPDF> {
+    const doc = new jsPDF('l', 'mm', 'a4');
+    const pageWidth = 297;
+    const pageHeight = 210;
+    const margin = 10;
+    const contentWidth = pageWidth - margin * 2;
+    let yPosition = 15;
+
+    // Display label like "April 2026"
+    const monthLabel = (() => {
+      try {
+        return format(new Date(`${data.month}-01`), 'MMMM yyyy');
+      } catch {
+        return data.month;
+      }
+    })();
+
+    doc.setProperties({
+      title: `Equipment Timesheet Report - ${monthLabel}`,
+      subject: 'Project Equipment Monthly Timesheet',
+      author: 'SND Rental System',
+      creator: 'SND Rental System',
+    });
+
+    // --- Arabic / English mixed-text support ----------------------------------
+    // Register Noto Sans Arabic (when reachable). When unavailable we fall back
+    // to Helvetica for everything — Arabic glyphs simply won't shape, but the
+    // PDF stays readable.
+    let notoRegistered = false;
+    try {
+      const arabicFontData = await loadArabicFontDataForPdf();
+      if (arabicFontData) {
+        applyArabicFontToPdf(doc, arabicFontData, false);
+        notoRegistered = true;
+      }
+    } catch (e) {
+      console.warn('[pdf] Arabic font load failed; falling back to Helvetica.', e);
+    }
+    // Pick the right font per cell. Default style = 'normal'.
+    const pickFont = (text: unknown, style: 'normal' | 'bold' = 'normal') => {
+      const s = String(text ?? '');
+      if (notoRegistered && textContainsArabic(s)) {
+        // Noto Sans Arabic is only registered as 'normal' — bold falls back to
+        // Helvetica so we keep weight on Latin headings.
+        doc.setFont(ARABIC_FONT_NAME, 'normal');
+      } else {
+        doc.setFont('helvetica', style);
+      }
+    };
+
+    // Logo + company header (matches existing project reports)
+    const logoPath = '/snd-logo.png';
+    const companyName = 'Samhan Naser Al-Dosri Est.';
+    let logoDataUrl: string | null = null;
+    try {
+      logoDataUrl = await this.loadImageAsDataURL(logoPath);
+    } catch (error) {
+      console.warn('Could not load logo:', error);
+    }
+
+    const drawPageHeader = (yPos: number) => {
+      if (logoDataUrl) {
+        doc.addImage(logoDataUrl, 'PNG', margin, yPos - 5, 20, 15);
+      }
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text(companyName, margin + 25, yPos);
+    };
+
+    drawPageHeader(yPosition);
+
+    yPosition += 6;
+    doc.setFontSize(14);
+    doc.text('Equipment Timesheet Report', margin + 25, yPosition);
+
+    yPosition += 8;
+    doc.setFontSize(11);
+    // The project name may be Arabic — switch font for that single line, then
+    // restore Helvetica for the following English-only meta rows.
+    pickFont(data.project.name);
+    doc.text(`Project: ${data.project.name}`, margin, yPosition);
+    doc.setFont('helvetica', 'normal');
+    yPosition += 6;
+    doc.text(`Month:   ${monthLabel}`, margin, yPosition);
+    yPosition += 6;
+    doc.text(
+      `Generated: ${format(new Date(), 'yyyy-MM-dd HH:mm')}`,
+      margin,
+      yPosition
+    );
+    yPosition += 6;
+    doc.text(
+      `Items: ${data.summary.totalEquipment}  |  Active: ${data.summary.active ?? data.summary.withHours}  |  Received: ${data.summary.received}  |  Total: SAR ${data.summary.totalCost.toLocaleString(
+        undefined,
+        { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+      )}`,
+      margin,
+      yPosition
+    );
+    yPosition += 8;
+
+    // Columns: SI | Equipment | Operator | Start Date | Duration | Total (SAR) | TS
+    const headers = [
+      '#',
+      'Equipment',
+      'Operator',
+      'Start Date',
+      'Duration',
+      'Total (SAR)',
+      'TS',
+    ];
+
+    const rawWidths = [10, 60, 65, 28, 26, 40, 12];
+    const sumWidths = rawWidths.reduce((a, b) => a + b, 0);
+    const columnWidths = rawWidths.map(w => (w / sumWidths) * contentWidth);
+
+    const startX = margin;
+    const headerHeight = 8;
+    let xPosition = startX;
+
+    const drawHeaderRow = (yPos: number) => {
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      xPosition = startX;
+      headers.forEach((header, index) => {
+        doc.setFillColor(51, 51, 51);
+        doc.rect(xPosition, yPos - 5, columnWidths[index], headerHeight, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.text(header, xPosition + 2, yPos, {
+          maxWidth: columnWidths[index] - 4,
+        });
+        doc.setTextColor(0, 0, 0);
+        xPosition += columnWidths[index];
+      });
+    };
+
+    drawHeaderRow(yPosition);
+    yPosition += headerHeight + 2;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+
+    const fmtNum = (n: number, digits = 2) =>
+      n.toLocaleString(undefined, {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
+      });
+
+    const fmtDate = (d?: string | null) => {
+      if (!d) return '-';
+      try {
+        return format(new Date(d), 'yyyy-MM-dd');
+      } catch {
+        return d;
+      }
+    };
+
+    data.items.forEach((it, idx) => {
+      // Page break check
+      if (yPosition > pageHeight - 25) {
+        doc.addPage();
+        yPosition = 15;
+        drawPageHeader(yPosition);
+        yPosition += 10;
+        drawHeaderRow(yPosition);
+        yPosition += headerHeight + 2;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+      }
+
+      // Start date: prefer the slice-of-month start when available so the
+      // PDF matches what the user sees in the report tab.
+      const displayedStart = it.effectiveStartDate || it.startDate || null;
+      const duration =
+        it.isManualHours && (it.timesheetHours ?? 0) > 0
+          ? `${fmtNum(it.timesheetHours ?? 0, 1)} hrs`
+          : (it.durationDays ?? 0) > 0
+            ? `${it.durationDays} ${(it.durationDays ?? 0) === 1 ? 'day' : 'days'}`
+            : '-';
+
+      const rowData = [
+        String(idx + 1),
+        it.equipmentName + (it.doorNumber ? ` (${it.doorNumber})` : ''),
+        it.operatorName
+          ? it.operatorFileNumber
+            ? `${it.operatorName} (#${it.operatorFileNumber})`
+            : it.operatorName
+          : '-',
+        fmtDate(displayedStart),
+        duration,
+        fmtNum(it.monthlyCost),
+        it.received ? 'Y' : '-',
+      ];
+
+      // Pre-measure to keep row heights consistent across cells.
+      // splitTextToSize uses whichever font is currently active, so we set the
+      // font for each cell *before* measuring it.
+      const cellLines: string[][] = [];
+      let maxLines = 1;
+      rowData.forEach((cell, ci) => {
+        pickFont(cell);
+        const lines = doc.splitTextToSize(cell || '-', columnWidths[ci] - 4);
+        cellLines.push(lines);
+        maxLines = Math.max(maxLines, lines.length);
+      });
+
+      const rowHeight = 4 + maxLines * 3;
+      xPosition = startX;
+      rowData.forEach((cell, ci) => {
+        doc.rect(xPosition, yPosition - 5, columnWidths[ci], rowHeight, 'S');
+        pickFont(cell);
+        cellLines[ci].forEach((line, li) => {
+          doc.text(line, xPosition + 2, yPosition + li * 3, {
+            maxWidth: columnWidths[ci] - 4,
+          });
+        });
+        xPosition += columnWidths[ci];
+      });
+      // Reset for any drawing that happens before the next row
+      doc.setFont('helvetica', 'normal');
+
+      yPosition += rowHeight;
+    });
+
+    // Totals row
+    if (yPosition > pageHeight - 25) {
+      doc.addPage();
+      yPosition = 15;
+      drawPageHeader(yPosition);
+      yPosition += 10;
+    }
+
+    yPosition += 4;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+
+    const totalsRow = [
+      '',
+      'TOTAL',
+      '',
+      '',
+      `${data.summary.totalDurationDays ?? 0} days`,
+      fmtNum(data.summary.totalCost),
+      '',
+    ];
+
+    xPosition = startX;
+    totalsRow.forEach((cell, ci) => {
+      doc.setFillColor(230, 230, 230);
+      doc.rect(xPosition, yPosition - 5, columnWidths[ci], headerHeight, 'FD');
+      doc.text(cell, xPosition + 2, yPosition, {
+        maxWidth: columnWidths[ci] - 4,
+      });
+      xPosition += columnWidths[ci];
+    });
+
+    yPosition += headerHeight + 6;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text(
+      'TS = Timesheet received for this month.',
+      margin,
+      yPosition
+    );
+
+    return doc;
+  }
+
+  static async downloadMonthlyEquipmentTimesheetReport(
+    data: ProjectEquipmentMonthlyReportData,
+    filename?: string
+  ): Promise<void> {
+    try {
+      const pdf = await this.generateMonthlyEquipmentTimesheetReport(data);
+      const pdfBlob = pdf.output('blob');
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      const safeProject = (data.project.name || 'project').replace(/\s+/g, '-');
+      link.download =
+        filename ||
+        `equipment-timesheet-${safeProject}-${data.month}-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error generating monthly equipment timesheet PDF:', error);
       throw error;
     }
   }

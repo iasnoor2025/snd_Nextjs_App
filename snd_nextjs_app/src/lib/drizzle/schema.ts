@@ -3059,6 +3059,94 @@ export const projectEquipment = pgTable(
   ]
 );
 
+// Daily timesheet hours per project_equipment row (mirrors rental_equipment_timesheets)
+export const projectEquipmentTimesheets = pgTable(
+  'project_equipment_timesheets',
+  {
+    id: serial().primaryKey().notNull(),
+    projectEquipmentId: integer('project_equipment_id').notNull(),
+    projectId: integer('project_id').notNull(),
+    equipmentId: integer('equipment_id'),
+    date: date().notNull(),
+    regularHours: numeric('regular_hours', { precision: 5, scale: 2 }).default('0').notNull(),
+    overtimeHours: numeric('overtime_hours', { precision: 5, scale: 2 }).default('0').notNull(),
+    notes: text(),
+    createdBy: integer('created_by'),
+    createdAt: date('created_at').default(sql`CURRENT_DATE`).notNull(),
+    updatedAt: date('updated_at').notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.projectEquipmentId],
+      foreignColumns: [projectEquipment.id],
+      name: 'project_equipment_timesheets_project_equipment_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('cascade'),
+    foreignKey({
+      columns: [table.projectId],
+      foreignColumns: [projects.id],
+      name: 'project_equipment_timesheets_project_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('cascade'),
+    foreignKey({
+      columns: [table.equipmentId],
+      foreignColumns: [equipment.id],
+      name: 'project_equipment_timesheets_equipment_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+    uniqueIndex('project_equipment_timesheets_pe_date_key').on(
+      table.projectEquipmentId,
+      table.date
+    ),
+  ]
+);
+
+// Per-month "received" tracking for project equipment timesheets
+export const projectEquipmentTimesheetReceived = pgTable(
+  'project_equipment_timesheet_received',
+  {
+    id: serial().primaryKey().notNull(),
+    projectId: integer('project_id').notNull(),
+    projectEquipmentId: integer('project_equipment_id').notNull(),
+    month: text().notNull(), // YYYY-MM
+    received: boolean().default(false).notNull(),
+    receivedBy: integer('received_by'),
+    receivedAt: timestamp('received_at', { precision: 3, mode: 'string' }),
+    createdAt: date('created_at').default(sql`CURRENT_DATE`).notNull(),
+    updatedAt: date('updated_at').notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.projectId],
+      foreignColumns: [projects.id],
+      name: 'project_equipment_timesheet_received_project_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('cascade'),
+    foreignKey({
+      columns: [table.projectEquipmentId],
+      foreignColumns: [projectEquipment.id],
+      name: 'project_equipment_timesheet_received_project_equipment_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('cascade'),
+    foreignKey({
+      columns: [table.receivedBy],
+      foreignColumns: [users.id],
+      name: 'project_equipment_timesheet_received_received_by_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+    uniqueIndex('project_equipment_timesheet_received_pe_month_key').on(
+      table.projectEquipmentId,
+      table.month
+    ),
+  ]
+);
+
 export const projectMaterials = pgTable(
   'project_materials',
   {
