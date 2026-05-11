@@ -425,46 +425,98 @@ export default function ManpowerDialog({
     });
   };
 
+  type EmployeeProfile = {
+    id?: string | number;
+    first_name?: string;
+    middle_name?: string;
+    last_name?: string;
+    file_number?: string;
+    basic_salary?: number | string;
+    contract_days_per_month?: number | string;
+    is_external?: boolean;
+    company_name?: string | null;
+  };
+
+  const resolveEmployeeProfile = (response: any): EmployeeProfile | null => {
+    if (!response) return null;
+    // App endpoints are not fully uniform: some return {data}, others {employee}.
+    if (response.data && typeof response.data === 'object') return response.data as EmployeeProfile;
+    if (response.employee && typeof response.employee === 'object')
+      return response.employee as EmployeeProfile;
+    return null;
+  };
+
+  const deriveDailyRateFromProfile = (profile: EmployeeProfile): number => {
+    const basicSalary = parseFloat(String(profile.basic_salary ?? 0)) || 0;
+    const contractDaysPerMonth =
+      Number(profile.contract_days_per_month ?? 30) > 0
+        ? Number(profile.contract_days_per_month ?? 30)
+        : 30;
+    if (basicSalary <= 0) return 0;
+    return parseFloat((basicSalary / contractDaysPerMonth).toFixed(2));
+  };
+
+  const getEmployeeProfile = async (employeeId: string): Promise<EmployeeProfile | null> => {
+    // 1) Prefer full employee endpoint.
+    try {
+      const details = await ApiService.get(`/employees/${employeeId}`);
+      const profile = resolveEmployeeProfile(details);
+      if (profile) return profile;
+    } catch (error) {
+      console.error('Error fetching employee details endpoint:', error);
+    }
+
+    // 2) Fallback to dropdown endpoint (contains internal + external employees, including salary).
+    try {
+      const dropdown = await ApiService.get('/employees/dropdown', { all: true, limit: 1000 });
+      const employeeData = dropdown.data || [];
+      const selectedEmployee = employeeData.find(
+        (emp: any) => String(emp.id) === String(employeeId)
+      );
+      if (selectedEmployee) return selectedEmployee as EmployeeProfile;
+    } catch (error) {
+      console.error('Error fetching employee dropdown fallback:', error);
+    }
+
+    return null;
+  };
+
+  const applyEmployeeProfileToForm = (
+    profile: EmployeeProfile,
+    options?: { forceDailyRate?: boolean; previousRate?: number }
+  ) => {
+    const fullName =
+      [profile.first_name, profile.middle_name, profile.last_name]
+        .filter(Boolean)
+        .join(' ')
+        .trim() || profile.company_name || '';
+    const calculatedRate = deriveDailyRateFromProfile(profile);
+    const forceDailyRate = options?.forceDailyRate === true;
+    const previousRate = options?.previousRate;
+
+    setFormData(prev => {
+      const shouldOverwriteRate = forceDailyRate || !previousRate || previousRate === 0;
+      return {
+        ...prev,
+        employee_name: fullName,
+        employee_file_number: profile.file_number || '',
+        name: fullName,
+        daily_rate: shouldOverwriteRate && calculatedRate > 0 ? calculatedRate : prev.daily_rate,
+      };
+    });
+  };
+
   // Function to recalculate daily rate from employee's basic salary
   const recalculateDailyRateFromEmployee = async (employeeId: string, currentFormData: ManpowerResource) => {
     try {
-      // Fetch employee details to get basic salary
-      const response = await ApiService.get(`/employees/${employeeId}`);
-      if (response.success && response.data) {
-        const selectedEmployee = response.data;
-        
-        if (selectedEmployee && selectedEmployee.basic_salary) {
-          const basicSalary = parseFloat(selectedEmployee.basic_salary) || 0;
-          const contractDaysPerMonth = selectedEmployee.contract_days_per_month || 30; // Default to 30 days
-          const dailyRate = basicSalary > 0 && contractDaysPerMonth > 0 
-            ? basicSalary / contractDaysPerMonth 
-            : 0;
-          
+      const profile = await getEmployeeProfile(employeeId);
+      if (profile) {
+        const dailyRate = deriveDailyRateFromProfile(profile);
+        if (dailyRate > 0) {
           setFormData(prev => ({
             ...prev,
-            daily_rate: parseFloat(dailyRate.toFixed(2)),
+            daily_rate: dailyRate,
           }));
-        }
-      } else {
-        // Fallback: try fetching from public endpoint
-        const fallbackResponse = await ApiService.get('/employees/public?all=true&limit=1000');
-        if (fallbackResponse.success) {
-          const data = fallbackResponse.data;
-          const employeeData = data.data || data || [];
-          const selectedEmployee = employeeData.find((emp: any) => emp.id === employeeId || emp.id?.toString() === employeeId);
-          
-          if (selectedEmployee && selectedEmployee.basic_salary) {
-            const basicSalary = parseFloat(selectedEmployee.basic_salary) || 0;
-            const contractDaysPerMonth = selectedEmployee.contract_days_per_month || 30; // Default to 30 days
-            const dailyRate = basicSalary > 0 && contractDaysPerMonth > 0 
-              ? basicSalary / contractDaysPerMonth 
-              : 0;
-            
-            setFormData(prev => ({
-              ...prev,
-              daily_rate: parseFloat(dailyRate.toFixed(2)),
-            }));
-          }
         }
       }
     } catch (error) {
@@ -476,66 +528,14 @@ export default function ManpowerDialog({
   // Function to fetch employee details and populate form
   const fetchEmployeeDetails = async (employeeId: string, currentFormData: ManpowerResource) => {
     try {
-      // Fetch specific employee details to get basic salary
-      const response = await ApiService.get(`/employees/${employeeId}`);
-      if (response.success && response.data) {
-        const selectedEmployee = response.data;
-
-        if (selectedEmployee) {
-          setFormData(prev => {
-            const newData = {
-              ...prev,
-              employee_name: `${selectedEmployee.first_name || ''} ${selectedEmployee.last_name || ''}`.trim(),
-              employee_file_number: selectedEmployee.file_number || '',
-              name: `${selectedEmployee.first_name || ''} ${selectedEmployee.last_name || ''}`.trim(),
-            };
-
-            // Calculate daily rate from basic salary if available
-            // Set daily rate if it's not already set (0 or empty) to allow manual overrides
-            if (selectedEmployee.basic_salary && (!prev.daily_rate || prev.daily_rate === 0)) {
-              const basicSalary = parseFloat(selectedEmployee.basic_salary) || 0;
-              const contractDaysPerMonth = selectedEmployee.contract_days_per_month || 30; // Default to 30 days
-              const dailyRate = basicSalary > 0 && contractDaysPerMonth > 0 
-                ? basicSalary / contractDaysPerMonth 
-                : 0;
-              newData.daily_rate = parseFloat(dailyRate.toFixed(2));
-            }
-
-            return newData;
-          });
-        }
-      } else {
-        // Fallback: try fetching from public endpoint if direct endpoint fails
-        const fallbackResponse = await ApiService.get('/employees/public?all=true&limit=1000');
-        if (fallbackResponse.success) {
-          const data = fallbackResponse.data;
-          const employeeData = data.data || data || [];
-          const selectedEmployee = employeeData.find((emp: any) => emp.id === employeeId || emp.id?.toString() === employeeId);
-
-          if (selectedEmployee) {
-            setFormData(prev => {
-              const newData = {
-                ...prev,
-                employee_name: `${selectedEmployee.first_name || ''} ${selectedEmployee.last_name || ''}`.trim(),
-                employee_file_number: selectedEmployee.file_number || '',
-                name: `${selectedEmployee.first_name || ''} ${selectedEmployee.last_name || ''}`.trim(),
-              };
-
-              // Calculate daily rate from basic salary if available
-              // Set daily rate if it's not already set (0 or empty) to allow manual overrides
-              if (selectedEmployee.basic_salary && (!prev.daily_rate || prev.daily_rate === 0)) {
-                const basicSalary = parseFloat(selectedEmployee.basic_salary) || 0;
-                const contractDaysPerMonth = selectedEmployee.contract_days_per_month || 30; // Default to 30 days
-                const dailyRate = basicSalary > 0 && contractDaysPerMonth > 0 
-                  ? basicSalary / contractDaysPerMonth 
-                  : 0;
-                newData.daily_rate = parseFloat(dailyRate.toFixed(2));
-              }
-
-              return newData;
-            });
-          }
-        }
+      const profile = await getEmployeeProfile(employeeId);
+      if (profile) {
+        // When employee selection changes from dropdown, always refresh
+        // daily rate from the selected employee profile.
+        applyEmployeeProfileToForm(profile, {
+          forceDailyRate: true,
+          previousRate: currentFormData.daily_rate,
+        });
       }
     } catch (error) {
       console.error('Error fetching employee details:', error);
